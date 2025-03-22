@@ -1,5 +1,6 @@
 ﻿<Project>
-<Import Project="HexalithVersion.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../'))" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('HexalithVersion.props', '$(MSBuildThisFileDirectory)../'))" />
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
