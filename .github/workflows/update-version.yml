@@ -1,0 +1,32 @@
+name: Update Version on Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Update version in props file
+        run: |
+          sed -i "s/<HexalithVersion>.*<\/HexalithVersion>/<HexalithVersion>$VERSION<\/HexalithVersion>/" HexalithVersion.props
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add HexalithVersion.props
+          git commit -m "chore: update version to $VERSION [skip ci]"
+          git push 
