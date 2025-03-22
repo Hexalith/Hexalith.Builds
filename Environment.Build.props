@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(TF_BUILD)' == 'true'">
+    <CIBuild>true</CIBuild>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Define if the project is building inside an IDE (Visual Studio, Resharper, Visual Code or Cursor -->
+    <IDEBuild Condition="'$(IDEBuild)' == '' and '$(BuildingByReSharper)' == 'true'">true</IDEBuild>
+    <IDEBuild Condition="'$(IDEBuild)' == '' and '$(BuildingInsideVisualStudio)' == 'true'">true</IDEBuild>
+    <IDEBuild Condition="'$(IDEBuild)' == '' and ('$(TERM_PROGRAM)' == 'vscode' or '$(TERM_PROGRAM)' == 'cursor' or '$(VSCODE_PID)' != '' or '$(VSCODE_CWD)' != '')">true</IDEBuild>
+  </PropertyGroup>
+</Project>

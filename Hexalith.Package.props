@@ -1,0 +1,25 @@
+<Project>
+  <Import Project="Hexalith.Build.props" />
+  <Import Project="Stylecop.Build.props" />
+  <Import Project="Framework.Build.props" />
+  <PropertyGroup>
+    <Authors>Jérôme Piquot</Authors>
+    <Company>ITANEO</Company>
+    <Product>Hexalith</Product>
+    <PackageTags>Hexalith;.NET;DDD;CLEAN;Distributed;Event Driven;Microservice;Event Sourcing;Blazor;Fluent UI;ASP Net Core;</PackageTags>
+    <Description>Hexalith is a set of libraries to build an application with micro-service architecture.</Description>
+    <RepositoryUrl>https://github.com/Hexalith/Hexalith</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENCE</PackageLicenseFile>
+    <VersionPrefix>$(HexalithVersion)</VersionPrefix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' != 'Release'">
+    <VersionSuffix Condition="'$(GITHUB_RUN_NUMBER)' != ''">preview-$(GITHUB_RUN_NUMBER)</VersionSuffix>
+    <VersionSuffix Condition="'$(GITHUB_RUN_NUMBER)' == ''">$(Date:yyyyMMddHHmmss)</VersionSuffix>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

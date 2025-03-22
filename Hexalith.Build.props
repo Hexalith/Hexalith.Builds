@@ -1,6 +1,8 @@
 <Project>
-  <Import Project="HexalithVersion.props" />
+  <Import Project="Environment.Build.props" />
+  <Import Project="Hexalith.Version.props" />
   <PropertyGroup>
+    <UseProjectReference Condition="'$(UseProjectReference)' == '' and '$(IDEBuild)' == 'true' and '$(CIBuild)' != 'true'">true</UseProjectReference>
   </PropertyGroup>
   <ItemGroup>
   </ItemGroup>
