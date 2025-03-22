@@ -22,7 +22,7 @@ The repository contains the following key files:
 
 ### Version Control
 
-- `Hexalith.Version.props`: Defines the current version of Hexalith (currently `1.56.0`), used across all projects
+- `Hexalith.Version.props`: Defines the current version of Hexalith based on the latest git tag [![Version](https://img.shields.io/github/v/tag/Hexalith/Hexalith.Builds?filter=v*)](https://github.com/Hexalith/Hexalith.Builds/tags), used across all projects
 
 ### Build Configuration
 
@@ -80,11 +80,18 @@ This is automatically set when `IDEBuild` is `true` and `CIBuild` is not `true`.
 
 ## Version Management
 
-The version of all Hexalith components is managed centrally in the `Hexalith.Version.props` file. When a new version is tagged in GitHub (with format `v*.*.*`), the GitHub Actions workflow will automatically update this version.
+The version of all Hexalith components is managed centrally in the `Hexalith.Version.props` file. The version number is derived from git tags in the repository.
+
+When a new version is tagged in GitHub (with format `v*.*.*`), the GitHub Actions workflow will automatically update the `HexalithVersion` property in the `Hexalith.Version.props` file.
 
 For non-release builds, a suffix is added to the version number:
 - For GitHub builds: `preview-{GITHUB_RUN_NUMBER}`
 - For local builds: A timestamp in the format `yyyyMMddHHmmss`
+
+To create a new version:
+1. Create and push a new tag with format `v*.*.*` (e.g., `v1.2.3`)
+2. The GitHub workflow will automatically update the version in `Hexalith.Version.props`
+3. All projects referencing this repository will use the new version
 
 ## License
 
