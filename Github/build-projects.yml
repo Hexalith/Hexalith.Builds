@@ -1,0 +1,11 @@
+name: Build Projects
+runs:
+  using: "composite"
+  steps:
+    - name: Build all projects
+      shell: pwsh
+      run: |
+        Get-ChildItem -Path src -Filter *.csproj -Recurse | ForEach-Object {
+          Write-Host "Building $($_.FullName)"
+          dotnet build $_.FullName --configuration Release -p:Version=${{ env.VERSION }}
+        }
