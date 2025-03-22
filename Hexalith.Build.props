@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="HexalithVersion.props" />
+  <PropertyGroup>
+  </PropertyGroup>
+  <ItemGroup>
+  </ItemGroup>
+</Project>

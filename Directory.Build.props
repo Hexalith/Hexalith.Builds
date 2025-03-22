@@ -1,9 +1,0 @@
-<Project>
-  <Import Project="" />
-  <PropertyGroup>
-    <RootNamespace>placeHolder.Database</RootNamespace>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Threenine.Data" />
-  </ItemGroup>
-</Project>
