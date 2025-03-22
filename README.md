@@ -22,7 +22,8 @@ The repository contains the following key files:
 
 ### Version Control
 
-- `Hexalith.Version.props`: Defines the current version of Hexalith based on the latest git tag [![Version](https://img.shields.io/github/v/tag/Hexalith/Hexalith.Builds?filter=v*)](https://github.com/Hexalith/Hexalith.Builds/tags), used across all projects
+- `Hexalith.Version.props`: Defines the current version of all Hexalith projects based on the latest git tag in this repository.
+- Current : [![Version](https://img.shields.io/github/v/tag/Hexalith/Hexalith.Builds?filter=v*)](https://github.com/Hexalith/Hexalith.Builds/tags)
 
 ### Build Configuration
 
