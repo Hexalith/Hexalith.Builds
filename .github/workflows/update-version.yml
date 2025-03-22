@@ -1,4 +1,4 @@
-name: Update Version on Tag
+name: Update Hexalith Version on Tag
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
 
       - name: Update version in props file
         run: |
-          sed -i "s/<HexalithVersion>.*<\/HexalithVersion>/<HexalithVersion>$VERSION<\/HexalithVersion>/" HexalithVersion.props
+          sed -i "s/<HexalithVersion>.*<\/HexalithVersion>/<HexalithVersion>$VERSION<\/HexalithVersion>/" Hexalith.Version.props
 
       - name: Commit and push changes
         run: |
