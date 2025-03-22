@@ -4,7 +4,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Hexalith.Common" Version="$HexalithVersion" />
+    <PackageVersion Include="Hexalith.Commons" Version="$HexalithVersion" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Threenine.Data" Version="5.0.1" />
