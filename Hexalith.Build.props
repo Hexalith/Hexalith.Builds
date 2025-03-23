@@ -5,4 +5,10 @@
     <UseProjectReference Condition="'$(UseProjectReference)' == '' and '$(IDEBuild)' == 'true' and '$(CIBuild)' != 'true'">true</UseProjectReference>
     <NoWarn>$(NoWarn);S113;SA1609;</NoWarn>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SonarAnalyzer.CSharp">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 </Project>
