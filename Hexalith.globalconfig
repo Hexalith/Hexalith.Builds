@@ -1,2 +1,3 @@
+is_global = true 
 [*.cs]
 file_header_template = Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved. Licensed under the MIT license. See LICENSE file in the project root for full license information.
