@@ -1,6 +1,5 @@
 <Project>
   <Import Project="Hexalith.Build.props" />
-  <Import Project="Stylecop.Build.props" />
   <Import Project="Framework.Build.props" />
   <PropertyGroup>
     <Authors>Jérôme Piquot</Authors>
@@ -21,5 +20,6 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)/.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 </Project>
