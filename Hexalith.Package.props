@@ -20,6 +20,5 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)/.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 </Project>
