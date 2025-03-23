@@ -4,6 +4,9 @@
   <PropertyGroup>
     <UseProjectReference Condition="'$(UseProjectReference)' == '' and '$(IDEBuild)' == 'true' and '$(CIBuild)' != 'true'">true</UseProjectReference>
     <NoWarn>$(NoWarn);S113;SA1609;</NoWarn>
+    <AnalysisMode>All</AnalysisMode>
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
+    <AnalysisLevel>preview-all</AnalysisLevel>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SonarAnalyzer.CSharp">
