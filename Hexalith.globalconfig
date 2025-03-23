@@ -1,3 +1,34 @@
 is_global = true 
-[*.cs]
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
 file_header_template = Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved. Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+# C# files
+[*.cs]
+dotnet_analyzer_diagnostic.severity = error
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+
+# Python files
+[*.py]
+indent_size = 4
+
+# Makefiles
+[Makefile]
+indent_style = tab
+
+# Markdown files
+[*.md]
+trim_trailing_whitespace = false
+
+# Typescript files
+[*.{js,ts,jsx,tsx}]
+indent_size = 2
