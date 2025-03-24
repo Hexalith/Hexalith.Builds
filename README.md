@@ -38,9 +38,15 @@ The repository contains the following key files:
 
 ### Code Style and Analysis
 
+- `Hexalith.globalconfig`: Global configuration file for C# code style and formatting rules
 - `Stylecop.Build.props`: Configures StyleCop analyzers for code style enforcement
 - `.stylecop.json`: Contains StyleCop configuration settings like indentation and documentation rules
 - `.stylecop.ruleset`: Defines the rule set for StyleCop analyzers
+
+### Tools and Templates
+
+- `Tools/builds-submodule-init.ps1`: PowerShell script for initializing the Hexalith.Builds Git submodule
+- `Github/`: Directory containing GitHub workflow templates for building and deploying projects
 
 ### Workflows
 
@@ -61,6 +67,20 @@ For projects that will be packaged and published as NuGet packages:
 ```xml
 <Import Project="$(MSBuildThisFileDirectory)..\Hexalith.Builds\Hexalith.Package.props" />
 ```
+
+### Adding as a Git Submodule
+
+You can add this repository as a Git submodule to your project using the provided PowerShell script:
+
+```powershell
+# From your repository root:
+.\Hexalith.Builds\Tools\builds-submodule-init.ps1
+```
+
+This script will:
+1. Initialize the Hexalith.Builds Git submodule from the GitHub repository
+2. Update the submodule to the latest commit referenced in your repository
+3. Checkout the main branch in the Hexalith.Builds submodule
 
 ### Environment Detection
 
@@ -93,6 +113,17 @@ To create a new version:
 1. Create and push a new tag with format `v*.*.*` (e.g., `v1.2.3`)
 2. The GitHub workflow will automatically update the version in `Hexalith.Version.props`
 3. All projects referencing this repository will use the new version
+
+## GitHub Workflow Templates
+
+The repository provides reusable GitHub workflow templates in the `Github` directory:
+
+- `build-projects.yml`: Workflow template for building projects in a repository
+- `build-packages.yml`: Template for building and packaging NuGet packages
+- `publish-container.yml`: Template for building and publishing container images
+- `deploy-container-app.yml`: Template for deploying container applications
+
+You can use these templates in your GitHub workflows by referencing them from your own workflow files.
 
 ## License
 
