@@ -1,4 +1,4 @@
-name: Copy AI Instructions
+name: Copy common AI instructions file to Cursor, Cline and Github Copilot rules files
 
 on:
   push:
