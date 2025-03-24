@@ -8,6 +8,7 @@ charset = utf-8
 trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
+file_header_template = Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved. Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 # Python files
 [*.py]
@@ -28,7 +29,6 @@ indent_size = 2
 
 # C# files
 [*.cs]
-file_header_template = Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved. Licensed under the MIT license. See LICENSE file in the project root for full license information.
 dotnet_analyzer_diagnostic.severity = error
 
 #### Core EditorConfig Options ####
@@ -57,7 +57,6 @@ dotnet_search_reference_assemblies = true
 # Organize usings
 dotnet_separate_import_directive_groups = true
 dotnet_sort_system_directives_first = true
-file_header_template = unset
 
 # this. and Me. preferences
 dotnet_style_qualification_for_event = false:warning
