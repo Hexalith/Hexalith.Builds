@@ -10,9 +10,29 @@ git submodule foreach git checkout main
 # Create symbolic links from parent repo to submodule for development configuration files
 Write-Host "Creating symbolic links to configuration files..." -ForegroundColor Cyan
 
-# Create symlinks for rules files
-New-Item -ItemType SymbolicLink -Path "Hexalith.Builds\.clinerules" -Target ".clinerules" -Force
-New-Item -ItemType SymbolicLink -Path "Hexalith.Builds\.cursorrules" -Target ".cursorrules" -Force
-New-Item -ItemType SymbolicLink -Path "Hexalith.Builds\.github\copilot-instructions.md" -Target ".github\copilot-instructions.md" -Force
+# Ensure target directories exist
+if (-not (Test-Path ".github")) {
+    New-Item -ItemType Directory -Path ".github" -Force
+}
 
-Write-Host "Symbolic links created successfully." -ForegroundColor Green
+# Create the files if they don't exist in Hexalith.Builds
+$files = @(
+    @{Source = "Hexalith.Builds\.clinerules"; Target = ".clinerules"},
+    @{Source = "Hexalith.Builds\.cursorrules"; Target = ".cursorrules"},
+    @{Source = "Hexalith.Builds\.github\copilot-instructions.md"; Target = ".github\copilot-instructions.md"}
+)
+
+foreach ($file in $files) {
+    if (Test-Path $file.Source) {
+        # Create symlink from root to Hexalith.Builds (opposite of before)
+        if (Test-Path $file.Target) {
+            Remove-Item $file.Target -Force
+        }
+        New-Item -ItemType SymbolicLink -Path $file.Target -Target $file.Source -Force
+        Write-Host "Created symbolic link: $($file.Target) -> $($file.Source)" -ForegroundColor Green
+    } else {
+        Write-Host "Warning: Source file $($file.Source) does not exist" -ForegroundColor Yellow
+    }
+}
+
+Write-Host "Symbolic link creation process completed." -ForegroundColor Green
