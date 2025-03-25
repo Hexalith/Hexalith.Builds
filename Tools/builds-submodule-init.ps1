@@ -1,4 +1,33 @@
+# Check if running with administrator privileges
+$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+$isAdmin = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if (-not $isAdmin) {
+    Write-Host "Error: This script requires administrator privileges to create symbolic links." -ForegroundColor Red
+    Write-Host "Please run PowerShell as Administrator and try again." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Running with administrator privileges - proceeding with initialization..." -ForegroundColor Green
+
 # Initialize the Hexalith.Builds Git submodule from the specified repository
+git submodule add https://github.com/Hexalith/Hexalith.Builds.git
+
+# Initialize the Hexalith.Builds submodule
+git submodule init Hexalith.Builds
+
+# Check if running with administrator privileges
+$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+$isAdmin = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if (-not $isAdmin) {
+    Write-Host "Error: This script requires administrator privileges to create symbolic links." -ForegroundColor Red
+    Write-Host "Please run PowerShell as Administrator and try again." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Running with administrator privileges - proceeding with initialization..." -ForegroundColor Green
+
 git submodule add https://github.com/Hexalith/Hexalith.Builds.git
 
 # Initialize the Hexalith.Builds submodule
