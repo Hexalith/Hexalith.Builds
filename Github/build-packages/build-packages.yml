@@ -1,0 +1,31 @@
+name: 'Build .NET packages'
+description: 'Build all .NET projects in the src directory'
+
+inputs:
+  version:
+    description: 'Version number for the build'
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Determine build configuration
+      id: build-config
+      shell: pwsh
+      run: |
+        $version = "${{ inputs.version }}"
+        $configuration = if ($version -notlike '*-*') { 'Release' } else { 'Debug' }
+        echo "BUILD_CONFIGURATION=$configuration" >> $env:GITHUB_ENV
+
+    - name: Build .NET projects version (${{ inputs.version }})
+      shell: pwsh
+      run: |
+        $projects = Get-ChildItem -Path "./src" -Recurse -Filter "*.csproj"
+        foreach ($project in $projects) {
+          Write-Host "Building $($project.FullName)..."
+          dotnet build $project.FullName `
+            --configuration $env:BUILD_CONFIGURATION `
+            -p:Version=${{ inputs.version }} `
+            -p:FileVersion=${{ inputs.version }}
+        }
