@@ -14,8 +14,8 @@ inputs:
     description: 'Build attempt number to be added to preview versions'
     required: false
     default: '0'
-  preview:
-    description: 'Preview identifier to be added to the version'
+  ref:
+    description: 'Github ref'
     required: false
     default: ''
 
@@ -33,8 +33,8 @@ runs:
       run: |
         [xml]$props = Get-Content "${{ inputs.version-path }}"
         $version = $props.Project.PropertyGroup.HexalithVersion
-        if ("${{ inputs.preview }}" -ne "") {
-            $version = "$version-${{ inputs.preview }}.${{ inputs.buildId }}.${{ inputs.buildAttempt }}"
+        if ("${{ inputs.ref }}" -ne "refs/tags/v*") {
+          $version = "$version-preview.${{ inputs.buildId }}.${{ inputs.buildAttempt }}"
         }
         echo "version=$version" >> $env:GITHUB_OUTPUT
         echo "VERSION=$version" >> $env:GITHUB_ENV
