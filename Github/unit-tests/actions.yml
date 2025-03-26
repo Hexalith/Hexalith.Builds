@@ -1,0 +1,19 @@
+name: 'Run Unit Tests'
+description: 'Runs unit tests and cleans the solution'
+
+inputs:
+  project-name:
+    description: 'The name of the project'
+    required: true
+    type: string
+
+runs:
+  using: composite
+  steps:
+    - name: Run Unit Tests
+      shell: pwsh
+      run: dotnet test -c Release ./test/${{ inputs.project-name }}.Tests/${{ inputs.project-name }}.Tests.csproj
+
+    - name: Clean Solution
+      shell: pwsh
+      run: dotnet clean
