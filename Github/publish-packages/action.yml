@@ -1,10 +1,6 @@
 name: 'Publish NuGet Packages'
 description: 'Publish release packages to NuGet.org or preview packages to Github Packages'
 
-permissions:
-  packages: write
-  contents: read
-
 inputs:
   version:
     description: 'Version number for the packages'
