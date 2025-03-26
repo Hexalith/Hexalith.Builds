@@ -15,4 +15,4 @@ runs:
 
     - name: Clean Solution
       shell: pwsh
-      run: dotnet clean
+      run: dotnet clean ./test/${{ inputs.project-name }}.Tests/${{ inputs.project-name }}.Tests.csproj
