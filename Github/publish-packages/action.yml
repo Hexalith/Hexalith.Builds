@@ -19,10 +19,10 @@ runs:
       if: contains(inputs.version, '-')
       shell: bash
       run: |
-        dotnet nuget push './src/**/*.nupkg' --api-key ${{ inputs.github-token }} --source https://nuget.pkg.github.com/Hexalith/index.json
+        dotnet nuget push './src/**/*.nupkg' --api-key ${{ inputs.github-token }} --source https://nuget.pkg.github.com/Hexalith/index.json --skip-duplicate
 
     - name: Publish release version (${{ inputs.version }}) to NuGet
       if: "!contains(inputs.version, '-')"
       shell: bash
       run: |
-        dotnet nuget push './src/**/*.nupkg' --api-key ${{ inputs.nuget-api-key }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push './src/**/*.nupkg' --api-key ${{ inputs.nuget-api-key }} --source https://api.nuget.org/v3/index.json --skip-duplicate --skip-duplicate
