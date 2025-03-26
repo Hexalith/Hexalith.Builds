@@ -13,6 +13,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENCE</PackageLicenseFile>
     <VersionPrefix>$(HexalithVersion)</VersionPrefix>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' != 'Release'">
     <VersionSuffix Condition="'$(GITHUB_RUN_NUMBER)' != ''">preview-$(GITHUB_RUN_NUMBER)</VersionSuffix>
