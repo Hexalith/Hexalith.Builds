@@ -1,0 +1,21 @@
+name: 'Initialize Build'
+description: 'Initialize a build for a project'
+
+runs:
+  using: composite
+  steps:
+    - name: Initialize Hexalith.Builds submodule
+      shell: bash
+      run: git submodule init Hexalith.Builds
+
+    - name: Update Hexalith.Builds submodule
+      shell: bash
+      run: git submodule update Hexalith.Builds
+
+    - name: Change to Hexalith.Builds directory
+      shell: bash
+      run: cd Hexalith.Builds
+
+    - name: Checkout main branch
+      shell: bash
+      run: git checkout main
