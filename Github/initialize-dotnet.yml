@@ -1,0 +1,11 @@
+name: Initialize .NET Framework
+runs:
+  using: "composite"
+  steps:
+    - name: Setup .NET 9.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - name: Add Aspire Workloads
+      run: |
+        dotnet workload install aspire
