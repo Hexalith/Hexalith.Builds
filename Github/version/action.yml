@@ -34,7 +34,7 @@ runs:
         [xml]$props = Get-Content "${{ inputs.version-path }}"
         $version = $props.Project.PropertyGroup.HexalithVersion
         if ("${{ inputs.ref }}" -ne "refs/tags/v*") {
-          $version = "$version-preview.${{ inputs.buildId }}.${{ inputs.buildAttempt }}"
+          $version = "$version-preview${{ inputs.buildId }}${{ inputs.buildAttempt }}"
         }
         echo "version=$version" >> $env:GITHUB_OUTPUT
         echo "VERSION=$version" >> $env:GITHUB_ENV
