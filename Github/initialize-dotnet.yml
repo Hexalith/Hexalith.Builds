@@ -1,4 +1,5 @@
-name: Initialize .NET Framework
+name: 'Initialize .NET Framework'
+description: 'Sets up .NET 9.0 and installs Aspire workload'
 runs:
   using: "composite"
   steps:
@@ -7,5 +8,5 @@ runs:
       with:
         dotnet-version: 9.0.x
     - name: Add Aspire Workloads
-      run: |
-        dotnet workload install aspire
+      shell: bash
+      run: dotnet workload install aspire 
