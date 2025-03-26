@@ -1,6 +1,10 @@
 name: 'Publish NuGet Packages'
 description: 'Publish release packages to NuGet.org or preview packages to Github Packages'
 
+permissions:
+  packages: write
+  contents: read
+
 inputs:
   version:
     description: 'Version number for the packages'
@@ -11,6 +15,7 @@ inputs:
   github-token:
     description: 'GitHub token for publishing to GitHub Packages'
     required: true
+    default: ${{ secrets.GITHUB_TOKEN }}
 
 runs:
   using: "composite"
@@ -18,13 +23,13 @@ runs:
     - name: Setup GitHub Packages Source
       shell: bash
       run: |
-        dotnet nuget add source --username USERNAME --password ${{ inputs.github-token }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/Hexalith/index.json"
+        dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/Hexalith/index.json"
 
     - name: Publish preview version (${{ inputs.version }}) to GitHub Packages
       if: contains(inputs.version, '-')
       shell: bash
       run: |
-        dotnet nuget push './src/**/*.nupkg' --api-key ${{ inputs.github-token }} --source github --skip-duplicate
+        dotnet nuget push './src/**/*.nupkg' --api-key ${{ secrets.GITHUB_TOKEN }} --source github --skip-duplicate
 
     - name: Publish release version (${{ inputs.version }}) to NuGet
       if: "!contains(inputs.version, '-')"
