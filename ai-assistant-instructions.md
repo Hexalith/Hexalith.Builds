@@ -4,3 +4,4 @@ Use recommended XML tags for commenting public, protected and internal objects i
 Use latest C# and Blazor language version.
 Comments of record the record properties defined in the primary constructor must be defined in the record comment with param tags.
 For unit tests use XUnit and Shouldly
+Use conventional commits conventions for commit messages.
