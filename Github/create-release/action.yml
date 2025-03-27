@@ -1,15 +1,48 @@
 name: Create Release
 description: Create a release using automatic versionning
 
+outputs:
+  version:
+    description: 'The new release version'
+    value: ${{ steps.semantic.outputs.new_release_version }}
+  major:
+    description: 'The new release major version'
+    value: ${{ steps.semantic.outputs.new_release_major_version }}
+  minor:
+    description: 'The new release minor version'
+    value: ${{ steps.semantic.outputs.new_release_minor_version }}
+  patch:
+    description: 'The new release patch version'
+    value: ${{ steps.semantic.outputs.new_release_patch_version }}
+  published:
+    description: 'Whether a new release was published'
+    value: ${{ steps.semantic.outputs.new_release_published }}
+
 runs:
   using: "composite"
   steps:
+    - name: Temporarily merge PR branch
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        git config --global user.name github-actions
+        git config --global user.email github-actions@github.com
+        git merge --no-ff origin/${{ github.event.pull_request.head.ref }} --message "${{ github.event.pull_request.title }}"
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v4
       with:
+        id: semantic   # Need an `id` for output variables
+        branch: main
+        unset_gha_env: ${{ github.event_name == 'pull_request' }}
+        ci: ${{ github.event_name == 'pull_request' && false || '' }}
         extra_plugins: |
           @semantic-release/git
           @semantic-release/exec
           @semantic-release/changelog
         env:
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+    - name: Show release information
+      run: |
+        echo ${{ steps.semantic.outputs.new_release_version }}
+        echo ${{ steps.semantic.outputs.new_release_major_version }}
+        echo ${{ steps.semantic.outputs.new_release_minor_version }}
+        echo ${{ steps.semantic.outputs.new_release_patch_version }}          
