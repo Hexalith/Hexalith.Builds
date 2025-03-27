@@ -27,6 +27,7 @@ runs:
         git config --global user.name github-actions
         git config --global user.email github-actions@github.com
         git merge --no-ff origin/${{ github.event.pull_request.head.ref }} --message "${{ github.event.pull_request.title }}"
+      shell: bash
     - name: Semantic Release
       uses: cycjimmy/semantic-release-action@v4
       with:
@@ -38,11 +39,12 @@ runs:
           @semantic-release/git
           @semantic-release/exec
           @semantic-release/changelog
-        env:
-          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
     - name: Show release information
       run: |
         echo ${{ steps.semantic.outputs.new_release_version }}
         echo ${{ steps.semantic.outputs.new_release_major_version }}
         echo ${{ steps.semantic.outputs.new_release_minor_version }}
-        echo ${{ steps.semantic.outputs.new_release_patch_version }}          
+        echo ${{ steps.semantic.outputs.new_release_patch_version }}
+      shell: bash
