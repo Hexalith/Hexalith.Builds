@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Hexalith.Commons" Version="$(HexalithVersion)" />
+    <PackageVersion Include="Hexalith.Commons" Version="1.56.0" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
