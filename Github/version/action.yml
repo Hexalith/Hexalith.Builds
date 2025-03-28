@@ -6,35 +6,29 @@ inputs:
     description: 'Path to the Hexalith.Version.props file'
     required: false
     default: './Hexalith.Builds/Hexalith.Version.props'
-  buildId:
-    description: 'Build ID to be added to preview versions'
-    required: false
-    default: '0'
-  buildAttempt:
-    description: 'Build attempt number to be added to preview versions'
-    required: false
-    default: '0'
-  ref:
-    description: 'Github ref'
-    required: false
-    default: ''
 
 outputs:
   version:
-    description: 'The version extracted from Hexalith.Version.props'
-    value: ${{ steps.get-version.outputs.version }}
+    description: 'The new release version'
+    value: ${{ steps.version.outputs.version }}
+  major:
+    description: 'The new release major version'
+    value: ${{ steps.version.outputs.major }}
+  minor:
+    description: 'The new release minor version'
+    value: ${{ steps.version.outputs.minor }}
+  patch:
+    description: 'The new release patch version'
+    value: ${{ steps.version.outputs.patch }}
+  published:
+    description: 'Whether a new release was published'
+    value: ${{ steps.version.outputs.published }}
 
 runs:
   using: "composite"
   steps:
     - name: Get Version
-      id: get-version
-      shell: pwsh
-      run: |
-        [xml]$props = Get-Content "${{ inputs.version-path }}"
-        $version = $props.Project.PropertyGroup.HexalithVersion
-        if ("${{ inputs.ref }}" -notmatch '^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$') {
-          $version = "$version-preview-${{ inputs.buildId }}-${{ inputs.buildAttempt }}"
-        }
-        echo "version=$version" >> $env:GITHUB_OUTPUT
-        echo "VERSION=$version" >> $env:GITHUB_ENV
+      id: version
+      uses: Hexalith/Hexalith.Builds/Github/create-release@main
+      with:
+        dry_run: true
