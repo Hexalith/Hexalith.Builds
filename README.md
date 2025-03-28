@@ -1,4 +1,5 @@
 # Hexalith.Builds
+[![Version](https://img.shields.io/github/v/tag/Hexalith/Hexalith.Builds?filter=v*)](https://github.com/Hexalith/Hexalith.Builds/tags)
 
 Common project for building Hexalith applications, modules and libraries.
 
@@ -15,10 +16,6 @@ This repository:
 - Ensures consistent AI assistant rules and commit message formats
 
 ## Repository Structure
-
-### Version Control
-- `Hexalith.Version.props`: Defines the current version based on the latest git tag
-- Current: [![Version](https://img.shields.io/github/v/tag/Hexalith/Hexalith.Builds?filter=v*)](https://github.com/Hexalith/Hexalith.Builds/tags)
 
 ### Build Configuration
 - `Hexalith.Build.props`: Main build properties file
