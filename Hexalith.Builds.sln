@@ -19,6 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_build", "_build", "{BEF876
 		Hexalith.Package.props = Hexalith.Package.props
 		Hexalith.Version.props = Hexalith.Version.props
 		LICENSE = LICENSE
+		package.json = package.json
 		README.md = README.md
 		stylecop.json = stylecop.json
 	EndProjectSection
