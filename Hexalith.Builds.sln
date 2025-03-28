@@ -40,36 +40,43 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build-packages", "build-packages", "{92F655EE-E086-4CC2-A739-B7DF368155F0}"
 	ProjectSection(SolutionItems) = preProject
 		Github\build-packages\action.yml = Github\build-packages\action.yml
+		Github\build-packages\README.md = Github\build-packages\README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "create-release", "create-release", "{3641DD0D-A8EB-4A8A-9D01-9BBBC817EAD1}"
 	ProjectSection(SolutionItems) = preProject
 		Github\create-release\action.yml = Github\create-release\action.yml
+		Github\create-release\README.md = Github\create-release\README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "initialize-build", "initialize-build", "{166DC700-B846-4480-8852-2F905B812D97}"
 	ProjectSection(SolutionItems) = preProject
 		Github\initialize-build\action.yml = Github\initialize-build\action.yml
+		Github\initialize-build\README.md = Github\initialize-build\README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "initialize-dotnet", "initialize-dotnet", "{3D2AD65A-D0ED-4AF8-B59F-321AE5843196}"
 	ProjectSection(SolutionItems) = preProject
 		Github\initialize-dotnet\action.yml = Github\initialize-dotnet\action.yml
+		Github\initialize-dotnet\README.md = Github\initialize-dotnet\README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "publish-packages", "publish-packages", "{27F5DFE1-2F69-4342-8892-A7C79B5D643B}"
 	ProjectSection(SolutionItems) = preProject
 		Github\publish-packages\action.yml = Github\publish-packages\action.yml
+		Github\publish-packages\README.md = Github\publish-packages\README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "unit-tests", "unit-tests", "{EBF3EBAA-466E-4C5F-BBC2-36837317AE33}"
 	ProjectSection(SolutionItems) = preProject
 		Github\unit-tests\action.yml = Github\unit-tests\action.yml
+		Github\unit-tests\README.md = Github\unit-tests\README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "version", "version", "{4834D1DF-1EA5-406F-8F9F-30643AFC87E6}"
 	ProjectSection(SolutionItems) = preProject
 		Github\version\action.yml = Github\version\action.yml
+		Github\version\README.md = Github\version\README.md
 	EndProjectSection
 EndProject
 Global

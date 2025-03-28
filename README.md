@@ -15,6 +15,7 @@ This repository serves several key purposes:
 - Enforcing uniform code style and analysis rules
 - Standardizing build configurations
 - Providing common build properties for development environments
+- Ensuring consistent AI assistant rules and commit message formats
 
 ## Repository Structure
 
@@ -31,26 +32,42 @@ The repository contains the following key files:
 - `Environment.Build.props`: Defines build environment variables to detect CI/CD pipelines and IDE environments
 - `Framework.Build.props`: Specifies the default target framework (currently `net9.0`)
 - `Hexalith.Package.props`: Defines common package metadata for NuGet packages
+- `Hexalith.Builds.sln`: Solution file for the Hexalith.Builds project
 
 ### Package Management
 
 - `Directory.Packages.props`: Centralizes package version management for all dependencies using the central package management feature
+- `package.json`: Node.js package configuration for release management
 
 ### Code Style and Analysis
 
 - `Hexalith.globalconfig`: Global configuration file for C# code style and formatting rules
-- `Stylecop.Build.props`: Configures StyleCop analyzers for code style enforcement
-- `.stylecop.json`: Contains StyleCop configuration settings like indentation and documentation rules
-- `.stylecop.ruleset`: Defines the rule set for StyleCop analyzers
+- `stylecop.json`: Contains StyleCop configuration settings like indentation and documentation rules
+
+### AI Assistant Rules
+
+- `.clinerules`: Rules for the Cline AI assistant
+- `.cursorrules`: Rules for the Cursor AI assistant
+- `ai-assistant-instructions.md`: Common instructions for AI assistants
+- `ai-commit-prompt.md`: Prompt for generating commit messages following the Conventional Commits specification
+- `.github/copilot-instructions.md`: Instructions for GitHub Copilot
 
 ### Tools and Templates
 
 - `Tools/builds-submodule-init.ps1`: PowerShell script for initializing the Hexalith.Builds Git submodule
 - `Github/`: Directory containing GitHub workflow templates for building and deploying projects
+  - `build-packages/`: Templates for building .NET packages
+  - `create-release/`: Templates for creating releases with semantic versioning
+  - `initialize-build/`: Templates for initializing builds
+  - `initialize-dotnet/`: Templates for initializing .NET projects
+  - `publish-packages/`: Templates for publishing packages
+  - `unit-tests/`: Templates for running unit tests
+  - `version/`: Templates for versioning
 
 ### Workflows
 
-- `.github/workflows/update-version.yml`: GitHub Actions workflow that automatically updates the version in `Hexalith.Version.props` when a new version tag is pushed
+- `.github/workflows/build-release.yml`: GitHub Actions workflow that builds packages and creates releases when changes are pushed to specific branches
+- `.github/workflows/copy-ai-assistant-instructions.yml`: GitHub Actions workflow that copies the content of `ai-assistant-instructions.md` to all AI assistant rule files when changes are made
 
 ## Usage
 
@@ -118,12 +135,25 @@ To create a new version:
 
 The repository provides reusable GitHub workflow templates in the `Github` directory:
 
-- `build-projects.yml`: Workflow template for building projects in a repository
-- `build-packages.yml`: Template for building and packaging NuGet packages
-- `publish-container.yml`: Template for building and publishing container images
-- `deploy-container-app.yml`: Template for deploying container applications
+- [`build-packages`](Github/build-packages/README.md): Template for building .NET packages with specific version numbers
+- [`create-release`](Github/create-release/README.md): Template for creating releases using semantic versioning
+- [`initialize-build`](Github/initialize-build/README.md): Templates for initializing builds
+- [`initialize-dotnet`](Github/initialize-dotnet/README.md): Templates for initializing .NET projects
+- [`publish-packages`](Github/publish-packages/README.md): Templates for publishing packages
+- [`unit-tests`](Github/unit-tests/README.md): Templates for running unit tests
+- [`version`](Github/version/README.md): Templates for versioning
 
 You can use these templates in your GitHub workflows by referencing them from your own workflow files.
+
+## AI Assistant Rules
+
+The repository includes rules and instructions for various AI assistants:
+
+- `.clinerules` and `.cursorrules`: Rules for Cline and Cursor AI assistants
+- `ai-assistant-instructions.md`: Common instructions for all AI assistants
+- `ai-commit-prompt.md`: Prompt for generating commit messages following the Conventional Commits specification
+
+These files ensure consistent coding style and practices across all Hexalith projects when using AI assistants.
 
 ## License
 
