@@ -41,3 +41,4 @@ runs:
         echo "Minor: ${{ steps.semantic.outputs.new_release_minor_version }}"
         echo "Patch: ${{ steps.semantic.outputs.new_release_patch_version }}"
         echo "Published: ${{ steps.semantic.outputs.new_release_published }}"
+      shell: bash
