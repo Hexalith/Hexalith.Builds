@@ -47,4 +47,5 @@ runs:
     - name: Show release information
       run: |
         echo Version ${{ steps.semantic.outputs.new_release_version }}
+        echo Published ${{ steps.semantic.outputs.new_release_published }}
       shell: bash
