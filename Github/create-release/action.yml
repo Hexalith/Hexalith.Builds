@@ -1,6 +1,12 @@
 name: Create Release
 description: Create a release using automatic versionning
 
+inputs:
+  dry_run:
+    description: 'If true, the release process will be simulated without making any changes'
+    required: false
+    default: 'false'
+
 outputs:
   version:
     description: 'The new release version'
@@ -35,16 +41,10 @@ runs:
         branch: main
         unset_gha_env: ${{ github.event_name == 'pull_request' }}
         ci: ${{ github.event_name == 'pull_request' && false || '' }}
-        extra_plugins: |
-          @semantic-release/git
-          @semantic-release/exec
-          @semantic-release/changelog
+        dry_run: ${{ inputs.dry_run }}
       env:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
     - name: Show release information
       run: |
-        echo ${{ steps.semantic.outputs.new_release_version }}
-        echo ${{ steps.semantic.outputs.new_release_major_version }}
-        echo ${{ steps.semantic.outputs.new_release_minor_version }}
-        echo ${{ steps.semantic.outputs.new_release_patch_version }}
+        echo Version ${{ steps.semantic.outputs.new_release_version }}
       shell: bash
