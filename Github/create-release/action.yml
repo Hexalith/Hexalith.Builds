@@ -41,8 +41,6 @@ runs:
         unset_gha_env: ${{ github.event_name == 'pull_request' }}
         ci: ${{ github.event_name == 'pull_request' && false || '' }}
         extra_plugins: |
-            # @semantic-release/commit-analyzer
-            # @semantic-release/release-notes-generator
             @semantic-release/git
             @semantic-release/changelog
       env:
