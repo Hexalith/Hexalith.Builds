@@ -35,7 +35,7 @@ runs:
       id: version
       uses: Hexalith/Hexalith.Builds/Github/version@main
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         
     - name: Initialize .NET
       uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
