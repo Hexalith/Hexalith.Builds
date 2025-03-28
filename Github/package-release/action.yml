@@ -59,8 +59,9 @@ runs:
       uses: Hexalith/Hexalith.Builds/Github/publish-packages@main
       with:
         version: ${{ steps.version.outputs.version }}
-        nuget-api-key: ${{ secrets.NUGET_API_KEY }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Create Release
       uses: Hexalith/Hexalith.Builds/Github/create-release@main
       env:
