@@ -1,0 +1,35 @@
+name: Build Packages
+on:
+  push:
+    branches: 
+      - main
+      - next
+      - next-major
+      - aplha
+      - beta
+      - '[0-9]+.[0-9]+.x'
+
+permissions:
+  packages: write
+  contents: write
+  issues: write
+  pull-requests: write
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build and Test
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Create Release
+      uses: Hexalith/Hexalith.Builds/Github/create-release@main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+    

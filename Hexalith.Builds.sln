@@ -32,6 +32,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{1C4D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{A1BAF2D0-67E1-4A23-BE7E-74BB63208B9A}"
 	ProjectSection(SolutionItems) = preProject
+		.github\workflows\build-release.yml = .github\workflows\build-release.yml
 		.github\workflows\copy-ai-assistant-instructions.yml = .github\workflows\copy-ai-assistant-instructions.yml
 	EndProjectSection
 EndProject
