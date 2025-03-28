@@ -60,12 +60,12 @@ runs:
       with:
         version: ${{ steps.version.outputs.version }}
       env:
-        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NUGET_API_KEY: ${{ env.NUGET_API_KEY }}
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
     - name: Create Release
       uses: Hexalith/Hexalith.Builds/Github/create-release@main
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
 
 
     
