@@ -35,9 +35,9 @@ runs:
         git merge --no-ff origin/${{ github.event.pull_request.head.ref }} --message "${{ github.event.pull_request.title }}"
       shell: bash
     - name: Semantic Release
+      id: semantic  
       uses: cycjimmy/semantic-release-action@v4
       with:
-        id: semantic   # Need an `id` for output variables
         branch: main
         unset_gha_env: ${{ github.event_name == 'pull_request' }}
         ci: ${{ github.event_name == 'pull_request' && false || '' }}
