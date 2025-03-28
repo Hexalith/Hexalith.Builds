@@ -1,0 +1,90 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.35906.104
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Github", "Github", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_build", "_build", "{BEF876D7-271A-4034-B0DA-6FA1F3CD4005}"
+	ProjectSection(SolutionItems) = preProject
+		.clinerules = .clinerules
+		.cursorrules = .cursorrules
+		.gitignore = .gitignore
+		ai-assistant-instructions.md = ai-assistant-instructions.md
+		ai-commit-prompt.md = ai-commit-prompt.md
+		Directory.Packages.props = Directory.Packages.props
+		Environment.Build.props = Environment.Build.props
+		Framework.Build.props = Framework.Build.props
+		Hexalith.Build.props = Hexalith.Build.props
+		Hexalith.globalconfig = Hexalith.globalconfig
+		Hexalith.Package.props = Hexalith.Package.props
+		Hexalith.Version.props = Hexalith.Version.props
+		LICENSE = LICENSE
+		README.md = README.md
+		stylecop.json = stylecop.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{8721B1C6-15C9-497E-9925-A658396B458C}"
+	ProjectSection(SolutionItems) = preProject
+		Tools\builds-submodule-init.ps1 = Tools\builds-submodule-init.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{1C4DC42B-3B17-43AB-AE64-F74FA67C45C8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{A1BAF2D0-67E1-4A23-BE7E-74BB63208B9A}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\copy-ai-assistant-instructions.yml = .github\workflows\copy-ai-assistant-instructions.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build-packages", "build-packages", "{92F655EE-E086-4CC2-A739-B7DF368155F0}"
+	ProjectSection(SolutionItems) = preProject
+		Github\build-packages\action.yml = Github\build-packages\action.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "create-release", "create-release", "{3641DD0D-A8EB-4A8A-9D01-9BBBC817EAD1}"
+	ProjectSection(SolutionItems) = preProject
+		Github\create-release\action.yml = Github\create-release\action.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "initialize-build", "initialize-build", "{166DC700-B846-4480-8852-2F905B812D97}"
+	ProjectSection(SolutionItems) = preProject
+		Github\initialize-build\action.yml = Github\initialize-build\action.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "initialize-dotnet", "initialize-dotnet", "{3D2AD65A-D0ED-4AF8-B59F-321AE5843196}"
+	ProjectSection(SolutionItems) = preProject
+		Github\initialize-dotnet\action.yml = Github\initialize-dotnet\action.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "publish-packages", "publish-packages", "{27F5DFE1-2F69-4342-8892-A7C79B5D643B}"
+	ProjectSection(SolutionItems) = preProject
+		Github\publish-packages\action.yml = Github\publish-packages\action.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "unit-tests", "unit-tests", "{EBF3EBAA-466E-4C5F-BBC2-36837317AE33}"
+	ProjectSection(SolutionItems) = preProject
+		Github\unit-tests\action.yml = Github\unit-tests\action.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "version", "version", "{4834D1DF-1EA5-406F-8F9F-30643AFC87E6}"
+	ProjectSection(SolutionItems) = preProject
+		Github\version\action.yml = Github\version\action.yml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A1BAF2D0-67E1-4A23-BE7E-74BB63208B9A} = {1C4DC42B-3B17-43AB-AE64-F74FA67C45C8}
+		{92F655EE-E086-4CC2-A739-B7DF368155F0} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{3641DD0D-A8EB-4A8A-9D01-9BBBC817EAD1} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{166DC700-B846-4480-8852-2F905B812D97} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{3D2AD65A-D0ED-4AF8-B59F-321AE5843196} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{27F5DFE1-2F69-4342-8892-A7C79B5D643B} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{EBF3EBAA-466E-4C5F-BBC2-36837317AE33} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{4834D1DF-1EA5-406F-8F9F-30643AFC87E6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {84B6AB08-779D-4DE4-9584-45B541B606D5}
+	EndGlobalSection
+EndGlobal
