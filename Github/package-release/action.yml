@@ -1,0 +1,70 @@
+name: Build Packages
+description: 'Build for Hexalith package projects'
+
+inputs:
+  project-name:
+    description: 'The name of the project'
+    required: true
+
+outputs:
+  version:
+    description: 'The new release version'
+    value: ${{ steps.version.outputs.version }}
+  major:
+    description: 'The new release major version'
+    value: ${{ steps.version.outputs.major }}
+  minor:
+    description: 'The new release minor version'
+    value: ${{ steps.version.outputs.minor }}
+  patch:
+    description: 'The new release patch version'
+    value: ${{ steps.version.outputs.patch }}
+  published:
+    description: 'Whether a new release was published'
+    value: ${{ steps.version.outputs.published }}
+
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get Version
+      id: version
+      uses: Hexalith/Hexalith.Builds/Github/version@main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Initialize .NET
+      uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
+
+    - name: Initialize Build
+      uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
+
+    - name: Run Unit Tests of version
+      uses: Hexalith/Hexalith.Builds/Github/unit-tests@main
+      with:
+        project-name: ${{ github.event.repository.name }}
+
+    - name: Build Packages version ${{ steps.version.outputs.version }}
+      if: ${{ steps.version.outputs.published == 'true' }}
+      uses: Hexalith/Hexalith.Builds/Github/build-packages@main
+      with:
+        version: ${{ steps.version.outputs.version }}
+        
+    - name: Publish Packages
+      if: ${{ steps.version.outputs.published == 'true' }}
+      uses: Hexalith/Hexalith.Builds/Github/publish-packages@main
+      with:
+        version: ${{ steps.version.outputs.version }}
+        nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create Release
+      uses: Hexalith/Hexalith.Builds/Github/create-release@main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+    

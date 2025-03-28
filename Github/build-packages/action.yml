@@ -5,7 +5,6 @@ inputs:
   version:
     description: 'Version number for the build'
     required: true
-    type: string
 
 runs:
   using: "composite"

@@ -79,6 +79,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "version", "version", "{4834
 		Github\version\README.md = Github\version\README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "package-release", "package-release", "{7C597B24-96C0-49D6-80E4-FAAF410B2418}"
+	ProjectSection(SolutionItems) = preProject
+		Github\package-release\README.md = Github\package-release\README.md
+		Github\package-release\action.yml = Github\package-release\action.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -92,6 +98,7 @@ Global
 		{27F5DFE1-2F69-4342-8892-A7C79B5D643B} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{EBF3EBAA-466E-4C5F-BBC2-36837317AE33} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{4834D1DF-1EA5-406F-8F9F-30643AFC87E6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{7C597B24-96C0-49D6-80E4-FAAF410B2418} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {84B6AB08-779D-4DE4-9584-45B541B606D5}
