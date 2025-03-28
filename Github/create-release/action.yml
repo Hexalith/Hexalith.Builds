@@ -45,7 +45,6 @@ runs:
             # @semantic-release/release-notes-generator
             @semantic-release/git
             @semantic-release/changelog
-            # @semantic-release/github
       env:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
     - name: Show release information
