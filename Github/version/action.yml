@@ -27,9 +27,9 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Get Version
-      id: version
-      uses: Hexalith/Hexalith.Builds/Github/create-release@main
+    - name: Semantic Release
+      id: version  
+      uses: cycjimmy/semantic-release-action@v4
       with:
         dry_run: true
       env:
