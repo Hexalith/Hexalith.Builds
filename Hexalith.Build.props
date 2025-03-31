@@ -1,5 +1,6 @@
 <Project>
-  <Import Project="Environment.Build.props" />
+  <Import Project="Props/Environment.Build.props" />
+  <Import Project="Props/Framework.Build.props" />
   <PropertyGroup>
     <UseProjectReference Condition="'$(UseProjectReference)' == '' and '$(IDEBuild)' == 'true' and '$(CIBuild)' != 'true'">true</UseProjectReference>
     <NoWarn>$(NoWarn);S113;SA1609;SA1309;SA1101;SA1009;SA1111;RCS1158;SA1502;</NoWarn>
@@ -11,7 +12,7 @@
     <Nullable>enable</Nullable>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <IsPackable>true</IsPackable>
+    <IsPackable>false</IsPackable>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ContinuousIntegrationBuild Condition="'$(Configuration)'=='Release'">true</ContinuousIntegrationBuild>

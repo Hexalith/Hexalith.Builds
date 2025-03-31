@@ -8,6 +8,7 @@ Common project for building Hexalith applications, modules and libraries.
 The Hexalith.Builds repository centralizes build configurations, property definitions, package management, and code style settings for the Hexalith ecosystem. It ensures consistency across all Hexalith repositories by providing standard build files that can be imported into any Hexalith project.
 
 This repository:
+
 - Centralizes version management
 - Maintains consistent package dependencies and versions
 - Enforces uniform code style and analysis rules
@@ -18,21 +19,24 @@ This repository:
 ## Repository Structure
 
 ### Build Configuration
-- `Hexalith.Build.props`: Main build properties file
-- `Environment.Build.props`: Defines build environment variables
-- `Framework.Build.props`: Specifies the default target framework (currently `net9.0`)
-- `Hexalith.Package.props`: Defines common package metadata for NuGet packages
-- `Hexalith.Builds.sln`: Solution file
 
-### Package Management
-- `Directory.Packages.props`: Centralizes package version management
+- `Hexalith.Build.props`: Build properties common to all Hexalith projects
+- `Hexalith.Package.props`: Build properties common to all Hexalith NuGet packages projects
+- `Props/Environment.Build.props`: Defines build environment variables
+- `Props/Framework.Build.props`: Specifies the default target framework (currently `net9.0`)
+
+### Package Version Management
+
+- `Directory.Packages.props`: Centralizes version management for all imported Nuget packages
 - `package.json`: Node.js package configuration for release management
 
 ### Code Style and Analysis
+
 - `Hexalith.globalconfig`: Global configuration file for C# code style
 - `stylecop.json`: StyleCop configuration settings
 
 ### AI Assistant Rules
+
 - `.clinerules`: Rules for the Cline AI assistant
 - `.cursorrules`: Rules for the Cursor AI assistant
 - `ai-assistant-instructions.md`: Common instructions for AI assistants
@@ -40,6 +44,7 @@ This repository:
 - `.github/copilot-instructions.md`: Instructions for GitHub Copilot
 
 ### Tools and Templates
+
 - [`Tools/`](Tools/README.md): Tools for repository management
   - `builds-submodule-init.ps1`: Script for initializing the Git submodule
 - [`Github/`](Github/): Directory containing GitHub workflow templates:
@@ -52,6 +57,7 @@ This repository:
   - [`version/`](Github/version/README.md): Templates for versioning
 
 ### Workflows
+
 - `.github/workflows/build-release.yml`: Builds packages and creates releases
 - `.github/workflows/copy-ai-assistant-instructions.yml`: Syncs AI assistant instructions
 
@@ -61,17 +67,52 @@ This repository:
 
 To use the standardized build properties:
 
+`Directory.Build.props` in the repository root :
+
 ```xml
-<Import Project="$(MSBuildThisFileDirectory)..\Hexalith.Builds\Hexalith.Build.props" />
+<Project>
+  <PropertyGroup>
+    <!-- Define a property to store the path of the parent Directory.Build.props. -->
+    <ParentDirectoryBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentDirectoryBuildProps>
+    <!-- Define a property to store the path of the Directory.Build.props in Hexalith.Builds project. This directory can be in the current project or a parent project. -->
+    <HexalithBuildProps>$([MSBuild]::GetDirectoryNameOfFileAbove('Hexalith.Builds', 'Hexalith.Build.props'))</HexalithBuildProps>
+  </PropertyGroup>
+
+  <!-- Import the parent Directory.Build.props file if it exists -->
+  <Import Project="$(ParentDirectoryBuildProps)" Condition="Exists('$(ParentDirectoryBuildProps)')" />
+
+  <!-- Import the Hexalith.Build.props file in Hexalith.Builds. This file must exist. -->
+  <Import Project="$(HexalithBuildProps)/Hexalith.Build.props" />
+
+  <PropertyGroup>
+    <Product>Hexalith.MyProject</Product>
+    <RepositoryUrl>https://github.com/Hexalith/Hexalith.MyProject</RepositoryUrl>
+  </PropertyGroup>
+</Project>
 ```
 
 For projects to be packaged as NuGet packages:
 
+`Directory.Build.props` in the repository source directory `/src` :
+
 ```xml
-<Import Project="$(MSBuildThisFileDirectory)..\Hexalith.Builds\Hexalith.Package.props" />
+<Project>
+  <PropertyGroup>
+    <!-- Define a property to store the path of the parent Directory.Build.props. -->
+    <ParentDirectoryBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentDirectoryBuildProps>
+    <!-- Define a property to store the path of the Directory.Package.props in Hexalith.Builds project. This directory can be in the current project or a parent project. -->
+    <HexalithBuildProps>$([MSBuild]::GetDirectoryNameOfFileAbove('Hexalith.Builds', 'Hexalith.Package.props'))</HexalithBuildProps>
+  </PropertyGroup>
+
+  <!-- Import the parent Directory.Build.props file if it exists -->
+  <Import Project="$(ParentDirectoryBuildProps)" Condition="Exists('$(ParentDirectoryBuildProps)')" />
+
+  <!-- Import the Hexalith.Package.props file in Hexalith.Builds. This file must exist. -->
+  <Import Project="$(HexalithBuildProps)/Hexalith.Package.props" />
+</Project>
 ```
 
-### Adding as a Git Submodule
+### Adding Hexalith.Builds in a new repository as a Git Submodule
 
 Add this repository as a Git submodule:
 
@@ -85,6 +126,7 @@ This script initializes and configures the Hexalith.Builds Git submodule.
 ### Environment Detection
 
 The build system automatically detects different environments:
+
 - `CIBuild`: Set to `true` in GitHub Actions or Azure DevOps
 - `IDEBuild`: Set to `true` in Visual Studio, ReSharper, VS Code, or Cursor
 
@@ -103,10 +145,12 @@ This is automatically set when `IDEBuild` is `true` and `CIBuild` is not `true`.
 Versions are managed centrally in `Hexalith.Version.props` and derived from git tags.
 
 For non-release builds, a suffix is added:
+
 - GitHub builds: `preview-{GITHUB_RUN_NUMBER}`
 - Local builds: Timestamp in format `yyyyMMddHHmmss`
 
 To create a new version:
+
 1. Create and push a tag with format `v*.*.*` (e.g., `v1.2.3`)
 2. GitHub Actions will update `Hexalith.Version.props`
 3. All referencing projects will use the new version
@@ -114,6 +158,7 @@ To create a new version:
 ## GitHub Workflow Templates
 
 The repository provides reusable workflow templates in the `Github` directory for:
+
 - Building .NET packages
 - Creating releases with semantic versioning
 - Initializing builds and .NET projects
