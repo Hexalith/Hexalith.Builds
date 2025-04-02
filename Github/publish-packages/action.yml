@@ -13,12 +13,12 @@ runs:
       if: contains(inputs.version, '-')
       shell: bash
       run: |
-        dotnet nuget push '**/*.nupkg' --api-key ${{ env.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/Hexalith/index.json --skip-duplicate
-        dotnet nuget push '**/*.snupkg' --api-key ${{ env.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/Hexalith/index.json --skip-duplicate
+        dotnet nuget push './src/**/*.nupkg' --api-key ${{ env.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/Hexalith/index.json --skip-duplicate
+        dotnet nuget push './src/**/*.snupkg' --api-key ${{ env.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/Hexalith/index.json --skip-duplicate
 
     - name: Publish release version (${{ inputs.version }}) to NuGet
       if: "!contains(inputs.version, '-')"
       shell: bash
       run: |
-        dotnet nuget push '**/*.nupkg' --api-key ${{ env.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-        dotnet nuget push '**/*.snupkg' --api-key ${{ env.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push './src/**/*.nupkg' --api-key ${{ env.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push './src/**/*.snupkg' --api-key ${{ env.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
