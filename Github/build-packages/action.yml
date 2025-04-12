@@ -1,4 +1,4 @@
-name: 'Build .NET packages'
+name: 'Build .NET libraries'
 description: 'Build all .NET projects in the src directory'
 
 inputs:
