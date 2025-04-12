@@ -20,7 +20,7 @@ runs:
     - name: Build .NET projects version (${{ inputs.version }})
       shell: pwsh
       run: |
-        $projects = Get-ChildItem -Path "./src/packages" -Recurse -Filter "*.csproj"
+        $projects = Get-ChildItem -Path "./src/libraries" -Recurse -Filter "*.csproj"
         foreach ($project in $projects) {
           Write-Host "Building $($project.FullName)..."
           dotnet build $project.FullName `
