@@ -15,7 +15,6 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <VersionPrefix>$(HexalithVersion)</VersionPrefix>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IsPackable Condition="'$(IDEBuild)' != 'true'">true</IsPackable>
   </PropertyGroup>
@@ -23,10 +22,4 @@
     <VersionSuffix Condition="'$(GITHUB_RUN_NUMBER)' != ''">preview-$(GITHUB_RUN_NUMBER)</VersionSuffix>
     <VersionSuffix Condition="'$(GITHUB_RUN_NUMBER)' == ''">$(Date:yyyyMMddHHmmss)</VersionSuffix>
   </PropertyGroup>
-  <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\" />
-  </ItemGroup>
-  <ItemGroup>
-    <GlobalAnalyzerConfigFiles Include="Hexalith.globalconfig" />
-  </ItemGroup>
 </Project>
