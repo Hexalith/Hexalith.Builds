@@ -4,6 +4,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Commons" Version="1.56.0" />
+    <PackageVersion Include="Hexalith.Commons.Configurations" Version="1.56.0" />
+    <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="1.56.0" />
+    <PackageVersion Include="Hexalith.Commons.Metadatas" Version="1.56.0" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
