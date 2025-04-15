@@ -12,6 +12,7 @@
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.2" />
     <PackageVersion Include="Aspire.Hosting" Version="9.1.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="9.1.0" />
     <PackageVersion Include="Azure.Bicep.Core" Version="0.26.54" />
     <PackageVersion Include="Azure.Identity" Version="1.13.2" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.1.0" />
