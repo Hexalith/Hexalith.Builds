@@ -28,8 +28,8 @@
     <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="">
       <Link>$(MSBuildThisFileDirectory)../icon.png</Link>
     </None>
-    <None Include="$(MSBuildThisFileDirectory)../README.md" Pack="true" PackagePath="\">
-      <Link>$(MSBuildThisFileDirectory)../README.md</Link>
+    <None Include="$(ProjectRoot)/README.md" Pack="true" PackagePath="\">
+      <Link>README.md</Link>
     </None>
   </ItemGroup>
   <ItemGroup>
