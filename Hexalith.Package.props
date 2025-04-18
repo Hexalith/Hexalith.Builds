@@ -16,7 +16,6 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <VersionPrefix>$(HexalithVersion)</VersionPrefix>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IsPackable Condition="'$(IDEBuild)' != 'true'">true</IsPackable>
   </PropertyGroup>
@@ -26,7 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="">
-      <Link>$(MSBuildThisFileDirectory)../icon.png</Link>
+      <Link>icon.png</Link>
     </None>
     <None Include="$(ProjectRoot)/README.md" Pack="true" PackagePath="\">
       <Link>README.md</Link>
