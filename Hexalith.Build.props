@@ -21,8 +21,6 @@
     <HexalithBuildsRoot>$(MSBuildThisFileDirectory)</HexalithBuildsRoot>
     <ProjectRoot>$(MSBuildThisFileDirectory)..</ProjectRoot>
     <AssetTargetFallback>$(AssetTargetFallback);net8.0;net7.0;net6.0;</AssetTargetFallback>
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <CompilerGeneratedFilesOutputPath>.\HexalithCodeGeneneration</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SonarAnalyzer.CSharp">
