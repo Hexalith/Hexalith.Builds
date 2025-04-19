@@ -55,6 +55,7 @@
     <PackageVersion Include="Humanizer" Version="2.14.1" />
     <PackageVersion Include="ISO3166" Version="1.0.4" />
     <PackageVersion Include="MailKit" Version="4.11.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authorization" Version="9.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="9.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="9.0.4" />
