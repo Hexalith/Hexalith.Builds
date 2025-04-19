@@ -21,6 +21,11 @@
     <HexalithBuildsRoot>$(MSBuildThisFileDirectory)</HexalithBuildsRoot>
     <ProjectRoot>$(MSBuildThisFileDirectory)..</ProjectRoot>
     <AssetTargetFallback>$(AssetTargetFallback);net8.0;net7.0;net6.0;</AssetTargetFallback>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(TF_BUILD)' == 'true'">
+    <!-- Enable Deterministic Builds for github actions -->
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SonarAnalyzer.CSharp">
