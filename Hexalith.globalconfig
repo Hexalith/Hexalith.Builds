@@ -1,34 +1,7 @@
-is_global = true 
+is_global = true
+# Top level entry required to mark this as a global AnalyzerConfig file
 
-# Unix-style newlines with a newline ending every file
-[*]
-end_of_line = lf
-insert_final_newline = true
-charset = utf-8
-trim_trailing_whitespace = true
-indent_style = space
-indent_size = 2
-file_header_template = Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved. Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-# Python files
-[*.py]
-indent_size = 4
-
-# Makefiles
-[Makefile]
-indent_style = tab
-
-# Markdown files
-[*.md]
-trim_trailing_whitespace = false
-
-# Typescript files
-[*.{js,ts,jsx,tsx}]
-indent_size = 2
-
-
-# C# files
-[*.cs]
+# Analyzer options
 dotnet_analyzer_diagnostic.severity = error
 
 #### Core EditorConfig Options ####
@@ -173,7 +146,7 @@ csharp_style_unused_value_assignment_preference = discard_variable:warning
 csharp_style_unused_value_expression_statement_preference = discard_variable:warning
 
 # 'using' directive preferences
-csharp_using_directive_placement = inside_namespace:warning
+csharp_using_directive_placement = inside_namespace:error
 
 # New line preferences
 csharp_style_allow_blank_line_after_colon_in_constructor_initializer_experimental = true:warning
@@ -270,4 +243,8 @@ dotnet_naming_style.begins_with_i.required_prefix = I
 dotnet_naming_style.begins_with_i.required_suffix = 
 dotnet_naming_style.begins_with_i.word_separator = 
 dotnet_naming_style.begins_with_i.capitalization = pascal_case
+
+# StyleCop settings
+dotnet_diagnostic.SA1200.severity = none
+dotnet_diagnostic.SA1135.severity = none
 
