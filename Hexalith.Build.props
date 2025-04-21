@@ -1,7 +1,7 @@
 <Project>
   <Import Project="Props/Environment.Build.props" />
   <PropertyGroup>
-    <NoWarn>$(NoWarn);S113;SA1609;SA1309;SA1101;SA1009;SA1111;RCS1158;SA1502;IDE0079;SA1518;</NoWarn>
+    <NoWarn>$(NoWarn);S113;SA1609;SA1309;SA1101;SA1009;SA1111;RCS1158;SA1502;IDE0079;SA1518;S1135;</NoWarn>
     <AnalysisMode>All</AnalysisMode>
     <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
     <AnalysisLevel>preview-all</AnalysisLevel>
