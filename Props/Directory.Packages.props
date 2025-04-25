@@ -19,17 +19,17 @@
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="9.2.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Hosting" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Hosting.Redis" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="9.2.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="9.2.1" />
+    <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="9.2.1" />
+    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="9.2.1" />
+    <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="9.2.1" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="9.2.1" />
+    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="9.2.1" />
+    <PackageVersion Include="Aspire.Hosting" Version="9.2.1" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.2.1" />
+    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="9.2.1" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="9.2.1" />
+    <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="9.2.1" />
     <PackageVersion Include="Azure.Bicep.Core" Version="0.26.54" />
     <PackageVersion Include="Azure.Identity" Version="1.13.2" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.2.0" />
@@ -41,7 +41,7 @@
     <PackageVersion Include="Azure.Security.KeyVault.Secrets" Version="4.6.0" />
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.24.0" />
     <PackageVersion Include="Cocona" Version="2.2.0" />
-    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="9.2.1" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="9.4.0" />
     <PackageVersion Include="CompareNETObjects" Version="4.83.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Dapr.AspNetCore" Version="1.15.2" />
@@ -93,7 +93,7 @@
     <PackageVersion Include="Microsoft.Extensions.Options" Version="9.0.4" />
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.4" />
     <PackageVersion Include="Microsoft.Extensions.Options.DataAnnotations" Version="9.0.4" />
-    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="9.2.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="9.2.1" />
     <PackageVersion Include="Microsoft.FluentUI.Components" Version="4.11.6" />
     <PackageVersion Include="Microsoft.Graph" Version="5.12.0" />
     <PackageVersion Include="Microsoft.Identity.Client" Version="4.69.1" />
