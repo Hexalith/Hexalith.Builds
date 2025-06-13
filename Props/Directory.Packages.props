@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Commons" Version="1.66.5" />
-    <PackageVersion Include="Hexalith.Commons.Configurations" Version="1.66.5" />
+    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.0.1" />
     <PackageVersion Include="Hexalith.Commons.Metadatas" Version="1.66.5" />
     <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="1.66.5" />
     <PackageVersion Include="Hexalith.Domains" Version="1.0.3" />
@@ -19,8 +19,8 @@
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="9.2.1" />
-    <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="9.2.1" />
+    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="9.4.0" />
     <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="9.2.1" />
     <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="9.2.1" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="9.2.1" />
@@ -52,7 +52,7 @@
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="2.4.1" />
     <PackageVersion Include="Google.Apis" Version="5.4.2" />
-    <PackageVersion Include="Google.Apis.Auth.AspNetCore3" Version="1.69.0" />
+    <PackageVersion Include="Google.Apis.Auth.AspNetCore3" Version="1.70.0" />
     <PackageVersion Include="Grpc" Version="2.70.0" />
     <PackageVersion Include="Grpc.HealthCheck" Version="2.71.0" />
     <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.71.0" />
@@ -98,7 +98,7 @@
     <PackageVersion Include="Microsoft.FluentUI.Components" Version="4.11.6" />
     <PackageVersion Include="Microsoft.Graph" Version="5.12.0" />
     <PackageVersion Include="Microsoft.Identity.Client" Version="4.69.1" />
-    <PackageVersion Include="Microsoft.Identity.Web" Version="3.8.3" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="3.9.3" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.41.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
