@@ -64,6 +64,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="9.0.6" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.6" />
