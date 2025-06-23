@@ -29,7 +29,7 @@
     <PackageVersion Include="AspNet.Security.OAuth.Notion" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Okta" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.PayPal" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Redit" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Reddit" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="9.4.0" />
@@ -74,6 +74,7 @@
     <PackageVersion Include="ISO3166" Version="1.0.4" />
     <PackageVersion Include="MailKit" Version="4.11.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authorization" Version="9.0.6" />
+    <PackageVersion Include="Microsoft.AspNetCore.DataProtection" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.6" />
