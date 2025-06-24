@@ -1,0 +1,51 @@
+name: 'Publish Azure Container '
+description: 'Publish application containers to Azure Container Apps'
+inputs:
+  version:
+    description: 'Version number for the packages'
+    required: true
+  client-id:
+    description: 'Client ID for the Azure administration'
+    required: true
+  tenant-id:
+    description: 'Tenant ID for the Azure administration'
+    required: true
+  subscription-id:
+    description: 'Subscription ID for the Azure administration'
+    required: true
+  resource-group:
+    description: 'Resource group to deploy the containers to'
+    required: true
+  app-id:
+    description: 'The short name of the application'
+    required: true
+  registry:
+    description: 'Registry to publish the containers to'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Log in to Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ inputs.client-id }}
+        tenant-id: ${{ inputs.tenant-id }}
+        subscription-id: ${{ inputs.subscription-id }}
+        enable-AzPSSession: true
+        allow-no-subscriptions: true
+    - name: Deploy to Azure Container Apps
+      shell: bash
+      run: |
+        # Function to update container app
+        update_container_app() {
+          local app_type=$1
+          
+          az containerapp update \
+            --name ${{ inputs.app-id }}$app_type \
+            --resource-group ${{ inputs.resource-group }} \
+            --image ${{ inputs.registry }}/${{ inputs.app-id }}$app_type:${{ inputs.version }}
+        }
+
+        update_container_app "web"
+        update_container_app "api" 

@@ -1,0 +1,58 @@
+name: 'Publish Application Containers'
+description: 'Publish application containers to container registry'
+
+inputs:
+  app-id:
+    description: 'The short name of the application'
+    required: true
+  version:
+    description: 'Version number for the packages'
+    required: true
+  registry:
+    description: 'Registry to publish the containers to'
+    required: true
+  username:
+    description: 'Username for the container registry'
+    required: true
+  password:
+    description: 'Password for the container registry'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Login to the container registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username }}
+        password: ${{ inputs.password }}
+    - name: Publish and push the server images to the container registry
+      shell: bash
+      run: |
+        publish_container() {
+          local app_type=$1
+          local project_name="HexalithApp.${app_type}Server"
+          local project_path="./HexalithApp/src/${project_name}/${project_name}.csproj"
+          local app_type_lower=$(echo "$app_type" | tr '[:upper:]' '[:lower:]')
+          local repo="${{ inputs.app-id }}${app_type_lower}"
+
+          echo "Publishing project ${project_name} to ${repo}"
+          if [ ! -f "$project_path" ]; then
+            echo "Error: Project file not found at $project_path"
+            return 1
+          fi
+          
+          echo "Publishing container for ${project_path}..."
+          dotnet publish "$project_path" \
+            /t:PublishContainer \
+            --configuration Release \
+            --os linux \
+            --arch x64 \
+            -p:ContainerImageTags='"${{ inputs.version }};latest"' \
+            -p:ContainerRegistry=${{ inputs.registry }} \
+            -p:ContainerRepository=$repo
+        }
+
+        publish_container "Web"
+        publish_container "Api"
