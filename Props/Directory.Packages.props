@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Commons" Version="2.0.1" />
-    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.0.1" />
+    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.0.2" />
     <PackageVersion Include="Hexalith.Commons.Metadatas" Version="1.66.5" />
     <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="1.66.5" />
     <PackageVersion Include="Hexalith.Domains" Version="1.0.5" />
