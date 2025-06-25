@@ -11,9 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_build", "_build", "{BEF876
 		.gitignore = .gitignore
 		ai-assistant-instructions.md = ai-assistant-instructions.md
 		ai-commit-prompt.md = ai-commit-prompt.md
-		Directory.Packages.props = Directory.Packages.props
 		Environment.Build.props = Environment.Build.props
-		Framework.Build.props = Framework.Build.props
 		Hexalith.Build.props = Hexalith.Build.props
 		Hexalith.globalconfig = Hexalith.globalconfig
 		Hexalith.Package.props = Hexalith.Package.props
@@ -81,8 +79,20 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "version", "version", "{4834
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "package-release", "package-release", "{7C597B24-96C0-49D6-80E4-FAAF410B2418}"
 	ProjectSection(SolutionItems) = preProject
-		Github\package-release\README.md = Github\package-release\README.md
 		Github\package-release\action.yml = Github\package-release\action.yml
+		Github\package-release\README.md = Github\package-release\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "publish-azure-container-app", "publish-azure-container-app", "{BBDEC05C-F536-0BF7-FE72-7453AE9FB43C}"
+	ProjectSection(SolutionItems) = preProject
+		Github\publish-azure-container-app\action.yml = Github\publish-azure-container-app\action.yml
+		Github\publish-azure-container-app\README.md = Github\publish-azure-container-app\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "publish-container-to-registry", "publish-container-to-registry", "{4313965C-2013-2A78-C421-2CE966E564A7}"
+	ProjectSection(SolutionItems) = preProject
+		Github\publish-container-to-registry\action.yml = Github\publish-container-to-registry\action.yml
+		Github\publish-container-to-registry\README.md = Github\publish-container-to-registry\README.md
 	EndProjectSection
 EndProject
 Global
@@ -99,6 +109,8 @@ Global
 		{EBF3EBAA-466E-4C5F-BBC2-36837317AE33} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{4834D1DF-1EA5-406F-8F9F-30643AFC87E6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{7C597B24-96C0-49D6-80E4-FAAF410B2418} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{BBDEC05C-F536-0BF7-FE72-7453AE9FB43C} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{4313965C-2013-2A78-C421-2CE966E564A7} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {84B6AB08-779D-4DE4-9584-45B541B606D5}
