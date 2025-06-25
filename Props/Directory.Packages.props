@@ -117,7 +117,6 @@
     <PackageVersion Include="Microsoft.Identity.Web" Version="3.9.4" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.41.0" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
     <PackageVersion Include="Microsoft.TeamsFx" Version="2.5.0" />
     <PackageVersion Include="Microsoft.TypeScript.MSBuild" Version="5.8.1" />
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.14.15" />
