@@ -21,6 +21,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Initialize HexalithApp submodule
+      run: |
+          git submodule init HexalithApp
+          git submodule update HexalithApp
+          cd HexalithApp
+          git checkout main
     - name: Login to the container registry
       uses: docker/login-action@v3
       with:
