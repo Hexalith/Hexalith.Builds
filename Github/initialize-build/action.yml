@@ -19,3 +19,7 @@ runs:
     - name: Checkout main branch
       shell: bash
       run: git checkout main
+
+    - name: Pull changes
+      shell: bash
+      run: git pull
