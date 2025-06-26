@@ -1,6 +1,7 @@
 ﻿<Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Application.Modules" Version="1.67.7" />
