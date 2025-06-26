@@ -64,7 +64,9 @@ runs:
             --arch x64 \
             -p:ContainerImageTags='"${{ inputs.version }};latest"' \
             -p:ContainerRegistry=${{ inputs.registry }} \
-            -p:ContainerRepository=$repo
+            -p:ContainerRepository=$repo \
+            -p:Version=${{ inputs.version }} \
+            -p:FileVersion=${{ inputs.version }}
         }
 
         publish_container "Web"
