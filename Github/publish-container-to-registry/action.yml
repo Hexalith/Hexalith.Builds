@@ -25,9 +25,14 @@ runs:
       shell: bash
       run: |
           git submodule init HexalithApp
-          git submodule update --recursive HexalithApp
+          git submodule update HexalithApp
+          git submodule init Hexalith.Builds
+          git submodule update Hexalith.Builds
           cd HexalithApp
           git checkout main
+          git pull
+          cd../Hexalith.Builds
+          git pull
     - name: Login to the container registry
       uses: docker/login-action@v3
       with:
