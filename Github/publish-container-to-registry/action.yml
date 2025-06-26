@@ -21,7 +21,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Initialize HexalithApp submodule
+    - name: Initialize HexalithApp and Hexalith.Builds submodules
       shell: bash
       run: |
           git submodule init HexalithApp
