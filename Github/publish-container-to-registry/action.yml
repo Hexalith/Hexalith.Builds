@@ -31,7 +31,7 @@ runs:
           cd HexalithApp
           git checkout main
           git pull
-          cd../Hexalith.Builds
+          cd ../Hexalith.Builds
           git pull
     - name: Login to the container registry
       uses: docker/login-action@v3
