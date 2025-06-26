@@ -25,7 +25,7 @@ runs:
       shell: bash
       run: |
           git submodule init HexalithApp
-          git submodule update HexalithApp
+          git submodule update --recursive HexalithApp
           cd HexalithApp
           git checkout main
     - name: Login to the container registry
