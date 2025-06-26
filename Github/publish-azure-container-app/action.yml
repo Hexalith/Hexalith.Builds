@@ -1,4 +1,4 @@
-name: 'Publish Azure Container '
+name: 'Publish Azure Container App'
 description: 'Publish application containers to Azure Container Apps'
 inputs:
   version:
@@ -26,6 +26,18 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Debug Authentication Values
+      if: runner.debug == '1'
+      shell: bash
+      run: |
+        echo "::debug::Checking authentication values..."
+        echo "::debug::Client ID provided: ${{ inputs.client-id != '' }}"
+        echo "::debug::Tenant ID provided: ${{ inputs.tenant-id != '' }}"
+        echo "::debug::Subscription ID provided: ${{ inputs.subscription-id != '' }}"
+        echo "::debug::Resource Group: ${{ inputs.resource-group }}"
+        echo "::debug::App ID: ${{ inputs.app-id }}"
+        echo "::debug::Registry: ${{ inputs.registry }}"
+        
     - name: Log in to Azure
       uses: azure/login@v2
       with:
