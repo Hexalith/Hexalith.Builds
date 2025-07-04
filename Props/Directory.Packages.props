@@ -28,15 +28,13 @@
     <PackageVersion Include="AspNet.Security.OAuth.Reddit" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Notion" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Basecamp" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.LikededIn" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.LinkedIn" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Instagram" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.OpenIdConnect" Version="9.4.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Google" Version="9.4.0" />
     <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="9.3.1" />
     <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="9.3.1" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="9.3.1" />
@@ -80,12 +78,15 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="9.0.6" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.6" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.6" />
+    <PackageVersion Include="Microsoft.AspNetCore.DataProtection" Version="9.0.6" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity" Version="2.3.1" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
     <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.47.2" />
