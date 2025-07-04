@@ -3,18 +3,31 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Hexalith.Commons" Version="1.66.5" />
-    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.0.1" />
-    <PackageVersion Include="Hexalith.Commons.Metadatas" Version="1.66.5" />
-    <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="1.66.5" />
-    <PackageVersion Include="Hexalith.Domains" Version="1.0.4" />
-    <PackageVersion Include="Hexalith.Domains.Abstractions" Version="1.0.4" />
+    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.0.4" />
+    <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.0.4" />
+    <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.0.4" />
+    <PackageVersion Include="Hexalith.Domains" Version="1.0.6" />
+    <PackageVersion Include="Hexalith.Domains.Abstractions" Version="1.0.6" />
     <PackageVersion Include="Hexalith.IdentityStores" Version="1.0.10" />
     <PackageVersion Include="Hexalith.IdentityStores.Abstractions" Version="1.0.10" />
     <PackageVersion Include="Hexalith.IdentityStores.UI" Version="1.0.10" />
     <PackageVersion Include="Hexalith.NetAspire.Hosting" Version="1.2.2" />
-    <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.6.9" />
-    <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.6.9" />
+    <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.6.10" />
+    <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.6.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="Hexalith.Commons" Version="2.0.4" />
+    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.0.4" />
+    <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.0.4" />
+    <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.0.4" />
+    <PackageVersion Include="Hexalith.Domains" Version="1.0.6" />
+    <PackageVersion Include="Hexalith.Domains.Abstractions" Version="1.0.6" />
+    <PackageVersion Include="Hexalith.IdentityStores" Version="1.0.10" />
+    <PackageVersion Include="Hexalith.IdentityStores.Abstractions" Version="1.0.10" />
+    <PackageVersion Include="Hexalith.IdentityStores.UI" Version="1.0.10" />
+    <PackageVersion Include="Hexalith.NetAspire.Hosting" Version="1.2.2" />
+    <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.6.10" />
+    <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.6.10" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
