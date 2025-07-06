@@ -21,7 +21,7 @@
     <Product>Hexalith.MyModule</Product>
     <RepositoryUrl>https://github.com/Hexalith/Hexalith.MyModule</RepositoryUrl>
     <PackageProjectUrl>https://github.com/Hexalith/Hexalith.MyModule</PackageProjectUrl>
-    <PackageTags>hexalith;my module</PackageTags>
-    <Description>MyModule Hexalith module</Description>
+    <PackageTags>hexalith;my module:</PackageTags>
+    <Description>Hexalith MyModule Module</Description>
   </PropertyGroup>
 </Project>
