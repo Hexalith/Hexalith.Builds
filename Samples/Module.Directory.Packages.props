@@ -1,0 +1,20 @@
+﻿<Project>
+  <!-- Module packages versions. -->
+  <PropertyGroup>
+    <!-- Define path of the parent Directory.Packages.props. -->
+    <ParentDirectoryPackageProps>$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../'))</ParentDirectoryPackageProps>
+    <!-- Define paths of the Hexalith packages props. -->
+    <Hexalith1BuildPackageProps>$(MSBuildThisFileDirectory)Hexalith.Builds/Props/Directory.Packages.props</Hexalith1BuildPackageProps>
+    <Hexalith2BuildPackageProps>$(MSBuildThisFileDirectory)../Hexalith.Builds/Props/Directory.Packages.props</Hexalith2BuildPackageProps>
+    <Hexalith3BuildPackageProps>$(MSBuildThisFileDirectory)../../Hexalith.Builds/Props/Directory.Packages.props</Hexalith3BuildPackageProps>
+  </PropertyGroup>
+  <Import Project="$(ParentDirectoryPackageProps)" Condition="Exists('$(ParentDirectoryPackageProps)')" />
+  <!-- Import the Directory.Package.props file in Hexalith.Builds. -->
+  <Import Project="$(Hexalith1BuildPackageProps)" Condition="Exists('$(Hexalith1BuildPackageProps)') And '$(HexalithVersionsLoaded)' != 'true'" />
+  <!-- Import the required Hexalith.Packages.props file. -->
+  <Import Project="$(Hexalith2BuildPackageProps)" Condition="Exists('$(Hexalith2BuildPackageProps)') And '$(HexalithVersionsLoaded)' != 'true'" />
+  <Import Project="$(Hexalith3BuildPackageProps)" Condition="'$(HexalithVersionsLoaded)' != 'true'" />
+  <ItemGroup Condition="'$(HexalithVersionsLoaded)' != 'true'">
+    <!-- Define packages versions for this module. -->
+  </ItemGroup>
+</Project>
