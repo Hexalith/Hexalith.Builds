@@ -7,6 +7,10 @@
     <PackageVersion Include="Hexalith.Security.WebApp" Version="2.8.26" />
     <PackageVersion Include="Hexalith.Security.WebServer" Version="2.8.26" />
     <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.8.26" />
+    <PackageVersion Include="Hexalith.Documents" Version="2.5.0" />
+    <PackageVersion Include="Hexalith.Documents.Commands" Version="2.5.0" />
+    <PackageVersion Include="Hexalith.Documents.Requests" Version="2.5.0" />
+    <PackageVersion Include="Hexalith.Documents.UI.Components" Version="2.5.0" />
     <PackageVersion Include="Hexalith.Documents.WebApp" Version="2.5.0" />
     <PackageVersion Include="Hexalith.Documents.WebServer" Version="2.5.0" />
     <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.5.0" />
