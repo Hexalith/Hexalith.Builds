@@ -4,9 +4,9 @@
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Hexalith.Security.WebApp" Version="2.8.30" />
-    <PackageVersion Include="Hexalith.Security.WebServer" Version="2.8.30" />
-    <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.8.30" />
+    <PackageVersion Include="Hexalith.Security.WebApp" Version="2.10.0" />
+    <PackageVersion Include="Hexalith.Security.WebServer" Version="2.10.0" />
+    <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.10.0" />
     <PackageVersion Include="Hexalith.Documents" Version="2.5.1" />
     <PackageVersion Include="Hexalith.Documents.Commands" Version="2.5.1" />
     <PackageVersion Include="Hexalith.Documents.Requests" Version="2.5.1" />
@@ -166,6 +166,6 @@
     <PackageVersion Include="System.Text.Json" Version="9.0.7" />
     <PackageVersion Include="Threenine.Data" Version="5.0.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.1" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.2" />
   </ItemGroup>
 </Project>
