@@ -7,13 +7,13 @@
     <PackageVersion Include="Hexalith.Security.WebApp" Version="2.11.3" />
     <PackageVersion Include="Hexalith.Security.WebServer" Version="2.11.3" />
     <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.11.3" />
-    <PackageVersion Include="Hexalith.Documents" Version="2.5.1" />
-    <PackageVersion Include="Hexalith.Documents.Commands" Version="2.5.1" />
-    <PackageVersion Include="Hexalith.Documents.Requests" Version="2.5.1" />
-    <PackageVersion Include="Hexalith.Documents.UI.Components" Version="2.5.1" />
-    <PackageVersion Include="Hexalith.Documents.WebApp" Version="2.5.1" />
-    <PackageVersion Include="Hexalith.Documents.WebServer" Version="2.5.1" />
-    <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.5.1" />
+    <PackageVersion Include="Hexalith.Documents" Version="2.6.0" />
+    <PackageVersion Include="Hexalith.Documents.Commands" Version="2.6.0" />
+    <PackageVersion Include="Hexalith.Documents.Requests" Version="2.6.0" />
+    <PackageVersion Include="Hexalith.Documents.UI.Components" Version="2.6.0" />
+    <PackageVersion Include="Hexalith.Documents.WebApp" Version="2.6.0" />
+    <PackageVersion Include="Hexalith.Documents.WebServer" Version="2.6.0" />
+    <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.6.0" />
     <PackageVersion Include="Hexalith.Commons" Version="2.1.3" />
     <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.1.3" />
     <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.1.3" />
