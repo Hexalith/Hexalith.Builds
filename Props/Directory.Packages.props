@@ -4,9 +4,9 @@
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Hexalith.Security.WebApp" Version="2.11.3" />
-    <PackageVersion Include="Hexalith.Security.WebServer" Version="2.11.3" />
-    <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.11.3" />
+    <PackageVersion Include="Hexalith.Security.WebApp" Version="2.11.4" />
+    <PackageVersion Include="Hexalith.Security.WebServer" Version="2.11.4" />
+    <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.11.4" />
     <PackageVersion Include="Hexalith.Documents" Version="2.6.0" />
     <PackageVersion Include="Hexalith.Documents.Commands" Version="2.6.0" />
     <PackageVersion Include="Hexalith.Documents.Requests" Version="2.6.0" />
