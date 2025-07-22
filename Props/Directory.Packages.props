@@ -4,9 +4,9 @@
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Hexalith.Security.WebApp" Version="2.11.4" />
-    <PackageVersion Include="Hexalith.Security.WebServer" Version="2.11.4" />
-    <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.11.4" />
+    <PackageVersion Include="Hexalith.Security.WebApp" Version="2.11.5" />
+    <PackageVersion Include="Hexalith.Security.WebServer" Version="2.11.5" />
+    <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.11.5" />
     <PackageVersion Include="Hexalith.Documents" Version="2.6.0" />
     <PackageVersion Include="Hexalith.Documents.Commands" Version="2.6.0" />
     <PackageVersion Include="Hexalith.Documents.Requests" Version="2.6.0" />
@@ -20,9 +20,9 @@
     <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.1.3" />
     <PackageVersion Include="Hexalith.Domains" Version="1.0.7" />
     <PackageVersion Include="Hexalith.Domains.Abstractions" Version="1.0.7" />
-    <PackageVersion Include="Hexalith.IdentityStores" Version="1.3.19" />
-    <PackageVersion Include="Hexalith.IdentityStores.Abstractions" Version="1.3.19" />
-    <PackageVersion Include="Hexalith.IdentityStores.UI" Version="1.3.19" />
+    <PackageVersion Include="Hexalith.IdentityStores" Version="1.3.24" />
+    <PackageVersion Include="Hexalith.IdentityStores.Abstractions" Version="1.3.24" />
+    <PackageVersion Include="Hexalith.IdentityStores.UI" Version="1.3.24" />
     <PackageVersion Include="Hexalith.NetAspire.Hosting" Version="1.2.5" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.6.12" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.6.12" />
