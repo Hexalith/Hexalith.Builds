@@ -66,7 +66,7 @@
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.24.0" />
     <PackageVersion Include="Cocona" Version="2.2.0" />
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="9.5.0" />
-    <PackageVersion Include="CompareNETObjects" Version="4.83.0" />
+    <PackageVersion Include="CompareNETObjects" Version="4.84.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Dapr.AspNetCore" Version="1.15.2" />
     <PackageVersion Include="docfx.console" Version="2.59.4" />
