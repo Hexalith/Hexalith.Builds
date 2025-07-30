@@ -7,13 +7,13 @@
     <PackageVersion Include="Hexalith.Security.WebApp" Version="2.11.10" />
     <PackageVersion Include="Hexalith.Security.WebServer" Version="2.11.10" />
     <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.11.10" />
-    <PackageVersion Include="Hexalith.Documents" Version="2.6.1" />
-    <PackageVersion Include="Hexalith.Documents.Commands" Version="2.6.1" />
-    <PackageVersion Include="Hexalith.Documents.Requests" Version="2.6.1" />
-    <PackageVersion Include="Hexalith.Documents.UI.Components" Version="2.6.1" />
-    <PackageVersion Include="Hexalith.Documents.WebApp" Version="2.6.1" />
-    <PackageVersion Include="Hexalith.Documents.WebServer" Version="2.6.1" />
-    <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.6.1" />
+    <PackageVersion Include="Hexalith.Documents" Version="2.6.3" />
+    <PackageVersion Include="Hexalith.Documents.Commands" Version="2.6.3" />
+    <PackageVersion Include="Hexalith.Documents.Requests" Version="2.6.3" />
+    <PackageVersion Include="Hexalith.Documents.UI.Components" Version="2.6.3" />
+    <PackageVersion Include="Hexalith.Documents.WebApp" Version="2.6.3" />
+    <PackageVersion Include="Hexalith.Documents.WebServer" Version="2.6.3" />
+    <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.6.3" />
     <PackageVersion Include="Hexalith.Commons" Version="2.1.4" />
     <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.1.4" />
     <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.1.4" />
@@ -50,7 +50,7 @@
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="9.3.1" />
     <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="9.3.1" />
     <PackageVersion Include="Aspire.Hosting" Version="9.3.2" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.3.1" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.4.0" />
     <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="9.3.1" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="9.3.1" />
     <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="9.3.1" />
