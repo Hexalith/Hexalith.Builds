@@ -30,21 +30,21 @@
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Discord" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Okta" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Reddit" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Notion" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Basecamp" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.LinkedIn" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Instagram" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="9.4.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="9.4.2" />
+    <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Discord" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Okta" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Reddit" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Notion" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Basecamp" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.LinkedIn" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Instagram" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="9.4.0" />
     <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="9.4.2" />
     <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="9.4.2" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="9.4.2" />
