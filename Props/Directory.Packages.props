@@ -20,10 +20,10 @@
     <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.1.7" />
     <PackageVersion Include="Hexalith.Domains" Version="1.0.10" />
     <PackageVersion Include="Hexalith.Domains.Abstractions" Version="1.0.10" />
-    <PackageVersion Include="Hexalith.IdentityStores" Version="1.3.34" />
-    <PackageVersion Include="Hexalith.IdentityStores.Abstractions" Version="1.3.34" />
-    <PackageVersion Include="Hexalith.IdentityStores.UI" Version="1.3.34" />
-    <PackageVersion Include="Hexalith.NetAspire.Hosting" Version="1.2.10" />
+    <PackageVersion Include="Hexalith.IdentityStores" Version="1.3.37" />
+    <PackageVersion Include="Hexalith.IdentityStores.Abstractions" Version="1.3.37" />
+    <PackageVersion Include="Hexalith.IdentityStores.UI" Version="1.3.37" />
+    <PackageVersion Include="Hexalith.NetAspire.Hosting" Version="1.2.13" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.7.0" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.7.0" />
   </ItemGroup>
