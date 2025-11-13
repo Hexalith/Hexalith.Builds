@@ -1,5 +1,5 @@
 name: 'Initialize .NET Framework'
-description: 'Sets up .NET 9.0 and installs Aspire workload'
+description: 'Sets up .NET 10.0 and installs Aspire workload'
 inputs:
   aspire:
     description: 'Whether to install Aspire workload'
@@ -8,10 +8,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup .NET 9.0
+    - name: Setup .NET 10.0
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
     - name: Add Aspire Workloads
       if: inputs.aspire != ''
       shell: bash
