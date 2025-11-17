@@ -14,10 +14,10 @@
     <PackageVersion Include="Hexalith.Documents.WebApp" Version="2.6.9" />
     <PackageVersion Include="Hexalith.Documents.WebServer" Version="2.6.9" />
     <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.6.9" />
-    <PackageVersion Include="Hexalith.Commons" Version="2.1.9" />
-    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.1.7" />
-    <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.1.7" />
-    <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.1.7" />
+    <PackageVersion Include="Hexalith.Commons" Version="2.2.0" />
+    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.2.0" />
+    <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.2.0" />
+    <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.2.0" />
     <PackageVersion Include="Hexalith.Domains" Version="1.1.0" />
     <PackageVersion Include="Hexalith.Domains.Abstractions" Version="1.0.11" />
     <PackageVersion Include="Hexalith.IdentityStores" Version="1.3.37" />
@@ -30,21 +30,21 @@
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.2" />
-    <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Discord" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Okta" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Reddit" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Notion" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Basecamp" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.LinkedIn" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Instagram" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="9.4.0" />
-    <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="9.4.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Discord" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Okta" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Reddit" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Notion" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Basecamp" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.LinkedIn" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Instagram" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Twitter" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="10.0.0" />
+    <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="10.0.0" />
     <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="13.0.0" />
     <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="13.0.0" />
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.0.0" />
@@ -125,7 +125,7 @@
     <PackageVersion Include="Microsoft.FluentUI.Components" Version="4.11.6" />
     <PackageVersion Include="Microsoft.Graph" Version="5.12.0" />
     <PackageVersion Include="Microsoft.Identity.Client" Version="4.72.1" />
-    <PackageVersion Include="Microsoft.Identity.Web" Version="3.14.1" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.0.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.41.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
