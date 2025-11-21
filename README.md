@@ -23,7 +23,7 @@ This repository:
 - `Hexalith.Build.props`: Build properties common to all Hexalith projects
 - `Hexalith.Package.props`: Build properties common to all Hexalith NuGet packages projects
 - `Props/Environment.Build.props`: Defines build environment variables
-- `Props/Framework.Build.props`: Specifies the default target framework (currently `net9.0`)
+- `Props/Framework.Build.props`: Specifies the default target framework (currently `net10.0`)
 
 ### Package Version Management
 
