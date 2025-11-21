@@ -7,13 +7,13 @@
     <PackageVersion Include="Hexalith.Security.WebApp" Version="2.13.0" />
     <PackageVersion Include="Hexalith.Security.WebServer" Version="2.13.0" />
     <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.13.0" />
-    <PackageVersion Include="Hexalith.Documents" Version="2.6.9" />
-    <PackageVersion Include="Hexalith.Documents.Commands" Version="2.6.9" />
-    <PackageVersion Include="Hexalith.Documents.Requests" Version="2.6.9" />
-    <PackageVersion Include="Hexalith.Documents.UI.Components" Version="2.6.9" />
-    <PackageVersion Include="Hexalith.Documents.WebApp" Version="2.6.9" />
-    <PackageVersion Include="Hexalith.Documents.WebServer" Version="2.6.9" />
-    <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.6.9" />
+    <PackageVersion Include="Hexalith.Documents" Version="2.7.0" />
+    <PackageVersion Include="Hexalith.Documents.Commands" Version="2.7.0" />
+    <PackageVersion Include="Hexalith.Documents.Requests" Version="2.7.0" />
+    <PackageVersion Include="Hexalith.Documents.UI.Components" Version="2.7.0" />
+    <PackageVersion Include="Hexalith.Documents.WebApp" Version="2.7.0" />
+    <PackageVersion Include="Hexalith.Documents.WebServer" Version="2.7.0" />
+    <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.7.0" />
     <PackageVersion Include="Hexalith.Commons" Version="2.2.0" />
     <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.2.0" />
     <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.2.0" />
@@ -146,7 +146,7 @@
     <PackageVersion Include="Radzen.Blazor" Version="4.23.4" />
     <PackageVersion Include="Roslynator.Analyzers" Version="4.14.1" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="4.14.1" />
-    <PackageVersion Include="Scriban" Version="6.5.0" />
+    <PackageVersion Include="Scriban" Version="6.5.1" />
     <PackageVersion Include="SendGrid" Version="9.29.3" />
     <PackageVersion Include="SendGrid.Extensions.DependencyInjection" Version="1.0.1" />
     <PackageVersion Include="Serilog" Version="9.0.0" />
