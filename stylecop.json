@@ -12,7 +12,7 @@
       "tabSize": 4,
       "useTabs": false
     },
-    "MyNewModuleationRules": {
+    "documentationRules": {
       "companyName": "ITANEO",
       "copyrightText": "Copyright (c) {companyName} (https://www.itaneo.com). All rights reserved.\nLicensed under the {licenseName} license. See {licenseFile} file in the project root for full license information.",
       "variables": {
