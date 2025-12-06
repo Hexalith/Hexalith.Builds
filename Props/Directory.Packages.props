@@ -45,15 +45,15 @@
     <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="10.0.0" />
-    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="13.0.0" />
-    <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="13.0.0" />
-    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.0.0" />
-    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="13.0.0" />
-    <PackageVersion Include="Aspire.Hosting" Version="13.0.1" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.0.1" />
-    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.0.1" />
-    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.0.1" />
-    <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="13.0.1" />
+    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Hosting" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.0.2" />
+    <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="13.0.2" />
     <PackageVersion Include="Azure.Bicep.Core" Version="0.26.54" />
     <PackageVersion Include="Azure.Identity" Version="1.13.2" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
@@ -71,9 +71,9 @@
     <PackageVersion Include="Dapr.AspNetCore" Version="1.15.2" />
     <PackageVersion Include="docfx.console" Version="2.59.4" />
     <PackageVersion Include="FluentAssertions" Version="8.4.0" />
-    <PackageVersion Include="FluentValidation" Version="12.1.0" />
-    <PackageVersion Include="FluentValidation.AspNetCore" Version="12.0.0" />
-    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.AspNetCore" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="3.0.1" />
     <PackageVersion Include="Google.Apis" Version="5.4.2" />
     <PackageVersion Include="Google.Apis.Auth.AspNetCore3" Version="1.70.0" />
@@ -160,7 +160,7 @@
     <PackageVersion Include="Serilog.Sinks.Debug" Version="3.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="6.0.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.16.0.128591" />
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.16.1.129956" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.0.1" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.6.1" />
