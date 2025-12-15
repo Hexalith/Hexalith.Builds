@@ -31,7 +31,7 @@ The Hexalith ecosystem consists of multiple interconnected repositories:
 
 ### Commit Message Format
 
-```
+```text
 <type>(<scope>): <short description>
 
 <optional body>
@@ -65,7 +65,7 @@ The Hexalith ecosystem consists of multiple interconnected repositories:
 
 ### Examples
 
-```
+```text
 feat(auth): add user authentication endpoint
 
 Implement JWT-based authentication with refresh token support.
@@ -74,13 +74,13 @@ Includes validation middleware and token generation service.
 Closes #123
 ```
 
-```
+```text
 fix(orders): correct tax calculation for international orders
 
 BREAKING CHANGE: tax calculation now requires country code parameter
 ```
 
-```
+```text
 refactor(domain): simplify aggregate root base class
 ```
 
@@ -88,129 +88,76 @@ refactor(domain): simplify aggregate root base class
 
 ### Project Structure
 
-```
-src/
-├── Domain/                     # Domain Layer (innermost)
-│   ├── Aggregates/            # Aggregate roots
-│   ├── Entities/              # Domain entities
-│   ├── ValueObjects/          # Value objects
-│   ├── Events/                # Domain events
-│   ├── Commands/              # Domain commands
-│   └── Services/              # Domain services
-├── Application/               # Application Layer
-│   ├── Commands/              # Command handlers
-│   ├── Queries/               # Query handlers
-│   ├── Services/              # Application services
-│   └── DTOs/                  # Data transfer objects
-├── Infrastructure/            # Infrastructure Layer
-│   ├── Persistence/           # Database implementations
-│   ├── Messaging/             # Message bus implementations
-│   └── External/              # External service integrations
-└── Presentation/              # Presentation Layer (outermost)
-    ├── Api/                   # REST/GraphQL APIs
-    └── UI/                    # Blazor UI components
-```
+Hexalith modules follow a **vertical slice architecture** with separate NuGet packages per layer. Each module (e.g., `Hexalith.Documents`) is organized as follows:
 
-### DDD Patterns
+```text
 
-#### Aggregates
-
-- Aggregates are the consistency boundary
-- Only reference other aggregates by ID
-- Keep aggregates small and focused
-- Use factory methods for complex creation logic
-
-```csharp
-/// <summary>
-/// Order aggregate root managing order lifecycle.
-/// </summary>
-/// <param name="Id">The unique order identifier.</param>
-/// <param name="CustomerId">The customer who placed the order.</param>
-/// <param name="Items">The order line items.</param>
-public sealed record Order(
-    string Id,
-    string CustomerId,
-    IReadOnlyList<OrderItem> Items) : IAggregateRoot
-{
-    public static Order Create(string customerId, IEnumerable<OrderItem> items)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(customerId);
-        return new Order(
-            Id: Guid.NewGuid().ToString(),
-            CustomerId: customerId,
-            Items: items.ToList());
-    }
-}
+{ModuleName}/
+├── AspireHost/                         # .NET Aspire orchestration host
+├── HexalithApp/                        # Application templates (submodule)
+├── Hexalith.Builds/                    # Build configuration (submodule)
+├── src/
+│   ├── examples/
+│   │   └── Hexalith.{Module}.Example/                       # Example implementation
+│   ├── libraries/                                           # NuGet package libraries
+│   │   ├── Domain/                                          # Domain layer packages
+│   │   │   ├── Hexalith.{Module}/                           # Aggregate roots, entities, state
+│   │   │   ├── Hexalith.{Module}.Abstractions/              # Domain interfaces, value objects
+│   │   │   └── Hexalith.{Module}.Events/                    # Domain events
+│   │   ├── Application/                                     # Application layer packages
+│   │   │   ├── Hexalith.{Module}.Commands/                  # CQRS command definitions
+│   │   │   ├── Hexalith.{Module}.Requests/                  # Queries & view models
+│   │   │   ├── Hexalith.{Module}.Application/               # Command & query handlers
+│   │   │   ├── Hexalith.{Module}.Application.Abstractions/  # Application interfaces
+│   │   │   └── Hexalith.{Module}.Projections/               # Read model projections
+│   │   ├── Infrastructure/                                  # Infrastructure layer packages
+│   │   │   ├── Hexalith.{Module}.Servers/                   # Shared server utilities
+│   │   │   ├── Hexalith.{Module}.ApiServer/                 # REST API controllers
+│   │   │   ├── Hexalith.{Module}.WebServer/                 # Web server implementation
+│   │   │   └── Hexalith.{Module}.WebApp/                    # Blazor web application
+│   │   └── Presentation/                                    # Presentation layer packages
+│   │       ├── Hexalith.{Module}.UI.Components/             # Reusable Blazor components
+│   │       ├── Hexalith.{Module}.UI.Pages/                  # Blazor page components
+│   │       └── Hexalith.{Module}.Localizations/             # language resources
+│   └── servers/                        # Docker/deployment projects
+└── test/
+    └── Hexalith.{Module}.Tests/        # Unit & integration tests
 ```
 
-#### Value Objects
+### Layer Organization by Package
 
-- Immutable by design
-- Equality based on values, not identity
-- Use records for simple value objects
+Each layer is a separate NuGet package with clear responsibilities:
 
-```csharp
-/// <summary>
-/// Represents a monetary value with currency.
-/// </summary>
-/// <param name="Amount">The monetary amount.</param>
-/// <param name="Currency">The ISO currency code.</param>
-public sealed record Money(decimal Amount, string Currency)
-{
-    public static Money Zero(string currency) => new(0m, currency);
+| Package | Layer | Contents |
+|---------|-------|----------|
+| `Hexalith.{Module}` | Domain | Aggregate roots, entities, value objects, state |
+| `Hexalith.{Module}.Abstractions` | Domain | Domain nterfaces, shared value objects |
+| `Hexalith.{Module}.Events` | Domain | Domain events |
+| `Hexalith.{Module}.Commands` | Application | Command definitions, validators |
+| `Hexalith.{Module}.Requests` | Application | Query definitions, view models |
+| `Hexalith.{Module}.Application` | Application | Command & query handlers, services |
+| `Hexalith.{Module}.Projections` | Application | Event projections, read model handlers |
+| `Hexalith.{Module}.Servers` | Infrastructure | Shared server utilities |
+| `Hexalith.{Module}.ApiServer` | Infrastructure | REST API controllers, modules |
+| `Hexalith.{Module}.WebServer` | Infrastructure | Web server implementation |
+| `Hexalith.{Module}.WebApp` | Infrastructure | Blazor web application |
+| `Hexalith.{Module}.UI.Components` | Presentation | Reusable Blazor component library |
+| `Hexalith.{Module}.UI.Pages` | Presentation | Page-level Blazor components |
+| `Hexalith.{Module}.Localizations` | Presentation | i18n resources |
 
-    public Money Add(Money other)
-    {
-        if (Currency != other.Currency)
-            throw new InvalidOperationException("Cannot add different currencies");
-        return this with { Amount = Amount + other.Amount };
-    }
-}
+### Package Dependency Flow
+
+```text
+Presentation (UI.Components, UI.Pages, Localizations)
+    ↓
+Infrastructure (Servers, ApiServer, WebServer, WebApp)
+    ↓
+Application (Commands, Requests, Handlers, Projections)
+    ↓
+Domain (Aggregates, Events)
+    ↓
+Abstractions (value objects & interfaces)
 ```
-
-#### Domain Events
-
-- Use past tense naming (e.g., `OrderPlaced`, `PaymentReceived`)
-- Events are immutable facts
-- Include all relevant data for event handlers
-
-```csharp
-/// <summary>
-/// Event raised when an order is placed.
-/// </summary>
-/// <param name="OrderId">The order identifier.</param>
-/// <param name="CustomerId">The customer identifier.</param>
-/// <param name="TotalAmount">The order total amount.</param>
-/// <param name="OccurredAt">When the event occurred.</param>
-public sealed record OrderPlaced(
-    string OrderId,
-    string CustomerId,
-    Money TotalAmount,
-    DateTimeOffset OccurredAt) : IDomainEvent;
-```
-
-#### Commands
-
-- Use imperative naming (e.g., `PlaceOrder`, `CancelOrder`)
-- Commands are requests that may fail
-- Validate commands before processing
-
-```csharp
-/// <summary>
-/// Command to place a new order.
-/// </summary>
-/// <param name="CustomerId">The customer placing the order.</param>
-/// <param name="Items">The items to order.</param>
-public sealed record PlaceOrder(
-    string CustomerId,
-    IReadOnlyList<OrderItemRequest> Items) : ICommand;
-```
-
-### CQRS Pattern
-
-- Separate read and write models
-- Commands modify state, queries read state
-- Use MediatR or similar for handler dispatch
 
 ## C# Coding Standards
 
@@ -364,75 +311,15 @@ public sealed class OrderTests
 
 ### Test Organization
 
-```
+```text
 test/
-├── Domain.Tests/           # Domain layer unit tests
-├── Application.Tests/      # Application layer tests
-├── Infrastructure.Tests/   # Infrastructure integration tests
-└── Api.Tests/             # API integration tests
-```
-
-## DAPR Integration
-
-### State Management
-
-```csharp
-public sealed class DaprOrderRepository(DaprClient daprClient) : IOrderRepository
-{
-    private const string StoreName = "statestore";
-
-    public async Task<Order?> GetAsync(string id, CancellationToken ct)
-        => await daprClient.GetStateAsync<Order>(StoreName, id, cancellationToken: ct);
-
-    public async Task SaveAsync(Order order, CancellationToken ct)
-        => await daprClient.SaveStateAsync(StoreName, order.Id, order, cancellationToken: ct);
-}
-```
-
-### Pub/Sub Messaging
-
-```csharp
-public sealed class DaprEventPublisher(DaprClient daprClient) : IEventPublisher
-{
-    private const string PubSubName = "pubsub";
-
-    public async Task PublishAsync<TEvent>(TEvent @event, CancellationToken ct)
-        where TEvent : IDomainEvent
-        => await daprClient.PublishEventAsync(PubSubName, typeof(TEvent).Name, @event, ct);
-}
-```
-
-## Blazor UI Guidelines
-
-### Fluent UI Components
-
-Use Microsoft Fluent UI Blazor components for consistent UI:
-
-```razor
-@using Microsoft.FluentUI.AspNetCore.Components
-
-<FluentCard>
-    <FluentStack Orientation="Orientation.Vertical" VerticalGap="10">
-        <FluentTextField @bind-Value="@_orderNumber" Label="Order Number" />
-        <FluentButton Appearance="Appearance.Accent" OnClick="@SubmitOrder">
-            Place Order
-        </FluentButton>
-    </FluentStack>
-</FluentCard>
-```
-
-### Component Structure
-
-```
-Components/
-├── Layout/                # Layout components
-├── Shared/                # Shared/reusable components
-├── Pages/                 # Page components
-└── Features/              # Feature-specific components
-    └── Orders/
-        ├── OrderList.razor
-        ├── OrderDetail.razor
-        └── OrderForm.razor
+└── Hexalith.{Module}.Tests/    # All tests for the module
+    ├── {Aggregate}/            # Tests organized by aggregate
+    │   ├── {Command}Tests.cs   # Command tests
+    │   ├── {Event}Tests.cs     # Command tests
+    │   ├── {Query}Tests.cs     # Query tests
+    │   └── {Aggregate}Tests.cs # Aggregate tests
+    └── ...
 ```
 
 ## Build Configuration
@@ -448,4 +335,4 @@ This project uses centralized build configuration from `Hexalith.Builds`:
 - [Hexalith Documentation](https://github.com/Hexalith/Hexalith)
 - [DAPR Documentation](https://docs.dapr.io/)
 - [Fluent UI Blazor](https://www.fluentui-blazor.net/)
-- [Angular Commit Guidelines](https://github.com/angular/angular/blob/main/contributing-docs/commit-message-guidelines.md)
+- [Commit Guidelines](https://github.com/angular/angular/blob/main/contributing-docs/commit-message-guidelines.md)
