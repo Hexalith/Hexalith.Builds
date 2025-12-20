@@ -330,6 +330,13 @@ This project uses centralized build configuration from `Hexalith.Builds`:
 - `Hexalith.Package.props` - NuGet package properties
 - `Directory.Packages.props` - Centralized package versions
 
+## Start the application
+
+```bash
+cd AspireHost
+dotnet run
+```
+
 ## Additional Resources
 
 - [Hexalith Documentation](https://github.com/Hexalith/Hexalith)
