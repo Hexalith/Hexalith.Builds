@@ -4,9 +4,9 @@ This file provides guidance for AI assistants (Claude, Copilot, Cursor, etc.) wo
 
 ## Technology Stack
 
-- **.NET 9+** - Latest .NET framework
-- **C# 13+** - Latest C# language features
-- **DAPR 1.15+** - Distributed Application Runtime for microservices
+- **.NET 10+** - Latest .NET framework
+- **C# 14+** - Latest C# language features
+- **DAPR 1.16+** - Distributed Application Runtime for microservices
 - **Microsoft Fluent UI Blazor** - UI component library for Blazor applications
 - **XUnit + Shouldly** - Unit testing framework and assertion library
 
@@ -143,7 +143,7 @@ Each layer is a separate NuGet package with clear responsibilities:
 | `Hexalith.{Module}.WebApp` | Infrastructure | Blazor web application |
 | `Hexalith.{Module}.UI.Components` | Presentation | Reusable Blazor component library |
 | `Hexalith.{Module}.UI.Pages` | Presentation | Page-level Blazor components |
-| `Hexalith.{Module}.Localizations` | Presentation | i18n resources |
+| `Hexalith.{Module}.Localizations` | Domain | i18n resources |
 
 ### Package Dependency Flow
 
