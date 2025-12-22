@@ -4,6 +4,10 @@
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Hexalith.Applications" Version="1.0.3" />
+    <PackageVersion Include="Hexalith.Applications.Abstractions" Version="1.0.3" />
+    <PackageVersion Include="Hexalith.Applications.Commands" Version="1.0.3" />
+    <PackageVersion Include="Hexalith.Applications.Commands.Abstractions" Version="1.0.3" />
     <PackageVersion Include="Hexalith.Security.WebApp" Version="2.14.8" />
     <PackageVersion Include="Hexalith.Security.WebServer" Version="2.14.8" />
     <PackageVersion Include="Hexalith.Security.ApiServer" Version="2.14.8" />
