@@ -81,9 +81,9 @@
     <PackageVersion Include="GitHubActionsTestLogger" Version="3.0.1" />
     <PackageVersion Include="Google.Apis" Version="5.4.2" />
     <PackageVersion Include="Google.Apis.Auth.AspNetCore3" Version="1.70.0" />
-    <PackageVersion Include="Grpc" Version="2.70.0" />
-    <PackageVersion Include="Grpc.HealthCheck" Version="2.71.0" />
-    <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.71.0" />
+    <PackageVersion Include="Grpc" Version="2.76.0" />
+    <PackageVersion Include="Grpc.HealthCheck" Version="2.76.0" />
+    <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.76.0" />
     <PackageVersion Include="HotChocolate" Version="15.0.3" />
     <PackageVersion Include="Humanizer" Version="3.0.1" />
     <PackageVersion Include="ISO3166" Version="1.0.4" />
@@ -166,7 +166,7 @@
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.17.0.131074" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.0.1" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.0" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.6.1" />
     <PackageVersion Include="System.Text.Json" Version="10.0.1" />
     <PackageVersion Include="Threenine.Data" Version="5.0.1" />
