@@ -22,6 +22,7 @@
     <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.6.0" />
     <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.6.0" />
     <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.6.0" />
+    <PackageVersion Include="Hexalith.Commons.StringEncoders" Version="2.6.0" />
     <PackageVersion Include="Hexalith.Domains" Version="2.0.2" />
     <PackageVersion Include="Hexalith.Domains.Abstractions" Version="2.0.2" />
     <PackageVersion Include="Hexalith.IdentityStores" Version="1.4.4" />
@@ -73,7 +74,11 @@
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="13.0.0" />
     <PackageVersion Include="CompareNETObjects" Version="4.84.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
-    <PackageVersion Include="Dapr.AspNetCore" Version="1.15.2" />
+    <PackageVersion Include="Dapr" Version="1.16.1" />
+    <PackageVersion Include="Dapr.AspNetCore" Version="1.16.1" />
+    <PackageVersion Include="Dapr.Actors.AspNetCore" Version="1.16.1" />
+    <PackageVersion Include="Dapr.Actors.Generators" Version="1.16.1" />
+    <PackageVersion Include="Dapr.Actors" Version="1.16.1" />
     <PackageVersion Include="docfx.console" Version="2.59.4" />
     <PackageVersion Include="FluentAssertions" Version="8.4.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
