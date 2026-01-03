@@ -259,6 +259,10 @@ dotnet_naming_style._camelcase.required_suffix =
 dotnet_naming_style._camelcase.word_separator = 
 dotnet_naming_style._camelcase.capitalization = camel_case
 
+# Generated files - mark as generated code to suppress analyzers and documentation warnings
+[*.g.cs]
+generated_code = true
+
 [*.{cs,vb}]
 dotnet_style_operator_placement_when_wrapping = beginning_of_line
 tab_width = 4
