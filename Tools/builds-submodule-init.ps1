@@ -37,3 +37,4 @@ git submodule update $submodulePath
 
 # Checkout the main branch in the Hexalith.Builds submodule
 git submodule foreach git checkout main
+
