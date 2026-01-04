@@ -273,36 +273,7 @@ public sealed class InsufficientStockException(
 
 ### Logging with LoggerMessageAttribute
 
-Use `LoggerMessageAttribute` for high-performance source-generated logging. This approach provides compile-time checking and avoids boxing allocations:
-
-```csharp
-public partial class OrderService(
-    IOrderRepository repository,
-    ILogger<OrderService> logger) : IOrderService
-{
-    public async Task<Order> PlaceOrderAsync(PlaceOrder command, CancellationToken ct)
-    {
-        LogPlacingOrder(logger, command.CustomerId, command.Items.Count);
-
-        var order = await repository.CreateAsync(command, ct);
-
-        LogOrderPlaced(logger, order.Id, order.Total);
-        return order;
-    }
-
-    [LoggerMessage(LogLevel.Information, "Placing order for customer {CustomerId} with {ItemCount} items")]
-    private static partial void LogPlacingOrder(ILogger logger, string customerId, int itemCount);
-
-    [LoggerMessage(LogLevel.Information, "Order {OrderId} placed successfully. Total: {Total}")]
-    private static partial void LogOrderPlaced(ILogger logger, string orderId, decimal total);
-
-    [LoggerMessage(LogLevel.Warning, "Order {OrderId} placement failed: {Reason}")]
-    private static partial void LogOrderFailed(ILogger logger, string orderId, string reason);
-
-    [LoggerMessage(LogLevel.Error, "Unexpected error while processing order for customer {CustomerId}")]
-    private static partial void LogOrderError(ILogger logger, Exception exception, string customerId);
-}
-```
+Use `LoggerMessageAttribute` for high-performance source-generated logging. This approach provides compile-time checking and avoids boxing allocations.
 
 **Rules:**
 
