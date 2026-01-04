@@ -271,6 +271,18 @@ public sealed class InsufficientStockException(
 }
 ```
 
+### Logging with LoggerMessageAttribute
+
+Use `LoggerMessageAttribute` for high-performance source-generated logging. This approach provides compile-time checking and avoids boxing allocations.
+
+**Rules:**
+
+- Always use `static partial` methods with `LoggerMessageAttribute`
+- Pass `ILogger` as the first parameter
+- For exceptions, pass `Exception` as the second parameter (before other parameters)
+- Use structured logging with named placeholders (e.g., `{OrderId}`, `{CustomerId}`)
+- The class must be declared as `partial`
+
 ## Testing Standards
 
 ### Unit Tests with XUnit and Shouldly
