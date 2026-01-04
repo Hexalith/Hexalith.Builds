@@ -287,6 +287,8 @@ Use `LoggerMessageAttribute` for high-performance source-generated logging. This
 
 ### Unit Tests with XUnit and Shouldly
 
+Unit test methods are written using Pascal Case naming.
+
 ```csharp
 public sealed class OrderTests
 {
