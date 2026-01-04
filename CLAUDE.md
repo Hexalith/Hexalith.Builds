@@ -58,7 +58,7 @@ The Hexalith ecosystem consists of multiple interconnected repositories:
 
 1. Use imperative mood in short description (e.g., "add" not "added")
 2. Start description with lowercase (unless proper noun)
-3. No period at end of short description
+3. Omit the period at end of short description
 4. Keep short description under 50 characters
 5. Wrap body at 72 characters
 6. Use `BREAKING CHANGE:` in footer for breaking changes (triggers major version)
