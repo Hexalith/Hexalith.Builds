@@ -131,7 +131,7 @@ Each layer is a separate NuGet package with clear responsibilities:
 | Package | Layer | Contents |
 |---------|-------|----------|
 | `Hexalith.{Module}` | Domain | Aggregate roots, entities, value objects, state |
-| `Hexalith.{Module}.Abstractions` | Domain | Domain nterfaces, shared value objects |
+| `Hexalith.{Module}.Abstractions` | Domain | Domain interfaces, shared value objects |
 | `Hexalith.{Module}.Events` | Domain | Domain events |
 | `Hexalith.{Module}.Commands` | Application | Command definitions, validators |
 | `Hexalith.{Module}.Requests` | Application | Query definitions, view models |
@@ -165,60 +165,9 @@ Abstractions (value objects & interfaces)
 
 Use primary constructors for classes and records when possible:
 
-```csharp
-// Preferred: Primary constructor
-public sealed class OrderService(
-    IOrderRepository repository,
-    IEventPublisher publisher) : IOrderService
-{
-    public async Task<Order> GetAsync(string id, CancellationToken ct)
-        => await repository.GetAsync(id, ct);
-}
-
-// Avoid: Traditional constructor with field assignments
-public sealed class OrderService : IOrderService
-{
-    private readonly IOrderRepository _repository;
-    private readonly IEventPublisher _publisher;
-
-    public OrderService(IOrderRepository repository, IEventPublisher publisher)
-    {
-        _repository = repository;
-        _publisher = publisher;
-    }
-}
-```
-
 ### XML Documentation
 
 Use XML documentation for all public, protected, and internal members:
-
-```csharp
-/// <summary>
-/// Handles order placement operations.
-/// </summary>
-/// <param name="repository">The order repository.</param>
-/// <param name="publisher">The event publisher.</param>
-public sealed class OrderCommandHandler(
-    IOrderRepository repository,
-    IEventPublisher publisher)
-{
-    /// <summary>
-    /// Places a new order for a customer.
-    /// </summary>
-    /// <param name="command">The place order command.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The created order.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when command is null.</exception>
-    public async Task<Order> HandleAsync(
-        PlaceOrder command,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        // Implementation
-    }
-}
-```
 
 ### Record Properties Documentation
 
@@ -285,43 +234,7 @@ Use `LoggerMessageAttribute` for high-performance source-generated logging. This
 
 ## Testing Standards
 
-### Unit Tests with XUnit and Shouldly
-
-Unit test methods are written using Pascal Case naming.
-
-```csharp
-public sealed class OrderTests
-{
-    [Fact]
-    public void Create_WithValidData_ShouldReturnOrder()
-    {
-        // Arrange
-        var customerId = "customer-123";
-        var items = new[] { new OrderItem("product-1", 2, new Money(10m, "USD")) };
-
-        // Act
-        var order = Order.Create(customerId, items);
-
-        // Assert
-        order.CustomerId.ShouldBe(customerId);
-        order.Items.Count.ShouldBe(1);
-        order.Id.ShouldNotBeNullOrWhiteSpace();
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData(" ")]
-    [InlineData(null)]
-    public void Create_WithInvalidCustomerId_ShouldThrow(string? customerId)
-    {
-        // Arrange
-        var items = Array.Empty<OrderItem>();
-
-        // Act & Assert
-        Should.Throw<ArgumentException>(() => Order.Create(customerId!, items));
-    }
-}
-```
+Unit Tests use XUnit and Shouldly and test methods are written using Pascal Case naming.
 
 ### Test Organization
 
