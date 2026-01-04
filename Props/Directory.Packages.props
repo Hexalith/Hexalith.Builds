@@ -83,6 +83,7 @@
     <PackageVersion Include="Dapr.Actors.AspNetCore" Version="1.16.1" />
     <PackageVersion Include="Dapr.Actors.Generators" Version="1.16.1" />
     <PackageVersion Include="Dapr.Actors" Version="1.16.1" />
+    <PackageVersion Include="Dapr.Workflow" Version="1.16.1" />
     <PackageVersion Include="docfx.console" Version="2.59.4" />
     <PackageVersion Include="FluentAssertions" Version="8.4.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
