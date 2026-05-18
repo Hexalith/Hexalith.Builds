@@ -46,9 +46,9 @@ jobs:
         uses: actions/checkout@v3
         
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 10.0.300
           
       - name: Build packages
         run: dotnet pack -c Release

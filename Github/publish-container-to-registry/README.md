@@ -72,9 +72,9 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.300'
           
       - name: Publish Application Containers
         uses: ./.github/actions/publish-container-app

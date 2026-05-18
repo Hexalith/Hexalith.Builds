@@ -1,7 +1,7 @@
 # Initialize .NET Framework GitHub Action
 
 ## Overview
-This GitHub Action sets up the .NET 9.0 development environment and optionally installs the Aspire workload. It provides a standardized way to ensure that all necessary .NET components are available for building and testing .NET applications in your GitHub workflow.
+This GitHub Action sets up the .NET 10.0.300 development environment and optionally installs the Aspire workload. It provides a standardized way to ensure that all necessary .NET components are available for building and testing .NET applications in your GitHub workflow.
 
 ## Inputs
 
@@ -13,9 +13,9 @@ This GitHub Action sets up the .NET 9.0 development environment and optionally i
 
 The action performs the following steps:
 
-1. **Setup .NET 9.0**:
-   - Uses the official `actions/setup-dotnet@v4` action to install .NET 9.0
-   - Ensures that the latest version of .NET 9.0 is available in the build environment
+1. **Setup .NET 10.0.300**:
+   - Uses the official `actions/setup-dotnet@v5` action to install .NET 10.0.300
+   - Ensures that .NET SDK 10.0.300 is available in the build environment
 
 2. **Add Aspire Workload** (Optional):
    - If the `aspire` input is provided with a non-empty value, installs the Aspire workload
@@ -63,7 +63,7 @@ jobs:
 
 This action leverages the official .NET setup action to ensure a consistent .NET environment across different runners. It:
 
-1. Installs the specified version of .NET (9.0.x) on the runner
+1. Installs the specified version of .NET (10.0.300) on the runner
 2. Configures the environment variables and paths needed for .NET development
 3. Optionally installs the Aspire workload, which provides additional templates and libraries for building distributed applications
 
