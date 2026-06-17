@@ -55,15 +55,15 @@
     <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="10.0.0" />
-    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="13.4.2" />
-    <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="13.4.2" />
-    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.4.2" />
-    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="13.4.2" />
-    <PackageVersion Include="Aspire.Hosting" Version="13.4.2" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.4.2" />
-    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.4.2" />
-    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.4.2" />
-    <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="13.4.2" />
+    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="13.4.5" />
+    <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="13.4.5" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.4.5" />
+    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="13.4.5" />
+    <PackageVersion Include="Aspire.Hosting" Version="13.4.5" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.4.5" />
+    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.4.5" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.4.5" />
+    <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="13.4.5" />
     <PackageVersion Include="Azure.Bicep.Core" Version="0.41.2" />
     <PackageVersion Include="Azure.Identity" Version="1.19.0" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
