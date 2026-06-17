@@ -2,6 +2,12 @@
 
 This file provides guidance for AI assistants (Claude, Copilot, Cursor, etc.) working with Hexalith .NET applications built using Domain-Driven Design (DDD) architecture.
 
+## AI assistant instructions
+
+Before working in this repository, read the shared Hexalith LLM instructions —
+[`hexalith-llm-instructions.md`](https://github.com/Hexalith/Hexalith.AI.Tools/blob/main/hexalith-llm-instructions.md)
+— and follow it.
+
 ## Technology Stack
 
 - **.NET 10+** - Latest .NET framework
