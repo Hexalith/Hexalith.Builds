@@ -8,6 +8,10 @@ Before working in this repository, read the shared Hexalith LLM instructions —
 [`hexalith-llm-instructions.md`](https://github.com/Hexalith/Hexalith.AI.Tools/blob/main/hexalith-llm-instructions.md)
 — and follow it.
 
+Before working on any module user interface or UX, also read
+[`Hexalith.AI.Tools/hexalith-ux-instructions.md`](https://github.com/Hexalith/Hexalith.AI.Tools/blob/main/hexalith-ux-instructions.md)
+and follow it.
+
 ## Technology Stack
 
 - **.NET 10+** - Latest .NET framework
