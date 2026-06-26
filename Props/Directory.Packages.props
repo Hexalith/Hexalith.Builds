@@ -76,7 +76,7 @@
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.29.0" />
     <PackageVersion Include="ByteAether.Ulid" Version="1.3.7" />
     <PackageVersion Include="Cocona" Version="2.2.0" />
-    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="13.0.0" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="13.4.0-preview.1.260602-0230" />
     <PackageVersion Include="CompareNETObjects" Version="4.84.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="Dapr" Version="1.17.9" />
