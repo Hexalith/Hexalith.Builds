@@ -4,22 +4,6 @@ description: 'Initialize a build for a project'
 runs:
   using: composite
   steps:
-    - name: Initialize Hexalith.Builds submodule
+    - name: Initialize root submodules
       shell: bash
-      run: git submodule init Hexalith.Builds
-
-    - name: Update Hexalith.Builds submodule
-      shell: bash
-      run: git submodule update Hexalith.Builds
-
-    - name: Change to Hexalith.Builds directory
-      shell: bash
-      run: cd Hexalith.Builds
-
-    - name: Checkout main branch
-      shell: bash
-      run: git checkout main
-
-    - name: Pull changes
-      shell: bash
-      run: git pull
+      run: git -c submodule.recurse=false submodule update --init
