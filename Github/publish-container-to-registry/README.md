@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -88,7 +88,7 @@ jobs:
 
 ## How It Works
 
-1. **Authentication**: Uses `docker/login-action@v3` to authenticate with the container registry
+1. **Authentication**: Uses `docker/login-action@v4` to authenticate with the container registry
 2. **Container Building**: Leverages .NET's native container publishing capabilities via `dotnet publish` with the `/t:PublishContainer` target
 3. **Project Discovery**: Automatically locates project files in the `./HexalithApp/src/` directory structure
 4. **Multi-Container Support**: Publishes both Web and API server containers in a single action
