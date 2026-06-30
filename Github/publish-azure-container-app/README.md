@@ -172,7 +172,7 @@ The action automatically updates two container apps:
 
 ## How It Works
 
-1. **Authentication**: Uses the `azure/login@v3` action to authenticate with Azure using service principal credentials
+1. **Authentication**: Uses the `azure/login@master` action to authenticate with Azure using service principal credentials
 2. **Container Update Function**: Defines a bash function `update_container_app()` that updates container apps using Azure CLI
 3. **Dual Deployment**: Executes the update function for both web and API components
 4. **Image Format**: Uses the format `{registry}/{app-id}{type}:{version}` for container images

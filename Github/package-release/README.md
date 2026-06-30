@@ -16,7 +16,7 @@ This GitHub Action builds and publishes packages for Hexalith projects.
 
 ## Steps
 
-1. **Checkout Repository**: Uses `actions/checkout@v7` to fetch the repository with full history.
+1. **Checkout Repository**: Uses `actions/checkout@main` to fetch the repository with full history.
 2. **Get Version**: Uses `Hexalith/Hexalith.Builds/Github/version@main` to determine the new version.
 3. **Initialize .NET**: Uses `Hexalith/Hexalith.Builds/Github/initialize-dotnet@main` to set up the .NET environment.
 4. **Initialize Build**: Uses `Hexalith/Hexalith.Builds/Github/initialize-build@main` to prepare the build environment.

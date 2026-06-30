@@ -24,7 +24,7 @@ This GitHub Action retrieves version information using semantic-release in dry-r
 The action performs the following steps:
 
 1. **Semantic Version Analysis**:
-   - Uses the `cycjimmy/semantic-release-action@v4` action in dry-run mode
+   - Uses the `cycjimmy/semantic-release-action@main` action in dry-run mode
    - Analyzes commit messages since the last release to determine the next version
    - Does not create any tags or releases
 
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@main
         with:
           fetch-depth: 0
           

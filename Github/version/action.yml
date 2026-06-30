@@ -29,7 +29,7 @@ runs:
   steps:
     - name: Semantic Release
       id: semantic  
-      uses: cycjimmy/semantic-release-action@v6
+      uses: cycjimmy/semantic-release-action@main
       with:
         dry_run: true
       env:

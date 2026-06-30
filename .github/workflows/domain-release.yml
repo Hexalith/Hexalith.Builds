@@ -1,0 +1,97 @@
+name: Hexalith Domain Release
+
+on:
+  workflow_call:
+    inputs:
+      solution:
+        description: 'Path to the .slnx/.sln solution to restore and build.'
+        required: true
+        type: string
+      dotnet-global-json:
+        required: false
+        type: string
+        default: 'global.json'
+      packages-lock-file:
+        required: false
+        type: string
+        default: 'Directory.Packages.props'
+      dapr-version:
+        required: false
+        type: string
+        default: '1.17.0'
+      test-projects:
+        description: 'Newline-separated test projects (Tier 1+2) run before release.'
+        required: false
+        type: string
+        default: ''
+      node-version:
+        required: false
+        type: string
+        default: 'lts/*'
+      timeout-minutes:
+        required: false
+        type: number
+        default: 20
+    secrets:
+      NUGET_API_KEY:
+        required: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      - uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+          submodules: true
+          persist-credentials: false
+      - name: Initialize .NET
+        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
+        with:
+          global-json-file: ${{ inputs.dotnet-global-json }}
+      - uses: actions/setup-node@main
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Cache NuGet packages
+        uses: actions/cache@main
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
+          restore-keys: nuget-
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Restore
+        run: dotnet restore ${{ inputs.solution }}
+      - name: Build
+        run: dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
+      - name: Install and initialize Dapr
+        if: ${{ inputs.test-projects != '' }}
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
+        with:
+          version: ${{ inputs.dapr-version }}
+      - name: Run tests (Tier 1 + 2)
+        if: ${{ inputs.test-projects != '' }}
+        shell: bash
+        env:
+          TEST_PROJECTS: ${{ inputs.test-projects }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r proj; do
+            [ -z "$proj" ] && continue
+            name=$(basename "$proj")
+            dotnet test "$proj" --no-build --configuration Release \
+              --logger "trx;LogFileName=${name}.trx" \
+              --results-directory "TestResults/${name}" \
+              --collect:"XPlat Code Coverage"
+          done <<< "$TEST_PROJECTS"
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: npx semantic-release

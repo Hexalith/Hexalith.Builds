@@ -98,15 +98,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.build-timeout-minutes }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@main
         with:
           fetch-depth: 0
           submodules: true
-      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+      - name: Initialize .NET
+        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Cache NuGet packages
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@main
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
@@ -141,7 +142,7 @@ jobs:
           done <<< "$UNIT_TEST_PROJECTS"
       - name: Install and initialize Dapr
         if: ${{ inputs.integration-test-projects != '' }}
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main # TODO: pin to Builds commit SHA once pushed
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
         with:
           version: ${{ inputs.dapr-version }}
       - name: Integration tests (Tier 2)
@@ -176,7 +177,7 @@ jobs:
           python3 scripts/validate-coverage.py "${args[@]}" --summary-file "$GITHUB_STEP_SUMMARY"
       - name: Upload test and coverage evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@main
         with:
           name: blocking-test-results
           path: |
@@ -191,15 +192,16 @@ jobs:
     needs: build-and-test
     continue-on-error: ${{ inputs.aspire-continue-on-error }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@main
         with:
           fetch-depth: 0
           submodules: true
-      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+      - name: Initialize .NET
+        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Cache NuGet packages
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@main
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
@@ -209,7 +211,7 @@ jobs:
           dotnet restore ${{ inputs.solution }}
           dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main # TODO: pin to Builds commit SHA once pushed
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
         with:
           version: ${{ inputs.dapr-version }}
       - name: Aspire contract tests (Tier 3, non-Performance)
@@ -228,7 +230,7 @@ jobs:
           echo "Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
       - name: Upload test results
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@main
         with:
           name: aspire-test-results
           path: |
@@ -242,15 +244,16 @@ jobs:
     timeout-minutes: ${{ inputs.performance-timeout-minutes }}
     needs: build-and-test
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@main
         with:
           fetch-depth: 0
           submodules: true
-      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+      - name: Initialize .NET
+        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Cache NuGet packages
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@main
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
@@ -260,7 +263,7 @@ jobs:
           dotnet restore ${{ inputs.solution }}
           dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main # TODO: pin to Builds commit SHA once pushed
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
         with:
           version: ${{ inputs.dapr-version }}
       - name: Performance tests (Tier 3, nightly only)
@@ -273,7 +276,7 @@ jobs:
           --results-directory TestResults/performance
       - name: Upload performance test results
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@main
         with:
           name: performance-test-results
           path: "TestResults/**/*.trx"

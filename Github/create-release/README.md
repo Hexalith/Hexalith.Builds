@@ -28,7 +28,7 @@ The action performs the following steps:
    - Configures Git user information for the merge operation
 
 2. **Semantic Release Process**:
-   - Uses the `cycjimmy/semantic-release-action@v4` action
+   - Uses the `cycjimmy/semantic-release-action@main` action
    - Includes additional plugins for Git integration and changelog generation
    - Determines the version bump based on conventional commit messages
    - Creates a GitHub release with appropriate tags
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@main
         with:
           fetch-depth: 0
           

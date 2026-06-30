@@ -14,7 +14,7 @@ This GitHub Action sets up the .NET 10.0.300 development environment and optiona
 The action performs the following steps:
 
 1. **Setup .NET 10.0.300**:
-   - Uses the official `actions/setup-dotnet@v5` action to install .NET 10.0.300
+   - Uses the official `actions/setup-dotnet@main` action to install .NET 10.0.300
    - Ensures that .NET SDK 10.0.300 is available in the build environment
 
 2. **Add Aspire Workload** (Optional):
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@main
         
       - name: Setup .NET
         uses: ./Github/initialize-dotnet
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@main
         
       - name: Setup .NET with Aspire
         uses: ./Github/initialize-dotnet

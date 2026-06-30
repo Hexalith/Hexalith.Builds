@@ -18,12 +18,12 @@ runs:
   steps:
     - name: Setup .NET from global.json
       if: inputs.global-json-file != ''
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@main
       with:
         global-json-file: ${{ inputs.global-json-file }}
     - name: Setup .NET ${{ inputs.dotnet-version }}
       if: inputs.global-json-file == ''
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@main
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
     - name: Add Aspire Workloads
