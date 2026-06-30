@@ -1,0 +1,280 @@
+name: Hexalith Domain CI
+
+on:
+  workflow_call:
+    inputs:
+      solution:
+        description: 'Path to the .slnx/.sln solution to restore and build.'
+        required: true
+        type: string
+      dotnet-global-json:
+        description: 'Path to global.json pinning the .NET SDK.'
+        required: false
+        type: string
+        default: 'global.json'
+      packages-lock-file:
+        description: 'File hashed for the NuGet cache key.'
+        required: false
+        type: string
+        default: 'Directory.Packages.props'
+      dapr-version:
+        description: 'Dapr version for integration/aspire tiers.'
+        required: false
+        type: string
+        default: '1.17.0'
+      unit-test-projects:
+        description: 'Newline-separated Tier 1 test project paths (no Dapr).'
+        required: false
+        type: string
+        default: ''
+      integration-test-projects:
+        description: 'Newline-separated Tier 2 test project paths (require Dapr).'
+        required: false
+        type: string
+        default: ''
+      aspire-test-project:
+        description: 'Tier 3 Aspire test project path. When set, enables the aspire and performance jobs.'
+        required: false
+        type: string
+        default: ''
+      aspire-non-performance-filter:
+        description: 'dotnet test --filter for the non-performance Aspire tier.'
+        required: false
+        type: string
+        default: 'Category!=Performance'
+      performance-filter:
+        description: 'dotnet test --filter for the nightly performance tier.'
+        required: false
+        type: string
+        default: 'Category=Performance'
+      run-consumer-validation:
+        description: 'Run scripts/pack + validate-nuget + validate-consumer package checks.'
+        required: false
+        type: boolean
+        default: false
+      run-coverage-gate:
+        description: 'Run scripts/validate-coverage.py over TestResults.'
+        required: false
+        type: boolean
+        default: false
+      coverage-minimum-line:
+        description: 'Minimum line coverage percentage.'
+        required: false
+        type: number
+        default: 80
+      coverage-required-branch:
+        description: 'Required branch coverage percentage.'
+        required: false
+        type: number
+        default: 100
+      coverage-isolation-targets:
+        description: 'Newline-separated files passed as --isolation-auth-target.'
+        required: false
+        type: string
+        default: ''
+      aspire-continue-on-error:
+        description: 'Whether the Aspire tier is non-blocking.'
+        required: false
+        type: boolean
+        default: true
+      build-timeout-minutes:
+        required: false
+        type: number
+        default: 15
+      aspire-timeout-minutes:
+        required: false
+        type: number
+        default: 10
+      performance-timeout-minutes:
+        required: false
+        type: number
+        default: 60
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.build-timeout-minutes }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          submodules: true
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          global-json-file: ${{ inputs.dotnet-global-json }}
+      - name: Cache NuGet packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
+          restore-keys: nuget-
+      - name: Restore
+        run: dotnet restore ${{ inputs.solution }}
+      - name: Build
+        run: dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
+      - name: Validate package consumer references
+        if: ${{ inputs.run-consumer-validation }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf ./nupkgs
+          python3 scripts/pack-release-packages.py ./nupkgs 0.0.0-ci-test
+          python3 scripts/validate-nuget-packages.py ./nupkgs
+          python3 scripts/validate-consumer-package-references.py ./nupkgs
+      - name: Unit tests (Tier 1)
+        if: ${{ inputs.unit-test-projects != '' }}
+        shell: bash
+        env:
+          UNIT_TEST_PROJECTS: ${{ inputs.unit-test-projects }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r proj; do
+            [ -z "$proj" ] && continue
+            name=$(basename "$proj")
+            dotnet test "$proj" --no-build --configuration Release \
+              --logger "trx;LogFileName=${name}.trx" \
+              --results-directory "TestResults/${name}" \
+              --collect:"XPlat Code Coverage"
+          done <<< "$UNIT_TEST_PROJECTS"
+      - name: Install and initialize Dapr
+        if: ${{ inputs.integration-test-projects != '' }}
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main # TODO: pin to Builds commit SHA once pushed
+        with:
+          version: ${{ inputs.dapr-version }}
+      - name: Integration tests (Tier 2)
+        if: ${{ inputs.integration-test-projects != '' }}
+        shell: bash
+        env:
+          INTEGRATION_TEST_PROJECTS: ${{ inputs.integration-test-projects }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r proj; do
+            [ -z "$proj" ] && continue
+            name=$(basename "$proj")
+            dotnet test "$proj" --no-build --configuration Release \
+              --logger "trx;LogFileName=${name}.trx" \
+              --results-directory "TestResults/${name}" \
+              --collect:"XPlat Code Coverage"
+          done <<< "$INTEGRATION_TEST_PROJECTS"
+      - name: Validate coverage gates
+        if: ${{ inputs.run-coverage-gate }}
+        shell: bash
+        env:
+          COVERAGE_ISOLATION_TARGETS: ${{ inputs.coverage-isolation-targets }}
+        run: |
+          set -euo pipefail
+          args=(--coverage-root TestResults
+                --minimum-line-coverage ${{ inputs.coverage-minimum-line }}
+                --required-branch-coverage ${{ inputs.coverage-required-branch }})
+          while IFS= read -r tgt; do
+            [ -z "$tgt" ] && continue
+            args+=(--isolation-auth-target "$tgt")
+          done <<< "$COVERAGE_ISOLATION_TARGETS"
+          python3 scripts/validate-coverage.py "${args[@]}" --summary-file "$GITHUB_STEP_SUMMARY"
+      - name: Upload test and coverage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: blocking-test-results
+          path: |
+            TestResults/**/*.trx
+            TestResults/**/coverage.cobertura.xml
+          retention-days: 7
+
+  aspire-tests:
+    if: ${{ inputs.aspire-test-project != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.aspire-timeout-minutes }}
+    needs: build-and-test
+    continue-on-error: ${{ inputs.aspire-continue-on-error }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          submodules: true
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          global-json-file: ${{ inputs.dotnet-global-json }}
+      - name: Cache NuGet packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
+          restore-keys: nuget-
+      - name: Restore and Build
+        run: |
+          dotnet restore ${{ inputs.solution }}
+          dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
+      - name: Install and initialize Dapr
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main # TODO: pin to Builds commit SHA once pushed
+        with:
+          version: ${{ inputs.dapr-version }}
+      - name: Aspire contract tests (Tier 3, non-Performance)
+        shell: bash
+        run: >
+          dotnet test "${{ inputs.aspire-test-project }}"
+          --no-build --configuration Release
+          --filter "${{ inputs.aspire-non-performance-filter }}"
+          --logger "trx;LogFileName=aspire-results.trx"
+          --results-directory TestResults/aspire
+          --collect:"XPlat Code Coverage"
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## Tier 3 Aspire Contract Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: aspire-test-results
+          path: |
+            TestResults/**/*.trx
+            TestResults/**/coverage.cobertura.xml
+          retention-days: 7
+
+  performance-tests:
+    if: ${{ inputs.aspire-test-project != '' && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.performance-timeout-minutes }}
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          submodules: true
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          global-json-file: ${{ inputs.dotnet-global-json }}
+      - name: Cache NuGet packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
+          restore-keys: nuget-
+      - name: Restore and Build
+        run: |
+          dotnet restore ${{ inputs.solution }}
+          dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
+      - name: Install and initialize Dapr
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main # TODO: pin to Builds commit SHA once pushed
+        with:
+          version: ${{ inputs.dapr-version }}
+      - name: Performance tests (Tier 3, nightly only)
+        shell: bash
+        run: >
+          dotnet test "${{ inputs.aspire-test-project }}"
+          --no-build --configuration Release
+          --filter "${{ inputs.performance-filter }}"
+          --logger "trx;LogFileName=perf-results.trx"
+          --results-directory TestResults/performance
+      - name: Upload performance test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: performance-test-results
+          path: "TestResults/**/*.trx"
+          retention-days: 7
