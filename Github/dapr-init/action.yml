@@ -1,0 +1,24 @@
+name: 'Initialize Dapr'
+description: 'Installs the Dapr CLI and runs dapr init with retry'
+
+inputs:
+  version:
+    description: 'Dapr runtime/CLI version to install'
+    required: false
+    default: '1.17.0'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Dapr CLI
+      uses: dapr/setup-dapr@8d980918fd43a2765c143ce7f687665b2d46a6b9 # v2
+      with:
+        version: ${{ inputs.version }}
+
+    - name: Initialize Dapr
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        timeout_minutes: 5
+        max_attempts: 3
+        retry_wait_seconds: 15
+        command: dapr init

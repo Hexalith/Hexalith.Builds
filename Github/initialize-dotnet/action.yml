@@ -1,6 +1,14 @@
 name: 'Initialize .NET Framework'
-description: 'Sets up .NET SDK 10.0.300 and installs Aspire workload'
+description: 'Sets up the .NET SDK (pinned version or from global.json) and optionally installs the Aspire workload'
 inputs:
+  global-json-file:
+    description: 'Path to a global.json pinning the SDK version. Takes precedence over dotnet-version when set.'
+    required: false
+    default: ''
+  dotnet-version:
+    description: 'Explicit .NET SDK version to install when global-json-file is not provided'
+    required: false
+    default: '10.0.300'
   aspire:
     description: 'Whether to install Aspire workload'
     required: false
@@ -8,11 +16,17 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup .NET 10.0.300
+    - name: Setup .NET from global.json
+      if: inputs.global-json-file != ''
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 10.0.300
+        global-json-file: ${{ inputs.global-json-file }}
+    - name: Setup .NET ${{ inputs.dotnet-version }}
+      if: inputs.global-json-file == ''
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
     - name: Add Aspire Workloads
       if: inputs.aspire != ''
       shell: bash
-      run: dotnet workload install aspire 
+      run: dotnet workload install aspire
