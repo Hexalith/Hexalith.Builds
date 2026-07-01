@@ -26,9 +26,10 @@ commit/tag, NuGet publish, and GitHub release) in a single pass.
 2. **Initialize build submodules** (`Github/initialize-build`) — checks out `references/Hexalith.Builds`.
 3. **Initialize .NET** (`Github/initialize-dotnet`).
 4. **Setup Node.js** (`actions/setup-node@v4`, `lts/*`).
-5. **Install semantic-release dependencies** (`npm install`).
-6. **Run unit tests** (`Github/unit-tests`).
-7. **Semantic Release** (`npx semantic-release`) — one pass:
+5. **Install semantic-release dependencies** (`npm ci` — requires a committed `package-lock.json`).
+6. **Verify dependency provenance and signatures** (`npm audit signatures`).
+7. **Run unit tests** (`Github/unit-tests`).
+8. **Semantic Release** (`npx semantic-release`) — one pass:
    - analyze commits → next version
    - `@semantic-release/changelog` → update `CHANGELOG.md`
    - `@semantic-release/exec` `prepareCmd` → `scripts/build-packages.ps1` builds/packs the libraries
@@ -55,6 +56,8 @@ commit/tag, NuGet publish, and GitHub release) in a single pass.
 
 - These `devDependencies`: `semantic-release`, `@semantic-release/changelog`,
   `@semantic-release/exec`, `@semantic-release/git`, `@semantic-release/github`.
+- A committed `package-lock.json` (run `npm install` once and commit it) so the
+  action can install with `npm ci` for reproducible, verifiable builds.
 - The `Hexalith.Builds` submodule mounted at `references/Hexalith.Builds`.
 
 ## Example Usage

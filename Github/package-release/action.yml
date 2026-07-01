@@ -14,10 +14,10 @@ runs:
         fetch-depth: 0
 
     - name: Initialize build submodules
-      uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
+      uses: Hexalith/Hexalith.Builds/Github/initialize-build@v4.16.0
 
     - name: Initialize .NET
-      uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
+      uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@v4.16.0
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -26,10 +26,14 @@ runs:
 
     - name: Install semantic-release dependencies
       shell: bash
-      run: npm install
+      run: npm ci
+
+    - name: Verify dependency provenance and signatures
+      shell: bash
+      run: npm audit signatures
 
     - name: Run unit tests
-      uses: Hexalith/Hexalith.Builds/Github/unit-tests@main
+      uses: Hexalith/Hexalith.Builds/Github/unit-tests@v4.16.0
       with:
         project-name: ${{ inputs.project-name }}
 
