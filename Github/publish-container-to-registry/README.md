@@ -15,7 +15,7 @@ registry using .NET container publishing.
 
 ## Steps
 
-1. Initialize the `HexalithApp` and `Hexalith.Builds` submodules.
+1. Initialize the `HexalithApp` and `references/Hexalith.Builds` submodules.
 2. Check out and pull `main` inside both submodules.
 3. Log in to the target registry with `docker/login-action@master`.
 4. Publish the `HexalithApp.WebServer` project as a Linux x64 container.
@@ -49,6 +49,7 @@ HexalithApp/
     |   +-- HexalithApp.WebServer.csproj
     +-- HexalithApp.ApiServer/
         +-- HexalithApp.ApiServer.csproj
+references/Hexalith.Builds/
 ```
 
 ## Usage
@@ -101,8 +102,8 @@ jobs:
 
 ## Prerequisites
 
-- The consuming repository must declare `HexalithApp` and `Hexalith.Builds` as
-  root-level submodules.
+- The consuming repository must declare `HexalithApp` and
+  `references/Hexalith.Builds` as root-declared submodules.
 - A .NET SDK compatible with the Web/API server projects must be installed
   before this action runs.
 - Docker must be available on the runner.
@@ -110,8 +111,9 @@ jobs:
 
 ## Notes
 
-- The action currently moves the `HexalithApp` and `Hexalith.Builds` submodules
-  to the latest `main` branch before publishing.
+- The action currently moves the `HexalithApp` and
+  `references/Hexalith.Builds` submodules to the latest `main` branch before
+  publishing.
 - The action uses .NET's `/t:PublishContainer` target with Release
   configuration, Linux OS, and x64 architecture.
 - Any registry supported by Docker login can be used, including GitHub

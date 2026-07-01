@@ -26,12 +26,12 @@ runs:
       run: |
           git submodule init HexalithApp
           git submodule update HexalithApp
-          git submodule init Hexalith.Builds
-          git submodule update Hexalith.Builds
+          git submodule init references/Hexalith.Builds
+          git submodule update references/Hexalith.Builds
           cd HexalithApp
           git checkout main
           git pull
-          cd ../Hexalith.Builds
+          cd ../references/Hexalith.Builds
           git checkout main
           git pull
     - name: Login to the container registry

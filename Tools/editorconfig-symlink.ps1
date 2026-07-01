@@ -1,14 +1,15 @@
-# Creates a symbolic link to .editorconfig in the parent directory of Hexalith.Builds
+# Creates a symbolic link to .editorconfig in the parent repository
 # This script must be run with administrator privileges on Windows
 
 # Get the script's directory and navigate to the target locations
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $hexalithBuildsDir = Split-Path -Parent $scriptDir
-$parentDir = Split-Path -Parent $hexalithBuildsDir
+$referencesDir = Split-Path -Parent $hexalithBuildsDir
+$parentDir = Split-Path -Parent $referencesDir
 
 $sourceEditorConfig = Join-Path $hexalithBuildsDir ".editorconfig"
 $targetSymlink = Join-Path $parentDir ".editorconfig"
-$relativeTarget = "Hexalith.Builds\.editorconfig"
+$relativeTarget = "references\Hexalith.Builds\.editorconfig"
 
 # Verify source file exists
 if (-not (Test-Path $sourceEditorConfig)) {

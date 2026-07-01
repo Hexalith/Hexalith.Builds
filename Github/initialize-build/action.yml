@@ -4,6 +4,6 @@ description: 'Initialize a build for a project'
 runs:
   using: composite
   steps:
-    - name: Initialize root submodules
+    - name: Initialize root-declared submodules
       shell: bash
       run: git -c submodule.recurse=false submodule update --init

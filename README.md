@@ -67,9 +67,9 @@ This repository:
 
 - [`Tools/`](Tools/README.md): Repository utility scripts.
   - `builds-submodule-init.ps1`: Adds or initializes the `Hexalith.Builds`
-    submodule and checks it out on `main`.
+    submodule under `references/` and checks it out on `main`.
   - `editorconfig-symlink.ps1`: Creates a parent repository `.editorconfig`
-    symlink pointing to `Hexalith.Builds/.editorconfig`.
+    symlink pointing to `references/Hexalith.Builds/.editorconfig`.
 
 ### GitHub Composite Actions
 
@@ -78,7 +78,7 @@ This repository:
 - [`Github/dapr-init/`](Github/dapr-init/README.md): Install the Dapr CLI and
   run `dapr init` with retry.
 - [`Github/initialize-build/`](Github/initialize-build/README.md): Initialize
-  root-level submodules without recursive or remote updates.
+  root-declared submodules without recursive or remote updates.
 - [`Github/initialize-dotnet/`](Github/initialize-dotnet/README.md): Install
   the .NET SDK from `global.json` or an explicit version, with optional Aspire
   workload installation.
@@ -109,16 +109,24 @@ This repository:
 
 ### Add Hexalith.Builds as a Submodule
 
-From a consuming repository root, add or initialize this repository as a root
+From a consuming repository root, add or initialize this repository as a
+root-declared submodule under `references/`:
+
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Hexalith/Hexalith.Builds/main/Tools/builds-submodule-init.ps1" -OutFile "builds-submodule-init.ps1"
+.\builds-submodule-init.ps1
+```
+
+After the submodule exists, the same script is available from the build
 submodule:
 
 ```powershell
-.\Hexalith.Builds\Tools\builds-submodule-init.ps1
+.\references\Hexalith.Builds\Tools\builds-submodule-init.ps1
 ```
 
 The script requires administrator privileges on Windows because related tooling
-may create symbolic links. It initializes only the root `Hexalith.Builds`
-submodule and checks out `main`.
+may create symbolic links. It initializes only the
+`references/Hexalith.Builds` submodule and checks out `main`.
 
 ### Import Build Properties
 
@@ -128,8 +136,8 @@ build props and then sets repository-specific package metadata:
 
 ```xml
 <Project>
-  <Import Project="Hexalith.Builds/Hexalith.Build.props"
-          Condition="Exists('Hexalith.Builds/Hexalith.Build.props')" />
+  <Import Project="references/Hexalith.Builds/Hexalith.Build.props"
+          Condition="Exists('references/Hexalith.Builds/Hexalith.Build.props')" />
 
   <PropertyGroup>
     <Product>Hexalith.MyModule</Product>
@@ -153,8 +161,8 @@ For library projects that should produce NuGet packages, import
   <Import Project="$(ParentDirectoryBuildProps)"
           Condition="Exists('$(ParentDirectoryBuildProps)')" />
 
-  <Import Project="../Hexalith.Builds/Hexalith.Package.props"
-          Condition="Exists('../Hexalith.Builds/Hexalith.Package.props')" />
+  <Import Project="../references/Hexalith.Builds/Hexalith.Package.props"
+          Condition="Exists('../references/Hexalith.Builds/Hexalith.Package.props')" />
 </Project>
 ```
 
@@ -165,8 +173,8 @@ Use `Props/Directory.Packages.props` from a repository
 
 ```xml
 <Project>
-  <Import Project="Hexalith.Builds/Props/Directory.Packages.props"
-          Condition="Exists('Hexalith.Builds/Props/Directory.Packages.props')" />
+  <Import Project="references/Hexalith.Builds/Props/Directory.Packages.props"
+          Condition="Exists('references/Hexalith.Builds/Props/Directory.Packages.props')" />
 
   <ItemGroup>
     <!-- Add repository-specific PackageVersion entries here. -->

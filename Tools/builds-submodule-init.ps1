@@ -11,30 +11,69 @@ if (-not $isAdmin) {
 Write-Host "Running with administrator privileges - proceeding with initialization..." -ForegroundColor Green
 
 # Check if the submodule already exists
-$submodulePath = "Hexalith.Builds"
+$submodulePath = "references/Hexalith.Builds"
+$legacySubmodulePath = "Hexalith.Builds"
+$submoduleUrl = "https://github.com/Hexalith/Hexalith.Builds.git"
 $gitModulesPath = ".gitmodules"
 
+function Add-BuildsSubmodule {
+    $submoduleParentPath = Split-Path -Parent $submodulePath
+    if (-not (Test-Path $submoduleParentPath)) {
+        New-Item -ItemType Directory -Path $submoduleParentPath | Out-Null
+    }
+
+    git submodule add $submoduleUrl $submodulePath
+    # Add the submodule directory to the list of safe directories
+    git config --global --add safe.directory ./$submodulePath
+    # Add the directory to the list of safe directories
+    git config --global --add safe.directory .
+}
+
+function Test-SubmodulePath {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (-not (Test-Path $gitModulesPath)) {
+        return $false
+    }
+
+    $submodulePaths = git config -f $gitModulesPath --get-regexp "submodule\..*\.path" 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $submodulePaths) {
+        return $false
+    }
+
+    foreach ($line in $submodulePaths) {
+        $parts = $line -split "\s+", 2
+        if ($parts.Count -eq 2 -and $parts[1] -eq $Path) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 if (Test-Path $gitModulesPath) {
-    $modulesContent = Get-Content $gitModulesPath -Raw
-    if ($modulesContent -match "Hexalith\.Builds") {
+    if (Test-SubmodulePath $submodulePath) {
         Write-Host "Submodule already exists. Initializing..." -ForegroundColor Cyan
         git submodule init $submodulePath
+    } elseif (Test-SubmodulePath $legacySubmodulePath) {
+        Write-Host "Error: Hexalith.Builds is declared at the repository root." -ForegroundColor Red
+        Write-Host "Move the submodule to '$submodulePath' before running this script." -ForegroundColor Red
+        exit 1
     } else {
         Write-Host "Adding new submodule..." -ForegroundColor Cyan
-        git submodule add https://github.com/Hexalith/Hexalith.Builds.git
+        Add-BuildsSubmodule
     }
 } else {
     Write-Host "Adding new submodule..." -ForegroundColor Cyan
-    git submodule add https://github.com/Hexalith/Hexalith.Builds.git
-    # Add the submodule directory to the list of safe directories
-    git config --global --add safe.directory ./Hexalith.Builds
-    # Add the directory to the list of safe directories
-    git config --global --add safe.directory .
+    Add-BuildsSubmodule
 }
 
 # Update the Hexalith.Builds submodule to the latest commit referenced in the parent repo
 git submodule update $submodulePath
 
 # Checkout the main branch in the Hexalith.Builds submodule
-git submodule foreach git checkout main
+git -C $submodulePath checkout main
 

@@ -105,7 +105,7 @@ Hexalith modules follow a **vertical slice architecture** with separate NuGet pa
 {ModuleName}/
 ├── AspireHost/                         # .NET Aspire orchestration host
 ├── HexalithApp/                        # Application templates (submodule)
-├── Hexalith.Builds/                    # Build configuration (submodule)
+├── references/Hexalith.Builds/         # Build configuration (submodule)
 ├── src/
 │   ├── examples/
 │   │   └── Hexalith.{Module}.Example/                       # Example implementation

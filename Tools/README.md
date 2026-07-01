@@ -7,17 +7,20 @@ submodule.
 
 ### builds-submodule-init.ps1
 
-Adds or initializes the `Hexalith.Builds` Git submodule in a parent repository.
+Adds or initializes the `Hexalith.Builds` Git submodule in a parent repository
+under `references/Hexalith.Builds`.
 
 #### Purpose
 
 The script automates:
 
 1. Checking that PowerShell is running with administrator privileges.
-2. Adding the `Hexalith.Builds` submodule when it is not already declared.
-3. Initializing the existing `Hexalith.Builds` submodule when it is declared.
+2. Adding the `references/Hexalith.Builds` submodule when it is not already
+   declared.
+3. Initializing the existing `references/Hexalith.Builds` submodule when it is
+   declared.
 4. Updating the submodule.
-5. Checking out the `main` branch in initialized submodules.
+5. Checking out the `main` branch in the initialized build submodule.
 
 #### Requirements
 
@@ -30,7 +33,7 @@ The script automates:
 Run the script from the root directory of your repository:
 
 ```powershell
-.\Hexalith.Builds\Tools\builds-submodule-init.ps1
+.\references\Hexalith.Builds\Tools\builds-submodule-init.ps1
 ```
 
 If the submodule has not been added yet, you can download the script and run it:
@@ -44,14 +47,14 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Hexalith/Hexalith.Buil
 
 - The script does not use recursive or remote submodule updates.
 - When adding a new submodule, it adds the repository root and
-  `./Hexalith.Builds` to Git's global safe directory list.
+  `./references/Hexalith.Builds` to Git's global safe directory list.
 - The script does not create symlinks. Use `editorconfig-symlink.ps1` for the
   shared `.editorconfig` link.
 
 ### editorconfig-symlink.ps1
 
 Creates a `.editorconfig` symbolic link in the parent repository that points to
-`Hexalith.Builds/.editorconfig`.
+`references/Hexalith.Builds/.editorconfig`.
 
 #### Purpose
 
@@ -61,11 +64,11 @@ style settings from the `Hexalith.Builds` submodule.
 #### Requirements
 
 - Administrator privileges on Windows.
-- `Hexalith.Builds/.editorconfig` must exist.
+- `references/Hexalith.Builds/.editorconfig` must exist.
 
 #### Usage
 
-Run the script from the `Hexalith.Builds` submodule:
+Run the script from the `references/Hexalith.Builds` submodule:
 
 ```powershell
 .\Tools\editorconfig-symlink.ps1
@@ -73,11 +76,12 @@ Run the script from the `Hexalith.Builds` submodule:
 
 #### What the Script Does
 
-1. Resolves the `Hexalith.Builds` directory and its parent repository.
-2. Verifies that `Hexalith.Builds/.editorconfig` exists.
+1. Resolves the `references/Hexalith.Builds` directory and its parent
+   repository.
+2. Verifies that `references/Hexalith.Builds/.editorconfig` exists.
 3. Removes any existing parent `.editorconfig` path.
 4. Creates a symbolic link from the parent `.editorconfig` to
-   `Hexalith.Builds\.editorconfig`.
+   `references\Hexalith.Builds\.editorconfig`.
 
 ## Troubleshooting
 
