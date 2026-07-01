@@ -12,7 +12,7 @@ pull-request / CI gate that runs before the release job.
 1. **Checkout** (`actions/checkout@v5`, `fetch-depth: 0`).
 2. **Initialize build submodules** (`Github/initialize-build`).
 3. **Initialize .NET** (`Github/initialize-dotnet`).
-4. **Run unit tests** (`Github/unit-tests`) — compiles the libraries (as test
+4. **Run unit tests** (`Github/unit-tests`) - compiles the libraries (as test
    dependencies) and runs the test suite.
 
 ## Example Usage

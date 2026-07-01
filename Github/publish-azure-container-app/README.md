@@ -1,60 +1,66 @@
 # Publish Azure Container App Action
 
-This GitHub Action deploys container images to Azure Container Apps using OIDC (OpenID Connect) authentication.
+Updates existing Azure Container Apps to use a new image version. The action
+logs in to Azure with `azure/login@master` and updates the Web and API
+container apps with Azure CLI.
+
+## Inputs
+
+| Input | Description | Required |
+|-------|-------------|----------|
+| `version` | Image version tag to deploy. | Yes |
+| `client-id` | Azure application client ID. | Yes |
+| `tenant-id` | Azure tenant ID. | Yes |
+| `subscription-id` | Azure subscription ID. | Yes |
+| `resource-group` | Resource group containing the container apps. | Yes |
+| `app-id` | Short application name used as the container app and image prefix. | Yes |
+| `registry` | Container registry host containing the images. | Yes |
+
+## What This Action Updates
+
+The action updates two existing container apps:
+
+| Container app | Image |
+|---------------|-------|
+| `{app-id}web` | `{registry}/{app-id}web:{version}` |
+| `{app-id}api` | `{registry}/{app-id}api:{version}` |
+
+For example, with `app-id: myapp`, `registry: myregistry.azurecr.io`, and
+`version: 1.2.3`, the action deploys:
+
+- `myregistry.azurecr.io/myappweb:1.2.3` to `myappweb`
+- `myregistry.azurecr.io/myappapi:1.2.3` to `myappapi`
 
 ## Prerequisites
 
-### 1. Azure Configuration
+### Azure
 
-You need to set up OIDC authentication between GitHub and Azure:
+- An Azure application registration or managed identity configured for
+  `azure/login`.
+- Federated credentials for GitHub OIDC if using token-based login.
+- Permissions to update the target Azure Container Apps. The Contributor role
+  on the resource group is sufficient.
+- Existing container apps named `{app-id}web` and `{app-id}api`.
+- Published container images in the registry with the requested `version` tag.
 
-1. **Create an Azure App Registration**:
-   ```bash
-   az ad app create --display-name "GitHub-Actions-<YourRepoName>"
-   ```
+### GitHub
 
-2. **Add Federated Credentials**:
-   ```bash
-   az ad app federated-credential create \
-     --id <APPLICATION-OBJECT-ID> \
-     --parameters @federated-credential.json
-   ```
-
-   Where `federated-credential.json` contains:
-   ```json
-   {
-     "name": "GitHub-<YourRepoName>-<Environment>",
-     "issuer": "https://token.actions.githubusercontent.com",
-     "subject": "repo:<YourOrg>/<YourRepo>:environment:<Environment>",
-     "audiences": ["api://AzureADTokenExchange"]
-   }
-   ```
-
-3. **Grant Required Permissions**:
-   - Assign the service principal the "Contributor" role on your resource group or container apps
-
-### 2. GitHub Configuration
-
-Configure the following secrets in your repository or environment:
-
-- `AZURE_APPLICATIONID`: The Application (client) ID from your Azure App Registration
-- `AZURE_TENANTID`: Your Azure Active Directory tenant ID
-- `AZURE_SUBSCRIPTION_ID`: Your Azure subscription ID
-
-Configure the following variables:
-
-- `HEXALITH_MODULE_SHORT_NAME`: Short name for your application (used as prefix for container apps)
-- `HEXALITH_RESOURCE_GROUP`: Azure resource group containing your container apps
-- `AZURE_REGISTRY`: Your Azure Container Registry URL
-
-### 3. Workflow Permissions
-
-Your workflow must have the `id-token: write` permission for OIDC authentication:
+The workflow must allow OIDC token issuance:
 
 ```yaml
 permissions:
   id-token: write
+  contents: read
 ```
+
+Configure these secrets or environment values in the consuming repository:
+
+- Azure client ID
+- Azure tenant ID
+- Azure subscription ID
+- Azure resource group name
+- Application short name
+- Registry host
 
 ## Usage
 
@@ -73,123 +79,33 @@ permissions:
 
 ## Troubleshooting
 
-### Error: "Not all values are present"
+### Not all values are present
 
-This error occurs when the authentication values are not properly passed to the action. Check:
+This usually means one or more Azure login values were not passed to the action.
+Check:
 
-1. **Secrets are configured**: Go to Settings → Secrets and variables → Actions in your repository
-2. **Environment is specified**: If using environment-specific secrets, ensure your job specifies the environment:
-   ```yaml
-   environment: Staging
-   ```
-3. **Secrets have correct values**: Verify the values match your Azure configuration
-4. **No typos in secret names**: The names are case-sensitive
+- The repository or environment secrets exist.
+- The job specifies the expected environment when using environment secrets.
+- The secret names match the workflow exactly.
+- The values are not empty.
 
-### Error: "AADSTS700016: Application with identifier..."
+When GitHub Actions debug logging is enabled, the action prints whether each
+authentication input was provided without writing secret values.
 
-This error indicates the OIDC configuration in Azure is incorrect. Verify:
+### AADSTS700016 application not found
 
-1. The federated credential subject matches your repository and environment
-2. The issuer is exactly `https://token.actions.githubusercontent.com`
-3. The audience is `api://AzureADTokenExchange`
+Verify the Azure identity configuration:
 
-### Debugging Steps
+- The client ID matches the application registration.
+- The federated credential subject matches the repository and environment.
+- The issuer is `https://token.actions.githubusercontent.com`.
+- The audience is `api://AzureADTokenExchange`.
 
-1. **Verify secrets are accessible**:
-   Add a debug step before the deployment:
-   ```yaml
-   - name: Debug Auth Values
-     run: |
-       echo "Client ID exists: ${{ secrets.AZURE_APPLICATIONID != '' }}"
-       echo "Tenant ID exists: ${{ secrets.AZURE_TENANTID != '' }}"
-       echo "Subscription ID exists: ${{ secrets.AZURE_SUBSCRIPTION_ID != '' }}"
-   ```
+### Container app update fails
 
-2. **Check Azure configuration**:
-   ```bash
-   # List federated credentials
-   az ad app federated-credential list --id <APPLICATION-OBJECT-ID>
-   
-   # Verify service principal permissions
-   az role assignment list --assignee <APPLICATION-ID>
-   ```
+Check:
 
-3. **Enable Azure CLI debugging**:
-   Set the `AZURE_LOG_LEVEL` environment variable to `DEBUG` in your workflow
-
-## What This Action Does
-
-1. Authenticates to Azure using OIDC
-2. Updates container images for two container apps:
-   - `<app-id>web`: Web application container
-   - `<app-id>api`: API application container
-
-Both container apps must already exist in the specified resource group.
-
-## Overview
-
-This GitHub Action publishes application containers to Azure Container Apps. It automates the deployment process by logging into Azure and updating container apps with new image versions. The action is designed to deploy both web and API components of an application.
-
-## Inputs
-
-| Input | Description | Required | Type |
-|-------|-------------|----------|------|
-| `version` | Version number for the packages | Yes | string |
-| `client-id` | Client ID for the Azure administration | Yes | string |
-| `tenant-id` | Tenant ID for the Azure administration | Yes | string |
-| `subscription-id` | Subscription ID for the Azure administration | Yes | string |
-| `resource-group` | Resource group to deploy the containers to | Yes | string |
-| `app-id` | The short name of the application | Yes | string |
-| `registry` | Registry to publish the containers to | Yes | string |
-
-## Functionality
-
-This action performs the following operations:
-
-1. **Azure Authentication**: Logs into Azure using service principal credentials
-2. **Container App Updates**: Updates both web and API container apps with new image versions
-3. **Image Deployment**: Deploys container images from the specified registry with the provided version tag
-
-The action automatically updates two container apps:
-
-- `{app-id}web` - Web application container
-- `{app-id}api` - API application container
-
-## Usage Example
-
-```yaml
-- name: Publish to Azure Container Apps
-  uses: ./.github/actions/publish-azure-container-app
-  with:
-    version: ${{ steps.version.outputs.version }}
-    client-id: ${{ secrets.AZURE_CLIENT_ID }}
-    tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-    subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-    resource-group: 'my-resource-group'
-    app-id: 'myapp'
-    registry: 'myregistry.azurecr.io'
-```
-
-## How It Works
-
-1. **Authentication**: Uses the `azure/login@master` action to authenticate with Azure using service principal credentials
-2. **Container Update Function**: Defines a bash function `update_container_app()` that updates container apps using Azure CLI
-3. **Dual Deployment**: Executes the update function for both web and API components
-4. **Image Format**: Uses the format `{registry}/{app-id}{type}:{version}` for container images
-
-The action uses Azure CLI commands to update existing container apps rather than creating new ones, ensuring zero-downtime deployments.
-
-## Prerequisites
-
-- **Azure Service Principal**: A service principal with appropriate permissions to manage Azure Container Apps
-- **Existing Container Apps**: The container apps `{app-id}web` and `{app-id}api` must already exist in the specified resource group
-- **Container Registry**: Access to the specified container registry with the required images
-- **Azure CLI**: The action uses Azure CLI commands for container app management
-
-### Required Azure Permissions
-
-The service principal must have the following permissions:
-
-- `Microsoft.ContainerApps/containerApps/write` - To update container apps
-- `Microsoft.ContainerApps/containerApps/read` - To read existing container app configurations
-- `Microsoft.Resources/subscriptions/resourceGroups/read` - To access the resource group
+- The container app names are exactly `{app-id}web` and `{app-id}api`.
+- The container apps are in the specified resource group.
+- The image tags exist in the specified registry.
+- The Azure identity has permission to update Container Apps.

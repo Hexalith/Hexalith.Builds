@@ -1,173 +1,211 @@
 # Hexalith.Builds
+
 [![Version](https://img.shields.io/github/v/tag/Hexalith/Hexalith.Builds?filter=v*)](https://github.com/Hexalith/Hexalith.Builds/tags)
 
-Common project for building Hexalith applications, modules and libraries.
+Common build, release, and repository automation assets for Hexalith
+applications, modules, and libraries.
 
 ## Overview
 
-The Hexalith.Builds repository centralizes build configurations, property definitions, package management, and code style settings for the Hexalith ecosystem. It ensures consistency across all Hexalith repositories by providing standard build files that can be imported into any Hexalith project.
+This repository centralizes the shared build configuration used across the
+Hexalith ecosystem. It provides MSBuild properties, analyzer configuration,
+central package versions, GitHub composite actions, reusable workflows, release
+configuration, and repository maintenance tools.
 
 This repository:
 
-- Centralizes version management
-- Maintains consistent package dependencies and versions
-- Enforces uniform code style and analysis rules
-- Standardizes build configurations
-- Provides common build properties for development environments
-- Ensures consistent AI assistant rules and commit message formats
+- Centralizes package version management for consuming repositories.
+- Provides common MSBuild settings for .NET projects and NuGet packages.
+- Enforces shared analyzer, code style, nullable, and documentation settings.
+- Provides reusable GitHub Actions for verification, release, Dapr bootstrap,
+  and container deployment.
+- Provides semantic-release configuration for Conventional Commit based
+  releases.
+- Keeps AI assistant instructions and repository conventions discoverable.
 
 ## Repository Structure
 
 ### Build Configuration
 
-- `Hexalith.Build.props`: Build properties common to all Hexalith projects
-- `Hexalith.Package.props`: Build properties common to all Hexalith NuGet packages projects
-- `Props/Environment.Build.props`: Defines build environment variables
-- `Props/Framework.Build.props`: Specifies the default target framework (currently `net10.0`)
+- `Hexalith.Build.props`: Common MSBuild properties, analyzers, source link,
+  nullable, documentation, and package version settings.
+- `Hexalith.Package.props`: NuGet package metadata and package build settings
+  for library projects.
+- `Props/Environment.Build.props`: CI and IDE build detection.
+- `Props/Directory.Packages.props`: Central package versions for Hexalith
+  projects.
+- `Samples/Module.Directory.Build.props`: Sample module root
+  `Directory.Build.props`.
+- `Samples/Module.Directory.Packages.props`: Sample module
+  `Directory.Packages.props`.
 
-### Package Version Management
+### Release Configuration
 
-- `Directory.Packages.props`: Centralizes version management for all imported Nuget packages
-- `package.json`: Node.js package configuration for release management
+- `package.json`: semantic-release configuration for this repository.
+- `package-lock.json`: Locked npm dependency graph for reproducible release
+  jobs.
+- `Github/package-release/release.config.json`: Shared semantic-release config
+  for package-producing repositories.
+- `Github/scripts/build-packages.ps1`: Builds library projects during
+  semantic-release.
+- `Github/scripts/publish-packages.ps1`: Publishes NuGet packages during
+  semantic-release.
 
 ### Code Style and Analysis
 
-- `Hexalith.globalconfig`: Global configuration file for C# code style
-- `stylecop.json`: StyleCop configuration settings
+- `.editorconfig`: Shared editor and analyzer style settings.
+- `Hexalith.globalconfig`: Global C# analyzer configuration.
+- `stylecop.json`: StyleCop configuration.
 
 ### AI Assistant Rules
 
-- `.clinerules`: Rules for the Cline AI assistant
-- `.cursorrules`: Rules for the Cursor AI assistant
-- `ai-assistant-instructions.md`: Common instructions for AI assistants
-- `ai-commit-prompt.md`: Prompt for generating commit messages
-- `.github/copilot-instructions.md`: Instructions for GitHub Copilot
+- `AGENTS.md`: Instructions for Codex and AGENTS-compatible assistants.
+- `CLAUDE.md`: Instructions for Claude-compatible assistants.
+- `.github/copilot-instructions.md`: Instructions for GitHub Copilot.
 
-### Tools and Templates
+### Tools
 
-- [`Tools/`](Tools/README.md): Tools for repository management
-  - `builds-submodule-init.ps1`: Script for initializing the Git submodule
-- [`Github/`](Github/): Directory containing GitHub workflow templates:
-  - [`build-packages/`](Github/build-packages/README.md): Templates for building .NET packages
-  - [`create-release/`](Github/create-release/README.md): Templates for creating releases with semantic versioning
-  - [`initialize-build/`](Github/initialize-build/README.md): Templates for initializing builds
-  - [`initialize-dotnet/`](Github/initialize-dotnet/README.md): Templates for initializing .NET projects
-  - [`publish-packages/`](Github/publish-packages/README.md): Templates for publishing packages
-  - [`unit-tests/`](Github/unit-tests/README.md): Templates for running unit tests
-  - [`version/`](Github/version/README.md): Templates for versioning
+- [`Tools/`](Tools/README.md): Repository utility scripts.
+  - `builds-submodule-init.ps1`: Adds or initializes the `Hexalith.Builds`
+    submodule and checks it out on `main`.
+  - `editorconfig-symlink.ps1`: Creates a parent repository `.editorconfig`
+    symlink pointing to `Hexalith.Builds/.editorconfig`.
 
-### Workflows
+### GitHub Composite Actions
 
-- `.github/workflows/build-release.yml`: Builds packages and creates releases
-- `.github/workflows/copy-ai-assistant-instructions.yml`: Syncs AI assistant instructions
+- [`Github/create-release/`](Github/create-release/README.md): Run
+  semantic-release without building packages.
+- [`Github/dapr-init/`](Github/dapr-init/README.md): Install the Dapr CLI and
+  run `dapr init` with retry.
+- [`Github/initialize-build/`](Github/initialize-build/README.md): Initialize
+  root-level submodules without recursive or remote updates.
+- [`Github/initialize-dotnet/`](Github/initialize-dotnet/README.md): Install
+  the .NET SDK from `global.json` or an explicit version, with optional Aspire
+  workload installation.
+- [`Github/package-release/`](Github/package-release/README.md): Build and
+  release package projects with semantic-release.
+- [`Github/publish-azure-container-app/`](Github/publish-azure-container-app/README.md):
+  Update Azure Container Apps to a published image version.
+- [`Github/publish-container-to-registry/`](Github/publish-container-to-registry/README.md):
+  Build and publish Web/API containers to a registry.
+- [`Github/unit-tests/`](Github/unit-tests/README.md): Run and clean a standard
+  Hexalith test project.
+- [`Github/verify/`](Github/verify/README.md): CI gate that checks out,
+  initializes, builds through tests, and does not publish.
+
+### Reusable Workflows
+
+- `.github/workflows/build-release.yml`: Releases this repository with
+  `Github/create-release`.
+- `.github/workflows/domain-ci.yml`: Reusable domain module CI pipeline. See
+  [domain-ci.md](.github/workflows/domain-ci.md).
+- `.github/workflows/domain-release.yml`: Reusable domain module release
+  pipeline. See [domain-release.md](.github/workflows/domain-release.md).
+- `.github/workflows/copy-ai-assistant-instructions.yml`: Copies
+  `ai-assistant-instructions.md` to assistant-specific rule files when that
+  source file exists and is changed.
 
 ## Usage
 
-### Importing Build Properties
+### Add Hexalith.Builds as a Submodule
 
-To use the standardized build properties:
-
-`Directory.Build.props` in the repository root :
-
-```xml
-<Project>
-  <PropertyGroup>
-    <!-- Define a property to store the path of the parent Directory.Build.props. -->
-    <ParentDirectoryBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentDirectoryBuildProps>
-    <!-- Define a property to store the path of the Directory.Build.props in Hexalith.Builds project. This directory can be in the current project or a parent project. -->
-    <HexalithBuildProps>$([MSBuild]::GetDirectoryNameOfFileAbove('Hexalith.Builds', 'Hexalith.Build.props'))</HexalithBuildProps>
-  </PropertyGroup>
-
-  <!-- Import the parent Directory.Build.props file if it exists -->
-  <Import Project="$(ParentDirectoryBuildProps)" Condition="Exists('$(ParentDirectoryBuildProps)')" />
-
-  <!-- Import the Hexalith.Build.props file in Hexalith.Builds. This file must exist. -->
-  <Import Project="$(HexalithBuildProps)/Hexalith.Build.props" />
-
-  <PropertyGroup>
-    <Product>Hexalith.MyProject</Product>
-    <RepositoryUrl>https://github.com/Hexalith/Hexalith.MyProject</RepositoryUrl>
-  </PropertyGroup>
-</Project>
-```
-
-For projects to be packaged as NuGet packages:
-
-`Directory.Build.props` in the repository source directory `/src` :
-
-```xml
-<Project>
-  <PropertyGroup>
-    <!-- Define a property to store the path of the parent Directory.Build.props. -->
-    <ParentDirectoryBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentDirectoryBuildProps>
-    <!-- Define a property to store the path of the Directory.Package.props in Hexalith.Builds project. This directory can be in the current project or a parent project. -->
-    <HexalithBuildProps>$([MSBuild]::GetDirectoryNameOfFileAbove('Hexalith.Builds', 'Hexalith.Package.props'))</HexalithBuildProps>
-  </PropertyGroup>
-
-  <!-- Import the parent Directory.Build.props file if it exists -->
-  <Import Project="$(ParentDirectoryBuildProps)" Condition="Exists('$(ParentDirectoryBuildProps)')" />
-
-  <!-- Import the Hexalith.Package.props file in Hexalith.Builds. This file must exist. -->
-  <Import Project="$(HexalithBuildProps)/Hexalith.Package.props" />
-</Project>
-```
-
-### Adding Hexalith.Builds in a new repository as a Git Submodule
-
-Add this repository as a Git submodule:
+From a consuming repository root, add or initialize this repository as a root
+submodule:
 
 ```powershell
-# From your repository root:
 .\Hexalith.Builds\Tools\builds-submodule-init.ps1
 ```
 
-This script initializes and configures the Hexalith.Builds Git submodule.
+The script requires administrator privileges on Windows because related tooling
+may create symbolic links. It initializes only the root `Hexalith.Builds`
+submodule and checks out `main`.
 
-### Environment Detection
+### Import Build Properties
 
-The build system automatically detects different environments:
-
-- `CIBuild`: Set to `true` in GitHub Actions or Azure DevOps
-- `IDEBuild`: Set to `true` in Visual Studio, ReSharper, VS Code, or Cursor
-
-### Project References vs Package References
-
-For local development, use project references instead of package references:
+Use the sample files in `Samples/` as the starting point for consuming
+repositories. A typical module root `Directory.Build.props` imports the shared
+build props and then sets repository-specific package metadata:
 
 ```xml
-<UseProjectReference>true</UseProjectReference>
+<Project>
+  <Import Project="Hexalith.Builds/Hexalith.Build.props"
+          Condition="Exists('Hexalith.Builds/Hexalith.Build.props')" />
+
+  <PropertyGroup>
+    <Product>Hexalith.MyModule</Product>
+    <RepositoryUrl>https://github.com/Hexalith/Hexalith.MyModule.git</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Hexalith/Hexalith.MyModule</PackageProjectUrl>
+    <PackageTags>hexalith;my module;</PackageTags>
+    <Description>Hexalith MyModule Module</Description>
+  </PropertyGroup>
+</Project>
 ```
 
-This is automatically set when `IDEBuild` is `true` and `CIBuild` is not `true`.
+For library projects that should produce NuGet packages, import
+`Hexalith.Package.props` from the source-level `Directory.Build.props`:
 
-## Version Management
+```xml
+<Project>
+  <PropertyGroup>
+    <ParentDirectoryBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentDirectoryBuildProps>
+  </PropertyGroup>
 
-Versions are managed centrally in `Hexalith.Version.props` and derived from git tags.
+  <Import Project="$(ParentDirectoryBuildProps)"
+          Condition="Exists('$(ParentDirectoryBuildProps)')" />
 
-For non-release builds, a suffix is added:
+  <Import Project="../Hexalith.Builds/Hexalith.Package.props"
+          Condition="Exists('../Hexalith.Builds/Hexalith.Package.props')" />
+</Project>
+```
 
-- GitHub builds: `preview-{GITHUB_RUN_NUMBER}`
-- Local builds: Timestamp in format `yyyyMMddHHmmss`
+### Import Central Package Versions
 
-To create a new version:
+Use `Props/Directory.Packages.props` from a repository
+`Directory.Packages.props` file:
 
-1. Create and push a tag with format `v*.*.*` (e.g., `v1.2.3`)
-2. GitHub Actions will update `Hexalith.Version.props`
-3. All referencing projects will use the new version
+```xml
+<Project>
+  <Import Project="Hexalith.Builds/Props/Directory.Packages.props"
+          Condition="Exists('Hexalith.Builds/Props/Directory.Packages.props')" />
 
-## GitHub Workflow Templates
+  <ItemGroup>
+    <!-- Add repository-specific PackageVersion entries here. -->
+  </ItemGroup>
+</Project>
+```
 
-The repository provides reusable workflow templates in the `Github` directory for:
+## Environment Detection
 
-- Building .NET packages
-- Creating releases with semantic versioning
-- Initializing builds and .NET projects
-- Publishing packages
-- Running unit tests
-- Versioning
+The build properties set environment flags used by consuming projects:
 
-Use these templates by referencing them in your own workflow files.
+- `CIBuild`: Set to `true` in GitHub Actions or Azure DevOps.
+- `IDEBuild`: Set to `true` in Visual Studio, ReSharper, VS Code, or Cursor.
+
+## Version and Release Management
+
+Releases are driven by semantic-release and Angular Conventional Commits.
+Release jobs analyze commits, calculate the next version, update
+`CHANGELOG.md`, create a GitHub release, and optionally build and publish NuGet
+packages.
+
+For package-producing repositories, use the
+[`Github/package-release`](Github/package-release/README.md) action and extend
+`Github/package-release/release.config.json` from the consuming repository's
+`package.json`.
+
+Package publishing behavior:
+
+- Stable versions are published to NuGet.org with `NUGET_API_KEY`.
+- Pre-release versions are published to GitHub Packages with `GITHUB_TOKEN`.
+- Debug and non-release local builds receive a generated `VersionSuffix` from
+  `Hexalith.Package.props`.
+
+To create a release, merge or push Conventional Commits to a configured release
+branch such as `main`, `next`, `next-major`, `alpha`, `beta`, or a maintenance
+branch matching `[0-9]+.[0-9]+.x`. The release workflow creates the tag and
+release artifacts.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for
+details.

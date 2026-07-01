@@ -20,12 +20,13 @@ workflows in consuming repositories (e.g. `Hexalith.Tenants`).
     version: '1.17.0'
 ```
 
-Consumers that pin third-party actions by SHA should pin this action to a commit SHA
+Consumers that pin shared actions by SHA should pin this action to a commit SHA
 rather than `@main`:
 
 ```yaml
   uses: Hexalith/Hexalith.Builds/Github/dapr-init@<commit-sha>
 ```
 
-The pinned third-party actions used internally (`dapr/setup-dapr`, `nick-fields/retry`)
-are themselves pinned by SHA inside this action, preserving supply-chain posture.
+This action currently uses `dapr/setup-dapr@main` and
+`nick-fields/retry@master` internally. Review `action.yml` if your repository
+requires every nested third-party action to be pinned by commit SHA.

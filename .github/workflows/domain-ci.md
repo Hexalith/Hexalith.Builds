@@ -1,35 +1,42 @@
-# Hexalith Domain CI — reusable workflow
+# Hexalith Domain CI reusable workflow
 
-`domain-ci.yml` is a reusable (`workflow_call`) CI pipeline for Hexalith domain modules.
-It factors the common skeleton — checkout (+submodules), .NET SDK from `global.json`,
-NuGet cache, restore, `Release -warnaserror` build, Dapr bootstrap, multi-tier tests,
-coverage gate, and artifact upload — so every domain repo can consume one pinned pipeline.
+`domain-ci.yml` is a reusable (`workflow_call`) CI pipeline for Hexalith domain
+modules. It factors the common skeleton: checkout with submodules, .NET SDK from
+`global.json`, NuGet cache, restore, `Release -warnaserror` build, optional
+consumer validation, Dapr bootstrap, multi-tier tests, optional coverage gate,
+and artifact upload.
 
 ## Jobs
 
 | Job | Runs when | Tiers |
 |-----|-----------|-------|
-| `build-and-test`   | always                                   | consumer validation, Tier 1 (unit), Tier 2 (integration, Dapr), coverage gate |
-| `aspire-tests`     | `aspire-test-project` set                | Tier 3 Aspire contract tests (`Category!=Performance`) |
-| `performance-tests`| `aspire-test-project` set + `schedule`   | Tier 3 performance tests (`Category=Performance`) |
+| `build-and-test` | Always. | Consumer validation, Tier 1 unit tests, Tier 2 Dapr integration tests, coverage gate. |
+| `aspire-tests` | `aspire-test-project` is set. | Tier 3 Aspire contract tests using `Category!=Performance` by default. |
+| `performance-tests` | `aspire-test-project` is set and the event is `schedule`. | Tier 3 performance tests using `Category=Performance` by default. |
 
-## Conventions assumed in the consuming repo
+## Consuming Repository Conventions
 
-The reusable workflow checks out the **caller** repository, so these paths resolve against
-the consumer:
+The reusable workflow checks out the caller repository, so these paths resolve
+against the consuming repository:
 
-- `scripts/pack-release-packages.py`, `scripts/validate-nuget-packages.py`,
-  `scripts/validate-consumer-package-references.py` — required when
-  `run-consumer-validation: true`.
-- `scripts/validate-coverage.py` — required when `run-coverage-gate: true`.
-- `global.json` (or the path given in `dotnet-global-json`).
+- `scripts/pack-release-packages.py`,
+  `scripts/validate-nuget-packages.py`, and
+  `scripts/validate-consumer-package-references.py` are required when
+  `run-consumer-validation` is `true`.
+- `scripts/validate-coverage.py` is required when `run-coverage-gate` is
+  `true`.
+- `global.json`, or the path supplied through `dotnet-global-json`, pins the
+  .NET SDK.
 
 ## Inputs
 
-See the `inputs:` block in `domain-ci.yml`. Lists (test projects, isolation targets) are
-newline-separated strings (`workflow_call` does not support arrays); the workflow splits
-them in bash. Test result folders are derived from each project's basename under
-`TestResults/`.
+See the `inputs:` block in `domain-ci.yml` for the full list of supported
+inputs and defaults.
+
+List inputs such as test projects and isolation targets are newline-separated
+strings because `workflow_call` does not support arrays. The workflow splits
+those strings in bash. Test result folders are derived from each project
+basename under `TestResults/`.
 
 ## Usage
 
@@ -51,5 +58,9 @@ jobs:
         src/Hexalith.<Module>.Server/Aggregates/SomeAggregate.cs
 ```
 
-Pin to a commit SHA (not `@main`) in repositories that enforce SHA-pinned actions. The
-internally-used third-party actions are already SHA-pinned inside this workflow.
+## Pinning
+
+Pin this reusable workflow to a commit SHA in repositories that require stable
+build inputs. The workflow currently references some nested actions with branch
+refs, such as `actions/checkout@main`, so audit `domain-ci.yml` if your
+repository requires every nested action to be SHA-pinned.

@@ -1,60 +1,70 @@
 # Publish Application Containers to Registry
 
-## Overview
-
-This GitHub Action publishes Hexalith application containers to a specified container registry. It builds and pushes both Web and API server containers using .NET's built-in container publishing capabilities.
-
-The action automatically:
-
-- Authenticates with the target container registry
-- Builds and publishes Web server containers
-- Builds and publishes API server containers
-- Tags containers with the specified version and 'latest' tag
-- Pushes containers to the registry
+Builds and pushes the Hexalith Web and API server containers to a container
+registry using .NET container publishing.
 
 ## Inputs
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `app-id` | The short name of the application | Yes | - |
-| `version` | Version number for the containers (e.g., "1.0.0") | Yes | - |
-| `registry` | Container registry URL (e.g., "ghcr.io", "docker.io") | Yes | - |
-| `username` | Username for the container registry | Yes | - |
-| `password` | Password or token for the container registry | Yes | - |
+| `app-id` | Short application name used as the container repository prefix. | Yes | - |
+| `version` | Version tag applied to the images. | Yes | - |
+| `registry` | Container registry host, such as `ghcr.io` or `myregistry.azurecr.io`. | Yes | - |
+| `username` | Registry username. | Yes | - |
+| `password` | Registry password or token. | Yes | - |
 
-## Functionality
+## Steps
 
-The action performs the following steps:
+1. Initialize the `HexalithApp` and `Hexalith.Builds` submodules.
+2. Check out and pull `main` inside both submodules.
+3. Log in to the target registry with `docker/login-action@master`.
+4. Publish the `HexalithApp.WebServer` project as a Linux x64 container.
+5. Publish the `HexalithApp.ApiServer` project as a Linux x64 container.
 
-1. **Registry Authentication**: Logs into the specified container registry using provided credentials
-2. **Container Publishing**: For each application type (Web and API):
-   - Locates the project file in the HexalithApp source directory
-   - Publishes the container using `dotnet publish` with container-specific parameters
-   - Tags the container with both the specified version and 'latest'
-   - Pushes the container to the registry
+Each image is tagged with the supplied version and `latest`.
 
-### Container Configuration
+## Image Names
 
-- **OS**: Linux
-- **Architecture**: x64
-- **Configuration**: Release
-- **Tags**: Version tag + 'latest' tag
-- **Repository naming**: Uses the pattern `{app-id}{apptype}` (lowercase)
+The action publishes two repositories:
 
-## Usage Example
+| Project | Repository |
+|---------|------------|
+| `HexalithApp.WebServer` | `{app-id}web` |
+| `HexalithApp.ApiServer` | `{app-id}api` |
+
+For example, with `app-id: myapp`, `registry: ghcr.io`, and
+`version: 1.2.3`, the action publishes:
+
+- `ghcr.io/myappweb:1.2.3`
+- `ghcr.io/myappweb:latest`
+- `ghcr.io/myappapi:1.2.3`
+- `ghcr.io/myappapi:latest`
+
+## Expected Project Structure
+
+```text
+HexalithApp/
++-- src/
+    +-- HexalithApp.WebServer/
+    |   +-- HexalithApp.WebServer.csproj
+    +-- HexalithApp.ApiServer/
+        +-- HexalithApp.ApiServer.csproj
+```
+
+## Usage
 
 ```yaml
-- name: Publish Application Containers
-  uses: ./.github/actions/publish-container-app
+- name: Publish application containers
+  uses: Hexalith/Hexalith.Builds/Github/publish-container-to-registry@main
   with:
     app-id: myapp
     version: ${{ github.ref_name }}
     registry: ghcr.io
-    username: ${{ secrets.REGISTRY_USERNAME }}
-    password: ${{ secrets.REGISTRY_TOKEN }}
+    username: ${{ github.actor }}
+    password: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-### Complete Workflow Example
+## Complete Workflow Example
 
 ```yaml
 name: Build and Publish Containers
@@ -67,53 +77,43 @@ on:
 jobs:
   publish-containers:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@main
-        
-      - name: Setup .NET
-        uses: actions/setup-dotnet@main
+        uses: actions/checkout@v5
+
+      - name: Initialize .NET
+        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
         with:
           dotnet-version: '10.0.300'
-          
-      - name: Publish Application Containers
-        uses: ./.github/actions/publish-container-app
+
+      - name: Publish application containers
+        uses: Hexalith/Hexalith.Builds/Github/publish-container-to-registry@main
         with:
           app-id: myapp
           version: ${{ github.ref_name }}
           registry: ghcr.io
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_TOKEN }}
-```
-
-## How It Works
-
-1. **Authentication**: Uses `docker/login-action@master` to authenticate with the container registry
-2. **Container Building**: Leverages .NET's native container publishing capabilities via `dotnet publish` with the `/t:PublishContainer` target
-3. **Project Discovery**: Automatically locates project files in the `./HexalithApp/src/` directory structure
-4. **Multi-Container Support**: Publishes both Web and API server containers in a single action
-5. **Tagging Strategy**: Applies both version-specific and 'latest' tags for flexible deployment
-
-### Project Structure Expected
-
-```text
-HexalithApp/
-└── src/
-    ├── HexalithApp.WebServer/
-    │   └── HexalithApp.WebServer.csproj
-    └── HexalithApp.ApiServer/
-        └── HexalithApp.ApiServer.csproj
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Prerequisites
 
-- **.NET 8.0+**: The action requires .NET 8.0 or later for container publishing
-- **Docker**: Container runtime must be available (typically provided by GitHub Actions runners)
-- **Registry Access**: Valid credentials for the target container registry
-- **Project Structure**: HexalithApp projects must be present in the expected directory structure
+- The consuming repository must declare `HexalithApp` and `Hexalith.Builds` as
+  root-level submodules.
+- A .NET SDK compatible with the Web/API server projects must be installed
+  before this action runs.
+- Docker must be available on the runner.
+- Registry credentials must have permission to push the target repositories.
 
-### Supported Registries
+## Notes
 
-The action supports any container registry that can be accessed via Docker login, including:
-
-- Azure Container Registry (azurecr.io)
+- The action currently moves the `HexalithApp` and `Hexalith.Builds` submodules
+  to the latest `main` branch before publishing.
+- The action uses .NET's `/t:PublishContainer` target with Release
+  configuration, Linux OS, and x64 architecture.
+- Any registry supported by Docker login can be used, including GitHub
+  Container Registry, Azure Container Registry, Docker Hub, and private
+  registries.

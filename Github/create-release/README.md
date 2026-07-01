@@ -1,77 +1,64 @@
 # Create Release GitHub Action
 
-## Overview
-This GitHub Action automates the release process using semantic versioning. It leverages the semantic-release framework to analyze commit messages, determine the appropriate version bump, create GitHub releases, and generate changelogs automatically.
+Runs semantic-release for repositories that need versioning, changelog updates,
+Git tags, and GitHub releases, but do not build or publish NuGet packages from
+this action.
 
 ## Inputs
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| `dry_run` | If true, the release process will be simulated without making any changes | No | `false` |
+None.
 
 ## Outputs
 
-| Output | Description |
-|--------|-------------|
-| `version` | The new release version (e.g., 1.2.3) |
-| `major` | The major version number (e.g., 1) |
-| `minor` | The minor version number (e.g., 2) |
-| `patch` | The patch version number (e.g., 3) |
-| `published` | Boolean indicating whether a new release was published |
+None.
 
-## Functionality
+## Steps
 
-The action performs the following steps:
+1. Set up Node.js with `actions/setup-node@v4` and `lts/*`.
+2. Install npm dependencies with `npm ci`.
+3. Verify npm package provenance and signatures with `npm audit signatures`.
+4. Run `npx semantic-release`.
 
-1. **Handle Pull Requests**:
-   - If triggered by a pull request, temporarily merges the PR branch to analyze its commits
-   - Configures Git user information for the merge operation
+## Environment Variables
 
-2. **Semantic Release Process**:
-   - Uses the `cycjimmy/semantic-release-action@main` action
-   - Includes additional plugins for Git integration and changelog generation
-   - Determines the version bump based on conventional commit messages
-   - Creates a GitHub release with appropriate tags
-   - Generates or updates the changelog
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GITHUB_TOKEN` | Yes | Token used by semantic-release to update the changelog commit, create tags, and create the GitHub release. |
 
-3. **Output Information**:
-   - Displays the new release version and whether a release was published
-   - Makes version information available as outputs for subsequent workflow steps
+## Requirements
 
-## Usage Example
+- A committed `package-lock.json`, because the action uses `npm ci`.
+- A `package.json`, `.releaserc`, or `release.config.*` file that configures
+  semantic-release.
+- Workflow permissions that allow writing contents and, when needed, issues and
+  pull requests.
+
+## Usage
 
 ```yaml
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@main
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          
+
       - name: Create release
-        id: create_release
-        uses: ./Github/create-release
+        uses: Hexalith/Hexalith.Builds/Github/create-release@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Use version in subsequent steps
-        if: steps.create_release.outputs.published == 'true'
-        run: echo "New version released: ${{ steps.create_release.outputs.version }}"
 ```
 
-## How It Works
+## Versioning
 
-This action uses semantic-release to automate version management and release creation:
+semantic-release determines the next version from Conventional Commits:
 
-1. It analyzes commit messages since the last release to determine the appropriate version bump:
-   - `fix:` commits trigger a patch bump (0.0.x)
-   - `feat:` commits trigger a minor bump (0.x.0)
-   - `BREAKING CHANGE:` commits trigger a major bump (x.0.0)
-
-2. When running in a pull request context, it performs a temporary merge to analyze what would happen if the PR were merged, without actually creating a release.
-
-3. When running in the main branch, it creates a proper release with appropriate tags and changelog updates.
-
-The action requires a properly configured `.releaserc` or `release.config.js` file in your repository to define the semantic-release configuration.
+- `fix:` commits trigger a patch release.
+- `feat:` commits trigger a minor release.
+- Commits with a `BREAKING CHANGE:` footer trigger a major release.

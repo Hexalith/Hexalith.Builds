@@ -1,0 +1,71 @@
+<Solution>
+  <Folder Name="/.github/" />
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/build-release.yml" />
+    <File Path=".github/workflows/copy-ai-assistant-instructions.yml" />
+  </Folder>
+  <Folder Name="/Github/" />
+  <Folder Name="/Github/build-packages/">
+    <File Path="Github/build-packages/action.yml" />
+    <File Path="Github/build-packages/README.md" />
+  </Folder>
+  <Folder Name="/Github/create-release/">
+    <File Path="Github/create-release/action.yml" />
+    <File Path="Github/create-release/README.md" />
+  </Folder>
+  <Folder Name="/Github/initialize-build/">
+    <File Path="Github/initialize-build/action.yml" />
+    <File Path="Github/initialize-build/README.md" />
+  </Folder>
+  <Folder Name="/Github/initialize-dotnet/">
+    <File Path="Github/initialize-dotnet/action.yml" />
+    <File Path="Github/initialize-dotnet/README.md" />
+  </Folder>
+  <Folder Name="/Github/package-release/">
+    <File Path="Github/package-release/action.yml" />
+    <File Path="Github/package-release/README.md" />
+  </Folder>
+  <Folder Name="/Github/publish-azure-container-app/">
+    <File Path="Github/publish-azure-container-app/action.yml" />
+    <File Path="Github/publish-azure-container-app/README.md" />
+  </Folder>
+  <Folder Name="/Github/publish-container-to-registry/">
+    <File Path="Github/publish-container-to-registry/action.yml" />
+    <File Path="Github/publish-container-to-registry/README.md" />
+  </Folder>
+  <Folder Name="/Github/publish-packages/">
+    <File Path="Github/publish-packages/action.yml" />
+    <File Path="Github/publish-packages/README.md" />
+  </Folder>
+  <Folder Name="/Github/unit-tests/">
+    <File Path="Github/unit-tests/action.yml" />
+    <File Path="Github/unit-tests/README.md" />
+  </Folder>
+  <Folder Name="/Github/version/">
+    <File Path="Github/version/action.yml" />
+    <File Path="Github/version/README.md" />
+  </Folder>
+  <Folder Name="/Props/">
+    <File Path="Props/Directory.Packages.props" />
+    <File Path="Props/Environment.Build.props" />
+  </Folder>
+  <Folder Name="/Tools/">
+    <File Path="Tools/builds-submodule-init.ps1" />
+  </Folder>
+  <Folder Name="/_build/">
+    <File Path=".clinerules" />
+    <File Path=".cursorrules" />
+    <File Path=".gitignore" />
+    <File Path="ai-assistant-instructions.md" />
+    <File Path="ai-commit-prompt.md" />
+    <File Path="Environment.Build.props" />
+    <File Path="Hexalith.Build.props" />
+    <File Path="Hexalith.globalconfig" />
+    <File Path="Hexalith.Package.props" />
+    <File Path="Hexalith.Version.props" />
+    <File Path="LICENSE" />
+    <File Path="package.json" />
+    <File Path="README.md" />
+    <File Path="stylecop.json" />
+  </Folder>
+</Solution>

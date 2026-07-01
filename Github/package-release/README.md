@@ -1,7 +1,7 @@
 # Build Packages Action
 
 This GitHub Action builds and releases packages for Hexalith .NET projects using
-[semantic-release](https://semantic-release.org) directly (the official CLI — no
+[semantic-release](https://semantic-release.org) directly (the official CLI; no
 third-party wrapper action).
 
 It is the **release** half of a two-job pipeline: run the
@@ -27,19 +27,19 @@ commit/tag, NuGet publish, and GitHub release) in a single pass.
 
 ## Steps
 
-1. **Checkout** (`actions/checkout@v5`, `fetch-depth: 0`) — full history is required by semantic-release.
-2. **Initialize build submodules** (`Github/initialize-build`) — checks out `references/Hexalith.Builds`.
+1. **Checkout** (`actions/checkout@v5`, `fetch-depth: 0`) - full history is required by semantic-release.
+2. **Initialize build submodules** (`Github/initialize-build`) - checks out root-level submodules such as `references/Hexalith.Builds`.
 3. **Initialize .NET** (`Github/initialize-dotnet`).
 4. **Setup Node.js** (`actions/setup-node@v4`, `lts/*`).
-5. **Install semantic-release dependencies** (`npm ci` — requires a committed `package-lock.json`).
+5. **Install semantic-release dependencies** (`npm ci` - requires a committed `package-lock.json`).
 6. **Verify dependency provenance and signatures** (`npm audit signatures`).
-7. **Semantic Release** (`npx semantic-release`) — one pass:
-   - analyze commits → next version
-   - `@semantic-release/changelog` → update `CHANGELOG.md`
-   - `@semantic-release/exec` `prepareCmd` → `scripts/build-packages.ps1` builds/packs the libraries
-   - `@semantic-release/git` → commit `CHANGELOG.md`
-   - `@semantic-release/exec` `publishCmd` → `scripts/publish-packages.ps1` pushes to NuGet.org (stable) or GitHub Packages (pre-release)
-   - `@semantic-release/github` → create the GitHub release
+7. **Semantic Release** (`npx semantic-release`) - one pass:
+   - analyze commits and calculate the next version
+   - `@semantic-release/changelog` updates `CHANGELOG.md`
+   - `@semantic-release/exec` `prepareCmd` runs `scripts/build-packages.ps1`
+   - `@semantic-release/git` commits `CHANGELOG.md`
+   - `@semantic-release/exec` `publishCmd` runs `scripts/publish-packages.ps1`
+   - `@semantic-release/github` creates the GitHub release
 
 ## Environment Variables
 

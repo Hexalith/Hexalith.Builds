@@ -1,80 +1,54 @@
-# Initialize .NET Framework GitHub Action
+# Initialize .NET GitHub Action
 
-## Overview
-This GitHub Action sets up the .NET 10.0.300 development environment and optionally installs the Aspire workload. It provides a standardized way to ensure that all necessary .NET components are available for building and testing .NET applications in your GitHub workflow.
+Sets up the .NET SDK for Hexalith workflows. The action can install the SDK
+declared by a `global.json` file, or install an explicit SDK version when no
+`global.json` path is provided. It can also install the Aspire workload.
 
 ## Inputs
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `aspire` | Whether to install the Aspire workload. Set to any non-empty value to install. | No | `''` (empty string) |
+| `global-json-file` | Path to a `global.json` file that pins the SDK version. Takes precedence over `dotnet-version` when set. | No | `''` |
+| `dotnet-version` | SDK version passed to `actions/setup-dotnet` when `global-json-file` is empty. | No | `10.0.300` |
+| `aspire` | Install the Aspire workload when set to any non-empty value. | No | `''` |
 
-## Functionality
+## Steps
 
-The action performs the following steps:
+1. If `global-json-file` is set, run `actions/setup-dotnet@main` with that
+   file.
+2. Otherwise, run `actions/setup-dotnet@main` with `dotnet-version`.
+3. If `aspire` is non-empty, run `dotnet workload install aspire`.
 
-1. **Setup .NET 10.0.300**:
-   - Uses the official `actions/setup-dotnet@main` action to install .NET 10.0.300
-   - Ensures that .NET SDK 10.0.300 is available in the build environment
+## Usage
 
-2. **Add Aspire Workload** (Optional):
-   - If the `aspire` input is provided with a non-empty value, installs the Aspire workload
-   - Executes `dotnet workload install aspire` to add the necessary components for building Aspire applications
-
-## Usage Example
-
-### Basic Usage (Without Aspire)
+### Use the default SDK
 
 ```yaml
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@main
-        
-      - name: Setup .NET
-        uses: ./Github/initialize-dotnet
-        
-      - name: Build project
-        run: dotnet build
+- name: Initialize .NET
+  uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
 ```
 
-### With Aspire Workload
+### Use global.json
 
 ```yaml
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@main
-        
-      - name: Setup .NET with Aspire
-        uses: ./Github/initialize-dotnet
-        with:
-          aspire: 'true'
-        
-      - name: Build Aspire project
-        run: dotnet build
+- name: Initialize .NET
+  uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
+  with:
+    global-json-file: global.json
 ```
 
-## How It Works
+### Install Aspire workload
 
-This action leverages the official .NET setup action to ensure a consistent .NET environment across different runners. It:
+```yaml
+- name: Initialize .NET with Aspire
+  uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
+  with:
+    global-json-file: global.json
+    aspire: 'true'
+```
 
-1. Installs the specified version of .NET (10.0.300) on the runner
-2. Configures the environment variables and paths needed for .NET development
-3. Optionally installs the Aspire workload, which provides additional templates and libraries for building distributed applications
+## Notes
 
-The action is designed to be simple and focused, handling just the .NET setup portion of your workflow. This makes it easy to reuse across different projects and workflows.
-
-## About .NET Aspire
-
-.NET Aspire is a stack for building distributed applications with .NET. It provides a set of components and tools that simplify the development of cloud-native applications. When the Aspire workload is installed, you gain access to:
-
-- Project templates for Aspire applications
-- Libraries for service discovery, health checks, and resilience
-- Integration with cloud services and containers
-
-If your project uses .NET Aspire, make sure to set the `aspire` input to a non-empty value.
+- `global-json-file` is preferred for repositories that pin their SDK.
+- `dotnet-version` is only used when `global-json-file` is empty.
+- The action does not restore, build, or test the repository.
