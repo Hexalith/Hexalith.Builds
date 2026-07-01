@@ -28,8 +28,8 @@ runs:
   using: "composite"
   steps:
     - name: Semantic Release
-      id: semantic  
-      uses: cycjimmy/semantic-release-action@main
+      id: semantic
+      uses: cycjimmy/semantic-release-action@v6
       with:
         dry_run: true
       env:
