@@ -43,7 +43,7 @@ GitHub operations.
 ```yaml
 jobs:
   release:
-    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@<commit-sha>
+    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@main
     with:
       solution: Hexalith.<Module>.slnx
       test-projects: |
@@ -53,9 +53,7 @@ jobs:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 ```
 
-## Pinning
+## Version Reference
 
-Pin this reusable workflow to a commit SHA in repositories that require stable
-build inputs. The workflow currently references some nested actions with branch
-refs, so audit `domain-release.yml` if your repository requires every nested
-action to be SHA-pinned.
+Use `@main` for Hexalith.Builds reusable workflow references so consuming
+repositories run the latest shared release logic.

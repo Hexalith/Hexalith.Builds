@@ -9,10 +9,10 @@ runs:
         fetch-depth: 0
 
     - name: Initialize build submodules
-      uses: Hexalith/Hexalith.Builds/Github/initialize-build@v4.16.0
+      uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
 
     - name: Initialize .NET
-      uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@v4.16.0
+      uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
 
     - name: Setup Node.js
       uses: actions/setup-node@v4

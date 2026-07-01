@@ -2,6 +2,13 @@
 
 This file provides guidance for AI assistants (Claude, Copilot, Cursor, etc.) working with Hexalith .NET applications built using Domain-Driven Design (DDD) architecture.
 
+## AI assistant instructions
+
+When adding or updating GitHub workflow or action references to Hexalith.Builds
+actions or reusable workflows, always use the latest main branch reference:
+`Hexalith/Hexalith.Builds/<action-path>@main`. Do not pin Hexalith.Builds
+actions or reusable workflows to release tags or commit SHAs.
+
 ## Technology Stack
 
 - **.NET 10+** - Latest .NET framework

@@ -20,12 +20,8 @@ workflows in consuming repositories (e.g. `Hexalith.Tenants`).
     version: '1.17.0'
 ```
 
-Consumers that pin shared actions by SHA should pin this action to a commit SHA
-rather than `@main`:
-
-```yaml
-  uses: Hexalith/Hexalith.Builds/Github/dapr-init@<commit-sha>
-```
+Use `@main` for Hexalith.Builds action references so consuming repositories run
+the latest shared Dapr bootstrap logic.
 
 This action currently uses `dapr/setup-dapr@main` and
 `nick-fields/retry@master` internally. Review `action.yml` if your repository

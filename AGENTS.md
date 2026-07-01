@@ -12,6 +12,11 @@ Before working on any module user interface or UX, also read
 [`Hexalith.AI.Tools/hexalith-ux-instructions.md`](https://github.com/Hexalith/Hexalith.AI.Tools/blob/main/hexalith-ux-instructions.md)
 and follow it.
 
+When adding or updating GitHub workflow or action references to Hexalith.Builds
+actions or reusable workflows, always use the latest main branch reference:
+`Hexalith/Hexalith.Builds/<action-path>@main`. Do not pin Hexalith.Builds
+actions or reusable workflows to release tags or commit SHAs.
+
 ## Technology Stack
 
 - **.NET 10+** - Latest .NET framework

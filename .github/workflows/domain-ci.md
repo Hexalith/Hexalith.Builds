@@ -43,7 +43,7 @@ basename under `TestResults/`.
 ```yaml
 jobs:
   ci:
-    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@<commit-sha>
+    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@main
     with:
       solution: Hexalith.<Module>.slnx
       run-consumer-validation: true
@@ -58,9 +58,7 @@ jobs:
         src/Hexalith.<Module>.Server/Aggregates/SomeAggregate.cs
 ```
 
-## Pinning
+## Version Reference
 
-Pin this reusable workflow to a commit SHA in repositories that require stable
-build inputs. The workflow currently references some nested actions with branch
-refs, such as `actions/checkout@main`, so audit `domain-ci.yml` if your
-repository requires every nested action to be SHA-pinned.
+Use `@main` for Hexalith.Builds reusable workflow references so consuming
+repositories run the latest shared CI logic.
