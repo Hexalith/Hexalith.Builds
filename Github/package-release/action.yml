@@ -1,28 +1,10 @@
 name: Build Packages
-description: 'Build for Hexalith package projects'
+description: 'Build, test, and release Hexalith .NET package projects with semantic-release'
 
 inputs:
   project-name:
     description: 'The name of the project'
     required: true
-
-outputs:
-  version:
-    description: 'The new release version'
-    value: ${{ steps.version.outputs.version }}
-  major:
-    description: 'The new release major version'
-    value: ${{ steps.version.outputs.major }}
-  minor:
-    description: 'The new release minor version'
-    value: ${{ steps.version.outputs.minor }}
-  patch:
-    description: 'The new release patch version'
-    value: ${{ steps.version.outputs.patch }}
-  published:
-    description: 'Whether a new release was published'
-    value: ${{ steps.version.outputs.published }}
-
 
 runs:
   using: "composite"
@@ -31,41 +13,33 @@ runs:
       with:
         fetch-depth: 0
 
-    - name: Get Version
-      id: version
-      uses: Hexalith/Hexalith.Builds/Github/version@main
-      env:
-        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
-        
+    - name: Initialize build submodules
+      uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
+
     - name: Initialize .NET
       uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
 
-    - name: Initialize Build
-      uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 'lts/*'
 
-    - name: Run Unit Tests of version
+    - name: Install semantic-release dependencies
+      shell: bash
+      run: npm install
+
+    - name: Run unit tests
       uses: Hexalith/Hexalith.Builds/Github/unit-tests@main
       with:
-        project-name: ${{ github.event.repository.name }}
+        project-name: ${{ inputs.project-name }}
 
-    - name: Build Packages version ${{ steps.version.outputs.version }}
-      if: ${{ steps.version.outputs.published == 'true' }}
-      uses: Hexalith/Hexalith.Builds/Github/build-packages@main
-      with:
-        version: ${{ steps.version.outputs.version }}
-        
-    - name: Publish Packages
-      if: ${{ steps.version.outputs.published == 'true' }}
-      uses: Hexalith/Hexalith.Builds/Github/publish-packages@main
-      with:
-        version: ${{ steps.version.outputs.version }}
+    # One-pass release: semantic-release computes the version from Conventional
+    # Commits and drives the .NET build (prepare) and NuGet publish (publish)
+    # through @semantic-release/exec. The build and publish steps only run when
+    # a release is actually warranted, so no explicit gating is needed.
+    - name: Semantic Release
+      shell: bash
       env:
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         NUGET_API_KEY: ${{ env.NUGET_API_KEY }}
-        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
-    - name: Create Release
-      uses: Hexalith/Hexalith.Builds/Github/create-release@main
-      env:
-        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
-
-
-    
+      run: npx semantic-release
