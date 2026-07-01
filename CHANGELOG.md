@@ -1,3 +1,10 @@
+## [4.16.3](https://github.com/Hexalith/Hexalith.Builds/compare/v4.16.2...v4.16.3) (2026-07-01)
+
+
+### Bug Fixes
+
+* update Hexalith.PolymorphicSerializations and ByteAether.Ulid package versions ([6e5a079](https://github.com/Hexalith/Hexalith.Builds/commit/6e5a0798ddda106c254745cd1b5879b32d5b11f0))
+
 ## [4.16.2](https://github.com/Hexalith/Hexalith.Builds/compare/v4.16.1...v4.16.2) (2026-07-01)
 
 
