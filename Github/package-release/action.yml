@@ -1,10 +1,5 @@
 name: Build Packages
-description: 'Build, test, and release Hexalith .NET package projects with semantic-release'
-
-inputs:
-  project-name:
-    description: 'The name of the project'
-    required: true
+description: 'Build and release Hexalith .NET package projects with semantic-release (run after the verify job)'
 
 runs:
   using: "composite"
@@ -31,11 +26,6 @@ runs:
     - name: Verify dependency provenance and signatures
       shell: bash
       run: npm audit signatures
-
-    - name: Run unit tests
-      uses: Hexalith/Hexalith.Builds/Github/unit-tests@v4.16.0
-      with:
-        project-name: ${{ inputs.project-name }}
 
     # One-pass release: semantic-release computes the version from Conventional
     # Commits and drives the .NET build (prepare) and NuGet publish (publish)

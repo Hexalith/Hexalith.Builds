@@ -1,0 +1,27 @@
+name: Verify
+description: 'Build and test a Hexalith .NET project without publishing (PR / CI gate)'
+
+inputs:
+  project-name:
+    description: 'The name of the project'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+
+    - name: Initialize build submodules
+      uses: Hexalith/Hexalith.Builds/Github/initialize-build@v4.16.0
+
+    - name: Initialize .NET
+      uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@v4.16.0
+
+    # dotnet test builds the test project and its referenced libraries, so this
+    # both compiles the code and runs the tests — no publish, no versioning.
+    - name: Run unit tests
+      uses: Hexalith/Hexalith.Builds/Github/unit-tests@v4.16.0
+      with:
+        project-name: ${{ inputs.project-name }}

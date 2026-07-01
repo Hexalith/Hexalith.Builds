@@ -1,28 +1,25 @@
-name: Build Packages
+name: Release
 on:
   push:
-    branches: 
+    branches:
       - main
       - next
       - next-major
-      - aplha
+      - alpha
       - beta
       - '[0-9]+.[0-9]+.x'
 
 permissions:
-  packages: write
-  contents: write
-  issues: write
-  pull-requests: write
-  
+  contents: write        # commit changelog, push tag, create GitHub release
+  issues: write          # semantic-release comments on released issues
+  pull-requests: write   # semantic-release comments on released PRs
+
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
-    name: Build and Test
-    outputs:
-      version: ${{ steps.version.outputs.version }}
+    name: Release
     steps:
-    - uses: actions/checkout@main
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
@@ -30,6 +27,3 @@ jobs:
       uses: Hexalith/Hexalith.Builds/Github/create-release@main
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-    

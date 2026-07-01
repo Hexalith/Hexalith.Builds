@@ -1,8 +1,13 @@
 # Build Packages Action
 
-This GitHub Action builds, tests, and releases packages for Hexalith .NET
-projects using [semantic-release](https://semantic-release.org) directly (the
-official CLI — no third-party wrapper action).
+This GitHub Action builds and releases packages for Hexalith .NET projects using
+[semantic-release](https://semantic-release.org) directly (the official CLI — no
+third-party wrapper action).
+
+It is the **release** half of a two-job pipeline: run the
+[`verify`](../verify) action first (on pull requests and pushes) to build and
+test, then run this action on pushes to release branches. This action does not
+re-run the tests.
 
 It runs semantic-release **once**: the version is computed from
 [Conventional Commits](https://www.conventionalcommits.org), then the .NET build
@@ -13,7 +18,7 @@ separate "is a release published?" gate.
 
 ## Inputs
 
-- `project-name` (required): The name of the project (used to locate the test project).
+None.
 
 ## Outputs
 
@@ -28,8 +33,7 @@ commit/tag, NuGet publish, and GitHub release) in a single pass.
 4. **Setup Node.js** (`actions/setup-node@v4`, `lts/*`).
 5. **Install semantic-release dependencies** (`npm ci` — requires a committed `package-lock.json`).
 6. **Verify dependency provenance and signatures** (`npm audit signatures`).
-7. **Run unit tests** (`Github/unit-tests`).
-8. **Semantic Release** (`npx semantic-release`) — one pass:
+7. **Semantic Release** (`npx semantic-release`) — one pass:
    - analyze commits → next version
    - `@semantic-release/changelog` → update `CHANGELOG.md`
    - `@semantic-release/exec` `prepareCmd` → `scripts/build-packages.ps1` builds/packs the libraries
@@ -63,15 +67,34 @@ commit/tag, NuGet publish, and GitHub release) in a single pass.
 ## Example Usage
 
 ```yaml
+on:
+  push:
+    branches: [main, next, next-major, alpha, beta, '[0-9]+.[0-9]+.x']
+  pull_request:
+    branches: [main, next, next-major, alpha, beta]
+
+permissions:
+  contents: read
+
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
-    name: Build and Test
     steps:
-    - name: Build and publish packages
-      uses: Hexalith/Hexalith.Builds/Github/package-release@main
+    - uses: Hexalith/Hexalith.Builds/Github/verify@main
       with:
         project-name: ${{ github.event.repository.name }}
+
+  release:
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      packages: write
+    steps:
+    - uses: Hexalith/Hexalith.Builds/Github/package-release@main
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

@@ -1,52 +1,24 @@
 name: Create Release
-description: Create a release using automatic versionning
-
-inputs:
-  dry_run:
-    description: 'If true, the release process will be simulated without making any changes'
-    required: false
-    default: 'false'
-
-outputs:
-  version:
-    description: 'The new release version'
-    value: ${{ steps.semantic.outputs.new_release_version }}
-  major:
-    description: 'The new release major version'
-    value: ${{ steps.semantic.outputs.new_release_major_version }}
-  minor:
-    description: 'The new release minor version'
-    value: ${{ steps.semantic.outputs.new_release_minor_version }}
-  patch:
-    description: 'The new release patch version'
-    value: ${{ steps.semantic.outputs.new_release_patch_version }}
-  published:
-    description: 'Whether a new release was published'
-    value: ${{ steps.semantic.outputs.new_release_published }}
+description: 'Release with semantic-release (version, changelog, git commit, GitHub release) — no package build'
 
 runs:
   using: "composite"
   steps:
-    - name: Temporarily merge PR branch
-      if: ${{ github.event_name == 'pull_request' }}
-      run: |
-        git config --global user.name github-actions
-        git config --global user.email github-actions@github.com
-        git merge --no-ff origin/${{ github.event.pull_request.head.ref }} --message "${{ github.event.pull_request.title }}"
-      shell: bash
-    - name: Semantic Release
-      id: semantic
-      uses: cycjimmy/semantic-release-action@v6
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        unset_gha_env: ${{ github.event_name == 'pull_request' }}
-        ci: ${{ github.event_name == 'pull_request' && false || '' }}
-        extra_plugins: |
-            @semantic-release/git
-            @semantic-release/changelog
+        node-version: 'lts/*'
+
+    - name: Install semantic-release dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Verify dependency provenance and signatures
+      shell: bash
+      run: npm audit signatures
+
+    - name: Semantic Release
+      shell: bash
       env:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
-    - name: Show release information
-      run: |
-        echo Version ${{ steps.semantic.outputs.new_release_version }}
-        echo Published ${{ steps.semantic.outputs.new_release_published }}
-      shell: bash
+      run: npx semantic-release
