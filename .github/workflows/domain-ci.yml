@@ -98,16 +98,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.build-timeout-minutes }}
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-          submodules: true
+          submodules: false
+      - name: Initialize root-declared submodules
+        shell: bash
+        run: git -c submodule.recurse=false submodule update --init
       - name: Initialize .NET
-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Cache NuGet packages
-        uses: actions/cache@main
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
@@ -142,9 +145,17 @@ jobs:
           done <<< "$UNIT_TEST_PROJECTS"
       - name: Install and initialize Dapr
         if: ${{ inputs.integration-test-projects != '' }}
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
+        uses: dapr/setup-dapr@8d980918fd43a2765c143ce7f687665b2d46a6b9 # v2
         with:
           version: ${{ inputs.dapr-version }}
+      - name: Run dapr init
+        if: ${{ inputs.integration-test-projects != '' }}
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: dapr init
       - name: Integration tests (Tier 2)
         if: ${{ inputs.integration-test-projects != '' }}
         shell: bash
@@ -177,7 +188,7 @@ jobs:
           python3 scripts/validate-coverage.py "${args[@]}" --summary-file "$GITHUB_STEP_SUMMARY"
       - name: Upload test and coverage evidence
         if: always()
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: blocking-test-results
           path: |
@@ -192,16 +203,19 @@ jobs:
     needs: build-and-test
     continue-on-error: ${{ inputs.aspire-continue-on-error }}
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-          submodules: true
+          submodules: false
+      - name: Initialize root-declared submodules
+        shell: bash
+        run: git -c submodule.recurse=false submodule update --init
       - name: Initialize .NET
-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Cache NuGet packages
-        uses: actions/cache@main
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
@@ -211,9 +225,16 @@ jobs:
           dotnet restore ${{ inputs.solution }}
           dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
+        uses: dapr/setup-dapr@8d980918fd43a2765c143ce7f687665b2d46a6b9 # v2
         with:
           version: ${{ inputs.dapr-version }}
+      - name: Run dapr init
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: dapr init
       - name: Aspire contract tests (Tier 3, non-Performance)
         shell: bash
         run: >
@@ -230,7 +251,7 @@ jobs:
           echo "Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
       - name: Upload test results
         if: failure()
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: aspire-test-results
           path: |
@@ -244,16 +265,19 @@ jobs:
     timeout-minutes: ${{ inputs.performance-timeout-minutes }}
     needs: build-and-test
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-          submodules: true
+          submodules: false
+      - name: Initialize root-declared submodules
+        shell: bash
+        run: git -c submodule.recurse=false submodule update --init
       - name: Initialize .NET
-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Cache NuGet packages
-        uses: actions/cache@main
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
@@ -263,9 +287,16 @@ jobs:
           dotnet restore ${{ inputs.solution }}
           dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
+        uses: dapr/setup-dapr@8d980918fd43a2765c143ce7f687665b2d46a6b9 # v2
         with:
           version: ${{ inputs.dapr-version }}
+      - name: Run dapr init
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: dapr init
       - name: Performance tests (Tier 3, nightly only)
         shell: bash
         run: >
@@ -276,7 +307,7 @@ jobs:
           --results-directory TestResults/performance
       - name: Upload performance test results
         if: always()
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: performance-test-results
           path: "TestResults/**/*.trx"

@@ -39,7 +39,7 @@ runs:
         echo "::debug::Registry: ${{ inputs.registry }}"
         
     - name: Log in to Azure
-      uses: azure/login@master
+      uses: azure/login@93381592711f247e165c389ebb30b596c84cdc48 # v3.0.0
       with:
         client-id: ${{ inputs.client-id }}
         tenant-id: ${{ inputs.tenant-id }}
@@ -60,4 +60,4 @@ runs:
         }
 
         update_container_app "web"
-        update_container_app "api" 
+        update_container_app "api"

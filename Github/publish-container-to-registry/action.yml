@@ -35,7 +35,7 @@ runs:
           git checkout main
           git pull
     - name: Login to the container registry
-      uses: docker/login-action@master
+      uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
       with:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.username }}

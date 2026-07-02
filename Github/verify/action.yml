@@ -9,19 +9,19 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 0
 
     - name: Initialize build submodules
-      uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
+      shell: bash
+      run: git -c submodule.recurse=false submodule update --init
 
     - name: Initialize .NET
-      uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
+      uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
 
     # dotnet test builds the test project and its referenced libraries, so this
     # both compiles the code and runs the tests — no publish, no versioning.
     - name: Run unit tests
-      uses: Hexalith/Hexalith.Builds/Github/unit-tests@main
-      with:
-        project-name: ${{ inputs.project-name }}
+      shell: bash
+      run: dotnet test -c Release ./test/${{ inputs.project-name }}.Tests/${{ inputs.project-name }}.Tests.csproj -p:GeneratePackageOnBuild=false

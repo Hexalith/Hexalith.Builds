@@ -55,5 +55,5 @@ jobs:
 
 ## Version Reference
 
-Use `@main` for Hexalith.Builds reusable workflow references so consuming
-repositories run the latest shared release logic.
+Use a versioned Hexalith.Builds tag or full commit SHA for reproducible module
+release pipelines. See `ci-cd-standards.md` for shared CI/CD policy.
