@@ -1,0 +1,46 @@
+name: Hexalith CodeQL
+
+# Reusable SAST workflow. Consuming modules call this with a thin caller that sets `languages`.
+# Uses build-mode `none` by default so CodeQL analyses source without a full solution build
+# (no DAPR/Aspire/submodule orchestration needed for the scan).
+
+on:
+  workflow_call:
+    inputs:
+      languages:
+        description: 'Comma-separated CodeQL languages (e.g. csharp).'
+        required: false
+        type: string
+        default: 'csharp'
+      build-mode:
+        description: 'CodeQL build mode (none | autobuild | manual).'
+        required: false
+        type: string
+        default: 'none'
+      timeout-minutes:
+        required: false
+        type: number
+        default: 30
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: false
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
+        with:
+          languages: ${{ inputs.languages }}
+          build-mode: ${{ inputs.build-mode }}
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3

@@ -66,3 +66,62 @@ test project lists, and operational exceptions in their own docs.
   `if: always()`.
 - Keep retention short for routine CI evidence unless a module has compliance
   requirements for longer retention.
+
+## Runtime Dependencies (Dapr)
+
+- The supported Dapr baseline is **1.18+**. Shared reusable workflows and the
+  `dapr-init` composite action default to `1.18.0`; do not pin a module below
+  this baseline without a documented exception.
+
+## Dependency Auditing
+
+- Keep the NuGet vulnerability audit **enabled** (`NuGetAudit=true`,
+  `NuGetAuditMode=all`). Do not disable it globally with `-p:NuGetAudit=false`;
+  that silences the scanner across the whole pipeline.
+- When `TreatWarningsAsErrors` is on, exclude the audit advisory codes
+  (`NU1901`–`NU1904`) from `WarningsNotAsErrors` so a transitive advisory that
+  cannot be upgraded immediately does not block CI, while still surfacing it in
+  build logs.
+- Acknowledge or waive an individual advisory with `<NuGetAuditSuppress>` rather
+  than turning the whole audit off.
+
+## Security Scanning
+
+- Every module ships a **Dependabot** config (`.github/dependabot.yml`) covering
+  the `nuget`, `github-actions`, and (when a `package.json` is present) `npm`
+  ecosystems.
+- Every module runs **CodeQL** on push/PR to `main` plus a weekly schedule.
+  Prefer calling the shared reusable workflow:
+
+  ```yaml
+  jobs:
+    codeql:
+      uses: Hexalith/Hexalith.Builds/.github/workflows/codeql.yml@main
+      permissions:
+        security-events: write
+        contents: read
+      with:
+        languages: csharp
+  ```
+
+- Pull requests run **dependency review** to block newly introduced vulnerable
+  or non-compliant dependencies:
+
+  ```yaml
+  jobs:
+    dependency-review:
+      uses: Hexalith/Hexalith.Builds/.github/workflows/dependency-review.yml@main
+  ```
+
+## Commit Message Validation
+
+- Modules that release with semantic-release MUST validate Conventional Commits
+  on pull requests, because versioning is derived entirely from commit messages.
+- Provide `@commitlint/*` devDependencies, a commitlint config, and a
+  `package-lock.json`, then call the shared reusable workflow:
+
+  ```yaml
+  jobs:
+    commitlint:
+      uses: Hexalith/Hexalith.Builds/.github/workflows/commitlint.yml@main
+  ```

@@ -21,7 +21,7 @@ actions or reusable workflows to release tags or commit SHAs.
 
 - **.NET 10+** - Latest .NET framework
 - **C# 14+** - Latest C# language features
-- **DAPR 1.16+** - Distributed Application Runtime for microservices
+- **DAPR 1.18+** - Distributed Application Runtime for microservices
 - **Microsoft Fluent UI Blazor** - UI component library for Blazor applications
 - **XUnit + Shouldly** - Unit testing framework and assertion library
 

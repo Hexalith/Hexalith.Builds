@@ -1,0 +1,11 @@
+# Keeps the pinned third-party actions used by the shared reusable workflows and composite
+# actions up to date. Dependabot opens PRs that bump the SHA and the trailing version comment.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "ci(deps)"

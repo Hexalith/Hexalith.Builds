@@ -9,7 +9,7 @@ workflows in consuming repositories (e.g. `Hexalith.Tenants`).
 
 | Input     | Required | Default    | Description                          |
 |-----------|----------|------------|--------------------------------------|
-| `version` | No       | `1.17.0`   | Dapr runtime/CLI version to install. |
+| `version` | No       | `1.18.0`   | Dapr runtime/CLI version to install. |
 
 ## Usage
 
@@ -17,7 +17,7 @@ workflows in consuming repositories (e.g. `Hexalith.Tenants`).
 - name: Install and initialize Dapr
   uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
   with:
-    version: '1.17.0'
+    version: '1.18.0'
 ```
 
 Use `@main` for Hexalith.Builds action references so consuming repositories run

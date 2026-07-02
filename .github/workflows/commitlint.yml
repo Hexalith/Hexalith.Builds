@@ -1,0 +1,38 @@
+name: Hexalith Commitlint
+
+# Reusable Conventional Commits gate. semantic-release derives the next version and changelog
+# solely from commit messages, so a malformed commit silently breaks versioning. Consuming
+# modules call this from a pull_request-triggered caller and must ship @commitlint/* devDependencies,
+# a commitlint config, and a package-lock.json (npm ci).
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        type: string
+        default: 'lts/*'
+
+permissions:
+  contents: read
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate PR commit messages
+        run: >
+          npx commitlint
+          --from "${{ github.event.pull_request.base.sha }}"
+          --to "${{ github.event.pull_request.head.sha }}"
+          --verbose

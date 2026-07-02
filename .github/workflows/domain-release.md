@@ -12,7 +12,7 @@ Dapr-backed tests, and then runs semantic-release.
 | `solution` | Yes | - | Path to the `.slnx` or `.sln` file to restore and build. |
 | `dotnet-global-json` | No | `global.json` | Path to the SDK-pinning `global.json` file. |
 | `packages-lock-file` | No | `Directory.Packages.props` | File used to build the NuGet cache key. |
-| `dapr-version` | No | `1.17.0` | Dapr version used when tests are enabled. |
+| `dapr-version` | No | `1.18.0` | Dapr version used when tests are enabled. |
 | `test-projects` | No | `''` | Newline-separated test project paths to run before release. |
 | `node-version` | No | `lts/*` | Node.js version passed to `actions/setup-node`. |
 | `timeout-minutes` | No | `20` | Timeout for the release job. |
