@@ -19,10 +19,12 @@ test project lists, and operational exceptions in their own docs.
 - Pin third-party actions to a full commit SHA and record the upstream version in
   a trailing comment.
 - Do not use mutable action references such as `@main`, `@master`, or floating
-  major tags in shared workflows or actions.
-- Reusable workflow references from consuming repositories should use a
-  versioned Hexalith.Builds tag or a full Hexalith.Builds commit SHA when the
-  consuming module requires reproducibility.
+  major tags for third-party actions in shared workflows or actions.
+- Hexalith.Builds is the exception: GitHub workflow or action references to
+  Hexalith.Builds actions or reusable workflows must always use the latest
+  `main` branch reference. Use
+  `Hexalith/Hexalith.Builds/<action-path>@main`; do not pin Hexalith.Builds
+  actions or reusable workflows to release tags or commit SHAs.
 
 ## Submodules
 
