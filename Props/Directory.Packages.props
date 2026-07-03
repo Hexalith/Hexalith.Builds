@@ -18,27 +18,28 @@
     <PackageVersion Include="Hexalith.Documents.WebApp" Version="2.7.1" />
     <PackageVersion Include="Hexalith.Documents.WebServer" Version="2.7.1" />
     <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.7.1" />
-    <PackageVersion Include="Hexalith.Commons" Version="2.24.2" />
-    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.24.2" />
+    <PackageVersion Include="Hexalith.Commons" Version="2.26.0" />
+    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.26.0" />
     <PackageVersion Include="Hexalith.Commons.Aspire" Version="2.25.1" />
     <PackageVersion Include="Hexalith.Commons.Http" Version="2.25.1" />
-    <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.24.2" />
+    <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.26.0" />
     <PackageVersion Include="Hexalith.Commons.ServiceDefaults" Version="2.25.1" />
-    <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.24.2" />
-    <PackageVersion Include="Hexalith.Commons.StringEncoders" Version="2.24.2" />
+    <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.26.0" />
+    <PackageVersion Include="Hexalith.Commons.StringEncoders" Version="2.26.0" />
     <PackageVersion Include="Hexalith.Domains" Version="2.0.2" />
     <PackageVersion Include="Hexalith.Domains.Abstractions" Version="2.0.2" />
-    <PackageVersion Include="Hexalith.EventStore.Admin.Abstractions" Version="3.22.0" />
-    <PackageVersion Include="Hexalith.EventStore.Admin.Server" Version="3.22.0" />
-    <PackageVersion Include="Hexalith.EventStore.Aspire" Version="3.22.0" />
-    <PackageVersion Include="Hexalith.EventStore.Client" Version="3.22.0" />
-    <PackageVersion Include="Hexalith.EventStore.Contracts" Version="3.22.0" />
-    <PackageVersion Include="Hexalith.EventStore.DomainService" Version="3.22.0" />
-    <PackageVersion Include="Hexalith.EventStore.Server" Version="3.22.0" />
-    <PackageVersion Include="Hexalith.EventStore.ServiceDefaults" Version="3.22.0" />
-    <PackageVersion Include="Hexalith.EventStore.SignalR" Version="3.22.0" />
-    <PackageVersion Include="Hexalith.EventStore.Testing" Version="3.22.0" />
-    <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="3.22.0" />
+    <PackageVersion Include="Hexalith.EventStore.Admin.Abstractions" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.Admin.Server" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.Aspire" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.Client" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.Contracts" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.DomainService" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.RestApi.Generators" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.Server" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.ServiceDefaults" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.SignalR" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.Testing" Version="3.31.0" />
+    <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="3.31.0" />
     <PackageVersion Include="Hexalith.FrontComposer.Contracts" Version="0.2.0-review.77962d15" />
     <PackageVersion Include="Hexalith.FrontComposer.Mcp" Version="0.2.0-review.77962d15" />
     <PackageVersion Include="Hexalith.FrontComposer.Shell" Version="0.2.0-review.77962d15" />
@@ -65,8 +66,8 @@
     <PackageVersion Include="Hexalith.Parties.ServiceDefaults" Version="1.0.0" />
     <PackageVersion Include="Hexalith.Parties.Testing" Version="1.0.0" />
     <PackageVersion Include="Hexalith.Parties.UI" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.15.4" />
-    <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.15.4" />
+    <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.16.1" />
+    <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.16.1" />
     <PackageVersion Include="Hexalith.Tenants.Aspire" Version="3.15.1" />
     <PackageVersion Include="Hexalith.Tenants.Client" Version="3.15.1" />
     <PackageVersion Include="Hexalith.Tenants.Contracts" Version="3.15.1" />
@@ -142,7 +143,7 @@
     <PackageVersion Include="Humanizer" Version="3.0.10" />
     <PackageVersion Include="ISO3166" Version="1.0.4" />
     <PackageVersion Include="MailKit" Version="4.17.0" />
-    <PackageVersion Include="MediatR" Version="14.1.0" />
+    <PackageVersion Include="MediatR" Version="14.2.0" />
     <PackageVersion Include="MessagePack" Version="3.1.7" />
     <PackageVersion Include="Microsoft.AspNetCore.Authorization" Version="10.0.9" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="10.0.9" />
@@ -163,10 +164,10 @@
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.61.0" />
     <PackageVersion Include="Microsoft.Bot.Builder" Version="4.23.1" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.3.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="5.3.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.3.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.6.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.9" />
@@ -196,9 +197,9 @@
     <PackageVersion Include="Microsoft.IdentityModel.Protocols" Version="8.19.1" />
     <PackageVersion Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.19.1" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.19.1" />
-    <PackageVersion Include="Microsoft.Identity.Web" Version="4.11.0" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.12.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
-    <PackageVersion Include="Microsoft.OpenApi" Version="2.9.0" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.7.0" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.77.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" />
     <PackageVersion Include="Microsoft.TeamsFx" Version="3.0.0" />
@@ -216,7 +217,7 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
     <PackageVersion Include="OrchardCore.Localization.Core" Version="3.0.0" />
-    <PackageVersion Include="Radzen.Blazor" Version="11.0.5" />
+    <PackageVersion Include="Radzen.Blazor" Version="11.1.0" />
     <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="4.15.0" />
     <PackageVersion Include="Scriban" Version="7.2.5" />
@@ -232,13 +233,13 @@
     <PackageVersion Include="Serilog.Sinks.Debug" Version="3.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.27.0.140913" />
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.28.0.143324" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
     <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.2.3" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
     <PackageVersion Include="System.Text.Json" Version="10.0.9" />
-    <PackageVersion Include="Testcontainers" Version="4.12.0" />
+    <PackageVersion Include="Testcontainers" Version="4.13.0" />
     <PackageVersion Include="Threenine.Data" Version="5.0.1" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="bunit" Version="2.8.4-preview" />
