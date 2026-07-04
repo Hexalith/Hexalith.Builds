@@ -28,18 +28,18 @@
     <PackageVersion Include="Hexalith.Commons.StringEncoders" Version="2.26.0" />
     <PackageVersion Include="Hexalith.Domains" Version="2.0.2" />
     <PackageVersion Include="Hexalith.Domains.Abstractions" Version="2.0.2" />
-    <PackageVersion Include="Hexalith.EventStore.Admin.Abstractions" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.Admin.Server" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.Aspire" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.Client" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.Contracts" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.DomainService" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.RestApi.Generators" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.Server" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.ServiceDefaults" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.SignalR" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.Testing" Version="3.33.4" />
-    <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="3.33.4" />
+    <PackageVersion Include="Hexalith.EventStore.Admin.Abstractions" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.Admin.Server" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.Aspire" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.Client" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.Contracts" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.DomainService" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.RestApi.Generators" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.Server" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.ServiceDefaults" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.SignalR" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.Testing" Version="3.33.5" />
+    <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="3.33.5" />
     <PackageVersion Include="Hexalith.FrontComposer.Contracts" Version="0.2.0-review.77962d15" />
     <PackageVersion Include="Hexalith.FrontComposer.Mcp" Version="0.2.0-review.77962d15" />
     <PackageVersion Include="Hexalith.FrontComposer.Shell" Version="0.2.0-review.77962d15" />
