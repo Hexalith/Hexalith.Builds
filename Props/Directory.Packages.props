@@ -20,10 +20,10 @@
     <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.7.1" />
     <PackageVersion Include="Hexalith.Commons" Version="2.26.0" />
     <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.26.0" />
-    <PackageVersion Include="Hexalith.Commons.Aspire" Version="2.25.1" />
-    <PackageVersion Include="Hexalith.Commons.Http" Version="2.25.1" />
+    <PackageVersion Include="Hexalith.Commons.Aspire" Version="2.26.0" />
+    <PackageVersion Include="Hexalith.Commons.Http" Version="2.26.0" />
     <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.26.0" />
-    <PackageVersion Include="Hexalith.Commons.ServiceDefaults" Version="2.25.1" />
+    <PackageVersion Include="Hexalith.Commons.ServiceDefaults" Version="2.26.0" />
     <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.26.0" />
     <PackageVersion Include="Hexalith.Commons.StringEncoders" Version="2.26.0" />
     <PackageVersion Include="Hexalith.Domains" Version="2.0.2" />
