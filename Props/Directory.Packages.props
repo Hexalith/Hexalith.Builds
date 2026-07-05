@@ -40,11 +40,11 @@
     <PackageVersion Include="Hexalith.EventStore.SignalR" Version="3.35.0" />
     <PackageVersion Include="Hexalith.EventStore.Testing" Version="3.35.0" />
     <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="3.35.0" />
-    <PackageVersion Include="Hexalith.FrontComposer.Contracts" Version="1.1.0" />
-    <PackageVersion Include="Hexalith.FrontComposer.Mcp" Version="1.1.0" />
-    <PackageVersion Include="Hexalith.FrontComposer.Shell" Version="1.1.0" />
-    <PackageVersion Include="Hexalith.FrontComposer.SourceTools" Version="1.1.0" />
-    <PackageVersion Include="Hexalith.FrontComposer.Testing" Version="1.1.0" />
+    <PackageVersion Include="Hexalith.FrontComposer.Contracts" Version="1.2.0" />
+    <PackageVersion Include="Hexalith.FrontComposer.Mcp" Version="1.2.0" />
+    <PackageVersion Include="Hexalith.FrontComposer.Shell" Version="1.2.0" />
+    <PackageVersion Include="Hexalith.FrontComposer.SourceTools" Version="1.2.0" />
+    <PackageVersion Include="Hexalith.FrontComposer.Testing" Version="1.2.0" />
     <PackageVersion Include="Hexalith.KeyValueStorages" Version="2.1.2" />
     <PackageVersion Include="Hexalith.KeyValueStorages.Abstractions" Version="2.1.2" />
     <PackageVersion Include="Hexalith.KeyValueStorages.Files" Version="2.1.2" />
