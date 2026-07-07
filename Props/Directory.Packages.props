@@ -66,8 +66,8 @@
     <PackageVersion Include="Hexalith.Parties.ServiceDefaults" Version="1.0.0" />
     <PackageVersion Include="Hexalith.Parties.Testing" Version="1.0.0" />
     <PackageVersion Include="Hexalith.Parties.UI" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.16.1" />
-    <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.16.1" />
+    <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.16.2" />
+    <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.16.2" />
     <PackageVersion Include="Hexalith.Tenants.Aspire" Version="3.15.1" />
     <PackageVersion Include="Hexalith.Tenants.Client" Version="3.15.1" />
     <PackageVersion Include="Hexalith.Tenants.Contracts" Version="3.15.1" />
