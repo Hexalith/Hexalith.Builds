@@ -1,3 +1,10 @@
+## [4.16.4](https://github.com/Hexalith/Hexalith.Builds/compare/v4.16.3...v4.16.4) (2026-07-08)
+
+
+### Bug Fixes
+
+* **release:** delay zot login until publish ([5f853bb](https://github.com/Hexalith/Hexalith.Builds/commit/5f853bb4440b9f13d85f6fd2f8469f606590af47))
+
 ## [4.16.3](https://github.com/Hexalith/Hexalith.Builds/compare/v4.16.2...v4.16.3) (2026-07-01)
 
 
