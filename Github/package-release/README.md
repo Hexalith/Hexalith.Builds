@@ -30,7 +30,7 @@ commit/tag, NuGet publish, and GitHub release) in a single pass.
 1. **Checkout** (`actions/checkout@v5`, `fetch-depth: 0`) - full history is required by semantic-release.
 2. **Initialize build submodules** (`Github/initialize-build`) - checks out root-declared submodules such as `references/Hexalith.Builds`.
 3. **Initialize .NET** (`Github/initialize-dotnet`).
-4. **Setup Node.js** (`actions/setup-node@v4`, `lts/*`).
+4. **Setup Node.js** (`actions/setup-node@v6`, `node`).
 5. **Install semantic-release dependencies** (`npm ci` - requires a committed `package-lock.json`).
 6. **Verify dependency provenance and signatures** (`npm audit signatures`).
 7. **Semantic Release** (`npx semantic-release`) - one pass:

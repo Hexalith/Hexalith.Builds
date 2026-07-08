@@ -14,7 +14,7 @@ None.
 
 ## Steps
 
-1. Set up Node.js with `actions/setup-node@v4` and `lts/*`.
+1. Set up Node.js with `actions/setup-node@v6` and `node`.
 2. Install npm dependencies with `npm ci`.
 3. Verify npm package provenance and signatures with `npm audit signatures`.
 4. Run `npx semantic-release`.

@@ -23,6 +23,7 @@ workflows in consuming repositories (e.g. `Hexalith.Tenants`).
 Use `@main` for Hexalith.Builds action references so consuming repositories run
 the latest shared Dapr bootstrap logic.
 
-This action currently uses `dapr/setup-dapr@main` and
-`nick-fields/retry@master` internally. Review `action.yml` if your repository
-requires every nested third-party action to be pinned by commit SHA.
+This action installs the Dapr CLI with a shell step and uses
+`nick-fields/retry@v4.0.0` internally for `dapr init`. Review `action.yml` if
+your repository requires every nested third-party action to be pinned by commit
+SHA.

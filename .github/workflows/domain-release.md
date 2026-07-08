@@ -14,7 +14,7 @@ Dapr-backed tests, and then runs semantic-release.
 | `packages-lock-file` | No | `Directory.Packages.props` | File used to build the NuGet cache key. |
 | `dapr-version` | No | `1.18.0` | Dapr version used when tests are enabled. |
 | `test-projects` | No | `''` | Newline-separated test project paths to run before release. |
-| `node-version` | No | `lts/*` | Node.js version passed to `actions/setup-node`. |
+| `node-version` | No | `node` | Node.js version passed to `actions/setup-node`. |
 | `timeout-minutes` | No | `20` | Timeout for the release job. |
 | `publish-containers` | No | `false` | Whether to prepare semantic-release container publishing for .NET SDK container projects. |
 | `container-projects` | No | `''` | Newline-separated container mappings in `path/to/project.csproj|repository-name` format. Required when `publish-containers` is `true`. |

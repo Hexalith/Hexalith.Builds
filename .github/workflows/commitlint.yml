@@ -11,7 +11,7 @@ on:
       node-version:
         required: false
         type: string
-        default: 'lts/*'
+        default: 'node'
 
 permissions:
   contents: read

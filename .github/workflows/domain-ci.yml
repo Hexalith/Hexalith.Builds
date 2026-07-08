@@ -143,11 +143,29 @@ jobs:
               --results-directory "TestResults/${name}" \
               --collect:"XPlat Code Coverage"
           done <<< "$UNIT_TEST_PROJECTS"
-      - name: Install and initialize Dapr
+      - name: Install Dapr CLI
         if: ${{ inputs.integration-test-projects != '' }}
-        uses: dapr/setup-dapr@8d980918fd43a2765c143ce7f687665b2d46a6b9 # v2
-        with:
-          version: ${{ inputs.dapr-version }}
+        shell: bash
+        env:
+          DAPR_VERSION: ${{ inputs.dapr-version }}
+        run: |
+          set -euo pipefail
+          version="${DAPR_VERSION#v}"
+          os="$(uname | tr '[:upper:]' '[:lower:]')"
+          case "$(uname -m)" in
+            x86_64) arch="amd64" ;;
+            aarch64) arch="arm64" ;;
+            armv7*) arch="arm" ;;
+            *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+          esac
+          install_dir="${RUNNER_TEMP}/dapr-cli"
+          mkdir -p "$install_dir"
+          archive="${RUNNER_TEMP}/dapr-cli.tar.gz"
+          curl -fsSL "https://github.com/dapr/cli/releases/download/v${version}/dapr_${os}_${arch}.tar.gz" -o "$archive"
+          tar -xzf "$archive" -C "$install_dir" dapr
+          chmod +x "${install_dir}/dapr"
+          echo "$install_dir" >> "$GITHUB_PATH"
+          "${install_dir}/dapr" --version
       - name: Run dapr init
         if: ${{ inputs.integration-test-projects != '' }}
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
@@ -224,10 +242,28 @@ jobs:
         run: |
           dotnet restore ${{ inputs.solution }}
           dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
-      - name: Install and initialize Dapr
-        uses: dapr/setup-dapr@8d980918fd43a2765c143ce7f687665b2d46a6b9 # v2
-        with:
-          version: ${{ inputs.dapr-version }}
+      - name: Install Dapr CLI
+        shell: bash
+        env:
+          DAPR_VERSION: ${{ inputs.dapr-version }}
+        run: |
+          set -euo pipefail
+          version="${DAPR_VERSION#v}"
+          os="$(uname | tr '[:upper:]' '[:lower:]')"
+          case "$(uname -m)" in
+            x86_64) arch="amd64" ;;
+            aarch64) arch="arm64" ;;
+            armv7*) arch="arm" ;;
+            *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+          esac
+          install_dir="${RUNNER_TEMP}/dapr-cli"
+          mkdir -p "$install_dir"
+          archive="${RUNNER_TEMP}/dapr-cli.tar.gz"
+          curl -fsSL "https://github.com/dapr/cli/releases/download/v${version}/dapr_${os}_${arch}.tar.gz" -o "$archive"
+          tar -xzf "$archive" -C "$install_dir" dapr
+          chmod +x "${install_dir}/dapr"
+          echo "$install_dir" >> "$GITHUB_PATH"
+          "${install_dir}/dapr" --version
       - name: Run dapr init
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
@@ -286,10 +322,28 @@ jobs:
         run: |
           dotnet restore ${{ inputs.solution }}
           dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
-      - name: Install and initialize Dapr
-        uses: dapr/setup-dapr@8d980918fd43a2765c143ce7f687665b2d46a6b9 # v2
-        with:
-          version: ${{ inputs.dapr-version }}
+      - name: Install Dapr CLI
+        shell: bash
+        env:
+          DAPR_VERSION: ${{ inputs.dapr-version }}
+        run: |
+          set -euo pipefail
+          version="${DAPR_VERSION#v}"
+          os="$(uname | tr '[:upper:]' '[:lower:]')"
+          case "$(uname -m)" in
+            x86_64) arch="amd64" ;;
+            aarch64) arch="arm64" ;;
+            armv7*) arch="arm" ;;
+            *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+          esac
+          install_dir="${RUNNER_TEMP}/dapr-cli"
+          mkdir -p "$install_dir"
+          archive="${RUNNER_TEMP}/dapr-cli.tar.gz"
+          curl -fsSL "https://github.com/dapr/cli/releases/download/v${version}/dapr_${os}_${arch}.tar.gz" -o "$archive"
+          tar -xzf "$archive" -C "$install_dir" dapr
+          chmod +x "${install_dir}/dapr"
+          echo "$install_dir" >> "$GITHUB_PATH"
+          "${install_dir}/dapr" --version
       - name: Run dapr init
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
