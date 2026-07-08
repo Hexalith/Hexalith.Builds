@@ -2,6 +2,8 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.47.0</HexalithEventStoreVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">2.4.2</HexalithTenantsVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Applications" Version="1.0.6" />
@@ -28,18 +30,18 @@
     <PackageVersion Include="Hexalith.Commons.StringEncoders" Version="2.27.0" />
     <PackageVersion Include="Hexalith.Domains" Version="2.0.2" />
     <PackageVersion Include="Hexalith.Domains.Abstractions" Version="2.0.2" />
-    <PackageVersion Include="Hexalith.EventStore.Admin.Abstractions" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.Admin.Server" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.Aspire" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.Client" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.Contracts" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.DomainService" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.RestApi.Generators" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.Server" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.ServiceDefaults" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.SignalR" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.Testing" Version="3.47.0" />
-    <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="3.47.0" />
+    <PackageVersion Include="Hexalith.EventStore.Admin.Abstractions" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.Admin.Server" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.Aspire" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.Client" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.Contracts" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.DomainService" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.RestApi.Generators" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.Server" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.ServiceDefaults" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.SignalR" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.Testing" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Contracts" Version="1.7.0" />
     <PackageVersion Include="Hexalith.FrontComposer.Mcp" Version="1.7.0" />
     <PackageVersion Include="Hexalith.FrontComposer.Shell" Version="1.7.0" />
@@ -68,12 +70,12 @@
     <PackageVersion Include="Hexalith.Parties.UI" Version="1.0.0" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.16.2" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.16.2" />
-    <PackageVersion Include="Hexalith.Tenants.Aspire" Version="2.4.2" />
-    <PackageVersion Include="Hexalith.Tenants.Client" Version="2.4.2" />
-    <PackageVersion Include="Hexalith.Tenants.Contracts" Version="2.4.2" />
-    <PackageVersion Include="Hexalith.Tenants.Server" Version="2.4.2" />
-    <PackageVersion Include="Hexalith.Tenants.Testing" Version="2.4.2" />
-    <PackageVersion Include="Hexalith.Tenants.UI" Version="2.4.2" />
+    <PackageVersion Include="Hexalith.Tenants.Aspire" Version="$(HexalithTenantsVersion)" />
+    <PackageVersion Include="Hexalith.Tenants.Client" Version="$(HexalithTenantsVersion)" />
+    <PackageVersion Include="Hexalith.Tenants.Contracts" Version="$(HexalithTenantsVersion)" />
+    <PackageVersion Include="Hexalith.Tenants.Server" Version="$(HexalithTenantsVersion)" />
+    <PackageVersion Include="Hexalith.Tenants.Testing" Version="$(HexalithTenantsVersion)" />
+    <PackageVersion Include="Hexalith.Tenants.UI" Version="$(HexalithTenantsVersion)" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
