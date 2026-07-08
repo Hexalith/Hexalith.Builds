@@ -32,9 +32,23 @@ on:
         required: false
         type: number
         default: 20
+      publish-containers:
+        description: 'Publish .NET SDK container images during semantic-release.'
+        required: false
+        type: boolean
+        default: false
+      container-projects:
+        description: 'Newline-separated project-to-repository mappings: path/to/project.csproj|repository-name.'
+        required: false
+        type: string
+        default: ''
     secrets:
       NUGET_API_KEY:
         required: true
+      HEXALITH_ZOT_USERNAME:
+        required: false
+      HEXALITH_ZOT_API_KEY:
+        required: false
 
 permissions:
   contents: write
@@ -101,8 +115,82 @@ jobs:
               --results-directory "TestResults/${name}" \
               --collect:"XPlat Code Coverage"
           done <<< "$TEST_PROJECTS"
+      - name: Login to Hexalith Zot
+        if: ${{ inputs.publish-containers }}
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          registry: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
+          username: ${{ secrets.HEXALITH_ZOT_USERNAME }}
+          password: ${{ secrets.HEXALITH_ZOT_API_KEY }}
+      - name: Prepare release container publisher
+        if: ${{ inputs.publish-containers }}
+        shell: bash
+        env:
+          HEXALITH_CONTAINER_PROJECTS: ${{ inputs.container-projects }}
+        run: |
+          set -euo pipefail
+          if [ -z "${HEXALITH_CONTAINER_PROJECTS//[[:space:]]/}" ]; then
+            echo "container-projects is required when publish-containers is true." >&2
+            exit 1
+          fi
+
+          mkdir -p .hexalith/release
+          cat > .hexalith/release/publish-containers.sh <<'BASH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          version="${1:-}"
+          registry="${HEXALITH_ZOT_REGISTRY:-registry.hexalith.com}"
+          projects="${HEXALITH_CONTAINER_PROJECTS:-}"
+          semver_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+
+          trim() {
+            local value="$1"
+            value="${value#"${value%%[![:space:]]*}"}"
+            value="${value%"${value##*[![:space:]]}"}"
+            printf '%s' "$value"
+          }
+
+          fail() {
+            echo "[publish-containers] $1" >&2
+            exit 1
+          }
+
+          [ -n "$version" ] || fail "Release version argument is required."
+          [[ "$version" =~ $semver_pattern ]] || fail "Release version '$version' must be SemVer without build metadata."
+          [ -n "${projects//[[:space:]]/}" ] || fail "HEXALITH_CONTAINER_PROJECTS is empty."
+
+          while IFS= read -r raw_line; do
+            line="$(trim "${raw_line%$'\r'}")"
+            [ -n "$line" ] || continue
+
+            IFS='|' read -r project repository extra <<< "$line"
+            project="$(trim "$project")"
+            repository="$(trim "$repository")"
+            extra="$(trim "${extra:-}")"
+
+            [ -z "$extra" ] || fail "Invalid container mapping '$line'. Expected project|repository."
+            [ -n "$project" ] || fail "Container project path is empty in '$line'."
+            [ -n "$repository" ] || fail "Container repository is empty in '$line'."
+            [ -f "$project" ] || fail "Container project not found: $project"
+
+            echo "[publish-containers] Publishing ${registry}/${repository}:${version} from ${project}"
+            dotnet publish "$project" \
+              --configuration Release \
+              --os linux \
+              --arch x64 \
+              /t:PublishContainer \
+              -p:ContainerRegistry="$registry" \
+              -p:ContainerRepository="$repository" \
+              -p:ContainerImageTag="$version" \
+              -p:Version="$version"
+          done <<< "$projects"
+          BASH
+          chmod +x .hexalith/release/publish-containers.sh
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          HEXALITH_CONTAINER_PROJECTS: ${{ inputs.container-projects }}
+          HEXALITH_ZOT_REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
         run: npx semantic-release
