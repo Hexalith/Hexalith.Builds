@@ -42,13 +42,15 @@ GitHub operations. Container publishing uses the organization variable
 6. Restore and build the solution in Release configuration with warnings as
    errors.
 7. If `test-projects` is not empty, initialize Dapr and run each test project.
-8. If `publish-containers` is `true`, log in to Hexalith Zot and create
+8. If `publish-containers` is `true`, create
    `.hexalith/release/publish-containers.sh` in the caller workspace.
 9. Run `npx semantic-release`.
 
 The generated publish helper accepts the semantic-release version as its first
 argument. Call it from the caller repository semantic-release `publishCmd` after
-the NuGet publish command:
+the NuGet publish command. The helper logs in to Hexalith Zot only when
+semantic-release reaches `publishCmd`, so non-releasing commits do not require
+registry credentials:
 
 ```json
 "publishCmd": "dotnet nuget push ./nupkgs/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate && ./.hexalith/release/publish-containers.sh ${nextRelease.version}"
