@@ -1,3 +1,10 @@
+## [4.16.5](https://github.com/Hexalith/Hexalith.Builds/compare/v4.16.4...v4.16.5) (2026-07-08)
+
+
+### Bug Fixes
+
+* replace hardcoded versions with property references for HexalithEventStore and HexalithTenants ([63ae647](https://github.com/Hexalith/Hexalith.Builds/commit/63ae64791c6ac7153c9f26c2a44552f79f36d769))
+
 ## [4.16.4](https://github.com/Hexalith/Hexalith.Builds/compare/v4.16.3...v4.16.4) (2026-07-08)
 
 
