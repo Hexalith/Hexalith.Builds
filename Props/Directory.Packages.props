@@ -68,12 +68,12 @@
     <PackageVersion Include="Hexalith.Parties.UI" Version="1.0.0" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.16.2" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.16.2" />
-    <PackageVersion Include="Hexalith.Tenants.Aspire" Version="3.15.1" />
-    <PackageVersion Include="Hexalith.Tenants.Client" Version="3.15.1" />
-    <PackageVersion Include="Hexalith.Tenants.Contracts" Version="3.15.1" />
-    <PackageVersion Include="Hexalith.Tenants.Server" Version="3.15.1" />
-    <PackageVersion Include="Hexalith.Tenants.Testing" Version="3.15.1" />
-    <PackageVersion Include="Hexalith.Tenants.UI" Version="3.15.1" />
+    <PackageVersion Include="Hexalith.Tenants.Aspire" Version="2.4.2" />
+    <PackageVersion Include="Hexalith.Tenants.Client" Version="2.4.2" />
+    <PackageVersion Include="Hexalith.Tenants.Contracts" Version="2.4.2" />
+    <PackageVersion Include="Hexalith.Tenants.Server" Version="2.4.2" />
+    <PackageVersion Include="Hexalith.Tenants.Testing" Version="2.4.2" />
+    <PackageVersion Include="Hexalith.Tenants.UI" Version="2.4.2" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
