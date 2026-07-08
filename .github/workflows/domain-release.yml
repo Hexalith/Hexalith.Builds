@@ -87,37 +87,11 @@ jobs:
         run: dotnet restore ${{ inputs.solution }}
       - name: Build
         run: dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
-      - name: Install Dapr CLI
+      - name: Install and initialize Dapr
         if: ${{ inputs.test-projects != '' }}
-        shell: bash
-        env:
-          DAPR_VERSION: ${{ inputs.dapr-version }}
-        run: |
-          set -euo pipefail
-          version="${DAPR_VERSION#v}"
-          os="$(uname | tr '[:upper:]' '[:lower:]')"
-          case "$(uname -m)" in
-            x86_64) arch="amd64" ;;
-            aarch64) arch="arm64" ;;
-            armv7*) arch="arm" ;;
-            *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
-          esac
-          install_dir="${RUNNER_TEMP}/dapr-cli"
-          mkdir -p "$install_dir"
-          archive="${RUNNER_TEMP}/dapr-cli.tar.gz"
-          curl -fsSL "https://github.com/dapr/cli/releases/download/v${version}/dapr_${os}_${arch}.tar.gz" -o "$archive"
-          tar -xzf "$archive" -C "$install_dir" dapr
-          chmod +x "${install_dir}/dapr"
-          echo "$install_dir" >> "$GITHUB_PATH"
-          "${install_dir}/dapr" --version
-      - name: Run dapr init
-        if: ${{ inputs.test-projects != '' }}
-        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
         with:
-          timeout_minutes: 5
-          max_attempts: 3
-          retry_wait_seconds: 15
-          command: dapr init
+          version: ${{ inputs.dapr-version }}
       - name: Run tests (Tier 1 + 2)
         if: ${{ inputs.test-projects != '' }}
         shell: bash
