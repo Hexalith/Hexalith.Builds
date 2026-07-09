@@ -1,3 +1,10 @@
+## [4.17.1](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.0...v4.17.1) (2026-07-09)
+
+
+### Bug Fixes
+
+* update HexalithCommonsVersion references in Directory.Packages.props ([9d22370](https://github.com/Hexalith/Hexalith.Builds/commit/9d22370c0f2d44b6a2a268de9ce533d639a38d8c))
+
 # [4.17.0](https://github.com/Hexalith/Hexalith.Builds/compare/v4.16.5...v4.17.0) (2026-07-09)
 
 
