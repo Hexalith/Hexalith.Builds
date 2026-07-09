@@ -1,5 +1,9 @@
 # Run Unit Tests GitHub Action
 
+> **Deprecated (legacy pipeline generation).** New Hexalith modules should use the
+> reusable `domain-ci.yml` workflow instead (see `.github/workflows/`). This action is kept
+> for existing consumers and receives maintenance fixes only.
+
 ## Overview
 This GitHub Action automates the process of running unit tests for a specific project and cleaning up the solution afterward. It's designed to work with the standard test project structure where test projects are located in the `test` directory and follow the naming convention `{ProjectName}.Tests`.
 

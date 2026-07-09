@@ -13,10 +13,14 @@ on:
         type: string
         default: 'global.json'
       packages-lock-file:
-        description: 'File hashed for the NuGet cache key.'
+        description: >-
+          Comma-separated hashFiles() patterns for the NuGet cache key. The default
+          covers the module package props, global.json, and the shared package props
+          imported from the Hexalith.Builds submodule; patterns that match nothing
+          are simply ignored.
         required: false
         type: string
-        default: 'Directory.Packages.props'
+        default: 'Directory.Packages.props, global.json, references/Hexalith.Builds/Props/Directory.Packages.props'
       dapr-version:
         description: 'Dapr version for integration/aspire tiers.'
         required: false
@@ -72,6 +76,14 @@ on:
         required: false
         type: string
         default: ''
+      coverage-line-scope:
+        description: >-
+          Newline-separated source path prefixes passed as --line-scope to
+          scripts/validate-coverage.py (the production projects the line gate is
+          scoped to). When empty, the script falls back to its built-in default.
+        required: false
+        type: string
+        default: ''
       aspire-continue-on-error:
         description: 'Whether the Aspire tier is non-blocking.'
         required: false
@@ -103,8 +115,7 @@ jobs:
           fetch-depth: 0
           submodules: false
       - name: Initialize root-declared submodules
-        shell: bash
-        run: git -c submodule.recurse=false submodule update --init
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
       - name: Initialize .NET
         uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
@@ -168,6 +179,7 @@ jobs:
         shell: bash
         env:
           COVERAGE_ISOLATION_TARGETS: ${{ inputs.coverage-isolation-targets }}
+          COVERAGE_LINE_SCOPE: ${{ inputs.coverage-line-scope }}
         run: |
           set -euo pipefail
           args=(--coverage-root TestResults
@@ -177,6 +189,10 @@ jobs:
             [ -z "$tgt" ] && continue
             args+=(--isolation-auth-target "$tgt")
           done <<< "$COVERAGE_ISOLATION_TARGETS"
+          while IFS= read -r prefix; do
+            [ -z "$prefix" ] && continue
+            args+=(--line-scope "$prefix")
+          done <<< "$COVERAGE_LINE_SCOPE"
           python3 scripts/validate-coverage.py "${args[@]}" --summary-file "$GITHUB_STEP_SUMMARY"
       - name: Upload test and coverage evidence
         if: always()
@@ -200,8 +216,7 @@ jobs:
           fetch-depth: 0
           submodules: false
       - name: Initialize root-declared submodules
-        shell: bash
-        run: git -c submodule.recurse=false submodule update --init
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
       - name: Initialize .NET
         uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
@@ -220,6 +235,8 @@ jobs:
         uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
         with:
           version: ${{ inputs.dapr-version }}
+      # Coverage is not collected here: this tier is advisory (non-blocking by
+      # default) and its coverage is intentionally excluded from the gates.
       - name: Aspire contract tests (Tier 3, non-Performance)
         shell: bash
         run: >
@@ -228,20 +245,17 @@ jobs:
           --filter "${{ inputs.aspire-non-performance-filter }}"
           --logger "trx;LogFileName=aspire-results.trx"
           --results-directory TestResults/aspire
-          --collect:"XPlat Code Coverage"
       - name: Test summary
         if: always()
         run: |
           echo "## Tier 3 Aspire Contract Tests" >> $GITHUB_STEP_SUMMARY
           echo "Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
       - name: Upload test results
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: aspire-test-results
-          path: |
-            TestResults/**/*.trx
-            TestResults/**/coverage.cobertura.xml
+          path: "TestResults/**/*.trx"
           retention-days: 7
 
   performance-tests:
@@ -255,8 +269,7 @@ jobs:
           fetch-depth: 0
           submodules: false
       - name: Initialize root-declared submodules
-        shell: bash
-        run: git -c submodule.recurse=false submodule update --init
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
       - name: Initialize .NET
         uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:

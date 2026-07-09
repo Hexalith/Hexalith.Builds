@@ -2,7 +2,8 @@ name: Hexalith Commitlint
 
 # Reusable Conventional Commits gate. semantic-release derives the next version and changelog
 # solely from commit messages, so a malformed commit silently breaks versioning. Consuming
-# modules call this from a pull_request-triggered caller and must ship @commitlint/* devDependencies,
+# modules call this from a pull_request-triggered caller (and, for repositories that push
+# directly to main, a push-triggered caller) and must ship @commitlint/* devDependencies,
 # a commitlint config, and a package-lock.json (npm ci).
 
 on:
@@ -30,9 +31,26 @@ jobs:
           node-version: ${{ inputs.node-version }}
       - name: Install dependencies
         run: npm ci
-      - name: Validate PR commit messages
-        run: >
-          npx commitlint
-          --from "${{ github.event.pull_request.base.sha }}"
-          --to "${{ github.event.pull_request.head.sha }}"
-          --verbose
+      - name: Verify npm dependency provenance and signatures
+        run: npm audit signatures
+      - name: Validate commit messages
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          PUSH_AFTER_SHA: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            npx commitlint --from "$PR_BASE_SHA" --to "$PR_HEAD_SHA" --verbose
+          elif [ -n "$PUSH_BEFORE_SHA" ] &&
+               [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ] &&
+               git cat-file -e "$PUSH_BEFORE_SHA" 2>/dev/null; then
+            npx commitlint --from "$PUSH_BEFORE_SHA" --to "$PUSH_AFTER_SHA" --verbose
+          else
+            # Branch creation or force-push with an unreachable before-SHA:
+            # validate at least the head commit rather than failing on the range.
+            npx commitlint --last --verbose
+          fi

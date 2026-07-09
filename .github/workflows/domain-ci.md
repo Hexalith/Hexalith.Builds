@@ -14,6 +14,13 @@ and artifact upload.
 | `aspire-tests` | `aspire-test-project` is set. | Tier 3 Aspire contract tests using `Category!=Performance` by default. |
 | `performance-tests` | `aspire-test-project` is set and the event is `schedule`. | Tier 3 performance tests using `Category=Performance` by default. |
 
+The Aspire tier is **advisory (non-blocking) by default**
+(`aspire-continue-on-error: true`): full-topology Aspire runs on shared runners
+are inherently flakier than Tier 1/2, so they signal without gating merges. Its
+coverage is deliberately not collected and is excluded from the coverage gates;
+TRX results are always uploaded as the `aspire-test-results` artifact. Set
+`aspire-continue-on-error: false` in a module that wants the tier blocking.
+
 ## Consuming Repository Conventions
 
 The reusable workflow checks out the caller repository, so these paths resolve
@@ -24,7 +31,8 @@ against the consuming repository:
   `scripts/validate-consumer-package-references.py` are required when
   `run-consumer-validation` is `true`.
 - `scripts/validate-coverage.py` is required when `run-coverage-gate` is
-  `true`.
+  `true`. When the `coverage-line-scope` input is set, the script must support
+  a repeatable `--line-scope <path-prefix>` argument scoping the line gate.
 - `global.json`, or the path supplied through `dotnet-global-json`, pins the
   .NET SDK.
 
@@ -60,5 +68,7 @@ jobs:
 
 ## Version Reference
 
-Use a versioned Hexalith.Builds tag or full commit SHA for reproducible module
-pipelines. See `ci-cd-standards.md` for shared CI/CD policy.
+Use `Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@main` from
+consuming repositories — Hexalith.Builds references always track `main` (see
+`ci-cd-standards.md`, "Action References"); third-party actions inside the
+shared workflows are the ones pinned to commit SHAs.

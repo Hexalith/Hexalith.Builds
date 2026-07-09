@@ -1,5 +1,9 @@
 # Build Packages Action
 
+> **Deprecated (legacy pipeline generation).** New Hexalith modules should use the
+> reusable `domain-release.yml` workflow instead (see `.github/workflows/`). This action is kept
+> for existing consumers and receives maintenance fixes only.
+
 This GitHub Action builds and releases packages for Hexalith .NET projects using
 [semantic-release](https://semantic-release.org) directly (the official CLI; no
 third-party wrapper action).

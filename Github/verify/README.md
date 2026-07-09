@@ -1,5 +1,9 @@
 # Verify Action
 
+> **Deprecated (legacy pipeline generation).** New Hexalith modules should use the
+> reusable `domain-ci.yml` workflow instead (see `.github/workflows/`). This action is kept
+> for existing consumers and receives maintenance fixes only.
+
 Builds and tests a Hexalith .NET project **without publishing**. Use it as the
 pull-request / CI gate that runs before the release job.
 

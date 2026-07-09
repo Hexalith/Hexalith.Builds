@@ -24,6 +24,13 @@
     <ProjectRoot>$(MSBuildThisFileDirectory)..</ProjectRoot>
     <AssetTargetFallback>$(AssetTargetFallback);net8.0;net7.0;net6.0;</AssetTargetFallback>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- Keep the NuGet vulnerability audit enabled everywhere, but keep the advisory
+         codes out of warnings-as-errors so a transitive advisory that cannot be
+         upgraded immediately surfaces in build logs without blocking every pipeline
+         (see .github/workflows/ci-cd-standards.md, "Dependency Auditing"). -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(TF_BUILD)' == 'true'">
     <!-- Enable Deterministic Builds for github actions -->

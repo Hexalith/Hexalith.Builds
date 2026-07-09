@@ -1,5 +1,10 @@
 # Publish Application Containers to Registry
 
+> **Deprecated (legacy HexalithApp-era action).** Domain modules publish containers
+> through the `domain-release.yml` reusable workflow and the `Github/publish-containers`
+> composite action. This action also mutates submodules to branch heads at run time,
+> which the current submodule standard forbids. Kept for existing consumers only.
+
 Builds and pushes the Hexalith Web and API server containers to a container
 registry using .NET container publishing.
 

@@ -45,7 +45,8 @@ This repository:
 - `package-lock.json`: Locked npm dependency graph for reproducible release
   jobs.
 - `Github/package-release/release.config.json`: Shared semantic-release config
-  for package-producing repositories.
+  for package-producing repositories (legacy — domain modules use
+  `domain-release.yml` with a module `.releaserc.json`).
 - `Github/scripts/build-packages.ps1`: Builds library projects during
   semantic-release.
 - `Github/scripts/publish-packages.ps1`: Publishes NuGet packages during
@@ -74,7 +75,8 @@ This repository:
 ### GitHub Composite Actions
 
 - [`Github/create-release/`](Github/create-release/README.md): Run
-  semantic-release without building packages.
+  semantic-release without building packages (legacy — modules use
+  `domain-release.yml`).
 - [`Github/dapr-init/`](Github/dapr-init/README.md): Install the Dapr CLI and
   run `dapr init` with retry.
 - [`Github/initialize-build/`](Github/initialize-build/README.md): Initialize
@@ -83,15 +85,21 @@ This repository:
   the .NET SDK from `global.json` or an explicit version, with optional Aspire
   workload installation.
 - [`Github/package-release/`](Github/package-release/README.md): Build and
-  release package projects with semantic-release.
+  release package projects with semantic-release (legacy — modules use
+  `domain-release.yml`).
 - [`Github/publish-azure-container-app/`](Github/publish-azure-container-app/README.md):
-  Update Azure Container Apps to a published image version.
+  Update Azure Container Apps to a published image version (legacy
+  HexalithApp-era).
 - [`Github/publish-container-to-registry/`](Github/publish-container-to-registry/README.md):
-  Build and publish Web/API containers to a registry.
+  Build and publish Web/API containers to a registry (legacy — modules use
+  `domain-release.yml` container publishing).
+- [`Github/publish-containers/`](Github/publish-containers/README.md): Install
+  the semantic-release container publish helper used by `domain-release.yml`.
 - [`Github/unit-tests/`](Github/unit-tests/README.md): Run and clean a standard
-  Hexalith test project.
+  Hexalith test project (legacy — modules use `domain-ci.yml`).
 - [`Github/verify/`](Github/verify/README.md): CI gate that checks out,
-  initializes, builds through tests, and does not publish.
+  initializes, builds through tests, and does not publish (legacy — modules use
+  `domain-ci.yml`).
 
 ### Reusable Workflows
 
@@ -196,10 +204,11 @@ Release jobs analyze commits, calculate the next version, update
 `CHANGELOG.md`, create a GitHub release, and optionally build and publish NuGet
 packages.
 
-For package-producing repositories, use the
-[`Github/package-release`](Github/package-release/README.md) action and extend
-`Github/package-release/release.config.json` from the consuming repository's
-`package.json`.
+Domain modules release through the reusable
+[`domain-release.yml`](.github/workflows/domain-release.md) workflow with a
+module-owned `.releaserc.json`. The legacy
+[`Github/package-release`](Github/package-release/README.md) action and its
+`release.config.json` remain only for pre-domain-workflow repositories.
 
 Package publishing behavior:
 

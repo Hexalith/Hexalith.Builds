@@ -12,15 +12,20 @@ on:
         type: string
         default: 'global.json'
       packages-lock-file:
+        description: 'Comma-separated hashFiles() patterns for the NuGet cache key.'
         required: false
         type: string
-        default: 'Directory.Packages.props'
+        default: 'Directory.Packages.props, global.json, references/Hexalith.Builds/Props/Directory.Packages.props'
       dapr-version:
         required: false
         type: string
         default: '1.18.0'
       test-projects:
-        description: 'Newline-separated test projects (Tier 1+2) run before release.'
+        description: >-
+          Newline-separated test projects (Tier 1+2) run before release. Leave
+          empty when the caller is triggered by workflow_run on CI success — the
+          CI gate already ran for the same head, and re-running it here only
+          duplicates compute (see ci-cd-standards.md, Release Gates).
         required: false
         type: string
         default: ''
@@ -66,8 +71,7 @@ jobs:
           submodules: false
           persist-credentials: false
       - name: Initialize root-declared submodules
-        shell: bash
-        run: git -c submodule.recurse=false submodule update --init
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
       - name: Initialize .NET
         uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
@@ -83,6 +87,8 @@ jobs:
           restore-keys: nuget-
       - name: Install npm dependencies
         run: npm ci
+      - name: Verify npm dependency provenance and signatures
+        run: npm audit signatures
       - name: Restore
         run: dotnet restore ${{ inputs.solution }}
       - name: Build
@@ -107,77 +113,20 @@ jobs:
               --results-directory "TestResults/${name}" \
               --collect:"XPlat Code Coverage"
           done <<< "$TEST_PROJECTS"
+      - name: Upload release test evidence
+        if: ${{ always() && inputs.test-projects != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-test-results
+          path: |
+            TestResults/**/*.trx
+            TestResults/**/coverage.cobertura.xml
+          retention-days: 7
       - name: Prepare release container publisher
         if: ${{ inputs.publish-containers }}
-        shell: bash
-        env:
-          HEXALITH_CONTAINER_PROJECTS: ${{ inputs.container-projects }}
-        run: |
-          set -euo pipefail
-          if [ -z "${HEXALITH_CONTAINER_PROJECTS//[[:space:]]/}" ]; then
-            echo "container-projects is required when publish-containers is true." >&2
-            exit 1
-          fi
-
-          mkdir -p .hexalith/release
-          cat > .hexalith/release/publish-containers.sh <<'BASH'
-          #!/usr/bin/env bash
-          set -euo pipefail
-
-          version="${1:-}"
-          registry="${HEXALITH_ZOT_REGISTRY:-registry.hexalith.com}"
-          projects="${HEXALITH_CONTAINER_PROJECTS:-}"
-          username="${HEXALITH_ZOT_USERNAME:-}"
-          api_key="${HEXALITH_ZOT_API_KEY:-}"
-          semver_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
-
-          trim() {
-            local value="$1"
-            value="${value#"${value%%[![:space:]]*}"}"
-            value="${value%"${value##*[![:space:]]}"}"
-            printf '%s' "$value"
-          }
-
-          fail() {
-            echo "[publish-containers] $1" >&2
-            exit 1
-          }
-
-          [ -n "$version" ] || fail "Release version argument is required."
-          [[ "$version" =~ $semver_pattern ]] || fail "Release version '$version' must be SemVer without build metadata."
-          [ -n "${projects//[[:space:]]/}" ] || fail "HEXALITH_CONTAINER_PROJECTS is empty."
-          [ -n "$username" ] || fail "HEXALITH_ZOT_USERNAME is required to publish containers."
-          [ -n "$api_key" ] || fail "HEXALITH_ZOT_API_KEY is required to publish containers."
-
-          echo "$api_key" | docker login "$registry" --username "$username" --password-stdin
-
-          while IFS= read -r raw_line; do
-            line="$(trim "${raw_line%$'\r'}")"
-            [ -n "$line" ] || continue
-
-            IFS='|' read -r project repository extra <<< "$line"
-            project="$(trim "$project")"
-            repository="$(trim "$repository")"
-            extra="$(trim "${extra:-}")"
-
-            [ -z "$extra" ] || fail "Invalid container mapping '$line'. Expected project|repository."
-            [ -n "$project" ] || fail "Container project path is empty in '$line'."
-            [ -n "$repository" ] || fail "Container repository is empty in '$line'."
-            [ -f "$project" ] || fail "Container project not found: $project"
-
-            echo "[publish-containers] Publishing ${registry}/${repository}:${version} from ${project}"
-            dotnet publish "$project" \
-              --configuration Release \
-              --os linux \
-              --arch x64 \
-              /t:PublishContainer \
-              -p:ContainerRegistry="$registry" \
-              -p:ContainerRepository="$repository" \
-              -p:ContainerImageTag="$version" \
-              -p:Version="$version"
-          done <<< "$projects"
-          BASH
-          chmod +x .hexalith/release/publish-containers.sh
+        uses: Hexalith/Hexalith.Builds/Github/publish-containers@main
+        with:
+          container-projects: ${{ inputs.container-projects }}
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

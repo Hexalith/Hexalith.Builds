@@ -1,0 +1,28 @@
+name: 'Prepare Container Publisher'
+description: >-
+  Installs the semantic-release container publish helper into
+  .hexalith/release/publish-containers.sh in the caller workspace. The helper is
+  shipped with this action (version-matched to the @main workflow that uses it),
+  so it does not depend on the caller's Hexalith.Builds submodule pin.
+
+inputs:
+  container-projects:
+    description: 'Newline-separated project-to-repository mappings: path/to/project.csproj|repository-name.'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install container publish helper
+      shell: bash
+      env:
+        HEXALITH_CONTAINER_PROJECTS: ${{ inputs.container-projects }}
+      run: |
+        set -euo pipefail
+        if [ -z "${HEXALITH_CONTAINER_PROJECTS//[[:space:]]/}" ]; then
+          echo "container-projects is required when publish-containers is true." >&2
+          exit 1
+        fi
+        mkdir -p .hexalith/release
+        cp "${GITHUB_ACTION_PATH}/publish-containers.sh" .hexalith/release/publish-containers.sh
+        chmod +x .hexalith/release/publish-containers.sh

@@ -1,5 +1,8 @@
 # Publish Azure Container App Action
 
+> **Legacy HexalithApp-era action.** Not part of the domain module pipeline
+> generation (`domain-ci.yml` / `domain-release.yml`). Kept for existing consumers.
+
 Updates existing Azure Container Apps to use a new image version. The action
 logs in to Azure with `azure/login@master` and updates the Web and API
 container apps with Azure CLI.

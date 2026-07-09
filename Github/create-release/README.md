@@ -1,5 +1,9 @@
 # Create Release GitHub Action
 
+> **Deprecated (legacy pipeline generation).** New Hexalith modules should use the
+> reusable `domain-release.yml` workflow instead (see `.github/workflows/`). This action is kept
+> for existing consumers and receives maintenance fixes only.
+
 Runs semantic-release for repositories that need versioning, changelog updates,
 Git tags, and GitHub releases, but do not build or publish NuGet packages from
 this action.

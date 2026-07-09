@@ -56,11 +56,42 @@ test project lists, and operational exceptions in their own docs.
 
 - Release jobs should not duplicate the full CI gate when the platform supports
   a reliable CI-success trigger.
+- The standard trigger for module release workflows is `workflow_run` on the CI
+  workflow, gated on a successful push-event run, so the release never runs in
+  parallel with the CI gate and can never publish from a commit whose CI failed:
+
+  ```yaml
+  on:
+    workflow_run:
+      workflows: [CI]
+      types: [completed]
+      branches: [main]
+
+  concurrency:
+    group: release-${{ github.ref }}
+    cancel-in-progress: false
+
+  jobs:
+    release:
+      if: >-
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push'
+      uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@main
+  ```
+
+  With this trigger, leave `test-projects` empty — CI already ran the tiers for
+  the same head. The `event == 'push'` guard keeps scheduled CI runs from
+  starting release runs.
 - Release jobs may still restore/build/pack when the release tool needs to
   produce versioned artifacts, but those steps should run only after CI has
   passed and preferably only when a release is warranted.
+- Give release workflows a non-cancelling concurrency group
+  (`cancel-in-progress: false`) so overlapping merges queue instead of racing
+  semantic-release on tags and the changelog commit.
 - Keep release permissions at the job level. Non-release jobs should use
   `contents: read`; semantic-release jobs need only the write scopes they use.
+- Pass release secrets explicitly instead of `secrets: inherit`; the reusable
+  workflows declare the exact secret surface they need.
 
 ## Artifacts
 
