@@ -1,3 +1,10 @@
+# [4.17.0](https://github.com/Hexalith/Hexalith.Builds/compare/v4.16.5...v4.17.0) (2026-07-09)
+
+
+### Features
+
+* enhance CI/CD workflows with new release triggers and improved commit message validation ([5b726e0](https://github.com/Hexalith/Hexalith.Builds/commit/5b726e0cd965ea42199ff56fa61cf2e2925725b4))
+
 ## [4.16.5](https://github.com/Hexalith/Hexalith.Builds/compare/v4.16.4...v4.16.5) (2026-07-08)
 
 
