@@ -4,6 +4,7 @@
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.47.0</HexalithEventStoreVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">2.4.2</HexalithTenantsVersion>
+    <HexalithCommonsVersion Condition="'$(HexalithTenantsVersion)' == ''">2.28.0</HexalithCommonsVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Applications" Version="1.0.6" />
@@ -20,14 +21,14 @@
     <PackageVersion Include="Hexalith.Documents.WebApp" Version="2.7.1" />
     <PackageVersion Include="Hexalith.Documents.WebServer" Version="2.7.1" />
     <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.7.1" />
-    <PackageVersion Include="Hexalith.Commons" Version="2.27.0" />
-    <PackageVersion Include="Hexalith.Commons.Configurations" Version="2.27.0" />
-    <PackageVersion Include="Hexalith.Commons.Aspire" Version="2.27.0" />
-    <PackageVersion Include="Hexalith.Commons.Http" Version="2.27.0" />
-    <PackageVersion Include="Hexalith.Commons.Metadatas" Version="2.27.0" />
-    <PackageVersion Include="Hexalith.Commons.ServiceDefaults" Version="2.27.0" />
-    <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="2.27.0" />
-    <PackageVersion Include="Hexalith.Commons.StringEncoders" Version="2.27.0" />
+    <PackageVersion Include="Hexalith.Commons" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.Configurations" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.Aspire" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.Http" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.Metadatas" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.ServiceDefaults" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.StringEncoders" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Domains" Version="2.0.2" />
     <PackageVersion Include="Hexalith.Domains.Abstractions" Version="2.0.2" />
     <PackageVersion Include="Hexalith.EventStore.Admin.Abstractions" Version="$(HexalithEventStoreVersion)" />
