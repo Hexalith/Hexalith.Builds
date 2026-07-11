@@ -1,3 +1,10 @@
+## [4.17.3](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.2...v4.17.3) (2026-07-11)
+
+
+### Bug Fixes
+
+* update HexalithEventStoreVersion and use variables for HexalithFrontComposerVersion ([b2f3f5e](https://github.com/Hexalith/Hexalith.Builds/commit/b2f3f5e6b85e3720729444b711c893a000f6ddb2))
+
 ## [4.17.2](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.1...v4.17.2) (2026-07-11)
 
 
