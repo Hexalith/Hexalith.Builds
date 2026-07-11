@@ -2,9 +2,11 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.47.0</HexalithEventStoreVersion>
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">2.4.2</HexalithTenantsVersion>
-    <HexalithCommonsVersion Condition="'$(HexalithTenantsVersion)' == ''">2.28.0</HexalithCommonsVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.52.0</HexalithEventStoreVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">3.2.3</HexalithTenantsVersion>
+    <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.28.0</HexalithCommonsVersion>
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">1.45.0</HexalithMemoriesVersion>
+    <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.16.2</HexalithPolymorphicSerializationsVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Applications" Version="1.0.6" />
@@ -57,9 +59,9 @@
     <PackageVersion Include="Hexalith.IdentityStores.UI" Version="1.4.5" />
     <PackageVersion Include="Hexalith.NetAspire.Defaults" Version="1.4.8" />
     <PackageVersion Include="Hexalith.NetAspire.Hosting" Version="1.4.8" />
-    <PackageVersion Include="Hexalith.Memories.Aspire" Version="1.44.1" />
-    <PackageVersion Include="Hexalith.Memories.Client.Rest" Version="1.44.1" />
-    <PackageVersion Include="Hexalith.Memories.Contracts" Version="1.44.1" />
+    <PackageVersion Include="Hexalith.Memories.Aspire" Version="$(HexalithMemoriesVersion)" />
+    <PackageVersion Include="Hexalith.Memories.Client.Rest" Version="$(HexalithMemoriesVersion)" />
+    <PackageVersion Include="Hexalith.Memories.Contracts" Version="$(HexalithMemoriesVersion)" />
     <PackageVersion Include="Hexalith.Parties.AdminPortal" Version="1.0.0" />
     <PackageVersion Include="Hexalith.Parties.Client" Version="1.0.0" />
     <PackageVersion Include="Hexalith.Parties.ConsumerPortal" Version="1.0.0" />
@@ -69,8 +71,8 @@
     <PackageVersion Include="Hexalith.Parties.ServiceDefaults" Version="1.0.0" />
     <PackageVersion Include="Hexalith.Parties.Testing" Version="1.0.0" />
     <PackageVersion Include="Hexalith.Parties.UI" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="1.16.2" />
-    <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="1.16.2" />
+    <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="$(HexalithPolymorphicSerializationsVersion)" />
+    <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="$(HexalithPolymorphicSerializationsVersion)" />
     <PackageVersion Include="Hexalith.Tenants.Aspire" Version="$(HexalithTenantsVersion)" />
     <PackageVersion Include="Hexalith.Tenants.Client" Version="$(HexalithTenantsVersion)" />
     <PackageVersion Include="Hexalith.Tenants.Contracts" Version="$(HexalithTenantsVersion)" />
