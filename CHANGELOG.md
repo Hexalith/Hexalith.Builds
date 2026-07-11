@@ -1,3 +1,10 @@
+## [4.17.2](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.1...v4.17.2) (2026-07-11)
+
+
+### Bug Fixes
+
+* update Hexalith package versions and use variables for Memories and PolymorphicSerializations ([5819423](https://github.com/Hexalith/Hexalith.Builds/commit/581942325f6df3099a407894838617d8b06287a7))
+
 ## [4.17.1](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.0...v4.17.1) (2026-07-09)
 
 
