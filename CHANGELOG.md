@@ -1,3 +1,10 @@
+## [4.17.5](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.4...v4.17.5) (2026-07-12)
+
+
+### Bug Fixes
+
+* update HexalithCommonsVersion to 2.28.1 ([b6d1111](https://github.com/Hexalith/Hexalith.Builds/commit/b6d11118c87e46cbd696aa33764586d74de6b714))
+
 ## [4.17.4](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.3...v4.17.4) (2026-07-12)
 
 
