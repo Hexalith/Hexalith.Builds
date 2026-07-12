@@ -1,3 +1,10 @@
+## [4.17.4](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.3...v4.17.4) (2026-07-12)
+
+
+### Bug Fixes
+
+* update HexalithEventStoreVersion to 3.58.0 and HexalithMemoriesVersion to 2.1.0 ([0549f1e](https://github.com/Hexalith/Hexalith.Builds/commit/0549f1e4454a1ba4f3b8394440d36165a92df4c1))
+
 ## [4.17.3](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.2...v4.17.3) (2026-07-11)
 
 
