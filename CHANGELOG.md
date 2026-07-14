@@ -1,3 +1,10 @@
+## [4.18.2](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.1...v4.18.2) (2026-07-14)
+
+
+### Bug Fixes
+
+* **ci:** enforce performance evidence failures ([c617b9c](https://github.com/Hexalith/Hexalith.Builds/commit/c617b9cdb97357c838af5f6ed604baaeea118286))
+
 ## [4.18.1](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.0...v4.18.1) (2026-07-14)
 
 
