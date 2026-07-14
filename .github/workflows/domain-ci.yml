@@ -422,9 +422,12 @@ jobs:
               )
               sys.exit(1)
 
-          summary["status"] = (
-              "test-failures" if counts["failed"] > 0 else "executed"
-          )
+          if summary["testStepOutcome"] != "success":
+              summary["status"] = "test-step-failed"
+          else:
+              summary["status"] = (
+                  "test-failures" if counts["failed"] > 0 else "executed"
+              )
           write_evidence()
           PY
       - name: Upload performance test results
