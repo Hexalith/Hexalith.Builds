@@ -1,3 +1,10 @@
+# [4.18.0](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.10...v4.18.0) (2026-07-14)
+
+
+### Features
+
+* enhance performance testing with detailed evidence reporting and validation ([3831176](https://github.com/Hexalith/Hexalith.Builds/commit/38311762e12c3ccc1fdf0814bb0942cc0b4c39d2))
+
 ## [4.17.10](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.9...v4.17.10) (2026-07-14)
 
 
