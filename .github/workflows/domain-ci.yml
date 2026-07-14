@@ -294,12 +294,15 @@ jobs:
         env:
           HEXALITH_EVENTSTORE_RUN_PERFORMANCE_TESTS: '1'
           HEXALITH_TENANTS_RUN_PERFORMANCE_TESTS: '1'
-        run: >
-          dotnet test "${{ inputs.aspire-test-project }}"
-          --no-build --configuration Release
-          --filter "${{ inputs.performance-filter }}"
-          --logger "trx;LogFileName=perf-results.trx"
-          --results-directory TestResults/performance
+        run: |
+          set -euo pipefail
+          rm -rf TestResults/performance
+          mkdir -p TestResults/performance
+          dotnet test "${{ inputs.aspire-test-project }}" \
+            --no-build --configuration Release \
+            --filter "${{ inputs.performance-filter }}" \
+            --logger "trx;LogFileName=perf-results.trx" \
+            --results-directory TestResults/performance
       - name: Validate performance test execution
         if: always()
         shell: bash
@@ -424,10 +427,23 @@ jobs:
 
           if summary["testStepOutcome"] != "success":
               summary["status"] = "test-step-failed"
-          else:
-              summary["status"] = (
-                  "test-failures" if counts["failed"] > 0 else "executed"
+              write_evidence()
+              print(
+                  "::error title=Performance test step failed::The performance test "
+                  f"step outcome was {summary['testStepOutcome']}."
               )
+              sys.exit(1)
+
+          if counts["failed"] > 0:
+              summary["status"] = "test-failures"
+              write_evidence()
+              print(
+                  "::error title=Performance test failures::The performance TRX "
+                  f"reports {counts['failed']} failed test(s)."
+              )
+              sys.exit(1)
+
+          summary["status"] = "executed"
           write_evidence()
           PY
       - name: Upload performance test results

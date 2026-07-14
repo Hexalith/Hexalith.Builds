@@ -35,8 +35,11 @@ After the test process finishes, the job always reads
 workflow run identity, selected filter, test-step outcome, and total, executed,
 passed, failed, and skipped counts. The guard fails with distinct diagnostics
 when the TRX is missing, the filter matched no tests, or every selected test was
-skipped. It uses the TRX `Counters.executed` value for the last check because
-xUnit v3 can report a skipped result as `NotExecuted` while leaving the
+skipped. It also fails when the test step or TRX reports test failures, preserving
+that state in the JSON summary. The performance directory is recreated before
+each run so stale TRX cannot satisfy the current execution guard. The guard uses
+the TRX `Counters.executed` value for the all-skipped check because xUnit v3 can
+report a skipped result as `NotExecuted` while leaving the
 `Counters.notExecuted` value at zero.
 
 The complete `TestResults/performance` directory is retained for seven days as
