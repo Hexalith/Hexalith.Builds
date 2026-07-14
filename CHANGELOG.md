@@ -1,3 +1,10 @@
+## [4.18.4](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.3...v4.18.4) (2026-07-14)
+
+
+### Bug Fixes
+
+* update HexalithEventStoreVersion to 3.64.1 and HexalithFrontComposerVersion to 3.1.1 ([129db83](https://github.com/Hexalith/Hexalith.Builds/commit/129db83c7e5d3da84d9cbadb3034d8f37ec36c00))
+
 ## [4.18.3](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.2...v4.18.3) (2026-07-14)
 
 
