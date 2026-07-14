@@ -2,8 +2,8 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.64.0</HexalithEventStoreVersion>
-    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">2.0.4</HexalithFrontComposerVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.64.1</HexalithEventStoreVersion>
+    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">3.1.1</HexalithFrontComposerVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">3.2.6</HexalithTenantsVersion>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.28.1</HexalithCommonsVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.5.0</HexalithMemoriesVersion>
