@@ -289,17 +289,149 @@ jobs:
         with:
           version: ${{ inputs.dapr-version }}
       - name: Performance tests (Tier 3, nightly only)
+        id: performance-tests
         shell: bash
+        env:
+          HEXALITH_EVENTSTORE_RUN_PERFORMANCE_TESTS: '1'
+          HEXALITH_TENANTS_RUN_PERFORMANCE_TESTS: '1'
         run: >
           dotnet test "${{ inputs.aspire-test-project }}"
           --no-build --configuration Release
           --filter "${{ inputs.performance-filter }}"
           --logger "trx;LogFileName=perf-results.trx"
           --results-directory TestResults/performance
+      - name: Validate performance test execution
+        if: always()
+        shell: bash
+        env:
+          PERFORMANCE_FILTER: ${{ inputs.performance-filter }}
+          PERFORMANCE_TEST_STEP_OUTCOME: ${{ steps.performance-tests.outcome }}
+        run: |
+          python3 - <<'PY'
+          import datetime
+          import json
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          evidence_directory = Path("TestResults/performance")
+          trx_path = evidence_directory / "perf-results.trx"
+          summary_path = evidence_directory / "performance-test-summary.json"
+          evidence_directory.mkdir(parents=True, exist_ok=True)
+
+          summary = {
+              "schemaVersion": 1,
+              "generatedAtUtc": datetime.datetime.now(datetime.UTC).isoformat(),
+              "repository": os.environ.get("GITHUB_REPOSITORY", ""),
+              "commitSha": os.environ.get("GITHUB_SHA", ""),
+              "ref": os.environ.get("GITHUB_REF", ""),
+              "runId": os.environ.get("GITHUB_RUN_ID", ""),
+              "runAttempt": os.environ.get("GITHUB_RUN_ATTEMPT", ""),
+              "filter": os.environ.get("PERFORMANCE_FILTER", ""),
+              "testStepOutcome": os.environ.get("PERFORMANCE_TEST_STEP_OUTCOME", ""),
+              "trxPath": str(trx_path),
+              "status": "unknown",
+              "counts": {
+                  "total": None,
+                  "executed": None,
+                  "passed": None,
+                  "failed": None,
+                  "skipped": None,
+              },
+          }
+
+          def local_name(element):
+              return element.tag.rsplit("}", 1)[-1]
+
+          def write_evidence():
+              summary_path.write_text(
+                  json.dumps(summary, indent=2, sort_keys=True) + "\n",
+                  encoding="utf-8",
+              )
+
+              github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+              if github_summary:
+                  counts = summary["counts"]
+                  with Path(github_summary).open("a", encoding="utf-8") as stream:
+                      stream.write("## Scheduled Performance Tests\n\n")
+                      stream.write(f"- Status: `{summary['status']}`\n")
+                      stream.write(f"- Test step: `{summary['testStepOutcome']}`\n")
+                      stream.write(f"- Filter: `{summary['filter']}`\n")
+                      stream.write(f"- TRX: `{summary['trxPath']}`\n")
+                      stream.write(
+                          "- Counts: "
+                          f"total={counts['total']}, executed={counts['executed']}, "
+                          f"passed={counts['passed']}, failed={counts['failed']}, "
+                          f"skipped={counts['skipped']}\n\n"
+                      )
+
+          if not trx_path.is_file():
+              summary["status"] = "missing-trx"
+              write_evidence()
+              print(
+                  f"::error title=Missing performance TRX::Expected {trx_path} "
+                  "but the performance test step produced no result file."
+              )
+              sys.exit(1)
+
+          try:
+              root = ET.parse(trx_path).getroot()
+              counters = next(
+                  (element for element in root.iter() if local_name(element) == "Counters"),
+                  None,
+              )
+              if counters is None:
+                  raise ValueError("TRX does not contain a Counters element")
+
+              counts = {
+                  "total": int(counters.get("total", "0")),
+                  "executed": int(counters.get("executed", "0")),
+                  "passed": int(counters.get("passed", "0")),
+                  "failed": int(counters.get("failed", "0")),
+                  "skipped": sum(
+                      1
+                      for element in root.iter()
+                      if local_name(element) == "UnitTestResult"
+                      and element.get("outcome") == "NotExecuted"
+                  ),
+              }
+              summary["counts"] = counts
+          except (ET.ParseError, OSError, TypeError, ValueError) as error:
+              summary["status"] = "invalid-trx"
+              summary["diagnostic"] = str(error)
+              write_evidence()
+              print(f"::error title=Invalid performance TRX::{error}")
+              sys.exit(1)
+
+          if counts["total"] == 0:
+              summary["status"] = "no-matching-tests"
+              write_evidence()
+              print(
+                  "::error title=No matching performance tests::The performance filter "
+                  "selected zero tests."
+              )
+              sys.exit(1)
+
+          if counts["executed"] == 0:
+              summary["status"] = "all-tests-skipped"
+              write_evidence()
+              print(
+                  "::error title=All performance tests skipped::The performance filter "
+                  f"selected {counts['total']} test(s), but none executed."
+              )
+              sys.exit(1)
+
+          summary["status"] = (
+              "test-failures" if counts["failed"] > 0 else "executed"
+          )
+          write_evidence()
+          PY
       - name: Upload performance test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: performance-test-results
-          path: "TestResults/**/*.trx"
+          path: TestResults/performance
+          if-no-files-found: error
           retention-days: 7
