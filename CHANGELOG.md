@@ -1,3 +1,10 @@
+## [4.18.1](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.0...v4.18.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* improve performance test status reporting for failed test steps ([c09ef7d](https://github.com/Hexalith/Hexalith.Builds/commit/c09ef7d4b190865aa6d987ad6a688c0f34460a08))
+
 # [4.18.0](https://github.com/Hexalith/Hexalith.Builds/compare/v4.17.10...v4.18.0) (2026-07-14)
 
 
