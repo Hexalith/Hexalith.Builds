@@ -2,11 +2,11 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.64.2</HexalithEventStoreVersion>
-    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">3.1.1</HexalithFrontComposerVersion>
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">3.2.6</HexalithTenantsVersion>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.28.1</HexalithCommonsVersion>
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.5.0</HexalithMemoriesVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.67.1</HexalithEventStoreVersion>
+    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">3.2.2</HexalithFrontComposerVersion>
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.6.17</HexalithMemoriesVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">3.2.10</HexalithTenantsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.16.2</HexalithPolymorphicSerializationsVersion>
   </PropertyGroup>
   <ItemGroup>
