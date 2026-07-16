@@ -1,3 +1,11 @@
+## [4.19.1](https://github.com/Hexalith/Hexalith.Builds/compare/v4.19.0...v4.19.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* update HexalithTenantsVersion and refactor Hexalith.Parties package versions to use variable references ([2044475](https://github.com/Hexalith/Hexalith.Builds/commit/2044475e6cfb9d41a97d782f083a0ed1ebba6b02))
+* update package versions in Directory.Packages.props for consistency and compatibility ([09d38ea](https://github.com/Hexalith/Hexalith.Builds/commit/09d38ea0990e877ae9042c25d502745411baee8e))
+
 # [4.19.0](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.11...v4.19.0) (2026-07-16)
 
 
