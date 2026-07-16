@@ -1,3 +1,10 @@
+## [4.18.10](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.9...v4.18.10) (2026-07-16)
+
+
+### Bug Fixes
+
+* add PowerShell script for validating Dapr package versions ([8afb3a0](https://github.com/Hexalith/Hexalith.Builds/commit/8afb3a04a9b2d4506ac9908f34a7c714c20c63d3))
+
 ## [4.18.9](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.8...v4.18.9) (2026-07-16)
 
 
