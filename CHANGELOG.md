@@ -1,3 +1,10 @@
+## [4.18.9](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.8...v4.18.9) (2026-07-16)
+
+
+### Bug Fixes
+
+* update HexalithPolymorphicSerializationsVersion to v1.16.3 ([d600df2](https://github.com/Hexalith/Hexalith.Builds/commit/d600df2135ad51a0723d2edaba7be5d13339a5ed))
+
 ## [4.18.8](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.7...v4.18.8) (2026-07-16)
 
 
