@@ -1,3 +1,10 @@
+# [4.19.0](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.11...v4.19.0) (2026-07-16)
+
+
+### Features
+
+* add test-platform input and validation for domain workflows ([f791424](https://github.com/Hexalith/Hexalith.Builds/commit/f7914242ebad186304400954041ac79936ecb2a2))
+
 ## [4.18.11](https://github.com/Hexalith/Hexalith.Builds/compare/v4.18.10...v4.18.11) (2026-07-16)
 
 
