@@ -1,3 +1,10 @@
+## [4.19.2](https://github.com/Hexalith/Hexalith.Builds/compare/v4.19.1...v4.19.2) (2026-07-16)
+
+
+### Bug Fixes
+
+* update .NET SDK version to 10.0.302 in multiple workflows and configuration files ([1a15a0c](https://github.com/Hexalith/Hexalith.Builds/commit/1a15a0caf3fa77b67fdc9e46e436264d9109a833))
+
 ## [4.19.1](https://github.com/Hexalith/Hexalith.Builds/compare/v4.19.0...v4.19.1) (2026-07-16)
 
 
