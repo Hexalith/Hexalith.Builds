@@ -23,6 +23,17 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Initialize .NET
+      uses: ./Github/initialize-dotnet
+
+    - name: Validate Dapr package versions
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/validate-dapr-package-versions.ps1
+
+    - name: Test Dapr package validator
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-dapr-package-version-validator.ps1
+
     - name: Create Release
       uses: ./Github/create-release
       env:
