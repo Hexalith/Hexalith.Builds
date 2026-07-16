@@ -13,6 +13,7 @@ Dapr-backed tests, and then runs semantic-release.
 | `dotnet-global-json` | No | `global.json` | Path to the SDK-pinning `global.json` file. |
 | `packages-lock-file` | No | `Directory.Packages.props` | File used to build the NuGet cache key. |
 | `dapr-version` | No | `1.18.0` | Dapr version used when tests are enabled. |
+| `test-platform` | No | `vstest` | Test command contract. Set `microsoft-testing-platform` for xUnit v3 MTP-native TRX reporting. |
 | `test-projects` | No | `''` | Newline-separated test project paths to run before release. Leave empty when the caller is triggered by `workflow_run` on CI success — CI already ran the same gate. |
 | `node-version` | No | `node` | Node.js version passed to `actions/setup-node`. |
 | `timeout-minutes` | No | `20` | Timeout for the release job. |

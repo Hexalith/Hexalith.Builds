@@ -42,6 +42,10 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-dapr-package-version-validator.ps1
 
+    - name: Test domain workflow test-platform contracts
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
+
     - name: Create Release
       uses: ./Github/create-release
       env:

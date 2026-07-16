@@ -20,6 +20,12 @@ Run the focused fixture suite with:
 .\Tools\test-central-package-version-validator.ps1
 ```
 
+### test-domain-workflow-test-platforms.ps1
+
+Checks that reusable domain CI/release workflows retain their backward-compatible
+VSTest default and route Microsoft.Testing.Platform callers to MTP-native TRX and
+trait-filter options without leaking VSTest-only arguments.
+
 ### builds-submodule-init.ps1
 
 Adds or initializes the `Hexalith.Builds` Git submodule in a parent repository

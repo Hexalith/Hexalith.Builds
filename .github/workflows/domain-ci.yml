@@ -26,6 +26,13 @@ on:
         required: false
         type: string
         default: '1.18.0'
+      test-platform:
+        description: >-
+          Test command contract: vstest uses --logger/--collect; microsoft-testing-platform
+          uses the xUnit v3 MTP reporter and trait-filter options.
+        required: false
+        type: string
+        default: 'vstest'
       unit-test-projects:
         description: 'Newline-separated Tier 1 test project paths (no Dapr).'
         required: false
@@ -48,6 +55,16 @@ on:
         default: 'Category!=Performance'
       performance-filter:
         description: 'dotnet test --filter for the nightly performance tier.'
+        required: false
+        type: string
+        default: 'Category=Performance'
+      aspire-mtp-excluded-trait:
+        description: 'Microsoft.Testing.Platform trait excluded from the non-performance Aspire tier.'
+        required: false
+        type: string
+        default: 'Category=Performance'
+      performance-mtp-trait:
+        description: 'Microsoft.Testing.Platform trait selected by the nightly performance tier.'
         required: false
         type: string
         default: 'Category=Performance'
@@ -126,6 +143,18 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
           restore-keys: nuget-
+      - name: Validate test platform input
+        if: ${{ inputs.test-platform != 'vstest' && inputs.test-platform != 'microsoft-testing-platform' }}
+        shell: bash
+        run: |
+          echo "Unsupported test-platform '${{ inputs.test-platform }}'. Expected vstest or microsoft-testing-platform." >&2
+          exit 1
+      - name: Validate Microsoft.Testing.Platform coverage support
+        if: ${{ inputs.test-platform == 'microsoft-testing-platform' && inputs.run-coverage-gate }}
+        shell: bash
+        run: |
+          echo "run-coverage-gate is not supported with microsoft-testing-platform until an MTP coverage extension is configured." >&2
+          exit 1
       - name: Restore
         run: dotnet restore ${{ inputs.solution }}
       - name: Build
@@ -139,8 +168,8 @@ jobs:
           python3 scripts/pack-release-packages.py ./nupkgs 0.0.0-ci-test
           python3 scripts/validate-nuget-packages.py ./nupkgs
           python3 scripts/validate-consumer-package-references.py ./nupkgs
-      - name: Unit tests (Tier 1)
-        if: ${{ inputs.unit-test-projects != '' }}
+      - name: Unit tests (Tier 1, VSTest)
+        if: ${{ inputs.unit-test-projects != '' && inputs.test-platform == 'vstest' }}
         shell: bash
         env:
           UNIT_TEST_PROJECTS: ${{ inputs.unit-test-projects }}
@@ -154,13 +183,28 @@ jobs:
               --results-directory "TestResults/${name}" \
               --collect:"XPlat Code Coverage"
           done <<< "$UNIT_TEST_PROJECTS"
+      - name: Unit tests (Tier 1, Microsoft.Testing.Platform)
+        if: ${{ inputs.unit-test-projects != '' && inputs.test-platform == 'microsoft-testing-platform' }}
+        shell: bash
+        env:
+          UNIT_TEST_PROJECTS: ${{ inputs.unit-test-projects }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r proj; do
+            [ -z "$proj" ] && continue
+            name=$(basename "$proj")
+            dotnet test "$proj" --no-build --configuration Release \
+              --results-directory "TestResults/${name}" \
+              --report-xunit-trx \
+              --report-xunit-trx-filename "${name}.trx"
+          done <<< "$UNIT_TEST_PROJECTS"
       - name: Install and initialize Dapr
         if: ${{ inputs.integration-test-projects != '' }}
         uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
         with:
           version: ${{ inputs.dapr-version }}
-      - name: Integration tests (Tier 2)
-        if: ${{ inputs.integration-test-projects != '' }}
+      - name: Integration tests (Tier 2, VSTest)
+        if: ${{ inputs.integration-test-projects != '' && inputs.test-platform == 'vstest' }}
         shell: bash
         env:
           INTEGRATION_TEST_PROJECTS: ${{ inputs.integration-test-projects }}
@@ -173,6 +217,21 @@ jobs:
               --logger "trx;LogFileName=${name}.trx" \
               --results-directory "TestResults/${name}" \
               --collect:"XPlat Code Coverage"
+          done <<< "$INTEGRATION_TEST_PROJECTS"
+      - name: Integration tests (Tier 2, Microsoft.Testing.Platform)
+        if: ${{ inputs.integration-test-projects != '' && inputs.test-platform == 'microsoft-testing-platform' }}
+        shell: bash
+        env:
+          INTEGRATION_TEST_PROJECTS: ${{ inputs.integration-test-projects }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r proj; do
+            [ -z "$proj" ] && continue
+            name=$(basename "$proj")
+            dotnet test "$proj" --no-build --configuration Release \
+              --results-directory "TestResults/${name}" \
+              --report-xunit-trx \
+              --report-xunit-trx-filename "${name}.trx"
           done <<< "$INTEGRATION_TEST_PROJECTS"
       - name: Validate coverage gates
         if: ${{ inputs.run-coverage-gate }}
@@ -237,7 +296,8 @@ jobs:
           version: ${{ inputs.dapr-version }}
       # Coverage is not collected here: this tier is advisory (non-blocking by
       # default) and its coverage is intentionally excluded from the gates.
-      - name: Aspire contract tests (Tier 3, non-Performance)
+      - name: Aspire contract tests (Tier 3, non-Performance, VSTest)
+        if: ${{ inputs.test-platform == 'vstest' }}
         shell: bash
         run: >
           dotnet test "${{ inputs.aspire-test-project }}"
@@ -245,6 +305,16 @@ jobs:
           --filter "${{ inputs.aspire-non-performance-filter }}"
           --logger "trx;LogFileName=aspire-results.trx"
           --results-directory TestResults/aspire
+      - name: Aspire contract tests (Tier 3, non-Performance, Microsoft.Testing.Platform)
+        if: ${{ inputs.test-platform == 'microsoft-testing-platform' }}
+        shell: bash
+        run: >
+          dotnet test "${{ inputs.aspire-test-project }}"
+          --no-build --configuration Release
+          --filter-not-trait "${{ inputs.aspire-mtp-excluded-trait }}"
+          --results-directory TestResults/aspire
+          --report-xunit-trx
+          --report-xunit-trx-filename aspire-results.trx
       - name: Test summary
         if: always()
         run: |
@@ -288,8 +358,9 @@ jobs:
         uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
         with:
           version: ${{ inputs.dapr-version }}
-      - name: Performance tests (Tier 3, nightly only)
-        id: performance-tests
+      - name: Performance tests (Tier 3, nightly only, VSTest)
+        if: ${{ inputs.test-platform == 'vstest' }}
+        id: performance-tests-vstest
         shell: bash
         env:
           HEXALITH_EVENTSTORE_RUN_PERFORMANCE_TESTS: '1'
@@ -303,12 +374,29 @@ jobs:
             --filter "${{ inputs.performance-filter }}" \
             --logger "trx;LogFileName=perf-results.trx" \
             --results-directory TestResults/performance
+      - name: Performance tests (Tier 3, nightly only, Microsoft.Testing.Platform)
+        if: ${{ inputs.test-platform == 'microsoft-testing-platform' }}
+        id: performance-tests-mtp
+        shell: bash
+        env:
+          HEXALITH_EVENTSTORE_RUN_PERFORMANCE_TESTS: '1'
+          HEXALITH_TENANTS_RUN_PERFORMANCE_TESTS: '1'
+        run: |
+          set -euo pipefail
+          rm -rf TestResults/performance
+          mkdir -p TestResults/performance
+          dotnet test "${{ inputs.aspire-test-project }}" \
+            --no-build --configuration Release \
+            --filter-trait "${{ inputs.performance-mtp-trait }}" \
+            --results-directory TestResults/performance \
+            --report-xunit-trx \
+            --report-xunit-trx-filename perf-results.trx
       - name: Validate performance test execution
         if: always()
         shell: bash
         env:
-          PERFORMANCE_FILTER: ${{ inputs.performance-filter }}
-          PERFORMANCE_TEST_STEP_OUTCOME: ${{ steps.performance-tests.outcome }}
+          PERFORMANCE_FILTER: ${{ inputs.test-platform == 'microsoft-testing-platform' && inputs.performance-mtp-trait || inputs.performance-filter }}
+          PERFORMANCE_TEST_STEP_OUTCOME: ${{ inputs.test-platform == 'microsoft-testing-platform' && steps.performance-tests-mtp.outcome || steps.performance-tests-vstest.outcome }}
         run: |
           python3 - <<'PY'
           import datetime

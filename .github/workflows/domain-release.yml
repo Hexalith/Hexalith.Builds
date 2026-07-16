@@ -20,6 +20,13 @@ on:
         required: false
         type: string
         default: '1.18.0'
+      test-platform:
+        description: >-
+          Test command contract: vstest uses --logger/--collect; microsoft-testing-platform
+          uses the xUnit v3 MTP reporter options.
+        required: false
+        type: string
+        default: 'vstest'
       test-projects:
         description: >-
           Newline-separated test projects (Tier 1+2) run before release. Leave
@@ -85,6 +92,12 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
           restore-keys: nuget-
+      - name: Validate test platform input
+        if: ${{ inputs.test-platform != 'vstest' && inputs.test-platform != 'microsoft-testing-platform' }}
+        shell: bash
+        run: |
+          echo "Unsupported test-platform '${{ inputs.test-platform }}'. Expected vstest or microsoft-testing-platform." >&2
+          exit 1
       - name: Install npm dependencies
         run: npm ci
       - name: Verify npm dependency provenance and signatures
@@ -98,8 +111,8 @@ jobs:
         uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
         with:
           version: ${{ inputs.dapr-version }}
-      - name: Run tests (Tier 1 + 2)
-        if: ${{ inputs.test-projects != '' }}
+      - name: Run tests (Tier 1 + 2, VSTest)
+        if: ${{ inputs.test-projects != '' && inputs.test-platform == 'vstest' }}
         shell: bash
         env:
           TEST_PROJECTS: ${{ inputs.test-projects }}
@@ -112,6 +125,21 @@ jobs:
               --logger "trx;LogFileName=${name}.trx" \
               --results-directory "TestResults/${name}" \
               --collect:"XPlat Code Coverage"
+          done <<< "$TEST_PROJECTS"
+      - name: Run tests (Tier 1 + 2, Microsoft.Testing.Platform)
+        if: ${{ inputs.test-projects != '' && inputs.test-platform == 'microsoft-testing-platform' }}
+        shell: bash
+        env:
+          TEST_PROJECTS: ${{ inputs.test-projects }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r proj; do
+            [ -z "$proj" ] && continue
+            name=$(basename "$proj")
+            dotnet test "$proj" --no-build --configuration Release \
+              --results-directory "TestResults/${name}" \
+              --report-xunit-trx \
+              --report-xunit-trx-filename "${name}.trx"
           done <<< "$TEST_PROJECTS"
       - name: Upload release test evidence
         if: ${{ always() && inputs.test-projects != '' }}

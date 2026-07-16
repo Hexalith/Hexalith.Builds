@@ -6,6 +6,12 @@ modules. It factors the common skeleton: checkout with submodules, .NET SDK from
 consumer validation, Dapr bootstrap, multi-tier tests, optional coverage gate,
 and artifact upload.
 
+The `test-platform` input defaults to `vstest` for backward compatibility.
+Callers whose `global.json` selects `Microsoft.Testing.Platform` must set
+`test-platform: microsoft-testing-platform`; those lanes use xUnit v3 MTP-native
+TRX reporters and trait filters. MTP callers cannot enable `run-coverage-gate`
+until they configure an MTP-compatible coverage extension.
+
 ## Jobs
 
 | Job | Runs when | Tiers |
@@ -87,8 +93,9 @@ jobs:
     uses: Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@main
     with:
       solution: Hexalith.<Module>.slnx
+      test-platform: microsoft-testing-platform
       run-consumer-validation: true
-      run-coverage-gate: true
+      run-coverage-gate: false
       unit-test-projects: |
         tests/Hexalith.<Module>.Contracts.Tests
         tests/Hexalith.<Module>.Client.Tests
