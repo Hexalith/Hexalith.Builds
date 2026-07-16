@@ -5,6 +5,21 @@ submodule.
 
 ## Available Tools
 
+### validate-central-package-versions.ps1
+
+Evaluates `Props/Directory.Packages.props` with MSBuild and rejects blank,
+unresolved, tag-prefixed, or malformed package versions before release.
+
+```powershell
+.\Tools\validate-central-package-versions.ps1
+```
+
+Run the focused fixture suite with:
+
+```powershell
+.\Tools\test-central-package-version-validator.ps1
+```
+
 ### builds-submodule-init.ps1
 
 Adds or initializes the `Hexalith.Builds` Git submodule in a parent repository

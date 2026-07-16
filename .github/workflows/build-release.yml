@@ -26,6 +26,14 @@ jobs:
     - name: Initialize .NET
       uses: ./Github/initialize-dotnet
 
+    - name: Validate central package versions
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/validate-central-package-versions.ps1
+
+    - name: Test central package version validator
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-central-package-version-validator.ps1
+
     - name: Validate Dapr package versions
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/validate-dapr-package-versions.ps1
