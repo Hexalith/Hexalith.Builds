@@ -8,6 +8,7 @@
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.0.0</HexalithFrontComposerVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.6.20</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">3.2.11</HexalithTenantsVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">1.0.0</HexalithTenantsVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Applications" Version="1.0.6" />
@@ -63,15 +64,15 @@
     <PackageVersion Include="Hexalith.Memories.Aspire" Version="$(HexalithMemoriesVersion)" />
     <PackageVersion Include="Hexalith.Memories.Client.Rest" Version="$(HexalithMemoriesVersion)" />
     <PackageVersion Include="Hexalith.Memories.Contracts" Version="$(HexalithMemoriesVersion)" />
-    <PackageVersion Include="Hexalith.Parties.AdminPortal" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.Parties.Client" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.Parties.ConsumerPortal" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.Parties.Contracts" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.Parties.Picker" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.Parties.Server" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.Parties.ServiceDefaults" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.Parties.Testing" Version="1.0.0" />
-    <PackageVersion Include="Hexalith.Parties.UI" Version="1.0.0" />
+    <PackageVersion Include="Hexalith.Parties.AdminPortal" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Parties.Client" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Parties.ConsumerPortal" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Parties.Contracts" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Parties.Picker" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Parties.Server" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Parties.ServiceDefaults" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Parties.Testing" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Parties.UI" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="$(HexalithPolymorphicSerializationsVersion)" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="$(HexalithPolymorphicSerializationsVersion)" />
     <PackageVersion Include="Hexalith.Tenants.Aspire" Version="$(HexalithTenantsVersion)" />
