@@ -8,7 +8,7 @@ inputs:
   dotnet-version:
     description: 'Explicit .NET SDK version to install when global-json-file is not provided'
     required: false
-    default: '10.0.300'
+    default: '10.0.302'
   aspire:
     description: 'Whether to install Aspire workload'
     required: false

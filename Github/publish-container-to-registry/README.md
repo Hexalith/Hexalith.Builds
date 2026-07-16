@@ -93,7 +93,7 @@ jobs:
       - name: Initialize .NET
         uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
         with:
-          dotnet-version: '10.0.300'
+          dotnet-version: '10.0.302'
 
       - name: Publish application containers
         uses: Hexalith/Hexalith.Builds/Github/publish-container-to-registry@main

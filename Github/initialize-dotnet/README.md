@@ -9,7 +9,7 @@ declared by a `global.json` file, or install an explicit SDK version when no
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
 | `global-json-file` | Path to a `global.json` file that pins the SDK version. Takes precedence over `dotnet-version` when set. | No | `''` |
-| `dotnet-version` | SDK version passed to `actions/setup-dotnet` when `global-json-file` is empty. | No | `10.0.300` |
+| `dotnet-version` | SDK version passed to `actions/setup-dotnet` when `global-json-file` is empty. | No | `10.0.302` |
 | `aspire` | Install the Aspire workload when set to any non-empty value. | No | `''` |
 
 ## Steps
