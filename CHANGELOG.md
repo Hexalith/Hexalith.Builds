@@ -1,3 +1,16 @@
+# [4.20.0](https://github.com/Hexalith/Hexalith.Builds/compare/v4.19.2...v4.20.0) (2026-07-17)
+
+
+### Bug Fixes
+
+* add negative and positive test fixtures for module manifest validation ([a625ded](https://github.com/Hexalith/Hexalith.Builds/commit/a625ded44bde4c2734a5af50d2221d11cffefa54))
+* update instructions for locating hexalith-llm-instructions.md in submodules ([4750d5f](https://github.com/Hexalith/Hexalith.Builds/commit/4750d5f07ec67a691152aeb04b92c8b018a5b9c2))
+
+
+### Features
+
+* enhance path resolution and validation in tooling components ([039f3f2](https://github.com/Hexalith/Hexalith.Builds/commit/039f3f264662ba300927faabe5aa44e837892141))
+
 ## [4.19.2](https://github.com/Hexalith/Hexalith.Builds/compare/v4.19.1...v4.19.2) (2026-07-16)
 
 
