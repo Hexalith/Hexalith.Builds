@@ -60,9 +60,10 @@ This repository:
 
 ### AI Assistant Rules
 
-- `AGENTS.md`: Instructions for Codex and AGENTS-compatible assistants.
-- `CLAUDE.md`: Instructions for Claude-compatible assistants.
-- `.github/copilot-instructions.md`: Instructions for GitHub Copilot.
+- `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`: the shared,
+  location-independent baseline for Codex, Claude, and GitHub Copilot.
+- [`DEVELOPMENT.md`](DEVELOPMENT.md): repository-specific Build, release, and
+  C# development guidance.
 
 ### Tools
 
