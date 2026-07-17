@@ -12,10 +12,12 @@ Before working in a Hexalith repository, locate, read, and follow
 `hexalith-llm-instructions.md`.
 
 - If the current repository contains that file at its root, read that copy.
-- Otherwise, if the repository is checked out as a submodule, use
-  `git rev-parse --show-superproject-working-tree` to locate its enclosing
-  superproject, then read
-  `<superproject>/references/Hexalith.AI.Tools/hexalith-llm-instructions.md`.
+- Otherwise, use `git rev-parse --show-superproject-working-tree` to locate an
+  enclosing superproject. When it returns no path, use the current repository
+  root as the workspace. Then read
+  `<workspace>/references/Hexalith.AI.Tools/hexalith-llm-instructions.md`.
+- Before using that workspace copy, confirm its root `.gitmodules` declares
+  `references/Hexalith.AI.Tools` as a root submodule.
 - Do not initialize or update a nested submodule to locate this file. If no
   permitted location exists, stop and report the missing baseline as a blocker.
 
