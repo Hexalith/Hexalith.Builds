@@ -1,8 +1,7 @@
 schema: hexalith.readiness-evidence.v1
 project: Hexalith.Builds
-markdown_view: readiness.md
 validation:
-  command: dotnet tool run hexalith-evidence validate test/fixtures/evidence/positive/readiness.yaml
+  command: dotnet tool run hexalith-evidence validate test/fixtures/evidence/negative/invalid-artifact.yaml
   required_coverage:
     fr: FR-1..FR-1
     nfr: NFR-1..NFR-1
@@ -56,18 +55,18 @@ rows:
     verification_command: dotnet tool run hexalith-module test --profile full --filter Finding=TEST-001
     evidence_artifact: evidence/finding-001.json
     estimate: S
-  - key: release-smoke
+  - key: release-invalid-artifact
     category: release
     ids: [NFR-11.smoke]
-    description: release smoke evidence
+    description: malformed module-run artifact control
     primary_story: "8.11"
     supporting_stories: []
     entry_gates: [G-4]
     fixture: fixtures/readiness-release-smoke
     verification_command: dotnet tool run hexalith-module test --profile full --filter Category=smoke
-    evidence_artifact: test/fixtures/evidence/positive/evidence/release-passed.json
+    evidence_artifact: test/fixtures/evidence/negative/evidence/invalid-run.json
     estimate: M
     status: passed
     outcome: passed
     artifact_schema: hexalith.module-run-evidence.v1
-    artifact_sha256: 79e050281dceb829d755cfc43d24289cbed7e8837f36d5579e66f7232a34478b
+    artifact_sha256: fdce830664205d5a2c463db13943bc87868c3d82ff0232a4c4149c1799e7c4d3

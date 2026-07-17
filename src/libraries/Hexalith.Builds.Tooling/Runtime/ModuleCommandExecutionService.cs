@@ -368,6 +368,19 @@ public static class ModuleCommandExecutionService
         ModuleManifest manifest,
         out ToolDiagnostic? diagnostic)
     {
+        if (!string.IsNullOrWhiteSpace(profile)
+            && (ManifestPathValidator.ContainsPlaceholder(profile) || ManifestSecretDetector.ContainsSecret(profile)))
+        {
+            diagnostic = new ToolDiagnostic(
+                "HXC003",
+                ToolPhase.Usage,
+                ToolFailureCategory.Usage,
+                "The requested qualification profile contains prohibited material.",
+                "profile",
+                "Use a declared metadata-only profile name.");
+            return false;
+        }
+
         if (command != ModuleInvocationCommand.Test && string.IsNullOrWhiteSpace(profile))
         {
             diagnostic = null;
@@ -389,4 +402,4 @@ public static class ModuleCommandExecutionService
         diagnostic = null;
         return true;
     }
-}
+}

@@ -35,6 +35,13 @@ internal static class EvidenceCommandApplication
 
         RootCommand rootCommand = CreateRootCommand(standardOutput);
         ParseResult parseResult = rootCommand.Parse(arguments);
+        if (parseResult.Errors.Count > 0)
+        {
+            return await ToolCommandHost.WriteParseFailureAsync(
+                standardOutput,
+                ToolCommandHost.RequestedOutputFormat(arguments)).ConfigureAwait(false);
+        }
+
         return await parseResult.InvokeAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

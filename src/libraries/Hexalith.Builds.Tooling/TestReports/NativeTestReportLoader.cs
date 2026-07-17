@@ -74,8 +74,21 @@ public static class NativeTestReportLoader
             return Failed("HXT002", "report");
         }
 
-        XElement? counters = document.Descendants().FirstOrDefault(element =>
-            string.Equals(element.Name.LocalName, "Counters", StringComparison.Ordinal));
+        if (document.Root is null || !string.Equals(document.Root.Name.LocalName, "TestRun", StringComparison.Ordinal))
+        {
+            return Failed("HXT002", "report");
+        }
+
+        XElement[] resultSummaries = [.. document.Root.Elements().Where(element =>
+            string.Equals(element.Name.LocalName, "ResultSummary", StringComparison.Ordinal))];
+        if (resultSummaries.Length != 1)
+        {
+            return Failed("HXT002", "resultSummary");
+        }
+
+        XElement[] counterElements = [.. resultSummaries[0].Elements().Where(element =>
+            string.Equals(element.Name.LocalName, "Counters", StringComparison.Ordinal))];
+        XElement? counters = counterElements.Length == 1 ? counterElements[0] : null;
         return counters is null || !TryReadCounters(counters, out int total, out int passed, out int failed, out int skipped)
             ? Failed("HXT002", "counters")
             : CreateResult(fullPath, bytes, total, passed, failed, skipped);
@@ -162,12 +175,11 @@ public static class NativeTestReportLoader
         failed = failedCount + errors + timeouts + aborted;
         skipped = notExecuted + inconclusive;
 
-        if (total < 0 || passed < 0 || failed < 0 || skipped < 0 || passed + failed + skipped > total)
+        if (total < 0 || passed < 0 || failed < 0 || skipped < 0 || passed + failed + skipped != total)
         {
             return false;
         }
 
-        skipped += total - passed - failed - skipped;
         return true;
     }
 
@@ -180,4 +192,4 @@ public static class NativeTestReportLoader
             ? !required
             : int.TryParse(attribute.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
     }
-}
+}

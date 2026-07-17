@@ -10,6 +10,7 @@ using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Filesystem;
+using Hexalith.Builds.Tooling.RunEvidence;
 
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
@@ -314,10 +315,12 @@ internal static class ReadinessEvidenceValidator
         "HXE141" => "Critical evidence reports a failed outcome.",
         "HXE142" => "Critical skipped evidence requires an explanation.",
         "HXE143" => "Passing evidence must report a passing outcome.",
+        "HXE144" => "Failed evidence must report a failed outcome.",
         "HXE145" => "Executed evidence does not resolve to a readable artifact.",
         "HXE146" => "Executed evidence is missing its schema or SHA-256 metadata.",
         "HXE147" => "The evidence artifact SHA-256 does not match its declared value.",
         "HXE148" => "The evidence artifact schema does not match its declared value.",
+        "HXE149" => "Passed readiness must reference a successful module-run artifact.",
         "HXE150" => "The Markdown view does not resolve to a readable file.",
         "HXE151" => "The Markdown view row identities drift from the YAML source of truth.",
         _ => "The readiness evidence is invalid.",
@@ -347,10 +350,12 @@ internal static class ReadinessEvidenceValidator
         "HXE141" => "Resolve failed critical evidence before release qualification.",
         "HXE142" => "Provide a specific critical skip explanation or execute the evidence.",
         "HXE143" => "Record a passed outcome only for successful execution.",
+        "HXE144" => "Record a failed outcome only for failed execution.",
         "HXE145" => "Retain an actual readable artifact for executed evidence.",
         "HXE146" => "Record the artifact schema and SHA-256 for executed evidence.",
         "HXE147" => "Regenerate the artifact hash after producing the evidence.",
         "HXE148" => "Use an artifact whose schema matches the declared evidence schema.",
+        "HXE149" => "Reference a completed run-evidence artifact with a successful outcome.",
         "HXE150" => "Supply the configured Markdown view beside the YAML source.",
         "HXE151" => "Regenerate the Markdown view from the YAML row identities.",
         _ => "Correct the readiness evidence and run validation again.",
@@ -905,6 +910,15 @@ internal static class ReadinessEvidenceValidator
                 AddDiagnostic(diagnostics, document, "HXE143", ToolFailureCategory.EvidencePolicy, "outcome", row, rowKey);
             }
         }
+        else if (string.Equals(status, "failed", StringComparison.Ordinal)
+            && !string.Equals(outcome, "failed", StringComparison.Ordinal))
+        {
+            AddDiagnostic(diagnostics, document, "HXE144", ToolFailureCategory.EvidencePolicy, "outcome", row, rowKey);
+        }
+        else if (string.Equals(outcome, "passed", StringComparison.Ordinal))
+        {
+            AddDiagnostic(diagnostics, document, "HXE143", ToolFailureCategory.EvidencePolicy, "outcome", row, rowKey);
+        }
 
         if (critical
             && string.Equals(status, "failed", StringComparison.Ordinal))
@@ -919,7 +933,10 @@ internal static class ReadinessEvidenceValidator
             AddDiagnostic(diagnostics, document, "HXE142", ToolFailureCategory.EvidencePolicy, "skip_reason", row, rowKey);
         }
 
-        if (!string.Equals(status, "passed", StringComparison.Ordinal)
+        bool executionClaim = string.Equals(outcome, "passed", StringComparison.Ordinal)
+            || string.Equals(outcome, "failed", StringComparison.Ordinal);
+        if (!executionClaim
+            && !string.Equals(status, "passed", StringComparison.Ordinal)
             && !string.Equals(status, "failed", StringComparison.Ordinal))
         {
             return;
@@ -967,20 +984,16 @@ internal static class ReadinessEvidenceValidator
             AddDiagnostic(diagnostics, document, "HXE147", ToolFailureCategory.EvidencePolicy, "artifact_sha256", row, rowKey);
         }
 
-        try
-        {
-            using JsonDocument artifactDocument = JsonDocument.Parse(artifactBytes);
-            if (artifactDocument.RootElement.ValueKind != JsonValueKind.Object
-                || !artifactDocument.RootElement.TryGetProperty("schema", out JsonElement schemaElement)
-                || !string.Equals(schemaElement.GetString(), artifactSchema, StringComparison.Ordinal)
-                || !string.Equals(artifactSchema, _moduleRunEvidenceSchema, StringComparison.Ordinal))
-            {
-                AddDiagnostic(diagnostics, document, "HXE148", ToolFailureCategory.EvidencePolicy, "artifact_schema", row, rowKey);
-            }
-        }
-        catch (JsonException)
+        if (!string.Equals(artifactSchema, _moduleRunEvidenceSchema, StringComparison.Ordinal)
+            || !ModuleRunEvidenceArtifactValidator.TryValidate(artifactBytes, out ModuleRunEvidenceArtifactSummary? artifactSummary))
         {
             AddDiagnostic(diagnostics, document, "HXE148", ToolFailureCategory.EvidencePolicy, "artifact_schema", row, rowKey);
+        }
+        else if (string.Equals(status, "passed", StringComparison.Ordinal)
+            && (!string.Equals(artifactSummary.FinalStatus, "completed", StringComparison.Ordinal)
+                || artifactSummary.ExitCode != (int)ToolExitCode.Success))
+        {
+            AddDiagnostic(diagnostics, document, "HXE149", ToolFailureCategory.EvidencePolicy, "evidence_artifact", row, rowKey);
         }
     }
 

@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.Tooling.RunEvidence;
 
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -55,8 +56,15 @@ public static partial class ModuleRunEvidenceFactory
             ? Directory.GetCurrentDirectory()
             : ManifestPathValidator.FindRepositoryRoot(fullManifestPath);
         string? normalizedManifestPath = ToRepositoryRelativePath(fullManifestPath, repositoryRoot);
+        if (normalizedManifestPath is not null
+            && (ManifestPathValidator.ContainsPlaceholder(normalizedManifestPath)
+                || ManifestSecretDetector.ContainsSecret(normalizedManifestPath)))
+        {
+            normalizedManifestPath = null;
+        }
         string? manifestHash = HashFile(fullManifestPath);
         ModuleProfile? selectedProfile = GetProfile(manifest, profile);
+        string? profileIdentity = selectedProfile is null ? null : profile;
         string? fixturePath = selectedProfile is null
             ? null
             : ToRepositoryRelativePath(Path.Combine(repositoryRoot, selectedProfile.Fixture), repositoryRoot);
@@ -71,10 +79,10 @@ public static partial class ModuleRunEvidenceFactory
             new ModuleRunTimestamps(startedUtc, completedUtc),
             CreateEnvironment(repositoryRoot),
             new ModuleRunInvocation(
-                CreateCommand(command, normalizedManifestPath, profile, filterHash),
+                CreateCommand(command, normalizedManifestPath, profileIdentity, filterHash),
                 normalizedManifestPath,
                 manifestHash,
-                profile,
+                profileIdentity,
                 fixturePath,
                 fixtureHash,
                 filterHash),
@@ -130,10 +138,11 @@ public static partial class ModuleRunEvidenceFactory
         string toolVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
             ?? assembly.GetName().Version?.ToString()
             ?? "unavailable";
+        SourceControlMetadata sourceControl = ReadSourceControlMetadata(repositoryRoot);
         return new ModuleRunEnvironment(
-            ReadRepositoryRevision(repositoryRoot),
-            "unknown",
-            Environment.Version.ToString(),
+            sourceControl.Revision,
+            sourceControl.DirtyMarker,
+            ReadSdkVersion(repositoryRoot),
             RuntimeInformation.OSDescription,
             toolVersion);
     }
@@ -169,29 +178,73 @@ public static partial class ModuleRunEvidenceFactory
     private static string HashString(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
-    private static string ReadRepositoryRevision(string repositoryRoot)
+    private static string ReadSdkVersion(string repositoryRoot)
     {
-        string gitPath = Path.Combine(repositoryRoot, ".git");
-        if (!Directory.Exists(gitPath))
+        string? sdkVersion = RunTool(repositoryRoot, "dotnet", "--version");
+        return !string.IsNullOrWhiteSpace(sdkVersion) && SdkVersionRegex().IsMatch(sdkVersion)
+            ? sdkVersion
+            : Environment.Version.ToString();
+    }
+
+    private static SourceControlMetadata ReadSourceControlMetadata(string repositoryRoot)
+    {
+        string? revision = RunTool(repositoryRoot, "git", "rev-parse", "--verify", "HEAD");
+        string? status = RunTool(repositoryRoot, "git", "status", "--porcelain", "--untracked-files=all");
+        return new SourceControlMetadata(
+            !string.IsNullOrWhiteSpace(revision) && RevisionRegex().IsMatch(revision) ? revision : "unavailable",
+            status is null ? "unknown" : string.IsNullOrWhiteSpace(status) ? "clean" : "dirty");
+    }
+
+    private static string? RunTool(string workingDirectory, string fileName, params string[] arguments)
+    {
+        if (!Directory.Exists(workingDirectory))
         {
-            return "unavailable";
+            return null;
         }
 
         try
         {
-            string head = File.ReadAllText(Path.Combine(gitPath, "HEAD")).Trim();
-            string revision = head.StartsWith("ref: ", StringComparison.Ordinal)
-                ? File.ReadAllText(Path.Combine(gitPath, head[5..])).Trim()
-                : head;
-            return RevisionRegex().IsMatch(revision) ? revision : "unavailable";
+            ProcessStartInfo startInfo = new(fileName)
+            {
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                WorkingDirectory = workingDirectory,
+            };
+            foreach (string argument in arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            using Process? process = Process.Start(startInfo);
+            if (process is null)
+            {
+                return null;
+            }
+
+            Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
+            Task<string> standardError = process.StandardError.ReadToEndAsync();
+            process.WaitForExit();
+            _ = standardError.GetAwaiter().GetResult();
+            string output = standardOutput.GetAwaiter().GetResult().Trim();
+            return process.ExitCode == 0 ? output : null;
         }
         catch (IOException)
         {
-            return "unavailable";
+            return null;
         }
         catch (UnauthorizedAccessException)
         {
-            return "unavailable";
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return null;
         }
     }
 
@@ -249,4 +302,9 @@ public static partial class ModuleRunEvidenceFactory
 
     [GeneratedRegex("^[0-9a-fA-F]{40,64}$", RegexOptions.CultureInvariant)]
     private static partial Regex RevisionRegex();
+
+    [GeneratedRegex("^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$", RegexOptions.CultureInvariant)]
+    private static partial Regex SdkVersionRegex();
+
+    private sealed record SourceControlMetadata(string Revision, string DirtyMarker);
 }

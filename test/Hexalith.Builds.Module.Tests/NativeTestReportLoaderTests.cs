@@ -60,6 +60,7 @@ public sealed class NativeTestReportLoaderTests
     [InlineData("<Counters total=\"2\" passed=\"0\" failed=\"0\" notExecuted=\"2\" />", "HXT004")]
     [InlineData("<Counters total=\"2\" passed=\"1\" failed=\"1\" notExecuted=\"0\" />", "HXT005")]
     [InlineData("<Counters total=\"1\" passed=\"2\" failed=\"0\" notExecuted=\"0\" />", "HXT002")]
+    [InlineData("<Counters total=\"2\" passed=\"1\" failed=\"0\" notExecuted=\"0\" />", "HXT002")]
     [InlineData("<Counters passed=\"1\" failed=\"0\" notExecuted=\"0\" />", "HXT002")]
     public async Task InvalidOrNonPassingTrxReturnsStableRuleAsync(string counters, string ruleId)
     {
@@ -68,6 +69,21 @@ public sealed class NativeTestReportLoaderTests
 
         result.IsValid.ShouldBeFalse();
         result.Diagnostic.ShouldNotBeNull().RuleId.ShouldBe(ruleId);
+    }
+
+    /// <summary>
+    /// Verifies unrelated XML counters cannot masquerade as a native TRX report.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task UnstructuredCountersAreRejectedAsync()
+    {
+        NativeTestReportLoadResult result = await LoadAsync(
+            "<metadata><Counters total=\"1\" passed=\"1\" failed=\"0\" /></metadata>")
+            .ConfigureAwait(true);
+
+        result.IsValid.ShouldBeFalse();
+        result.Diagnostic.ShouldNotBeNull().RuleId.ShouldBe("HXT002");
     }
 
     private static async Task<NativeTestReportLoadResult> LoadAsync(string reportContent)
@@ -86,4 +102,4 @@ public sealed class NativeTestReportLoaderTests
             Directory.Delete(directory, true);
         }
     }
-}
+}

@@ -4,9 +4,11 @@
 // </copyright>
 
 using Hexalith.Builds.ModuleTool.Cli;
+using Hexalith.Builds.Tooling.Diagnostics;
 
-return await ModuleCommandApplication.InvokeAsync(
-    args,
-    Console.Out,
-    Console.Error,
-    CancellationToken.None).ConfigureAwait(false);
+return await ToolCommandHost.RunWithConsoleCancellationAsync(cancellationToken =>
+    ModuleCommandApplication.InvokeAsync(
+        args,
+        Console.Out,
+        Console.Error,
+        cancellationToken)).ConfigureAwait(false);

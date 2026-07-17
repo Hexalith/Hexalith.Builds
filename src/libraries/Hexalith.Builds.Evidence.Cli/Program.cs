@@ -4,9 +4,11 @@
 // </copyright>
 
 using Hexalith.Builds.Evidence.Cli;
+using Hexalith.Builds.Tooling.Diagnostics;
 
-return await EvidenceCommandApplication.InvokeAsync(
-    args,
-    Console.Out,
-    Console.Error,
-    CancellationToken.None).ConfigureAwait(false);
+return await ToolCommandHost.RunWithConsoleCancellationAsync(cancellationToken =>
+    EvidenceCommandApplication.InvokeAsync(
+        args,
+        Console.Out,
+        Console.Error,
+        cancellationToken)).ConfigureAwait(false);

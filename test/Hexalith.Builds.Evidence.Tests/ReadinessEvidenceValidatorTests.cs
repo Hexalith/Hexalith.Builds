@@ -81,6 +81,21 @@ public sealed class ReadinessEvidenceValidatorTests
     }
 
     /// <summary>
+    /// Verifies a hash-matched artifact with only a schema marker cannot satisfy a passed readiness claim.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task IncompleteModuleRunArtifactFailsClosedAsync()
+    {
+        ToolCommandResult result = await ReadinessEvidenceValidator.ValidateAsync(
+            EvidenceFixturePath.Get("negative/invalid-artifact.yaml"),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        result.Outcome.Category.ShouldBe(ToolFailureCategory.EvidencePolicy);
+        result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldContain("HXE148");
+    }
+
+    /// <summary>
     /// Verifies policy controls expose deterministic, metadata-only diagnostics.
     /// </summary>
     /// <returns>A task that completes after the assertion.</returns>
