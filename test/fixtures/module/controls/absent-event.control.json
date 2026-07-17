@@ -1,0 +1,8 @@
+{
+  "schema": "hexalith.p0-persisted-control.v1",
+  "id": "p0-control-absent-event",
+  "kind": "absent-event",
+  "expectedStatus": "non-passing",
+  "requiresLiveRunner": true,
+  "assertion": "An authenticated write without the expected persisted event cannot pass."
+}

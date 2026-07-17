@@ -1,0 +1,8 @@
+{
+  "schema": "hexalith.p0-persisted-control.v1",
+  "id": "p0-control-stale-state",
+  "kind": "stale-state",
+  "expectedStatus": "non-passing",
+  "requiresLiveRunner": true,
+  "assertion": "A state record outside the current runner-owned namespace cannot satisfy the fixture."
+}

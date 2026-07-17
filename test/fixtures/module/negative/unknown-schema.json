@@ -1,0 +1,26 @@
+{
+  "schema": "hexalith.module-manifest.v2",
+  "id": "p0-two-module-persisted",
+  "modules": [
+    {
+      "id": "p0-fixture-orders",
+      "descriptorAssembly": "test/fixtures/module/descriptors/p0-fixture-orders.descriptor.json",
+      "dependencies": [],
+      "domain": "p0-fixture-orders-domain",
+      "applicationId": "p0-fixture-orders-app",
+      "resourceId": "p0-fixture-orders-resource"
+    }
+  ],
+  "platform": {
+    "eventStoreVersion": "3.70.0",
+    "daprRuntimeVersion": "1.18.0",
+    "daprSdkVersion": "1.18.4",
+    "frontComposerVersion": "4.0.1"
+  },
+  "profiles": {
+    "persisted": {
+      "fixture": "test/fixtures/module/profiles/p0-two-module-persisted.fixture.json",
+      "classes": ["persisted-boundary"]
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "hexalith.p0-persisted-fixture.v1",
+  "id": "p0-two-module-persisted",
+  "kind": "declarative-test-contract",
+  "executionStatus": "requires-supported-platform",
+  "runtimeAuthority": "hexalith-module",
+  "runIdentity": {
+    "owner": "runner",
+    "scope": "unique-per-invocation",
+    "tenantNamespace": "runner-generated",
+    "domainNamespace": "runner-generated",
+    "resourceNamespace": "runner-generated"
+  },
+  "requiredLiveAssertions": [
+    "persisted-event",
+    "projection-read-state",
+    "expected-sequence",
+    "stop-restart-rehydration",
+    "retry-idempotency",
+    "two-instance-access",
+    "tenant-isolation"
+  ],
+  "staticAssetLimitation": "The runner must execute this fixture against actual EventStore and Dapr state."
+}

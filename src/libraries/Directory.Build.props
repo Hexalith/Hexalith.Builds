@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)../../Directory.Build.props" />
+  <Import Project="$(MSBuildThisFileDirectory)../../Hexalith.Package.props" />
+  <PropertyGroup>
+    <Product>Hexalith Builds</Product>
+    <RepositoryUrl>https://github.com/Hexalith/Hexalith.Builds</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Hexalith/Hexalith.Builds</PackageProjectUrl>
+  </PropertyGroup>
+</Project>

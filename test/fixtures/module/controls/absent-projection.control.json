@@ -1,0 +1,8 @@
+{
+  "schema": "hexalith.p0-persisted-control.v1",
+  "id": "p0-control-absent-projection",
+  "kind": "absent-projection",
+  "expectedStatus": "non-passing",
+  "requiresLiveRunner": true,
+  "assertion": "An event without its expected projection or read state cannot pass."
+}

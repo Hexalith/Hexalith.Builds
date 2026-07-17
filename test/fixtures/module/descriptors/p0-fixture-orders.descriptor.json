@@ -1,0 +1,7 @@
+{
+  "schema": "hexalith.p0-fixture-descriptor.v1",
+  "id": "p0-fixture-orders",
+  "kind": "metadata-only-test-descriptor",
+  "execution": "requires-approved-runner-descriptor-abi",
+  "evidence": "not-runtime-evidence"
+}

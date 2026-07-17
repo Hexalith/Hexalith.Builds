@@ -1,5 +1,5 @@
 name: Create Release
-description: 'Release with semantic-release (version, changelog, git commit, GitHub release) — no package build'
+description: 'Run the repository-configured semantic-release lifecycle (version, changelog, optional package lifecycle, GitHub release)'
 
 runs:
   using: "composite"
@@ -21,4 +21,5 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+        NUGET_API_KEY: ${{ env.NUGET_API_KEY }}
       run: npx semantic-release

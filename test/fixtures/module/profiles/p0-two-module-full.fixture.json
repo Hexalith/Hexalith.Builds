@@ -1,0 +1,34 @@
+{
+  "schema": "hexalith.p0-persisted-fixture.v1",
+  "id": "p0-two-module-full",
+  "kind": "declarative-test-contract",
+  "executionStatus": "requires-supported-platform",
+  "runtimeAuthority": "hexalith-module",
+  "runIdentity": {
+    "owner": "runner",
+    "scope": "unique-per-invocation",
+    "tenantNamespace": "runner-generated",
+    "domainNamespace": "runner-generated",
+    "resourceNamespace": "runner-generated"
+  },
+  "requiredLiveAssertions": [
+    "authenticated-write",
+    "persisted-event",
+    "projection-read-state",
+    "expected-sequence",
+    "stop-restart-rehydration",
+    "retry-idempotency",
+    "two-instance-access",
+    "tenant-isolation"
+  ],
+  "negativeControls": [
+    "controls/stale-state.control.json",
+    "controls/absent-event.control.json",
+    "controls/absent-projection.control.json",
+    "controls/wrong-sequence.control.json",
+    "controls/cross-tenant.control.json",
+    "controls/cancellation.control.json",
+    "controls/prerequisite-unavailable.control.json"
+  ],
+  "staticAssetLimitation": "This declarative fixture is not a passing persisted-runtime result."
+}

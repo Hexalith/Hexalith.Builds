@@ -1,0 +1,126 @@
+schema: hexalith.readiness-evidence.v1
+project: Hexalith.Builds
+markdown_view: policy-controls.md
+validation:
+  required_coverage:
+    fr: FR-1..FR-1
+    nfr: NFR-1..NFR-1
+    finding: "1"
+    release: "1"
+status_legend:
+  pending: planned evidence
+  blocked-external: external dependency
+  not-verified: unavailable environment
+  failed: executed evidence failed
+  passed: executed evidence passed
+  skipped: skipped evidence
+defaults:
+  repository: Hexalith.Builds
+  owner: Builds Owner
+  environment: deterministic-local
+  pinned_revision: 0123456789abcdef
+  status: pending
+  release_disposition: release-blocking
+rows:
+  - key: fr-1
+    category: fr
+    ids: [FR-1]
+    description: functional readiness coverage
+    primary_story: "6.1"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/fr-1
+    verification_command: dotnet tool run hexalith-module test --profile full --filter FR-1
+    evidence_artifact: evidence/fr-1.json
+    estimate: M
+  - key: nfr-1
+    category: nfr
+    ids: [NFR-1]
+    description: non-functional readiness coverage
+    primary_story: "8.1"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/nfr-1
+    verification_command: dotnet tool run hexalith-module test --profile full --filter NFR-1
+    evidence_artifact: evidence/nfr-1.json
+    estimate: M
+  - key: finding-001
+    category: finding
+    ids: [TEST-001]
+    description: finding readiness coverage
+    primary_story: "8.1"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/finding-001
+    verification_command: dotnet tool run hexalith-module test --profile full --filter Finding=TEST-001
+    evidence_artifact: evidence/finding-001.json
+    estimate: S
+  - key: release-smoke
+    category: release
+    ids: [NFR-11.smoke]
+    description: undeclared status control
+    primary_story: "8.11"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/release-smoke
+    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=smoke
+    evidence_artifact: evidence/release-smoke.json
+    estimate: M
+    status: blocked
+  - key: release-unavailable
+    category: release
+    ids: [NFR-11.unavailable]
+    description: passed unavailable control
+    primary_story: "8.11"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/release-unavailable
+    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=unavailable
+    evidence_artifact: test/fixtures/evidence/positive/evidence/release-passed.json
+    estimate: M
+    status: passed
+    outcome: unavailable
+    artifact_schema: hexalith.module-run-evidence.v1
+    artifact_sha256: 672af04f216a62d10bdf95a4fb0a04fab39ae50dd6415b7c868ea3b7ab2befa9
+  - key: release-failed
+    category: release
+    ids: [NFR-11.failed]
+    description: failed critical control
+    primary_story: "8.11"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/release-failed
+    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=failed
+    evidence_artifact: test/fixtures/evidence/positive/evidence/release-passed.json
+    estimate: M
+    status: failed
+    outcome: failed
+    artifact_schema: hexalith.module-run-evidence.v1
+    artifact_sha256: 672af04f216a62d10bdf95a4fb0a04fab39ae50dd6415b7c868ea3b7ab2befa9
+  - key: release-skipped
+    category: release
+    ids: [NFR-11.skipped]
+    description: unexplained critical skip control
+    primary_story: "8.11"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/release-skipped
+    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=skipped
+    evidence_artifact: evidence/release-skipped.json
+    estimate: M
+    status: skipped
+  - key: release-missing-artifact
+    category: release
+    ids: [NFR-11.missing-artifact]
+    description: missing executed artifact control
+    primary_story: "8.11"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/release-missing-artifact
+    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=missing-artifact
+    evidence_artifact: evidence/missing.json
+    estimate: M
+    status: passed
+    outcome: passed
+    artifact_schema: hexalith.module-run-evidence.v1
+    artifact_sha256: 672af04f216a62d10bdf95a4fb0a04fab39ae50dd6415b7c868ea3b7ab2befa9

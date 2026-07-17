@@ -1,0 +1,8 @@
+{
+  "schema": "hexalith.p0-persisted-control.v1",
+  "id": "p0-control-prerequisite-unavailable",
+  "kind": "prerequisite-unavailable",
+  "expectedStatus": "prerequisite-unavailable",
+  "requiresLiveRunner": true,
+  "assertion": "An unavailable required platform prerequisite is non-passing, never skipped success."
+}

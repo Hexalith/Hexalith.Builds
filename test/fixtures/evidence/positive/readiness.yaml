@@ -1,0 +1,73 @@
+schema: hexalith.readiness-evidence.v1
+project: Hexalith.Builds
+markdown_view: readiness.md
+validation:
+  command: dotnet tool run hexalith-evidence validate test/fixtures/evidence/positive/readiness.yaml
+  required_coverage:
+    fr: FR-1..FR-1
+    nfr: NFR-1..NFR-1
+    finding: "1"
+    release: "1"
+status_legend:
+  pending: planned evidence that has not executed
+  blocked-external: evidence blocked by an external prerequisite
+  not-verified: environment unavailable
+  failed: executed evidence failed
+  passed: executed evidence passed
+  skipped: evidence skipped with a declared reason
+defaults:
+  repository: Hexalith.Builds
+  owner: Builds Owner
+  environment: deterministic-local
+  pinned_revision: 0123456789abcdef
+  status: pending
+  release_disposition: release-blocking
+rows:
+  - key: fr-1
+    category: fr
+    ids: [FR-1]
+    description: functional readiness coverage
+    primary_story: "6.1"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/readiness-fr-1
+    verification_command: dotnet tool run hexalith-module test --profile full --filter FR-1
+    evidence_artifact: evidence/fr-1.json
+    estimate: M
+  - key: nfr-1
+    category: nfr
+    ids: [NFR-1]
+    description: non-functional readiness coverage
+    primary_story: "8.1"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/readiness-nfr-1
+    verification_command: dotnet tool run hexalith-module test --profile full --filter NFR-1
+    evidence_artifact: evidence/nfr-1.json
+    estimate: M
+  - key: finding-001
+    category: finding
+    ids: [TEST-001]
+    description: audit finding readiness coverage
+    primary_story: "8.1"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/readiness-finding-001
+    verification_command: dotnet tool run hexalith-module test --profile full --filter Finding=TEST-001
+    evidence_artifact: evidence/finding-001.json
+    estimate: S
+  - key: release-smoke
+    category: release
+    ids: [NFR-11.smoke]
+    description: release smoke evidence
+    primary_story: "8.11"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/readiness-release-smoke
+    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=smoke
+    evidence_artifact: test/fixtures/evidence/positive/evidence/release-passed.json
+    estimate: M
+    status: passed
+    outcome: passed
+    artifact_schema: hexalith.module-run-evidence.v1
+    artifact_sha256: 672af04f216a62d10bdf95a4fb0a04fab39ae50dd6415b7c868ea3b7ab2befa9

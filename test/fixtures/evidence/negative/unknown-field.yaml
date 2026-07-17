@@ -1,0 +1,3 @@
+schema: hexalith.readiness-evidence.v1
+project: Hexalith.Builds
+unknown_policy_escape: false

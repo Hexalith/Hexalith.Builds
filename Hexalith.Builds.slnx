@@ -1,4 +1,10 @@
 <Solution>
+  <Project Path="src/libraries/Hexalith.Builds.Evidence.Cli/Hexalith.Builds.Evidence.Cli.csproj" />
+  <Project Path="src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj" />
+  <Project Path="src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj" />
+  <Project Path="test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj" />
+  <Project Path="test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj" />
+  <Project Path="test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj" />
   <Folder Name="/.github/" />
   <Folder Name="/.github/workflows/">
     <File Path=".github/workflows/build-release.yml" />

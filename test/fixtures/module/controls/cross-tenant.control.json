@@ -1,0 +1,8 @@
+{
+  "schema": "hexalith.p0-persisted-control.v1",
+  "id": "p0-control-cross-tenant",
+  "kind": "cross-tenant",
+  "expectedStatus": "non-passing",
+  "requiresLiveRunner": true,
+  "assertion": "State observed under a different runner-owned Tenant namespace cannot pass."
+}

@@ -1,0 +1,8 @@
+{
+  "schema": "hexalith.p0-persisted-control.v1",
+  "id": "p0-control-cancellation",
+  "kind": "cancellation",
+  "expectedStatus": "cancelled",
+  "requiresLiveRunner": true,
+  "assertion": "A cancelled run must retain metadata-only failure evidence and cannot pass."
+}

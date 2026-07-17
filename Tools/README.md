@@ -5,6 +5,40 @@ submodule.
 
 ## Available Tools
 
+### G-4 tool package qualification
+
+`build-g4-tool-packages.ps1` builds both authorized .NET tools in Release,
+packs exactly `Hexalith.Builds.Module.Cli` and
+`Hexalith.Builds.Evidence.Cli`, and writes a SHA-256 inventory. It does not
+reuse the shared consumer `Github/scripts/build-packages.ps1` behavior.
+
+```powershell
+.\Tools\build-g4-tool-packages.ps1 -Version 0.0.0-ci.1
+```
+
+`test-g4-tool-package-contracts.ps1` performs clean source and package-mode
+qualification. It generates a temporary local-tool manifest pinned to the
+provided version, restores only from the temporary local feed, and invokes the
+positive and blocking-negative module/evidence controls.
+
+```powershell
+.\Tools\test-g4-tool-package-contracts.ps1 -Version 0.0.0-ci.1 -RequireControls
+```
+
+`publish-g4-tool-packages.ps1` verifies the Release inventory before
+publication. A prerelease version (one containing `-`) targets
+repository-configured GitHub Packages using `GITHUB_TOKEN`; a stable version
+targets NuGet.org using `NUGET_API_KEY`. The script fails closed if the token,
+package inventory, version, NuGet package, symbol package, or SHA-256 record
+is missing.
+
+```powershell
+.\Tools\publish-g4-tool-packages.ps1 -Version 4.20.0
+```
+
+The version shown above is illustrative. Semantic-release supplies the actual
+version; never create a consumer tool manifest with an unpublished version.
+
 ### validate-central-package-versions.ps1
 
 Evaluates `Props/Directory.Packages.props` with MSBuild and rejects blank,

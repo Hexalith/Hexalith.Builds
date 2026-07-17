@@ -1,0 +1,8 @@
+{
+  "schema": "hexalith.p0-persisted-control.v1",
+  "id": "p0-control-wrong-sequence",
+  "kind": "wrong-sequence",
+  "expectedStatus": "non-passing",
+  "requiresLiveRunner": true,
+  "assertion": "A persisted event or projection at an unexpected sequence cannot pass."
+}

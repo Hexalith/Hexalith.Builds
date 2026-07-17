@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.dev/schemas/hexalith.module-manifest.v1.json",
+  "title": "Hexalith module manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "modules", "platform", "profiles"],
+  "properties": {
+    "schema": { "const": "hexalith.module-manifest.v1" },
+    "id": { "$ref": "#/$defs/identifier" },
+    "modules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/module" }
+    },
+    "platform": { "$ref": "#/$defs/platform" },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["descriptorAssembly"],
+      "properties": {
+        "descriptorAssembly": { "$ref": "#/$defs/repositoryPath" }
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/profile" }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.{1,2}(?:/|$)).+$"
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "descriptorAssembly", "dependencies", "domain", "applicationId", "resourceId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "descriptorAssembly": { "$ref": "#/$defs/repositoryPath" },
+        "dependencies": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/identifier" },
+          "uniqueItems": true
+        },
+        "domain": { "$ref": "#/$defs/identifier" },
+        "applicationId": { "$ref": "#/$defs/identifier" },
+        "resourceId": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventStoreVersion", "daprRuntimeVersion", "daprSdkVersion", "frontComposerVersion"],
+      "properties": {
+        "eventStoreVersion": { "const": "3.70.0" },
+        "daprRuntimeVersion": { "const": "1.18.0" },
+        "daprSdkVersion": { "const": "1.18.4" },
+        "frontComposerVersion": { "const": "4.0.1" }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixture", "classes"],
+      "properties": {
+        "fixture": { "$ref": "#/$defs/repositoryPath" },
+        "classes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "pure-domain",
+              "host-contract",
+              "persisted-boundary",
+              "restart",
+              "two-instance",
+              "authenticated-browser",
+              "authenticated-cli",
+              "authenticated-mcp"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

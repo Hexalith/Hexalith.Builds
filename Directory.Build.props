@@ -1,0 +1,15 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)Hexalith.Build.props" />
+  <PropertyGroup>
+    <ProjectRoot>$(MSBuildThisFileDirectory)</ProjectRoot>
+    <Product>Hexalith Builds</Product>
+    <RepositoryUrl>https://github.com/Hexalith/Hexalith.Builds</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Hexalith/Hexalith.Builds</PackageProjectUrl>
+    <PackageTags>Hexalith;Build;Tooling;Aspire;Dapr;Evidence</PackageTags>
+    <CLSCompliant>false</CLSCompliant>
+    <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

@@ -13,6 +13,7 @@ permissions:
   contents: write        # commit changelog, push tag, create GitHub release
   issues: write          # semantic-release comments on released issues
   pull-requests: write   # semantic-release comments on released PRs
+  packages: write        # publish semantic-release prerelease tool packages to GitHub Packages
 
 jobs:
   release:
@@ -25,6 +26,8 @@ jobs:
 
     - name: Initialize .NET
       uses: ./Github/initialize-dotnet
+      with:
+        global-json-file: global.json
 
     - name: Validate central package versions
       shell: pwsh
@@ -46,7 +49,12 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
 
+    - name: Qualify G-4 tool source and Release packages
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -RequireControls
+
     - name: Create Release
       uses: ./Github/create-release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

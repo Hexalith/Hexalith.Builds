@@ -13,25 +13,51 @@
       "main",
       "next",
       "next-major",
-      { "name": "beta", "prerelease": true },
-      { "name": "alpha", "prerelease": true }
+      {
+        "name": "beta",
+        "prerelease": true
+      },
+      {
+        "name": "alpha",
+        "prerelease": true
+      }
     ],
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",
       [
+        "@semantic-release/exec",
+        {
+          "prepareCmd": "pwsh -NoProfile -File ./Tools/build-g4-tool-packages.ps1 -Version ${nextRelease.version}",
+          "publishCmd": "pwsh -NoProfile -File ./Tools/publish-g4-tool-packages.ps1 -Version ${nextRelease.version}"
+        }
+      ],
+      [
         "@semantic-release/git",
         {
-          "assets": ["CHANGELOG.md"],
+          "assets": [
+            "CHANGELOG.md"
+          ],
           "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
         }
       ],
-      "@semantic-release/github"
+      [
+        "@semantic-release/github",
+        {
+          "assets": [
+            {
+              "path": "artifacts/g4-tool-packages/**/g4-tool-package-inventory.json",
+              "label": "G-4 tool package SHA-256 inventory"
+            }
+          ]
+        }
+      ]
     ]
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^12.0.8",
     "semantic-release": "^25.0.5"

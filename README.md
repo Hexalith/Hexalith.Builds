@@ -191,6 +191,87 @@ Use `Props/Directory.Packages.props` from a repository
 </Project>
 ```
 
+## G-4 Local Tools
+
+This repository owns two repository-scoped .NET tools. They are the only public
+runner and readiness-validator contracts for the G-4 workflow:
+
+| Package ID | Tool command | Purpose |
+| --- | --- | --- |
+| `Hexalith.Builds.Module.Cli` | `hexalith-module` | Validates a module manifest and owns supported runner lifecycle. |
+| `Hexalith.Builds.Evidence.Cli` | `hexalith-evidence` | Validates `hexalith.readiness-evidence.v1` matrices. |
+
+After an approved version is published, a consumer pins both exact versions in
+its checked-in `.config/dotnet-tools.json`, then restores and invokes them from
+the consumer checkout:
+
+```powershell
+dotnet tool restore
+dotnet tool run hexalith-module run --manifest module/hexalith-projects.module.json
+dotnet tool run hexalith-module down --manifest module/hexalith-projects.module.json
+dotnet tool run hexalith-module test --manifest module/hexalith-projects.module.json --profile full
+dotnet tool run hexalith-evidence validate _bmad-output/planning-artifacts/implementation-readiness-traceability-matrix.yaml
+```
+
+An exact-version consumer manifest is intentionally not checked in before the
+first package is published; consumers must not invent a `4.20.0` pin. The
+semantic-release version and package hashes are the release record.
+
+### Module Manifest and Runner Contract
+
+`hexalith-module` accepts a strict `hexalith.module-manifest.v1` JSON file.
+All descriptor, UI, and fixture paths are forward-slash, repository-relative
+paths. Validation rejects unknown or duplicate fields, duplicate identifiers,
+path escapes, placeholders, unreadable files, unsupported pins, malformed
+dependencies, and secret-bearing values before any lifecycle work.
+
+The profile classes are `pure-domain`, `host-contract`, `persisted-boundary`,
+`restart`, `two-instance`, `authenticated-browser`, `authenticated-cli`, and
+`authenticated-mcp`. They define runner handoff contracts; they do not turn a
+product assertion into a runner-owned pass claim.
+
+Use `--output json` for a machine-readable diagnostic, and `--evidence
+<repository-relative>.json` to atomically retain canonical
+`hexalith.module-run-evidence.v1` metadata. Filter values are retained only as
+SHA-256 fingerprints. Evidence identifies volatile timestamps and run IDs so
+semantic comparisons remain deterministic.
+
+The exit-code contract is stable: `0` success, `1` usage/manifest, `2`
+prerequisite unavailable, `3` topology/lifecycle, `4` product/test, `5`
+persisted state, `6` evidence schema/policy, and `130` cancellation. The
+first causal failure is retained; a later evidence-write failure cannot rewrite
+an earlier runner failure.
+
+Live persisted composition remains explicitly unavailable while the separately
+owned G-6 Dapr runtime-to-SDK disposition is unresolved. That result is a
+non-passing prerequisite outcome, never a skipped or passing qualification.
+`down` remains idempotent and only removes runner-owned invocation metadata.
+
+### Evidence Validator Contract
+
+`hexalith-evidence validate <matrix.yaml>` parses YAML with duplicate-key
+checking before strict schema and policy validation. Diagnostics are sorted by
+source, row, rule, field, location, and hint. The validator rejects an
+undeclared row status such as the currently unresolved `blocked` matrix status;
+it does not mutate a consumer-owned matrix or invent status semantics.
+
+Rows that claim passed or failed execution must reference a readable,
+repository-relative JSON artifact with the declared
+`hexalith.module-run-evidence.v1` schema and SHA-256. Future-path references
+remain valid for `pending`, `blocked-external`, and `not-verified` rows.
+The positive evidence fixture is a schema/validator contract sample only; it
+is not persisted-runtime acceptance evidence.
+
+### Metadata and Troubleshooting
+
+Do not put bearer tokens, credentials, source payloads, raw environment dumps,
+or protected tenant/resource values in a manifest, filter, fixture, or
+retained artifact. The tools reject manifest secret-bearing values and avoid
+retaining raw filters. If a command returns `2`, resolve the documented
+external prerequisite rather than treating the run as a pass. If a command
+returns `6`, correct the evidence path, schema, hash, status declaration, or
+policy diagnostic and rerun it.
+
 ## Environment Detection
 
 The build properties set environment flags used by consuming projects:

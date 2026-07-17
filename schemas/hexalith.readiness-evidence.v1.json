@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.dev/schemas/hexalith.readiness-evidence.v1.json",
+  "title": "Hexalith readiness evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status_legend", "defaults", "rows"],
+  "properties": {
+    "schema": { "const": "hexalith.readiness-evidence.v1" },
+    "project": { "type": "string" },
+    "generated": { "type": "string" },
+    "generated_by": { "type": "string" },
+    "source_of_truth": { "type": "string" },
+    "markdown_view": { "type": "string" },
+    "sources": { "type": "array", "items": { "type": "string" } },
+    "validation": { "type": "object" },
+    "status_legend": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string" }
+    },
+    "containment": { "type": "object" },
+    "defaults": { "type": "object" },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/row" }
+    }
+  },
+  "$defs": {
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "status"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "category": { "type": "string" },
+        "ids": { "type": ["array", "string"] },
+        "description": { "type": "string" },
+        "architecture_decisions": { "type": ["array", "string"] },
+        "user_journeys": { "type": ["array", "string"] },
+        "primary_story": { "type": "string" },
+        "supporting_stories": { "type": ["array", "string"] },
+        "entry_gates": { "type": ["array", "string"] },
+        "fixture": { "type": "string" },
+        "verification_command": { "type": "string" },
+        "evidence_artifact": { "type": "string" },
+        "estimate": { "type": "string" },
+        "status": { "type": "string" },
+        "blocker": { "type": "string" },
+        "notes": { "type": "string" },
+        "owner": { "type": "string" },
+        "priority": { "type": "string" },
+        "binding": { "type": "string" },
+        "linked_findings": { "type": ["array", "string"] },
+        "repository": { "type": "string" },
+        "environment": { "type": "string" },
+        "pinned_revision": { "type": "string" },
+        "release_disposition": { "type": "string" }
+      }
+    }
+  }
+}
