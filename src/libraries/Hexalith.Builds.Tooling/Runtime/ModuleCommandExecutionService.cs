@@ -234,6 +234,32 @@ public static class ModuleCommandExecutionService
                 startedUtc,
                 CancellationToken.None).ConfigureAwait(false);
         }
+        catch (IOException)
+        {
+            return await WriteLifecycleFailureAsync(
+                command,
+                manifestPath,
+                profile,
+                filter,
+                evidencePath,
+                format,
+                writer,
+                startedUtc,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return await WriteLifecycleFailureAsync(
+                command,
+                manifestPath,
+                profile,
+                filter,
+                evidencePath,
+                format,
+                writer,
+                startedUtc,
+                cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private static async Task<int> WriteResultAsync(
@@ -298,6 +324,44 @@ public static class ModuleCommandExecutionService
         return new ToolCommandResult(result.Status, result.Outcome, [.. result.Diagnostics, diagnostic]);
     }
 
+    private static async Task<int> WriteLifecycleFailureAsync(
+        ModuleInvocationCommand command,
+        string manifestPath,
+        string? profile,
+        string? filter,
+        string? evidencePath,
+        ToolOutputFormat format,
+        TextWriter writer,
+        DateTimeOffset startedUtc,
+        CancellationToken cancellationToken)
+    {
+        ToolDiagnostic lifecycleDiagnostic = new(
+            "HXR004",
+            ToolPhase.Topology,
+            ToolFailureCategory.TopologyOrLifecycle,
+            "The runner-owned lifecycle state could not be safely managed.",
+            "runtime",
+            "Resolve runner-owned state access before retrying.");
+        return await WriteResultAsync(
+            "failed",
+            ToolOutcome.Passed().Fail(
+                ToolPhase.Topology,
+                ToolFailureCategory.TopologyOrLifecycle,
+                lifecycleDiagnostic.RuleId,
+                ToolExitCode.TopologyOrLifecycle),
+            [lifecycleDiagnostic],
+            format,
+            writer,
+            command,
+            manifestPath,
+            null,
+            profile,
+            filter,
+            evidencePath,
+            startedUtc,
+            cancellationToken).ConfigureAwait(false);
+    }
+
     private static bool ValidateProfile(
         ModuleInvocationCommand command,
         string? profile,
@@ -325,4 +389,4 @@ public static class ModuleCommandExecutionService
         diagnostic = null;
         return true;
     }
-}
+}

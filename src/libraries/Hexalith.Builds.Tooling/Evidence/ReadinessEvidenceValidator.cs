@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Filesystem;
 
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
@@ -808,16 +809,17 @@ internal static class ReadinessEvidenceValidator
             return;
         }
 
-        string markdownPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(document.FullPath)!, markdownView));
-        if (!IsContainedBy(markdownPath, Path.GetDirectoryName(document.FullPath)!))
+        string markdownRoot = Path.GetDirectoryName(document.FullPath)!;
+        string lexicalMarkdownPath = Path.GetFullPath(Path.Combine(markdownRoot, markdownView));
+        if (!File.Exists(lexicalMarkdownPath))
         {
-            AddDiagnostic(diagnostics, document, "HXE109", ToolFailureCategory.EvidencePolicy, "markdown_view", document.Root);
+            AddDiagnostic(diagnostics, document, "HXE150", ToolFailureCategory.EvidencePolicy, "markdown_view", document.Root);
             return;
         }
 
-        if (!File.Exists(markdownPath))
+        if (!RepositoryPathResolver.TryResolveExistingFile(markdownRoot, markdownView, out string markdownPath))
         {
-            AddDiagnostic(diagnostics, document, "HXE150", ToolFailureCategory.EvidencePolicy, "markdown_view", document.Root);
+            AddDiagnostic(diagnostics, document, "HXE109", ToolFailureCategory.EvidencePolicy, "markdown_view", document.Root);
             return;
         }
 
@@ -929,8 +931,7 @@ internal static class ReadinessEvidenceValidator
             return;
         }
 
-        string artifactPath = Path.GetFullPath(Path.Combine(document.RepositoryRoot, artifact));
-        if (!IsContainedBy(artifactPath, document.RepositoryRoot) || !File.Exists(artifactPath))
+        if (!RepositoryPathResolver.TryResolveExistingFile(document.RepositoryRoot, artifact, out string artifactPath))
         {
             AddDiagnostic(diagnostics, document, "HXE145", ToolFailureCategory.EvidencePolicy, "evidence_artifact", row, rowKey);
             return;
@@ -1112,14 +1113,6 @@ internal static class ReadinessEvidenceValidator
         }
 
         return Path.GetDirectoryName(fullPath)!;
-    }
-
-    private static bool IsContainedBy(string candidatePath, string rootPath)
-    {
-        string relativePath = Path.GetRelativePath(rootPath, candidatePath);
-        return !relativePath.Equals("..", StringComparison.Ordinal)
-            && !relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-            && !Path.IsPathRooted(relativePath);
     }
 
     private static string ToRepositoryRelativePath(string fullPath, string repositoryRoot) =>

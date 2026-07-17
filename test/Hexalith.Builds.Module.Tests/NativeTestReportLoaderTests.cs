@@ -60,6 +60,7 @@ public sealed class NativeTestReportLoaderTests
     [InlineData("<Counters total=\"2\" passed=\"0\" failed=\"0\" notExecuted=\"2\" />", "HXT004")]
     [InlineData("<Counters total=\"2\" passed=\"1\" failed=\"1\" notExecuted=\"0\" />", "HXT005")]
     [InlineData("<Counters total=\"1\" passed=\"2\" failed=\"0\" notExecuted=\"0\" />", "HXT002")]
+    [InlineData("<Counters passed=\"1\" failed=\"0\" notExecuted=\"0\" />", "HXT002")]
     public async Task InvalidOrNonPassingTrxReturnsStableRuleAsync(string counters, string ruleId)
     {
         NativeTestReportLoadResult result = await LoadAsync($"<TestRun><ResultSummary>{counters}</ResultSummary></TestRun>")
@@ -85,4 +86,4 @@ public sealed class NativeTestReportLoaderTests
             Directory.Delete(directory, true);
         }
     }
-}
+}

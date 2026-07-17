@@ -76,28 +76,26 @@ public static class NativeTestReportLoader
 
         XElement? counters = document.Descendants().FirstOrDefault(element =>
             string.Equals(element.Name.LocalName, "Counters", StringComparison.Ordinal));
-        if (counters is null || !TryReadCounters(counters, out int total, out int passed, out int failed, out int skipped))
-        {
-            return Failed("HXT002", "counters");
-        }
+        return counters is null || !TryReadCounters(counters, out int total, out int passed, out int failed, out int skipped)
+            ? Failed("HXT002", "counters")
+            : CreateResult(fullPath, bytes, total, passed, failed, skipped);
+    }
 
-        if (total == 0)
+    private static NativeTestReportLoadResult CreateResult(
+        string fullPath,
+        byte[] bytes,
+        int total,
+        int passed,
+        int failed,
+        int skipped) =>
+        (total, passed, failed, skipped) switch
         {
-            return Failed("HXT003", "total");
-        }
-
-        if (failed > 0)
-        {
-            return Failed("HXT005", "failed");
-        }
-
-        if (skipped >= total || passed == 0)
-        {
-            return Failed("HXT004", "skipped");
-        }
-
-        return passed + skipped == total
-            ? new NativeTestReportLoadResult(
+            (0, _, _, _) => Failed("HXT003", "total"),
+            (_, _, > 0, _) => Failed("HXT005", "failed"),
+            (_, 0, _, _) => Failed("HXT004", "skipped"),
+            (_, _, _, var skippedCount) when skippedCount >= total => Failed("HXT004", "skipped"),
+            _ when passed + skipped != total => Failed("HXT002", "counters"),
+            _ => new NativeTestReportLoadResult(
                 new NativeTestReport(
                     Path.GetFileName(fullPath),
                     Convert.ToHexString(SHA256.HashData(bytes)),
@@ -105,9 +103,8 @@ public static class NativeTestReportLoader
                     passed,
                     failed,
                     skipped),
-                null)
-            : Failed("HXT002", "counters");
-    }
+                null),
+        };
 
     private static NativeTestReportLoadResult Failed(string ruleId, string field) => new(
         null,
@@ -146,13 +143,24 @@ public static class NativeTestReportLoader
         out int failed,
         out int skipped)
     {
-        total = ReadCounter(counters, "total");
-        passed = ReadCounter(counters, "passed");
-        failed = ReadCounter(counters, "failed")
-            + ReadCounter(counters, "error")
-            + ReadCounter(counters, "timeout")
-            + ReadCounter(counters, "aborted");
-        skipped = ReadCounter(counters, "notExecuted") + ReadCounter(counters, "inconclusive");
+        total = 0;
+        passed = 0;
+        failed = 0;
+        skipped = 0;
+        if (!TryReadCounter(counters, "total", true, out total) ||
+            !TryReadCounter(counters, "passed", true, out passed) ||
+            !TryReadCounter(counters, "failed", true, out int failedCount) ||
+            !TryReadCounter(counters, "error", false, out int errors) ||
+            !TryReadCounter(counters, "timeout", false, out int timeouts) ||
+            !TryReadCounter(counters, "aborted", false, out int aborted) ||
+            !TryReadCounter(counters, "notExecuted", false, out int notExecuted) ||
+            !TryReadCounter(counters, "inconclusive", false, out int inconclusive))
+        {
+            return false;
+        }
+
+        failed = failedCount + errors + timeouts + aborted;
+        skipped = notExecuted + inconclusive;
 
         if (total < 0 || passed < 0 || failed < 0 || skipped < 0 || passed + failed + skipped > total)
         {
@@ -163,12 +171,13 @@ public static class NativeTestReportLoader
         return true;
     }
 
-    private static int ReadCounter(XElement counters, string name)
+    private static bool TryReadCounter(XElement counters, string name, bool required, out int value)
     {
+        value = 0;
         XAttribute? attribute = counters.Attributes().FirstOrDefault(attribute =>
             string.Equals(attribute.Name.LocalName, name, StringComparison.Ordinal));
-        return attribute is null || !int.TryParse(attribute.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value)
-            ? 0
-            : value;
+        return attribute is null
+            ? !required
+            : int.TryParse(attribute.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
     }
-}
+}

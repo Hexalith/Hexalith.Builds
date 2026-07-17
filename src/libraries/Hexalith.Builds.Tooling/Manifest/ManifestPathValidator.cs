@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.Tooling.Manifest;
 
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Filesystem;
 
 /// <summary>
 /// Validates canonical repository-relative paths used by module manifests.
@@ -80,6 +81,18 @@ public static class ManifestPathValidator
             return null;
         }
 
+        if (ManifestSecretDetector.ContainsSecret(path))
+        {
+            diagnostics.Add(new ToolDiagnostic(
+                "HXM007",
+                ToolPhase.Manifest,
+                ToolFailureCategory.Manifest,
+                "The manifest contains a prohibited secret-bearing value.",
+                field,
+                "Remove secret-bearing values from the manifest."));
+            return null;
+        }
+
         if (Path.IsPathRooted(path) ||
             path.Contains('\\', StringComparison.Ordinal) ||
             path.Split('/', StringSplitOptions.None).Any(segment =>
@@ -95,20 +108,41 @@ public static class ManifestPathValidator
             return null;
         }
 
-        string rootWithSeparator = Path.EndsInDirectorySeparator(repositoryRoot)
-            ? repositoryRoot
-            : string.Concat(repositoryRoot, Path.DirectorySeparatorChar);
-        string fullPath = Path.GetFullPath(Path.Combine(repositoryRoot, path.Replace('/', Path.DirectorySeparatorChar)));
+        string lexicalPath;
+        try
+        {
+            lexicalPath = Path.GetFullPath(Path.Combine(repositoryRoot, path.Replace('/', Path.DirectorySeparatorChar)));
+        }
+        catch (ArgumentException)
+        {
+            lexicalPath = string.Empty;
+        }
+        catch (NotSupportedException)
+        {
+            lexicalPath = string.Empty;
+        }
 
-        if (!fullPath.StartsWith(rootWithSeparator, StringComparison.Ordinal) || !File.Exists(fullPath))
+        if (!File.Exists(lexicalPath))
         {
             diagnostics.Add(new ToolDiagnostic(
-                !fullPath.StartsWith(rootWithSeparator, StringComparison.Ordinal) ? "HXM004" : "HXM005",
+                "HXM005",
                 ToolPhase.Manifest,
                 ToolFailureCategory.Manifest,
                 "A manifest path does not resolve to a readable repository file.",
                 field,
                 "Supply an existing file beneath the repository root."));
+            return null;
+        }
+
+        if (!RepositoryPathResolver.TryResolveExistingFile(repositoryRoot, path, out string fullPath))
+        {
+            diagnostics.Add(new ToolDiagnostic(
+                "HXM004",
+                ToolPhase.Manifest,
+                ToolFailureCategory.Manifest,
+                "A manifest path is not canonical and repository-relative.",
+                field,
+                "Use a readable file physically contained by the repository root."));
             return null;
         }
 

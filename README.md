@@ -242,6 +242,11 @@ persisted state, `6` evidence schema/policy, and `130` cancellation. The
 first causal failure is retained; a later evidence-write failure cannot rewrite
 an earlier runner failure.
 
+The runner’s native-report boundary accepts the TRX counters emitted by both
+VSTest and Microsoft Testing Platform/xUnit v3. Missing or invalid reports,
+zero matching tests, all-skipped tests, and failed test counts are explicit
+non-passing product/test outcomes.
+
 Live persisted composition remains explicitly unavailable while the separately
 owned G-6 Dapr runtime-to-SDK disposition is unresolved. That result is a
 non-passing prerequisite outcome, never a skipped or passing qualification.

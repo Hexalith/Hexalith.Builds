@@ -142,7 +142,7 @@ so that Projects Story 6.1 and later consumers can prove supported-path behavior
 
 - [ ] Emit deterministic module-run evidence (AC: 6-8, 11, 12)
   - [x] Define `hexalith.module-run-evidence.v1`, canonical serialization, metadata allowlist, hash rules, volatile fields, and artifact retention.
-  - [ ] Capture VSTest and MTP/xUnit v3 native results without hiding their exit status or report semantics.
+  - [x] Capture VSTest and MTP/xUnit v3 native results without hiding their exit status or report semantics.
   - [ ] Test successful, partial, unavailable, cancelled, runner-failed, test-failed, state-failed, and evidence-failed output.
   - [ ] Seed tokens/secrets in tests and prove redaction across logs, state, reports, JSON, and diagnostics.
 
@@ -332,8 +332,9 @@ GPT-5 Codex
 - 2026-07-17 Task 1 plan: establish repository-local SDK/MSBuild authority first, keep shared behavior in a non-packable `Hexalith.Builds.Tooling` project, and expose only the two authorized .NET tool packages.
 - 2026-07-17 Task 1 validation: `dotnet build Hexalith.Builds.slnx --configuration Release --no-restore` completed with 0 warnings/errors; each of the three test projects passed with one test and no skips.
 - 2026-07-17 Task 2 validation: strict manifest and command contracts passed with 36 module tests, including exact exit codes, causal-outcome retention, canonical evidence output, filter redaction, and explicit G-6 prerequisite unavailability.
+- 2026-07-17 Native report validation: the shared TRX loader passed VSTest and Microsoft Testing Platform/xUnit v3-compatible counters and rejected missing counters, zero matches, all-skipped, inconsistent, and failed reports; module tests increased to 43 passing.
 - 2026-07-17 Evidence validation: the `hexalith-evidence validate` command passed 8 focused tests covering duplicate YAML keys, unsupported schema/fields, defaults, coverage, artifact hashes, Markdown identities, undeclared `blocked`, and policy controls.
-- 2026-07-17 Package qualification: `pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-ci.9 -RequireControls` passed: Release build had 0 warnings/errors; Evidence 8/8, Module 36/36, Integration 1/1; exactly two tool `.nupkg`/`.snupkg` artifacts were hashed, restored from an isolated local feed, and exercised through all curated positive and negative controls.
+- 2026-07-17 Package qualification: `pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-ci.14 -RequireControls` passed: Release build had 0 warnings/errors; Evidence 8/8, Module 43/43, Integration 1/1; exactly two tool `.nupkg`/`.snupkg` artifacts were hashed, restored from an isolated local feed, and exercised through all curated positive and negative controls.
 - 2026-07-17 Deliberate live-lane stop: G-6 is unresolved and no owner-approved descriptor/platform composition ABI or P1 baseline is available. `run` and `test` therefore return explicit non-passing `HXR002` prerequisite evidence; no static fixture or hand-authored sample is represented as persisted-runtime proof.
 
 ### Completion Notes List
@@ -382,6 +383,7 @@ GPT-5 Codex
 - `src/libraries/Hexalith.Builds.Module.Cli/AssemblyInfo.cs` and `ModuleCommandApplication.cs` (new)
 - `src/libraries/Hexalith.Builds.Evidence.Cli/AssemblyInfo.cs` and `EvidenceCommandApplication.cs` (new)
 - `src/libraries/Hexalith.Builds.Tooling/AssemblyInfo.cs` and `Diagnostics/`, `Manifest/`, `Runtime/`, `RunEvidence/`, and `Evidence/` source sets (new)
+- `src/libraries/Hexalith.Builds.Tooling/TestReports/` source set and `test/Hexalith.Builds.Module.Tests/NativeTestReportLoaderTests.cs` (new)
 - `test/Hexalith.Builds.Module.Tests/ManifestValidationTests.cs`, `ModuleCommandApplicationTests.cs`, `ModuleRunEvidenceSerializationTests.cs`, `PersistedFixtureAssetTests.cs`, and `ToolOutcomeTests.cs` (new)
 - `test/Hexalith.Builds.Evidence.Tests/EvidenceCommandApplicationTests.cs`, `EvidenceFixturePath.cs`, and `ReadinessEvidenceValidatorTests.cs` (new)
 - `test/fixtures/module/` and `test/fixtures/evidence/` curated positive, negative, expected-result, and contract-only control corpora (new)

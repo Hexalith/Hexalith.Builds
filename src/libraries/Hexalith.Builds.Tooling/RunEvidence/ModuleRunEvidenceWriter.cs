@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Filesystem;
 using Hexalith.Builds.Tooling.Manifest;
 
 /// <summary>
@@ -44,6 +45,13 @@ public static class ModuleRunEvidenceWriter
         try
         {
             _ = Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
+            targetPath = ResolveEvidencePath(evidencePath, manifestPath);
+            if (targetPath is null)
+            {
+                return ModuleRunEvidenceWriteResult.Failed();
+            }
+
+            temporaryPath = $"{targetPath}.{Guid.NewGuid():N}.tmp";
             byte[] content = SerializeCanonical(evidence);
             await File.WriteAllBytesAsync(temporaryPath, content, cancellationToken).ConfigureAwait(false);
             File.Move(temporaryPath, targetPath, true);
@@ -136,11 +144,9 @@ public static class ModuleRunEvidenceWriter
         {
             string fullManifestPath = Path.GetFullPath(manifestPath);
             string repositoryRoot = ManifestPathValidator.FindRepositoryRoot(fullManifestPath);
-            string rootWithSeparator = Path.EndsInDirectorySeparator(repositoryRoot)
-                ? repositoryRoot
-                : string.Concat(repositoryRoot, Path.DirectorySeparatorChar);
-            string targetPath = Path.GetFullPath(Path.Combine(repositoryRoot, evidencePath.Replace('/', Path.DirectorySeparatorChar)));
-            return targetPath.StartsWith(rootWithSeparator, StringComparison.Ordinal) ? targetPath : null;
+            return RepositoryPathResolver.TryResolvePathWithinRoot(repositoryRoot, evidencePath, out string targetPath)
+                ? targetPath
+                : null;
         }
         catch (ArgumentException)
         {
