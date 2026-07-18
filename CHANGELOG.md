@@ -1,3 +1,16 @@
+# [4.21.0](https://github.com/Hexalith/Hexalith.Builds/compare/v4.20.0...v4.21.0) (2026-07-18)
+
+
+### Bug Fixes
+
+* refactor and enhance run evidence tooling ([a14c776](https://github.com/Hexalith/Hexalith.Builds/commit/a14c77668ccc749e226f2b6d01285582b908c414))
+* update HexalithEventStoreVersion to 3.70.1 ([c074d0d](https://github.com/Hexalith/Hexalith.Builds/commit/c074d0ddacadb63df2c6af6ac1f869a552e097eb))
+
+
+### Features
+
+* enhance module-run evidence validation ([b019d94](https://github.com/Hexalith/Hexalith.Builds/commit/b019d945654b3505aa1737754c4c3f68f477ff82))
+
 # [4.20.0](https://github.com/Hexalith/Hexalith.Builds/compare/v4.19.2...v4.20.0) (2026-07-17)
 
 
