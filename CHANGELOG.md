@@ -1,3 +1,10 @@
+## [4.21.7](https://github.com/Hexalith/Hexalith.Builds/compare/v4.21.6...v4.21.7) (2026-07-18)
+
+
+### Bug Fixes
+
+* update HexalithTenantsVersion to 3.2.18 ([8fd1b07](https://github.com/Hexalith/Hexalith.Builds/commit/8fd1b07a51fb971d4aad368e67703db2de8ebbfb))
+
 ## [4.21.6](https://github.com/Hexalith/Hexalith.Builds/compare/v4.21.5...v4.21.6) (2026-07-18)
 
 
