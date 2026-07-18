@@ -1,3 +1,10 @@
+## [4.21.5](https://github.com/Hexalith/Hexalith.Builds/compare/v4.21.4...v4.21.5) (2026-07-18)
+
+
+### Bug Fixes
+
+* update Hexalith.EventStore.Contracts version to use centralized versioning ([b1ec8a6](https://github.com/Hexalith/Hexalith.Builds/commit/b1ec8a60912c631bc18c4792d7b6da6425a96782))
+
 ## [4.21.4](https://github.com/Hexalith/Hexalith.Builds/compare/v4.21.3...v4.21.4) (2026-07-18)
 
 
