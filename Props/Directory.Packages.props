@@ -7,7 +7,7 @@
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.74.0</HexalithEventStoreVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.0.1</HexalithFrontComposerVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.10.0</HexalithMemoriesVersion>
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">3.15.1</HexalithTenantsVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">3.2.18</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.0.0</HexalithPartiesVersion>
     <HexalithChatbotVersion Condition="'$(HexalithChatbotVersion)' == ''">1.75.0</HexalithChatbotVersion>
   </PropertyGroup>
