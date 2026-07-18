@@ -1,3 +1,10 @@
+## [4.21.3](https://github.com/Hexalith/Hexalith.Builds/compare/v4.21.2...v4.21.3) (2026-07-18)
+
+
+### Bug Fixes
+
+* pin AngleSharp to 1.5.2 to remediate GHSA-pgww-w46g-26qg ([337f023](https://github.com/Hexalith/Hexalith.Builds/commit/337f02322b6eb9d78769b6003fad82d3ccb49488))
+
 ## [4.21.2](https://github.com/Hexalith/Hexalith.Builds/compare/v4.21.1...v4.21.2) (2026-07-18)
 
 
