@@ -9,6 +9,7 @@
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.10.0</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">3.15.1</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.0.0</HexalithPartiesVersion>
+    <HexalithChatbotVersion Condition="'$(HexalithChatbotVersion)' == ''">1.75.0</HexalithChatbotVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Hexalith.Applications" Version="1.0.6" />
@@ -73,6 +74,7 @@
     <PackageVersion Include="Hexalith.Parties.ServiceDefaults" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.Testing" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.UI" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Chatbot.Contracts" Version="$(HexalithChatbotVersion)" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="$(HexalithPolymorphicSerializationsVersion)" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="$(HexalithPolymorphicSerializationsVersion)" />
     <PackageVersion Include="Hexalith.Tenants.Aspire" Version="$(HexalithTenantsVersion)" />
