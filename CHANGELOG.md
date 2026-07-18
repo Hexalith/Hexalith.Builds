@@ -1,3 +1,10 @@
+## [4.21.4](https://github.com/Hexalith/Hexalith.Builds/compare/v4.21.3...v4.21.4) (2026-07-18)
+
+
+### Bug Fixes
+
+* add HexalithChatbotVersion and update Hexalith.Chatbot.Contracts package reference ([a8933ae](https://github.com/Hexalith/Hexalith.Builds/commit/a8933ae35546fae5e5a7b5bebbb0eadf442b040c))
+
 ## [4.21.3](https://github.com/Hexalith/Hexalith.Builds/compare/v4.21.2...v4.21.3) (2026-07-18)
 
 
