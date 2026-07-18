@@ -43,8 +43,9 @@ version; never create a consumer tool manifest with an unpublished version.
 
 ### validate-central-package-versions.ps1
 
-Evaluates `Props/Directory.Packages.props` with MSBuild and rejects blank,
-unresolved, tag-prefixed, or malformed package versions before release.
+Evaluates `Props/Directory.Packages.props` with MSBuild and rejects blank or
+duplicate IDs, blank, unresolved, tag-prefixed, or malformed versions, failed
+evaluation, and source/effective-catalog mismatches before release.
 
 ```powershell
 .\Tools\validate-central-package-versions.ps1
@@ -55,6 +56,46 @@ Run the focused fixture suite with:
 ```powershell
 .\Tools\test-central-package-version-validator.ps1
 ```
+
+`test-authoritative-package-catalog.ps1` protects the approved migration matrix,
+the shared `HexalithCommonsVersion`, and
+`CentralPackageVersionOverrideEnabled=false` through evaluated MSBuild output.
+
+### validate-consumer-package-authority.ps1
+
+Source-scans a consumer repository's tracked MSBuild XML and evaluates every
+tracked project. It requires a version-free root wrapper importing the shared
+catalog, CPM and override protection on every project, exact effective catalog
+values, and a catalog row for every non-implicit `PackageReference`. It rejects
+consumer `PackageVersion` items, dependency-version property overrides,
+`PackageReference`/`GlobalPackageReference` version metadata,
+`VersionOverride`, and CPM opt-outs while allowing legal asset metadata and
+SDK-implicit references.
+
+```powershell
+.\Tools\validate-consumer-package-authority.ps1 `
+  -RepositoryRoot ..\MyModule `
+  -CatalogPath .\Props\Directory.Packages.props
+.\Tools\test-consumer-package-authority-validator.ps1
+```
+
+### validate-package-version-exceptions.ps1
+
+Validates `package-version-exceptions.json` as the closed allowlist for the ten
+AppHost project-SDK pins and five local tool-manifest pins. Schema-only mode is
+appropriate in the Builds checkout. Supplying a ChatBot umbrella workspace also
+compares every actual root-declared repository pin with the allowlist and keeps
+`Aspire.AppHost.Sdk` exactly aligned with the shared `Aspire.Hosting` version.
+
+```powershell
+.\Tools\validate-package-version-exceptions.ps1 `
+  -InventoryPath .\Tools\package-version-exceptions.json `
+  -CatalogPath .\Props\Directory.Packages.props
+.\Tools\test-package-version-exception-validator.ps1
+```
+
+New entries require an architecture decision; the inventory is not a general
+escape hatch for local package-reference versions.
 
 ### test-domain-workflow-test-platforms.ps1
 

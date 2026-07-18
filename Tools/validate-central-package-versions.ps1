@@ -93,6 +93,41 @@ if (-not [string]::IsNullOrWhiteSpace($EvaluatorScriptPath)) {
     $resolvedEvaluatorScriptPath = Resolve-ExistingFile -Path $EvaluatorScriptPath -Description 'Evaluator script'
 }
 
+try {
+    [xml] $catalogXml = Get-Content -LiteralPath $resolvedCatalogPath -Raw -ErrorAction Stop
+}
+catch {
+    Stop-Validation "central catalog source is malformed XML. $($_.Exception.GetBaseException().Message)"
+}
+
+$sourcePackageVersions = @($catalogXml.SelectNodes("//*[local-name()='PackageVersion']"))
+if ($sourcePackageVersions.Count -eq 0) {
+    Stop-Validation 'central catalog source contains no PackageVersion entries.'
+}
+
+$sourceByIdentity = @{}
+foreach ($sourcePackageVersion in $sourcePackageVersions) {
+    $sourceIdentity = [string] $sourcePackageVersion.GetAttribute('Include')
+    if ([string]::IsNullOrWhiteSpace($sourceIdentity)) {
+        Stop-Validation 'A source PackageVersion entry must have a nonblank Include identity.'
+    }
+
+    $sourceIdentity = $sourceIdentity.Trim()
+    if ($sourceByIdentity.ContainsKey($sourceIdentity)) {
+        Stop-Validation "source contains duplicate package identity '$sourceIdentity' (case-insensitive)."
+    }
+
+    $sourceVersion = [string] $sourcePackageVersion.GetAttribute('Version')
+    if ([string]::IsNullOrWhiteSpace($sourceVersion)) {
+        $sourceVersionNode = $sourcePackageVersion.SelectSingleNode("*[local-name()='Version']")
+        if ($null -ne $sourceVersionNode) {
+            $sourceVersion = [string] $sourceVersionNode.InnerText
+        }
+    }
+
+    $sourceByIdentity[$sourceIdentity] = $sourceVersion.Trim()
+}
+
 $evaluationText = Invoke-CatalogEvaluation `
     -ResolvedCatalogPath $resolvedCatalogPath `
     -ResolvedEvaluatorScriptPath $resolvedEvaluatorScriptPath
@@ -119,6 +154,7 @@ if ($packageVersions.Count -eq 0) {
 }
 
 $failures = [System.Collections.Generic.List[string]]::new()
+$evaluatedByIdentity = @{}
 foreach ($packageVersion in $packageVersions) {
     $identity = if (
         $null -ne $packageVersion -and
@@ -147,6 +183,13 @@ foreach ($packageVersion in $packageVersions) {
         continue
     }
 
+    if ($evaluatedByIdentity.ContainsKey($identity)) {
+        $failures.Add("Evaluated catalog contains duplicate package identity '$identity' (case-insensitive).")
+        continue
+    }
+
+    $evaluatedByIdentity[$identity] = $version
+
     if ([string]::IsNullOrWhiteSpace($version)) {
         $failures.Add("Package '$identity' has a blank version.")
         continue
@@ -164,6 +207,31 @@ foreach ($packageVersion in $packageVersions) {
 
     if ($version -cnotmatch $nugetVersionPattern) {
         $failures.Add("Package '$identity' has malformed NuGet/SemVer version '$version'.")
+    }
+}
+
+foreach ($sourceEntry in $sourceByIdentity.GetEnumerator()) {
+    if (-not $evaluatedByIdentity.ContainsKey($sourceEntry.Key)) {
+        $failures.Add("Source package '$($sourceEntry.Key)' is missing from the evaluated catalog.")
+        continue
+    }
+
+    $sourceVersion = [string] $sourceEntry.Value
+    $evaluatedVersion = [string] $evaluatedByIdentity[$sourceEntry.Key]
+    if (
+        -not [string]::IsNullOrWhiteSpace($sourceVersion) -and
+        $sourceVersion -notmatch '[\$%@]\(' -and
+        $sourceVersion -cne $evaluatedVersion
+    ) {
+        $failures.Add(
+            "Package '$($sourceEntry.Key)' source version '$sourceVersion' evaluates to '$evaluatedVersion'."
+        )
+    }
+}
+
+foreach ($evaluatedEntry in $evaluatedByIdentity.GetEnumerator()) {
+    if (-not $sourceByIdentity.ContainsKey($evaluatedEntry.Key)) {
+        $failures.Add("Evaluated package '$($evaluatedEntry.Key)' has no authoritative source declaration.")
     }
 }
 

@@ -33,9 +33,29 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/validate-central-package-versions.ps1
 
+    - name: Test authoritative package catalog
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-authoritative-package-catalog.ps1
+
     - name: Test central package version validator
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-central-package-version-validator.ps1
+
+    - name: Validate Builds consumer package authority
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/validate-consumer-package-authority.ps1 -RepositoryRoot . -CatalogPath ./Props/Directory.Packages.props
+
+    - name: Test consumer package authority validator
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-consumer-package-authority-validator.ps1
+
+    - name: Validate package version exception inventory
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/validate-package-version-exceptions.ps1 -InventoryPath ./Tools/package-version-exceptions.json -CatalogPath ./Props/Directory.Packages.props
+
+    - name: Test package version exception validator
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-package-version-exception-validator.ps1
 
     - name: Validate Dapr package versions
       shell: pwsh

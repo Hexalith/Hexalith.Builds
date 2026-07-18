@@ -178,19 +178,28 @@ For library projects that should produce NuGet packages, import
 
 ### Import Central Package Versions
 
-Use `Props/Directory.Packages.props` from a repository
-`Directory.Packages.props` file:
+`Props/Directory.Packages.props` is the sole NuGet package-reference version
+authority for Hexalith repositories. A consumer-root `Directory.Packages.props`
+is a version-free wrapper: it imports the shared catalog and may retain only
+non-version CPM settings such as its existing transitive-pinning posture.
 
 ```xml
 <Project>
   <Import Project="references/Hexalith.Builds/Props/Directory.Packages.props"
           Condition="Exists('references/Hexalith.Builds/Props/Directory.Packages.props')" />
-
-  <ItemGroup>
-    <!-- Add repository-specific PackageVersion entries here. -->
-  </ItemGroup>
 </Project>
 ```
+
+Do not add consumer `PackageVersion` items, dependency-version properties,
+`PackageReference Version` or `VersionOverride` metadata, or a CPM opt-out.
+Add a missing dependency to the shared catalog through a reviewed Builds
+change, then keep the consuming `PackageReference` version-free. MSBuild project
+SDK pins and local tool-manifest pins cannot use CPM; they must be recorded in
+`Tools/package-version-exceptions.json` and pass its alignment validator.
+
+Run the catalog, consumer, and exception validators documented in
+[`Tools/README.md`](Tools/README.md) before integrating a catalog or wrapper
+change.
 
 ## G-4 Local Tools
 

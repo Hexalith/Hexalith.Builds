@@ -170,6 +170,13 @@ try {
     Test-Scenario -Name 'Blank version' -CatalogPath $blankCatalog -ExpectedExitCode 1 `
         -ExpectedOutput 'has a blank version'
 
+    $blankIdentityCatalog = Join-Path $temporaryRoot 'blank-identity.props'
+    Write-Utf8File -Path $blankIdentityCatalog -Content @'
+<Project><ItemGroup><PackageVersion Include="" Version="1.2.3" /></ItemGroup></Project>
+'@
+    Test-Scenario -Name 'Blank identity' -CatalogPath $blankIdentityCatalog -ExpectedExitCode 1 `
+        -ExpectedOutput 'must have a nonblank Include identity'
+
     $malformedCatalog = New-CatalogFixture -Name 'malformed-version' -Version '1..3'
     Test-Scenario -Name 'Malformed version' -CatalogPath $malformedCatalog -ExpectedExitCode 1 `
         -ExpectedOutput 'has malformed NuGet/SemVer version'
@@ -187,19 +194,41 @@ try {
     Test-Scenario -Name 'Failed evaluator' -CatalogPath $stableCatalog -ExpectedExitCode 1 `
         -ExpectedOutput 'catalog evaluation exited with code 17' -EvaluatorScriptPath $failedEvaluator
 
+    $duplicateJson = @'
+{"Items":{"PackageVersion":[{"Identity":"Fixture.Package","Version":"1.2.3"},{"Identity":"fixture.package","Version":"1.2.3"}]}}
+'@
+    $duplicateEvaluator = New-EvaluatorScript -Name 'duplicate-package-id' -Output $duplicateJson
+    Test-Scenario -Name 'Case-insensitive duplicate identity' -CatalogPath $stableCatalog -ExpectedExitCode 1 `
+        -ExpectedOutput "duplicate package identity 'fixture.package'" -EvaluatorScriptPath $duplicateEvaluator
+
+    $mismatchedJson = '{"Items":{"PackageVersion":[{"Identity":"Fixture.Package","Version":"9.9.9"}]}}'
+    $mismatchedEvaluator = New-EvaluatorScript -Name 'mismatched-effective-version' -Output $mismatchedJson
+    Test-Scenario -Name 'Mismatched effective catalog version' -CatalogPath $stableCatalog -ExpectedExitCode 1 `
+        -ExpectedOutput "source version '1.2.3' evaluates to '9.9.9'" -EvaluatorScriptPath $mismatchedEvaluator
+
     $script:scenarioCount++
     $workflow = Get-Content -LiteralPath $workflowPath -Raw
     $validateIndex = $workflow.IndexOf('- name: Validate central package versions', [StringComparison]::Ordinal)
+    $catalogContractIndex = $workflow.IndexOf('- name: Test authoritative package catalog', [StringComparison]::Ordinal)
     $testIndex = $workflow.IndexOf('- name: Test central package version validator', [StringComparison]::Ordinal)
+    $consumerValidationIndex = $workflow.IndexOf('- name: Validate Builds consumer package authority', [StringComparison]::Ordinal)
+    $consumerTestIndex = $workflow.IndexOf('- name: Test consumer package authority validator', [StringComparison]::Ordinal)
+    $exceptionValidationIndex = $workflow.IndexOf('- name: Validate package version exception inventory', [StringComparison]::Ordinal)
+    $exceptionTestIndex = $workflow.IndexOf('- name: Test package version exception validator', [StringComparison]::Ordinal)
     $daprIndex = $workflow.IndexOf('- name: Validate Dapr package versions', [StringComparison]::Ordinal)
     $releaseIndex = $workflow.IndexOf('- name: Create Release', [StringComparison]::Ordinal)
     if (
         $validateIndex -lt 0 -or
-        $testIndex -le $validateIndex -or
-        $daprIndex -le $testIndex -or
+        $catalogContractIndex -le $validateIndex -or
+        $testIndex -le $catalogContractIndex -or
+        $consumerValidationIndex -le $testIndex -or
+        $consumerTestIndex -le $consumerValidationIndex -or
+        $exceptionValidationIndex -le $consumerTestIndex -or
+        $exceptionTestIndex -le $exceptionValidationIndex -or
+        $daprIndex -le $exceptionTestIndex -or
         $releaseIndex -le $daprIndex
     ) {
-        $failures.Add('Release workflow must run central validation and its tests before Dapr validation and Create Release.')
+        $failures.Add('Release workflow must run all package-authority validations and tests before Dapr validation and Create Release.')
     }
 }
 finally {
