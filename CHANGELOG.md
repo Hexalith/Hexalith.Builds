@@ -1,3 +1,10 @@
+## [4.21.6](https://github.com/Hexalith/Hexalith.Builds/compare/v4.21.5...v4.21.6) (2026-07-18)
+
+
+### Bug Fixes
+
+* update HexalithEventStoreVersion to 3.74.0 ([1484ee3](https://github.com/Hexalith/Hexalith.Builds/commit/1484ee3aa640c6eb108159d81bdcadf924747527))
+
 ## [4.21.5](https://github.com/Hexalith/Hexalith.Builds/compare/v4.21.4...v4.21.5) (2026-07-18)
 
 
