@@ -85,6 +85,8 @@
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.6" />
+    <!-- FrontComposer bunit transitive floor pulls the vulnerable 1.4.0; pin the GHSA-pgww-w46g-26qg fix. -->
+    <PackageVersion Include="AngleSharp" Version="1.5.2" />
     <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="10.0.0" />
