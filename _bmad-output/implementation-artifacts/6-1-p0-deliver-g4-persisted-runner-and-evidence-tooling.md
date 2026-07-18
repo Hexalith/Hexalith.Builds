@@ -142,7 +142,7 @@ so that Projects Story 6.1 and later consumers can prove supported-path behavior
 
 - [ ] Emit deterministic module-run evidence (AC: 6-8, 11, 12)
   - [x] Define `hexalith.module-run-evidence.v1`, canonical serialization, metadata allowlist, hash rules, volatile fields, and artifact retention.
-  - [x] Capture VSTest and MTP/xUnit v3 native results without hiding their exit status or report semantics.
+  - [ ] Capture VSTest and MTP/xUnit v3 native results without hiding their exit status or report semantics.
   - [ ] Test successful, partial, unavailable, cancelled, runner-failed, test-failed, state-failed, and evidence-failed output.
   - [ ] Seed tokens/secrets in tests and prove redaction across logs, state, reports, JSON, and diagnostics.
 
@@ -332,20 +332,23 @@ GPT-5 Codex
 - 2026-07-17 Task 1 plan: establish repository-local SDK/MSBuild authority first, keep shared behavior in a non-packable `Hexalith.Builds.Tooling` project, and expose only the two authorized .NET tool packages.
 - 2026-07-17 Task 1 validation: `dotnet build Hexalith.Builds.slnx --configuration Release --no-restore` completed with 0 warnings/errors; each of the three test projects passed with one test and no skips.
 - 2026-07-17 Task 2 validation: strict manifest and command contracts passed with 36 module tests, including exact exit codes, causal-outcome retention, canonical evidence output, filter redaction, and explicit G-6 prerequisite unavailability.
-- 2026-07-17 Native report validation: the shared TRX loader passed VSTest and Microsoft Testing Platform/xUnit v3-compatible counters and rejected missing counters, zero matches, all-skipped, inconsistent, and failed reports; module tests increased to 43 passing.
-- 2026-07-17 Evidence validation: the `hexalith-evidence validate` command passed 8 focused tests covering duplicate YAML keys, unsupported schema/fields, defaults, coverage, artifact hashes, Markdown identities, undeclared `blocked`, and policy controls.
-- 2026-07-17 Package qualification: `pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-ci.14 -RequireControls` passed: Release build had 0 warnings/errors; Evidence 8/8, Module 43/43, Integration 1/1; exactly two tool `.nupkg`/`.snupkg` artifacts were hashed, restored from an isolated local feed, and exercised through all curated positive and negative controls.
+- 2026-07-17 Source qualification: `dotnet build Hexalith.Builds.slnx --no-restore --configuration Release --nologo` completed with 0 warnings/errors; Module 52/52, Evidence 11/11, and Integration 1/1 passed in Release.
+- 2026-07-17 Native report parser validation: the shared TRX parser accepts VSTest and Microsoft Testing Platform/xUnit v3-compatible counters and rejects missing/duplicate structural elements, zero matches, all-skipped, inconsistent/undercounted, and failed reports. It is not yet invoked by a live runner, so this remains parser coverage rather than native report capture.
+- 2026-07-17 Evidence validation: the `hexalith-evidence validate` command passed 11 focused tests covering duplicate YAML keys, unsupported schema/fields, defaults, coverage, complete canonical module-run artifact shape and hash validation, Markdown identities, undeclared `blocked`, execution-claim artifact requirements, and policy controls.
+- 2026-07-17 Review hardening: resolver-based physical symlink/reparse-point containment rejects manifest and evidence escapes; full canonical module-run artifacts and an invalid-artifact control are validated; provenance records submodule revision/dirty marker/selected SDK; secret-bearing profile/filter/path values are rejected or redacted; public parse diagnostics and Ctrl+C cancellation evidence are stable; TRX accounting is exact.
+- 2026-07-17 Package qualification: `pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-ci.15 -RequireControls` passed: Release build had 0 warnings/errors; Evidence 11/11, Module 52/52, Integration 1/1; exactly two tool `.nupkg`/`.snupkg` artifacts were hashed, restored from an isolated local feed into an isolated consumer repository with consumer-owned copied fixtures, and exercised through the curated positive and blocking-negative controls. This was local prepublication qualification only: no package publish, remote restore, exact consumer manifest, or owner acceptance occurred. The `run` control remained explicit non-passing `HXR002` while G-6/P1 live composition is unavailable.
 - 2026-07-17 Deliberate live-lane stop: G-6 is unresolved and no owner-approved descriptor/platform composition ABI or P1 baseline is available. `run` and `test` therefore return explicit non-passing `HXR002` prerequisite evidence; no static fixture or hand-authored sample is represented as persisted-runtime proof.
 
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
-- Jerome authorized Hexalith.Builds to own both P0 tools; current clean `origin/main` revision `edbaeae` replaced the stale earlier observation `01e48ee` as the implementation baseline.
+- Jerome authorized Hexalith.Builds to own both P0 tools; authorized baseline `edbaeae` replaced the stale earlier observation `01e48ee`. The delivery revision remains unaccepted and the current worktree is not represented as a published package.
 - Package IDs, command names, schema IDs, semantic-release channels, expected initial stable version, greenfield rollback, matrix-status disposition, file impact, negative controls, and P4 handoff are explicit.
 - Established the SDK/MSBuild/package spine at the authorized baseline with exact tool identities, a non-packable shared core, central package management, warning-as-error analysis, and nonzero contract-test execution.
-- Implemented strict module-manifest validation, public `hexalith-module` command parsing, runner-owned metadata state, first-causal diagnostics, canonical run-evidence output, and metadata-only secret/filter handling.
+- Implemented strict module-manifest validation, public `hexalith-module` command parsing, invocation-metadata state contract, first-causal diagnostics, canonical run-evidence output, and metadata-only secret/filter handling; this is not live platform composition.
 - Implemented the strict readiness-evidence validator, JSON/human command output, deterministic source/row/rule diagnostics, packaged positive/negative contract corpora, JSON schemas, and documentation.
 - Added Release-only exact-package build/publish/contract scripts and semantic-release lifecycle wiring. No package was published and no consumer pin was invented.
+- Hardened the public contracts against symlink/reparse-point escape, partial/forged evidence artifacts, secret-bearing input retention, unstable parser/Ctrl+C diagnostics, incomplete TRX counter accounting, and missing source/SDK provenance; package qualification now runs the packed tools against consumer-owned copied fixtures and retained invocation evidence.
 - Live persisted qualification, actual EventStore/Dapr composition, P1/G-6 disposition, an exact published version, and named-owner/Test-Architect acceptance remain outstanding; this story remains in progress and does not modify Projects.
 
 ### File List
@@ -382,12 +385,13 @@ GPT-5 Codex
 - `schemas/hexalith.readiness-evidence.v1.json` (new)
 - `src/libraries/Hexalith.Builds.Module.Cli/AssemblyInfo.cs` and `ModuleCommandApplication.cs` (new)
 - `src/libraries/Hexalith.Builds.Evidence.Cli/AssemblyInfo.cs` and `EvidenceCommandApplication.cs` (new)
-- `src/libraries/Hexalith.Builds.Tooling/AssemblyInfo.cs` and `Diagnostics/`, `Manifest/`, `Runtime/`, `RunEvidence/`, and `Evidence/` source sets (new)
+- `src/libraries/Hexalith.Builds.Tooling/AssemblyInfo.cs` and `Diagnostics/`, `Filesystem/`, `Manifest/`, `Runtime/`, `RunEvidence/`, and `Evidence/` source sets (new)
+- `src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandHost.cs`, `Diagnostics/ToolDiagnosticFormatter.cs`, `Evidence/ReadinessEvidenceValidator.cs`, `Filesystem/RepositoryPathResolver.cs`, `Manifest/ManifestPathValidator.cs`, `RunEvidence/ModuleRunEvidenceArtifactValidator.cs`, `RunEvidence/ModuleRunEvidenceArtifactSummary.cs`, `RunEvidence/ModuleRunEvidenceFactory.cs`, `RunEvidence/ModuleRunEvidenceWriter.cs`, and `Runtime/ModuleCommandExecutionService.cs` (new)
 - `src/libraries/Hexalith.Builds.Tooling/TestReports/` source set and `test/Hexalith.Builds.Module.Tests/NativeTestReportLoaderTests.cs` (new)
 - `test/Hexalith.Builds.Module.Tests/ManifestValidationTests.cs`, `ModuleCommandApplicationTests.cs`, `ModuleRunEvidenceSerializationTests.cs`, `PersistedFixtureAssetTests.cs`, and `ToolOutcomeTests.cs` (new)
 - `test/Hexalith.Builds.Evidence.Tests/EvidenceCommandApplicationTests.cs`, `EvidenceFixturePath.cs`, and `ReadinessEvidenceValidatorTests.cs` (new)
-- `test/fixtures/module/` and `test/fixtures/evidence/` curated positive, negative, expected-result, and contract-only control corpora (new)
+- `test/fixtures/module/` and `test/fixtures/evidence/` curated positive, negative, expected-result, full-valid-module-run-artifact, invalid-artifact, and contract-only control corpora (new)
 
 ### Change Log
 
-- 2026-07-17: Implemented the Builds-owned G-4 tool spine, strict module/evidence contracts, deterministic evidence output, package qualification/release wiring, schemas, fixtures, tests, and adoption documentation; retained live persisted execution and acceptance as explicit external-dependency work.
+- 2026-07-17: Implemented the Builds-owned G-4 tool spine, strict module/evidence contracts, deterministic evidence output, package qualification/release wiring, schemas, fixtures, tests, and adoption documentation; hardened fail-closed physical-path, provenance, artifact, diagnostic, cancellation, and package-consumer behavior; retained live persisted execution and acceptance as explicit external-dependency work.

@@ -17,7 +17,6 @@ internal static class ModuleRunEvidenceArtifactValidator
 {
     private const string _schema = "hexalith.module-run-evidence.v1";
 
-    private static readonly HashSet<string> _artifactHashProperties = new(StringComparer.Ordinal);
     private static readonly HashSet<string> _environmentProperties = new(StringComparer.Ordinal)
     {
         "repositoryRevision",
@@ -26,6 +25,7 @@ internal static class ModuleRunEvidenceArtifactValidator
         "operatingSystem",
         "toolVersion",
     };
+
     private static readonly HashSet<string> _invocationProperties = new(StringComparer.Ordinal)
     {
         "command",
@@ -36,6 +36,7 @@ internal static class ModuleRunEvidenceArtifactValidator
         "fixtureHash",
         "filterHash",
     };
+
     private static readonly HashSet<string> _moduleProperties = new(StringComparer.Ordinal)
     {
         "id",
@@ -44,6 +45,7 @@ internal static class ModuleRunEvidenceArtifactValidator
         "resourceId",
         "descriptorAssembly",
     };
+
     private static readonly HashSet<string> _outcomeProperties = new(StringComparer.Ordinal)
     {
         "exitCode",
@@ -51,12 +53,14 @@ internal static class ModuleRunEvidenceArtifactValidator
         "category",
         "ruleId",
     };
+
     private static readonly HashSet<string> _phaseOutcomeProperties = new(StringComparer.Ordinal)
     {
         "phase",
         "category",
         "ruleId",
     };
+
     private static readonly HashSet<string> _platformProperties = new(StringComparer.Ordinal)
     {
         "eventStoreVersion",
@@ -64,6 +68,7 @@ internal static class ModuleRunEvidenceArtifactValidator
         "daprSdkVersion",
         "frontComposerVersion",
     };
+
     private static readonly HashSet<string> _rootProperties = new(StringComparer.Ordinal)
     {
         "schema",
@@ -79,6 +84,7 @@ internal static class ModuleRunEvidenceArtifactValidator
         "outcome",
         "volatileFields",
     };
+
     private static readonly HashSet<string> _testCountProperties = new(StringComparer.Ordinal)
     {
         "reported",
@@ -87,11 +93,13 @@ internal static class ModuleRunEvidenceArtifactValidator
         "failed",
         "skipped",
     };
+
     private static readonly HashSet<string> _timestampProperties = new(StringComparer.Ordinal)
     {
         "startedUtc",
         "completedUtc",
     };
+
     private static readonly HashSet<string> _topologyProperties = new(StringComparer.Ordinal)
     {
         "modules",
@@ -128,9 +136,12 @@ internal static class ModuleRunEvidenceArtifactValidator
                 || !IsPhaseOutcomes(root)
                 || !IsTestCounts(root)
                 || !IsArtifactHashes(root)
-                || !IsFinalStatus(root)
-                || !IsOutcome(root, out int exitCode)
-                || !IsVolatileFields(root))
+                || !IsFinalStatus(root))
+            {
+                return false;
+            }
+
+            if (!IsOutcome(root, out int exitCode) || !IsVolatileFields(root))
             {
                 return false;
             }
@@ -146,42 +157,24 @@ internal static class ModuleRunEvidenceArtifactValidator
         }
     }
 
-    private static bool HasExactProperties(JsonElement element, IReadOnlySet<string> properties)
+    private static bool HasExactProperties(JsonElement element, HashSet<string> properties)
     {
         if (element.ValueKind != JsonValueKind.Object)
         {
             return false;
         }
 
-        HashSet<string> seen = new(StringComparer.Ordinal);
-        foreach (JsonProperty property in element.EnumerateObject())
-        {
-            if (!properties.Contains(property.Name) || !seen.Add(property.Name))
-            {
-                return false;
-            }
-        }
-
-        return seen.SetEquals(properties);
+        JsonProperty[] actualProperties = [.. element.EnumerateObject()];
+        return actualProperties.Length == properties.Count
+            && actualProperties.All(property => properties.Contains(property.Name))
+            && actualProperties.Select(property => property.Name).Distinct(StringComparer.Ordinal).Count() == actualProperties.Length;
     }
 
     private static bool IsArtifactHashes(JsonElement root)
     {
         JsonElement artifactHashes = root.GetProperty("artifactHashes");
-        if (artifactHashes.ValueKind != JsonValueKind.Object)
-        {
-            return false;
-        }
-
-        foreach (JsonProperty artifactHash in artifactHashes.EnumerateObject())
-        {
-            if (!IsUpperHex(artifactHash.Value, 64))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return artifactHashes.ValueKind == JsonValueKind.Object
+            && artifactHashes.EnumerateObject().All(artifactHash => IsUpperHex(artifactHash.Value, 64));
     }
 
     private static bool IsEnvironment(JsonElement root)
@@ -217,13 +210,17 @@ internal static class ModuleRunEvidenceArtifactValidator
         return value.ValueKind == JsonValueKind.String
             && value.GetString() is string text
             && text.Length == length
-            && text.All(character => character is >= '0' and <= '9' or >= 'a' and <= 'f');
+            && text.All(character => character is (>= '0' and <= '9') or (>= 'a' and <= 'f'));
     }
 
     private static bool IsMetadataString(JsonElement root, string propertyName) =>
         root.GetProperty(propertyName).ValueKind == JsonValueKind.String
         && root.GetProperty(propertyName).GetString() is string value
         && !ManifestSecretDetector.ContainsSecret(value);
+
+    private static bool IsString(JsonElement root, string propertyName, string expected) =>
+        root.GetProperty(propertyName).ValueKind == JsonValueKind.String
+        && string.Equals(root.GetProperty(propertyName).GetString(), expected, StringComparison.Ordinal);
 
     private static bool IsModule(JsonElement module) =>
         HasExactProperties(module, _moduleProperties)
@@ -266,31 +263,25 @@ internal static class ModuleRunEvidenceArtifactValidator
     private static bool IsPhaseOutcomes(JsonElement root)
     {
         JsonElement phaseOutcomes = root.GetProperty("phaseOutcomes");
-        if (phaseOutcomes.ValueKind != JsonValueKind.Array || phaseOutcomes.GetArrayLength() == 0)
+        return phaseOutcomes.ValueKind == JsonValueKind.Array
+            && phaseOutcomes.GetArrayLength() > 0
+            && phaseOutcomes.EnumerateArray().All(IsPhaseOutcome);
+    }
+
+    private static bool IsPhaseOutcome(JsonElement phaseOutcome)
+    {
+        if (!HasExactProperties(phaseOutcome, _phaseOutcomeProperties)
+            || !IsMetadataString(phaseOutcome, "phase")
+            || !IsMetadataString(phaseOutcome, "category"))
         {
             return false;
         }
 
-        foreach (JsonElement phaseOutcome in phaseOutcomes.EnumerateArray())
-        {
-            if (!HasExactProperties(phaseOutcome, _phaseOutcomeProperties)
-                || !IsMetadataString(phaseOutcome, "phase")
-                || !IsMetadataString(phaseOutcome, "category"))
-            {
-                return false;
-            }
-
-            JsonElement ruleId = phaseOutcome.GetProperty("ruleId");
-            if (ruleId.ValueKind != JsonValueKind.Null
-                && (ruleId.ValueKind != JsonValueKind.String
-                    || ruleId.GetString() is not string ruleIdValue
-                    || ManifestSecretDetector.ContainsSecret(ruleIdValue)))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        JsonElement ruleId = phaseOutcome.GetProperty("ruleId");
+        return ruleId.ValueKind == JsonValueKind.Null
+            || (ruleId.ValueKind == JsonValueKind.String
+                && ruleId.GetString() is string ruleIdValue
+                && !ManifestSecretDetector.ContainsSecret(ruleIdValue));
     }
 
     private static bool IsPlatform(JsonElement platform) =>
@@ -304,7 +295,7 @@ internal static class ModuleRunEvidenceArtifactValidator
     {
         JsonElement testCounts = root.GetProperty("testCounts");
         if (!HasExactProperties(testCounts, _testCountProperties)
-            || testCounts.GetProperty("reported").ValueKind is not JsonValueKind.True and not JsonValueKind.False
+            || testCounts.GetProperty("reported").ValueKind is not (JsonValueKind.True or JsonValueKind.False)
             || !TryGetNonNegativeInteger(testCounts, "total", out int total)
             || !TryGetNonNegativeInteger(testCounts, "passed", out int passed)
             || !TryGetNonNegativeInteger(testCounts, "failed", out int failed)
@@ -344,12 +335,9 @@ internal static class ModuleRunEvidenceArtifactValidator
             return false;
         }
 
-        foreach (JsonElement module in topology.GetProperty("modules").EnumerateArray())
+        if (!topology.GetProperty("modules").EnumerateArray().All(IsModule))
         {
-            if (!IsModule(module))
-            {
-                return false;
-            }
+            return false;
         }
 
         JsonElement platform = topology.GetProperty("platform");
@@ -360,7 +348,7 @@ internal static class ModuleRunEvidenceArtifactValidator
         value.ValueKind == JsonValueKind.String
         && value.GetString() is string text
         && text.Length == length
-        && text.All(character => character is >= '0' and <= '9' or >= 'A' and <= 'F');
+        && text.All(character => character is (>= '0' and <= '9') or (>= 'A' and <= 'F'));
 
     private static bool IsVolatileFields(JsonElement root)
     {
@@ -370,30 +358,23 @@ internal static class ModuleRunEvidenceArtifactValidator
             return false;
         }
 
-        HashSet<string> fields = new(StringComparer.Ordinal);
-        foreach (JsonElement field in volatileFields.EnumerateArray())
+        JsonElement[] fieldElements = [.. volatileFields.EnumerateArray()];
+        if (fieldElements.Any(field => field.ValueKind != JsonValueKind.String))
         {
-            if (field.ValueKind != JsonValueKind.String
-                || field.GetString() is not string fieldName
-                || ManifestSecretDetector.ContainsSecret(fieldName)
-                || !fields.Add(fieldName))
-            {
-                return false;
-            }
+            return false;
         }
 
-        return true;
+        string[] fields = [.. fieldElements.Select(field => field.GetString()!)];
+        return fields.All(field => !ManifestSecretDetector.ContainsSecret(field))
+            && fields.Distinct(StringComparer.Ordinal).Count() == fields.Length;
     }
 
-    private static bool TryGetNonNegativeInteger(JsonElement root, string propertyName, out int value) =>
-        root.GetProperty(propertyName).ValueKind == JsonValueKind.Number
-        && root.GetProperty(propertyName).TryGetInt32(out value)
-        && value >= 0;
+    private static bool TryGetNonNegativeInteger(JsonElement root, string propertyName, out int value)
+    {
+        value = 0;
+        JsonElement property = root.GetProperty(propertyName);
+        return property.ValueKind == JsonValueKind.Number
+            && property.TryGetInt32(out value)
+            && value >= 0;
+    }
 }
-
-/// <summary>
-/// Represents the safe completion facts extracted from a schema-valid run-evidence artifact.
-/// </summary>
-/// <param name="FinalStatus">The reported completion status.</param>
-/// <param name="ExitCode">The reported stable process exit code.</param>
-internal sealed record ModuleRunEvidenceArtifactSummary(string FinalStatus, int ExitCode);

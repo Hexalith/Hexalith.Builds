@@ -10,6 +10,7 @@ using System.Text;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.RunEvidence;
+using Hexalith.Builds.Tooling.Runtime;
 
 using Shouldly;
 
@@ -20,6 +21,8 @@ using Xunit;
 /// </summary>
 public sealed class ModuleRunEvidenceSerializationTests
 {
+    private static readonly string[] _knownDirtyMarkers = ["clean", "dirty"];
+
     /// <summary>
     /// Verifies canonical JSON orders unordered metadata and terminates the UTF-8 artifact with one newline.
     /// </summary>
@@ -63,5 +66,45 @@ public sealed class ModuleRunEvidenceSerializationTests
             text.IndexOf("z-artifact.json", StringComparison.Ordinal));
         text.ShouldNotContain("Bearer");
         text.ShouldContain("\"volatileFields\":[\"runId\",\"timestamps.completedUtc\",\"timestamps.startedUtc\"]");
+    }
+
+    /// <summary>
+    /// Verifies source evidence resolves the current submodule revision, dirty marker, and selected SDK.
+    /// </summary>
+    [Fact]
+    public void CreateEvidenceCapturesSourceControlAndSdkMetadata()
+    {
+        string repositoryRoot = FindRepositoryRoot();
+        ModuleRunEvidence evidence = ModuleRunEvidenceFactory.Create(
+            ModuleInvocationCommand.Down,
+            Path.Combine(repositoryRoot, "test", "fixtures", "module", "positive", "hexalith.module-manifest.v1.json"),
+            null,
+            null,
+            null,
+            new ToolCommandResult("completed", ToolOutcome.Passed(), []),
+            new DateTimeOffset(2026, 7, 17, 10, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 7, 17, 10, 1, 0, TimeSpan.Zero),
+            "0123456789abcdef0123456789abcdef");
+
+        evidence.Environment.RepositoryRevision.ShouldNotBe("unavailable");
+        evidence.Environment.RepositoryRevision.Length.ShouldBeGreaterThanOrEqualTo(40);
+        _knownDirtyMarkers.ShouldContain(evidence.Environment.RepositoryDirtyMarker);
+        evidence.Environment.SdkVersion.ShouldBe("10.0.302");
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        DirectoryInfo? directory = new(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "Hexalith.Builds.slnx")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException("The Builds repository root was not found.");
     }
 }

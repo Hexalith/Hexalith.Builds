@@ -7,6 +7,7 @@ namespace Hexalith.Builds.Evidence.Tests;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Evidence;
+using Hexalith.Builds.Tooling.Filesystem;
 
 using Shouldly;
 
@@ -93,6 +94,31 @@ public sealed class ReadinessEvidenceValidatorTests
 
         result.Outcome.Category.ShouldBe(ToolFailureCategory.EvidencePolicy);
         result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldContain("HXE148");
+    }
+
+    /// <summary>
+    /// Verifies an artifact link that points outside its repository root is rejected before it is read.
+    /// </summary>
+    [Fact]
+    public void EscapingArtifactSymlinkIsRejectedByRepositoryResolver()
+    {
+        string repositoryRoot = Path.Combine(Path.GetTempPath(), $"hexalith-builds-evidence-root-{Guid.NewGuid():N}");
+        string externalDirectory = Path.Combine(Path.GetTempPath(), $"hexalith-builds-evidence-external-{Guid.NewGuid():N}");
+
+        try
+        {
+            _ = Directory.CreateDirectory(repositoryRoot);
+            _ = Directory.CreateDirectory(externalDirectory);
+            File.WriteAllText(Path.Combine(externalDirectory, "artifact.json"), "{}");
+            _ = Directory.CreateSymbolicLink(Path.Combine(repositoryRoot, "evidence"), externalDirectory);
+
+            RepositoryPathResolver.TryResolveExistingFile(repositoryRoot, "evidence/artifact.json", out _).ShouldBeFalse();
+        }
+        finally
+        {
+            Directory.Delete(repositoryRoot, true);
+            Directory.Delete(externalDirectory, true);
+        }
     }
 
     /// <summary>

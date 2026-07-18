@@ -62,6 +62,7 @@ public static partial class ModuleRunEvidenceFactory
         {
             normalizedManifestPath = null;
         }
+
         string? manifestHash = HashFile(fullManifestPath);
         ModuleProfile? selectedProfile = GetProfile(manifest, profile);
         string? profileIdentity = selectedProfile is null ? null : profile;
@@ -190,9 +191,10 @@ public static partial class ModuleRunEvidenceFactory
     {
         string? revision = RunTool(repositoryRoot, "git", "rev-parse", "--verify", "HEAD");
         string? status = RunTool(repositoryRoot, "git", "status", "--porcelain", "--untracked-files=all");
-        return new SourceControlMetadata(
-            !string.IsNullOrWhiteSpace(revision) && RevisionRegex().IsMatch(revision) ? revision : "unavailable",
-            status is null ? "unknown" : string.IsNullOrWhiteSpace(status) ? "clean" : "dirty");
+        string resolvedRevision = !string.IsNullOrWhiteSpace(revision) && RevisionRegex().IsMatch(revision)
+            ? revision
+            : "unavailable";
+        return new SourceControlMetadata(resolvedRevision, ToDirtyMarker(status));
     }
 
     private static string? RunTool(string workingDirectory, string fileName, params string[] arguments)
@@ -223,12 +225,10 @@ public static partial class ModuleRunEvidenceFactory
                 return null;
             }
 
-            Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
-            Task<string> standardError = process.StandardError.ReadToEndAsync();
+            string standardOutput = process.StandardOutput.ReadToEnd();
+            _ = process.StandardError.ReadToEnd();
             process.WaitForExit();
-            _ = standardError.GetAwaiter().GetResult();
-            string output = standardOutput.GetAwaiter().GetResult().Trim();
-            return process.ExitCode == 0 ? output : null;
+            return process.ExitCode == 0 ? standardOutput.Trim() : null;
         }
         catch (IOException)
         {
@@ -247,6 +247,13 @@ public static partial class ModuleRunEvidenceFactory
             return null;
         }
     }
+
+    private static string ToDirtyMarker(string? status) => status switch
+    {
+        null => "unknown",
+        _ when string.IsNullOrWhiteSpace(status) => "clean",
+        _ => "dirty",
+    };
 
     private static ModuleRunTopology CreateTopology(ModuleManifest? manifest)
     {

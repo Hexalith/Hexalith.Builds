@@ -12,6 +12,8 @@ param(
 
     [switch] $RequireControls,
 
+    [switch] $RetainPackageDirectory,
+
     [string] $FixtureRoot = 'test/fixtures'
 )
 
@@ -219,6 +221,34 @@ function Assert-NegativeResult {
     }
 }
 
+function Assert-ExactNonPassingResult {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object] $Result,
+
+        [Parameter(Mandatory = $true)]
+        [int] $ExitCode,
+
+        [Parameter(Mandatory = $true)]
+        [string] $RuleId,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Description
+    )
+
+    if ($Result.ExitCode -ne $ExitCode) {
+        throw "$Description exited $($Result.ExitCode), expected $ExitCode."
+    }
+
+    if (-not $Result.Output.Contains($RuleId, [System.StringComparison]::Ordinal)) {
+        throw "$Description did not report expected stable rule ID '$RuleId'."
+    }
+
+    if ($Result.Output.Contains('"status":"passed"', [System.StringComparison]::Ordinal)) {
+        throw "$Description represented a non-passing outcome as passed."
+    }
+}
+
 $consumerRoot = $null
 
 try {
@@ -293,13 +323,71 @@ try {
     Assert-PositiveResult -Description 'hexalith-evidence validate help' -Result (Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments @('validate', '--help') -WorkingDirectory $consumerRoot)
 
     if ($RequireControls) {
-        $modulePositive = Get-RequiredFixture -Directory (Join-Path $fixtureRootPath 'module/positive') -Extensions @('.json') -Description 'Positive module manifest'
-        $evidencePositive = Get-RequiredFixture -Directory (Join-Path $fixtureRootPath 'evidence/positive') -Extensions @('.yaml', '.yml') -Description 'Positive readiness evidence'
-        $moduleNegatives = Get-NegativeFixtures -Directory (Join-Path $fixtureRootPath 'module/negative') -Extensions @('.json') -Description 'Module manifest negative control'
-        $evidenceNegatives = Get-NegativeFixtures -Directory (Join-Path $fixtureRootPath 'evidence/negative') -Extensions @('.yaml', '.yml') -Description 'Readiness evidence negative control'
+        $consumerFixturesRoot = Join-Path $consumerRoot 'test/fixtures'
+        $null = New-Item -ItemType Directory -Path $consumerFixturesRoot -Force
+        foreach ($fixtureDirectoryName in @('module', 'evidence')) {
+            Copy-Item -LiteralPath (Join-Path $fixtureRootPath $fixtureDirectoryName) -Destination $consumerFixturesRoot -Recurse -Force
+        }
 
-        Assert-PositiveResult -Description 'Positive module manifest' -Result (Invoke-ToolCommand -Command 'hexalith-module' -Arguments @('down', '--manifest', $modulePositive.FullName, '--output', 'json') -WorkingDirectory $consumerRoot)
-        Assert-PositiveResult -Description 'Positive readiness evidence' -Result (Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments @('validate', $evidencePositive.FullName, '--output', 'json') -WorkingDirectory $consumerRoot)
+        & git -C $consumerRoot init --quiet
+        if ($LASTEXITCODE -ne 0) {
+            throw "Unable to initialize the isolated package consumer repository (exit code $LASTEXITCODE)."
+        }
+
+        $modulePositive = Get-RequiredFixture -Directory (Join-Path $consumerFixturesRoot 'module/positive') -Extensions @('.json') -Description 'Positive module manifest'
+        $evidencePositive = Get-RequiredFixture -Directory (Join-Path $consumerFixturesRoot 'evidence/positive') -Extensions @('.yaml', '.yml') -Description 'Positive readiness evidence'
+        $moduleNegatives = Get-NegativeFixtures -Directory (Join-Path $consumerFixturesRoot 'module/negative') -Extensions @('.json') -Description 'Module manifest negative control'
+        $evidenceNegatives = Get-NegativeFixtures -Directory (Join-Path $consumerFixturesRoot 'evidence/negative') -Extensions @('.yaml', '.yml') -Description 'Readiness evidence negative control'
+        $moduleManifestPath = 'test/fixtures/module/positive/hexalith.module-manifest.v1.json'
+        $readinessEvidencePath = 'test/fixtures/evidence/positive/readiness.yaml'
+
+        $downResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments @(
+            'down',
+            '--manifest',
+            $moduleManifestPath,
+            '--filter',
+            'Bearer packaged-redaction-control',
+            '--evidence',
+            'evidence/module-run.json',
+            '--output',
+            'json'
+        ) -WorkingDirectory $consumerRoot
+        Assert-PositiveResult -Description 'Positive module manifest and canonical evidence' -Result $downResult
+
+        $moduleEvidencePath = Join-Path $consumerRoot 'evidence/module-run.json'
+        if (-not (Test-Path -LiteralPath $moduleEvidencePath -PathType Leaf)) {
+            throw 'Packaged module command did not retain its requested evidence artifact.'
+        }
+
+        $moduleEvidenceBytes = [System.IO.File]::ReadAllBytes($moduleEvidencePath)
+        if ($moduleEvidenceBytes.Length -eq 0 -or $moduleEvidenceBytes[$moduleEvidenceBytes.Length - 1] -ne [byte][char]"`n") {
+            throw 'Packaged module evidence is not canonical UTF-8 JSON with a final newline.'
+        }
+
+        $moduleEvidenceText = [System.IO.File]::ReadAllText($moduleEvidencePath)
+        if ($moduleEvidenceText.Contains('packaged-redaction-control', [System.StringComparison]::Ordinal) -or
+            $moduleEvidenceText.Contains('Bearer', [System.StringComparison]::Ordinal)) {
+            throw 'Packaged module evidence retained raw filter or credential material.'
+        }
+
+        $moduleEvidence = $moduleEvidenceText | ConvertFrom-Json
+        if ($moduleEvidence.schema -cne 'hexalith.module-run-evidence.v1' -or
+            $moduleEvidence.invocation.manifestPath -cne $moduleManifestPath) {
+            throw 'Packaged module evidence did not retain the expected canonical schema and consumer-relative manifest identity.'
+        }
+
+        $unavailableResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments @(
+            'run',
+            '--manifest',
+            $moduleManifestPath,
+            '--evidence',
+            'evidence/unavailable.json',
+            '--output',
+            'json'
+        ) -WorkingDirectory $consumerRoot
+        Assert-ExactNonPassingResult -Result $unavailableResult -ExitCode 2 -RuleId 'HXR002' -Description 'Unavailable platform prerequisite control'
+
+        Assert-PositiveResult -Description 'Positive readiness evidence' -Result (Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments @('validate', $readinessEvidencePath, '--output', 'json') -WorkingDirectory $consumerRoot)
 
         foreach ($fixture in $moduleNegatives) {
             Assert-NegativeResult -Fixture $fixture -Result (Invoke-ToolCommand -Command 'hexalith-module' -Arguments @('down', '--manifest', $fixture.FullName, '--output', 'json') -WorkingDirectory $consumerRoot)
@@ -333,7 +421,7 @@ finally {
         Remove-Item -LiteralPath $consumerRoot -Recurse -Force
     }
 
-    if ($ownsPackageDirectory -and (Test-Path -LiteralPath $packageDirectoryPath)) {
+    if ($ownsPackageDirectory -and -not $RetainPackageDirectory -and (Test-Path -LiteralPath $packageDirectoryPath)) {
         Remove-Item -LiteralPath $packageDirectoryPath -Recurse -Force
     }
 }

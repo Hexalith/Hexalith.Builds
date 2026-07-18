@@ -20,11 +20,13 @@ public static class ToolCommandHost
         ArgumentNullException.ThrowIfNull(operation);
 
         using CancellationTokenSource cancellationTokenSource = new();
-        ConsoleCancelEventHandler handler = (_, eventArgs) =>
+        void HandleCancel(object? sender, ConsoleCancelEventArgs eventArgs)
         {
             eventArgs.Cancel = true;
             cancellationTokenSource.Cancel();
-        };
+        }
+
+        ConsoleCancelEventHandler handler = HandleCancel;
         Console.CancelKeyPress += handler;
         try
         {

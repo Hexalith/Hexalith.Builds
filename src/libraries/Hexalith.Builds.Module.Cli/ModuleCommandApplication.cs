@@ -35,14 +35,11 @@ internal static class ModuleCommandApplication
 
         RootCommand rootCommand = CreateRootCommand(standardOutput);
         ParseResult parseResult = rootCommand.Parse(arguments);
-        if (parseResult.Errors.Count > 0)
-        {
-            return await ToolCommandHost.WriteParseFailureAsync(
+        return parseResult.Errors.Count > 0
+            ? await ToolCommandHost.WriteParseFailureAsync(
                 standardOutput,
-                ToolCommandHost.RequestedOutputFormat(arguments)).ConfigureAwait(false);
-        }
-
-        return await parseResult.InvokeAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+                ToolCommandHost.RequestedOutputFormat(arguments)).ConfigureAwait(false)
+            : await parseResult.InvokeAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     private static RootCommand CreateRootCommand(TextWriter standardOutput)

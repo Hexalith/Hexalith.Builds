@@ -53,6 +53,7 @@ public sealed class ManifestValidationTests
     [InlineData("\"id\": \"module-b\"", "\"id\": \"module-a\"", "HXM003")]
     [InlineData("assemblies/module-a.dll", "../module-a.dll", "HXM004")]
     [InlineData("assemblies/module-a.dll", "assemblies/missing.dll", "HXM005")]
+    [InlineData("assemblies/module-a.dll", "assemblies/bearer token=SUPERSECRET_8472.dll", "HXM007")]
     [InlineData("module-a", "${MODULE_ID}", "HXM006")]
     [InlineData("\"domain\": \"module-a\"", "\"domain\": \"module-a\", \"token\": \"SUPERSECRET_8472\"", "HXM002")]
     [InlineData("\"domain\": \"module-a\"", "\"domain\": \"bearer SUPERSECRET_8472\"", "HXM007")]
@@ -104,6 +105,37 @@ public sealed class ManifestValidationTests
         finally
         {
             Directory.Delete(directory, true);
+        }
+    }
+
+    /// <summary>
+    /// Verifies a repository-relative descriptor symlink cannot escape the manifest repository.
+    /// </summary>
+    [Fact]
+    public void LoadManifestWithEscapingDescriptorSymlinkFailsClosed()
+    {
+        string directory = CreateFixtureDirectory();
+        string externalDirectory = Path.Combine(Path.GetTempPath(), $"hexalith-builds-external-{Guid.NewGuid():N}");
+
+        try
+        {
+            _ = Directory.CreateDirectory(externalDirectory);
+            File.WriteAllText(Path.Combine(externalDirectory, "module-a.dll"), string.Empty);
+            File.WriteAllText(Path.Combine(externalDirectory, "module-b.dll"), string.Empty);
+            File.WriteAllText(Path.Combine(externalDirectory, "ui.dll"), string.Empty);
+            Directory.Delete(Path.Combine(directory, "assemblies"), recursive: true);
+            _ = Directory.CreateSymbolicLink(Path.Combine(directory, "assemblies"), externalDirectory);
+            string path = WriteManifest(directory, ValidManifestJson());
+
+            ManifestLoadResult result = ModuleManifestLoader.Load(path);
+
+            result.IsValid.ShouldBeFalse();
+            result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldContain("HXM004");
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+            Directory.Delete(externalDirectory, true);
         }
     }
 

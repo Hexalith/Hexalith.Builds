@@ -175,12 +175,11 @@ public static class NativeTestReportLoader
         failed = failedCount + errors + timeouts + aborted;
         skipped = notExecuted + inconclusive;
 
-        if (total < 0 || passed < 0 || failed < 0 || skipped < 0 || passed + failed + skipped != total)
-        {
-            return false;
-        }
-
-        return true;
+        return total >= 0
+            && passed >= 0
+            && failed >= 0
+            && skipped >= 0
+            && passed + failed + skipped == total;
     }
 
     private static bool TryReadCounter(XElement counters, string name, bool required, out int value)

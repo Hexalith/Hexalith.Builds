@@ -76,7 +76,8 @@ This repository:
 ### GitHub Composite Actions
 
 - [`Github/create-release/`](Github/create-release/README.md): Run
-  semantic-release without building packages (legacy — modules use
+  semantic-release without hard-coding package behavior; repositories may
+  configure their own verified package lifecycle (legacy — modules use
   `domain-release.yml`).
 - [`Github/dapr-init/`](Github/dapr-init/README.md): Install the Dapr CLI and
   run `dapr init` with retry.
@@ -217,6 +218,12 @@ An exact-version consumer manifest is intentionally not checked in before the
 first package is published; consumers must not invent a `4.20.0` pin. The
 semantic-release version and package hashes are the release record.
 
+Pre-release consumers configure the Hexalith GitHub Packages NuGet source and
+authenticated package-read access outside the checked-in tool manifest; stable
+consumers restore from NuGet.org. Keep those credentials in user or CI NuGet
+configuration/secret storage, never in a module manifest, filter, or retained
+evidence artifact.
+
 ### Module Manifest and Runner Contract
 
 `hexalith-module` accepts a strict `hexalith.module-manifest.v1` JSON file.
@@ -242,10 +249,11 @@ persisted state, `6` evidence schema/policy, and `130` cancellation. The
 first causal failure is retained; a later evidence-write failure cannot rewrite
 an earlier runner failure.
 
-The runner’s native-report boundary accepts the TRX counters emitted by both
-VSTest and Microsoft Testing Platform/xUnit v3. Missing or invalid reports,
-zero matching tests, all-skipped tests, and failed test counts are explicit
-non-passing product/test outcomes.
+The native-report parser validates TRX counters emitted by both VSTest and
+Microsoft Testing Platform/xUnit v3. Missing or invalid reports, zero matching
+tests, all-skipped tests, and failed test counts are explicit non-passing
+product/test outcomes once a live test invocation supplies a report. Parser
+coverage alone is not persisted-runtime proof.
 
 Live persisted composition remains explicitly unavailable while the separately
 owned G-6 Dapr runtime-to-SDK disposition is unresolved. That result is a

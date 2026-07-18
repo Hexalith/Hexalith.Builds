@@ -6,7 +6,6 @@
 namespace Hexalith.Builds.Tooling.Evidence;
 
 using System.Security.Cryptography;
-using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Filesystem;
@@ -984,8 +983,10 @@ internal static class ReadinessEvidenceValidator
             AddDiagnostic(diagnostics, document, "HXE147", ToolFailureCategory.EvidencePolicy, "artifact_sha256", row, rowKey);
         }
 
-        if (!string.Equals(artifactSchema, _moduleRunEvidenceSchema, StringComparison.Ordinal)
-            || !ModuleRunEvidenceArtifactValidator.TryValidate(artifactBytes, out ModuleRunEvidenceArtifactSummary? artifactSummary))
+        ModuleRunEvidenceArtifactSummary? artifactSummary = null;
+        bool isValidModuleRunArtifact = string.Equals(artifactSchema, _moduleRunEvidenceSchema, StringComparison.Ordinal)
+            && ModuleRunEvidenceArtifactValidator.TryValidate(artifactBytes, out artifactSummary);
+        if (!isValidModuleRunArtifact || artifactSummary is null)
         {
             AddDiagnostic(diagnostics, document, "HXE148", ToolFailureCategory.EvidencePolicy, "artifact_schema", row, rowKey);
         }

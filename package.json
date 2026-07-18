@@ -29,7 +29,7 @@
       [
         "@semantic-release/exec",
         {
-          "prepareCmd": "pwsh -NoProfile -File ./Tools/build-g4-tool-packages.ps1 -Version ${nextRelease.version}",
+          "prepareCmd": "pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version ${nextRelease.version} -PackageDirectory artifacts/g4-tool-packages/${nextRelease.version} -RetainPackageDirectory -RequireControls",
           "publishCmd": "pwsh -NoProfile -File ./Tools/publish-g4-tool-packages.ps1 -Version ${nextRelease.version}"
         }
       ],

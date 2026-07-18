@@ -83,6 +83,33 @@ public sealed class ModuleCommandApplicationTests
     }
 
     /// <summary>
+    /// Verifies parser failures use the stable JSON diagnostics contract instead of parser-owned output.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task MissingRequiredOptionWritesStableJsonUsageDiagnosticAsync()
+    {
+        StringWriter standardOutput = new();
+        await using (standardOutput.ConfigureAwait(true))
+        {
+            StringWriter standardError = new();
+            await using (standardError.ConfigureAwait(true))
+            {
+                int exitCode = await ModuleCommandApplication.InvokeAsync(
+                    ["run", "--output", "json"],
+                    standardOutput,
+                    standardError,
+                    TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+                exitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
+                standardOutput.ToString().ShouldContain("HXC001");
+                standardOutput.ToString().ShouldContain("\"phase\":\"Usage\"");
+                standardError.ToString().ShouldBeEmpty();
+            }
+        }
+    }
+
+    /// <summary>
     /// Verifies an unknown profile fails before runtime composition.
     /// </summary>
     /// <returns>A task that completes after the assertion.</returns>
@@ -107,6 +134,56 @@ public sealed class ModuleCommandApplicationTests
 
                     exitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
                     standardOutput.ToString().ShouldContain("HXC002");
+                }
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    /// <summary>
+    /// Verifies raw profile secrets cannot be retained when profile validation emits evidence.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task SecretBearingProfileIsRedactedFromEvidenceAsync()
+    {
+        string directory = CreateFixtureDirectory();
+
+        try
+        {
+            StringWriter standardOutput = new();
+            await using (standardOutput.ConfigureAwait(true))
+            {
+                StringWriter standardError = new();
+                await using (standardError.ConfigureAwait(true))
+                {
+                    int exitCode = await ModuleCommandApplication.InvokeAsync(
+                        [
+                            "test",
+                            "--manifest",
+                            Path.Combine(directory, "manifest.json"),
+                            "--profile",
+                            "Bearer profile-redaction-control",
+                            "--evidence",
+                            "evidence/profile-failure.json",
+                            "--output",
+                            "json",
+                        ],
+                        standardOutput,
+                        standardError,
+                        TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+                    exitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
+                    standardOutput.ToString().ShouldContain("HXC003");
+                    standardOutput.ToString().ShouldNotContain("profile-redaction-control");
+                    string evidence = await File.ReadAllTextAsync(
+                        Path.Combine(directory, "evidence", "profile-failure.json"),
+                        TestContext.Current.CancellationToken).ConfigureAwait(true);
+                    evidence.ShouldNotContain("profile-redaction-control");
+                    evidence.ShouldNotContain("Bearer");
                 }
             }
         }
@@ -284,6 +361,102 @@ public sealed class ModuleCommandApplicationTests
                     exitCode.ShouldBe((int)ToolExitCode.EvidenceSchemaOrPolicy);
                     standardOutput.ToString().ShouldContain("HXE001");
                     standardOutput.ToString().ShouldNotContain("passed");
+                }
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    /// <summary>
+    /// Verifies an evidence directory symlink cannot write outside the consumer repository.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task DownWithEscapingEvidenceSymlinkReturnsEvidenceFailureAsync()
+    {
+        string directory = CreateFixtureDirectory();
+        string externalDirectory = Path.Combine(Path.GetTempPath(), $"hexalith-builds-evidence-external-{Guid.NewGuid():N}");
+
+        try
+        {
+            _ = Directory.CreateDirectory(externalDirectory);
+            _ = Directory.CreateSymbolicLink(Path.Combine(directory, "evidence"), externalDirectory);
+            StringWriter standardOutput = new();
+            await using (standardOutput.ConfigureAwait(true))
+            {
+                StringWriter standardError = new();
+                await using (standardError.ConfigureAwait(true))
+                {
+                    int exitCode = await ModuleCommandApplication.InvokeAsync(
+                        [
+                            "down",
+                            "--manifest",
+                            Path.Combine(directory, "manifest.json"),
+                            "--evidence",
+                            "evidence/escaped.json",
+                            "--output",
+                            "json",
+                        ],
+                        standardOutput,
+                        standardError,
+                        TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+                    exitCode.ShouldBe((int)ToolExitCode.EvidenceSchemaOrPolicy);
+                    standardOutput.ToString().ShouldContain("HXE001");
+                    File.Exists(Path.Combine(externalDirectory, "escaped.json")).ShouldBeFalse();
+                }
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+            Directory.Delete(externalDirectory, true);
+        }
+    }
+
+    /// <summary>
+    /// Verifies a public command cancellation retains canonical cancelled evidence rather than a pass.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task CancelledDownWritesCancelledEvidenceAsync()
+    {
+        string directory = CreateFixtureDirectory();
+
+        try
+        {
+            using CancellationTokenSource cancellationTokenSource = new();
+            await cancellationTokenSource.CancelAsync().ConfigureAwait(true);
+            StringWriter standardOutput = new();
+            await using (standardOutput.ConfigureAwait(true))
+            {
+                StringWriter standardError = new();
+                await using (standardError.ConfigureAwait(true))
+                {
+                    int exitCode = await ModuleCommandApplication.InvokeAsync(
+                        [
+                            "down",
+                            "--manifest",
+                            Path.Combine(directory, "manifest.json"),
+                            "--evidence",
+                            "evidence/cancelled.json",
+                            "--output",
+                            "json",
+                        ],
+                        standardOutput,
+                        standardError,
+                        cancellationTokenSource.Token).ConfigureAwait(true);
+
+                    exitCode.ShouldBe((int)ToolExitCode.Cancelled);
+                    standardOutput.ToString().ShouldContain("HXC130");
+                    string evidence = await File.ReadAllTextAsync(
+                        Path.Combine(directory, "evidence", "cancelled.json"),
+                        TestContext.Current.CancellationToken).ConfigureAwait(true);
+                    evidence.ShouldContain("\"finalStatus\":\"cancelled\"");
+                    evidence.ShouldNotContain("\"finalStatus\":\"completed\"");
                 }
             }
         }

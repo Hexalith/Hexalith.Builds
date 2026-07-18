@@ -68,4 +68,31 @@ public sealed class EvidenceCommandApplicationTests
             }
         }
     }
+
+    /// <summary>
+    /// Verifies a missing required argument uses stable JSON usage diagnostics.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task MissingEvidencePathWritesStableJsonUsageDiagnosticAsync()
+    {
+        StringWriter standardOutput = new();
+        await using (standardOutput.ConfigureAwait(true))
+        {
+            StringWriter standardError = new();
+            await using (standardError.ConfigureAwait(true))
+            {
+                int exitCode = await EvidenceCommandApplication.InvokeAsync(
+                    ["validate", "--output", "json"],
+                    standardOutput,
+                    standardError,
+                    TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+                exitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
+                standardOutput.ToString().ShouldContain("HXC001");
+                standardOutput.ToString().ShouldContain("\"phase\":\"Usage\"");
+                standardError.ToString().ShouldBeEmpty();
+            }
+        }
+    }
 }

@@ -129,7 +129,7 @@ if ([string]::IsNullOrWhiteSpace($apiKey)) {
 Write-Host "Publishing the verified G-4 tool package inventory to $channel."
 foreach ($artifactName in @($expectedArtifactNames | Sort-Object)) {
     $artifactPath = Join-Path $packageDirectoryPath $artifactName
-    Invoke-DotNet -Arguments @('nuget', 'push', $artifactPath, '--api-key', $apiKey, '--source', $source, '--skip-duplicate')
+    Invoke-DotNet -Arguments @('nuget', 'push', $artifactPath, '--api-key', $apiKey, '--source', $source)
 }
 
 if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_STEP_SUMMARY)) {

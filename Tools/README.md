@@ -17,9 +17,11 @@ reuse the shared consumer `Github/scripts/build-packages.ps1` behavior.
 ```
 
 `test-g4-tool-package-contracts.ps1` performs clean source and package-mode
-qualification. It generates a temporary local-tool manifest pinned to the
-provided version, restores only from the temporary local feed, and invokes the
-positive and blocking-negative module/evidence controls.
+qualification. It copies the fixtures into an isolated temporary consumer
+repository, generates a local-tool manifest pinned to the provided version,
+restores only from the temporary local feed, and invokes the positive and
+blocking-negative module/evidence controls. `-RetainPackageDirectory` preserves
+the exact qualified artifacts for the semantic-release publisher.
 
 ```powershell
 .\Tools\test-g4-tool-package-contracts.ps1 -Version 0.0.0-ci.1 -RequireControls

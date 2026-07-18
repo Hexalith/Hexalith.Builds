@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.Tooling.Diagnostics;
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Renders stable, metadata-only command results.
@@ -16,6 +17,7 @@ public static class ToolDiagnosticFormatter
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false,
+        Converters = { new JsonStringEnumConverter() },
     };
 
     /// <summary>
