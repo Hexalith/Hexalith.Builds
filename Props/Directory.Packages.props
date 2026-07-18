@@ -40,7 +40,7 @@
     <PackageVersion Include="Hexalith.EventStore.Admin.Server" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.Aspire" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.Client" Version="$(HexalithEventStoreVersion)" />
-    <PackageVersion Include="Hexalith.EventStore.Contracts" Version="3.70.2" />
+    <PackageVersion Include="Hexalith.EventStore.Contracts" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.DomainService" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.RestApi.Generators" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.Server" Version="$(HexalithEventStoreVersion)" />
