@@ -1,13 +1,16 @@
 name: 'Prepare Container Publisher'
 description: >-
   Installs the semantic-release container publish helper into
-  .hexalith/release/publish-containers.sh in the caller workspace. The helper is
-  shipped with this action (version-matched to the @main workflow that uses it),
-  so it does not depend on the caller's Hexalith.Builds submodule pin.
+  .hexalith/release/publish-containers.sh in the caller workspace. The reusable
+  workflow invokes this action from an exact approved Builds checkout, so it does
+  not depend on a second mutable action resolution or the caller's submodule pin.
 
 inputs:
   container-projects:
     description: 'Newline-separated project-to-repository mappings: path/to/project.csproj|repository-name.'
+    required: true
+  builds-execution-sha:
+    description: 'Exact maintainer-approved Hexalith.Builds commit used by the reusable workflow and action.'
     required: true
 
 runs:
@@ -17,12 +20,44 @@ runs:
       shell: bash
       env:
         HEXALITH_CONTAINER_PROJECTS: ${{ inputs.container-projects }}
+        HEXALITH_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
       run: |
         set -euo pipefail
         if [ -z "${HEXALITH_CONTAINER_PROJECTS//[[:space:]]/}" ]; then
           echo "container-projects is required when publish-containers is true." >&2
           exit 1
         fi
+        if [[ ! "$HEXALITH_BUILDS_EXECUTION_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "builds-execution-sha must be an exact lowercase 40-character commit SHA." >&2
+          exit 1
+        fi
+        verification_directory="$(mktemp -d)"
+        cleanup() {
+          rm -rf "$verification_directory"
+        }
+        trap cleanup EXIT
+        for file in \
+          action.yml \
+          publish-containers.sh \
+          oci_registry_validator.py \
+          publication_authority.py \
+          smoke-container-platforms.sh \
+          smoke_container_platforms.py; do
+          approved_url="https://raw.githubusercontent.com/Hexalith/Hexalith.Builds/${HEXALITH_BUILDS_EXECUTION_SHA}/Github/publish-containers/${file}"
+          curl --fail --silent --show-error --location "$approved_url" --output "$verification_directory/$file"
+          if ! cmp --silent "$GITHUB_ACTION_PATH/$file" "$verification_directory/$file"; then
+            echo "Resolved publish-containers action bytes do not match the approved Builds commit." >&2
+            exit 1
+          fi
+        done
         mkdir -p .hexalith/release
         cp "${GITHUB_ACTION_PATH}/publish-containers.sh" .hexalith/release/publish-containers.sh
+        cp "${GITHUB_ACTION_PATH}/oci_registry_validator.py" .hexalith/release/oci_registry_validator.py
+        cp "${GITHUB_ACTION_PATH}/publication_authority.py" .hexalith/release/publication_authority.py
+        cp "${GITHUB_ACTION_PATH}/smoke-container-platforms.sh" .hexalith/release/smoke-container-platforms.sh
+        cp "${GITHUB_ACTION_PATH}/smoke_container_platforms.py" .hexalith/release/smoke_container_platforms.py
         chmod +x .hexalith/release/publish-containers.sh
+        chmod +x .hexalith/release/oci_registry_validator.py
+        chmod +x .hexalith/release/publication_authority.py
+        chmod +x .hexalith/release/smoke-container-platforms.sh
+        chmod +x .hexalith/release/smoke_container_platforms.py

@@ -19,6 +19,9 @@ Dapr-backed tests, and then runs semantic-release.
 | `timeout-minutes` | No | `20` | Timeout for the release job. |
 | `publish-containers` | No | `false` | Whether to prepare semantic-release container publishing for .NET SDK container projects. |
 | `container-projects` | No | `''` | Newline-separated container mappings in `path/to/project.csproj|repository-name` format. Required when `publish-containers` is `true`. |
+| `builds-execution-sha` | No | `''` | Exact maintainer-approved Builds commit. Required for container publishing and checked against both the resolved reusable workflow and nested action/helper bytes. |
+| `release-authority-url` | No | `''` | Durable HTTPS source for the release-owner authority JSON. Required for container publishing. |
+| `release-owner-allowlist` | No | `''` | Caller-workspace path to the checked-in GitHub approval role allowlist. Required for container publishing. |
 
 ## Secrets
 
@@ -39,8 +42,10 @@ GitHub operations. Container publishing uses the organization variable
 
 ## Steps
 
-1. Check out the caller repository with full history, then initialize
-   root-declared submodules only (`Github/initialize-build`).
+1. Check out the caller repository with full history, verify the resolved
+   reusable-workflow identity, check out that exact Builds commit, then
+   initialize root-declared submodules through its local `initialize-build`
+   action.
 2. Initialize .NET with `actions/setup-dotnet` from `global.json`.
 3. Set up Node.js.
 4. Cache NuGet packages.
@@ -49,20 +54,29 @@ GitHub operations. Container publishing uses the organization variable
    errors.
 7. If `test-projects` is not empty, initialize Dapr, run each test project, and
    upload TRX/coverage evidence (`release-test-results`, `if: always()`).
-8. If `publish-containers` is `true`, install
-   `.hexalith/release/publish-containers.sh` into the caller workspace via the
-   `Github/publish-containers` composite action (the script ships with the
-   action, version-matched to this workflow).
-9. Run `npx semantic-release`.
+8. If `publish-containers` is `true`, run the SHA-pinned arm64 emulation setup.
+9. Invoke the nested
+   `Github/publish-containers` action from the immutable local checkout, and
+   install the publisher, immutable OCI validator, durable authority validator,
+   and child-digest smoke helpers. The action also compares its action/helper
+   bytes with the same approved Builds commit.
+10. Run `npx semantic-release`, passing the approved Builds identity, exact
+    GitHub authority API source, and checked-in owner allowlist to the caller's
+    publication preflight; always upload the complete hidden release-evidence
+    directory afterward.
 
 The generated publish helper accepts the semantic-release version as its first
-argument. Call it from the caller repository semantic-release `publishCmd` after
-the NuGet publish command. The helper logs in to Hexalith Zot only when
-semantic-release reaches `publishCmd`, so non-releasing commits do not require
-registry credentials:
+argument. The caller's `verifyReleaseCmd` must validate its full durable
+authority and destination absence before semantic-release creates a Git tag.
+The `publishCmd` must revalidate immediately before the first NuGet push, then
+call the container helper with the same version. Existing package/tag identities
+are collisions; duplicate skipping is forbidden. The helper logs in to Hexalith
+Zot only when semantic-release reaches `publishCmd`, so non-releasing commits do
+not require registry credentials:
 
 ```json
-"publishCmd": "dotnet nuget push ./nupkgs/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate && ./.hexalith/release/publish-containers.sh ${nextRelease.version}"
+"verifyReleaseCmd": "bash scripts/validate-release-authority.sh ${nextRelease.version} verify >&2",
+"publishCmd": "bash scripts/validate-release-authority.sh ${nextRelease.version} publish >&2 && dotnet nuget push ./nupkgs/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json && ./.hexalith/release/publish-containers.sh ${nextRelease.version}"
 ```
 
 ## Usage
@@ -98,6 +112,9 @@ jobs:
     with:
       solution: Hexalith.<Module>.slnx
       publish-containers: true
+      builds-execution-sha: ${{ vars.HEXALITH_BUILDS_RELEASE_SHA }}
+      release-authority-url: ${{ vars.HEXALITH_RELEASE_AUTHORITY_URL }}
+      release-owner-allowlist: path/to/github-approval-role-allowlist.json
       container-projects: |
         src/Hexalith.<Module>/Hexalith.<Module>.csproj|module-name
     secrets:
@@ -110,6 +127,8 @@ The recommended organization-level values are:
 
 ```text
 vars.HEXALITH_ZOT_REGISTRY = registry.hexalith.com
+vars.HEXALITH_BUILDS_RELEASE_SHA
+vars.HEXALITH_RELEASE_AUTHORITY_URL
 secrets.HEXALITH_ZOT_USERNAME
 secrets.HEXALITH_ZOT_API_KEY
 secrets.NUGET_API_KEY

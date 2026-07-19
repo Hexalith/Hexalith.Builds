@@ -1,10 +1,14 @@
+import argparse
 import hashlib
 import importlib.util
 import json
-import os
 import tempfile
 import unittest
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
@@ -51,7 +55,7 @@ def build_capture(root, mutation):
         config_body = compact_json(config)
         config_digest = digest(config_body)
         config_name = write_body(root, f"{architecture}-config.json", config_body)
-        objects[config_digest] = {"content_type": config_media_type, "body": config_name}
+        objects[config_digest] = {"content_type": "application/octet-stream", "body": config_name}
 
         config_size = len(config_body) + (1 if mutation == "config-size-mismatch" and architecture == "amd64" else 0)
         child = {
@@ -77,6 +81,8 @@ def build_capture(root, mutation):
             descriptor["platform"]["architecture"] = "amd64"
         if mutation == "unknown-platform" and architecture == "arm64":
             descriptor["platform"] = {"os": "unknown", "architecture": "unknown"}
+        if mutation == "blank-platform" and architecture == "arm64":
+            descriptor["platform"]["architecture"] = " "
         if mutation == "variant-platform" and architecture == "arm64":
             descriptor["platform"]["variant"] = "v8"
         descriptors.append(descriptor)
@@ -103,6 +109,8 @@ def build_capture(root, mutation):
 
     if mutation == "unresolved-child":
         objects.pop(descriptors[0]["digest"])
+    if mutation == "child-content-type-mismatch":
+        objects[descriptors[0]["digest"]]["content_type"] = "application/octet-stream"
     if mutation == "raw-digest-mismatch":
         original_digest = descriptors[0]["digest"]
         false_digest = "sha256:" + ("0" * 64)
@@ -133,8 +141,10 @@ def build_capture(root, mutation):
 
     capture = {
         "tag": {
-            "content_type": top_media_type,
-            "docker_content_digest": tag_digest,
+            "content_type": (
+                "application/octet-stream" if mutation == "index-content-type-mismatch" else top_media_type
+            ),
+            "docker_content_digest": None if mutation == "missing-registry-digest" else tag_digest,
             "body": tag_body_name,
         },
         "objects": objects,
@@ -159,6 +169,115 @@ class OciRegistryValidatorTests(unittest.TestCase):
             evidence["container"]["digest"],
         )
 
+    def test_cross_origin_redirect_does_not_forward_registry_authorization(self):
+        request = urllib.request.Request(
+            "https://registry.example.test/v2/eventstore/blobs/sha256:abc",
+            headers={"Authorization": "Basic fixture-secret"},
+        )
+
+        redirected = self.validator.SafeRedirectHandler().redirect_request(
+            request,
+            None,
+            302,
+            "Found",
+            {},
+            "https://storage.example.test/signed-blob",
+        )
+
+        self.assertIsNotNone(redirected)
+        self.assertIsNone(redirected.get_header("Authorization"))
+
+        redirect_request = self.validator.SafeRedirectHandler().redirect_request
+        with self.assertRaises(urllib.error.HTTPError) as context:
+            redirect_request(
+                request,
+                None,
+                302,
+                "Found",
+                {},
+                "http://storage.example.test/signed-blob",
+            )
+        context.exception.close()
+
+    def test_registry_http_adapter_preserves_bytes_headers_and_immutable_references(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            capture_root = Path(temporary_directory)
+            build_capture(capture_root, "none")
+            capture = json.loads((capture_root / "responses.json").read_text(encoding="utf-8"))
+            requested = []
+
+            class FakeResponse:
+                def __init__(self, response):
+                    self.headers = {
+                        "Content-Type": response.get("content_type", ""),
+                        "Docker-Content-Digest": response.get("docker_content_digest"),
+                    }
+                    self._body = (capture_root / response["body"]).read_bytes()
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, exception_type, exception, traceback):
+                    return False
+
+                def read(self):
+                    return self._body
+
+            def open_request(request, timeout):
+                del timeout
+                requested.append(request)
+                reference = urllib.parse.unquote(request.full_url.rsplit("/", 1)[1])
+                response = capture["tag"] if reference == "3.76.1" else capture["objects"][reference]
+                return FakeResponse(response)
+
+            with mock.patch.object(self.validator.URL_OPENER, "open", side_effect=open_request):
+                evidence = self.validator.validate_registry(
+                    "registry.example.test/eventstore:3.76.1",
+                    "registry-user",
+                    "registry-key",
+                )
+
+            expected_index = (capture_root / "index.json").read_bytes()
+            self.assertEqual(expected_index, evidence["index_bytes"])
+            self.assertEqual(
+                ["linux/amd64", "linux/arm64"],
+                [child["platform"] for child in evidence["children"]],
+            )
+            manifest_requests = [request for request in requested if "/manifests/" in request.full_url]
+            blob_requests = [request for request in requested if "/blobs/" in request.full_url]
+            self.assertEqual(4, len(manifest_requests))
+            self.assertEqual(2, len(blob_requests))
+            self.assertTrue(
+                all(request.get_header("Accept") == self.validator.MANIFEST_ACCEPT for request in manifest_requests)
+            )
+            self.assertTrue(
+                all(request.get_header("Accept") == "application/octet-stream" for request in blob_requests)
+            )
+            self.assertTrue(
+                any(f"/manifests/{evidence['index_digest']}" in request.full_url for request in manifest_requests)
+            )
+            for child in evidence["children"]:
+                self.assertTrue(
+                    any(f"/manifests/{child['digest']}" in request.full_url for request in manifest_requests)
+                )
+                self.assertTrue(
+                    any(f"/blobs/{child['config_digest']}" in request.full_url for request in blob_requests)
+                )
+
+    def test_cli_inputs_reject_path_escape_and_option_shaped_image(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            with mock.patch.object(Path, "cwd", return_value=root):
+                evidence = self.validator.workspace_output_directory(str(root / "evidence"))
+                self.assertEqual(root / "evidence", evidence)
+                escaped_path = str(root.parent / "escape")
+                with self.assertRaises(argparse.ArgumentTypeError):
+                    self.validator.workspace_output_directory(escaped_path)
+
+        with self.assertRaises(self.validator.ValidationError) as context:
+            self.validator.validated_image_reference("--config=/tmp/host/eventstore:3.78.0")
+        self.assertEqual("invalid-image-reference", context.exception.code)
+
     def test_historical_single_manifest_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             capture_root = Path(temporary_directory)
@@ -167,10 +286,6 @@ class OciRegistryValidatorTests(unittest.TestCase):
                 self.validator.validate_capture(capture_root)
             self.assertEqual("wrong-index-media-type", context.exception.code)
 
-    @unittest.skipUnless(
-        os.environ.get("HEXALITH_VALIDATE_OCI_FULL_MATRIX") == "true",
-        "Task 4 full OCI validation matrix is not active yet.",
-    )
     def test_fixture_matrix(self):
         matrix = json.loads((FIXTURE_ROOT / "validation-cases.json").read_text(encoding="utf-8"))
         for case in matrix["cases"]:
@@ -185,6 +300,45 @@ class OciRegistryValidatorTests(unittest.TestCase):
                 with self.assertRaises(self.validator.ValidationError) as context:
                     self.validator.validate_capture(capture_root)
                 self.assertEqual(case["expected"], context.exception.code)
+
+    def test_pass_evidence_preserves_exact_index_bytes(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            capture_root = root / "capture"
+            evidence_root = root / "evidence"
+            capture_root.mkdir()
+            build_capture(capture_root, "none")
+
+            evidence = self.validator.validate_capture(capture_root)
+            expected_index = evidence["index_bytes"]
+            document = self.validator.write_evidence(
+                evidence_root,
+                "registry.example.test/eventstore:3.76.1",
+                evidence,
+            )
+
+            self.assertEqual(expected_index, (evidence_root / "index.raw").read_bytes())
+            self.assertEqual(
+                hashlib.sha256(expected_index).hexdigest(),
+                document["raw_index_sha256"],
+            )
+            self.assertEqual(
+                ["linux/amd64", "linux/arm64"],
+                document["platforms"],
+            )
+            for child in document["children"]:
+                manifest_path = evidence_root / child["manifest_raw_file"]
+                config_path = evidence_root / child["config_raw_file"]
+                self.assertTrue(manifest_path.is_file())
+                self.assertTrue(config_path.is_file())
+                self.assertEqual(
+                    child["manifest_raw_sha256"],
+                    hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+                )
+                self.assertEqual(
+                    child["config_raw_sha256"],
+                    hashlib.sha256(config_path.read_bytes()).hexdigest(),
+                )
 
 
 if __name__ == "__main__":

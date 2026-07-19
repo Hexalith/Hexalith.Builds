@@ -54,6 +54,21 @@ on:
         required: false
         type: string
         default: ''
+      builds-execution-sha:
+        description: 'Exact approved Hexalith.Builds commit resolved for the reusable workflow and nested publisher action.'
+        required: false
+        type: string
+        default: ''
+      release-authority-url:
+        description: 'Durable HTTPS source for the release-owner publication authority JSON.'
+        required: false
+        type: string
+        default: ''
+      release-owner-allowlist:
+        description: 'Caller-workspace path to the checked-in GitHub approval role allowlist.'
+        required: false
+        type: string
+        default: ''
     secrets:
       NUGET_API_KEY:
         required: true
@@ -77,7 +92,50 @@ jobs:
           fetch-depth: 0
           submodules: false
           persist-credentials: false
+      - name: Validate approved Builds execution identity
+        if: ${{ inputs.publish-containers }}
+        shell: bash
+        env:
+          BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          RELEASE_AUTHORITY_URL: ${{ inputs.release-authority-url }}
+          RELEASE_OWNER_ALLOWLIST: ${{ inputs.release-owner-allowlist }}
+          RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$BUILD_EXECUTION_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "builds-execution-sha must be an exact lowercase 40-character commit SHA." >&2
+            exit 1
+          fi
+          if [ "$RESOLVED_WORKFLOW_REPOSITORY" != "Hexalith/Hexalith.Builds" ]; then
+            echo "The release job is not defined by the approved Hexalith.Builds repository." >&2
+            exit 1
+          fi
+          if [ "$RESOLVED_WORKFLOW_SHA" != "$BUILD_EXECUTION_SHA" ]; then
+            echo "Resolved reusable-workflow SHA does not match the approved Builds identity." >&2
+            exit 1
+          fi
+          if [[ ! "$RELEASE_AUTHORITY_URL" =~ ^https://api\.github\.com/repos/Hexalith/Hexalith\.EventStore/issues/comments/[0-9]+$ ]]; then
+            echo "release-authority-url must be an EventStore GitHub issue-comment API URL." >&2
+            exit 1
+          fi
+          if [[ ! "$RELEASE_OWNER_ALLOWLIST" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "release-owner-allowlist must be a caller-workspace relative path." >&2
+            exit 1
+          fi
+      - name: Checkout approved Builds actions
+        if: ${{ inputs.publish-containers }}
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ inputs.builds-execution-sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
       - name: Initialize root-declared submodules
+        if: ${{ inputs.publish-containers }}
+        uses: ./.hexalith/builds-execution/Github/initialize-build
+      - name: Initialize root-declared submodules without container publication
+        if: ${{ !inputs.publish-containers }}
         uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -150,11 +208,17 @@ jobs:
             TestResults/**/*.trx
             TestResults/**/coverage.cobertura.xml
           retention-days: 7
+      - name: Set up arm64 emulation
+        if: ${{ inputs.publish-containers }}
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
+        with:
+          platforms: arm64
       - name: Prepare release container publisher
         if: ${{ inputs.publish-containers }}
-        uses: Hexalith/Hexalith.Builds/Github/publish-containers@main
+        uses: ./.hexalith/builds-execution/Github/publish-containers
         with:
           container-projects: ${{ inputs.container-projects }}
+          builds-execution-sha: ${{ inputs.builds-execution-sha }}
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -163,4 +227,16 @@ jobs:
           HEXALITH_ZOT_REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
           HEXALITH_ZOT_USERNAME: ${{ secrets.HEXALITH_ZOT_USERNAME }}
           HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}
+          HEXALITH_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          HEXALITH_RELEASE_AUTHORITY_URL: ${{ inputs.release-authority-url }}
+          HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH: ${{ inputs.release-owner-allowlist }}
         run: npx semantic-release
+      - name: Upload complete release evidence
+        if: ${{ always() && inputs.publish-containers }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .hexalith/release-evidence/**
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
