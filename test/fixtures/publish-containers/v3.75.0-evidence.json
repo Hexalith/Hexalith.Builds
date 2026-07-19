@@ -1,0 +1,33 @@
+{
+  "release": "v3.75.0",
+  "workflow_run": 29683837428,
+  "source_sha": "d046120fb4178252a0e0f300d714bac70018e9f7",
+  "tag_commit": "67a9e00efaf397a31669f65df7008f671d20e06a",
+  "container": {
+    "repository": "registry.hexalith.com/eventstore",
+    "tag": "3.75.0",
+    "digest": "sha256:1cb7b6ed3db986e9896cc36f360d14017f3bf3521eed8e33267c3dffd05ca253",
+    "raw_sha256": "1cb7b6ed3db986e9896cc36f360d14017f3bf3521eed8e33267c3dffd05ca253",
+    "media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "config_digest": "sha256:9623a1d61f39b21ab28948e903669a54b38ab500c190dc7e7c9889744209a6e9",
+    "platform": "linux/amd64",
+    "missing_platform": "linux/arm64",
+    "result": "failed-non-authorizing"
+  },
+  "packages": [
+    { "id": "Hexalith.EventStore.Contracts", "size": 143191, "sha256": "501485bacf3d76e847d1e162d6b51a72816a89ed2f167c56df19eb2c9eb96cf3" },
+    { "id": "Hexalith.EventStore.Client", "size": 146237, "sha256": "5e592616dd180c8cc8b51facc0eb2dc06d0a33b7c426a9f5d9012739d7d2eb23" },
+    { "id": "Hexalith.EventStore.Server", "size": 329419, "sha256": "a6510fb61cad2ab4d933d19d948cc5ca847edfc1e86bff342407bfb6d5acf8e3" },
+    { "id": "Hexalith.EventStore.SignalR", "size": 21155, "sha256": "85493eefbc9c0a302f8e6b956d0e0c942c97b74d23599492782530a105725a56" },
+    { "id": "Hexalith.EventStore.Testing", "size": 52308, "sha256": "9fd627c9cfc2114f058eeb63cfbea80735bef8b1a38771912b21af3eed476a49" },
+    { "id": "Hexalith.EventStore.Testing.Integration", "size": 63949, "sha256": "c9b7d6e19fa804a4e880ec1ac244fed41da576e0fac42552ea061bf5b50acbc4" },
+    { "id": "Hexalith.EventStore.Aspire", "size": 25663, "sha256": "cd7f42446536b47856e72429821ce53593e4601c16067c9d8ea3b6490b7329e1" },
+    { "id": "Hexalith.EventStore.ServiceDefaults", "size": 16207, "sha256": "823ebba8870caa13dd8b64801a759fd0a65ec6a2f19def60c94e592f247e8313" },
+    { "id": "Hexalith.EventStore.DomainService", "size": 51821, "sha256": "d41937ce8d9a4890d2e97a8e09d09b3c56cc46b24666216e26d6055296905050" },
+    { "id": "Hexalith.EventStore.RestApi.Generators", "size": 36992, "sha256": "e5fa1eb0bd09e2c2e2321781aca81e0dd9f846e00d349634b194f7f43eed77dc" },
+    { "id": "Hexalith.EventStore.Gateway", "size": 230221, "sha256": "3700b8cb46a34ed2f9d3f2664a571f07a5a1f70423df70967926cea86f39968c" },
+    { "id": "Hexalith.EventStore.Admin.Abstractions", "size": 111743, "sha256": "345fe452dda39fbc3513778936375da03b0be5c9ef2aee858f28deb1756b1be5" },
+    { "id": "Hexalith.EventStore.Admin.Cli", "size": 652071, "sha256": "fb2ac8c69da9790a9ff46237cb1db8958feaf04a59d340375094dc81ac503aad" },
+    { "id": "Hexalith.EventStore.Admin.Server", "size": 173425, "sha256": "e88f69d1bbd840ae9fa29bf710dcc71cc106c5cbc8101a59dc5552887c7a7a67" }
+  ]
+}
