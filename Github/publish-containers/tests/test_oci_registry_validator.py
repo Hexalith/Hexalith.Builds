@@ -1,9 +1,9 @@
 import hashlib
 import importlib.util
 import json
-import os
 import tempfile
 import unittest
+import urllib.request
 from pathlib import Path
 
 
@@ -51,7 +51,7 @@ def build_capture(root, mutation):
         config_body = compact_json(config)
         config_digest = digest(config_body)
         config_name = write_body(root, f"{architecture}-config.json", config_body)
-        objects[config_digest] = {"content_type": config_media_type, "body": config_name}
+        objects[config_digest] = {"content_type": "application/octet-stream", "body": config_name}
 
         config_size = len(config_body) + (1 if mutation == "config-size-mismatch" and architecture == "amd64" else 0)
         child = {
@@ -77,6 +77,8 @@ def build_capture(root, mutation):
             descriptor["platform"]["architecture"] = "amd64"
         if mutation == "unknown-platform" and architecture == "arm64":
             descriptor["platform"] = {"os": "unknown", "architecture": "unknown"}
+        if mutation == "blank-platform" and architecture == "arm64":
+            descriptor["platform"]["architecture"] = " "
         if mutation == "variant-platform" and architecture == "arm64":
             descriptor["platform"]["variant"] = "v8"
         descriptors.append(descriptor)
@@ -103,6 +105,8 @@ def build_capture(root, mutation):
 
     if mutation == "unresolved-child":
         objects.pop(descriptors[0]["digest"])
+    if mutation == "child-content-type-mismatch":
+        objects[descriptors[0]["digest"]]["content_type"] = "application/octet-stream"
     if mutation == "raw-digest-mismatch":
         original_digest = descriptors[0]["digest"]
         false_digest = "sha256:" + ("0" * 64)
@@ -133,7 +137,9 @@ def build_capture(root, mutation):
 
     capture = {
         "tag": {
-            "content_type": top_media_type,
+            "content_type": (
+                "application/octet-stream" if mutation == "index-content-type-mismatch" else top_media_type
+            ),
             "docker_content_digest": tag_digest,
             "body": tag_body_name,
         },
@@ -159,6 +165,24 @@ class OciRegistryValidatorTests(unittest.TestCase):
             evidence["container"]["digest"],
         )
 
+    def test_cross_origin_redirect_does_not_forward_registry_authorization(self):
+        request = urllib.request.Request(
+            "https://registry.example.test/v2/eventstore/blobs/sha256:abc",
+            headers={"Authorization": "Basic fixture-secret"},
+        )
+
+        redirected = self.validator.SafeRedirectHandler().redirect_request(
+            request,
+            None,
+            302,
+            "Found",
+            {},
+            "https://storage.example.test/signed-blob",
+        )
+
+        self.assertIsNotNone(redirected)
+        self.assertIsNone(redirected.get_header("Authorization"))
+
     def test_historical_single_manifest_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             capture_root = Path(temporary_directory)
@@ -167,10 +191,6 @@ class OciRegistryValidatorTests(unittest.TestCase):
                 self.validator.validate_capture(capture_root)
             self.assertEqual("wrong-index-media-type", context.exception.code)
 
-    @unittest.skipUnless(
-        os.environ.get("HEXALITH_VALIDATE_OCI_FULL_MATRIX") == "true",
-        "Task 4 full OCI validation matrix is not active yet.",
-    )
     def test_fixture_matrix(self):
         matrix = json.loads((FIXTURE_ROOT / "validation-cases.json").read_text(encoding="utf-8"))
         for case in matrix["cases"]:
@@ -185,6 +205,32 @@ class OciRegistryValidatorTests(unittest.TestCase):
                 with self.assertRaises(self.validator.ValidationError) as context:
                     self.validator.validate_capture(capture_root)
                 self.assertEqual(case["expected"], context.exception.code)
+
+    def test_pass_evidence_preserves_exact_index_bytes(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            capture_root = root / "capture"
+            evidence_root = root / "evidence"
+            capture_root.mkdir()
+            build_capture(capture_root, "none")
+
+            evidence = self.validator.validate_capture(capture_root)
+            expected_index = evidence["index_bytes"]
+            document = self.validator.write_evidence(
+                evidence_root,
+                "registry.example.test/eventstore:3.76.1",
+                evidence,
+            )
+
+            self.assertEqual(expected_index, (evidence_root / "index.raw").read_bytes())
+            self.assertEqual(
+                hashlib.sha256(expected_index).hexdigest(),
+                document["raw_index_sha256"],
+            )
+            self.assertEqual(
+                ["linux/amd64", "linux/arm64"],
+                document["platforms"],
+            )
 
 
 if __name__ == "__main__":

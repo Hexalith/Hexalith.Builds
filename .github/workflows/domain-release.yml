@@ -54,6 +54,16 @@ on:
         required: false
         type: string
         default: ''
+      builds-execution-sha:
+        description: 'Exact approved Hexalith.Builds commit resolved for the reusable workflow and nested publisher action.'
+        required: false
+        type: string
+        default: ''
+      release-authority-url:
+        description: 'Durable HTTPS source for the release-owner publication authority JSON.'
+        required: false
+        type: string
+        default: ''
     secrets:
       NUGET_API_KEY:
         required: true
@@ -150,11 +160,51 @@ jobs:
             TestResults/**/*.trx
             TestResults/**/coverage.cobertura.xml
           retention-days: 7
+      - name: Validate approved Builds execution identity
+        if: ${{ inputs.publish-containers }}
+        shell: bash
+        env:
+          BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          RELEASE_AUTHORITY_URL: ${{ inputs.release-authority-url }}
+          RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$BUILD_EXECUTION_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "builds-execution-sha must be an exact lowercase 40-character commit SHA." >&2
+            exit 1
+          fi
+          if [ "$RESOLVED_WORKFLOW_REPOSITORY" != "Hexalith/Hexalith.Builds" ]; then
+            echo "The release job is not defined by the approved Hexalith.Builds repository." >&2
+            exit 1
+          fi
+          if [ "$RESOLVED_WORKFLOW_SHA" != "$BUILD_EXECUTION_SHA" ]; then
+            echo "Resolved reusable-workflow SHA does not match the approved Builds identity." >&2
+            exit 1
+          fi
+          if [[ ! "$RELEASE_AUTHORITY_URL" =~ ^https:// ]]; then
+            echo "release-authority-url must be a durable HTTPS source." >&2
+            exit 1
+          fi
+      - name: Set up arm64 emulation
+        if: ${{ inputs.publish-containers }}
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
+        with:
+          platforms: arm64
+      - name: Checkout approved container publisher
+        if: ${{ inputs.publish-containers }}
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ inputs.builds-execution-sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
       - name: Prepare release container publisher
         if: ${{ inputs.publish-containers }}
-        uses: Hexalith/Hexalith.Builds/Github/publish-containers@main
+        uses: ./.hexalith/builds-execution/Github/publish-containers
         with:
           container-projects: ${{ inputs.container-projects }}
+          builds-execution-sha: ${{ inputs.builds-execution-sha }}
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -163,4 +213,6 @@ jobs:
           HEXALITH_ZOT_REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
           HEXALITH_ZOT_USERNAME: ${{ secrets.HEXALITH_ZOT_USERNAME }}
           HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}
+          HEXALITH_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          HEXALITH_RELEASE_AUTHORITY_URL: ${{ inputs.release-authority-url }}
         run: npx semantic-release

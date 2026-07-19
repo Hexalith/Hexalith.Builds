@@ -55,8 +55,8 @@ while IFS= read -r raw_line; do
   dotnet publish "$project" \
     --configuration Release \
     /t:PublishContainer \
-    -p:RuntimeIdentifiers="$runtime_identifiers" \
-    -p:ContainerRuntimeIdentifiers="$runtime_identifiers" \
+    "-p:RuntimeIdentifiers=\"$runtime_identifiers\"" \
+    "-p:ContainerRuntimeIdentifiers=\"$runtime_identifiers\"" \
     -p:ContainerImageFormat=OCI \
     -p:UseHexalithProjectReferences=false \
     -p:ContainerRegistry="$registry" \

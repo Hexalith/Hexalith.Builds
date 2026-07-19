@@ -73,6 +73,10 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -RequireControls
 
+    - name: Test multi-platform container publisher contracts
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-publish-containers.ps1
+
     - name: Create Release
       uses: ./Github/create-release
       env:

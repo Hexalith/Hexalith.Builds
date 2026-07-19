@@ -6,13 +6,16 @@
     { "name": "duplicate-platform", "mutation": "duplicate-platform", "expected": "duplicate-platform" },
     { "name": "extra-platform", "mutation": "extra-platform", "expected": "platform-set-mismatch" },
     { "name": "unknown-platform", "mutation": "unknown-platform", "expected": "unknown-platform" },
+    { "name": "blank-platform", "mutation": "blank-platform", "expected": "blank-platform" },
     { "name": "variant-platform", "mutation": "variant-platform", "expected": "variant-not-allowed" },
     { "name": "wrong-top-level-media-type", "mutation": "wrong-top-level-media-type", "expected": "wrong-index-media-type" },
+    { "name": "index-content-type-mismatch", "mutation": "index-content-type-mismatch", "expected": "content-type-mismatch" },
     { "name": "tag-digest-body-disagreement", "mutation": "tag-digest-body-disagreement", "expected": "tag-digest-body-mismatch" },
     { "name": "descriptor-size-mismatch", "mutation": "descriptor-size-mismatch", "expected": "child-size-mismatch" },
     { "name": "config-size-mismatch", "mutation": "config-size-mismatch", "expected": "config-size-mismatch" },
     { "name": "child-config-mismatch", "mutation": "child-config-mismatch", "expected": "config-platform-mismatch" },
     { "name": "unresolved-child", "mutation": "unresolved-child", "expected": "unresolved-child" },
+    { "name": "child-content-type-mismatch", "mutation": "child-content-type-mismatch", "expected": "child-content-type-mismatch" },
     { "name": "malformed-descriptor", "mutation": "malformed-descriptor", "expected": "malformed-descriptor" },
     { "name": "raw-digest-mismatch", "mutation": "raw-digest-mismatch", "expected": "child-digest-mismatch" }
   ]
