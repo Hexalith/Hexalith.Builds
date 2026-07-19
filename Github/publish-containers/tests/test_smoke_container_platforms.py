@@ -1,12 +1,19 @@
 import json
 import os
 import subprocess  # nosec B404 -- tests execute only repository-owned fixture scripts.
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(SCRIPT_DIRECTORY))
+
+import smoke_container_platforms as smoke_module  # noqa: E402
+
+
 SMOKE_HELPER = SCRIPT_DIRECTORY / "smoke-container-platforms.sh"
 AMD64_DIGEST = "sha256:" + ("a" * 64)
 ARM64_DIGEST = "sha256:" + ("b" * 64)
@@ -39,6 +46,10 @@ if [ "${1:-}" = run ]; then
     printf '%s\n' 'aarch64'
     exit 0
   fi
+  [[ " $* " == *" --env Authentication__JwtBearer__Issuer=hexalith-container-smoke "* ]] || exit 65
+  [[ " $* " == *" --env Authentication__JwtBearer__Audience=hexalith-eventstore "* ]] || exit 65
+  [[ " $* " == *" --env Authentication__JwtBearer__SigningKey=hexalith-container-smoke-only-key-not-a-secret "* ]] || exit 65
+  [[ " $* " == *" --env Authentication__JwtBearer__AllowInsecureSymmetricKey=true "* ]] || exit 65
   [ "$FAKE_START_PASS" = true ] || { printf '%s\n' 'fixture image start failed' >&2; exit 1; }
   printf '%s\n' 'fixture-container-id'
   exit 0
@@ -213,8 +224,37 @@ class SmokeContainerPlatformsTests(unittest.TestCase):
                 self.assertIn("must be greater than zero", result.stderr)
 
     def test_default_timeout_allows_bounded_emulated_startup(self):
-        source = (SCRIPT_DIRECTORY / "smoke_container_platforms.py").read_text(encoding="utf-8")
-        self.assertIn('DEFAULT_SMOKE_TIMEOUT_SECONDS = "180"', source)
+        captured = {}
+
+        def capture_run(image, evidence_directory, timeout_seconds, interval_seconds):
+            captured.update(
+                {
+                    "image": image,
+                    "evidence_directory": evidence_directory,
+                    "timeout_seconds": timeout_seconds,
+                    "interval_seconds": interval_seconds,
+                }
+            )
+            return {"result": "pass"}
+
+        with patch.dict(os.environ, {"HEXALITH_CONTAINER_SMOKE_INTERVAL_SECONDS": "0.05"}):
+            os.environ.pop("HEXALITH_CONTAINER_SMOKE_TIMEOUT_SECONDS", None)
+            with patch.object(smoke_module, "run_smoke", side_effect=capture_run):
+                with patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "smoke_container_platforms.py",
+                        "--image",
+                        "registry.example.test/eventstore:3.76.1",
+                        "--evidence-directory",
+                        ".hexalith/release-evidence",
+                    ],
+                ):
+                    self.assertEqual(0, smoke_module.main())
+
+        self.assertEqual(180.0, captured["timeout_seconds"])
+        self.assertEqual(0.05, captured["interval_seconds"])
 
 
 if __name__ == "__main__":
