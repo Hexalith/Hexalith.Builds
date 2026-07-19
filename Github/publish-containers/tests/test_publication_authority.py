@@ -1,6 +1,7 @@
 import hashlib
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 import urllib.request
@@ -12,6 +13,7 @@ SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
 VALIDATOR_PATH = SCRIPT_DIRECTORY / "publication_authority.py"
 BUILDS_SHA = "c" * 40
 SOURCE_SHA = "d" * 40
+sys.path.insert(0, str(SCRIPT_DIRECTORY))
 
 
 def load_validator():

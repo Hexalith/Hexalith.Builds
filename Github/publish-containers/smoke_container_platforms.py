@@ -11,10 +11,20 @@ import sys
 import time
 from pathlib import Path
 
+from oci_registry_validator import (
+    ValidationError,
+    _parse_image,
+    validated_image_reference,
+    workspace_output_directory,
+)
+
 
 REQUIRED_PLATFORMS = ("linux/amd64", "linux/arm64")
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 EMULATION_FAILURE_PATTERN = re.compile(r"exec format|qemu|binfmt", re.IGNORECASE)
+SAFE_COMMAND_ARGUMENT_PATTERN = re.compile(r"^[A-Za-z0-9_./:@+=,-]+$")
+EMULATION_SETUP_FAILURE = "environment/emulation-setup-failure"
+SMOKE_EXECUTABLES = {"curl", "docker"}
 
 
 class SmokeFailure(Exception):
@@ -22,6 +32,16 @@ class SmokeFailure(Exception):
 
 
 def _run(command, timeout=30):
+    if (
+        not isinstance(command, (list, tuple))
+        or not command
+        or command[0] not in SMOKE_EXECUTABLES
+        or any(
+            not isinstance(argument, str) or SAFE_COMMAND_ARGUMENT_PATTERN.fullmatch(argument) is None
+            for argument in command
+        )
+    ):
+        raise SmokeFailure("Smoke command contains an unsupported argument.")
     try:
         return subprocess.run(
             command,
@@ -62,11 +82,11 @@ def _load_children(evidence_directory):
 
 
 def _repository_without_tag(image):
-    last_slash = image.rfind("/")
-    last_colon = image.rfind(":")
-    if last_slash < 1 or last_colon <= last_slash + 1 or "@" in image[last_slash + 1 :]:
-        raise SmokeFailure("Image must include registry, repository, and mutable tag.")
-    return image[:last_colon]
+    try:
+        registry, repository, _ = _parse_image(image)
+    except ValidationError as error:
+        raise SmokeFailure("Image must include registry, repository, and mutable tag.") from error
+    return f"{registry}/{repository}"
 
 
 def _write_log(evidence_directory, name, lines):
@@ -91,7 +111,7 @@ def _preflight(evidence_directory):
     except SmokeFailure:
         result = None
     passed = result is not None and result.returncode == 0 and "linux/arm64" in result.stdout
-    outcome = "pass" if passed else "environment/emulation-setup-failure"
+    outcome = "pass" if passed else EMULATION_SETUP_FAILURE
     log_path = _write_log(
         evidence_directory,
         "smoke-preflight.log",
@@ -127,7 +147,7 @@ def _smoke_platform(repository, platform, digest, evidence_directory, timeout_se
         )
         if start.returncode != 0:
             if EMULATION_FAILURE_PATTERN.search(start.stderr or "") is not None:
-                outcome = "environment/emulation-setup-failure"
+                outcome = EMULATION_SETUP_FAILURE
             log_lines.append(f"outcome={outcome}")
             return outcome, _write_log(evidence_directory, f"smoke-linux-{architecture}.log", log_lines)
 
@@ -172,7 +192,7 @@ def run_smoke(image, evidence_directory, timeout_seconds, interval_seconds):
     preflight_passed, preflight_log = _preflight(evidence_directory)
     if not preflight_passed:
         summary = {
-            "result": "environment/emulation-setup-failure",
+            "result": EMULATION_SETUP_FAILURE,
             "image_repository": repository,
             "platforms": [],
         }
@@ -218,8 +238,8 @@ def _positive_number(value, name):
 
 def main():
     parser = argparse.ArgumentParser(description="Smoke both immutable OCI child digests.")
-    parser.add_argument("--image", required=True)
-    parser.add_argument("--evidence-directory", required=True)
+    parser.add_argument("--image", required=True, type=validated_image_reference)
+    parser.add_argument("--evidence-directory", required=True, type=workspace_output_directory)
     arguments = parser.parse_args()
     try:
         timeout_seconds = _positive_number(

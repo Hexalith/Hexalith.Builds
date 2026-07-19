@@ -1,3 +1,4 @@
+import argparse
 import hashlib
 import importlib.util
 import json
@@ -5,6 +6,7 @@ import tempfile
 import unittest
 import urllib.request
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
@@ -182,6 +184,19 @@ class OciRegistryValidatorTests(unittest.TestCase):
 
         self.assertIsNotNone(redirected)
         self.assertIsNone(redirected.get_header("Authorization"))
+
+    def test_cli_inputs_reject_path_escape_and_option_shaped_image(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            with mock.patch.object(Path, "cwd", return_value=root):
+                evidence = self.validator.workspace_output_directory(str(root / "evidence"))
+                self.assertEqual(root / "evidence", evidence)
+                with self.assertRaises(argparse.ArgumentTypeError):
+                    self.validator.workspace_output_directory(str(root.parent / "escape"))
+
+        with self.assertRaises(self.validator.ValidationError) as context:
+            self.validator.validated_image_reference("--config=/tmp/host/eventstore:3.78.0")
+        self.assertEqual("invalid-image-reference", context.exception.code)
 
     def test_historical_single_manifest_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

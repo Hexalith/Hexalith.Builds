@@ -31,6 +31,10 @@ MANIFEST_ACCEPT = ", ".join(
     )
 )
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+REGISTRY_PATTERN = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)*(?::[1-9][0-9]{0,4})?$")
+REPOSITORY_PATTERN = re.compile(r"^[a-z0-9]+(?:[._/-][a-z0-9]+)*$")
+TAG_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", re.ASCII)
+REGISTRY_OBJECT_UNRESOLVED = "Registry object could not be resolved."
 
 
 def _origin(url):
@@ -93,16 +97,54 @@ def _parse_json(body, code, subject):
     return value
 
 
+def _workspace_path(value, *, must_exist, expected_kind):
+    if not isinstance(value, str) or not value or "\0" in value:
+        raise argparse.ArgumentTypeError("Workspace path must be a nonblank string.")
+    try:
+        workspace = Path.cwd().resolve(strict=True)
+        candidate = Path(value)
+        if not candidate.is_absolute():
+            candidate = workspace / candidate
+        resolved = candidate.resolve(strict=must_exist)
+    except OSError as error:
+        raise argparse.ArgumentTypeError("Workspace path could not be resolved.") from error
+    if resolved == workspace or not resolved.is_relative_to(workspace):
+        raise argparse.ArgumentTypeError("Path must resolve below the current workspace.")
+    if expected_kind == "file" and not resolved.is_file():
+        raise argparse.ArgumentTypeError("Workspace file does not exist.")
+    if expected_kind == "directory" and not resolved.is_dir():
+        raise argparse.ArgumentTypeError("Workspace directory does not exist.")
+    return resolved
+
+
+def workspace_input_file(value):
+    """Resolve an existing CLI file below the current workspace."""
+
+    return _workspace_path(value, must_exist=True, expected_kind="file")
+
+
+def workspace_input_directory(value):
+    """Resolve an existing CLI directory below the current workspace."""
+
+    return _workspace_path(value, must_exist=True, expected_kind="directory")
+
+
+def workspace_output_directory(value):
+    """Resolve a CLI output directory below the current workspace."""
+
+    return _workspace_path(value, must_exist=False, expected_kind="output")
+
+
 def _read_body(capture_root, response, unresolved_code):
     if not isinstance(response, dict):
-        _fail(unresolved_code, "Registry object could not be resolved.")
+        _fail(unresolved_code, REGISTRY_OBJECT_UNRESOLVED)
     body_name = response.get("body")
     if not isinstance(body_name, str) or not body_name:
         _fail("malformed-response", "Registry capture response has no body path.")
     try:
         return (capture_root / body_name).read_bytes()
     except OSError as error:
-        raise ValidationError(unresolved_code, "Registry object could not be resolved.") from error
+        raise ValidationError(unresolved_code, REGISTRY_OBJECT_UNRESOLVED) from error
 
 
 def _validate_digest(value, code="malformed-descriptor"):
@@ -158,30 +200,31 @@ def _validate_index(tag_response, immutable_response, tag_body, immutable_body):
     return reported_digest, index, descriptors
 
 
+def _descriptor_platform(descriptor):
+    if not isinstance(descriptor, dict):
+        _fail("malformed-descriptor", "Index descriptor must be an object.")
+    _validate_digest(descriptor.get("digest"))
+    _validate_size(descriptor.get("size"))
+    if descriptor.get("mediaType") not in CHILD_MANIFEST_MEDIA_TYPES:
+        _fail("unsupported-child-media-type", "Child descriptor media type is not recognized.")
+    platform = descriptor.get("platform")
+    if not isinstance(platform, dict):
+        _fail("malformed-descriptor", "Child descriptor platform must be an object.")
+    os_name = platform.get("os")
+    architecture = platform.get("architecture")
+    if not isinstance(os_name, str) or not os_name.strip():
+        _fail("blank-platform", "Child descriptor OS is blank.")
+    if not isinstance(architecture, str) or not architecture.strip():
+        _fail("blank-platform", "Child descriptor architecture is blank.")
+    if os_name == "unknown" or architecture == "unknown":
+        _fail("unknown-platform", "Unknown platform descriptors are not allowed.")
+    if platform.get("variant") not in (None, ""):
+        _fail("variant-not-allowed", "Platform variants are not allowed.")
+    return f"{os_name}/{architecture}"
+
+
 def _validate_platforms(descriptors):
-    platforms = []
-    for descriptor in descriptors:
-        if not isinstance(descriptor, dict):
-            _fail("malformed-descriptor", "Index descriptor must be an object.")
-        _validate_digest(descriptor.get("digest"))
-        _validate_size(descriptor.get("size"))
-        if descriptor.get("mediaType") not in CHILD_MANIFEST_MEDIA_TYPES:
-            _fail("unsupported-child-media-type", "Child descriptor media type is not recognized.")
-        platform = descriptor.get("platform")
-        if not isinstance(platform, dict):
-            _fail("malformed-descriptor", "Child descriptor platform must be an object.")
-        os_name = platform.get("os")
-        architecture = platform.get("architecture")
-        if not isinstance(os_name, str) or not os_name.strip():
-            _fail("blank-platform", "Child descriptor OS is blank.")
-        if not isinstance(architecture, str) or not architecture.strip():
-            _fail("blank-platform", "Child descriptor architecture is blank.")
-        if os_name == "unknown" or architecture == "unknown":
-            _fail("unknown-platform", "Unknown platform descriptors are not allowed.")
-        variant = platform.get("variant")
-        if variant not in (None, ""):
-            _fail("variant-not-allowed", "Platform variants are not allowed.")
-        platforms.append(f"{os_name}/{architecture}")
+    platforms = [_descriptor_platform(descriptor) for descriptor in descriptors]
 
     if len(set(platforms)) != len(platforms):
         _fail("duplicate-platform", "Duplicate platform descriptors are not allowed.")
@@ -246,7 +289,7 @@ def _validate_graph(tag_response, immutable_resolver, child_resolver, config_res
         tag_body,
         immutable_body,
     )
-    platforms = _validate_platforms(descriptors)
+    _validate_platforms(descriptors)
     children = []
     for descriptor in descriptors:
         child_response = child_resolver(descriptor["digest"])
@@ -331,8 +374,8 @@ class RegistryClient:
                     "docker_content_digest": response.headers.get("Docker-Content-Digest"),
                     "body_bytes": response.read(),
                 }
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as error:
-            raise ValidationError(unresolved_code, "Registry object could not be resolved.") from error
+        except (urllib.error.URLError, TimeoutError) as error:
+            raise ValidationError(unresolved_code, REGISTRY_OBJECT_UNRESOLVED) from error
 
     def manifest(self, reference, unresolved_code):
         encoded_reference = urllib.parse.quote(reference, safe=":")
@@ -344,13 +387,25 @@ class RegistryClient:
 
 
 def _parse_image(image):
-    if not isinstance(image, str) or "/" not in image:
+    if not isinstance(image, str) or "/" not in image or len(image) > 255:
         _fail("invalid-image-reference", "Image must include registry, repository, and tag.")
     registry, remainder = image.split("/", 1)
     repository, separator, tag = remainder.rpartition(":")
-    if not registry or not separator or not repository or not tag or "@" in tag:
+    if (
+        not separator
+        or REGISTRY_PATTERN.fullmatch(registry) is None
+        or REPOSITORY_PATTERN.fullmatch(repository) is None
+        or TAG_PATTERN.fullmatch(tag) is None
+    ):
         _fail("invalid-image-reference", "Image must use a mutable tag for initial resolution.")
     return registry, repository, tag
+
+
+def validated_image_reference(value):
+    """Validate a CLI image reference without changing its value."""
+
+    _parse_image(value)
+    return value
 
 
 def validate_registry(image, username, api_key):
@@ -391,8 +446,8 @@ def write_evidence(evidence_directory, image, evidence):
 
 def main():
     parser = argparse.ArgumentParser(description="Validate an exact two-platform OCI index.")
-    parser.add_argument("--image", required=True)
-    parser.add_argument("--evidence-directory", required=True)
+    parser.add_argument("--image", required=True, type=validated_image_reference)
+    parser.add_argument("--evidence-directory", required=True, type=workspace_output_directory)
     arguments = parser.parse_args()
     try:
         evidence = validate_registry(

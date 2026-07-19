@@ -14,6 +14,13 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+from oci_registry_validator import (
+    SafeRedirectHandler,
+    workspace_input_directory,
+    workspace_input_file,
+    workspace_output_directory,
+)
+
 
 AUTHORITY_SCHEMA = "hexalith.release-publication-authority.v1"
 REQUIRED_OWNER_ROLE = "EventStore release owner"
@@ -27,32 +34,8 @@ REQUIRED_CONTRACT_FILES = (
 )
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
-SEMVER_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$")
-
-
-def _origin(url):
-    parsed = urllib.parse.urlsplit(url)
-    port = parsed.port
-    if port is None:
-        port = 443 if parsed.scheme.lower() == "https" else 80
-    return parsed.scheme.lower(), (parsed.hostname or "").lower(), port
-
-
-class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """Follow redirects without forwarding credentials to another origin."""
-
-    def redirect_request(self, request, file_pointer, code, message, headers, new_url):
-        redirected = super().redirect_request(
-            request,
-            file_pointer,
-            code,
-            message,
-            headers,
-            new_url,
-        )
-        if redirected is not None and _origin(request.full_url) != _origin(new_url):
-            redirected.remove_header("Authorization")
-        return redirected
+SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", re.ASCII)
+UTC_OFFSET = "+00:00"
 
 
 URL_OPENER = urllib.request.build_opener(SafeRedirectHandler())
@@ -96,7 +79,7 @@ def _parse_timestamp(value, field):
     if not isinstance(value, str) or not value.endswith("Z"):
         _fail("malformed-authority", f"Authority {field} must be a UTC timestamp.")
     try:
-        parsed = datetime.fromisoformat(value[:-1] + "+00:00")
+        parsed = datetime.fromisoformat(value[:-1] + UTC_OFFSET)
     except ValueError as error:
         raise AuthorityError("malformed-authority", f"Authority {field} is invalid.") from error
     return parsed
@@ -108,13 +91,7 @@ def _require_nonblank(value, code, field):
     return value
 
 
-def validate_authority_bytes(raw, expected, checked_at):
-    """Validate immutable authority bytes against the exact release contract."""
-
-    if checked_at.tzinfo is None or checked_at.utcoffset() is None:
-        _fail("invalid-checked-at", "Authority checked-at timestamp must be timezone-aware.")
-    checked_at = checked_at.astimezone(timezone.utc)
-    authority = _parse_json_unique(raw)
+def _validate_release_identity(authority, expected):
     if authority.get("schema") != AUTHORITY_SCHEMA or authority.get("decision") != "authorized":
         _fail("malformed-authority", "Authority schema or decision is invalid.")
     if authority.get("repository") != expected["repository"]:
@@ -133,6 +110,10 @@ def validate_authority_bytes(raw, expected, checked_at):
     builds_sha = expected["builds_execution_sha"]
     if not isinstance(builds_sha, str) or SHA_PATTERN.fullmatch(builds_sha) is None:
         _fail("builds-identity-mismatch", "Expected Builds execution SHA is invalid.")
+    return builds_sha
+
+
+def _validate_builds_identity(authority, expected, builds_sha):
     builds = authority.get("builds")
     if not isinstance(builds, dict):
         _fail("builds-identity-mismatch", "Authority Builds identity is missing.")
@@ -153,7 +134,10 @@ def validate_authority_bytes(raw, expected, checked_at):
         if actual_hash != approved_hash:
             _fail("approved-file-mismatch", "Installed contract bytes do not match authority.")
         actual_hashes[name] = actual_hash
+    return actual_hashes
 
+
+def _validate_owner_window(authority, checked_at):
     owner = authority.get("owner")
     if not isinstance(owner, dict) or owner.get("role") != REQUIRED_OWNER_ROLE:
         _fail("wrong-owner-role", "Authority owner role is not EventStore release owner.")
@@ -165,8 +149,21 @@ def validate_authority_bytes(raw, expected, checked_at):
         _fail("authority-not-yet-valid", "Authority is not valid at the action-time timestamp.")
     if checked_at >= expires_at or expires_at <= authorized_at:
         _fail("expired-authority", "Authority is expired at the action-time timestamp.")
+    return owner_name
 
-    checked_at_text = checked_at.isoformat().replace("+00:00", "Z")
+
+def validate_authority_bytes(raw, expected, checked_at):
+    """Validate immutable authority bytes against the exact release contract."""
+
+    if checked_at.tzinfo is None or checked_at.utcoffset() is None:
+        _fail("invalid-checked-at", "Authority checked-at timestamp must be timezone-aware.")
+    checked_at = checked_at.astimezone(timezone.utc)
+    authority = _parse_json_unique(raw)
+    builds_sha = _validate_release_identity(authority, expected)
+    actual_hashes = _validate_builds_identity(authority, expected, builds_sha)
+    owner_name = _validate_owner_window(authority, checked_at)
+
+    checked_at_text = checked_at.isoformat().replace(UTC_OFFSET, "Z")
     return {
         "result": "pass",
         "authority_sha256": _sha256_bytes(raw),
@@ -273,12 +270,12 @@ def _load_authority_url(url, github_token):
                 _fail("malformed-authority", "Authority record exceeds the size limit.")
             metadata = {
                 "source_url": url,
-                "retrieved_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "retrieved_at": datetime.now(timezone.utc).isoformat().replace(UTC_OFFSET, "Z"),
                 "etag": response.headers.get("ETag"),
                 "last_modified": response.headers.get("Last-Modified"),
             }
             return raw, metadata
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as error:
+    except (urllib.error.URLError, TimeoutError) as error:
         raise AuthorityError("authority-source-unavailable", "Authority source could not be loaded.") from error
 
 
@@ -325,12 +322,12 @@ def main():
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--container-repository", required=True)
     parser.add_argument("--builds-execution-sha", required=True)
-    parser.add_argument("--package-manifest", required=True)
-    parser.add_argument("--contract-directory", required=True)
-    parser.add_argument("--evidence-directory", required=True)
+    parser.add_argument("--package-manifest", required=True, type=workspace_input_file)
+    parser.add_argument("--contract-directory", required=True, type=workspace_input_directory)
+    parser.add_argument("--evidence-directory", required=True, type=workspace_output_directory)
     arguments = parser.parse_args()
     checked_at = datetime.now(timezone.utc)
-    contract_directory = Path(arguments.contract_directory)
+    contract_directory = arguments.contract_directory
     expected = {
         "repository": arguments.repository,
         "version": arguments.version,

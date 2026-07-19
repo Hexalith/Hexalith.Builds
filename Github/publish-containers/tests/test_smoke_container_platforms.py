@@ -93,6 +93,7 @@ printf '%s\n' 'Healthy'
                 str(evidence),
             ],
             env=environment,
+            cwd=root,
             capture_output=True,
             text=True,
             check=False,
