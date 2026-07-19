@@ -1,6 +1,6 @@
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404 -- tests execute only repository-owned fixture scripts.
 import tempfile
 import unittest
 from pathlib import Path
@@ -33,6 +33,43 @@ def extract_run_block(path, step_name):
             break
         block.append(line[run_indent + 2 :] if line.strip() else "")
     return "\n".join(block) + "\n"
+
+
+def create_action_mismatch_fixture(root):
+    approved = root / "approved"
+    action_path = root / "action"
+    fake_bin = root / "bin"
+    approved.mkdir()
+    fake_bin.mkdir()
+    files = (
+        "action.yml",
+        "publish-containers.sh",
+        "oci_registry_validator.py",
+        "publication_authority.py",
+        "smoke-container-platforms.sh",
+        "smoke_container_platforms.py",
+    )
+    for name in files:
+        shutil.copy2(SCRIPT_DIRECTORY / name, approved / name)
+    shutil.copytree(approved, action_path)
+    (action_path / "publish-containers.sh").write_text("changed bytes\n", encoding="utf-8")
+    write_executable(
+        fake_bin / "curl",
+        """#!/usr/bin/env bash
+set -euo pipefail
+output=''
+source_url=''
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --output) shift; output="$1" ;;
+    https://*) source_url="$1" ;;
+  esac
+  shift
+done
+cp "$FAKE_APPROVED/$(basename "$source_url")" "$output"
+""",
+    )
+    return approved, action_path, fake_bin
 
 
 class PublishScriptContractTests(unittest.TestCase):
@@ -120,7 +157,7 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertIn("- name: Upload complete release evidence", workflow)
         self.assertIn("if: ${{ always() && inputs.publish-containers }}", workflow)
 
-    def test_workflow_sha_and_action_byte_mismatches_fail_behaviorally(self):
+    def test_workflow_sha_mismatch_fails_behaviorally(self):
         identity_script = extract_run_block(DOMAIN_RELEASE, "Validate approved Builds execution identity")
         identity_environment = os.environ.copy()
         identity_environment.update(
@@ -132,7 +169,7 @@ class PublishScriptContractTests(unittest.TestCase):
                 "RESOLVED_WORKFLOW_SHA": "b" * 40,
             }
         )
-        identity_result = subprocess.run(  # NOSONAR -- executes a repository-owned fixture script.
+        identity_result = subprocess.run(  # nosec B603  # NOSONAR -- repository-owned fixture script.
             ["bash", "-c", identity_script],
             env=identity_environment,
             capture_output=True,
@@ -142,41 +179,10 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertNotEqual(0, identity_result.returncode)
         self.assertIn("does not match", identity_result.stderr)
 
+    def test_action_byte_mismatch_fails_behaviorally(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            approved = root / "approved"
-            action_path = root / "action"
-            fake_bin = root / "bin"
-            approved.mkdir()
-            fake_bin.mkdir()
-            files = (
-                "action.yml",
-                "publish-containers.sh",
-                "oci_registry_validator.py",
-                "publication_authority.py",
-                "smoke-container-platforms.sh",
-                "smoke_container_platforms.py",
-            )
-            for name in files:
-                shutil.copy2(SCRIPT_DIRECTORY / name, approved / name)
-            shutil.copytree(approved, action_path)
-            (action_path / "publish-containers.sh").write_text("changed bytes\n", encoding="utf-8")
-            write_executable(
-                fake_bin / "curl",
-                """#!/usr/bin/env bash
-set -euo pipefail
-output=''
-source_url=''
-while [ "$#" -gt 0 ]; do
-  case "$1" in
-    --output) shift; output="$1" ;;
-    https://*) source_url="$1" ;;
-  esac
-  shift
-done
-cp "$FAKE_APPROVED/$(basename "$source_url")" "$output"
-""",
-            )
+            approved, action_path, fake_bin = create_action_mismatch_fixture(root)
             action_environment = os.environ.copy()
             action_environment.update(
                 {
@@ -187,7 +193,7 @@ cp "$FAKE_APPROVED/$(basename "$source_url")" "$output"
                     "FAKE_APPROVED": str(approved),
                 }
             )
-            action_result = subprocess.run(  # NOSONAR -- executes a repository-owned fixture script.
+            action_result = subprocess.run(  # nosec B603  # NOSONAR -- repository-owned fixture script.
                 ["bash", "-c", extract_run_block(ACTION, "Install container publish helper")],
                 cwd=root,
                 env=action_environment,

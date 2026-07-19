@@ -1,6 +1,6 @@
 import json
 import os
-import subprocess
+import subprocess  # nosec B404 -- tests execute only repository-owned fixture scripts.
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,50 +10,17 @@ SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
 SMOKE_HELPER = SCRIPT_DIRECTORY / "smoke-container-platforms.sh"
 AMD64_DIGEST = "sha256:" + ("a" * 64)
 ARM64_DIGEST = "sha256:" + ("b" * 64)
-
-
-def write_executable(path, content):
-    path.write_text(content, encoding="utf-8")
-    path.chmod(0o755)
-
-
-class SmokeContainerPlatformsTests(unittest.TestCase):
-    def run_smoke(
-        self,
-        *,
-        preflight_pass=True,
-        runtime_emulation_pass=True,
-        pull_pass=True,
-        start_pass=True,
-        liveness_status="200",
-        container_state="running|0",
-        cleanup_pass=True,
-        timeout_value="0.25",
-    ):
-        temporary_directory = tempfile.TemporaryDirectory()
-        self.addCleanup(temporary_directory.cleanup)
-        root = Path(temporary_directory.name)
-        evidence = root / "evidence"
-        evidence.mkdir()
-        (evidence / "oci-validation.json").write_text(
-            json.dumps(
-                {
-                    "result": "pass",
-                    "platforms": ["linux/amd64", "linux/arm64"],
-                    "children": [
-                        {"platform": "linux/amd64", "digest": AMD64_DIGEST},
-                        {"platform": "linux/arm64", "digest": ARM64_DIGEST},
-                    ],
-                }
-            ),
-            encoding="utf-8",
-        )
-        fake_bin = root / "bin"
-        fake_bin.mkdir()
-        docker_log = root / "docker.log"
-        write_executable(
-            fake_bin / "docker",
-            """#!/usr/bin/env bash
+DEFAULT_SETTINGS = {
+    "preflight_pass": True,
+    "runtime_emulation_pass": True,
+    "pull_pass": True,
+    "start_pass": True,
+    "liveness_status": "200",
+    "container_state": "running|0",
+    "cleanup_pass": True,
+    "timeout_value": "0.25",
+}
+DOCKER_FIXTURE = """#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\t' "$@" >> "$FAKE_DOCKER_LOG"
 printf '\n' >> "$FAKE_DOCKER_LOG"
@@ -76,53 +43,79 @@ if [ "${1:-}" = run ]; then
   printf '%s\n' 'fixture-container-id'
   exit 0
 fi
-if [ "${1:-}" = port ]; then
-  printf '%s\n' '127.0.0.1:43123'
-  exit 0
-fi
-if [ "${1:-}" = inspect ]; then
-  printf '%s\n' "$FAKE_CONTAINER_STATE"
-  exit 0
-fi
-if [ "${1:-}" = logs ]; then
-  printf '%s\n' 'bounded fixture diagnostic'
-  exit 0
-fi
-if [ "${1:-}" = rm ]; then
-  [ "$FAKE_CLEANUP_PASS" = true ] || exit 1
-  exit 0
-fi
+if [ "${1:-}" = port ]; then printf '%s\n' '127.0.0.1:43123'; exit 0; fi
+if [ "${1:-}" = inspect ]; then printf '%s\n' "$FAKE_CONTAINER_STATE"; exit 0; fi
+if [ "${1:-}" = logs ]; then printf '%s\n' 'bounded fixture diagnostic'; exit 0; fi
+if [ "${1:-}" = rm ]; then [ "$FAKE_CLEANUP_PASS" = true ] || exit 1; exit 0; fi
 exit 0
-""",
-        )
-        write_executable(
-            fake_bin / "curl",
-            """#!/usr/bin/env bash
+"""
+CURL_FIXTURE = """#!/usr/bin/env bash
 set -euo pipefail
 [ "${*: -1}" = "http://127.0.0.1:43123/alive" ] || exit 64
 [[ " $* " != *" --location "* ]] || exit 64
 [[ " $* " == *" --output /dev/null "* ]] || exit 64
 [[ " $* " == *" --write-out %{http_code} "* ]] || exit 64
 printf '%s' "$FAKE_LIVENESS_STATUS"
-""",
-        )
-        environment = os.environ.copy()
-        environment.update(
+"""
+
+
+def write_executable(path, content):
+    path.write_text(content, encoding="utf-8")
+    path.chmod(0o755)
+
+
+def write_oci_evidence(evidence):
+    (evidence / "oci-validation.json").write_text(
+        json.dumps(
             {
-                "PATH": f"{fake_bin}:{environment['PATH']}",
-                "FAKE_DOCKER_LOG": str(docker_log),
-                "FAKE_PREFLIGHT_PASS": str(preflight_pass).lower(),
-                "FAKE_RUNTIME_EMULATION_PASS": str(runtime_emulation_pass).lower(),
-                "FAKE_PULL_PASS": str(pull_pass).lower(),
-                "FAKE_START_PASS": str(start_pass).lower(),
-                "FAKE_LIVENESS_STATUS": liveness_status,
-                "FAKE_CONTAINER_STATE": container_state,
-                "FAKE_CLEANUP_PASS": str(cleanup_pass).lower(),
-                "HEXALITH_CONTAINER_SMOKE_TIMEOUT_SECONDS": timeout_value,
-                "HEXALITH_CONTAINER_SMOKE_INTERVAL_SECONDS": "0.05",
+                "result": "pass",
+                "platforms": ["linux/amd64", "linux/arm64"],
+                "children": [
+                    {"platform": "linux/amd64", "digest": AMD64_DIGEST},
+                    {"platform": "linux/arm64", "digest": ARM64_DIGEST},
+                ],
             }
-        )
-        result = subprocess.run(
+        ),
+        encoding="utf-8",
+    )
+
+
+def smoke_environment(fake_bin, docker_log, settings):
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "PATH": f"{fake_bin}:{environment['PATH']}",
+            "FAKE_DOCKER_LOG": str(docker_log),
+            "FAKE_PREFLIGHT_PASS": str(settings["preflight_pass"]).lower(),
+            "FAKE_RUNTIME_EMULATION_PASS": str(settings["runtime_emulation_pass"]).lower(),
+            "FAKE_PULL_PASS": str(settings["pull_pass"]).lower(),
+            "FAKE_START_PASS": str(settings["start_pass"]).lower(),
+            "FAKE_LIVENESS_STATUS": settings["liveness_status"],
+            "FAKE_CONTAINER_STATE": settings["container_state"],
+            "FAKE_CLEANUP_PASS": str(settings["cleanup_pass"]).lower(),
+            "HEXALITH_CONTAINER_SMOKE_TIMEOUT_SECONDS": settings["timeout_value"],
+            "HEXALITH_CONTAINER_SMOKE_INTERVAL_SECONDS": "0.05",
+        }
+    )
+    return environment
+
+
+class SmokeContainerPlatformsTests(unittest.TestCase):
+    def run_smoke(self, **overrides):
+        settings = {**DEFAULT_SETTINGS, **overrides}
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        root = Path(temporary_directory.name)
+        evidence = root / "evidence"
+        evidence.mkdir()
+        write_oci_evidence(evidence)
+        fake_bin = root / "bin"
+        fake_bin.mkdir()
+        docker_log = root / "docker.log"
+        write_executable(fake_bin / "docker", DOCKER_FIXTURE)
+        write_executable(fake_bin / "curl", CURL_FIXTURE)
+        environment = smoke_environment(fake_bin, docker_log, settings)
+        result = subprocess.run(  # nosec B603 -- repository-owned fixture script and fixed arguments.
             [
                 "bash",
                 str(SMOKE_HELPER),

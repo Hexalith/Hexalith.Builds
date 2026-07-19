@@ -7,7 +7,7 @@ import json
 import math
 import os
 import re
-import subprocess
+import subprocess  # nosec B404 -- commands are validated against strict executable and argument allowlists.
 import sys
 import time
 from pathlib import Path
@@ -38,6 +38,7 @@ DIAGNOSTIC_LIMIT = 2048
 
 
 class SmokeFailure(Exception):
+
     """A support-safe smoke orchestration failure."""
 
 
@@ -53,7 +54,7 @@ def _run(command, timeout=30):
     ):
         raise SmokeFailure("Smoke command contains an unsupported argument.")
     try:
-        return subprocess.run(
+        return subprocess.run(  # nosec B603 -- every command and argument passed the allowlists above.
             command,
             capture_output=True,
             text=True,
@@ -313,7 +314,6 @@ def _smoke_platform(repository, platform, digest, evidence_directory, timeout_se
 
 def run_smoke(image, evidence_directory, timeout_seconds, interval_seconds):
     """Run the preflight and both digest-pinned platform smokes."""
-
     evidence_directory = Path(evidence_directory)
     workspace_make_directory(evidence_directory)
     children = _load_children(evidence_directory)

@@ -56,9 +56,11 @@ URL_OPENER = urllib.request.build_opener(SafeRedirectHandler())
 
 
 class AuthorityError(Exception):
+
     """A deterministic, support-safe authority preflight failure."""
 
     def __init__(self, code, message):
+        """Initialize a categorized authority failure."""
         super().__init__(message)
         self.code = code
 
@@ -170,7 +172,6 @@ def _validate_owner_window(authority, expected, checked_at):
 
 def validate_authority_bytes(raw, expected, checked_at):
     """Validate immutable authority bytes against the exact release contract."""
-
     if checked_at.tzinfo is None or checked_at.utcoffset() is None:
         _fail("invalid-checked-at", "Authority checked-at timestamp must be timezone-aware.")
     checked_at = checked_at.astimezone(timezone.utc)
@@ -199,7 +200,6 @@ def validate_authority_bytes(raw, expected, checked_at):
 
 def validate_destination_absence(package_ids, version, container_repository, probe):
     """Require exactly 14 new package IDs and one new container tag to be absent."""
-
     if len(package_ids) != 14 or len(set(package_ids)) != 14:
         _fail("package-inventory-mismatch", "Release package inventory must contain exactly 14 unique IDs.")
     if not isinstance(version, str) or SEMVER_PATTERN.fullmatch(version) is None:
@@ -227,7 +227,6 @@ def validate_destination_absence(package_ids, version, container_repository, pro
 
 def validate_container_absence(version, container_repository, probe):
     """Require the exact container version tag to remain absent."""
-
     if not isinstance(version, str) or SEMVER_PATTERN.fullmatch(version) is None:
         _fail("invalid-version", "Proposed release version is invalid.")
     status = probe("container", container_repository, version)
@@ -420,7 +419,7 @@ def _write_evidence(directory, phase, authority_raw, metadata, authority_evidenc
     )
 
 
-def main():
+def _parse_arguments():
     parser = argparse.ArgumentParser(description="Validate release publication authority.")
     parser.add_argument("--authority-url", required=True)
     parser.add_argument("--repository", required=True)
@@ -433,60 +432,76 @@ def main():
     parser.add_argument("--contract-directory", required=True, type=workspace_input_directory)
     parser.add_argument("--evidence-directory", required=True, type=workspace_output_directory)
     parser.add_argument("--phase", required=True, choices=("verify", "publish", "container"))
-    arguments = parser.parse_args()
-    checked_at = datetime.now(timezone.utc)
+    return parser.parse_args()
+
+
+def _expected_contract(arguments, metadata):
     contract_directory = arguments.contract_directory
+    return {
+        "repository": arguments.repository,
+        "version": arguments.version,
+        "source_sha": arguments.source_sha,
+        "container_repository": arguments.container_repository,
+        "durable_source": metadata["html_url"],
+        "owner_name": metadata["login"],
+        "platforms": list(REQUIRED_PLATFORMS),
+        "builds_execution_sha": arguments.builds_execution_sha,
+        "files": {name: contract_directory / name for name in REQUIRED_CONTRACT_FILES},
+    }
+
+
+def _validate_destinations(arguments, probe):
+    if arguments.phase == "container":
+        return validate_container_absence(
+            arguments.version,
+            arguments.container_repository,
+            probe,
+        )
+    if arguments.package_manifest is None:
+        _fail("package-inventory-mismatch", "Package manifest is required before NuGet publication.")
+    return validate_destination_absence(
+        _load_package_ids(arguments.package_manifest),
+        arguments.version,
+        arguments.container_repository,
+        probe,
+    )
+
+
+def _validate_publication(arguments):
+    checked_at = datetime.now(timezone.utc)
+    allowed_owners = _load_role_allowlist(arguments.role_allowlist, arguments.repository)
+    authority_raw, metadata = _load_authority_url(
+        arguments.authority_url,
+        os.environ.get("GITHUB_TOKEN", ""),
+        allowed_owners,
+    )
+    expected = _expected_contract(arguments, metadata)
+    _ = validate_authority_bytes(authority_raw, expected, checked_at)
+    probe = destination_probe(
+        os.environ.get("HEXALITH_ZOT_USERNAME", ""),
+        os.environ.get("HEXALITH_ZOT_API_KEY", ""),
+    )
+    destination_evidence = _validate_destinations(arguments, probe)
+    authority_evidence = validate_authority_bytes(
+        authority_raw,
+        expected,
+        datetime.now(timezone.utc),
+    )
+    _write_evidence(
+        arguments.evidence_directory,
+        arguments.phase,
+        authority_raw,
+        metadata,
+        authority_evidence,
+        destination_evidence,
+    )
+    return authority_evidence
+
+
+def main():
+    arguments = _parse_arguments()
     try:
-        allowed_owners = _load_role_allowlist(arguments.role_allowlist, arguments.repository)
-        authority_raw, metadata = _load_authority_url(
-            arguments.authority_url,
-            os.environ.get("GITHUB_TOKEN", ""),
-            allowed_owners,
-        )
-        expected = {
-            "repository": arguments.repository,
-            "version": arguments.version,
-            "source_sha": arguments.source_sha,
-            "container_repository": arguments.container_repository,
-            "durable_source": metadata["html_url"],
-            "owner_name": metadata["login"],
-            "platforms": list(REQUIRED_PLATFORMS),
-            "builds_execution_sha": arguments.builds_execution_sha,
-            "files": {name: contract_directory / name for name in REQUIRED_CONTRACT_FILES},
-        }
-        _ = validate_authority_bytes(authority_raw, expected, checked_at)
-        probe = destination_probe(
-            os.environ.get("HEXALITH_ZOT_USERNAME", ""),
-            os.environ.get("HEXALITH_ZOT_API_KEY", ""),
-        )
-        if arguments.phase == "container":
-            destination_evidence = validate_container_absence(
-                arguments.version,
-                arguments.container_repository,
-                probe,
-            )
-        else:
-            if arguments.package_manifest is None:
-                _fail("package-inventory-mismatch", "Package manifest is required before NuGet publication.")
-            destination_evidence = validate_destination_absence(
-                _load_package_ids(arguments.package_manifest),
-                arguments.version,
-                arguments.container_repository,
-                probe,
-            )
-        authority_evidence = validate_authority_bytes(
-            authority_raw,
-            expected,
-            datetime.now(timezone.utc),
-        )
-        _write_evidence(
-            arguments.evidence_directory,
-            arguments.phase,
-            authority_raw,
-            metadata,
-            authority_evidence,
-            destination_evidence,
-        )
+        authority_evidence = _validate_publication(arguments)
     except AuthorityError as error:
         print(f"[publication-authority] {error.code}: {error}", file=sys.stderr)
         return 1

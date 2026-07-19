@@ -31,6 +31,34 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def authority_cli_arguments(root, expected, metadata, package_manifest, allowlist, contract_directory):
+    return [
+        "publication_authority.py",
+        "--authority-url",
+        metadata["api_url"],
+        "--repository",
+        expected["repository"],
+        "--version",
+        expected["version"],
+        "--source-sha",
+        expected["source_sha"],
+        "--container-repository",
+        expected["container_repository"],
+        "--builds-execution-sha",
+        expected["builds_execution_sha"],
+        "--package-manifest",
+        str(package_manifest),
+        "--role-allowlist",
+        str(allowlist),
+        "--contract-directory",
+        str(contract_directory),
+        "--evidence-directory",
+        str(root / "evidence"),
+        "--phase",
+        "verify",
+    ]
+
+
 class PublicationAuthorityTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -80,6 +108,48 @@ class PublicationAuthorityTests(unittest.TestCase):
             "files": files,
         }
         return authority, expected, checked_at
+
+    def create_expiry_main_fixture(self, root):
+        contract_directory = root / "contract"
+        contract_directory.mkdir()
+        authority, expected, checked_at = self.create_contract(contract_directory)
+        authority["expires_at"] = (checked_at + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+        raw = (json.dumps(authority, sort_keys=True) + "\n").encode("utf-8")
+        metadata = {
+            "api_url": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1",
+            "html_url": authority["durable_source"],
+            "login": authority["owner"]["name"],
+            "role": "release_owner",
+            "body_sha256": hashlib.sha256(raw).hexdigest(),
+            "etag": '"fixture"',
+            "last_modified": None,
+            "retrieved_at": checked_at.isoformat(),
+        }
+        allowlist = root / "release-owners.json"
+        allowlist.write_text(
+            json.dumps(
+                {
+                    "schema": "hexalith.eventstore.github-approval-role-allowlist/v1",
+                    "repository": expected["repository"],
+                    "roles": {"release_owner": [authority["owner"]["name"]]},
+                }
+            ),
+            encoding="utf-8",
+        )
+        package_manifest = root / "release-packages.json"
+        package_manifest.write_text(
+            json.dumps({"packages": [{"id": f"Package.{index}"} for index in range(14)]}),
+            encoding="utf-8",
+        )
+        arguments = authority_cli_arguments(
+            root,
+            expected,
+            metadata,
+            package_manifest,
+            allowlist,
+            contract_directory,
+        )
+        return arguments, raw, metadata, checked_at
 
     def test_cross_origin_redirect_does_not_forward_authority_token(self):
         request = urllib.request.Request(
@@ -154,8 +224,12 @@ class PublicationAuthorityTests(unittest.TestCase):
             "builds-identity-mismatch": lambda authority, expected, checked: authority["builds"].update(action_sha="e" * 40),
             "wrong-owner-role": lambda authority, expected, checked: authority["owner"].update(role="developer"),
             "durable-source-mismatch": lambda authority, expected, checked: authority.update(durable_source="https://example.invalid/authority"),
-            "expired-authority": lambda authority, expected, checked: authority.update(expires_at=(checked - timedelta(seconds=1)).isoformat().replace("+00:00", "Z")),
-            "approved-file-mismatch": lambda authority, expected, checked: expected["files"]["publish-containers.sh"].write_text("changed\n", encoding="utf-8"),
+            "expired-authority": lambda authority, expected, checked: authority.update(
+                expires_at=(checked - timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+            ),
+            "approved-file-mismatch": lambda authority, expected, checked: expected["files"][
+                "publish-containers.sh"
+            ].write_text("changed\n", encoding="utf-8"),
         }
         for expected_code, mutate in mutations.items():
             with self.subTest(expected_code=expected_code), tempfile.TemporaryDirectory() as temporary_directory:
@@ -262,40 +336,7 @@ class PublicationAuthorityTests(unittest.TestCase):
     def test_main_revalidates_expiry_after_all_destination_probes(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            contract_directory = root / "contract"
-            contract_directory.mkdir()
-            authority, expected, checked_at = self.create_contract(contract_directory)
-            authority["expires_at"] = (checked_at + timedelta(seconds=1)).isoformat().replace(
-                "+00:00",
-                "Z",
-            )
-            raw = (json.dumps(authority, sort_keys=True) + "\n").encode("utf-8")
-            metadata = {
-                "api_url": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1",
-                "html_url": authority["durable_source"],
-                "login": authority["owner"]["name"],
-                "role": "release_owner",
-                "body_sha256": hashlib.sha256(raw).hexdigest(),
-                "etag": '"fixture"',
-                "last_modified": None,
-                "retrieved_at": checked_at.isoformat(),
-            }
-            allowlist = root / "release-owners.json"
-            allowlist.write_text(
-                json.dumps(
-                    {
-                        "schema": "hexalith.eventstore.github-approval-role-allowlist/v1",
-                        "repository": expected["repository"],
-                        "roles": {"release_owner": [authority["owner"]["name"]]},
-                    }
-                ),
-                encoding="utf-8",
-            )
-            package_manifest = root / "release-packages.json"
-            package_manifest.write_text(
-                json.dumps({"packages": [{"id": f"Package.{index}"} for index in range(14)]}),
-                encoding="utf-8",
-            )
+            arguments, raw, metadata, checked_at = self.create_expiry_main_fixture(root)
             probe_calls = []
 
             def absent_probe(kind, identity, version):
@@ -310,31 +351,6 @@ class PublicationAuthorityTests(unittest.TestCase):
                     value = next(cls.values)
                     return value.astimezone(tz) if tz is not None else value.replace(tzinfo=None)
 
-            arguments = [
-                "publication_authority.py",
-                "--authority-url",
-                metadata["api_url"],
-                "--repository",
-                expected["repository"],
-                "--version",
-                expected["version"],
-                "--source-sha",
-                expected["source_sha"],
-                "--container-repository",
-                expected["container_repository"],
-                "--builds-execution-sha",
-                expected["builds_execution_sha"],
-                "--package-manifest",
-                str(package_manifest),
-                "--role-allowlist",
-                str(allowlist),
-                "--contract-directory",
-                str(contract_directory),
-                "--evidence-directory",
-                str(root / "evidence"),
-                "--phase",
-                "verify",
-            ]
             previous_directory = Path.cwd()
             try:
                 os.chdir(root)

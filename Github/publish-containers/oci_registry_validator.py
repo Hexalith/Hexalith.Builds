@@ -46,6 +46,7 @@ def _origin(url):
 
 
 class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+
     """Follow redirects without forwarding credentials to another origin."""
 
     def redirect_request(self, request, file_pointer, code, message, headers, new_url):
@@ -76,9 +77,11 @@ URL_OPENER = urllib.request.build_opener(SafeRedirectHandler())
 
 
 class ValidationError(Exception):
+
     """A deterministic, support-safe OCI validation failure."""
 
     def __init__(self, code, message):
+        """Initialize a categorized validation failure."""
         super().__init__(message)
         self.code = code
 
@@ -129,55 +132,46 @@ def _workspace_path(value, *, must_exist, expected_kind):
 
 def workspace_input_file(value):
     """Resolve an existing CLI file below the current workspace."""
-
     return _workspace_path(value, must_exist=True, expected_kind="file")
 
 
 def workspace_input_directory(value):
     """Resolve an existing CLI directory below the current workspace."""
-
     return _workspace_path(value, must_exist=True, expected_kind="directory")
 
 
 def workspace_output_directory(value):
     """Resolve a CLI output directory below the current workspace."""
-
     return _workspace_path(value, must_exist=False, expected_kind="output")
 
 
 def workspace_make_directory(path):
     """Create a directory after its CLI path has been workspace-confined."""
-
     path.mkdir(parents=True, exist_ok=True)  # NOSONAR -- canonicalized below cwd.
 
 
 def workspace_path_exists(path):
     """Check a path after the owning CLI path has been workspace-confined."""
-
     return path.exists()  # NOSONAR -- canonicalized below cwd.
 
 
 def workspace_read_bytes(path):
     """Read bytes after the owning CLI path has been workspace-confined."""
-
     return path.read_bytes()  # NOSONAR -- canonicalized below cwd.
 
 
 def workspace_read_text(path):
     """Read text after the owning CLI path has been workspace-confined."""
-
     return path.read_text(encoding="utf-8")  # NOSONAR -- canonicalized below cwd.
 
 
 def workspace_write_bytes(path, value):
     """Write bytes after the owning CLI path has been workspace-confined."""
-
     path.write_bytes(value)  # NOSONAR -- canonicalized below cwd.
 
 
 def workspace_write_text(path, value):
     """Write text after the owning CLI path has been workspace-confined."""
-
     path.write_text(value, encoding="utf-8")  # NOSONAR -- canonicalized below cwd.
 
 
@@ -404,9 +398,11 @@ def validate_capture(capture_root):
 
 
 class RegistryClient:
+
     """Minimal Docker Registry HTTP API client that keeps response bytes untouched."""
 
     def __init__(self, registry, repository, username, api_key):
+        """Initialize a client for one validated registry repository."""
         repository_path = urllib.parse.quote(repository, safe="/")
         self._base_url = f"https://{registry}/v2/{repository_path}"
         credentials = base64.b64encode(f"{username}:{api_key}".encode("utf-8")).decode("ascii")
@@ -454,14 +450,12 @@ def _parse_image(image):
 
 def validated_image_reference(value):
     """Validate a CLI image reference without changing its value."""
-
     _parse_image(value)
     return value
 
 
 def validate_registry(image, username, api_key):
     """Validate a registry tag and all immutable descendants."""
-
     registry, repository, tag = _parse_image(image)
     if not username or not api_key:
         _fail("registry-authentication-missing", "Registry credentials are required.")
@@ -480,7 +474,6 @@ def validate_registry(image, username, api_key):
 
 def write_evidence(evidence_directory, image, evidence):
     """Persist support-safe immutable validation evidence."""
-
     directory = Path(evidence_directory)
     workspace_make_directory(directory)
     index_bytes = evidence["index_bytes"]
