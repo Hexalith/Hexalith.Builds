@@ -156,6 +156,7 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertIn("uses: ./.hexalith/builds-execution/Github/initialize-build", workflow)
         self.assertIn("- name: Upload complete release evidence", workflow)
         self.assertIn("if: ${{ always() && inputs.publish-containers }}", workflow)
+        self.assertIn("include-hidden-files: true", workflow)
 
     def test_workflow_sha_mismatch_fails_behaviorally(self):
         identity_script = extract_run_block(DOMAIN_RELEASE, "Validate approved Builds execution identity")
