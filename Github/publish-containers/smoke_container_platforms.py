@@ -35,6 +35,10 @@ CLEANUP_FAILURE = "cleanup-failure"
 SMOKE_EXECUTABLES = {"curl", "docker"}
 PULL_TIMEOUT_SECONDS = 120
 DIAGNOSTIC_LIMIT = 2048
+DEFAULT_SMOKE_TIMEOUT_SECONDS = "180"
+SMOKE_JWT_ISSUER = "hexalith-container-smoke"
+SMOKE_JWT_AUDIENCE = "hexalith-eventstore"
+SMOKE_JWT_SIGNING_KEY = "hexalith-container-smoke-only-key-not-a-secret"
 
 
 class SmokeFailure(Exception):  # noqa: D203,D211
@@ -201,6 +205,14 @@ def _start_container(platform, container_name, immutable_image):
             "127.0.0.1::8080",
             "--env",
             "ASPNETCORE_URLS=http://+:8080",
+            "--env",
+            f"Authentication__JwtBearer__Issuer={SMOKE_JWT_ISSUER}",
+            "--env",
+            f"Authentication__JwtBearer__Audience={SMOKE_JWT_AUDIENCE}",
+            "--env",
+            f"Authentication__JwtBearer__SigningKey={SMOKE_JWT_SIGNING_KEY}",
+            "--env",
+            "Authentication__JwtBearer__AllowInsecureSymmetricKey=true",
             "--name",
             container_name,
             immutable_image,
@@ -376,7 +388,7 @@ def main():
     arguments = parser.parse_args()
     try:
         timeout_seconds = _positive_number(
-            os.environ.get("HEXALITH_CONTAINER_SMOKE_TIMEOUT_SECONDS", "60"),
+            os.environ.get("HEXALITH_CONTAINER_SMOKE_TIMEOUT_SECONDS", DEFAULT_SMOKE_TIMEOUT_SECONDS),
             "HEXALITH_CONTAINER_SMOKE_TIMEOUT_SECONDS",
         )
         interval_seconds = _positive_number(
