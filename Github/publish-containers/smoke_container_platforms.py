@@ -53,8 +53,8 @@ def _run(command, timeout=30):
     ):
         raise SmokeFailure("Smoke command contains an unsupported argument.")
     try:
-        return subprocess.run(  # nosec B603 -- command and arguments passed strict allowlists above.
-            command,
+        return subprocess.run(
+            command,  # nosec B603  # nosemgrep -- restricted by executable and argument allowlists.
             capture_output=True,
             text=True,
             check=False,
