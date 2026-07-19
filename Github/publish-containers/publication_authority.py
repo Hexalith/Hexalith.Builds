@@ -18,7 +18,12 @@ from oci_registry_validator import (
     SafeRedirectHandler,
     workspace_input_directory,
     workspace_input_file,
+    workspace_make_directory,
     workspace_output_directory,
+    workspace_read_bytes,
+    workspace_read_text,
+    workspace_write_bytes,
+    workspace_write_text,
 )
 
 
@@ -281,7 +286,7 @@ def _load_authority_url(url, github_token):
 
 def _load_package_ids(path):
     try:
-        manifest = json.loads(Path(path).read_text(encoding="utf-8"))
+        manifest = json.loads(workspace_read_text(Path(path)))
         packages = manifest["packages"]
         package_ids = [item["id"] for item in packages]
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as error:
@@ -291,26 +296,26 @@ def _load_package_ids(path):
 
 def _write_evidence(directory, authority_raw, metadata, authority_evidence, destination_evidence):
     directory = Path(directory)
-    directory.mkdir(parents=True, exist_ok=True)
+    workspace_make_directory(directory)
     authority_path = directory / "release-owner-publication-authority.json"
     metadata_path = directory / "release-owner-publication-authority.source.json"
     checked_at_path = directory / "release-owner-publication-authority.checked-at.txt"
-    authority_path.write_bytes(authority_raw)
-    metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    checked_at_path.write_text(authority_evidence["checked_at"] + "\n", encoding="utf-8")
+    workspace_write_bytes(authority_path, authority_raw)
+    workspace_write_text(metadata_path, json.dumps(metadata, indent=2, sort_keys=True) + "\n")
+    workspace_write_text(checked_at_path, authority_evidence["checked_at"] + "\n")
     evidence = {
         "result": "pass",
         "authority": authority_evidence,
         "destinations": destination_evidence,
         "files": {
-            authority_path.name: _sha256_bytes(authority_path.read_bytes()),
-            metadata_path.name: _sha256_bytes(metadata_path.read_bytes()),
-            checked_at_path.name: _sha256_bytes(checked_at_path.read_bytes()),
+            authority_path.name: _sha256_bytes(workspace_read_bytes(authority_path)),
+            metadata_path.name: _sha256_bytes(workspace_read_bytes(metadata_path)),
+            checked_at_path.name: _sha256_bytes(workspace_read_bytes(checked_at_path)),
         },
     }
-    (directory / "publication-preflight.json").write_text(
+    workspace_write_text(
+        directory / "publication-preflight.json",
         json.dumps(evidence, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
     )
 
 

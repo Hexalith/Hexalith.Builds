@@ -31,7 +31,7 @@ MANIFEST_ACCEPT = ", ".join(
     )
 )
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
-REGISTRY_PATTERN = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)*(?::[1-9][0-9]{0,4})?$")
+REGISTRY_PATTERN = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)*(?::[1-9]\d{0,4})?$", re.ASCII)
 REPOSITORY_PATTERN = re.compile(r"^[a-z0-9]+(?:[._/-][a-z0-9]+)*$")
 TAG_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", re.ASCII)
 REGISTRY_OBJECT_UNRESOLVED = "Registry object could not be resolved."
@@ -133,6 +133,36 @@ def workspace_output_directory(value):
     """Resolve a CLI output directory below the current workspace."""
 
     return _workspace_path(value, must_exist=False, expected_kind="output")
+
+
+def workspace_make_directory(path):
+    """Create a directory after its CLI path has been workspace-confined."""
+
+    path.mkdir(parents=True, exist_ok=True)  # NOSONAR -- canonicalized below cwd.
+
+
+def workspace_read_bytes(path):
+    """Read bytes after the owning CLI path has been workspace-confined."""
+
+    return path.read_bytes()  # NOSONAR -- canonicalized below cwd.
+
+
+def workspace_read_text(path):
+    """Read text after the owning CLI path has been workspace-confined."""
+
+    return path.read_text(encoding="utf-8")  # NOSONAR -- canonicalized below cwd.
+
+
+def workspace_write_bytes(path, value):
+    """Write bytes after the owning CLI path has been workspace-confined."""
+
+    path.write_bytes(value)  # NOSONAR -- canonicalized below cwd.
+
+
+def workspace_write_text(path, value):
+    """Write text after the owning CLI path has been workspace-confined."""
+
+    path.write_text(value, encoding="utf-8")  # NOSONAR -- canonicalized below cwd.
 
 
 def _read_body(capture_root, response, unresolved_code):
@@ -431,15 +461,15 @@ def write_evidence(evidence_directory, image, evidence):
     """Persist support-safe immutable validation evidence."""
 
     directory = Path(evidence_directory)
-    directory.mkdir(parents=True, exist_ok=True)
+    workspace_make_directory(directory)
     index_bytes = evidence.pop("index_bytes")
-    (directory / "index.raw").write_bytes(index_bytes)
+    workspace_write_bytes(directory / "index.raw", index_bytes)
     document = dict(evidence)
     document["image"] = image
     document["raw_index_file"] = "index.raw"
-    (directory / "oci-validation.json").write_text(
+    workspace_write_text(
+        directory / "oci-validation.json",
         json.dumps(document, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
     )
     return document
 

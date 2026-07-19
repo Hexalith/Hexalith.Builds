@@ -191,8 +191,9 @@ class OciRegistryValidatorTests(unittest.TestCase):
             with mock.patch.object(Path, "cwd", return_value=root):
                 evidence = self.validator.workspace_output_directory(str(root / "evidence"))
                 self.assertEqual(root / "evidence", evidence)
+                escaped_path = str(root.parent / "escape")
                 with self.assertRaises(argparse.ArgumentTypeError):
-                    self.validator.workspace_output_directory(str(root.parent / "escape"))
+                    self.validator.workspace_output_directory(escaped_path)
 
         with self.assertRaises(self.validator.ValidationError) as context:
             self.validator.validated_image_reference("--config=/tmp/host/eventstore:3.78.0")

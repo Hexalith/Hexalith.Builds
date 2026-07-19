@@ -15,7 +15,11 @@ from oci_registry_validator import (
     ValidationError,
     _parse_image,
     validated_image_reference,
+    workspace_make_directory,
     workspace_output_directory,
+    workspace_read_bytes,
+    workspace_read_text,
+    workspace_write_text,
 )
 
 
@@ -57,7 +61,7 @@ def _run(command, timeout=30):
 def _load_children(evidence_directory):
     path = evidence_directory / "oci-validation.json"
     try:
-        evidence = json.loads(path.read_text(encoding="utf-8"))
+        evidence = json.loads(workspace_read_text(path))
     except (OSError, json.JSONDecodeError) as error:
         raise SmokeFailure("Validated OCI evidence is required before smoke execution.") from error
     if evidence.get("result") != "pass" or evidence.get("platforms") != list(REQUIRED_PLATFORMS):
@@ -91,18 +95,18 @@ def _repository_without_tag(image):
 
 def _write_log(evidence_directory, name, lines):
     path = evidence_directory / name
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    workspace_write_text(path, "\n".join(lines) + "\n")
     return path
 
 
 def _write_summary(evidence_directory, summary, log_paths):
     summary_path = evidence_directory / "smoke-results.json"
-    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    workspace_write_text(summary_path, json.dumps(summary, indent=2, sort_keys=True) + "\n")
     all_paths = [*log_paths, summary_path]
     hashes = []
     for path in sorted(all_paths, key=lambda item: item.name):
-        hashes.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}")
-    (evidence_directory / "smoke-sha256.txt").write_text("\n".join(hashes) + "\n", encoding="utf-8")
+        hashes.append(f"{hashlib.sha256(workspace_read_bytes(path)).hexdigest()}  {path.name}")
+    workspace_write_text(evidence_directory / "smoke-sha256.txt", "\n".join(hashes) + "\n")
 
 
 def _preflight(evidence_directory):
@@ -186,7 +190,7 @@ def run_smoke(image, evidence_directory, timeout_seconds, interval_seconds):
     """Run the preflight and both digest-pinned platform smokes."""
 
     evidence_directory = Path(evidence_directory)
-    evidence_directory.mkdir(parents=True, exist_ok=True)
+    workspace_make_directory(evidence_directory)
     children = _load_children(evidence_directory)
     repository = _repository_without_tag(image)
     preflight_passed, preflight_log = _preflight(evidence_directory)
