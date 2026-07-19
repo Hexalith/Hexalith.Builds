@@ -25,9 +25,12 @@ The helper:
 - runs the same bounded loopback `/alive` smoke against both immutable child
   digests after explicit digest-pinned pulls and an executable arm64 runtime
   preflight, using an isolated non-secret symmetric JWT configuration required
-  for startup validation and a 180-second default bound that accommodates
-  emulated arm64 startup, while retaining support-safe bounded diagnostics,
-  cleanup results, classifications, and hashes.
+  for startup validation and a 180-second per-platform default liveness bound
+  that accommodates emulated arm64 startup, while retaining support-safe
+  bounded diagnostics, cleanup results, classifications, and hashes. Callers
+  publishing containers should allocate at least 30 minutes to the complete
+  release job so preflight, pulls, both bounded smokes, and evidence upload have
+  headroom after publication.
 
 `dotnet publish` success is not sufficient. A mapping succeeds only after
 immutable validation and both child-digest smokes pass. Emulation setup,
