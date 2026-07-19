@@ -24,8 +24,10 @@ The helper:
   retaining the exact raw index, child-manifest, and config bytes, and
 - runs the same bounded loopback `/alive` smoke against both immutable child
   digests after explicit digest-pinned pulls and an executable arm64 runtime
-  preflight, retaining support-safe bounded diagnostics, cleanup results,
-  classifications, and hashes.
+  preflight, using an isolated non-secret symmetric JWT configuration required
+  for startup validation and a 180-second default bound that accommodates
+  emulated arm64 startup, while retaining support-safe bounded diagnostics,
+  cleanup results, classifications, and hashes.
 
 `dotnet publish` success is not sufficient. A mapping succeeds only after
 immutable validation and both child-digest smokes pass. Emulation setup,

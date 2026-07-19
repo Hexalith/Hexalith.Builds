@@ -144,6 +144,13 @@ class SmokeContainerPlatformsTests(unittest.TestCase):
         self.assertIn("--platform\tlinux/amd64", docker_log)
         self.assertIn("--platform\tlinux/arm64", docker_log)
         self.assertIn("ASPNETCORE_URLS=http://+:8080", docker_log)
+        self.assertIn("Authentication__JwtBearer__Issuer=hexalith-container-smoke", docker_log)
+        self.assertIn("Authentication__JwtBearer__Audience=hexalith-eventstore", docker_log)
+        self.assertIn(
+            "Authentication__JwtBearer__SigningKey=hexalith-container-smoke-only-key-not-a-secret",
+            docker_log,
+        )
+        self.assertIn("Authentication__JwtBearer__AllowInsecureSymmetricKey=true", docker_log)
         self.assertIn("--publish\t127.0.0.1::8080", docker_log)
         self.assertGreaterEqual(docker_log.count("rm\t--force"), 2)
         self.assertTrue((evidence / "smoke-sha256.txt").is_file())
@@ -204,6 +211,10 @@ class SmokeContainerPlatformsTests(unittest.TestCase):
                 self.assertNotEqual(0, result.returncode)
                 self.assertIsNone(summary)
                 self.assertIn("must be greater than zero", result.stderr)
+
+    def test_default_timeout_allows_bounded_emulated_startup(self):
+        source = (SCRIPT_DIRECTORY / "smoke_container_platforms.py").read_text(encoding="utf-8")
+        self.assertIn('DEFAULT_SMOKE_TIMEOUT_SECONDS = "180"', source)
 
 
 if __name__ == "__main__":
