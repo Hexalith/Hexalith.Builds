@@ -108,6 +108,7 @@ try {
   path = references/Fixture.Module
   url = https://example.invalid/Fixture.Module.git
 '@
+    Write-Utf8File -Path (Join-Path $moduleRoot '.git') -Content 'gitdir: ../../.git/modules/references/Fixture.Module'
     Write-Utf8File -Path (Join-Path $moduleRoot 'src/Fixture.AppHost/Fixture.AppHost.csproj') -Content @'
 <Project Sdk="Aspire.AppHost.Sdk/13.4.6"></Project>
 '@
@@ -157,6 +158,7 @@ try {
   path = references/Fixture.Module
   url = https://example.invalid/Fixture.Module.git
 '@
+    Write-Utf8File -Path (Join-Path $misalignedModule '.git') -Content 'gitdir: ../../.git/modules/references/Fixture.Module'
     Write-Utf8File -Path (Join-Path $misalignedModule 'src/Fixture.AppHost/Fixture.AppHost.csproj') -Content @'
 <Project Sdk="Aspire.AppHost.Sdk/13.4.2"></Project>
 '@
@@ -173,6 +175,40 @@ try {
     Test-Scenario -Name 'Unlisted tool exception' -InventoryPath $validInventoryPath `
         -CatalogPath $catalogPath -WorkspaceRoot $workspaceRoot -ExpectedExitCode 1 `
         -ExpectedOutput "unlisted version exception 'dotnet-tool|Fixture.Module|.config/dotnet-tools.json|unlisted.tool'"
+
+    $elementFormWorkspace = Join-Path $temporaryRoot 'element-form-workspace'
+    $elementFormModule = Join-Path $elementFormWorkspace 'references/Fixture.Module'
+    Write-Utf8File -Path (Join-Path $elementFormWorkspace '.gitmodules') -Content @'
+[submodule "references/Fixture.Module"]
+  path = references/Fixture.Module
+  url = https://example.invalid/Fixture.Module.git
+'@
+    Write-Utf8File -Path (Join-Path $elementFormModule '.git') -Content 'gitdir: ../../.git/modules/references/Fixture.Module'
+    Write-Utf8File -Path (Join-Path $elementFormModule 'src/Fixture.AppHost/Fixture.AppHost.csproj') -Content @'
+<Project Sdk="Aspire.AppHost.Sdk/13.4.6"></Project>
+'@
+    Write-Utf8File -Path (Join-Path $elementFormModule 'src/Element.AppHost/Element.AppHost.csproj') -Content @'
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Version="13.4.6" Name="Aspire.AppHost.Sdk" />
+</Project>
+'@
+    Write-Utf8File -Path (Join-Path $elementFormModule '.config/dotnet-tools.json') -Content @'
+{"version":1,"isRoot":true,"tools":{"fixture.tool":{"version":"1.2.3","commands":["fixture"]}}}
+'@
+    Test-Scenario -Name 'Unlisted element-form SDK pin' -InventoryPath $validInventoryPath `
+        -CatalogPath $catalogPath -WorkspaceRoot $elementFormWorkspace -ExpectedExitCode 1 `
+        -ExpectedOutput "unlisted version exception 'apphost-sdk|Fixture.Module|src/Element.AppHost/Element.AppHost.csproj|Aspire.AppHost.Sdk'"
+
+    $uninitializedWorkspace = Join-Path $temporaryRoot 'uninitialized-workspace'
+    Write-Utf8File -Path (Join-Path $uninitializedWorkspace '.gitmodules') -Content @'
+[submodule "references/Fixture.Module"]
+  path = references/Fixture.Module
+  url = https://example.invalid/Fixture.Module.git
+'@
+    New-Item -ItemType Directory -Path (Join-Path $uninitializedWorkspace 'references/Fixture.Module') -Force | Out-Null
+    Test-Scenario -Name 'Uninitialized submodule' -InventoryPath $validInventoryPath `
+        -CatalogPath $catalogPath -WorkspaceRoot $uninitializedWorkspace -ExpectedExitCode 1 `
+        -ExpectedOutput "Submodule 'references/Fixture.Module' is not initialized; cannot verify exceptions for owner 'Fixture.Module'"
 
     $duplicateInventoryPath = Join-Path $temporaryRoot 'duplicate.json'
     $duplicateInventory = Get-Content -LiteralPath $validInventoryPath -Raw | ConvertFrom-Json

@@ -66,26 +66,65 @@ function Read-XmlFile {
     }
 }
 
+function Expand-WrapperImportExpression {
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string] $Expression,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable] $Properties,
+
+        [Parameter(Mandatory = $true)]
+        [string] $WrapperDirectory
+    )
+
+    $expanded = $Expression
+    for ($depth = 0; $depth -lt 8; $depth++) {
+        $previous = $expanded
+        $expanded = [regex]::Replace($expanded, '\$\(([A-Za-z_][A-Za-z0-9_.-]*)\)', {
+            param($propertyMatch)
+            $propertyName = $propertyMatch.Groups[1].Value
+            if ($propertyName -ieq 'MSBuildThisFileDirectory') {
+                return $WrapperDirectory + [IO.Path]::DirectorySeparatorChar
+            }
+
+            if ($Properties.ContainsKey($propertyName)) {
+                return [string] $Properties[$propertyName]
+            }
+
+            return $propertyMatch.Value
+        })
+        if ($expanded -ceq $previous) {
+            break
+        }
+    }
+
+    return $expanded
+}
+
 function Get-ConsumerXmlFiles {
     param(
         [Parameter(Mandatory = $true)]
         [string] $Root
     )
 
-    $trackedPaths = @(& git -C $Root ls-files -- '*.csproj' '*.props' '*.targets' 2>$null)
-    if ($LASTEXITCODE -eq 0) {
-        return @(
-            $trackedPaths |
-                Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
-                ForEach-Object { Join-Path $Root $_ }
-        )
+    if ($null -ne (Get-Command git -ErrorAction SilentlyContinue)) {
+        $trackedPaths = @(& git -C $Root ls-files -- '*.csproj' '*.props' '*.targets' 2>$null)
+        if ($LASTEXITCODE -eq 0) {
+            return @(
+                $trackedPaths |
+                    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+                    ForEach-Object { Join-Path $Root $_ }
+            )
+        }
     }
 
     return @(
         Get-ChildItem -LiteralPath $Root -Recurse -File |
             Where-Object {
                 $_.Extension -in @('.csproj', '.props', '.targets') -and
-                $_.FullName -notmatch '[\\/](?:bin|obj|\.git)[\\/]'
+                $_.FullName -notmatch '[\\/](?:bin|obj|\.git|references)[\\/]'
             } |
             Select-Object -ExpandProperty FullName
     )
@@ -154,8 +193,54 @@ if (-not (Test-Path -LiteralPath $wrapperPath -PathType Leaf)) {
 }
 else {
     $wrapperXml = Read-XmlFile -Path $wrapperPath
-    if (@($wrapperXml.SelectNodes("//*[local-name()='Import']")).Count -eq 0) {
+    $wrapperImports = @($wrapperXml.SelectNodes("//*[local-name()='Import']"))
+    if ($wrapperImports.Count -eq 0) {
         $failures.Add("Repository wrapper '$wrapperPath' does not import the authoritative catalog.")
+    }
+    else {
+        $wrapperDirectory = [IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($wrapperPath))
+        $wrapperProperties = @{}
+        foreach ($propertyNode in @($wrapperXml.SelectNodes("//*[local-name()='PropertyGroup']/*"))) {
+            $wrapperProperties[$propertyNode.LocalName] = [string] $propertyNode.InnerText
+        }
+
+        $catalogImportFound = $false
+        $indeterminateImportFound = $false
+        $resolvedImportTargets = [System.Collections.Generic.List[string]]::new()
+        foreach ($wrapperImport in $wrapperImports) {
+            $expandedProject = Expand-WrapperImportExpression `
+                -Expression ([string] $wrapperImport.GetAttribute('Project')) `
+                -Properties $wrapperProperties -WrapperDirectory $wrapperDirectory
+            if ($expandedProject -match '\$\(') {
+                # Unresolvable property references stay indeterminate here; the effective
+                # evaluation stage below (HexalithVersionsLoaded marker and effective
+                # PackageVersion comparison) is the backstop for such wrappers.
+                $indeterminateImportFound = $true
+                continue
+            }
+
+            $normalizedProject = $expandedProject.Replace('/', [IO.Path]::DirectorySeparatorChar)
+            $normalizedProject = $normalizedProject.Replace('\', [IO.Path]::DirectorySeparatorChar)
+            try {
+                $normalizedProject = [IO.Path]::GetFullPath($normalizedProject, $wrapperDirectory)
+            }
+            catch {
+                # A path .NET cannot normalize can never equal the resolved catalog path;
+                # keep the expanded text for the diagnostic below.
+            }
+
+            $resolvedImportTargets.Add($normalizedProject)
+            if ([StringComparer]::OrdinalIgnoreCase.Equals($normalizedProject, $resolvedCatalogPath)) {
+                $catalogImportFound = $true
+                break
+            }
+        }
+
+        if (-not $catalogImportFound -and -not $indeterminateImportFound) {
+            $failures.Add(
+                "Repository wrapper '$wrapperPath' does not import the authoritative catalog '$resolvedCatalogPath'; imports resolve to: $([string]::Join(', ', $resolvedImportTargets))."
+            )
+        }
     }
 }
 

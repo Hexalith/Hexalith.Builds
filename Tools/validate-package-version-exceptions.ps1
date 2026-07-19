@@ -105,6 +105,40 @@ function Get-RepositoryFiles {
     )
 }
 
+function Get-ProjectSdkVersionPins {
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string] $ProjectText
+    )
+
+    $pins = [System.Collections.Generic.List[object]]::new()
+    foreach ($attributeMatch in [regex]::Matches($ProjectText, '\bSdk\s*=\s*"([^"]*)"')) {
+        foreach ($sdkReference in $attributeMatch.Groups[1].Value.Split(';')) {
+            $separatorIndex = $sdkReference.IndexOf('/')
+            if ($separatorIndex -gt 0 -and $separatorIndex -lt $sdkReference.Length - 1) {
+                $pins.Add([pscustomobject] @{
+                    Id = $sdkReference.Substring(0, $separatorIndex).Trim()
+                    Version = $sdkReference.Substring($separatorIndex + 1).Trim()
+                })
+            }
+        }
+    }
+
+    foreach ($elementMatch in [regex]::Matches($ProjectText, '<Sdk\b[^>]*>')) {
+        $nameMatch = [regex]::Match($elementMatch.Value, '\bName\s*=\s*"([^"]+)"')
+        $versionMatch = [regex]::Match($elementMatch.Value, '\bVersion\s*=\s*"([^"]+)"')
+        if ($nameMatch.Success -and $versionMatch.Success) {
+            $pins.Add([pscustomobject] @{
+                Id = $nameMatch.Groups[1].Value.Trim()
+                Version = $versionMatch.Groups[1].Value.Trim()
+            })
+        }
+    }
+
+    return @($pins)
+}
+
 try {
     $resolvedInventoryPath = Resolve-ExistingPath `
         -Path $InventoryPath -Description 'Exception inventory' -PathType Leaf
@@ -239,6 +273,7 @@ catch {
 
 $repositoryRoots = [System.Collections.Generic.List[object]]::new()
 $submoduleOwners = @{}
+$uninitializedSubmodules = @{}
 $gitmodulesPath = Join-Path $resolvedWorkspaceRoot '.gitmodules'
 if (Test-Path -LiteralPath $gitmodulesPath -PathType Leaf) {
     $gitmodulesText = Get-Content -LiteralPath $gitmodulesPath -Raw
@@ -248,7 +283,12 @@ if (Test-Path -LiteralPath $gitmodulesPath -PathType Leaf) {
         if (Test-Path -LiteralPath $repositoryRoot -PathType Container) {
             $owner = Split-Path -Leaf $relativeRoot
             $submoduleOwners[$owner] = $true
-            $repositoryRoots.Add([pscustomobject] @{ Owner = $owner; Root = $repositoryRoot; IsWorkspace = $false })
+            if (Test-Path -LiteralPath (Join-Path $repositoryRoot '.git')) {
+                $repositoryRoots.Add([pscustomobject] @{ Owner = $owner; Root = $repositoryRoot; IsWorkspace = $false })
+            }
+            else {
+                $uninitializedSubmodules[$owner] = $relativeRoot
+            }
         }
     }
 }
@@ -272,37 +312,87 @@ $repositoryRoots.Add(
     [pscustomobject] @{ Owner = $workspaceOwner; Root = $resolvedWorkspaceRoot; IsWorkspace = $true }
 )
 
+foreach ($uninitializedSubmodule in $uninitializedSubmodules.GetEnumerator()) {
+    $failures.Add(
+        "Submodule '$($uninitializedSubmodule.Value)' is not initialized; cannot verify exceptions for owner '$($uninitializedSubmodule.Key)'."
+    )
+}
+
 $actualExceptions = @{}
 foreach ($repository in $repositoryRoots) {
     $projectFiles = @(Get-RepositoryFiles -Root $repository.Root -Patterns @('*.csproj') `
         -ExcludeReferences:$repository.IsWorkspace)
     foreach ($projectPath in $projectFiles) {
         $projectText = Get-Content -LiteralPath $projectPath -Raw
-        $sdkMatch = [regex]::Match($projectText, 'Aspire\.AppHost\.Sdk/([^";\s<]+)')
-        if (-not $sdkMatch.Success) {
-            continue
-        }
-
         $relativePath = [IO.Path]::GetRelativePath($repository.Root, $projectPath).Replace('\', '/')
-        $version = $sdkMatch.Groups[1].Value
-        $key = "apphost-sdk|$($repository.Owner)|$relativePath|Aspire.AppHost.Sdk"
-        $actualExceptions[$key] = [pscustomobject] @{
-            Kind = 'apphost-sdk'
-            Owner = $repository.Owner
-            Path = $relativePath
-            Id = 'Aspire.AppHost.Sdk'
-            Version = $version
-        }
+        foreach ($sdkPin in @(Get-ProjectSdkVersionPins -ProjectText $projectText)) {
+            $key = "apphost-sdk|$($repository.Owner)|$relativePath|$($sdkPin.Id)"
+            $actualExceptions[$key] = [pscustomobject] @{
+                Kind = 'apphost-sdk'
+                Owner = $repository.Owner
+                Path = $relativePath
+                Id = $sdkPin.Id
+                Version = $sdkPin.Version
+            }
 
-        if ($catalogPackages.ContainsKey('Aspire.Hosting') -and $version -cne $catalogPackages['Aspire.Hosting']) {
-            $failures.Add(
-                "Aspire.AppHost.Sdk/$version is not aligned with Aspire.Hosting/$($catalogPackages['Aspire.Hosting']) for '$($repository.Owner)'."
-            )
+            if (
+                $sdkPin.Id -ceq 'Aspire.AppHost.Sdk' -and
+                $catalogPackages.ContainsKey('Aspire.Hosting') -and
+                $sdkPin.Version -cne $catalogPackages['Aspire.Hosting']
+            ) {
+                $failures.Add(
+                    "Aspire.AppHost.Sdk/$($sdkPin.Version) is not aligned with Aspire.Hosting/$($catalogPackages['Aspire.Hosting']) for '$($repository.Owner)'."
+                )
+            }
         }
     }
 
-    $toolManifestFiles = @(Get-RepositoryFiles -Root $repository.Root -Patterns @('*.json') `
-        -ExcludeReferences:$repository.IsWorkspace | Where-Object {
+    $jsonFiles = @(Get-RepositoryFiles -Root $repository.Root -Patterns @('*.json') `
+        -ExcludeReferences:$repository.IsWorkspace)
+    $globalJsonFiles = @($jsonFiles | Where-Object { [IO.Path]::GetFileName($_) -ieq 'global.json' })
+    foreach ($globalJsonPath in $globalJsonFiles) {
+        try {
+            $globalJson = Get-Content -LiteralPath $globalJsonPath -Raw | ConvertFrom-Json -ErrorAction Stop
+        }
+        catch {
+            $failures.Add("global.json '$globalJsonPath' is malformed JSON.")
+            continue
+        }
+
+        if (
+            $null -eq $globalJson -or
+            $globalJson.PSObject.Properties.Name -notcontains 'msbuild-sdks' -or
+            $null -eq $globalJson.'msbuild-sdks'
+        ) {
+            continue
+        }
+
+        $relativePath = [IO.Path]::GetRelativePath($repository.Root, $globalJsonPath).Replace('\', '/')
+        foreach ($sdkProperty in $globalJson.'msbuild-sdks'.PSObject.Properties) {
+            $sdkId = [string] $sdkProperty.Name
+            $sdkVersion = [string] $sdkProperty.Value
+            $key = "apphost-sdk|$($repository.Owner)|$relativePath|$sdkId"
+            $actualExceptions[$key] = [pscustomobject] @{
+                Kind = 'apphost-sdk'
+                Owner = $repository.Owner
+                Path = $relativePath
+                Id = $sdkId
+                Version = $sdkVersion
+            }
+
+            if (
+                $sdkId -ceq 'Aspire.AppHost.Sdk' -and
+                $catalogPackages.ContainsKey('Aspire.Hosting') -and
+                $sdkVersion -cne $catalogPackages['Aspire.Hosting']
+            ) {
+                $failures.Add(
+                    "Aspire.AppHost.Sdk/$sdkVersion is not aligned with Aspire.Hosting/$($catalogPackages['Aspire.Hosting']) for '$($repository.Owner)'."
+                )
+            }
+        }
+    }
+
+    $toolManifestFiles = @($jsonFiles | Where-Object {
             $_.Replace('\', '/') -like '*/.config/dotnet-tools.json'
         })
     foreach ($manifestPath in $toolManifestFiles) {
@@ -349,9 +439,16 @@ foreach ($actualEntry in $actualExceptions.GetEnumerator()) {
 }
 
 foreach ($allowlistEntry in $allowlist.GetEnumerator()) {
-    if (-not $actualExceptions.ContainsKey($allowlistEntry.Key)) {
-        $failures.Add("Allowlisted exception '$($allowlistEntry.Key)' was not found in the workspace.")
+    if ($actualExceptions.ContainsKey($allowlistEntry.Key)) {
+        continue
     }
+
+    if ($uninitializedSubmodules.ContainsKey((Get-PropertyText -Object $allowlistEntry.Value -Name 'owner'))) {
+        # Already reported once per uninitialized submodule; the entry cannot be verified.
+        continue
+    }
+
+    $failures.Add("Allowlisted exception '$($allowlistEntry.Key)' was not found in the workspace.")
 }
 
 if ($failures.Count -gt 0) {

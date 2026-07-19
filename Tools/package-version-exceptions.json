@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "architectureDecision": "Hexalith.ChatBot/_bmad-output/planning-artifacts/sprint-change-proposal-2026-07-18.md#CPM-incompatible-exceptions",
+  "architectureDecision": "Approved 2026-07-18 via Hexalith.ChatBot Story 1.1e (sprint change proposal, CPM-incompatible exceptions section): NuGet SDK resolver pins and dotnet-tool manifests cannot participate in Central Package Management; each entry in this inventory records file, id, version, owner, rationale, and alignment rule.",
   "exceptions": [
     {
       "kind": "apphost-sdk",

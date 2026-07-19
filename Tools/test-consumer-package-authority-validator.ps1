@@ -204,6 +204,30 @@ try {
     Test-Scenario -Name 'Missing shared import' -RepositoryRoot $missingImportRoot -ExpectedExitCode 1 `
         -ExpectedOutput 'does not import the authoritative catalog'
 
+    $wrongImportRoot = New-ConsumerFixture -Name 'wrong-import' -WrapperContent @'
+<Project>
+  <PropertyGroup>
+    <LocalPackageProps>$(MSBuildThisFileDirectory)Local.Packages.props</LocalPackageProps>
+  </PropertyGroup>
+  <Import Project="$(LocalPackageProps)" />
+</Project>
+'@
+    Test-Scenario -Name 'Resolvable non-catalog import' -RepositoryRoot $wrongImportRoot -ExpectedExitCode 1 `
+        -ExpectedOutput 'imports resolve to'
+
+    $fallbackChainRoot = New-ConsumerFixture -Name 'fallback-chain' -WrapperContent @'
+<Project>
+  <PropertyGroup>
+    <Hexalith1BuildPackageProps>$(MSBuildThisFileDirectory)missing/Directory.Packages.props</Hexalith1BuildPackageProps>
+    <Hexalith2BuildPackageProps>$(MSBuildThisFileDirectory)../shared/Directory.Packages.props</Hexalith2BuildPackageProps>
+  </PropertyGroup>
+  <Import Project="$(Hexalith1BuildPackageProps)" Condition="Exists('$(Hexalith1BuildPackageProps)') And '$(HexalithVersionsLoaded)' != 'true'" />
+  <Import Project="$(Hexalith2BuildPackageProps)" Condition="Exists('$(Hexalith2BuildPackageProps)') And '$(HexalithVersionsLoaded)' != 'true'" />
+</Project>
+'@
+    Test-Scenario -Name 'Fallback-chain wrapper import' -RepositoryRoot $fallbackChainRoot -ExpectedExitCode 0 `
+        -ExpectedOutput 'consumer package authority validation passed'
+
     $missingRowRoot = New-ConsumerFixture -Name 'missing-catalog-row' -ProjectContent @'
 <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include="Missing.Package" /></ItemGroup></Project>
 '@
