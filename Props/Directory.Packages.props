@@ -5,7 +5,7 @@
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.28.2</HexalithCommonsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.16.5</HexalithPolymorphicSerializationsVersion>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.75.0</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.76.1</HexalithEventStoreVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.0.1</HexalithFrontComposerVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.10.0</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">3.2.18</HexalithTenantsVersion>
