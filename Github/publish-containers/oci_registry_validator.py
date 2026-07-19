@@ -45,7 +45,7 @@ def _origin(url):
     return parsed.scheme.lower(), (parsed.hostname or "").lower(), port
 
 
-class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):  # noqa: D203
+class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):  # noqa: D203,D211
     """Follow redirects without forwarding credentials to another origin."""
 
     def redirect_request(self, request, file_pointer, code, message, headers, new_url):
@@ -396,7 +396,7 @@ def validate_capture(capture_root):
     )
 
 
-class RegistryClient:  # noqa: D203
+class RegistryClient:  # noqa: D203,D211
     """Minimal Docker Registry HTTP API client that keeps response bytes untouched."""
 
     def __init__(self, registry, repository, username, api_key):

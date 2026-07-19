@@ -55,7 +55,7 @@ GITHUB_LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]{0,38}$", re.ASCII)
 URL_OPENER = urllib.request.build_opener(SafeRedirectHandler())
 
 
-class AuthorityError(Exception):  # noqa: D203
+class AuthorityError(Exception):  # noqa: D203,D211
     """A deterministic, support-safe authority preflight failure."""
 
     def __init__(self, code, message):

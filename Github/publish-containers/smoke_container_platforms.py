@@ -37,7 +37,7 @@ PULL_TIMEOUT_SECONDS = 120
 DIAGNOSTIC_LIMIT = 2048
 
 
-class SmokeFailure(Exception):  # noqa: D203
+class SmokeFailure(Exception):  # noqa: D203,D211
     """A support-safe smoke orchestration failure."""
 
 
@@ -53,7 +53,7 @@ def _run(command, timeout=30):
     ):
         raise SmokeFailure("Smoke command contains an unsupported argument.")
     try:
-        return subprocess.run(  # nosec  # NOSONAR -- command and arguments passed strict allowlists above.
+        return subprocess.run(  # nosec B603 -- command and arguments passed strict allowlists above.
             command,
             capture_output=True,
             text=True,
