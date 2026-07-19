@@ -250,11 +250,12 @@ class PublicationAuthorityTests(unittest.TestCase):
             authority["expires_at"] = (checked_at + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
             expiring_raw = (json.dumps(authority, sort_keys=True) + "\n").encode("utf-8")
             self.validator.validate_authority_bytes(expiring_raw, expected, checked_at)
+            expired_checked_at = checked_at + timedelta(seconds=1)
             with self.assertRaises(self.validator.AuthorityError) as context:
                 self.validator.validate_authority_bytes(
                     expiring_raw,
                     expected,
-                    checked_at + timedelta(seconds=1),
+                    expired_checked_at,
                 )
             self.assertEqual("expired-authority", context.exception.code)
 

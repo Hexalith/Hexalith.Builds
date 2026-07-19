@@ -132,7 +132,7 @@ class PublishScriptContractTests(unittest.TestCase):
                 "RESOLVED_WORKFLOW_SHA": "b" * 40,
             }
         )
-        identity_result = subprocess.run(
+        identity_result = subprocess.run(  # NOSONAR -- executes a repository-owned fixture script.
             ["bash", "-c", identity_script],
             env=identity_environment,
             capture_output=True,
@@ -187,7 +187,7 @@ cp "$FAKE_APPROVED/$(basename "$source_url")" "$output"
                     "FAKE_APPROVED": str(approved),
                 }
             )
-            action_result = subprocess.run(
+            action_result = subprocess.run(  # NOSONAR -- executes a repository-owned fixture script.
                 ["bash", "-c", extract_run_block(ACTION, "Install container publish helper")],
                 cwd=root,
                 env=action_environment,

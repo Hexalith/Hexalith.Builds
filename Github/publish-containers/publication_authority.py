@@ -45,11 +45,11 @@ SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", re.ASCII)
 UTC_OFFSET = "+00:00"
 GITHUB_AUTHORITY_URL_PATTERN = re.compile(
-    r"^https://api\.github\.com/repos/Hexalith/Hexalith\.EventStore/issues/comments/\d+$",
+    r"^https://api\.github\.com/repos/Hexalith/Hexalith\.EventStore/issues/comments/(?P<comment_id>\d+)$",
     re.ASCII,
 )
 GITHUB_API_ORIGIN = ("https", "api.github.com", 443)
-GITHUB_LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$", re.ASCII)
+GITHUB_LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]{0,38}$", re.ASCII)
 
 
 URL_OPENER = urllib.request.build_opener(SafeRedirectHandler())
@@ -307,15 +307,20 @@ def _load_role_allowlist(path, repository):
 
 
 def _load_authority_url(url, github_token, allowed_owners):
-    if GITHUB_AUTHORITY_URL_PATTERN.fullmatch(url) is None:
+    source_match = GITHUB_AUTHORITY_URL_PATTERN.fullmatch(url)
+    if source_match is None:
         _fail("invalid-authority-source", "Authority source must be an EventStore GitHub issue-comment API URL.")
+    trusted_url = (
+        "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/"
+        f"{source_match.group('comment_id')}"
+    )
     headers = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    if github_token and _origin(url) == GITHUB_API_ORIGIN:
+    if github_token and _origin(trusted_url) == GITHUB_API_ORIGIN:
         headers["Authorization"] = f"Bearer {github_token}"
-    request = urllib.request.Request(url, headers=headers, method="GET")
+    request = urllib.request.Request(trusted_url, headers=headers, method="GET")
     try:
         with URL_OPENER.open(request, timeout=30) as response:
             response_raw = response.read(262145)
@@ -338,7 +343,7 @@ def _load_authority_url(url, github_token, allowed_owners):
             if len(raw) > 131072:
                 _fail("malformed-authority", "Authority record exceeds the size limit.")
             metadata = {
-                "api_url": url,
+                "api_url": trusted_url,
                 "html_url": html_url,
                 "login": owner_login,
                 "role": "release_owner",

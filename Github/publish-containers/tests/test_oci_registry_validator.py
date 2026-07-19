@@ -187,8 +187,9 @@ class OciRegistryValidatorTests(unittest.TestCase):
         self.assertIsNotNone(redirected)
         self.assertIsNone(redirected.get_header("Authorization"))
 
+        redirect_request = self.validator.SafeRedirectHandler().redirect_request
         with self.assertRaises(urllib.error.HTTPError) as context:
-            self.validator.SafeRedirectHandler().redirect_request(
+            redirect_request(
                 request,
                 None,
                 302,
@@ -236,7 +237,7 @@ class OciRegistryValidatorTests(unittest.TestCase):
                     "registry-key",
                 )
 
-            expected_index = (capture_root / capture["tag"]["body"]).read_bytes()
+            expected_index = (capture_root / "index.json").read_bytes()
             self.assertEqual(expected_index, evidence["index_bytes"])
             self.assertEqual(
                 ["linux/amd64", "linux/arm64"],
