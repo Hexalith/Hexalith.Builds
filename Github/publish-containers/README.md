@@ -20,13 +20,18 @@ The helper:
 - passes `linux-musl-x64;linux-musl-arm64` through both multi-RID properties and
   requires an OCI index containing exactly `linux/amd64` and `linux/arm64`,
 - rereads the tag and immutable index/children/configs from the registry and
-  verifies content types, hashes, sizes, and descriptor/config platforms, and
+  verifies content types, hashes, sizes, and descriptor/config platforms while
+  retaining the exact raw index, child-manifest, and config bytes, and
 - runs the same bounded loopback `/alive` smoke against both immutable child
-  digests, retaining support-safe logs, classifications, and hashes.
+  digests after explicit digest-pinned pulls and an executable arm64 runtime
+  preflight, retaining support-safe bounded diagnostics, cleanup results,
+  classifications, and hashes.
 
 `dotnet publish` success is not sufficient. A mapping succeeds only after
 immutable validation and both child-digest smokes pass. Emulation setup,
-image-start, and liveness-timeout failures are reported separately.
+registry-pull, image-start, liveness-timeout, and cleanup failures are reported
+separately. `/alive` accepts only an exact 2xx response and never follows a
+redirect.
 
 Because repository policy resolves the reusable workflow through mutable
 `@main`, the caller supplies one maintainer-approved `builds-execution-sha`.
@@ -36,12 +41,18 @@ action/helper bytes with the same immutable Builds commit before installing
 them. The caller repository's `references/Hexalith.Builds` submodule pin is not
 treated as executed release-tool identity.
 
-The installed `publication_authority.py` validates a separate durable
-release-owner record immediately before publication. It binds repository,
+The installed `publication_authority.py` fetches a separate durable GitHub
+issue-comment record through the exact EventStore API origin, verifies its
+author against the caller's checked-in release-owner allowlist, and validates it
+immediately before publication. It binds repository,
 version, workflow source SHA, container repository, exact platforms, owner,
 validity window, rationale, durable source, approved Builds identity, and helper
 hashes. It also requires all 14 package versions and the container tag to be
-absent. The validator records frozen authority/source/check-time evidence but
+absent. `verifyRelease` freezes the exact authority bytes before tag creation;
+the pre-NuGet and immediate pre-container phases require byte equality, repeat
+expiry and destination checks, and never overwrite the frozen record. The
+workflow uploads the complete hidden release-evidence directory on success or
+partial failure. The validator records authority/source/check-time evidence but
 does not create human authority.
 
 ## Inputs

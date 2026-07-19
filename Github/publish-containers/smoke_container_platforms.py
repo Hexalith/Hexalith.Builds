@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import subprocess
@@ -26,9 +27,13 @@ from oci_registry_validator import (
 REQUIRED_PLATFORMS = ("linux/amd64", "linux/arm64")
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 EMULATION_FAILURE_PATTERN = re.compile(r"exec format|qemu|binfmt", re.IGNORECASE)
-SAFE_COMMAND_ARGUMENT_PATTERN = re.compile(r"^[A-Za-z0-9_./:@+=,-]+$")
+SAFE_COMMAND_ARGUMENT_PATTERN = re.compile(r"^[A-Za-z0-9_./:@+=,%{}|-]+$")
 EMULATION_SETUP_FAILURE = "environment/emulation-setup-failure"
+REGISTRY_PULL_FAILURE = "registry-pull-failure"
+CLEANUP_FAILURE = "cleanup-failure"
 SMOKE_EXECUTABLES = {"curl", "docker"}
+PULL_TIMEOUT_SECONDS = 120
+DIAGNOSTIC_LIMIT = 2048
 
 
 class SmokeFailure(Exception):
@@ -109,19 +114,73 @@ def _write_summary(evidence_directory, summary, log_paths):
     workspace_write_text(evidence_directory / "smoke-sha256.txt", "\n".join(hashes) + "\n")
 
 
-def _preflight(evidence_directory):
+def _support_safe(value):
+    bounded = (value or "")[:DIAGNOSTIC_LIMIT]
+    bounded = re.sub(r"(?i)bearer\s+\S+", "Bearer [redacted]", bounded)
+    bounded = re.sub(
+        r"(?i)(authorization|token|password|secret|api[_-]?key)=\S+",
+        r"\1=[redacted]",
+        bounded,
+    )
+    return " | ".join(line.strip() for line in bounded.splitlines() if line.strip())
+
+
+def _preflight(repository, arm64_digest, evidence_directory):
+    immutable_image = f"{repository}@{arm64_digest}"
     try:
         result = _run(["docker", "buildx", "inspect", "--bootstrap"])
     except SmokeFailure:
         result = None
-    passed = result is not None and result.returncode == 0 and "linux/arm64" in result.stdout
-    outcome = "pass" if passed else EMULATION_SETUP_FAILURE
+    outcome = "pass"
+    if result is None or result.returncode != 0 or "linux/arm64" not in result.stdout:
+        outcome = EMULATION_SETUP_FAILURE
+    if outcome == "pass":
+        try:
+            pull = _run(
+                ["docker", "pull", "--platform", "linux/arm64", immutable_image],
+                timeout=PULL_TIMEOUT_SECONDS,
+            )
+        except SmokeFailure:
+            pull = None
+        if pull is None or pull.returncode != 0:
+            outcome = REGISTRY_PULL_FAILURE
+    if outcome == "pass":
+        try:
+            executable = _run(
+                [
+                    "docker",
+                    "run",
+                    "--rm",
+                    "--platform",
+                    "linux/arm64",
+                    "--entrypoint",
+                    "/bin/uname",
+                    immutable_image,
+                    "-m",
+                ],
+                timeout=30,
+            )
+        except SmokeFailure:
+            executable = None
+        if executable is None or executable.returncode != 0:
+            stderr = executable.stderr if executable is not None else ""
+            outcome = (
+                EMULATION_SETUP_FAILURE
+                if EMULATION_FAILURE_PATTERN.search(stderr or "") is not None
+                else "image-start-failure"
+            )
+        elif executable.stdout.strip() not in {"aarch64", "arm64"}:
+            outcome = EMULATION_SETUP_FAILURE
     log_path = _write_log(
         evidence_directory,
         "smoke-preflight.log",
-        ["check=linux/arm64-runtime-capability", f"outcome={outcome}"],
+        [
+            "check=linux/arm64-runtime-capability",
+            f"image={immutable_image}",
+            f"outcome={outcome}",
+        ],
     )
-    return passed, log_path
+    return outcome, log_path
 
 
 def _smoke_platform(repository, platform, digest, evidence_directory, timeout_seconds, interval_seconds):
@@ -129,61 +188,132 @@ def _smoke_platform(repository, platform, digest, evidence_directory, timeout_se
     container_name = f"hexalith-eventstore-smoke-{architecture}-{os.getpid()}"
     immutable_image = f"{repository}@{digest}"
     log_lines = [f"platform={platform}", f"image={immutable_image}"]
-    outcome = "image-start-failure"
+    outcome = "pass"
+    cleanup = "not-required"
+    started = False
     attempts = 0
     try:
-        start = _run(
-            [
-                "docker",
-                "run",
-                "--detach",
-                "--rm",
-                "--platform",
-                platform,
-                "--publish",
-                "127.0.0.1::8080",
-                "--env",
-                "ASPNETCORE_URLS=http://+:8080",
-                "--name",
-                container_name,
-                immutable_image,
-            ]
-        )
-        if start.returncode != 0:
-            if EMULATION_FAILURE_PATTERN.search(start.stderr or "") is not None:
-                outcome = EMULATION_SETUP_FAILURE
-            log_lines.append(f"outcome={outcome}")
-            return outcome, _write_log(evidence_directory, f"smoke-linux-{architecture}.log", log_lines)
-
-        port_result = _run(["docker", "port", container_name, "8080/tcp"])
-        port_match = re.search(r"127\.0\.0\.1:(\d+)", port_result.stdout if port_result.returncode == 0 else "")
-        if port_match is None:
-            log_lines.append("outcome=image-start-failure")
-            return "image-start-failure", _write_log(
-                evidence_directory,
-                f"smoke-linux-{architecture}.log",
-                log_lines,
+        try:
+            pull = _run(
+                ["docker", "pull", "--platform", platform, immutable_image],
+                timeout=PULL_TIMEOUT_SECONDS,
             )
-
-        url = f"http://127.0.0.1:{port_match.group(1)}/alive"
-        deadline = time.monotonic() + timeout_seconds
-        while True:
-            attempts += 1
-            liveness = _run(
-                ["curl", "--fail", "--silent", "--show-error", "--max-time", "5", url],
-                timeout=10,
+        except SmokeFailure:
+            pull = None
+        if pull is None or pull.returncode != 0:
+            outcome = REGISTRY_PULL_FAILURE
+        if outcome == "pass":
+            try:
+                start = _run(
+                    [
+                        "docker",
+                        "run",
+                        "--detach",
+                        "--platform",
+                        platform,
+                        "--publish",
+                        "127.0.0.1::8080",
+                        "--env",
+                        "ASPNETCORE_URLS=http://+:8080",
+                        "--name",
+                        container_name,
+                        immutable_image,
+                    ]
+                )
+            except SmokeFailure:
+                start = None
+            if start is None or start.returncode != 0:
+                stderr = start.stderr if start is not None else ""
+                outcome = (
+                    EMULATION_SETUP_FAILURE
+                    if EMULATION_FAILURE_PATTERN.search(stderr or "") is not None
+                    else "image-start-failure"
+                )
+            else:
+                started = True
+                cleanup = "pending"
+        if outcome == "pass":
+            port_result = _run(["docker", "port", container_name, "8080/tcp"])
+            port_match = re.search(
+                r"127\.0\.0\.1:(\d+)",
+                port_result.stdout if port_result.returncode == 0 else "",
             )
-            if liveness.returncode == 0:
-                outcome = "pass"
-                break
-            if time.monotonic() >= deadline:
-                outcome = "liveness-timeout"
-                break
-            time.sleep(interval_seconds)
-        log_lines.extend((f"attempts={attempts}", f"outcome={outcome}"))
-        return outcome, _write_log(evidence_directory, f"smoke-linux-{architecture}.log", log_lines)
+            if port_match is None:
+                outcome = "image-start-failure"
+            else:
+                url = f"http://127.0.0.1:{port_match.group(1)}/alive"
+                deadline = time.monotonic() + timeout_seconds
+                while True:
+                    attempts += 1
+                    liveness = _run(
+                        [
+                            "curl",
+                            "--silent",
+                            "--show-error",
+                            "--max-time",
+                            "5",
+                            "--output",
+                            "/dev/null",
+                            "--write-out",
+                            "%{http_code}",
+                            url,
+                        ],
+                        timeout=10,
+                    )
+                    if liveness.returncode == 0 and re.fullmatch(r"2\d\d", liveness.stdout.strip()):
+                        break
+                    try:
+                        state = _run(
+                            [
+                                "docker",
+                                "inspect",
+                                "--format",
+                                "{{.State.Status}}|{{.State.ExitCode}}",
+                                container_name,
+                            ]
+                        )
+                    except SmokeFailure:
+                        state = None
+                    if state is not None and state.returncode == 0:
+                        state_value = _support_safe(state.stdout)
+                        if state_value:
+                            log_lines.append(f"container_state={state_value}")
+                        if not state_value.startswith("running|"):
+                            outcome = "image-start-failure"
+                            break
+                    if time.monotonic() >= deadline:
+                        outcome = "liveness-timeout"
+                        break
+                    time.sleep(interval_seconds)
     finally:
-        _run(["docker", "rm", "--force", container_name])
+        if started:
+            try:
+                inspect = _run(
+                    ["docker", "inspect", "--format", "{{.State.Status}}|{{.State.ExitCode}}", container_name]
+                )
+                if inspect.returncode == 0:
+                    log_lines.append(f"container_state={_support_safe(inspect.stdout)}")
+            except SmokeFailure:
+                log_lines.append("container_state=unavailable")
+            if outcome != "pass":
+                try:
+                    diagnostics = _run(["docker", "logs", "--tail", "50", container_name])
+                    if diagnostics.returncode == 0:
+                        safe_diagnostics = _support_safe(diagnostics.stdout + diagnostics.stderr)
+                        log_lines.append(f"diagnostic_sha256={hashlib.sha256(safe_diagnostics.encode()).hexdigest()}")
+                        if safe_diagnostics:
+                            log_lines.append(f"diagnostic_excerpt={safe_diagnostics}")
+                except SmokeFailure:
+                    log_lines.append("diagnostics=unavailable")
+            try:
+                removal = _run(["docker", "rm", "--force", container_name])
+                cleanup = "pass" if removal.returncode == 0 else "failure"
+            except SmokeFailure:
+                cleanup = "failure"
+            if cleanup == "failure" and outcome == "pass":
+                outcome = CLEANUP_FAILURE
+    log_lines.extend((f"attempts={attempts}", f"cleanup={cleanup}", f"outcome={outcome}"))
+    return outcome, _write_log(evidence_directory, f"smoke-linux-{architecture}.log", log_lines), cleanup
 
 
 def run_smoke(image, evidence_directory, timeout_seconds, interval_seconds):
@@ -193,10 +323,10 @@ def run_smoke(image, evidence_directory, timeout_seconds, interval_seconds):
     workspace_make_directory(evidence_directory)
     children = _load_children(evidence_directory)
     repository = _repository_without_tag(image)
-    preflight_passed, preflight_log = _preflight(evidence_directory)
-    if not preflight_passed:
+    preflight_outcome, preflight_log = _preflight(repository, children["linux/arm64"], evidence_directory)
+    if preflight_outcome != "pass":
         summary = {
-            "result": EMULATION_SETUP_FAILURE,
+            "result": preflight_outcome,
             "image_repository": repository,
             "platforms": [],
         }
@@ -207,7 +337,7 @@ def run_smoke(image, evidence_directory, timeout_seconds, interval_seconds):
     log_paths = [preflight_log]
     overall_result = "pass"
     for platform in REQUIRED_PLATFORMS:
-        outcome, log_path = _smoke_platform(
+        outcome, log_path, cleanup = _smoke_platform(
             repository,
             platform,
             children[platform],
@@ -218,7 +348,12 @@ def run_smoke(image, evidence_directory, timeout_seconds, interval_seconds):
         if overall_result == "pass" and outcome != "pass":
             overall_result = outcome
         platform_results.append(
-            {"platform": platform, "digest": children[platform], "outcome": outcome}
+            {
+                "platform": platform,
+                "digest": children[platform],
+                "outcome": outcome,
+                "cleanup": cleanup,
+            }
         )
         log_paths.append(log_path)
     summary = {
@@ -235,7 +370,7 @@ def _positive_number(value, name):
         number = float(value)
     except ValueError as error:
         raise argparse.ArgumentTypeError(f"{name} must be a number.") from error
-    if number <= 0:
+    if not math.isfinite(number) or number <= 0:
         raise argparse.ArgumentTypeError(f"{name} must be greater than zero.")
     return number
 

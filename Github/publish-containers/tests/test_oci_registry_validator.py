@@ -4,6 +4,8 @@ import importlib.util
 import json
 import tempfile
 import unittest
+import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from unittest import mock
@@ -142,7 +144,7 @@ def build_capture(root, mutation):
             "content_type": (
                 "application/octet-stream" if mutation == "index-content-type-mismatch" else top_media_type
             ),
-            "docker_content_digest": tag_digest,
+            "docker_content_digest": None if mutation == "missing-registry-digest" else tag_digest,
             "body": tag_body_name,
         },
         "objects": objects,
@@ -184,6 +186,82 @@ class OciRegistryValidatorTests(unittest.TestCase):
 
         self.assertIsNotNone(redirected)
         self.assertIsNone(redirected.get_header("Authorization"))
+
+        with self.assertRaises(urllib.error.HTTPError) as context:
+            self.validator.SafeRedirectHandler().redirect_request(
+                request,
+                None,
+                302,
+                "Found",
+                {},
+                "http://storage.example.test/signed-blob",
+            )
+        context.exception.close()
+
+    def test_registry_http_adapter_preserves_bytes_headers_and_immutable_references(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            capture_root = Path(temporary_directory)
+            build_capture(capture_root, "none")
+            capture = json.loads((capture_root / "responses.json").read_text(encoding="utf-8"))
+            requested = []
+
+            class FakeResponse:
+                def __init__(self, response):
+                    self.headers = {
+                        "Content-Type": response.get("content_type", ""),
+                        "Docker-Content-Digest": response.get("docker_content_digest"),
+                    }
+                    self._body = (capture_root / response["body"]).read_bytes()
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, exception_type, exception, traceback):
+                    return False
+
+                def read(self):
+                    return self._body
+
+            def open_request(request, timeout):
+                del timeout
+                requested.append(request)
+                reference = urllib.parse.unquote(request.full_url.rsplit("/", 1)[1])
+                response = capture["tag"] if reference == "3.76.1" else capture["objects"][reference]
+                return FakeResponse(response)
+
+            with mock.patch.object(self.validator.URL_OPENER, "open", side_effect=open_request):
+                evidence = self.validator.validate_registry(
+                    "registry.example.test/eventstore:3.76.1",
+                    "registry-user",
+                    "registry-key",
+                )
+
+            expected_index = (capture_root / capture["tag"]["body"]).read_bytes()
+            self.assertEqual(expected_index, evidence["index_bytes"])
+            self.assertEqual(
+                ["linux/amd64", "linux/arm64"],
+                [child["platform"] for child in evidence["children"]],
+            )
+            manifest_requests = [request for request in requested if "/manifests/" in request.full_url]
+            blob_requests = [request for request in requested if "/blobs/" in request.full_url]
+            self.assertEqual(4, len(manifest_requests))
+            self.assertEqual(2, len(blob_requests))
+            self.assertTrue(
+                all(request.get_header("Accept") == self.validator.MANIFEST_ACCEPT for request in manifest_requests)
+            )
+            self.assertTrue(
+                all(request.get_header("Accept") == "application/octet-stream" for request in blob_requests)
+            )
+            self.assertTrue(
+                any(f"/manifests/{evidence['index_digest']}" in request.full_url for request in manifest_requests)
+            )
+            for child in evidence["children"]:
+                self.assertTrue(
+                    any(f"/manifests/{child['digest']}" in request.full_url for request in manifest_requests)
+                )
+                self.assertTrue(
+                    any(f"/blobs/{child['config_digest']}" in request.full_url for request in blob_requests)
+                )
 
     def test_cli_inputs_reject_path_escape_and_option_shaped_image(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -247,6 +325,19 @@ class OciRegistryValidatorTests(unittest.TestCase):
                 ["linux/amd64", "linux/arm64"],
                 document["platforms"],
             )
+            for child in document["children"]:
+                manifest_path = evidence_root / child["manifest_raw_file"]
+                config_path = evidence_root / child["config_raw_file"]
+                self.assertTrue(manifest_path.is_file())
+                self.assertTrue(config_path.is_file())
+                self.assertEqual(
+                    child["manifest_raw_sha256"],
+                    hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+                )
+                self.assertEqual(
+                    child["config_raw_sha256"],
+                    hashlib.sha256(config_path.read_bytes()).hexdigest(),
+                )
 
 
 if __name__ == "__main__":

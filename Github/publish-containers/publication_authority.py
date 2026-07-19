@@ -15,11 +15,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from oci_registry_validator import (
+    MANIFEST_ACCEPT,
     SafeRedirectHandler,
+    _origin,
     workspace_input_directory,
     workspace_input_file,
     workspace_make_directory,
     workspace_output_directory,
+    workspace_path_exists,
     workspace_read_bytes,
     workspace_read_text,
     workspace_write_bytes,
@@ -41,6 +44,12 @@ SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", re.ASCII)
 UTC_OFFSET = "+00:00"
+GITHUB_AUTHORITY_URL_PATTERN = re.compile(
+    r"^https://api\.github\.com/repos/Hexalith/Hexalith\.EventStore/issues/comments/\d+$",
+    re.ASCII,
+)
+GITHUB_API_ORIGIN = ("https", "api.github.com", 443)
+GITHUB_LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$", re.ASCII)
 
 
 URL_OPENER = urllib.request.build_opener(SafeRedirectHandler())
@@ -142,11 +151,13 @@ def _validate_builds_identity(authority, expected, builds_sha):
     return actual_hashes
 
 
-def _validate_owner_window(authority, checked_at):
+def _validate_owner_window(authority, expected, checked_at):
     owner = authority.get("owner")
     if not isinstance(owner, dict) or owner.get("role") != REQUIRED_OWNER_ROLE:
         _fail("wrong-owner-role", "Authority owner role is not EventStore release owner.")
     owner_name = _require_nonblank(owner.get("name"), "wrong-owner-role", "owner name")
+    if owner_name != expected.get("owner_name"):
+        _fail("wrong-owner", "Authority owner is not an approved EventStore release owner.")
     _require_nonblank(authority.get("rationale"), "malformed-authority", "rationale")
     authorized_at = _parse_timestamp(authority.get("authorized_at"), "authorized_at")
     expires_at = _parse_timestamp(authority.get("expires_at"), "expires_at")
@@ -166,7 +177,7 @@ def validate_authority_bytes(raw, expected, checked_at):
     authority = _parse_json_unique(raw)
     builds_sha = _validate_release_identity(authority, expected)
     actual_hashes = _validate_builds_identity(authority, expected, builds_sha)
-    owner_name = _validate_owner_window(authority, checked_at)
+    owner_name = _validate_owner_window(authority, expected, checked_at)
 
     checked_at_text = checked_at.isoformat().replace(UTC_OFFSET, "Z")
     return {
@@ -214,6 +225,23 @@ def validate_destination_absence(package_ids, version, container_repository, pro
     }
 
 
+def validate_container_absence(version, container_repository, probe):
+    """Require the exact container version tag to remain absent."""
+
+    if not isinstance(version, str) or SEMVER_PATTERN.fullmatch(version) is None:
+        _fail("invalid-version", "Proposed release version is invalid.")
+    status = probe("container", container_repository, version)
+    if status == 200:
+        _fail("version-collision", "The proposed container tag already exists.")
+    if status != 404:
+        _fail("destination-probe-failure", "Container destination absence could not be proved.")
+    return {
+        "result": "pass",
+        "version": version,
+        "container_repository": container_repository,
+    }
+
+
 def _http_status(request):
     try:
         with URL_OPENER.open(request, timeout=30) as response:
@@ -250,7 +278,7 @@ def destination_probe(username, api_key):
         request = urllib.request.Request(
             f"https://{registry}/v2/{repository_path}/manifests/{tag}",
             headers={
-                "Accept": "application/vnd.oci.image.index.v1+json",
+                "Accept": MANIFEST_ACCEPT,
                 "Authorization": f"Basic {credentials}",
             },
             method="HEAD",
@@ -260,21 +288,61 @@ def destination_probe(username, api_key):
     return probe
 
 
-def _load_authority_url(url, github_token):
-    parsed = urllib.parse.urlparse(url)
-    if parsed.scheme != "https" or not parsed.netloc:
-        _fail("invalid-authority-source", "Authority source must be an HTTPS URL.")
-    headers = {"Accept": "application/json"}
-    if github_token:
+def _load_role_allowlist(path, repository):
+    try:
+        document = json.loads(workspace_read_text(Path(path)))
+        owners = document["roles"]["release_owner"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as error:
+        raise AuthorityError("owner-allowlist-invalid", "Release-owner allowlist is invalid.") from error
+    if (
+        document.get("schema") != "hexalith.eventstore.github-approval-role-allowlist/v1"
+        or document.get("repository") != repository
+        or not isinstance(owners, list)
+        or not owners
+        or len(owners) != len(set(owners))
+        or any(not isinstance(owner, str) or GITHUB_LOGIN_PATTERN.fullmatch(owner) is None for owner in owners)
+    ):
+        _fail("owner-allowlist-invalid", "Release-owner allowlist is invalid.")
+    return set(owners)
+
+
+def _load_authority_url(url, github_token, allowed_owners):
+    if GITHUB_AUTHORITY_URL_PATTERN.fullmatch(url) is None:
+        _fail("invalid-authority-source", "Authority source must be an EventStore GitHub issue-comment API URL.")
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    if github_token and _origin(url) == GITHUB_API_ORIGIN:
         headers["Authorization"] = f"Bearer {github_token}"
     request = urllib.request.Request(url, headers=headers, method="GET")
     try:
         with URL_OPENER.open(request, timeout=30) as response:
-            raw = response.read(131073)
+            response_raw = response.read(262145)
+            if len(response_raw) > 262144:
+                _fail("malformed-authority", "Authority record exceeds the size limit.")
+            github_record = _parse_json_unique(response_raw)
+            body = github_record.get("body")
+            owner = github_record.get("user")
+            owner_login = owner.get("login") if isinstance(owner, dict) else None
+            html_url = github_record.get("html_url")
+            if not isinstance(body, str) or not body.strip():
+                _fail("malformed-authority", "GitHub authority comment body is empty.")
+            if owner_login not in allowed_owners:
+                _fail("wrong-owner", "GitHub authority author is not an approved release owner.")
+            if not isinstance(html_url, str) or not html_url.startswith(
+                "https://github.com/Hexalith/Hexalith.EventStore/"
+            ):
+                _fail("invalid-authority-source", "GitHub authority HTML URL is invalid.")
+            raw = body.encode("utf-8")
             if len(raw) > 131072:
                 _fail("malformed-authority", "Authority record exceeds the size limit.")
             metadata = {
-                "source_url": url,
+                "api_url": url,
+                "html_url": html_url,
+                "login": owner_login,
+                "role": "release_owner",
+                "body_sha256": _sha256_bytes(raw),
                 "retrieved_at": datetime.now(timezone.utc).isoformat().replace(UTC_OFFSET, "Z"),
                 "etag": response.headers.get("ETag"),
                 "last_modified": response.headers.get("Last-Modified"),
@@ -294,19 +362,47 @@ def _load_package_ids(path):
     return package_ids
 
 
-def _write_evidence(directory, authority_raw, metadata, authority_evidence, destination_evidence):
+def _stable_source_metadata(metadata):
+    return {
+        key: metadata.get(key)
+        for key in ("api_url", "html_url", "login", "role", "body_sha256", "etag", "last_modified")
+    }
+
+
+def _write_evidence(directory, phase, authority_raw, metadata, authority_evidence, destination_evidence):
     directory = Path(directory)
     workspace_make_directory(directory)
     authority_path = directory / "release-owner-publication-authority.json"
     metadata_path = directory / "release-owner-publication-authority.source.json"
-    checked_at_path = directory / "release-owner-publication-authority.checked-at.txt"
-    workspace_write_bytes(authority_path, authority_raw)
-    workspace_write_text(metadata_path, json.dumps(metadata, indent=2, sort_keys=True) + "\n")
+    if phase == "verify":
+        if workspace_path_exists(authority_path) or workspace_path_exists(metadata_path):
+            _fail("frozen-authority-collision", "Frozen authority evidence already exists.")
+        workspace_write_bytes(authority_path, authority_raw)
+        workspace_write_text(metadata_path, json.dumps(metadata, indent=2, sort_keys=True) + "\n")
+    else:
+        try:
+            frozen_authority = workspace_read_bytes(authority_path)
+            frozen_metadata = json.loads(workspace_read_text(metadata_path))
+        except (OSError, json.JSONDecodeError) as error:
+            raise AuthorityError("frozen-authority-missing", "Frozen authority evidence is unavailable.") from error
+        if frozen_authority != authority_raw:
+            _fail("authority-bytes-changed", "Live authority bytes differ from the frozen pre-tag record.")
+        if _stable_source_metadata(frozen_metadata) != _stable_source_metadata(metadata):
+            _fail("authority-source-changed", "Live authority source identity differs from the frozen record.")
+    checked_name = (
+        "release-owner-publication-authority.checked-at.txt"
+        if phase == "verify"
+        else f"release-owner-publication-authority.{phase}-revalidated-at.txt"
+    )
+    checked_at_path = directory / checked_name
+    if workspace_path_exists(checked_at_path):
+        _fail("authority-phase-collision", "Authority phase evidence already exists.")
     workspace_write_text(checked_at_path, authority_evidence["checked_at"] + "\n")
     evidence = {
         "result": "pass",
         "authority": authority_evidence,
         "destinations": destination_evidence,
+        "source_revalidation": metadata,
         "files": {
             authority_path.name: _sha256_bytes(workspace_read_bytes(authority_path)),
             metadata_path.name: _sha256_bytes(workspace_read_bytes(metadata_path)),
@@ -314,7 +410,7 @@ def _write_evidence(directory, authority_raw, metadata, authority_evidence, dest
         },
     }
     workspace_write_text(
-        directory / "publication-preflight.json",
+        directory / f"publication-preflight.{phase}.json",
         json.dumps(evidence, indent=2, sort_keys=True) + "\n",
     )
 
@@ -327,38 +423,52 @@ def main():
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--container-repository", required=True)
     parser.add_argument("--builds-execution-sha", required=True)
-    parser.add_argument("--package-manifest", required=True, type=workspace_input_file)
+    parser.add_argument("--package-manifest", type=workspace_input_file)
+    parser.add_argument("--role-allowlist", required=True, type=workspace_input_file)
     parser.add_argument("--contract-directory", required=True, type=workspace_input_directory)
     parser.add_argument("--evidence-directory", required=True, type=workspace_output_directory)
+    parser.add_argument("--phase", required=True, choices=("verify", "publish", "container"))
     arguments = parser.parse_args()
     checked_at = datetime.now(timezone.utc)
     contract_directory = arguments.contract_directory
-    expected = {
-        "repository": arguments.repository,
-        "version": arguments.version,
-        "source_sha": arguments.source_sha,
-        "container_repository": arguments.container_repository,
-        "durable_source": arguments.authority_url,
-        "platforms": list(REQUIRED_PLATFORMS),
-        "builds_execution_sha": arguments.builds_execution_sha,
-        "files": {name: contract_directory / name for name in REQUIRED_CONTRACT_FILES},
-    }
     try:
+        allowed_owners = _load_role_allowlist(arguments.role_allowlist, arguments.repository)
         authority_raw, metadata = _load_authority_url(
             arguments.authority_url,
             os.environ.get("GITHUB_TOKEN", ""),
+            allowed_owners,
         )
+        expected = {
+            "repository": arguments.repository,
+            "version": arguments.version,
+            "source_sha": arguments.source_sha,
+            "container_repository": arguments.container_repository,
+            "durable_source": metadata["html_url"],
+            "owner_name": metadata["login"],
+            "platforms": list(REQUIRED_PLATFORMS),
+            "builds_execution_sha": arguments.builds_execution_sha,
+            "files": {name: contract_directory / name for name in REQUIRED_CONTRACT_FILES},
+        }
         _ = validate_authority_bytes(authority_raw, expected, checked_at)
-        package_ids = _load_package_ids(arguments.package_manifest)
-        destination_evidence = validate_destination_absence(
-            package_ids,
-            arguments.version,
-            arguments.container_repository,
-            destination_probe(
-                os.environ.get("HEXALITH_ZOT_USERNAME", ""),
-                os.environ.get("HEXALITH_ZOT_API_KEY", ""),
-            ),
+        probe = destination_probe(
+            os.environ.get("HEXALITH_ZOT_USERNAME", ""),
+            os.environ.get("HEXALITH_ZOT_API_KEY", ""),
         )
+        if arguments.phase == "container":
+            destination_evidence = validate_container_absence(
+                arguments.version,
+                arguments.container_repository,
+                probe,
+            )
+        else:
+            if arguments.package_manifest is None:
+                _fail("package-inventory-mismatch", "Package manifest is required before NuGet publication.")
+            destination_evidence = validate_destination_absence(
+                _load_package_ids(arguments.package_manifest),
+                arguments.version,
+                arguments.container_repository,
+                probe,
+            )
         authority_evidence = validate_authority_bytes(
             authority_raw,
             expected,
@@ -366,6 +476,7 @@ def main():
         )
         _write_evidence(
             arguments.evidence_directory,
+            arguments.phase,
             authority_raw,
             metadata,
             authority_evidence,

@@ -18,7 +18,18 @@ def write_executable(path, content):
 
 
 class SmokeContainerPlatformsTests(unittest.TestCase):
-    def run_smoke(self, *, preflight_pass=True, start_pass=True, liveness_pass=True):
+    def run_smoke(
+        self,
+        *,
+        preflight_pass=True,
+        runtime_emulation_pass=True,
+        pull_pass=True,
+        start_pass=True,
+        liveness_status="200",
+        container_state="running|0",
+        cleanup_pass=True,
+        timeout_value="0.25",
+    ):
         temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(temporary_directory.cleanup)
         root = Path(temporary_directory.name)
@@ -51,13 +62,34 @@ if [ "${1:-}" = buildx ]; then
   printf '%s\n' 'Platforms: linux/amd64, linux/arm64'
   exit 0
 fi
+if [ "${1:-}" = pull ]; then
+  [ "$FAKE_PULL_PASS" = true ] || { printf '%s\n' 'fixture registry pull failed' >&2; exit 1; }
+  exit 0
+fi
 if [ "${1:-}" = run ]; then
+  if [[ " $* " == *" --entrypoint "* ]]; then
+    [ "$FAKE_RUNTIME_EMULATION_PASS" = true ] || { printf '%s\n' 'exec format error' >&2; exit 1; }
+    printf '%s\n' 'aarch64'
+    exit 0
+  fi
   [ "$FAKE_START_PASS" = true ] || { printf '%s\n' 'fixture image start failed' >&2; exit 1; }
   printf '%s\n' 'fixture-container-id'
   exit 0
 fi
 if [ "${1:-}" = port ]; then
   printf '%s\n' '127.0.0.1:43123'
+  exit 0
+fi
+if [ "${1:-}" = inspect ]; then
+  printf '%s\n' "$FAKE_CONTAINER_STATE"
+  exit 0
+fi
+if [ "${1:-}" = logs ]; then
+  printf '%s\n' 'bounded fixture diagnostic'
+  exit 0
+fi
+if [ "${1:-}" = rm ]; then
+  [ "$FAKE_CLEANUP_PASS" = true ] || exit 1
   exit 0
 fi
 exit 0
@@ -67,8 +99,11 @@ exit 0
             fake_bin / "curl",
             """#!/usr/bin/env bash
 set -euo pipefail
-[ "$FAKE_LIVENESS_PASS" = true ] || exit 22
-printf '%s\n' 'Healthy'
+[ "${*: -1}" = "http://127.0.0.1:43123/alive" ] || exit 64
+[[ " $* " != *" --location "* ]] || exit 64
+[[ " $* " == *" --output /dev/null "* ]] || exit 64
+[[ " $* " == *" --write-out %{http_code} "* ]] || exit 64
+printf '%s' "$FAKE_LIVENESS_STATUS"
 """,
         )
         environment = os.environ.copy()
@@ -77,9 +112,13 @@ printf '%s\n' 'Healthy'
                 "PATH": f"{fake_bin}:{environment['PATH']}",
                 "FAKE_DOCKER_LOG": str(docker_log),
                 "FAKE_PREFLIGHT_PASS": str(preflight_pass).lower(),
+                "FAKE_RUNTIME_EMULATION_PASS": str(runtime_emulation_pass).lower(),
+                "FAKE_PULL_PASS": str(pull_pass).lower(),
                 "FAKE_START_PASS": str(start_pass).lower(),
-                "FAKE_LIVENESS_PASS": str(liveness_pass).lower(),
-                "HEXALITH_CONTAINER_SMOKE_TIMEOUT_SECONDS": "0.25",
+                "FAKE_LIVENESS_STATUS": liveness_status,
+                "FAKE_CONTAINER_STATE": container_state,
+                "FAKE_CLEANUP_PASS": str(cleanup_pass).lower(),
+                "HEXALITH_CONTAINER_SMOKE_TIMEOUT_SECONDS": timeout_value,
                 "HEXALITH_CONTAINER_SMOKE_INTERVAL_SECONDS": "0.05",
             }
         )
@@ -128,9 +167,50 @@ printf '%s\n' 'Healthy'
         self.assertEqual("image-start-failure", summary["result"])
 
     def test_liveness_timeout_is_classified(self):
-        result, summary, _, _ = self.run_smoke(liveness_pass=False)
+        result, summary, _, _ = self.run_smoke(liveness_status="503")
         self.assertNotEqual(0, result.returncode)
         self.assertEqual("liveness-timeout", summary["result"])
+
+    def test_container_exit_during_liveness_preserves_start_failure_and_diagnostics(self):
+        result, summary, _, evidence = self.run_smoke(
+            liveness_status="503",
+            container_state="exited|17",
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual("image-start-failure", summary["result"])
+        self.assertEqual("pass", summary["platforms"][0]["cleanup"])
+        smoke_log = (evidence / "smoke-linux-amd64.log").read_text(encoding="utf-8")
+        self.assertIn("container_state=exited|17", smoke_log)
+        self.assertIn("diagnostic_sha256=", smoke_log)
+        self.assertIn("diagnostic_excerpt=bounded fixture diagnostic", smoke_log)
+
+    def test_redirect_is_not_accepted_as_liveness(self):
+        result, summary, _, _ = self.run_smoke(liveness_status="302")
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual("liveness-timeout", summary["result"])
+
+    def test_runtime_emulation_failure_is_classified_before_product_smoke(self):
+        result, summary, docker_log, _ = self.run_smoke(runtime_emulation_pass=False)
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual("environment/emulation-setup-failure", summary["result"])
+        self.assertNotIn("--detach", docker_log)
+
+    def test_registry_pull_and_cleanup_failures_are_preserved(self):
+        result, summary, _, _ = self.run_smoke(pull_pass=False)
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual("registry-pull-failure", summary["result"])
+
+        result, summary, _, _ = self.run_smoke(cleanup_pass=False)
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual("cleanup-failure", summary["result"])
+
+    def test_non_finite_timing_is_rejected(self):
+        for value in ("nan", "inf", "-inf"):
+            with self.subTest(value=value):
+                result, summary, _, _ = self.run_smoke(timeout_value=value)
+                self.assertNotEqual(0, result.returncode)
+                self.assertIsNone(summary)
+                self.assertIn("must be greater than zero", result.stderr)
 
 
 if __name__ == "__main__":

@@ -1,12 +1,14 @@
 import hashlib
 import importlib.util
 import json
+import os
 import sys
 import tempfile
 import unittest
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
@@ -74,6 +76,7 @@ class PublicationAuthorityTests(unittest.TestCase):
             "platforms": ["linux/amd64", "linux/arm64"],
             "builds_execution_sha": BUILDS_SHA,
             "durable_source": "https://github.com/Hexalith/Hexalith.EventStore/issues/120#issuecomment-1",
+            "owner_name": "release-owner",
             "files": files,
         }
         return authority, expected, checked_at
@@ -95,6 +98,40 @@ class PublicationAuthorityTests(unittest.TestCase):
 
         self.assertIsNotNone(redirected)
         self.assertIsNone(redirected.get_header("Authorization"))
+
+    def test_github_authority_adapter_binds_comment_author_and_body(self):
+        body = '{"schema":"hexalith.release-publication-authority.v1"}'
+        response_document = {
+            "body": body,
+            "user": {"login": "release-owner"},
+            "html_url": "https://github.com/Hexalith/Hexalith.EventStore/issues/120#issuecomment-1",
+        }
+
+        class FakeResponse:
+            headers = {"ETag": '"fixture-etag"', "Last-Modified": "Sun, 19 Jul 2026 13:00:00 GMT"}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exception_type, exception, traceback):
+                return False
+
+            def read(self, size):
+                return json.dumps(response_document).encode("utf-8")
+
+        api_url = "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1"
+        with mock.patch.object(self.validator.URL_OPENER, "open", return_value=FakeResponse()) as opened:
+            raw, metadata = self.validator._load_authority_url(
+                api_url,
+                "fixture-token",
+                {"release-owner"},
+            )
+
+        request = opened.call_args.args[0]
+        self.assertEqual("Bearer fixture-token", request.get_header("Authorization"))
+        self.assertEqual(body.encode("utf-8"), raw)
+        self.assertEqual("release-owner", metadata["login"])
+        self.assertEqual(response_document["html_url"], metadata["html_url"])
 
     def test_exact_unexpired_release_owner_authority_passes_and_records_hashes(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -157,6 +194,162 @@ class PublicationAuthorityTests(unittest.TestCase):
                 collision_probe,
             )
         self.assertEqual("version-collision", context.exception.code)
+
+        with self.assertRaises(self.validator.AuthorityError) as context:
+            self.validator.validate_container_absence(
+                "3.77.0",
+                "registry.hexalith.com/eventstore",
+                lambda kind, identity, version: 200,
+            )
+        self.assertEqual("version-collision", context.exception.code)
+
+    def test_registry_probe_requests_every_recognized_manifest_media_type(self):
+        captured = []
+
+        def status(request):
+            captured.append(request)
+            return 404
+
+        with mock.patch.object(self.validator, "_http_status", side_effect=status):
+            probe = self.validator.destination_probe("registry-user", "registry-key")
+            self.assertEqual(404, probe("container", "registry.hexalith.com/eventstore", "3.77.0"))
+
+        self.assertEqual(self.validator.MANIFEST_ACCEPT, captured[0].get_header("Accept"))
+
+    def test_frozen_authority_bytes_and_post_probe_expiry_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            authority, expected, checked_at = self.create_contract(root)
+            raw = (json.dumps(authority, sort_keys=True) + "\n").encode("utf-8")
+            evidence = self.validator.validate_authority_bytes(raw, expected, checked_at)
+            metadata = {
+                "api_url": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1",
+                "html_url": authority["durable_source"],
+                "login": "release-owner",
+                "role": "release_owner",
+                "body_sha256": hashlib.sha256(raw).hexdigest(),
+                "etag": '"fixture"',
+                "last_modified": None,
+                "retrieved_at": checked_at.isoformat(),
+            }
+            destination = {"result": "pass"}
+            evidence_root = root / "evidence"
+            self.validator._write_evidence(evidence_root, "verify", raw, metadata, evidence, destination)
+            self.validator._write_evidence(evidence_root, "publish", raw, metadata, evidence, destination)
+            with self.assertRaises(self.validator.AuthorityError) as context:
+                self.validator._write_evidence(
+                    evidence_root,
+                    "container",
+                    raw + b" ",
+                    metadata,
+                    evidence,
+                    destination,
+                )
+            self.assertEqual("authority-bytes-changed", context.exception.code)
+
+            authority["expires_at"] = (checked_at + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+            expiring_raw = (json.dumps(authority, sort_keys=True) + "\n").encode("utf-8")
+            self.validator.validate_authority_bytes(expiring_raw, expected, checked_at)
+            with self.assertRaises(self.validator.AuthorityError) as context:
+                self.validator.validate_authority_bytes(
+                    expiring_raw,
+                    expected,
+                    checked_at + timedelta(seconds=1),
+                )
+            self.assertEqual("expired-authority", context.exception.code)
+
+    def test_main_revalidates_expiry_after_all_destination_probes(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            contract_directory = root / "contract"
+            contract_directory.mkdir()
+            authority, expected, checked_at = self.create_contract(contract_directory)
+            authority["expires_at"] = (checked_at + timedelta(seconds=1)).isoformat().replace(
+                "+00:00",
+                "Z",
+            )
+            raw = (json.dumps(authority, sort_keys=True) + "\n").encode("utf-8")
+            metadata = {
+                "api_url": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1",
+                "html_url": authority["durable_source"],
+                "login": authority["owner"]["name"],
+                "role": "release_owner",
+                "body_sha256": hashlib.sha256(raw).hexdigest(),
+                "etag": '"fixture"',
+                "last_modified": None,
+                "retrieved_at": checked_at.isoformat(),
+            }
+            allowlist = root / "release-owners.json"
+            allowlist.write_text(
+                json.dumps(
+                    {
+                        "schema": "hexalith.eventstore.github-approval-role-allowlist/v1",
+                        "repository": expected["repository"],
+                        "roles": {"release_owner": [authority["owner"]["name"]]},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            package_manifest = root / "release-packages.json"
+            package_manifest.write_text(
+                json.dumps({"packages": [{"id": f"Package.{index}"} for index in range(14)]}),
+                encoding="utf-8",
+            )
+            probe_calls = []
+
+            def absent_probe(kind, identity, version):
+                probe_calls.append((kind, identity, version))
+                return 404
+
+            class SequencedDateTime(datetime):
+                values = iter((checked_at, checked_at + timedelta(seconds=1)))
+
+                @classmethod
+                def now(cls, tz=None):
+                    value = next(cls.values)
+                    return value.astimezone(tz) if tz is not None else value.replace(tzinfo=None)
+
+            arguments = [
+                "publication_authority.py",
+                "--authority-url",
+                metadata["api_url"],
+                "--repository",
+                expected["repository"],
+                "--version",
+                expected["version"],
+                "--source-sha",
+                expected["source_sha"],
+                "--container-repository",
+                expected["container_repository"],
+                "--builds-execution-sha",
+                expected["builds_execution_sha"],
+                "--package-manifest",
+                str(package_manifest),
+                "--role-allowlist",
+                str(allowlist),
+                "--contract-directory",
+                str(contract_directory),
+                "--evidence-directory",
+                str(root / "evidence"),
+                "--phase",
+                "verify",
+            ]
+            previous_directory = Path.cwd()
+            try:
+                os.chdir(root)
+                with (
+                    mock.patch.object(self.validator, "datetime", SequencedDateTime),
+                    mock.patch.object(self.validator, "_load_authority_url", return_value=(raw, metadata)),
+                    mock.patch.object(self.validator, "destination_probe", return_value=absent_probe),
+                    mock.patch.object(sys, "argv", arguments),
+                ):
+                    result = self.validator.main()
+            finally:
+                os.chdir(previous_directory)
+
+            self.assertEqual(1, result)
+            self.assertEqual(15, len(probe_calls))
+            self.assertFalse((root / "evidence" / "publication-preflight.verify.json").exists())
 
     def test_destination_probe_errors_and_non_exact_inventory_fail_closed(self):
         packages = [f"Package.{index}" for index in range(14)]

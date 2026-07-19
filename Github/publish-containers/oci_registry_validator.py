@@ -49,6 +49,16 @@ class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
     """Follow redirects without forwarding credentials to another origin."""
 
     def redirect_request(self, request, file_pointer, code, message, headers, new_url):
+        if urllib.parse.urlsplit(request.full_url).scheme.lower() == "https" and urllib.parse.urlsplit(
+            new_url
+        ).scheme.lower() != "https":
+            raise urllib.error.HTTPError(
+                new_url,
+                code,
+                "HTTPS downgrade redirect rejected.",
+                headers,
+                file_pointer,
+            )
         redirected = super().redirect_request(
             request,
             file_pointer,
@@ -139,6 +149,12 @@ def workspace_make_directory(path):
     """Create a directory after its CLI path has been workspace-confined."""
 
     path.mkdir(parents=True, exist_ok=True)  # NOSONAR -- canonicalized below cwd.
+
+
+def workspace_path_exists(path):
+    """Check a path after the owning CLI path has been workspace-confined."""
+
+    return path.exists()  # NOSONAR -- canonicalized below cwd.
 
 
 def workspace_read_bytes(path):
@@ -305,12 +321,17 @@ def _validate_child(descriptor, response, body, config_resolver):
         "config_digest": config_digest,
         "config_size": config_size,
         "config_media_type": config_media_type,
+        "manifest_bytes": body,
+        "config_bytes": config_body,
     }
 
 
 def _validate_graph(tag_response, immutable_resolver, child_resolver, config_resolver):
     tag_body = tag_response["body_bytes"]
-    reported_digest = tag_response.get("docker_content_digest")
+    reported_digest = _validate_digest(
+        tag_response.get("docker_content_digest"),
+        "missing-registry-digest",
+    )
     immutable_response = immutable_resolver(reported_digest)
     immutable_body = immutable_response["body_bytes"]
     index_digest, _, descriptors = _validate_index(
@@ -462,9 +483,31 @@ def write_evidence(evidence_directory, image, evidence):
 
     directory = Path(evidence_directory)
     workspace_make_directory(directory)
-    index_bytes = evidence.pop("index_bytes")
+    index_bytes = evidence["index_bytes"]
     workspace_write_bytes(directory / "index.raw", index_bytes)
-    document = dict(evidence)
+    document = {key: value for key, value in evidence.items() if key not in {"children", "index_bytes"}}
+    children = []
+    for child in evidence["children"]:
+        child_document = {
+            key: value
+            for key, value in child.items()
+            if key not in {"manifest_bytes", "config_bytes"}
+        }
+        architecture = child["platform"].split("/", 1)[1]
+        manifest_name = f"child-linux-{architecture}.manifest.raw"
+        config_name = f"child-linux-{architecture}.config.raw"
+        workspace_write_bytes(directory / manifest_name, child["manifest_bytes"])
+        workspace_write_bytes(directory / config_name, child["config_bytes"])
+        child_document.update(
+            {
+                "manifest_raw_file": manifest_name,
+                "manifest_raw_sha256": hashlib.sha256(child["manifest_bytes"]).hexdigest(),
+                "config_raw_file": config_name,
+                "config_raw_sha256": hashlib.sha256(child["config_bytes"]).hexdigest(),
+            }
+        )
+        children.append(child_document)
+    document["children"] = children
     document["image"] = image
     document["raw_index_file"] = "index.raw"
     workspace_write_text(
