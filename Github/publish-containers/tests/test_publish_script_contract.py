@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -16,6 +17,22 @@ RUNTIME_IDENTIFIERS = "linux-musl-x64;linux-musl-arm64"
 def write_executable(path, content):
     path.write_text(content, encoding="utf-8")
     path.chmod(0o755)
+
+
+def extract_run_block(path, step_name):
+    lines = path.read_text(encoding="utf-8").splitlines()
+    step_index = next(index for index, line in enumerate(lines) if line.strip() == f"- name: {step_name}")
+    run_index = next(
+        index for index in range(step_index + 1, len(lines)) if lines[index].strip() == "run: |"
+    )
+    run_indent = len(lines[run_index]) - len(lines[run_index].lstrip())
+    block = []
+    for line in lines[run_index + 1 :]:
+        indent = len(line) - len(line.lstrip())
+        if line.strip() and indent <= run_indent:
+            break
+        block.append(line[run_indent + 2 :] if line.strip() else "")
+    return "\n".join(block) + "\n"
 
 
 class PublishScriptContractTests(unittest.TestCase):
@@ -102,6 +119,85 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertIn("uses: ./.hexalith/builds-execution/Github/initialize-build", workflow)
         self.assertIn("- name: Upload complete release evidence", workflow)
         self.assertIn("if: ${{ always() && inputs.publish-containers }}", workflow)
+
+    def test_workflow_sha_and_action_byte_mismatches_fail_behaviorally(self):
+        identity_script = extract_run_block(DOMAIN_RELEASE, "Validate approved Builds execution identity")
+        identity_environment = os.environ.copy()
+        identity_environment.update(
+            {
+                "BUILD_EXECUTION_SHA": "a" * 40,
+                "RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1",
+                "RELEASE_OWNER_ALLOWLIST": "release-owners.json",
+                "RESOLVED_WORKFLOW_REPOSITORY": "Hexalith/Hexalith.Builds",
+                "RESOLVED_WORKFLOW_SHA": "b" * 40,
+            }
+        )
+        identity_result = subprocess.run(
+            ["bash", "-c", identity_script],
+            env=identity_environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(0, identity_result.returncode)
+        self.assertIn("does not match", identity_result.stderr)
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            approved = root / "approved"
+            action_path = root / "action"
+            fake_bin = root / "bin"
+            approved.mkdir()
+            fake_bin.mkdir()
+            files = (
+                "action.yml",
+                "publish-containers.sh",
+                "oci_registry_validator.py",
+                "publication_authority.py",
+                "smoke-container-platforms.sh",
+                "smoke_container_platforms.py",
+            )
+            for name in files:
+                shutil.copy2(SCRIPT_DIRECTORY / name, approved / name)
+            shutil.copytree(approved, action_path)
+            (action_path / "publish-containers.sh").write_text("changed bytes\n", encoding="utf-8")
+            write_executable(
+                fake_bin / "curl",
+                """#!/usr/bin/env bash
+set -euo pipefail
+output=''
+source_url=''
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --output) shift; output="$1" ;;
+    https://*) source_url="$1" ;;
+  esac
+  shift
+done
+cp "$FAKE_APPROVED/$(basename "$source_url")" "$output"
+""",
+            )
+            action_environment = os.environ.copy()
+            action_environment.update(
+                {
+                    "PATH": f"{fake_bin}:{action_environment['PATH']}",
+                    "GITHUB_ACTION_PATH": str(action_path),
+                    "HEXALITH_CONTAINER_PROJECTS": "EventStore.csproj|eventstore",
+                    "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
+                    "FAKE_APPROVED": str(approved),
+                }
+            )
+            action_result = subprocess.run(
+                ["bash", "-c", extract_run_block(ACTION, "Install container publish helper")],
+                cwd=root,
+                env=action_environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(0, action_result.returncode)
+            self.assertIn("do not match", action_result.stderr)
+            self.assertFalse((root / ".hexalith" / "release" / "publish-containers.sh").exists())
 
     def test_domain_release_sha_pins_arm64_emulation_setup_before_publisher(self):
         workflow = DOMAIN_RELEASE.read_text(encoding="utf-8")
@@ -265,6 +361,57 @@ class PublishScriptContractTests(unittest.TestCase):
 
             self.assertNotEqual(0, result.returncode)
             self.assertFalse(mutation_marker.exists())
+
+    def test_repository_path_escape_is_rejected_before_evidence_or_publication(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            fake_bin = root / "bin"
+            fake_bin.mkdir()
+            project = root / "EventStore.csproj"
+            project.write_text("<Project />\n", encoding="utf-8")
+            mutation_marker = root / "dotnet-ran"
+            escaped_path = root.parent / f"escaped-{root.name}"
+            role_allowlist = root / "release-owners.json"
+            role_allowlist.write_text("{}\n", encoding="utf-8")
+            write_executable(fake_bin / "docker", "#!/usr/bin/env bash\ncat >/dev/null\n")
+            write_executable(
+                fake_bin / "dotnet",
+                "#!/usr/bin/env bash\ntouch \"$FAKE_MUTATION_MARKER\"\n",
+            )
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PATH": f"{fake_bin}:{environment['PATH']}",
+                    "HEXALITH_CONTAINER_PROJECTS": f"{project}|../{escaped_path.name}",
+                    "HEXALITH_ZOT_USERNAME": "fixture-user",
+                    "HEXALITH_ZOT_API_KEY": "fixture-token",
+                    "HEXALITH_ZOT_REGISTRY": "registry.example.test",
+                    "HEXALITH_OCI_VALIDATOR": "/bin/true",
+                    "HEXALITH_CONTAINER_SMOKE": "/bin/true",
+                    "HEXALITH_PUBLICATION_AUTHORITY_VALIDATOR": "/bin/true",
+                    "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
+                    "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1",
+                    "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
+                    "HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH": str(role_allowlist),
+                    "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
+                    "GITHUB_SHA": "b" * 40,
+                    "FAKE_MUTATION_MARKER": str(mutation_marker),
+                }
+            )
+
+            result = subprocess.run(
+                ["bash", str(PUBLISHER), "3.76.1"],
+                cwd=root,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn(f"Container repository '../{escaped_path.name}' is invalid", result.stderr)
+            self.assertFalse(mutation_marker.exists())
+            self.assertFalse(escaped_path.exists())
 
 
 if __name__ == "__main__":
