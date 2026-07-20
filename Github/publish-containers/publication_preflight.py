@@ -177,7 +177,7 @@ def _github_json(url, token):
             if response.status != 200:
                 _fail("source-proof-unavailable", "GitHub source proof did not return HTTP 200.")
             body = response.read()
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as error:
+    except (urllib.error.URLError, TimeoutError) as error:
         raise PreflightError(
             "source-proof-unavailable",
             "GitHub source proof could not be completed.",

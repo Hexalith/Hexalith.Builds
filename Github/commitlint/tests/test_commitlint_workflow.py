@@ -106,7 +106,7 @@ class CommitlintWorkflowTests(unittest.TestCase):
 
         self.assertIn("name: Commitlint", caller)
         self.assertIn("types: [opened, synchronize, reopened, edited]", caller)
-        self.assertIn("uses: Hexalith/Hexalith.Builds/.github/workflows/commitlint.yml@main", caller)
+        self.assertIn("uses: ./.github/workflows/commitlint.yml", caller)
         self.assertIn("pull-request-title: ${{ github.event.pull_request.title }}", caller)
 
     def test_pinned_commitlint_rejects_malformed_and_default_ignored_titles(self):

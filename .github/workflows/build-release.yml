@@ -6,11 +6,7 @@ concurrency:
   group: builds-release-production
   cancel-in-progress: false
 
-permissions:
-  contents: write        # push tag and create GitHub release
-  issues: write          # semantic-release comments on released issues
-  pull-requests: write   # semantic-release comments on released PRs
-  packages: write        # publish semantic-release prerelease tool packages to GitHub Packages
+permissions: {}
 
 jobs:
   verify-source:
@@ -43,6 +39,11 @@ jobs:
     runs-on: ubuntu-latest
     name: Release
     environment: production
+    permissions:
+      contents: write        # push tag and create GitHub release
+      issues: write          # semantic-release comments on released issues
+      pull-requests: write   # semantic-release comments on released PRs
+      packages: write        # publish future tool packages to GitHub Packages
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:

@@ -140,11 +140,9 @@ class PublicationPreflightTests(unittest.TestCase):
                 arguments = self.arguments(root)
                 environment = self.runtime_environment()
                 environment.update(updates)
-                with (
-                    mock.patch.dict(os.environ, environment, clear=True),
-                    self.assertRaises(self.validator.PreflightError),
-                ):
-                    self.validator.build_publication_identity(arguments, self.source_proof())
+                with mock.patch.dict(os.environ, environment, clear=True):
+                    with self.assertRaises(self.validator.PreflightError):
+                        self.validator.build_publication_identity(arguments, self.source_proof())
 
     def test_source_proof_queries_exact_main_and_successful_push_ci(self):
         successful_run = self.source_proof()["ci_run"]
@@ -323,17 +321,12 @@ class PublicationPreflightTests(unittest.TestCase):
         for target in (
             "https://registry.hexalith.com/v2/eventstore/manifests/other",
             "https://storage.example.test/manifest",
-            "http://registry.hexalith.com/v2/eventstore/manifests/other",
+            "http://registry.hexalith.com/v2/eventstore/manifests/other",  # NOSONAR -- downgrade fixture.
         ):
-            with self.subTest(target=target), self.assertRaises(urllib.error.HTTPError):
-                self.validator.FailClosedRedirectHandler().redirect_request(
-                    request,
-                    None,
-                    302,
-                    "Found",
-                    {},
-                    target,
-                )
+            with self.subTest(target=target):
+                handler = self.validator.FailClosedRedirectHandler()
+                with self.assertRaises(urllib.error.HTTPError):
+                    handler.redirect_request(request, None, 302, "Found", {}, target)
 
         packages = [f"Package.{index}" for index in range(14)]
         for status in (201, 204, 301, 302, 401, 403, 429, 500, 503):
@@ -503,7 +496,10 @@ class PublicationPreflightTests(unittest.TestCase):
                     self.validator._validate_publication(verify)
                     manifest = json.loads(verify.package_manifest.read_text(encoding="utf-8"))
                     mutate(manifest)
-                    verify.package_manifest.write_text(json.dumps(manifest), encoding="utf-8")
+                    verify.package_manifest.write_text(  # NOSONAR -- validated temporary fixture path.
+                        json.dumps(manifest),
+                        encoding="utf-8",
+                    )
                     publish = SimpleNamespace(**vars(verify))
                     publish.phase = "publish"
                     with self.assertRaises(self.validator.PreflightError) as context:
