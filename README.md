@@ -304,9 +304,9 @@ The build properties set environment flags used by consuming projects:
 ## Version and Release Management
 
 Releases are driven by semantic-release and Angular Conventional Commits.
-Release jobs analyze commits, calculate the next version, update
-`CHANGELOG.md`, create a GitHub release, and optionally build and publish NuGet
-packages.
+Release jobs analyze commits, calculate the next version, create a Git tag and
+GitHub release, and publish the configured tool or NuGet packages. They do not
+commit generated release files back to protected branches.
 
 Domain modules release intentionally through a manually dispatched caller and
 the protected-environment reusable
@@ -324,9 +324,9 @@ Package publishing behavior:
 
 For domain modules, manually dispatch the module release caller only after its
 exact current `main` SHA has successful push CI, then approve the protected
-environment deployment. This Builds repository retains its own branch-driven
-release workflow for `main`, `next`, `next-major`, `alpha`, `beta`, and
-maintenance branches matching `[0-9]+.[0-9]+.x`.
+environment deployment. This Builds repository releases only through a manual
+dispatch from the exact current `main` tip and its protected `production`
+environment. Merging or pushing does not start a release.
 
 ## License
 

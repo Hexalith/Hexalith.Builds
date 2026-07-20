@@ -20,7 +20,10 @@ Dapr-backed tests, and then runs semantic-release.
 | `environment-name` | No | `production` | Protected caller-repository environment that supplies human release approval. |
 | `publish-containers` | No | `false` | Whether to prepare semantic-release container publishing for .NET SDK container projects. |
 | `container-projects` | No | `''` | Newline-separated container mappings in `path/to/project.csproj|repository-name` format. Required when `publish-containers` is `true`. |
-| `builds-execution-sha` | No | `''` | Exact maintainer-approved Builds commit. Required for container publishing and checked against both the resolved reusable workflow and nested action/helper bytes. |
+| `builds-execution-sha` | Yes | - | Exact maintainer-approved Builds commit. It must equal the reusable workflow's full-SHA `uses` revision and is checked against nested action/helper bytes. |
+| `source-branch` | No | `main` | Protected source branch revalidated at every publication boundary. |
+| `source-ci-workflow` | No | `ci.yml` | Workflow filename whose successful exact-source `push` run authorizes the source. |
+| `package-manifest` | No | `tools/release-packages.json` | Caller package manifest frozen into publication identity. |
 
 ## Protected environment and caller secrets
 
@@ -45,7 +48,7 @@ GitHub operations. Container publishing uses the organization variable
 ## Steps
 
 1. Wait for required protection on the configured environment, check out the
-   caller repository with full history, verify the resolved
+   caller repository with full history and no persisted credentials, verify the resolved
    reusable-workflow identity, check out that exact Builds commit, then
    initialize root-declared submodules through its local `initialize-build`
    action.
@@ -63,20 +66,23 @@ GitHub operations. Container publishing uses the organization variable
    install the publisher, immutable OCI validator, publication preflight,
    and child-digest smoke helpers. The action also compares its action/helper
    bytes with the same approved Builds commit.
-10. Run `npx semantic-release`, passing the approved Builds identity and
-    protected environment name to the caller's publication preflight; always
+10. Run `npx semantic-release`, passing the approved Builds identity, source
+    proof inputs, package manifest, and protected environment name to the
+    caller's publication preflight; always
     upload the complete hidden release-evidence directory afterward.
 
 The generated publish helper accepts the semantic-release version as its first
-argument. The caller's `verifyReleaseCmd` must freeze exact repository,
-version, source, Builds, environment, run, and helper identity and prove
-destination absence before semantic-release creates a Git tag. The `publishCmd`
-must require exact frozen-identity equality and revalidate immediately before
-the first NuGet push, then call the container helper with the same version. The
-helper requires both earlier phases and repeats container absence immediately
-before publication. Existing package/tag identities are collisions; duplicate
-skipping is forbidden. The helper logs in to Hexalith Zot only when
-semantic-release reaches `publishCmd`:
+argument. After environment approval, the caller's `verifyReleaseCmd` must
+re-prove exact current `main` and successful exact-SHA push CI, freeze exact
+repository, version, source proof, Builds, environment, run, helper, and
+canonical package-manifest identity, and prove destination absence before
+semantic-release creates a Git tag. The `publishCmd` must require exact
+frozen-identity equality, repeat the live source proof, and revalidate
+immediately before the first NuGet push, then call the container helper with the
+same version. The helper requires both earlier phases and repeats the live
+source proof and container absence immediately before publication. Existing
+package/tag identities are collisions; duplicate skipping is forbidden. The
+helper logs in to Hexalith Zot only when semantic-release reaches `publishCmd`:
 
 ```json
 "verifyReleaseCmd": "bash scripts/validate-publication-preflight.sh ${nextRelease.version} verify >&2",
@@ -109,15 +115,16 @@ jobs:
   release:
     needs: verify-source
     permissions:
+      actions: read
       contents: write
       issues: write
       pull-requests: write
-    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@main
+    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@0123456789abcdef0123456789abcdef01234567
     with:
       solution: Hexalith.<Module>.slnx
       environment-name: production
       publish-containers: true
-      builds-execution-sha: ${{ vars.HEXALITH_BUILDS_RELEASE_SHA }}
+      builds-execution-sha: 0123456789abcdef0123456789abcdef01234567
       container-projects: |
         src/Hexalith.<Module>/Hexalith.<Module>.csproj|module-name
     secrets:
@@ -130,7 +137,6 @@ The recommended organization-level values are:
 
 ```text
 vars.HEXALITH_ZOT_REGISTRY = registry.hexalith.com
-vars.HEXALITH_BUILDS_RELEASE_SHA
 caller repository/organization: secrets.HEXALITH_ZOT_USERNAME
 caller repository/organization: secrets.HEXALITH_ZOT_API_KEY
 caller repository/organization: secrets.NUGET_API_KEY
@@ -139,7 +145,8 @@ caller repository/organization: secrets.NUGET_API_KEY
 Pass exactly these declared names. The job-level protected environment gates
 their use without requiring a second credential copy.
 
-## Version Reference
-
-Use `Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@main` from
-consuming repositories. See `ci-cd-standards.md` for shared CI/CD policy.
+The SHA above is a placeholder: replace both occurrences with the same reviewed
+40-character Builds commit. Do not substitute a branch, tag, expression, or
+repository variable. The caller's `references/Hexalith.Builds` gitlink remains
+an independent development dependency and need not equal the executed release
+tool SHA. See `ci-cd-standards.md` for shared CI/CD policy.

@@ -5,10 +5,10 @@
 > for existing consumers and receives maintenance fixes only.
 
 Runs the repository's configured semantic-release lifecycle. The lifecycle
-always handles versioning, changelog updates, Git tags, and GitHub releases;
-repositories may additionally configure package preparation or publication
-through their own semantic-release plugins. This action does not hard-code a
-package format, registry, or product-specific release script.
+handles versioning, Git tags, and GitHub releases; repositories may additionally
+configure package preparation or publication through their own plugins. This
+action does not hard-code a changelog commit, package format, registry, or
+product-specific release script.
 
 ## Inputs
 
@@ -30,7 +30,7 @@ None.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GITHUB_TOKEN` | Yes | Token used by semantic-release to update the changelog commit, create tags, and create the GitHub release. |
+| `GITHUB_TOKEN` | Yes | Token used by semantic-release to create tags and the GitHub release. |
 | `NUGET_API_KEY` | Only for configured NuGet.org publication | Passed through unchanged for a repository semantic-release lifecycle that publishes stable NuGet packages. |
 
 ## Requirements
@@ -61,11 +61,14 @@ jobs:
           fetch-depth: 0
 
       - name: Create release
-        uses: Hexalith/Hexalith.Builds/Github/create-release@main
+        uses: Hexalith/Hexalith.Builds/Github/create-release@0123456789abcdef0123456789abcdef01234567
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 ```
+
+Replace the example SHA with the reviewed immutable Builds commit. Do not use a
+branch, tag, or variable for a publication action reference.
 
 ## Versioning
 

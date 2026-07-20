@@ -6,16 +6,16 @@ Hexalith build automation, shared .NET conventions, or release configuration.
 
 ## Hexalith.Builds References in GitHub Actions
 
-When adding or updating a GitHub workflow or action reference to a
-`Hexalith.Builds` action or reusable workflow, use the current `main` branch:
+For routine non-publication automation, use the current `main` branch:
 
 ```text
 Hexalith/Hexalith.Builds/<action-path>@main
 ```
 
-This is an intentional exception to the third-party action SHA-pinning rule.
-Do not pin `Hexalith.Builds` actions or reusable workflows to a release tag or
-commit SHA.
+Publication workflows are the exception: pin the reusable release workflow to
+a reviewed full commit SHA and pass that same literal as
+`builds-execution-sha`. Do not use a branch, tag, expression, or repository
+variable for release-tool identity.
 
 ## Technology Stack
 
@@ -50,7 +50,6 @@ Supported types and their usual release effect are:
 | `test` | Add or modify tests | None |
 | `build` | Build system or dependency change | None |
 | `ci` | CI/CD change | None |
-| `chore` | Maintenance | None |
 
 Follow these rules:
 
