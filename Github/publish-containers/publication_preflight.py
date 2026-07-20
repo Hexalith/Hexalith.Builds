@@ -49,8 +49,7 @@ POSITIVE_INTEGER_PATTERN = re.compile(r"^[1-9][0-9]*$", re.ASCII)
 WORKFLOW_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+\.ya?ml$", re.ASCII)
 
 
-class FailClosedRedirectHandler(SafeRedirectHandler):
-
+class FailClosedRedirectHandler(SafeRedirectHandler):  # noqa: D203,D211
     """Reject redirects while proving mutable publication destinations and source state."""
 
     def redirect_request(self, request, file_pointer, code, message, headers, new_url):
