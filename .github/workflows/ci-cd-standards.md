@@ -96,8 +96,10 @@ test project lists, and operational exceptions in their own docs.
   semantic-release on tags and the changelog commit.
 - Keep release permissions at the job level. Non-release jobs should use
   `contents: read`; semantic-release jobs need only the write scopes they use.
-- Store publication credentials in the protected environment. Pass only the
-  declared release secrets and never use `secrets: inherit`.
+- Pass only the reusable workflow's declared publication secrets explicitly
+  from caller repository or organization scope; never use `secrets: inherit`.
+  The reusable publication job still references the protected environment, so
+  those credentials cannot be used until its protection rules pass.
 
 ## Artifacts
 

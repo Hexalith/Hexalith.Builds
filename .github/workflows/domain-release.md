@@ -17,23 +17,25 @@ Dapr-backed tests, and then runs semantic-release.
 | `test-projects` | No | `''` | Newline-separated test project paths to run before release. Leave empty when the caller already proved exact-source CI success. |
 | `node-version` | No | `node` | Node.js version passed to `actions/setup-node`. |
 | `timeout-minutes` | No | `20` | Timeout for the release job. |
-| `environment-name` | No | `production` | Protected caller-repository environment that supplies human release approval and release secrets. |
+| `environment-name` | No | `production` | Protected caller-repository environment that supplies human release approval. |
 | `publish-containers` | No | `false` | Whether to prepare semantic-release container publishing for .NET SDK container projects. |
 | `container-projects` | No | `''` | Newline-separated container mappings in `path/to/project.csproj|repository-name` format. Required when `publish-containers` is `true`. |
 | `builds-execution-sha` | No | `''` | Exact maintainer-approved Builds commit. Required for container publishing and checked against both the resolved reusable workflow and nested action/helper bytes. |
 
-## Protected environment and secrets
+## Protected environment and caller secrets
 
-| Environment secret | Required | Description |
+| Caller secret | Required | Description |
 |--------|----------|-------------|
 | `NUGET_API_KEY` | Yes | API key used by semantic-release package publishing. |
 | `HEXALITH_ZOT_USERNAME` | No | Hexalith Zot username used when `publish-containers` is `true`. |
 | `HEXALITH_ZOT_API_KEY` | No | Hexalith Zot API key used when `publish-containers` is `true`. |
 
-Store these credentials in the protected environment named by
-`environment-name`. The reusable job reads them only after environment
-protection passes; callers do not pass repository or organization publication
-credentials and must not use `secrets: inherit`.
+Store these credentials at caller repository or organization scope and map only
+the three declared names explicitly. Do not use `secrets: inherit`. The reusable
+publication job references the protected environment named by
+`environment-name`, so GitHub does not start the job or expose its explicitly
+passed credentials until environment protection passes. The environment does
+not need duplicate credential values.
 
 The workflow also uses the caller repository `GITHUB_TOKEN` for semantic-release
 GitHub operations. Container publishing uses the organization variable
@@ -118,6 +120,10 @@ jobs:
       builds-execution-sha: ${{ vars.HEXALITH_BUILDS_RELEASE_SHA }}
       container-projects: |
         src/Hexalith.<Module>/Hexalith.<Module>.csproj|module-name
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      HEXALITH_ZOT_USERNAME: ${{ secrets.HEXALITH_ZOT_USERNAME }}
+      HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}
 ```
 
 The recommended organization-level values are:
@@ -125,14 +131,13 @@ The recommended organization-level values are:
 ```text
 vars.HEXALITH_ZOT_REGISTRY = registry.hexalith.com
 vars.HEXALITH_BUILDS_RELEASE_SHA
-environment production: secrets.HEXALITH_ZOT_USERNAME
-environment production: secrets.HEXALITH_ZOT_API_KEY
-environment production: secrets.NUGET_API_KEY
+caller repository/organization: secrets.HEXALITH_ZOT_USERNAME
+caller repository/organization: secrets.HEXALITH_ZOT_API_KEY
+caller repository/organization: secrets.NUGET_API_KEY
 ```
 
-Do not pass these publication credentials from repository or organization
-scope. Keeping them on the protected environment makes them unreachable until
-the reviewer gate passes.
+Pass exactly these declared names. The job-level protected environment gates
+their use without requiring a second credential copy.
 
 ## Version Reference
 
