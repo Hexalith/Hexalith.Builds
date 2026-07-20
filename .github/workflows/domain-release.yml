@@ -63,6 +63,16 @@ on:
         required: false
         type: string
         default: ''
+    secrets:
+      NUGET_API_KEY:
+        description: 'NuGet.org API key supplied explicitly by the caller.'
+        required: true
+      HEXALITH_ZOT_USERNAME:
+        description: 'Zot username supplied explicitly by the caller when publishing containers.'
+        required: false
+      HEXALITH_ZOT_API_KEY:
+        description: 'Zot API key supplied explicitly by the caller when publishing containers.'
+        required: false
 permissions:
   contents: write
   issues: write

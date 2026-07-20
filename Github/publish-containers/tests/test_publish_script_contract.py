@@ -133,6 +133,34 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertIn("environment-name:", workflow)
         self.assertIn("default: 'production'", workflow)
         self.assertIn("environment: ${{ inputs.environment-name }}", workflow)
+        self.assertIn("secrets:\n      NUGET_API_KEY:\n", workflow)
+        self.assertIn("NUGET_API_KEY:\n        description:", workflow)
+        self.assertIn("NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}", workflow)
+        self.assertIn(
+            "HEXALITH_ZOT_USERNAME: ${{ secrets.HEXALITH_ZOT_USERNAME }}",
+            workflow,
+        )
+        self.assertIn(
+            "HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}",
+            workflow,
+        )
+        self.assertEqual(1, workflow.count("NUGET_API_KEY:\n        description:"))
+        self.assertIn(
+            "NUGET_API_KEY:\n        description: 'NuGet.org API key supplied explicitly by the caller.'\n        required: true",
+            workflow,
+        )
+        self.assertIn(
+            "HEXALITH_ZOT_USERNAME:\n"
+            "        description: 'Zot username supplied explicitly by the caller when publishing containers.'\n"
+            "        required: false",
+            workflow,
+        )
+        self.assertIn(
+            "HEXALITH_ZOT_API_KEY:\n"
+            "        description: 'Zot API key supplied explicitly by the caller when publishing containers.'\n"
+            "        required: false",
+            workflow,
+        )
         self.assertNotIn("release-authority-url:", workflow)
         self.assertNotIn("release-owner-allowlist:", workflow)
         self.assertIn("job.workflow_sha", workflow)
