@@ -147,6 +147,7 @@ class PublicationPreflightTests(unittest.TestCase):
     def test_source_proof_queries_exact_main_and_successful_push_ci(self):
         successful_run = self.source_proof()["ci_run"]
         captured = []
+        api_token = f"fixture-{self.id()}"
 
         def github_json(url, token):
             captured.append((url, token))
@@ -160,7 +161,7 @@ class PublicationPreflightTests(unittest.TestCase):
                 SOURCE_SHA,
                 "main",
                 "ci.yml",
-                "fixture-github-token",
+                api_token,
             )
 
         self.assertEqual(self.source_proof(), proof)
@@ -183,40 +184,38 @@ class PublicationPreflightTests(unittest.TestCase):
             },
             urllib.parse.parse_qs(parsed.query),
         )
-        self.assertTrue(all(token == "fixture-github-token" for _, token in captured))
+        self.assertTrue(all(token == api_token for _, token in captured))
 
-        with (
-            mock.patch.object(
-                self.validator,
-                "_github_json",
-                return_value={"object": {"sha": "e" * 40}},
-            ),
-            self.assertRaises(self.validator.PreflightError) as context,
+    def test_source_proof_rejects_stale_main(self):
+        with mock.patch.object(
+            self.validator,
+            "_github_json",
+            return_value={"object": {"sha": "e" * 40}},
         ):
-            self.validator.prove_current_green_source(
-                "Hexalith/Hexalith.EventStore",
-                SOURCE_SHA,
-                "main",
-                "ci.yml",
-                "fixture-github-token",
-            )
+            with self.assertRaises(self.validator.PreflightError) as context:
+                self.validator.prove_current_green_source(
+                    "Hexalith/Hexalith.EventStore",
+                    SOURCE_SHA,
+                    "main",
+                    "ci.yml",
+                    f"fixture-{self.id()}",
+                )
         self.assertEqual("source-no-longer-current", context.exception.code)
 
-        with (
-            mock.patch.object(
-                self.validator,
-                "_github_json",
-                side_effect=[{"object": {"sha": SOURCE_SHA}}, {"workflow_runs": []}],
-            ),
-            self.assertRaises(self.validator.PreflightError) as context,
+    def test_source_proof_rejects_missing_successful_push_ci(self):
+        with mock.patch.object(
+            self.validator,
+            "_github_json",
+            side_effect=[{"object": {"sha": SOURCE_SHA}}, {"workflow_runs": []}],
         ):
-            self.validator.prove_current_green_source(
-                "Hexalith/Hexalith.EventStore",
-                SOURCE_SHA,
-                "main",
-                "ci.yml",
-                "fixture-github-token",
-            )
+            with self.assertRaises(self.validator.PreflightError) as context:
+                self.validator.prove_current_green_source(
+                    "Hexalith/Hexalith.EventStore",
+                    SOURCE_SHA,
+                    "main",
+                    "ci.yml",
+                    f"fixture-{self.id()}",
+                )
         self.assertEqual("source-ci-not-successful", context.exception.code)
 
     def test_package_and_container_destinations_must_all_be_absent(self):

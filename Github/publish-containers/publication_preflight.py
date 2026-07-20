@@ -50,6 +50,7 @@ WORKFLOW_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+\.ya?ml$", re.ASCII)
 
 
 class FailClosedRedirectHandler(SafeRedirectHandler):
+
     """Reject redirects while proving mutable publication destinations and source state."""
 
     def redirect_request(self, request, file_pointer, code, message, headers, new_url):
@@ -191,14 +192,7 @@ def _github_json(url, token):
     return document
 
 
-def prove_current_green_source(repository, source_sha, source_branch, source_ci_workflow, token):
-    """Prove the exact source is still current main and has successful push CI."""
-    if source_branch != "main":
-        _fail("source-branch-invalid", "Publication source branch must be exactly main.")
-    if WORKFLOW_PATTERN.fullmatch(source_ci_workflow) is None:
-        _fail("source-workflow-invalid", "Source CI workflow must be a workflow filename.")
-
-    repository_path = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
+def _live_source_sha(repository_path, source_branch, token):
     branch_path = urllib.parse.quote(source_branch, safe="")
     ref_document = _github_json(
         f"https://api.github.com/repos/{repository_path}/git/ref/heads/{branch_path}",
@@ -210,9 +204,10 @@ def prove_current_green_source(repository, source_sha, source_branch, source_ci_
         raise PreflightError("source-proof-invalid", "GitHub main ref response is invalid.") from error
     if SHA_PATTERN.fullmatch(live_sha or "") is None:
         _fail("source-proof-invalid", "GitHub main ref SHA is invalid.")
-    if live_sha != source_sha:
-        _fail("source-no-longer-current", "The release source is no longer the current main tip.")
+    return live_sha
 
+
+def _successful_ci_runs(repository_path, source_sha, source_branch, source_ci_workflow, token):
     workflow_path = urllib.parse.quote(source_ci_workflow, safe="")
     query = urllib.parse.urlencode(
         {
@@ -223,14 +218,14 @@ def prove_current_green_source(repository, source_sha, source_branch, source_ci_
             "per_page": "100",
         }
     )
-    runs_document = _github_json(
+    document = _github_json(
         f"https://api.github.com/repos/{repository_path}/actions/workflows/{workflow_path}/runs?{query}",
         token,
     )
-    runs = runs_document.get("workflow_runs")
+    runs = document.get("workflow_runs")
     if not isinstance(runs, list):
         _fail("source-proof-invalid", "GitHub CI runs response is invalid.")
-    successful_runs = [
+    return [
         run
         for run in runs
         if isinstance(run, dict)
@@ -242,6 +237,27 @@ def prove_current_green_source(repository, source_sha, source_branch, source_ci_
         and run.get("status") == "completed"
         and run.get("conclusion") == "success"
     ]
+
+
+def prove_current_green_source(repository, source_sha, source_branch, source_ci_workflow, token):
+    """Prove the exact source is still current main and has successful push CI."""
+    if source_branch != "main":
+        _fail("source-branch-invalid", "Publication source branch must be exactly main.")
+    if WORKFLOW_PATTERN.fullmatch(source_ci_workflow) is None:
+        _fail("source-workflow-invalid", "Source CI workflow must be a workflow filename.")
+
+    repository_path = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
+    live_sha = _live_source_sha(repository_path, source_branch, token)
+    if live_sha != source_sha:
+        _fail("source-no-longer-current", "The release source is no longer the current main tip.")
+
+    successful_runs = _successful_ci_runs(
+        repository_path,
+        source_sha,
+        source_branch,
+        source_ci_workflow,
+        token,
+    )
     if not successful_runs:
         _fail("source-ci-not-successful", "No successful push CI run exists for the exact current main source.")
     selected = min(successful_runs, key=lambda run: run["id"])
@@ -404,6 +420,12 @@ def destination_probe(username, api_key):
     return probe
 
 
+def _canonical_package_id(package_id):
+    if not isinstance(package_id, str) or not package_id or package_id != package_id.strip():
+        return False
+    return not any(ord(character) < 32 or ord(character) == 127 for character in package_id)
+
+
 def _load_package_identity(path):
     try:
         manifest = json.loads(workspace_read_text(Path(path)))
@@ -415,13 +437,7 @@ def _load_package_identity(path):
         not isinstance(manifest, dict)
         or not isinstance(packages, list)
         or len(package_ids) != 14
-        or any(
-            not isinstance(package_id, str)
-            or not package_id
-            or package_id != package_id.strip()
-            or any(ord(character) < 32 or ord(character) == 127 for character in package_id)
-            for package_id in package_ids
-        )
+        or not all(_canonical_package_id(package_id) for package_id in package_ids)
         or len({package_id.lower() for package_id in package_ids}) != 14
     ):
         _fail("package-inventory-mismatch", "Release package inventory must contain exactly 14 unique IDs.")
