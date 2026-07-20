@@ -54,7 +54,22 @@ jobs:
               echo "pull-request-title is required for pull_request validation." >&2
               exit 1
             fi
-            printf '%s\n' "$PR_TITLE" | npx commitlint --verbose
+            printf '%s\n' "$PR_TITLE" | node --input-type=module -e '
+              import lint from "@commitlint/lint";
+              import load from "@commitlint/load";
+
+              let title = "";
+              for await (const chunk of process.stdin) title += chunk;
+              title = title.replace(/\r?\n$/, "");
+              const configuration = await load({}, { cwd: process.cwd() });
+              const result = await lint(title, configuration.rules, {
+                parserOpts: configuration.parserPreset?.parserOpts,
+                ignores: configuration.ignores,
+                defaultIgnores: false,
+              });
+              for (const error of result.errors) console.error(`${error.name}: ${error.message}`);
+              if (!result.valid) process.exitCode = 1;
+            '
             npx commitlint --from "$PR_BASE_SHA" --to "$PR_HEAD_SHA" --verbose
           elif [ -n "$PUSH_BEFORE_SHA" ] &&
                [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ] &&

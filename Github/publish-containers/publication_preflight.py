@@ -29,7 +29,7 @@ from oci_registry_validator import (
 )
 
 
-PREFLIGHT_SCHEMA = "hexalith.release-publication-preflight.v1"
+PREFLIGHT_SCHEMA = "hexalith.release-publication-preflight.v2"
 REQUIRED_PLATFORMS = ["linux/amd64", "linux/arm64"]
 REQUIRED_CONTRACT_FILES = (
     "publish-containers.sh",
@@ -46,7 +46,28 @@ CONTAINER_REPOSITORY_PATTERN = re.compile(
     re.ASCII,
 )
 POSITIVE_INTEGER_PATTERN = re.compile(r"^[1-9][0-9]*$", re.ASCII)
-URL_OPENER = urllib.request.build_opener(SafeRedirectHandler())
+WORKFLOW_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+\.ya?ml$", re.ASCII)
+
+
+class FailClosedRedirectHandler(SafeRedirectHandler):  # noqa: D203,D211
+    """Reject redirects while proving mutable publication destinations and source state."""
+
+    def redirect_request(self, request, file_pointer, code, message, headers, new_url):
+        """Reject every redirect so a different response cannot prove source or absence."""
+        redirected = super().redirect_request(
+            request,
+            file_pointer,
+            code,
+            message,
+            headers,
+            new_url,
+        )
+        if redirected is not None:
+            raise urllib.error.HTTPError(request.full_url, code, message, headers, file_pointer)
+        return None
+
+
+URL_OPENER = urllib.request.build_opener(FailClosedRedirectHandler())
 
 
 class PreflightError(Exception):  # noqa: D203,D211
@@ -85,7 +106,7 @@ def _validate_environment_name(value):
     return value
 
 
-def _runtime_identity(repository, source_sha):
+def _runtime_identity(repository, source_sha, source_branch):
     runtime_repository = os.environ.get("GITHUB_REPOSITORY", "")
     runtime_sha = os.environ.get("GITHUB_SHA", "")
     workflow_sha = os.environ.get("GITHUB_WORKFLOW_SHA", "")
@@ -93,6 +114,9 @@ def _runtime_identity(repository, source_sha):
         _fail("repository-mismatch", "Runtime repository does not match the release repository.")
     if runtime_sha != source_sha:
         _fail("source-mismatch", "Runtime source SHA does not match the release source.")
+    runtime_ref = os.environ.get("GITHUB_REF", "")
+    if runtime_ref != f"refs/heads/{source_branch}":
+        _fail("source-ref-mismatch", "Runtime ref does not match the approved release branch.")
     if SHA_PATTERN.fullmatch(workflow_sha) is None:
         _fail("run-identity-invalid", "GITHUB_WORKFLOW_SHA must be an exact lowercase commit SHA.")
 
@@ -132,6 +156,123 @@ def _runtime_identity(repository, source_sha):
             "run-identity-invalid",
             "GITHUB_TRIGGERING_ACTOR",
         ),
+        "ref": runtime_ref,
+    }
+
+
+def _github_json(url, token):
+    if not token:
+        _fail("source-proof-unavailable", "GITHUB_TOKEN is required to prove the current release source.")
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        method="GET",
+    )
+    try:
+        with URL_OPENER.open(request, timeout=30) as response:
+            if response.status != 200:
+                _fail("source-proof-unavailable", "GitHub source proof did not return HTTP 200.")
+            body = response.read()
+    except (urllib.error.URLError, TimeoutError) as error:
+        raise PreflightError(
+            "source-proof-unavailable",
+            "GitHub source proof could not be completed.",
+        ) from error
+    try:
+        document = json.loads(body)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise PreflightError("source-proof-invalid", "GitHub source proof is not valid JSON.") from error
+    if not isinstance(document, dict):
+        _fail("source-proof-invalid", "GitHub source proof must be a JSON object.")
+    return document
+
+
+def _live_source_sha(repository_path, source_branch, token):
+    branch_path = urllib.parse.quote(source_branch, safe="")
+    ref_document = _github_json(
+        f"https://api.github.com/repos/{repository_path}/git/ref/heads/{branch_path}",
+        token,
+    )
+    try:
+        live_sha = ref_document["object"]["sha"]
+    except (KeyError, TypeError) as error:
+        raise PreflightError("source-proof-invalid", "GitHub main ref response is invalid.") from error
+    if SHA_PATTERN.fullmatch(live_sha or "") is None:
+        _fail("source-proof-invalid", "GitHub main ref SHA is invalid.")
+    return live_sha
+
+
+def _successful_ci_runs(repository_path, source_sha, source_branch, source_ci_workflow, token):
+    workflow_path = urllib.parse.quote(source_ci_workflow, safe="")
+    query = urllib.parse.urlencode(
+        {
+            "branch": source_branch,
+            "event": "push",
+            "head_sha": source_sha,
+            "status": "success",
+            "per_page": "100",
+        }
+    )
+    document = _github_json(
+        f"https://api.github.com/repos/{repository_path}/actions/workflows/{workflow_path}/runs?{query}",
+        token,
+    )
+    runs = document.get("workflow_runs")
+    if not isinstance(runs, list):
+        _fail("source-proof-invalid", "GitHub CI runs response is invalid.")
+    return [
+        run
+        for run in runs
+        if isinstance(run, dict)
+        and isinstance(run.get("id"), int)
+        and run.get("id") > 0
+        and run.get("head_sha") == source_sha
+        and run.get("head_branch") == source_branch
+        and run.get("event") == "push"
+        and run.get("status") == "completed"
+        and run.get("conclusion") == "success"
+    ]
+
+
+def prove_current_green_source(repository, source_sha, source_branch, source_ci_workflow, token):
+    """Prove the exact source is still current main and has successful push CI."""
+    if source_branch != "main":
+        _fail("source-branch-invalid", "Publication source branch must be exactly main.")
+    if WORKFLOW_PATTERN.fullmatch(source_ci_workflow) is None:
+        _fail("source-workflow-invalid", "Source CI workflow must be a workflow filename.")
+
+    repository_path = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
+    live_sha = _live_source_sha(repository_path, source_branch, token)
+    if live_sha != source_sha:
+        _fail("source-no-longer-current", "The release source is no longer the current main tip.")
+
+    successful_runs = _successful_ci_runs(
+        repository_path,
+        source_sha,
+        source_branch,
+        source_ci_workflow,
+        token,
+    )
+    if not successful_runs:
+        _fail("source-ci-not-successful", "No successful push CI run exists for the exact current main source.")
+    selected = min(successful_runs, key=lambda run: run["id"])
+    return {
+        "branch": source_branch,
+        "ref": f"refs/heads/{source_branch}",
+        "live_sha": live_sha,
+        "ci_workflow": source_ci_workflow,
+        "ci_run": {
+            "id": selected["id"],
+            "head_sha": selected["head_sha"],
+            "head_branch": selected["head_branch"],
+            "event": selected["event"],
+            "status": selected["status"],
+            "conclusion": selected["conclusion"],
+        },
     }
 
 
@@ -145,7 +286,7 @@ def _contract_hashes(directory):
     return hashes
 
 
-def build_publication_identity(arguments):
+def build_publication_identity(arguments, source_proof=None):
     """Build the exact, comment-free identity frozen across publication phases."""
     if REPOSITORY_PATTERN.fullmatch(arguments.repository) is None:
         _fail("repository-invalid", "Release repository is invalid.")
@@ -158,20 +299,30 @@ def build_publication_identity(arguments):
     if CONTAINER_REPOSITORY_PATTERN.fullmatch(arguments.container_repository) is None:
         _fail("container-repository-invalid", "Container repository is invalid.")
 
+    proof = source_proof or prove_current_green_source(
+        arguments.repository,
+        arguments.source_sha,
+        arguments.source_branch,
+        arguments.source_ci_workflow,
+        os.environ.get("GITHUB_TOKEN", ""),
+    )
+
     return {
         "schema": PREFLIGHT_SCHEMA,
         "repository": arguments.repository,
         "version": arguments.version,
         "source_sha": arguments.source_sha,
+        "source": proof,
         "container_repository": arguments.container_repository,
         "platforms": list(REQUIRED_PLATFORMS),
         "environment": _validate_environment_name(arguments.environment_name),
+        "packages": _load_package_identity(arguments.package_manifest),
         "builds": {
             "workflow_sha": arguments.builds_execution_sha,
             "action_sha": arguments.builds_execution_sha,
             "files": _contract_hashes(arguments.contract_directory),
         },
-        "run": _runtime_identity(arguments.repository, arguments.source_sha),
+        "run": _runtime_identity(arguments.repository, arguments.source_sha, arguments.source_branch),
     }
 
 
@@ -268,14 +419,32 @@ def destination_probe(username, api_key):
     return probe
 
 
-def _load_package_ids(path):
+def _canonical_package_id(package_id):
+    if not isinstance(package_id, str) or not package_id or package_id != package_id.strip():
+        return False
+    return not any(ord(character) < 32 or ord(character) == 127 for character in package_id)
+
+
+def _load_package_identity(path):
     try:
         manifest = json.loads(workspace_read_text(Path(path)))
         packages = manifest["packages"]
         package_ids = [item["id"] for item in packages]
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as error:
         raise PreflightError("package-inventory-mismatch", "Package manifest is invalid.") from error
-    return package_ids
+    if (
+        not isinstance(manifest, dict)
+        or not isinstance(packages, list)
+        or len(package_ids) != 14
+        or not all(_canonical_package_id(package_id) for package_id in package_ids)
+        or len({package_id.lower() for package_id in package_ids}) != 14
+    ):
+        _fail("package-inventory-mismatch", "Release package inventory must contain exactly 14 unique IDs.")
+    return {
+        "ids": package_ids,
+        "normalized_ids": [package_id.lower() for package_id in package_ids],
+        "manifest_sha256": _sha256_bytes(_canonical_bytes(manifest)),
+    }
 
 
 def _checked_at():
@@ -330,10 +499,12 @@ def _parse_arguments():
     parser.add_argument("--repository", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--source-sha", required=True)
+    parser.add_argument("--source-branch", required=False, default="main")
+    parser.add_argument("--source-ci-workflow", required=False, default="ci.yml")
     parser.add_argument("--container-repository", required=True)
     parser.add_argument("--builds-execution-sha", required=True)
     parser.add_argument("--environment-name", required=True)
-    parser.add_argument("--package-manifest", type=workspace_input_file)
+    parser.add_argument("--package-manifest", required=True, type=workspace_input_file)
     parser.add_argument("--contract-directory", required=True, type=workspace_input_directory)
     parser.add_argument("--evidence-directory", required=True, type=workspace_output_directory)
     parser.add_argument("--phase", required=True, choices=("verify", "publish", "container"))
@@ -347,10 +518,9 @@ def _validate_destinations(arguments, probe):
             arguments.container_repository,
             probe,
         )
-    if arguments.package_manifest is None:
-        _fail("package-inventory-mismatch", "Package manifest is required before NuGet publication.")
+    package_identity = _load_package_identity(arguments.package_manifest)
     return validate_destination_absence(
-        _load_package_ids(arguments.package_manifest),
+        package_identity["ids"],
         arguments.version,
         arguments.container_repository,
         probe,

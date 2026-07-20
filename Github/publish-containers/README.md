@@ -38,10 +38,10 @@ registry-pull, image-start, liveness-timeout, and cleanup failures are reported
 separately. `/alive` accepts only an exact 2xx response and never follows a
 redirect.
 
-Because repository policy resolves the reusable workflow through mutable
-`@main`, the caller supplies one maintainer-approved `builds-execution-sha`.
-The workflow checks its resolved job SHA, checks out the nested action at that
-exact commit, and invokes the action locally. The action then compares its
+The caller pins the reusable workflow to a reviewed full commit SHA and passes
+the identical literal as `builds-execution-sha`. The workflow checks its
+resolved job SHA, checks out the nested action at that exact commit, and invokes
+the action locally. The action then compares its
 action/helper bytes with the same immutable Builds commit before installing
 them. The caller repository's `references/Hexalith.Builds` submodule pin is not
 treated as executed release-tool identity.
@@ -49,18 +49,20 @@ treated as executed release-tool identity.
 The protected GitHub environment on the reusable release job supplies human
 publication approval. The installed `publication_preflight.py` supplies the
 machine-verifiable contract without a separate comment or expiring record. It
-freezes the exact repository, version, workflow source SHA, container
-repository, platforms, environment, GitHub run identity, approved Builds
-identity, and helper hashes. It also requires all 14 package versions and the
-container tag to be absent.
+freezes the exact repository, version, live current-main and successful push-CI
+proof, normalized package IDs and canonical manifest hash, container repository,
+platforms, environment, GitHub run identity, approved Builds identity, and
+helper hashes. It also requires every package version and the container tag to
+be absent.
 
-`verifyRelease` freezes that identity and checks every destination before tag
-creation. The pre-NuGet `publish` phase requires exact identity equality and
-repeats every destination check. The publisher then requires the prior two
-phases and repeats container-tag absence immediately before `dotnet publish`.
-Each phase is single-use and fail-closed; duplicate skipping and overwrites are
-forbidden. The workflow uploads the complete hidden release-evidence directory
-on success or partial failure.
+`verifyRelease` re-proves the source, freezes that identity, and checks every
+destination before tag creation. The pre-NuGet `publish` phase requires exact
+identity equality, re-proves the source, and repeats every destination check.
+The publisher then requires the prior two phases, re-proves the source, and
+repeats container-tag absence immediately before `dotnet publish`. Each phase
+is single-use and fail-closed; redirects, ambiguous statuses, duplicate
+skipping, and overwrites are forbidden. The workflow uploads the complete
+hidden release-evidence directory on success or partial failure.
 
 ## Inputs
 

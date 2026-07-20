@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = ROOT / ".github" / "workflows" / "commitlint.yml"
+CALLER = ROOT / ".github" / "workflows" / "commitlint-caller.yml"
 STANDARDS = ROOT / ".github" / "workflows" / "ci-cd-standards.md"
 
 
@@ -33,7 +34,11 @@ class CommitlintWorkflowTests(unittest.TestCase):
 
         self.assertIn("pull-request-title:", workflow)
         self.assertIn("PR_TITLE: ${{ inputs.pull-request-title }}", workflow)
-        self.assertIn("printf '%s\\n' \"$PR_TITLE\" | npx commitlint --verbose", script)
+        self.assertIn(
+            "printf '%s\\n' \"$PR_TITLE\" | node --input-type=module -e '",
+            script,
+        )
+        self.assertIn("defaultIgnores: false", script)
         self.assertNotIn("${{", script)
         self.assertLess(
             script.index("printf '%s\\n' \"$PR_TITLE\""),
@@ -76,7 +81,7 @@ class CommitlintWorkflowTests(unittest.TestCase):
 
             result = subprocess.run(  # nosec B603  # NOSONAR -- repository-owned fixture script.
                 ["bash", "-c", script],
-                cwd=root,
+                cwd=ROOT,
                 env=environment,
                 capture_output=True,
                 text=True,
@@ -85,17 +90,64 @@ class CommitlintWorkflowTests(unittest.TestCase):
 
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertFalse(marker.exists())
-            self.assertEqual(title + "\n", stdin_log.read_text(encoding="utf-8"))
             invocations = args_log.read_text(encoding="utf-8").splitlines()
-            self.assertEqual(2, len(invocations))
-            self.assertEqual("commitlint --verbose", invocations[0])
-            self.assertIn("commitlint --from", invocations[1])
+            self.assertEqual(1, len(invocations))
+            self.assertIn("commitlint --from", invocations[0])
+            self.assertFalse(stdin_log.read_text(encoding="utf-8"))
 
     def test_shared_guidance_requires_title_edit_events_and_exact_title_input(self):
         standards = STANDARDS.read_text(encoding="utf-8")
 
         self.assertIn("types: [opened, synchronize, reopened, edited]", standards)
         self.assertIn("pull-request-title: ${{ github.event.pull_request.title }}", standards)
+
+    def test_builds_caller_registers_exact_title_check_on_edits(self):
+        caller = CALLER.read_text(encoding="utf-8")
+
+        self.assertIn("name: Commitlint", caller)
+        self.assertIn("types: [opened, synchronize, reopened, edited]", caller)
+        self.assertIn("uses: ./.github/workflows/commitlint.yml", caller)
+        self.assertIn("pull-request-title: ${{ github.event.pull_request.title }}", caller)
+
+    def test_pinned_commitlint_rejects_malformed_and_default_ignored_titles(self):
+        cases = {
+            "fix: validate intentional releases": True,
+            "not conventional": False,
+            "Merge branch main": False,
+            "1.2.3": False,
+            "chore: hide release policy": False,
+            "fix: Uppercase subject": False,
+            "fix: " + ("x" * 110): False,
+        }
+        for title, expected in cases.items():
+            with self.subTest(title=title), tempfile.TemporaryDirectory() as temporary_directory:
+                root = Path(temporary_directory)
+                fake_bin = root / "bin"
+                fake_bin.mkdir()
+                npx = fake_bin / "npx"
+                npx.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+                npx.chmod(0o755)
+                environment = os.environ.copy()
+                environment.update(
+                    {
+                        "PATH": f"{fake_bin}:{environment['PATH']}",
+                        "EVENT_NAME": "pull_request",
+                        "PR_TITLE": title,
+                        "PR_BASE_SHA": "a" * 40,
+                        "PR_HEAD_SHA": "b" * 40,
+                        "PUSH_BEFORE_SHA": "",
+                        "PUSH_AFTER_SHA": "",
+                    }
+                )
+                result = subprocess.run(  # nosec B603  # NOSONAR -- repository-owned workflow script.
+                    ["bash", "-c", extract_run_block(WORKFLOW, "Validate commit messages")],
+                    cwd=ROOT,
+                    env=environment,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(expected, result.returncode == 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

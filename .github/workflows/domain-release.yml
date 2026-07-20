@@ -60,9 +60,23 @@ on:
         default: ''
       builds-execution-sha:
         description: 'Exact approved Hexalith.Builds commit resolved for the reusable workflow and nested publisher action.'
+        required: true
+        type: string
+      source-branch:
+        description: 'Exact protected source branch revalidated at every publication boundary.'
         required: false
         type: string
-        default: ''
+        default: 'main'
+      source-ci-workflow:
+        description: 'Caller CI workflow filename required to have successful exact-source push CI.'
+        required: false
+        type: string
+        default: 'ci.yml'
+      package-manifest:
+        description: 'Caller package manifest frozen into the publication identity.'
+        required: false
+        type: string
+        default: 'tools/release-packages.json'
     secrets:
       NUGET_API_KEY:
         description: 'NuGet.org API key supplied explicitly by the caller.'
@@ -74,6 +88,7 @@ on:
         description: 'Zot API key supplied explicitly by the caller when publishing containers.'
         required: false
 permissions:
+  actions: read
   contents: write
   issues: write
   pull-requests: write
@@ -90,7 +105,6 @@ jobs:
           submodules: false
           persist-credentials: false
       - name: Validate approved Builds execution identity
-        if: ${{ inputs.publish-containers }}
         shell: bash
         env:
           BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
@@ -111,7 +125,6 @@ jobs:
             exit 1
           fi
       - name: Checkout approved Builds actions
-        if: ${{ inputs.publish-containers }}
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: Hexalith/Hexalith.Builds
@@ -119,11 +132,7 @@ jobs:
           path: .hexalith/builds-execution
           persist-credentials: false
       - name: Initialize root-declared submodules
-        if: ${{ inputs.publish-containers }}
         uses: ./.hexalith/builds-execution/Github/initialize-build
-      - name: Initialize root-declared submodules without container publication
-        if: ${{ !inputs.publish-containers }}
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -153,7 +162,7 @@ jobs:
         run: dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
         if: ${{ inputs.test-projects != '' }}
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
+        uses: ./.hexalith/builds-execution/Github/dapr-init
         with:
           version: ${{ inputs.dapr-version }}
       - name: Run tests (Tier 1 + 2, VSTest)
@@ -216,6 +225,9 @@ jobs:
           HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}
           HEXALITH_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
           HEXALITH_RELEASE_ENVIRONMENT: ${{ inputs.environment-name }}
+          HEXALITH_RELEASE_SOURCE_BRANCH: ${{ inputs.source-branch }}
+          HEXALITH_RELEASE_SOURCE_CI_WORKFLOW: ${{ inputs.source-ci-workflow }}
+          HEXALITH_RELEASE_PACKAGE_MANIFEST: ${{ inputs.package-manifest }}
         run: npx semantic-release
       - name: Upload complete release evidence
         if: ${{ always() && inputs.publish-containers }}

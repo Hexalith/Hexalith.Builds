@@ -20,11 +20,12 @@ test project lists, and operational exceptions in their own docs.
   a trailing comment.
 - Do not use mutable action references such as `@main`, `@master`, or floating
   major tags for third-party actions in shared workflows or actions.
-- Hexalith.Builds is the exception: GitHub workflow or action references to
-  Hexalith.Builds actions or reusable workflows must always use the latest
-  `main` branch reference. Use
-  `Hexalith/Hexalith.Builds/<action-path>@main`; do not pin Hexalith.Builds
-  actions or reusable workflows to release tags or commit SHAs.
+- Routine, non-publication Hexalith.Builds workflow and action references use
+  the latest `main` branch reference. Publication is the deliberate exception:
+  pin the reusable release workflow to one reviewed full commit SHA and pass
+  that identical literal as `builds-execution-sha`. The executed release-tool
+  SHA is independent of the caller's development-time
+  `references/Hexalith.Builds` gitlink.
 
 ## Submodules
 
@@ -82,18 +83,25 @@ test project lists, and operational exceptions in their own docs.
 
     release:
       needs: verify-source
-      uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@main
+      uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@0123456789abcdef0123456789abcdef01234567
       with:
         environment-name: production
+        builds-execution-sha: 0123456789abcdef0123456789abcdef01234567
   ```
 
   Leave `test-projects` empty when the exact source CI already ran those tiers.
+- After environment approval, the reusable workflow independently re-proves
+  that its source SHA is still the exact current `main` tip and that an exact
+  successful `push` run of the declared CI workflow exists. It repeats that
+  proof before freezing verification evidence, before the first NuGet write,
+  and before the first container write. A new main commit makes the pending
+  release stale and fails it closed.
 - Release jobs may still restore/build/pack when the release tool needs to
   produce versioned artifacts, but those steps should run only after CI has
   passed and preferably only when a release is warranted.
 - Give release workflows a non-cancelling concurrency group
   (`cancel-in-progress: false`) so overlapping merges queue instead of racing
-  semantic-release on tags and the changelog commit.
+  semantic-release on tags and publication destinations.
 - Keep release permissions at the job level. Non-release jobs should use
   `contents: read`; semantic-release jobs need only the write scopes they use.
 - Pass only the reusable workflow's declared publication secrets explicitly

@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess  # nosec B404 -- tests execute only repository-owned fixture scripts.
@@ -17,6 +18,15 @@ RUNTIME_IDENTIFIERS = "linux-musl-x64;linux-musl-arm64"
 def write_executable(path, content):
     path.write_text(content, encoding="utf-8")
     path.chmod(0o755)
+
+
+def write_package_manifest(root):
+    path = root / "release-packages.json"
+    path.write_text(
+        json.dumps({"packages": [{"id": f"Package.{index}"} for index in range(14)]}),
+        encoding="utf-8",
+    )
+    return path
 
 
 def extract_run_block(path, step_name):
@@ -130,6 +140,13 @@ class PublishScriptContractTests(unittest.TestCase):
         workflow = DOMAIN_RELEASE.read_text(encoding="utf-8")
 
         self.assertIn("builds-execution-sha:", workflow)
+        self.assertIn(
+            "builds-execution-sha:\n"
+            "        description: 'Exact approved Hexalith.Builds commit resolved for the reusable workflow and nested publisher action.'\n"
+            "        required: true",
+            workflow,
+        )
+        self.assertIn("actions: read", workflow)
         self.assertIn("environment-name:", workflow)
         self.assertIn("default: 'production'", workflow)
         self.assertIn("environment: ${{ inputs.environment-name }}", workflow)
@@ -177,9 +194,19 @@ class PublishScriptContractTests(unittest.TestCase):
             "uses: Hexalith/Hexalith.Builds/Github/publish-containers@main",
             workflow,
         )
+        self.assertNotIn("Hexalith/Hexalith.Builds/", workflow)
         self.assertIn("builds-execution-sha: ${{ inputs.builds-execution-sha }}", workflow)
         self.assertIn("HEXALITH_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}", workflow)
         self.assertIn("HEXALITH_RELEASE_ENVIRONMENT: ${{ inputs.environment-name }}", workflow)
+        self.assertIn("HEXALITH_RELEASE_SOURCE_BRANCH: ${{ inputs.source-branch }}", workflow)
+        self.assertIn(
+            "HEXALITH_RELEASE_SOURCE_CI_WORKFLOW: ${{ inputs.source-ci-workflow }}",
+            workflow,
+        )
+        self.assertIn(
+            "HEXALITH_RELEASE_PACKAGE_MANIFEST: ${{ inputs.package-manifest }}",
+            workflow,
+        )
         self.assertNotIn("HEXALITH_RELEASE_AUTHORITY_URL", workflow)
         self.assertNotIn("HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH", workflow)
         identity_index = workflow.index("- name: Validate approved Builds execution identity")
@@ -259,6 +286,22 @@ class PublishScriptContractTests(unittest.TestCase):
 
         self.assertLess(publisher_gate, release_step)
 
+    def test_builds_release_is_manual_protected_and_does_not_push_git(self):
+        workflow = BUILD_RELEASE.read_text(encoding="utf-8")
+        package = json.loads((SCRIPT_DIRECTORY.parents[1] / "package.json").read_text(encoding="utf-8"))
+
+        self.assertIn("on:\n  workflow_dispatch:", workflow)
+        self.assertNotIn("\n  push:", workflow)
+        self.assertIn("environment: production", workflow)
+        self.assertIn("DISPATCH_REF", workflow)
+        self.assertIn("refs/heads/main", workflow)
+        self.assertIn("persist-credentials: false", workflow)
+        self.assertEqual(["main"], package["release"]["branches"])
+        self.assertNotIn("@semantic-release/changelog", package["release"]["plugins"])
+        self.assertNotIn("@semantic-release/git", package["release"]["plugins"])
+        self.assertNotIn("@semantic-release/changelog", package["devDependencies"])
+        self.assertNotIn("@semantic-release/git", package["devDependencies"])
+
     def test_multi_platform_publish_is_exact_and_validation_gated(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -270,6 +313,7 @@ class PublishScriptContractTests(unittest.TestCase):
             validator_arguments = root / "validator-arguments.txt"
             smoke_arguments = root / "smoke-arguments.txt"
             preflight_arguments = root / "preflight-arguments.txt"
+            package_manifest = write_package_manifest(root)
 
             write_executable(
                 fake_bin / "docker",
@@ -306,6 +350,7 @@ class PublishScriptContractTests(unittest.TestCase):
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
+                    "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
                     "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
                     "GITHUB_SHA": "b" * 40,
                     "FAKE_DOTNET_ARGUMENTS": str(dotnet_arguments),
@@ -350,6 +395,12 @@ class PublishScriptContractTests(unittest.TestCase):
             self.assertIn("registry.example.test/eventstore", preflight)
             self.assertIn("--environment-name", preflight)
             self.assertIn("production", preflight)
+            self.assertIn("--source-branch", preflight)
+            self.assertIn("main", preflight)
+            self.assertIn("--source-ci-workflow", preflight)
+            self.assertIn("ci.yml", preflight)
+            self.assertIn("--package-manifest", preflight)
+            self.assertIn(str(package_manifest), preflight)
 
     def test_rejected_preflight_blocks_sdk_container_mutation(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -359,6 +410,7 @@ class PublishScriptContractTests(unittest.TestCase):
             project = root / "EventStore.csproj"
             project.write_text("<Project />\n", encoding="utf-8")
             mutation_marker = root / "dotnet-ran"
+            package_manifest = write_package_manifest(root)
             write_executable(fake_bin / "docker", "#!/usr/bin/env bash\ncat >/dev/null\n")
             write_executable(
                 fake_bin / "dotnet",
@@ -379,6 +431,7 @@ class PublishScriptContractTests(unittest.TestCase):
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
+                    "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
                     "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
                     "GITHUB_SHA": "b" * 40,
                     "FAKE_MUTATION_MARKER": str(mutation_marker),
@@ -406,6 +459,7 @@ class PublishScriptContractTests(unittest.TestCase):
             project.write_text("<Project />\n", encoding="utf-8")
             mutation_marker = root / "dotnet-ran"
             escaped_path = root.parent / f"escaped-{root.name}"
+            package_manifest = write_package_manifest(root)
             write_executable(fake_bin / "docker", "#!/usr/bin/env bash\ncat >/dev/null\n")
             write_executable(
                 fake_bin / "dotnet",
@@ -425,6 +479,7 @@ class PublishScriptContractTests(unittest.TestCase):
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
+                    "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
                     "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
                     "GITHUB_SHA": "b" * 40,
                     "FAKE_MUTATION_MARKER": str(mutation_marker),

@@ -1,28 +1,54 @@
 name: Release
 on:
-  push:
-    branches:
-      - main
-      - next
-      - next-major
-      - alpha
-      - beta
-      - '[0-9]+.[0-9]+.x'
+  workflow_dispatch:
 
-permissions:
-  contents: write        # commit changelog, push tag, create GitHub release
-  issues: write          # semantic-release comments on released issues
-  pull-requests: write   # semantic-release comments on released PRs
-  packages: write        # publish semantic-release prerelease tool packages to GitHub Packages
+concurrency:
+  group: builds-release-production
+  cancel-in-progress: false
+
+permissions: {}
 
 jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    name: Verify current main source
+    permissions:
+      contents: read
+    steps:
+    - name: Require exact current main
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPOSITORY: ${{ github.repository }}
+        DISPATCH_REF: ${{ github.ref }}
+        DISPATCH_SHA: ${{ github.sha }}
+      run: |
+        set -euo pipefail
+        if [ "$DISPATCH_REF" != "refs/heads/main" ]; then
+          echo "Builds Release must be dispatched from refs/heads/main." >&2
+          exit 1
+        fi
+        live_main_sha="$(gh api "repos/${REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+        if [[ ! "$DISPATCH_SHA" =~ ^[0-9a-f]{40}$ ]] || [ "$DISPATCH_SHA" != "$live_main_sha" ]; then
+          echo "Builds Release source is not the exact current main tip." >&2
+          exit 1
+        fi
+
   release:
+    needs: verify-source
     runs-on: ubuntu-latest
     name: Release
+    environment: production
+    permissions:
+      contents: write        # push tag and create GitHub release
+      issues: write          # semantic-release comments on released issues
+      pull-requests: write   # semantic-release comments on released PRs
+      packages: write        # publish future tool packages to GitHub Packages
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 0
+        persist-credentials: false
 
     - name: Initialize .NET
       uses: ./Github/initialize-dotnet

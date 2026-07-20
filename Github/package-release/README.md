@@ -8,10 +8,9 @@ This GitHub Action builds and releases packages for Hexalith .NET projects using
 [semantic-release](https://semantic-release.org) directly (the official CLI; no
 third-party wrapper action).
 
-It is the **release** half of a two-job pipeline: run the
-[`verify`](../verify) action first (on pull requests and pushes) to build and
-test, then run this action on pushes to release branches. This action does not
-re-run the tests.
+It is the legacy release half of a two-job pipeline. New workflows must use the
+manual protected-environment `domain-release.yml` path instead. This action does
+not re-run tests and must not be introduced into new repositories.
 
 It runs semantic-release **once**: the version is computed from
 [Conventional Commits](https://www.conventionalcommits.org), then the .NET build
@@ -68,38 +67,26 @@ commit/tag, NuGet publish, and GitHub release) in a single pass.
   action can install with `npm ci` for reproducible, verifiable builds.
 - The `Hexalith.Builds` submodule mounted at `references/Hexalith.Builds`.
 
-## Example Usage
+## Legacy Usage
+
+Existing consumers should migrate rather than copy a branch-driven example.
+Until migration, pin this publication action to a reviewed full Builds SHA:
 
 ```yaml
-on:
-  push:
-    branches: [main, next, next-major, alpha, beta, '[0-9]+.[0-9]+.x']
-  pull_request:
-    branches: [main, next, next-major, alpha, beta]
-
-permissions:
-  contents: read
-
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: Hexalith/Hexalith.Builds/Github/verify@main
-      with:
-        project-name: ${{ github.event.repository.name }}
-
   release:
     runs-on: ubuntu-latest
-    needs: verify
-    if: github.event_name == 'push'
     permissions:
       contents: write
       issues: write
       pull-requests: write
       packages: write
     steps:
-    - uses: Hexalith/Hexalith.Builds/Github/package-release@main
+    - uses: Hexalith/Hexalith.Builds/Github/package-release@0123456789abcdef0123456789abcdef01234567
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 ```
+
+Replace the example SHA with the reviewed immutable Builds commit. Do not use a
+branch, tag, expression, or repository variable for publication identity.

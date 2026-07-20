@@ -14,6 +14,9 @@ builds_execution_sha="${HEXALITH_BUILDS_EXECUTION_SHA:-}"
 source_sha="${GITHUB_SHA:-}"
 release_repository="${GITHUB_REPOSITORY:-}"
 release_environment="${HEXALITH_RELEASE_ENVIRONMENT:-}"
+source_branch="${HEXALITH_RELEASE_SOURCE_BRANCH:-main}"
+source_ci_workflow="${HEXALITH_RELEASE_SOURCE_CI_WORKFLOW:-ci.yml}"
+package_manifest="${HEXALITH_RELEASE_PACKAGE_MANIFEST:-tools/release-packages.json}"
 evidence_directory="${HEXALITH_CONTAINER_EVIDENCE_DIRECTORY:-$PWD/.hexalith/release-evidence/$version}"
 semver_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
 
@@ -29,18 +32,21 @@ fail() {
   exit 1
 }
 
-[ -n "$version" ] || fail "Release version argument is required."
+[[ -n "$version" ]] || fail "Release version argument is required."
 [[ "$version" =~ $semver_pattern ]] || fail "Release version '$version' must be SemVer without build metadata."
-[ -n "${projects//[[:space:]]/}" ] || fail "HEXALITH_CONTAINER_PROJECTS is empty."
-[ -n "$username" ] || fail "HEXALITH_ZOT_USERNAME is required to publish containers."
-[ -n "$api_key" ] || fail "HEXALITH_ZOT_API_KEY is required to publish containers."
-[ -x "$validator" ] || fail "OCI registry validator is required and must be executable."
-[ -x "$smoke" ] || fail "Container platform smoke helper is required and must be executable."
+[[ -n "${projects//[[:space:]]/}" ]] || fail "HEXALITH_CONTAINER_PROJECTS is empty."
+[[ -n "$username" ]] || fail "HEXALITH_ZOT_USERNAME is required to publish containers."
+[[ -n "$api_key" ]] || fail "HEXALITH_ZOT_API_KEY is required to publish containers."
+[[ -x "$validator" ]] || fail "OCI registry validator is required and must be executable."
+[[ -x "$smoke" ]] || fail "Container platform smoke helper is required and must be executable."
 [[ -x "$publication_preflight" ]] || fail "Publication preflight is required and must be executable."
 [[ "$builds_execution_sha" =~ ^[0-9a-f]{40}$ ]] || fail "Exact Builds execution SHA is required."
 [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || fail "Exact workflow source SHA is required."
 [[ "$release_repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || fail "Release repository is invalid."
-[ -n "${release_environment//[[:space:]]/}" ] || fail "Protected release environment is required."
+[[ -n "${release_environment//[[:space:]]/}" ]] || fail "Protected release environment is required."
+[[ "$source_branch" = "main" ]] || fail "Release source branch must be exactly main."
+[[ "$source_ci_workflow" =~ ^[A-Za-z0-9_.-]+\.ya?ml$ ]] || fail "Release CI workflow is invalid."
+[[ -f "$package_manifest" ]] || fail "Release package manifest is required."
 
 workspace_root="$(realpath -e "$PWD")"
 evidence_directory="$(realpath -m "$evidence_directory")"
@@ -78,9 +84,12 @@ while IFS= read -r raw_line; do
     --repository "$release_repository" \
     --version "$version" \
     --source-sha "$source_sha" \
+    --source-branch "$source_branch" \
+    --source-ci-workflow "$source_ci_workflow" \
     --container-repository "${registry}/${repository}" \
     --builds-execution-sha "$builds_execution_sha" \
     --environment-name "$release_environment" \
+    --package-manifest "$package_manifest" \
     --contract-directory "$(dirname "$0")" \
     --evidence-directory "${evidence_directory}/preflight" \
     --phase container
