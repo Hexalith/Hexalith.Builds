@@ -46,19 +46,21 @@ action/helper bytes with the same immutable Builds commit before installing
 them. The caller repository's `references/Hexalith.Builds` submodule pin is not
 treated as executed release-tool identity.
 
-The installed `publication_authority.py` fetches a separate durable GitHub
-issue-comment record through the exact EventStore API origin, verifies its
-author against the caller's checked-in release-owner allowlist, and validates it
-immediately before publication. It binds repository,
-version, workflow source SHA, container repository, exact platforms, owner,
-validity window, rationale, durable source, approved Builds identity, and helper
-hashes. It also requires all 14 package versions and the container tag to be
-absent. `verifyRelease` freezes the exact authority bytes before tag creation;
-the pre-NuGet and immediate pre-container phases require byte equality, repeat
-expiry and destination checks, and never overwrite the frozen record. The
-workflow uploads the complete hidden release-evidence directory on success or
-partial failure. The validator records authority/source/check-time evidence but
-does not create human authority.
+The protected GitHub environment on the reusable release job supplies human
+publication approval. The installed `publication_preflight.py` supplies the
+machine-verifiable contract without a separate comment or expiring record. It
+freezes the exact repository, version, workflow source SHA, container
+repository, platforms, environment, GitHub run identity, approved Builds
+identity, and helper hashes. It also requires all 14 package versions and the
+container tag to be absent.
+
+`verifyRelease` freezes that identity and checks every destination before tag
+creation. The pre-NuGet `publish` phase requires exact identity equality and
+repeats every destination check. The publisher then requires the prior two
+phases and repeats container-tag absence immediately before `dotnet publish`.
+Each phase is single-use and fail-closed; duplicate skipping and overwrites are
+forbidden. The workflow uploads the complete hidden release-evidence directory
+on success or partial failure.
 
 ## Inputs
 

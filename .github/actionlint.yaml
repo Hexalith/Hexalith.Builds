@@ -1,0 +1,7 @@
+config-variables: null
+paths:
+  .github/workflows/domain-release.yml:
+    # GitHub exposes these reusable-workflow identity fields at runtime, but
+    # actionlint 1.7.12 does not yet include them in its job-context schema.
+    ignore:
+      - 'property "workflow_(repository|sha)" is not defined in object type'

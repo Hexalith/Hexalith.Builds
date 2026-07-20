@@ -54,34 +54,40 @@ test project lists, and operational exceptions in their own docs.
 
 ## Release Gates
 
-- Release jobs should not duplicate the full CI gate when the platform supports
-  a reliable CI-success trigger.
-- The standard trigger for module release workflows is `workflow_run` on the CI
-  workflow, gated on a successful push-event run, so the release never runs in
-  parallel with the CI gate and can never publish from a commit whose CI failed:
+- Release is an intentional operator action, not a side effect of every merge.
+  Module release callers use `workflow_dispatch`; ordinary pushes and pull
+  requests run CI only.
+- Before calling the reusable release workflow, the caller must fail closed
+  unless the dispatch selected the current `main` tip and an exact-SHA
+  successful push CI run exists. Keep this source check outside the protected
+  release job so invalid dispatches cannot request approval or access release
+  secrets.
+- The reusable release job is associated with the protected environment named
+  by `environment-name` (`production` by default). Configure that environment
+  in the caller repository with required reviewers and a `main`-only deployment
+  policy. The environment approval is the human publication authority:
 
   ```yaml
   on:
-    workflow_run:
-      workflows: [CI]
-      types: [completed]
-      branches: [main]
+    workflow_dispatch:
 
   concurrency:
-    group: release-${{ github.ref }}
+    group: release-production
     cancel-in-progress: false
 
   jobs:
+    verify-source:
+      # Caller-owned steps prove current main and exact-SHA green push CI.
+      runs-on: ubuntu-latest
+
     release:
-      if: >-
-        github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.event == 'push'
+      needs: verify-source
       uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@main
+      with:
+        environment-name: production
   ```
 
-  With this trigger, leave `test-projects` empty — CI already ran the tiers for
-  the same head. The `event == 'push'` guard keeps scheduled CI runs from
-  starting release runs.
+  Leave `test-projects` empty when the exact source CI already ran those tiers.
 - Release jobs may still restore/build/pack when the release tool needs to
   produce versioned artifacts, but those steps should run only after CI has
   passed and preferably only when a release is warranted.
@@ -90,8 +96,8 @@ test project lists, and operational exceptions in their own docs.
   semantic-release on tags and the changelog commit.
 - Keep release permissions at the job level. Non-release jobs should use
   `contents: read`; semantic-release jobs need only the write scopes they use.
-- Pass release secrets explicitly instead of `secrets: inherit`; the reusable
-  workflows declare the exact secret surface they need.
+- Store publication credentials in the protected environment. Pass only the
+  declared release secrets and never use `secrets: inherit`.
 
 ## Artifacts
 
@@ -149,12 +155,22 @@ test project lists, and operational exceptions in their own docs.
 ## Commit Message Validation
 
 - Modules that release with semantic-release MUST validate Conventional Commits
-  on pull requests, because versioning is derived entirely from commit messages.
+  and the prospective squash title on pull requests, because versioning is
+  derived entirely from the final commit message.
 - Provide `@commitlint/*` devDependencies, a commitlint config, and a
-  `package-lock.json`, then call the shared reusable workflow:
+  `package-lock.json`. Subscribe the caller to title edits and pass the title as
+  a reusable-workflow input; the shared workflow transfers it through an
+  environment variable and stdin rather than interpolating it into shell code:
 
   ```yaml
+  on:
+    pull_request:
+      branches: [main]
+      types: [opened, synchronize, reopened, edited]
+
   jobs:
     commitlint:
       uses: Hexalith/Hexalith.Builds/.github/workflows/commitlint.yml@main
+      with:
+        pull-request-title: ${{ github.event.pull_request.title }}
   ```

@@ -30,9 +30,8 @@ on:
       test-projects:
         description: >-
           Newline-separated test projects (Tier 1+2) run before release. Leave
-          empty when the caller is triggered by workflow_run on CI success — the
-          CI gate already ran for the same head, and re-running it here only
-          duplicates compute (see ci-cd-standards.md, Release Gates).
+          empty when the caller already proved exact-source CI success and those
+          tiers passed for the same head (see ci-cd-standards.md, Release Gates).
         required: false
         type: string
         default: ''
@@ -44,6 +43,11 @@ on:
         required: false
         type: number
         default: 20
+      environment-name:
+        description: 'Protected GitHub environment that authorizes the release job.'
+        required: false
+        type: string
+        default: 'production'
       publish-containers:
         description: 'Publish .NET SDK container images during semantic-release.'
         required: false
@@ -59,24 +63,6 @@ on:
         required: false
         type: string
         default: ''
-      release-authority-url:
-        description: 'Durable HTTPS source for the release-owner publication authority JSON.'
-        required: false
-        type: string
-        default: ''
-      release-owner-allowlist:
-        description: 'Caller-workspace path to the checked-in GitHub approval role allowlist.'
-        required: false
-        type: string
-        default: ''
-    secrets:
-      NUGET_API_KEY:
-        required: true
-      HEXALITH_ZOT_USERNAME:
-        required: false
-      HEXALITH_ZOT_API_KEY:
-        required: false
-
 permissions:
   contents: write
   issues: write
@@ -86,6 +72,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
+    environment: ${{ inputs.environment-name }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -97,8 +84,6 @@ jobs:
         shell: bash
         env:
           BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
-          RELEASE_AUTHORITY_URL: ${{ inputs.release-authority-url }}
-          RELEASE_OWNER_ALLOWLIST: ${{ inputs.release-owner-allowlist }}
           RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
           RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}
         run: |
@@ -113,14 +98,6 @@ jobs:
           fi
           if [ "$RESOLVED_WORKFLOW_SHA" != "$BUILD_EXECUTION_SHA" ]; then
             echo "Resolved reusable-workflow SHA does not match the approved Builds identity." >&2
-            exit 1
-          fi
-          if [[ ! "$RELEASE_AUTHORITY_URL" =~ ^https://api\.github\.com/repos/Hexalith/Hexalith\.EventStore/issues/comments/[0-9]+$ ]]; then
-            echo "release-authority-url must be an EventStore GitHub issue-comment API URL." >&2
-            exit 1
-          fi
-          if [[ ! "$RELEASE_OWNER_ALLOWLIST" =~ ^[A-Za-z0-9._/-]+$ ]]; then
-            echo "release-owner-allowlist must be a caller-workspace relative path." >&2
             exit 1
           fi
       - name: Checkout approved Builds actions
@@ -228,8 +205,7 @@ jobs:
           HEXALITH_ZOT_USERNAME: ${{ secrets.HEXALITH_ZOT_USERNAME }}
           HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}
           HEXALITH_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
-          HEXALITH_RELEASE_AUTHORITY_URL: ${{ inputs.release-authority-url }}
-          HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH: ${{ inputs.release-owner-allowlist }}
+          HEXALITH_RELEASE_ENVIRONMENT: ${{ inputs.environment-name }}
         run: npx semantic-release
       - name: Upload complete release evidence
         if: ${{ always() && inputs.publish-containers }}

@@ -45,7 +45,7 @@ def create_action_mismatch_fixture(root):
         "action.yml",
         "publish-containers.sh",
         "oci_registry_validator.py",
-        "publication_authority.py",
+        "publication_preflight.py",
         "smoke-container-platforms.sh",
         "smoke_container_platforms.py",
     )
@@ -99,20 +99,20 @@ class PublishScriptContractTests(unittest.TestCase):
             action,
         )
 
-    def test_action_installs_publication_authority_validator(self):
+    def test_action_installs_publication_preflight(self):
         action = ACTION.read_text(encoding="utf-8")
 
         self.assertIn(
-            'cp "${GITHUB_ACTION_PATH}/publication_authority.py" '
-            ".hexalith/release/publication_authority.py",
+            'cp "${GITHUB_ACTION_PATH}/publication_preflight.py" '
+            ".hexalith/release/publication_preflight.py",
             action,
         )
         self.assertIn(
-            "chmod +x .hexalith/release/publication_authority.py",
+            "chmod +x .hexalith/release/publication_preflight.py",
             action,
         )
 
-    def test_action_installs_authority_validator_and_binds_approved_builds_bytes(self):
+    def test_action_installs_preflight_and_binds_approved_builds_bytes(self):
         action = ACTION.read_text(encoding="utf-8")
 
         self.assertIn("builds-execution-sha:", action)
@@ -120,17 +120,21 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertIn("raw.githubusercontent.com/Hexalith/Hexalith.Builds", action)
         self.assertIn("cmp --silent", action)
         self.assertIn(
-            'cp "${GITHUB_ACTION_PATH}/publication_authority.py" '
-            ".hexalith/release/publication_authority.py",
+            'cp "${GITHUB_ACTION_PATH}/publication_preflight.py" '
+            ".hexalith/release/publication_preflight.py",
             action,
         )
-        self.assertIn("chmod +x .hexalith/release/publication_authority.py", action)
+        self.assertIn("chmod +x .hexalith/release/publication_preflight.py", action)
 
     def test_domain_release_requires_one_exact_builds_identity_for_workflow_and_action(self):
         workflow = DOMAIN_RELEASE.read_text(encoding="utf-8")
 
         self.assertIn("builds-execution-sha:", workflow)
-        self.assertIn("release-authority-url:", workflow)
+        self.assertIn("environment-name:", workflow)
+        self.assertIn("default: 'production'", workflow)
+        self.assertIn("environment: ${{ inputs.environment-name }}", workflow)
+        self.assertNotIn("release-authority-url:", workflow)
+        self.assertNotIn("release-owner-allowlist:", workflow)
         self.assertIn("job.workflow_sha", workflow)
         self.assertIn("job.workflow_repository", workflow)
         self.assertIn("BUILD_EXECUTION_SHA", workflow)
@@ -147,7 +151,9 @@ class PublishScriptContractTests(unittest.TestCase):
         )
         self.assertIn("builds-execution-sha: ${{ inputs.builds-execution-sha }}", workflow)
         self.assertIn("HEXALITH_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}", workflow)
-        self.assertIn("HEXALITH_RELEASE_AUTHORITY_URL: ${{ inputs.release-authority-url }}", workflow)
+        self.assertIn("HEXALITH_RELEASE_ENVIRONMENT: ${{ inputs.environment-name }}", workflow)
+        self.assertNotIn("HEXALITH_RELEASE_AUTHORITY_URL", workflow)
+        self.assertNotIn("HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH", workflow)
         identity_index = workflow.index("- name: Validate approved Builds execution identity")
         checkout_index = workflow.index("- name: Checkout approved Builds actions")
         initialize_index = workflow.index("- name: Initialize root-declared submodules\n")
@@ -164,8 +170,6 @@ class PublishScriptContractTests(unittest.TestCase):
         identity_environment.update(
             {
                 "BUILD_EXECUTION_SHA": "a" * 40,
-                "RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1",
-                "RELEASE_OWNER_ALLOWLIST": "release-owners.json",
                 "RESOLVED_WORKFLOW_REPOSITORY": "Hexalith/Hexalith.Builds",
                 "RESOLVED_WORKFLOW_SHA": "b" * 40,
             }
@@ -237,9 +241,7 @@ class PublishScriptContractTests(unittest.TestCase):
             dotnet_arguments = root / "dotnet-arguments.txt"
             validator_arguments = root / "validator-arguments.txt"
             smoke_arguments = root / "smoke-arguments.txt"
-            authority_arguments = root / "authority-arguments.txt"
-            role_allowlist = root / "release-owners.json"
-            role_allowlist.write_text("{}\n", encoding="utf-8")
+            preflight_arguments = root / "preflight-arguments.txt"
 
             write_executable(
                 fake_bin / "docker",
@@ -258,8 +260,8 @@ class PublishScriptContractTests(unittest.TestCase):
                 "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$@\" > \"$FAKE_SMOKE_ARGUMENTS\"\n",
             )
             write_executable(
-                root / "authority",
-                "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$@\" > \"$FAKE_AUTHORITY_ARGUMENTS\"\n",
+                root / "preflight",
+                "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$@\" > \"$FAKE_PREFLIGHT_ARGUMENTS\"\n",
             )
 
             environment = os.environ.copy()
@@ -272,17 +274,16 @@ class PublishScriptContractTests(unittest.TestCase):
                     "HEXALITH_ZOT_REGISTRY": "registry.example.test",
                     "HEXALITH_OCI_VALIDATOR": str(root / "validate"),
                     "HEXALITH_CONTAINER_SMOKE": str(root / "smoke"),
-                    "HEXALITH_PUBLICATION_AUTHORITY_VALIDATOR": str(root / "authority"),
+                    "HEXALITH_PUBLICATION_PREFLIGHT": str(root / "preflight"),
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
-                    "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1",
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
-                    "HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH": str(role_allowlist),
+                    "HEXALITH_RELEASE_ENVIRONMENT": "production",
                     "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
                     "GITHUB_SHA": "b" * 40,
                     "FAKE_DOTNET_ARGUMENTS": str(dotnet_arguments),
                     "FAKE_VALIDATOR_ARGUMENTS": str(validator_arguments),
                     "FAKE_SMOKE_ARGUMENTS": str(smoke_arguments),
-                    "FAKE_AUTHORITY_ARGUMENTS": str(authority_arguments),
+                    "FAKE_PREFLIGHT_ARGUMENTS": str(preflight_arguments),
                 }
             )
 
@@ -315,12 +316,14 @@ class PublishScriptContractTests(unittest.TestCase):
             self.assertIn(expected_image, smoke)
             self.assertIn(str(root / "evidence" / "eventstore"), validator)
             self.assertIn(str(root / "evidence" / "eventstore"), smoke)
-            authority = authority_arguments.read_text(encoding="utf-8").splitlines()
-            self.assertIn("--phase", authority)
-            self.assertIn("container", authority)
-            self.assertIn("registry.example.test/eventstore", authority)
+            preflight = preflight_arguments.read_text(encoding="utf-8").splitlines()
+            self.assertIn("--phase", preflight)
+            self.assertIn("container", preflight)
+            self.assertIn("registry.example.test/eventstore", preflight)
+            self.assertIn("--environment-name", preflight)
+            self.assertIn("production", preflight)
 
-    def test_rejected_authority_blocks_sdk_container_mutation(self):
+    def test_rejected_preflight_blocks_sdk_container_mutation(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
             fake_bin = root / "bin"
@@ -328,14 +331,12 @@ class PublishScriptContractTests(unittest.TestCase):
             project = root / "EventStore.csproj"
             project.write_text("<Project />\n", encoding="utf-8")
             mutation_marker = root / "dotnet-ran"
-            role_allowlist = root / "release-owners.json"
-            role_allowlist.write_text("{}\n", encoding="utf-8")
             write_executable(fake_bin / "docker", "#!/usr/bin/env bash\ncat >/dev/null\n")
             write_executable(
                 fake_bin / "dotnet",
                 "#!/usr/bin/env bash\ntouch \"$FAKE_MUTATION_MARKER\"\n",
             )
-            write_executable(root / "authority", "#!/usr/bin/env bash\nexit 1\n")
+            write_executable(root / "preflight", "#!/usr/bin/env bash\nexit 1\n")
             environment = os.environ.copy()
             environment.update(
                 {
@@ -346,11 +347,10 @@ class PublishScriptContractTests(unittest.TestCase):
                     "HEXALITH_ZOT_REGISTRY": "registry.example.test",
                     "HEXALITH_OCI_VALIDATOR": "/bin/true",
                     "HEXALITH_CONTAINER_SMOKE": "/bin/true",
-                    "HEXALITH_PUBLICATION_AUTHORITY_VALIDATOR": str(root / "authority"),
+                    "HEXALITH_PUBLICATION_PREFLIGHT": str(root / "preflight"),
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
-                    "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1",
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
-                    "HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH": str(role_allowlist),
+                    "HEXALITH_RELEASE_ENVIRONMENT": "production",
                     "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
                     "GITHUB_SHA": "b" * 40,
                     "FAKE_MUTATION_MARKER": str(mutation_marker),
@@ -378,8 +378,6 @@ class PublishScriptContractTests(unittest.TestCase):
             project.write_text("<Project />\n", encoding="utf-8")
             mutation_marker = root / "dotnet-ran"
             escaped_path = root.parent / f"escaped-{root.name}"
-            role_allowlist = root / "release-owners.json"
-            role_allowlist.write_text("{}\n", encoding="utf-8")
             write_executable(fake_bin / "docker", "#!/usr/bin/env bash\ncat >/dev/null\n")
             write_executable(
                 fake_bin / "dotnet",
@@ -395,11 +393,10 @@ class PublishScriptContractTests(unittest.TestCase):
                     "HEXALITH_ZOT_REGISTRY": "registry.example.test",
                     "HEXALITH_OCI_VALIDATOR": "/bin/true",
                     "HEXALITH_CONTAINER_SMOKE": "/bin/true",
-                    "HEXALITH_PUBLICATION_AUTHORITY_VALIDATOR": "/bin/true",
+                    "HEXALITH_PUBLICATION_PREFLIGHT": "/bin/true",
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
-                    "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/1",
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
-                    "HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH": str(role_allowlist),
+                    "HEXALITH_RELEASE_ENVIRONMENT": "production",
                     "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
                     "GITHUB_SHA": "b" * 40,
                     "FAKE_MUTATION_MARKER": str(mutation_marker),

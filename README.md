@@ -308,7 +308,8 @@ Release jobs analyze commits, calculate the next version, update
 `CHANGELOG.md`, create a GitHub release, and optionally build and publish NuGet
 packages.
 
-Domain modules release through the reusable
+Domain modules release intentionally through a manually dispatched caller and
+the protected-environment reusable
 [`domain-release.yml`](.github/workflows/domain-release.md) workflow with a
 module-owned `.releaserc.json`. The legacy
 [`Github/package-release`](Github/package-release/README.md) action and its
@@ -321,10 +322,11 @@ Package publishing behavior:
 - Debug and non-release local builds receive a generated `VersionSuffix` from
   `Hexalith.Package.props`.
 
-To create a release, merge or push Conventional Commits to a configured release
-branch such as `main`, `next`, `next-major`, `alpha`, `beta`, or a maintenance
-branch matching `[0-9]+.[0-9]+.x`. The release workflow creates the tag and
-release artifacts.
+For domain modules, manually dispatch the module release caller only after its
+exact current `main` SHA has successful push CI, then approve the protected
+environment deployment. This Builds repository retains its own branch-driven
+release workflow for `main`, `next`, `next-major`, `alpha`, `beta`, and
+maintenance branches matching `[0-9]+.[0-9]+.x`.
 
 ## License
 

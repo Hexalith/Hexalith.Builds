@@ -14,26 +14,26 @@ Dapr-backed tests, and then runs semantic-release.
 | `packages-lock-file` | No | `Directory.Packages.props` | File used to build the NuGet cache key. |
 | `dapr-version` | No | `1.18.0` | Dapr version used when tests are enabled. |
 | `test-platform` | No | `vstest` | Test command contract. Set `microsoft-testing-platform` for xUnit v3 MTP-native TRX reporting. |
-| `test-projects` | No | `''` | Newline-separated test project paths to run before release. Leave empty when the caller is triggered by `workflow_run` on CI success — CI already ran the same gate. |
+| `test-projects` | No | `''` | Newline-separated test project paths to run before release. Leave empty when the caller already proved exact-source CI success. |
 | `node-version` | No | `node` | Node.js version passed to `actions/setup-node`. |
 | `timeout-minutes` | No | `20` | Timeout for the release job. |
+| `environment-name` | No | `production` | Protected caller-repository environment that supplies human release approval and release secrets. |
 | `publish-containers` | No | `false` | Whether to prepare semantic-release container publishing for .NET SDK container projects. |
 | `container-projects` | No | `''` | Newline-separated container mappings in `path/to/project.csproj|repository-name` format. Required when `publish-containers` is `true`. |
 | `builds-execution-sha` | No | `''` | Exact maintainer-approved Builds commit. Required for container publishing and checked against both the resolved reusable workflow and nested action/helper bytes. |
-| `release-authority-url` | No | `''` | Durable HTTPS source for the release-owner authority JSON. Required for container publishing. |
-| `release-owner-allowlist` | No | `''` | Caller-workspace path to the checked-in GitHub approval role allowlist. Required for container publishing. |
 
-## Secrets
+## Protected environment and secrets
 
-| Secret | Required | Description |
+| Environment secret | Required | Description |
 |--------|----------|-------------|
 | `NUGET_API_KEY` | Yes | API key used by semantic-release package publishing. |
 | `HEXALITH_ZOT_USERNAME` | No | Hexalith Zot username used when `publish-containers` is `true`. |
 | `HEXALITH_ZOT_API_KEY` | No | Hexalith Zot API key used when `publish-containers` is `true`. |
 
-Pass secrets explicitly from the caller (see Usage below). The workflow declares
-its exact secret surface, so `secrets: inherit` grants more than it needs; use
-explicit mapping unless a repository has a documented reason not to.
+Store these credentials in the protected environment named by
+`environment-name`. The reusable job reads them only after environment
+protection passes; callers do not pass repository or organization publication
+credentials and must not use `secrets: inherit`.
 
 The workflow also uses the caller repository `GITHUB_TOKEN` for semantic-release
 GitHub operations. Container publishing uses the organization variable
@@ -42,7 +42,8 @@ GitHub operations. Container publishing uses the organization variable
 
 ## Steps
 
-1. Check out the caller repository with full history, verify the resolved
+1. Wait for required protection on the configured environment, check out the
+   caller repository with full history, verify the resolved
    reusable-workflow identity, check out that exact Builds commit, then
    initialize root-declared submodules through its local `initialize-build`
    action.
@@ -57,53 +58,54 @@ GitHub operations. Container publishing uses the organization variable
 8. If `publish-containers` is `true`, run the SHA-pinned arm64 emulation setup.
 9. Invoke the nested
    `Github/publish-containers` action from the immutable local checkout, and
-   install the publisher, immutable OCI validator, durable authority validator,
+   install the publisher, immutable OCI validator, publication preflight,
    and child-digest smoke helpers. The action also compares its action/helper
    bytes with the same approved Builds commit.
-10. Run `npx semantic-release`, passing the approved Builds identity, exact
-    GitHub authority API source, and checked-in owner allowlist to the caller's
-    publication preflight; always upload the complete hidden release-evidence
-    directory afterward.
+10. Run `npx semantic-release`, passing the approved Builds identity and
+    protected environment name to the caller's publication preflight; always
+    upload the complete hidden release-evidence directory afterward.
 
 The generated publish helper accepts the semantic-release version as its first
-argument. The caller's `verifyReleaseCmd` must validate its full durable
-authority and destination absence before semantic-release creates a Git tag.
-The `publishCmd` must revalidate immediately before the first NuGet push, then
-call the container helper with the same version. Existing package/tag identities
-are collisions; duplicate skipping is forbidden. The helper logs in to Hexalith
-Zot only when semantic-release reaches `publishCmd`, so non-releasing commits do
-not require registry credentials:
+argument. The caller's `verifyReleaseCmd` must freeze exact repository,
+version, source, Builds, environment, run, and helper identity and prove
+destination absence before semantic-release creates a Git tag. The `publishCmd`
+must require exact frozen-identity equality and revalidate immediately before
+the first NuGet push, then call the container helper with the same version. The
+helper requires both earlier phases and repeats container absence immediately
+before publication. Existing package/tag identities are collisions; duplicate
+skipping is forbidden. The helper logs in to Hexalith Zot only when
+semantic-release reaches `publishCmd`:
 
 ```json
-"verifyReleaseCmd": "bash scripts/validate-release-authority.sh ${nextRelease.version} verify >&2",
-"publishCmd": "bash scripts/validate-release-authority.sh ${nextRelease.version} publish >&2 && dotnet nuget push ./nupkgs/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json && ./.hexalith/release/publish-containers.sh ${nextRelease.version}"
+"verifyReleaseCmd": "bash scripts/validate-publication-preflight.sh ${nextRelease.version} verify >&2",
+"publishCmd": "bash scripts/validate-publication-preflight.sh ${nextRelease.version} publish >&2 && dotnet nuget push ./nupkgs/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json && ./.hexalith/release/publish-containers.sh ${nextRelease.version}"
 ```
 
 ## Usage
 
-The standard caller runs after CI succeeds (`workflow_run`), so the release
-never duplicates the CI gate and never publishes from a commit whose CI failed
-(see `ci-cd-standards.md`, "Release Gates"):
+The standard caller is manually dispatched. A caller-owned preflight must prove
+the selected SHA is the current `main` tip with successful exact-SHA push CI
+before the reusable protected-environment job is called (see
+`ci-cd-standards.md`, "Release Gates"):
 
 ```yaml
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-production
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    # Fail unless this is the current main SHA with successful exact-SHA push CI.
+
   release:
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push'
+    needs: verify-source
     permissions:
       contents: write
       issues: write
@@ -111,16 +113,11 @@ jobs:
     uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@main
     with:
       solution: Hexalith.<Module>.slnx
+      environment-name: production
       publish-containers: true
       builds-execution-sha: ${{ vars.HEXALITH_BUILDS_RELEASE_SHA }}
-      release-authority-url: ${{ vars.HEXALITH_RELEASE_AUTHORITY_URL }}
-      release-owner-allowlist: path/to/github-approval-role-allowlist.json
       container-projects: |
         src/Hexalith.<Module>/Hexalith.<Module>.csproj|module-name
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      HEXALITH_ZOT_USERNAME: ${{ secrets.HEXALITH_ZOT_USERNAME }}
-      HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}
 ```
 
 The recommended organization-level values are:
@@ -128,14 +125,14 @@ The recommended organization-level values are:
 ```text
 vars.HEXALITH_ZOT_REGISTRY = registry.hexalith.com
 vars.HEXALITH_BUILDS_RELEASE_SHA
-vars.HEXALITH_RELEASE_AUTHORITY_URL
-secrets.HEXALITH_ZOT_USERNAME
-secrets.HEXALITH_ZOT_API_KEY
-secrets.NUGET_API_KEY
+environment production: secrets.HEXALITH_ZOT_USERNAME
+environment production: secrets.HEXALITH_ZOT_API_KEY
+environment production: secrets.NUGET_API_KEY
 ```
 
-`secrets: inherit` also works but grants the called workflow every organization
-and repository secret; prefer the explicit mapping shown above.
+Do not pass these publication credentials from repository or organization
+scope. Keeping them on the protected environment makes them unreachable until
+the reviewer gate passes.
 
 ## Version Reference
 
