@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: 'node'
+      pull-request-title:
+        description: 'Exact pull request title supplied by a pull_request caller.'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -37,6 +42,7 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          PR_TITLE: ${{ inputs.pull-request-title }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
@@ -44,6 +50,11 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$EVENT_NAME" = "pull_request" ]; then
+            if [ -z "${PR_TITLE//[[:space:]]/}" ]; then
+              echo "pull-request-title is required for pull_request validation." >&2
+              exit 1
+            fi
+            printf '%s\n' "$PR_TITLE" | npx commitlint --verbose
             npx commitlint --from "$PR_BASE_SHA" --to "$PR_HEAD_SHA" --verbose
           elif [ -n "$PUSH_BEFORE_SHA" ] &&
                [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ] &&

@@ -103,6 +103,13 @@ Checks that reusable domain CI/release workflows retain their backward-compatibl
 VSTest default and route Microsoft.Testing.Platform callers to MTP-native TRX and
 trait-filter options without leaking VSTest-only arguments.
 
+### test-commitlint-workflow.ps1
+
+Checks that the reusable Commitlint workflow validates the prospective squash
+title before the pull-request commit range, transfers the title through an
+environment variable and stdin without shell evaluation, and documents caller
+subscription to pull-request title edits.
+
 ### builds-submodule-init.ps1
 
 Adds or initializes the `Hexalith.Builds` Git submodule in a parent repository

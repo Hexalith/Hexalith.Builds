@@ -40,7 +40,7 @@ runs:
           action.yml \
           publish-containers.sh \
           oci_registry_validator.py \
-          publication_authority.py \
+          publication_preflight.py \
           smoke-container-platforms.sh \
           smoke_container_platforms.py; do
           approved_url="https://raw.githubusercontent.com/Hexalith/Hexalith.Builds/${HEXALITH_BUILDS_EXECUTION_SHA}/Github/publish-containers/${file}"
@@ -53,11 +53,11 @@ runs:
         mkdir -p .hexalith/release
         cp "${GITHUB_ACTION_PATH}/publish-containers.sh" .hexalith/release/publish-containers.sh
         cp "${GITHUB_ACTION_PATH}/oci_registry_validator.py" .hexalith/release/oci_registry_validator.py
-        cp "${GITHUB_ACTION_PATH}/publication_authority.py" .hexalith/release/publication_authority.py
+        cp "${GITHUB_ACTION_PATH}/publication_preflight.py" .hexalith/release/publication_preflight.py
         cp "${GITHUB_ACTION_PATH}/smoke-container-platforms.sh" .hexalith/release/smoke-container-platforms.sh
         cp "${GITHUB_ACTION_PATH}/smoke_container_platforms.py" .hexalith/release/smoke_container_platforms.py
         chmod +x .hexalith/release/publish-containers.sh
         chmod +x .hexalith/release/oci_registry_validator.py
-        chmod +x .hexalith/release/publication_authority.py
+        chmod +x .hexalith/release/publication_preflight.py
         chmod +x .hexalith/release/smoke-container-platforms.sh
         chmod +x .hexalith/release/smoke_container_platforms.py

@@ -9,12 +9,11 @@ api_key="${HEXALITH_ZOT_API_KEY:-}"
 runtime_identifiers="linux-musl-x64;linux-musl-arm64"
 validator="${HEXALITH_OCI_VALIDATOR:-$(dirname "$0")/oci_registry_validator.py}"
 smoke="${HEXALITH_CONTAINER_SMOKE:-$(dirname "$0")/smoke-container-platforms.sh}"
-authority_validator="${HEXALITH_PUBLICATION_AUTHORITY_VALIDATOR:-$(dirname "$0")/publication_authority.py}"
-authority_url="${HEXALITH_RELEASE_AUTHORITY_URL:-}"
+publication_preflight="${HEXALITH_PUBLICATION_PREFLIGHT:-$(dirname "$0")/publication_preflight.py}"
 builds_execution_sha="${HEXALITH_BUILDS_EXECUTION_SHA:-}"
 source_sha="${GITHUB_SHA:-}"
 release_repository="${GITHUB_REPOSITORY:-}"
-role_allowlist="${HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH:-}"
+release_environment="${HEXALITH_RELEASE_ENVIRONMENT:-}"
 evidence_directory="${HEXALITH_CONTAINER_EVIDENCE_DIRECTORY:-$PWD/.hexalith/release-evidence/$version}"
 semver_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
 
@@ -37,12 +36,11 @@ fail() {
 [ -n "$api_key" ] || fail "HEXALITH_ZOT_API_KEY is required to publish containers."
 [ -x "$validator" ] || fail "OCI registry validator is required and must be executable."
 [ -x "$smoke" ] || fail "Container platform smoke helper is required and must be executable."
-[[ -x "$authority_validator" ]] || fail "Publication authority validator is required and must be executable."
+[[ -x "$publication_preflight" ]] || fail "Publication preflight is required and must be executable."
 [[ "$builds_execution_sha" =~ ^[0-9a-f]{40}$ ]] || fail "Exact Builds execution SHA is required."
 [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || fail "Exact workflow source SHA is required."
 [[ "$release_repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || fail "Release repository is invalid."
-[[ "$authority_url" =~ ^https:// ]] || fail "Durable release authority URL is required."
-[[ -f "$role_allowlist" ]] || fail "Release-owner allowlist is required."
+[ -n "${release_environment//[[:space:]]/}" ] || fail "Protected release environment is required."
 
 workspace_root="$(realpath -e "$PWD")"
 evidence_directory="$(realpath -m "$evidence_directory")"
@@ -76,16 +74,15 @@ while IFS= read -r raw_line; do
   mapping_evidence="${evidence_directory}/${repository}"
   mkdir -p "$mapping_evidence"
 
-  "$authority_validator" \
-    --authority-url "$authority_url" \
+  "$publication_preflight" \
     --repository "$release_repository" \
     --version "$version" \
     --source-sha "$source_sha" \
     --container-repository "${registry}/${repository}" \
     --builds-execution-sha "$builds_execution_sha" \
-    --role-allowlist "$role_allowlist" \
+    --environment-name "$release_environment" \
     --contract-directory "$(dirname "$0")" \
-    --evidence-directory "${evidence_directory}/authority" \
+    --evidence-directory "${evidence_directory}/preflight" \
     --phase container
 
   echo "[publish-containers] Publishing ${registry}/${repository}:${version} from ${resolved_project}"
