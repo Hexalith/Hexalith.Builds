@@ -86,6 +86,82 @@ public sealed class NativeTestReportLoaderTests
         result.Diagnostic.ShouldNotBeNull().RuleId.ShouldBe("HXT002");
     }
 
+    /// <summary>
+    /// Verifies a missing report path fails closed rather than throwing or being ignored.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task MissingReportFailsClosedAsync()
+    {
+        string missingPath = Path.Combine(Path.GetTempPath(), $"hexalith-builds-missing-{Guid.NewGuid():N}.trx");
+
+        NativeTestReportLoadResult result = await NativeTestReportLoader.LoadAsync(
+            missingPath,
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        result.IsValid.ShouldBeFalse();
+        result.Diagnostic.ShouldNotBeNull().RuleId.ShouldBe("HXT001");
+    }
+
+    /// <summary>
+    /// Verifies malformed XML, and a duplicated or absent structural element, are all rejected
+    /// as invalid rather than partially parsed.
+    /// </summary>
+    /// <param name="reportContent">The malformed or structurally invalid report content.</param>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Theory]
+    [InlineData("<TestRun><ResultSummary><Counters total=\"1\" passed=\"1\" failed=\"0\" notExecuted=\"0\" /></ResultSummary>")]
+    [InlineData("<TestRun></TestRun>")]
+    [InlineData(
+        "<TestRun>"
+        + "<ResultSummary><Counters total=\"1\" passed=\"1\" failed=\"0\" notExecuted=\"0\" /></ResultSummary>"
+        + "<ResultSummary><Counters total=\"1\" passed=\"1\" failed=\"0\" notExecuted=\"0\" /></ResultSummary>"
+        + "</TestRun>")]
+    [InlineData("<TestRun><ResultSummary></ResultSummary></TestRun>")]
+    public async Task StructurallyInvalidReportFailsClosedAsync(string reportContent)
+    {
+        NativeTestReportLoadResult result = await LoadAsync(reportContent).ConfigureAwait(true);
+
+        result.IsValid.ShouldBeFalse();
+        result.Diagnostic.ShouldNotBeNull().RuleId.ShouldBe("HXT002");
+    }
+
+    /// <summary>
+    /// Verifies a declared run-level outcome other than "Completed" fails closed even when
+    /// per-test counters look clean, since VSTest/MTP record host-level failures there.
+    /// </summary>
+    /// <param name="outcome">The declared <c>ResultSummary/@outcome</c> value.</param>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Theory]
+    [InlineData("Aborted")]
+    [InlineData("Failed")]
+    [InlineData("Timeout")]
+    [InlineData("InProgress")]
+    public async Task NonCompletedRunOutcomeFailsClosedAsync(string outcome)
+    {
+        NativeTestReportLoadResult result = await LoadAsync(
+            $"<TestRun><ResultSummary outcome=\"{outcome}\"><Counters total=\"1\" passed=\"1\" failed=\"0\" notExecuted=\"0\" /></ResultSummary></TestRun>")
+            .ConfigureAwait(true);
+
+        result.IsValid.ShouldBeFalse();
+        result.Diagnostic.ShouldNotBeNull().RuleId.ShouldBe("HXT006");
+    }
+
+    /// <summary>
+    /// Verifies a negative counter component cannot cancel out a real failure in the aggregate sum.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task NegativeCounterComponentFailsClosedAsync()
+    {
+        NativeTestReportLoadResult result = await LoadAsync(
+            "<TestRun><ResultSummary><Counters total=\"2\" passed=\"2\" failed=\"1\" error=\"-1\" notExecuted=\"0\" /></ResultSummary></TestRun>")
+            .ConfigureAwait(true);
+
+        result.IsValid.ShouldBeFalse();
+        result.Diagnostic.ShouldNotBeNull().RuleId.ShouldBe("HXT002");
+    }
+
     private static async Task<NativeTestReportLoadResult> LoadAsync(string reportContent)
     {
         string directory = Path.Combine(Path.GetTempPath(), $"hexalith-builds-trx-{Guid.NewGuid():N}");

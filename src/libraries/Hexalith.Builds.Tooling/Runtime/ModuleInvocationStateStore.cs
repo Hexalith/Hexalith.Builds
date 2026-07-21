@@ -82,8 +82,30 @@ public static class ModuleInvocationStateStore
             ModuleInvocationState? state = await ReadStateAsync(statePath, cancellationToken).ConfigureAwait(false);
             if (state is not null && string.Equals(state.ManifestHash, manifestHash, StringComparison.Ordinal))
             {
-                File.Delete(statePath);
+                TryDelete(statePath);
             }
+        }
+    }
+
+    /// <summary>
+    /// Deletes a state file best-effort. A file the store does not own (e.g. dropped by another
+    /// process into the shared directory) must not turn an otherwise-idempotent <c>down</c> into
+    /// a lifecycle failure.
+    /// </summary>
+    /// <param name="path">The state file path.</param>
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            // Leave the unreachable file in place; cleanup remains best-effort.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Leave the unreachable file in place; cleanup remains best-effort.
         }
     }
 
@@ -106,6 +128,10 @@ public static class ModuleInvocationStateStore
             }
         }
         catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
         {
             return null;
         }

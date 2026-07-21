@@ -123,7 +123,7 @@ so that Projects Story 6.1 and later consumers can prove supported-path behavior
 
 - [x] Implement the module manifest and command contract (AC: 2-4, 6, 8, 12)
   - [x] Define `hexalith.module-manifest.v1` models and strict validation before lifecycle work.
-  - [x] Implement `run`, `down`, and `test` with cancellation, stable human/JSON diagnostics, phase-aware outcomes, and invocation-scoped state.
+  - [x] Implement `run`, `down`, and `test` with cancellation, stable human/JSON diagnostics, phase-aware outcomes, and invocation-scoped state. **Code-review correction (2026-07-21, CD1):** the invocation-scoped state store (`ModuleInvocationStateStore.CreateAsync`) and run-identity plan (`ModuleRuntimePlan.Create`) are implemented but currently unreachable dead code — every `run`/`test` short-circuits at the always-unavailable `RuntimePrerequisiteGate` before reaching them. Run-identity resource scoping is neither demonstrable nor test-covered yet. Treat as deferred-until-G-6 and unverified; the Test Architect must re-check this scoping once the prerequisite gate opens under "Implement supported platform composition" below, before P0 acceptance.
   - [x] Implement and contract-test the exact exit-code map in frontmatter; do not assign rule severity by numeric exit-code precedence.
   - [x] Define stable pure-domain, host-contract/descriptor, persisted, restart, two-instance, browser, CLI, and MCP profile classes without product assertions in the runner.
   - [x] Validate path containment, duplicate/unknown fields and IDs, dependencies, assemblies, profiles, placeholders, and the metadata-only secret boundary.
@@ -209,6 +209,35 @@ Code review — **Chunk B (Evidence tooling)**, 2026-07-21. Scope: `src/librarie
 
 - [x] \[Review]\[Defer] YAML parse-bomb — deserialized twice with no anchor/alias/depth bound. [`.../Evidence/ReadinessEvidenceValidator.cs`:459-485] — deferred, low priority (semi-trusted in-repo input; YamlDotNet lacks native alias caps).
 - [x] \[Review]\[Defer] `IsArtifactHashes` validates hash values but not keys for path/secret shape. [`.../RunEvidence/ModuleRunEvidenceArtifactValidator.cs`:173-178] — deferred, low priority (keys never propagated to the readiness result).
+
+### Review Findings — Chunk C (Runtime & test-report orchestration)
+
+Code review — **Chunk C (Runtime & test-report orchestration)**, 2026-07-21. Scope: `src/libraries/Hexalith.Builds.Tooling/Runtime/*`, `.../TestReports/*`, `test/Hexalith.Builds.Module.Tests/{ModuleCommandApplicationTests,NativeTestReportLoaderTests,PersistedFixtureAssetTests}.cs` (baseline `edbaeaed`..HEAD `7708256`). Four blind review layers. The reachable/shipped path is fail-closed and correct (live runner deferred behind an always-unavailable prerequisite gate); findings are the classifier fail-opens, one reachable `down` robustness gap, and a latent cluster in the deferred composition/state code. 1 finding dismissed.
+
+**Decision-needed:**
+
+- [x] \[Review]\[Decision] CD1 · Traceability honesty — Task 2 is checked `[x]` ("invocation-scoped state") and Dev Notes claim an invocation-metadata state contract, but `ModuleRuntimePlan.Create` + `ModuleInvocationStateStore.CreateAsync` are unreachable dead code (`RuntimePrerequisiteGate.Check` always returns unavailable). Run-identity resource scoping is neither demonstrable nor tested. — **Resolved 2026-07-21:** annotated Task 2 and Dev Notes with a code-review correction marking the state machinery deferred-until-G-6 and unverified.
+
+**Patch:**
+
+- [x] \[Review]\[Patch] CP1 · HIGH · TRX loader ignores `ResultSummary/@outcome`; an `outcome="Aborted"/"Failed"/"Timeout"` run with clean per-test counters loads as a pass (real VSTest/MTP run-level-failure shape), violating AC 6 "failed test steps never pass". [`src/libraries/Hexalith.Builds.Tooling/TestReports/NativeTestReportLoader.cs`:82-94]
+- [x] \[Review]\[Patch] CP2 · MEDIUM · Negative TRX counter components (`failed="1" error="-1"` → `failed=0`) satisfy the aggregate sum check and load as a pass for a failed run. Bounds-check each parsed component ≥ 0. [`.../TestReports/NativeTestReportLoader.cs`:175-192]
+- [x] \[Review]\[Patch] CP3 · MEDIUM · `DownAsync` does not catch `UnauthorizedAccessException` on read/delete; a foreign `.json` in the world-shared temp dir turns idempotent `down` into a `TopologyOrLifecycle` (exit 3) failure. Skip unreadable/undeletable files. [`src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleInvocationStateStore.cs`:79-116]
+- [x] \[Review]\[Patch] CP4 · LOW · Dead switch arm `skipped >= total` is unreachable after the `passed==0` arm. [`.../TestReports/NativeTestReportLoader.cs`:109]
+- [x] \[Review]\[Patch] CP5 · MEDIUM · Test gaps: no coverage for HXT001 (missing/unreadable report), HXT002 (duplicate/absent `ResultSummary`/`Counters`, malformed XML), the CP1/CP2 fail-opens, or HXR004 (lifecycle exit 3), plus `down` idempotency. [`test/Hexalith.Builds.Module.Tests/NativeTestReportLoaderTests.cs`, `ModuleCommandApplicationTests.cs`] — **Resolved 2026-07-21:** added HXT001/HXT002/HXT006/negative-counter coverage to `NativeTestReportLoaderTests.cs`, and a new `ModuleInvocationStateStoreTests.cs` covering scoped/idempotent `down`, tolerance of a foreign file in the shared state dir, and the manifest-reread `IOException` that maps upstream to HXR004/exit 3 (direct unit-level coverage of that failure mode — driving it through the full CLI race is not deterministically reproducible without an instrumentation hook).
+
+**Deferred (belongs with the live runner — P1/G-6; all latent behind the deferred prerequisite gate):**
+
+- [x] \[Review]\[Defer] Run-identity teardown scoping — `DownAsync` keys cleanup on manifest hash, not RunId (AC 4). [`.../Runtime/ModuleInvocationStateStore.cs`:83] — deferred, latent (CreateAsync unreachable).
+- [x] \[Review]\[Defer] World-shared state dir `hexalith-builds/runs` is not user-scoped. [`.../Runtime/ModuleInvocationStateStore.cs`:96] — deferred, latent.
+- [x] \[Review]\[Defer] Failure/cancellation paths attempt no resource/state cleanup (AC 4 "attempt safe cleanup"). [`.../Runtime/ModuleCommandExecutionService.cs`:210-262] — deferred, latent (nothing composed pre-gate).
+- [x] \[Review]\[Defer] Non-atomic state write (`File.WriteAllTextAsync`) orphans corrupt files `down` can never reclaim. [`.../Runtime/ModuleInvocationStateStore.cs`:58] — deferred, latent.
+- [x] \[Review]\[Defer] `TenantNamespace` == `ResourceNamespace` (identical) + 48-bit RunId truncation; AC 5 wants distinct run-unique axes. [`.../Runtime/ModuleRuntimePlan.cs`] — deferred, latent.
+- [x] \[Review]\[Defer] Dead HXR003 block persists state then returns unavailable; duplicates HXR002 semantics. [`.../Runtime/ModuleCommandExecutionService.cs`:173-208] — deferred, latent (dead code).
+- [x] \[Review]\[Defer] `down` manifest-reread TOCTOU → exit 3 instead of idempotent completion. [`.../Runtime/ModuleCommandExecutionService.cs`:133] — deferred, low priority.
+- [x] \[Review]\[Defer] Cancellation during evidence-write on an already-failed path reclassifies the outcome to cancelled (exit 130), dropping the causal failure. [`.../Runtime/ModuleCommandExecutionService.cs`:293] — deferred, narrow timing (both outcomes non-passing).
+
+**Dismissed:** unguarded `Diagnostics[0]` on the invalid-manifest path (`ModuleCommandExecutionService.cs`:87) — the manifest loader guarantees ≥1 diagnostic whenever the manifest is null (`HXM002`/`HXM015`), so it cannot throw today.
 
 ## Dev Notes
 
@@ -379,7 +408,7 @@ GPT-5 Codex
 - Jerome authorized Hexalith.Builds to own both P0 tools; authorized baseline `edbaeae` replaced the stale earlier observation `01e48ee`. The delivery revision remains unaccepted and the current worktree is not represented as a published package.
 - Package IDs, command names, schema IDs, semantic-release channels, expected initial stable version, greenfield rollback, matrix-status disposition, file impact, negative controls, and P4 handoff are explicit.
 - Established the SDK/MSBuild/package spine at the authorized baseline with exact tool identities, a non-packable shared core, central package management, warning-as-error analysis, and nonzero contract-test execution.
-- Implemented strict module-manifest validation, public `hexalith-module` command parsing, invocation-metadata state contract, first-causal diagnostics, canonical run-evidence output, and metadata-only secret/filter handling; this is not live platform composition.
+- Implemented strict module-manifest validation, public `hexalith-module` command parsing, invocation-metadata state contract, first-causal diagnostics, canonical run-evidence output, and metadata-only secret/filter handling; this is not live platform composition. **Code-review correction (2026-07-21, CD1):** the invocation-metadata state contract is scaffolding only — `ModuleInvocationStateStore`/`ModuleRuntimePlan` are not yet reachable from any command path (the prerequisite gate always reports unavailable), so run-identity resource scoping is unverified and must be re-checked when platform composition opens the gate.
 - Implemented the strict readiness-evidence validator, JSON/human command output, deterministic source/row/rule diagnostics, packaged positive/negative contract corpora, JSON schemas, and documentation.
 - Added Release-only exact-package build/publish/contract scripts and semantic-release lifecycle wiring. No package was published and no consumer pin was invented.
 - Hardened the public contracts against symlink/reparse-point escape, partial/forged evidence artifacts, secret-bearing input retention, unstable parser/Ctrl+C diagnostics, incomplete TRX counter accounting, and missing source/SDK provenance; package qualification now runs the packed tools against consumer-owned copied fixtures and retained invocation evidence.
