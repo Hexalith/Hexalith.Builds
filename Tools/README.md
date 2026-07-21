@@ -57,9 +57,11 @@ Run the focused fixture suite with:
 .\Tools\test-central-package-version-validator.ps1
 ```
 
-`test-authoritative-package-catalog.ps1` protects the approved migration matrix,
-the shared `HexalithCommonsVersion`, and
+`test-authoritative-package-catalog.ps1` protects the approved migration package
+identities, shared package-family alignment, and
 `CentralPackageVersionOverrideEnabled=false` through evaluated MSBuild output.
+It does not pin dependency versions, so an intentional version bump remains a
+valid release input.
 
 ### validate-consumer-package-authority.ps1
 

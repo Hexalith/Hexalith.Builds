@@ -11,6 +11,7 @@ $evaluationText = [string]::Join(
         & dotnet msbuild $catalogPath -nologo `
             -getProperty:CentralPackageVersionOverrideEnabled `
             -getProperty:HexalithCommonsVersion `
+            -getProperty:HexalithEventStoreVersion `
             -getItem:PackageVersion 2>&1 |
             ForEach-Object { [string] $_ }
     )
@@ -21,71 +22,86 @@ if ($LASTEXITCODE -ne 0) {
 
 $evaluation = $evaluationText | ConvertFrom-Json -ErrorAction Stop
 $failures = [System.Collections.Generic.List[string]]::new()
-$expectedPackages = [ordered] @{
-    'Dapr.AI' = '1.18.4'
-    'Dapr.AI.Microsoft.Extensions' = '1.18.4'
-    'Fluxor' = '6.10.0'
-    'Kreuzberg' = '4.10.2'
-    'Microsoft.AspNetCore.Components.CustomElements' = '10.0.10'
-    'Microsoft.Extensions.Diagnostics.Abstractions' = '10.0.10'
-    'MinVer' = '8.0.0-rc.1'
-    'NBomber.Http' = '6.2.1'
-    'NFalkorDB' = '1.0.6'
-    'NRedisStack' = '1.6.0'
-    'NetArchTest.eNhancedEdition' = '1.4.5'
-    'OpenTelemetry' = '1.17.0'
-    'OpenTelemetry.Exporter.InMemory' = '1.17.0'
-    'OpenTelemetry.Instrumentation.StackExchangeRedis' = '1.16.0-beta.1'
-    'xunit.v3.extensibility.core' = '3.2.2'
-    'ByteAether.Ulid' = '1.3.8'
-    'CommunityToolkit.Aspire.Hosting.Dapr' = '13.4.1-beta.686'
-    'Fluxor.Blazor.Web' = '6.10.0'
-    'MediatR' = '14.2.0'
-    'Microsoft.AspNetCore.Authentication.JwtBearer' = '10.0.10'
-    'Microsoft.AspNetCore.Mvc.Testing' = '10.0.10'
-    'Microsoft.AspNetCore.OpenApi' = '10.0.10'
-    'Microsoft.AspNetCore.TestHost' = '10.0.10'
-    'Microsoft.Extensions.Configuration.Binder' = '10.0.10'
-    'Microsoft.Extensions.DependencyInjection' = '10.0.10'
-    'Microsoft.Extensions.DependencyInjection.Abstractions' = '10.0.10'
-    'Microsoft.Extensions.Hosting' = '10.0.10'
-    'Microsoft.Extensions.Hosting.Abstractions' = '10.0.10'
-    'Microsoft.Extensions.Http' = '10.0.10'
-    'Microsoft.Extensions.Http.Resilience' = '10.8.0'
-    'Microsoft.Extensions.Logging.Abstractions' = '10.0.10'
-    'Microsoft.Extensions.Options' = '10.0.10'
-    'Microsoft.Extensions.Options.ConfigurationExtensions' = '10.0.10'
-    'Microsoft.Extensions.ServiceDiscovery' = '10.8.0'
-    'Microsoft.NET.Test.Sdk' = '18.8.1'
-    'ModelContextProtocol' = '1.4.1'
-    'ModelContextProtocol.AspNetCore' = '1.4.1'
-    'NSubstitute' = '6.0.0'
-    'OpenTelemetry.Exporter.OpenTelemetryProtocol' = '1.17.0'
-    'OpenTelemetry.Extensions.Hosting' = '1.17.0'
-    'System.CommandLine' = '2.0.10'
-    'Testcontainers' = '4.13.0'
-    'YamlDotNet' = '18.1.0'
-    'bunit' = '2.8.4-preview'
-    'Hexalith.EventStore.Contracts' = '3.77.2'
-    'OpenTelemetry.Instrumentation.AspNetCore' = '1.17.0'
-    'OpenTelemetry.Instrumentation.Http' = '1.17.0'
-    'OpenTelemetry.Instrumentation.Runtime' = '1.17.0'
-}
+$requiredPackages = @(
+    'Dapr.AI'
+    'Dapr.AI.Microsoft.Extensions'
+    'Fluxor'
+    'Kreuzberg'
+    'Microsoft.AspNetCore.Components.CustomElements'
+    'Microsoft.Extensions.Diagnostics.Abstractions'
+    'MinVer'
+    'NBomber.Http'
+    'NFalkorDB'
+    'NRedisStack'
+    'NetArchTest.eNhancedEdition'
+    'OpenTelemetry'
+    'OpenTelemetry.Exporter.InMemory'
+    'OpenTelemetry.Instrumentation.StackExchangeRedis'
+    'xunit.v3.extensibility.core'
+    'ByteAether.Ulid'
+    'CommunityToolkit.Aspire.Hosting.Dapr'
+    'Fluxor.Blazor.Web'
+    'MediatR'
+    'Microsoft.AspNetCore.Authentication.JwtBearer'
+    'Microsoft.AspNetCore.Mvc.Testing'
+    'Microsoft.AspNetCore.OpenApi'
+    'Microsoft.AspNetCore.TestHost'
+    'Microsoft.Extensions.Configuration.Binder'
+    'Microsoft.Extensions.DependencyInjection'
+    'Microsoft.Extensions.DependencyInjection.Abstractions'
+    'Microsoft.Extensions.Hosting'
+    'Microsoft.Extensions.Hosting.Abstractions'
+    'Microsoft.Extensions.Http'
+    'Microsoft.Extensions.Http.Resilience'
+    'Microsoft.Extensions.Logging.Abstractions'
+    'Microsoft.Extensions.Options'
+    'Microsoft.Extensions.Options.ConfigurationExtensions'
+    'Microsoft.Extensions.ServiceDiscovery'
+    'Microsoft.NET.Test.Sdk'
+    'ModelContextProtocol'
+    'ModelContextProtocol.AspNetCore'
+    'NSubstitute'
+    'OpenTelemetry.Exporter.OpenTelemetryProtocol'
+    'OpenTelemetry.Extensions.Hosting'
+    'System.CommandLine'
+    'Testcontainers'
+    'YamlDotNet'
+    'bunit'
+    'Hexalith.EventStore.Contracts'
+    'OpenTelemetry.Instrumentation.AspNetCore'
+    'OpenTelemetry.Instrumentation.Http'
+    'OpenTelemetry.Instrumentation.Runtime'
+)
 
 $evaluatedPackages = @{}
 foreach ($packageVersion in @($evaluation.Items.PackageVersion)) {
     $evaluatedPackages[[string] $packageVersion.Identity] = [string] $packageVersion.Version
 }
 
-foreach ($expectedPackage in $expectedPackages.GetEnumerator()) {
-    if (-not $evaluatedPackages.ContainsKey($expectedPackage.Key)) {
-        $failures.Add("Catalog is missing approved package '$($expectedPackage.Key)'.")
+foreach ($requiredPackage in $requiredPackages) {
+    if (-not $evaluatedPackages.ContainsKey($requiredPackage)) {
+        $failures.Add("Catalog is missing approved package '$requiredPackage'.")
+    }
+}
+
+$sharedPackageVersions = [ordered] @{
+    'Hexalith.Commons' = [string] $evaluation.Properties.HexalithCommonsVersion
+    'Hexalith.EventStore.Contracts' = [string] $evaluation.Properties.HexalithEventStoreVersion
+}
+foreach ($sharedPackageVersion in $sharedPackageVersions.GetEnumerator()) {
+    if ([string]::IsNullOrWhiteSpace($sharedPackageVersion.Value)) {
+        $failures.Add("Shared version for package '$($sharedPackageVersion.Key)' resolved to a blank value.")
         continue
     }
 
-    if ($evaluatedPackages[$expectedPackage.Key] -cne $expectedPackage.Value) {
+    if (-not $evaluatedPackages.ContainsKey($sharedPackageVersion.Key)) {
+        $failures.Add("Catalog is missing shared-version package '$($sharedPackageVersion.Key)'.")
+        continue
+    }
+
+    if ($evaluatedPackages[$sharedPackageVersion.Key] -cne $sharedPackageVersion.Value) {
         $failures.Add(
-            "Package '$($expectedPackage.Key)' resolved to '$($evaluatedPackages[$expectedPackage.Key])'; expected '$($expectedPackage.Value)'."
+            "Package '$($sharedPackageVersion.Key)' resolved to '$($evaluatedPackages[$sharedPackageVersion.Key])'; expected shared version '$($sharedPackageVersion.Value)'."
         )
     }
 }
@@ -95,11 +111,6 @@ if ($overrideEnabled -cne 'false') {
     $failures.Add(
         "CentralPackageVersionOverrideEnabled resolved to '$overrideEnabled'; expected exact value 'false'."
     )
-}
-
-$commonsVersion = [string] $evaluation.Properties.HexalithCommonsVersion
-if ($commonsVersion -cne '2.28.2') {
-    $failures.Add("HexalithCommonsVersion resolved to '$commonsVersion'; expected '2.28.2'.")
 }
 
 if ($failures.Count -gt 0) {
@@ -112,5 +123,5 @@ if ($failures.Count -gt 0) {
 }
 
 [Console]::Out.WriteLine(
-    "Authoritative package catalog tests passed for $($expectedPackages.Count) approved package values."
+    "Authoritative package catalog tests passed for $($requiredPackages.Count) approved package identities and $($sharedPackageVersions.Count) shared package versions."
 )
