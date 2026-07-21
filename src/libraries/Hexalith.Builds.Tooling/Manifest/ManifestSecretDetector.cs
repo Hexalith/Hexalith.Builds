@@ -11,6 +11,38 @@ namespace Hexalith.Builds.Tooling.Manifest;
 public static class ManifestSecretDetector
 {
     /// <summary>
+    /// High-precision credential markers. Each carries an explicit delimiter, a well-known
+    /// credential prefix, or an unambiguous key body so ordinary metadata (module ids,
+    /// repository-relative paths, versions) is not misclassified as secret-bearing.
+    /// </summary>
+    private static readonly string[] _secretMarkers =
+    [
+        "bearer ",
+        "token=",
+        "secret=",
+        "password=",
+        "passwd=",
+        "pwd=",
+        "pass=",
+        "api-key",
+        "api_key",
+        "apikey=",
+        "client-secret",
+        "client_secret",
+        "private key",       // PEM private-key blocks (-----BEGIN ... PRIVATE KEY-----)
+        "ghp_",              // GitHub personal access token
+        "gho_",              // GitHub OAuth token
+        "ghu_",              // GitHub user-to-server token
+        "ghs_",              // GitHub server-to-server token
+        "ghr_",              // GitHub refresh token
+        "github_pat_",       // GitHub fine-grained token
+        "xoxb-",             // Slack bot token
+        "xoxp-",             // Slack user token
+        "aws_secret_access_key",
+        "eyj",               // JWT header segment (base64url of {")
+    ];
+
+    /// <summary>
     /// Determines whether a manifest value appears to contain credential material.
     /// </summary>
     /// <param name="value">The value to inspect.</param>
@@ -19,11 +51,6 @@ public static class ManifestSecretDetector
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        return value.Contains("bearer ", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("token=", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("secret=", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("password=", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("api-key", StringComparison.OrdinalIgnoreCase) ||
-               value.Contains("client-secret", StringComparison.OrdinalIgnoreCase);
+        return Array.Exists(_secretMarkers, marker => value.Contains(marker, StringComparison.OrdinalIgnoreCase));
     }
 }

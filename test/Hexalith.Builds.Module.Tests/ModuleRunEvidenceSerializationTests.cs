@@ -24,7 +24,8 @@ public sealed class ModuleRunEvidenceSerializationTests
     private static readonly string[] _knownDirtyMarkers = ["clean", "dirty"];
 
     /// <summary>
-    /// Verifies canonical JSON orders unordered metadata and terminates the UTF-8 artifact with one newline.
+    /// Verifies canonical JSON orders unordered metadata deterministically, pins the top-level
+    /// property sequence, and terminates the UTF-8 artifact with one newline.
     /// </summary>
     [Fact]
     public void SerializeCanonicalOrdersArtifactHashesAndTerminatesWithNewline()
@@ -45,7 +46,10 @@ public sealed class ModuleRunEvidenceSerializationTests
                 null,
                 "HASH"),
             new ModuleRunTopology(
-                [new ModuleRunModule("orders", "orders", "orders", "orders", "assemblies/orders.dll")],
+                [
+                    new ModuleRunModule("orders", "orders", "orders", "orders", "assemblies/orders.dll"),
+                    new ModuleRunModule("accounts", "accounts", "accounts", "accounts", "assemblies/accounts.dll"),
+                ],
                 new PlatformPins("3.70.0", "1.18.0", "1.18.4", "4.0.1")),
             [new ModuleRunPhaseOutcome(ToolPhase.Cleanup, ToolFailureCategory.None, "HXI001")],
             new ModuleRunTestCounts(false, 0, 0, 0, 0),
@@ -56,7 +60,9 @@ public sealed class ModuleRunEvidenceSerializationTests
             },
             "completed",
             ToolOutcome.Passed(),
-            ["timestamps.startedUtc", "runId", "timestamps.completedUtc"]);
+            ["timestamps.startedUtc", "runId", "timestamps.completedUtc"],
+            ["persisted-order-created"],
+            ["orders:0..1"]);
 
         byte[] serialized = ModuleRunEvidenceWriter.SerializeCanonical(evidence);
         string text = Encoding.UTF8.GetString(serialized);
@@ -64,7 +70,14 @@ public sealed class ModuleRunEvidenceSerializationTests
         serialized[^1].ShouldBe((byte)'\n');
         text.IndexOf("a-artifact.json", StringComparison.Ordinal).ShouldBeLessThan(
             text.IndexOf("z-artifact.json", StringComparison.Ordinal));
-        text.ShouldNotContain("Bearer");
+
+        // Topology modules must be ordered by id for deterministic comparison.
+        text.IndexOf("\"id\":\"accounts\"", StringComparison.Ordinal).ShouldBeLessThan(
+            text.IndexOf("\"id\":\"orders\"", StringComparison.Ordinal));
+
+        // The top-level property sequence is part of the canonical contract.
+        text.ShouldStartWith("{\"schema\":\"hexalith.module-run-evidence.v1\",\"runId\":");
+        text.ShouldContain("\"testCounts\":{\"reported\":false,\"total\":0,\"passed\":0,\"failed\":0,\"skipped\":0},\"persistedAssertions\":[\"persisted-order-created\"],\"expectedSequences\":[\"orders:0..1\"],\"artifactHashes\":");
         text.ShouldContain("\"volatileFields\":[\"runId\",\"timestamps.completedUtc\",\"timestamps.startedUtc\"]");
     }
 

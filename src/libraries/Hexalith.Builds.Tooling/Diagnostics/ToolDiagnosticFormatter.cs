@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.Tooling.Diagnostics;
 
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -45,9 +46,38 @@ public static class ToolDiagnosticFormatter
 
     private static string FormatHuman(ToolCommandResult result)
     {
-        ToolDiagnostic? diagnostic = result.Diagnostics.Count == 0 ? null : result.Diagnostics[0];
-        return diagnostic is null
-            ? $"{result.Status}: {result.Outcome.ExitCode}"
-            : $"{diagnostic.RuleId} {diagnostic.Phase} {diagnostic.Category}: {diagnostic.Message}";
+        StringBuilder builder = new();
+        _ = builder.Append(result.Status).Append(": ").Append(result.Outcome.ExitCode);
+        foreach (ToolDiagnostic diagnostic in result.Diagnostics)
+        {
+            _ = builder.Append('\n');
+            AppendDiagnostic(builder, diagnostic);
+        }
+
+        return builder.ToString();
+    }
+
+    private static void AppendDiagnostic(StringBuilder builder, ToolDiagnostic diagnostic)
+    {
+        _ = builder.Append(diagnostic.RuleId)
+            .Append(' ').Append(diagnostic.Phase)
+            .Append(' ').Append(diagnostic.Category);
+        AppendField(builder, "source", diagnostic.Source);
+        AppendField(builder, "row", diagnostic.Row);
+        AppendField(builder, "field", diagnostic.Field);
+        AppendField(builder, "location", diagnostic.Location);
+        _ = builder.Append(": ").Append(diagnostic.Message);
+        if (!string.IsNullOrEmpty(diagnostic.Hint))
+        {
+            _ = builder.Append(" (").Append(diagnostic.Hint).Append(')');
+        }
+    }
+
+    private static void AppendField(StringBuilder builder, string name, string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            _ = builder.Append(' ').Append(name).Append('=').Append(value);
+        }
     }
 }

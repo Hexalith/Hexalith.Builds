@@ -198,9 +198,24 @@ internal static class ReadinessEvidenceValidator
         value.Contains("{{", StringComparison.Ordinal)
         || value.Contains("}}", StringComparison.Ordinal)
         || value.Contains("${", StringComparison.Ordinal)
+        || value.Contains('%', StringComparison.Ordinal)
         || string.Equals(value, "TBD", StringComparison.OrdinalIgnoreCase)
         || string.Equals(value, "TODO", StringComparison.OrdinalIgnoreCase)
         || string.Equals(value, "CHANGEME", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Recognizes explicit boolean-false spellings. Any value that is not an explicit false is
+    /// treated as critical so YAML spellings such as <c>yes</c>/<c>on</c>/<c>1</c> cannot
+    /// silently downgrade a critical row to non-critical.
+    /// </summary>
+    /// <param name="value">The criticality override value.</param>
+    /// <returns><see langword="true"/> when the value is an explicit boolean false.</returns>
+    private static bool IsFalseBoolean(string value) =>
+        string.Equals(value, "false", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value, "no", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value, "off", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value, "n", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value, "0", StringComparison.Ordinal);
 
     private static ToolCommandResult CreateFailure(
         IEnumerable<ToolDiagnostic> diagnostics,
@@ -322,6 +337,8 @@ internal static class ReadinessEvidenceValidator
         "HXE149" => "Passed readiness must reference a successful module-run artifact.",
         "HXE150" => "The Markdown view does not resolve to a readable file.",
         "HXE151" => "The Markdown view row identities drift from the YAML source of truth.",
+        "HXE152" => "Passed readiness must cite an artifact matching the row's verification command.",
+        "HXE153" => "Passed readiness must cite an artifact with executed passing tests.",
         _ => "The readiness evidence is invalid.",
     };
 
@@ -357,6 +374,8 @@ internal static class ReadinessEvidenceValidator
         "HXE149" => "Reference a completed run-evidence artifact with a successful outcome.",
         "HXE150" => "Supply the configured Markdown view beside the YAML source.",
         "HXE151" => "Regenerate the Markdown view from the YAML row identities.",
+        "HXE152" => "Cite the test-command run-evidence artifact produced for this row.",
+        "HXE153" => "Reference a run-evidence artifact reporting executed passing tests and no failures.",
         _ => "Correct the readiness evidence and run validation again.",
     };
 
@@ -456,6 +475,30 @@ internal static class ReadinessEvidenceValidator
         string source = ToRepositoryRelativePath(fullPath, repositoryRoot);
         try
         {
+            // A plain load tolerates duplicate mapping keys, so any failure here is a
+            // genuine syntax error rather than a duplicate key. This classifies HXE002
+            // without depending on any third-party exception message text.
+            IDeserializer syntaxCheckingDeserializer = new DeserializerBuilder().Build();
+            _ = syntaxCheckingDeserializer.Deserialize<object>(content);
+        }
+        catch (YamlException exception)
+        {
+            diagnostics.Add(new ToolDiagnostic(
+                "HXE002",
+                ToolPhase.Evidence,
+                ToolFailureCategory.EvidenceSchema,
+                MessageFor("HXE002"),
+                "yaml",
+                HintFor("HXE002"),
+                source,
+                $"{exception.Start.Line + 1}:{exception.Start.Column + 1}"));
+            return null;
+        }
+
+        try
+        {
+            // The document is already known to be syntactically valid, so a rejection from
+            // the duplicate-key-checking deserializer is unambiguously a duplicate key.
             IDeserializer duplicateKeyCheckingDeserializer = new DeserializerBuilder()
                 .WithDuplicateKeyChecking()
                 .Build();
@@ -463,16 +506,13 @@ internal static class ReadinessEvidenceValidator
         }
         catch (YamlException exception)
         {
-            string ruleId = exception.Message.Contains("duplicate", StringComparison.OrdinalIgnoreCase)
-                ? "HXE001"
-                : "HXE002";
             diagnostics.Add(new ToolDiagnostic(
-                ruleId,
+                "HXE001",
                 ToolPhase.Evidence,
                 ToolFailureCategory.EvidenceSchema,
-                MessageFor(ruleId),
+                MessageFor("HXE001"),
                 "yaml",
-                HintFor(ruleId),
+                HintFor("HXE001"),
                 source,
                 $"{exception.Start.Line + 1}:{exception.Start.Column + 1}"));
             return null;
@@ -693,6 +733,11 @@ internal static class ReadinessEvidenceValidator
             AddDiagnostic(diagnostics, document, "HXE005", ToolFailureCategory.EvidenceSchema, "project", root);
         }
 
+        if (TryGetNode(root, "markdown_view", out YamlNode? markdownViewNode) && markdownViewNode is not YamlScalarNode)
+        {
+            AddDiagnostic(diagnostics, document, "HXE006", ToolFailureCategory.EvidenceSchema, "markdown_view", markdownViewNode);
+        }
+
         ValidateNestedMapping(document, root, "defaults", _defaultFields, diagnostics);
         ValidateNestedMapping(document, root, "validation", _validationFields, diagnostics);
 
@@ -864,12 +909,12 @@ internal static class ReadinessEvidenceValidator
             }
 
             string firstCell = cells[1].Trim();
-            if (firstCell.Length > 2
-                && firstCell[0] == '`'
-                && firstCell[^1] == '`'
-                && IsCanonicalIdentifier(firstCell[1..^1]))
+            string candidate = firstCell.Length > 1 && firstCell[0] == '`' && firstCell[^1] == '`'
+                ? firstCell[1..^1].Trim()
+                : firstCell;
+            if (IsCanonicalIdentifier(candidate))
             {
-                _ = markdownKeys.Add(firstCell[1..^1]);
+                _ = markdownKeys.Add(candidate);
             }
         }
 
@@ -895,8 +940,9 @@ internal static class ReadinessEvidenceValidator
         string? category = GetScalar(row, "category");
         string? status = GetEffectiveScalar(row, defaults, "status");
         string? outcome = GetScalar(row, "outcome");
-        bool critical = string.Equals(category, "release", StringComparison.Ordinal)
-            || string.Equals(GetScalar(row, "critical"), "true", StringComparison.OrdinalIgnoreCase);
+        string? criticalOverride = GetScalar(row, "critical");
+        bool criticalByOverride = !string.IsNullOrWhiteSpace(criticalOverride) && !IsFalseBoolean(criticalOverride);
+        bool critical = string.Equals(category, "release", StringComparison.Ordinal) || criticalByOverride;
 
         if (string.Equals(status, "passed", StringComparison.Ordinal))
         {
@@ -990,12 +1036,68 @@ internal static class ReadinessEvidenceValidator
         {
             AddDiagnostic(diagnostics, document, "HXE148", ToolFailureCategory.EvidencePolicy, "artifact_schema", row, rowKey);
         }
-        else if (string.Equals(status, "passed", StringComparison.Ordinal)
-            && (!string.Equals(artifactSummary.FinalStatus, "completed", StringComparison.Ordinal)
-                || artifactSummary.ExitCode != (int)ToolExitCode.Success))
+        else if (string.Equals(status, "passed", StringComparison.Ordinal))
         {
-            AddDiagnostic(diagnostics, document, "HXE149", ToolFailureCategory.EvidencePolicy, "evidence_artifact", row, rowKey);
+            if (!string.Equals(artifactSummary.FinalStatus, "completed", StringComparison.Ordinal)
+                || artifactSummary.ExitCode != (int)ToolExitCode.Success)
+            {
+                AddDiagnostic(diagnostics, document, "HXE149", ToolFailureCategory.EvidencePolicy, "evidence_artifact", row, rowKey);
+            }
+            else if (!ArtifactBindsToRow(artifactSummary, GetScalar(row, "verification_command")))
+            {
+                AddDiagnostic(diagnostics, document, "HXE152", ToolFailureCategory.EvidencePolicy, "evidence_artifact", row, rowKey);
+            }
+            else if (!artifactSummary.TestsReported
+                || artifactSummary.TestsPassed <= 0
+                || artifactSummary.TestsFailed != 0)
+            {
+                AddDiagnostic(diagnostics, document, "HXE153", ToolFailureCategory.EvidencePolicy, "evidence_artifact", row, rowKey);
+            }
         }
+    }
+
+    /// <summary>
+    /// Binds a passing readiness row to the artifact it cites: the artifact must be a
+    /// <c>test</c> invocation (never <c>run</c>/<c>down</c>), its module subcommand must match
+    /// the row's verification command when both are resolvable, and a declared profile must match.
+    /// </summary>
+    /// <param name="summary">The validated artifact summary.</param>
+    /// <param name="verificationCommand">The row's declared verification command.</param>
+    /// <returns><see langword="true"/> when the artifact binds to the row.</returns>
+    private static bool ArtifactBindsToRow(ModuleRunEvidenceArtifactSummary summary, string? verificationCommand)
+    {
+        string? artifactSubcommand = ExtractModuleSubcommand(summary.Command);
+        if (artifactSubcommand is null || !string.Equals(artifactSubcommand, "test", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        string? rowSubcommand = ExtractModuleSubcommand(verificationCommand);
+        if (rowSubcommand is not null && !string.Equals(rowSubcommand, artifactSubcommand, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        string? rowProfile = ExtractCommandOption(verificationCommand, "--profile");
+        return rowProfile is null || string.Equals(rowProfile, summary.Profile, StringComparison.Ordinal);
+    }
+
+    private static string? ExtractModuleSubcommand(string? command) =>
+        ExtractTokenAfter(command, "hexalith-module");
+
+    private static string? ExtractCommandOption(string? command, string option) =>
+        ExtractTokenAfter(command, option);
+
+    private static string? ExtractTokenAfter(string? command, string token)
+    {
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            return null;
+        }
+
+        string[] tokens = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        int index = Array.IndexOf(tokens, token);
+        return index >= 0 && index + 1 < tokens.Length ? tokens[index + 1] : null;
     }
 
     private static void ValidateCoverage(
@@ -1019,17 +1121,89 @@ internal static class ReadinessEvidenceValidator
         List<ToolDiagnostic> diagnostics)
     {
         string? declaration = GetScalar(coverage, category);
+        List<YamlMappingNode> categoryRows = [.. rows.Where(row => string.Equals(GetScalar(row, "category"), category, StringComparison.Ordinal))];
+
+        // Priority-aware coverage: a declaration such as "9 P1 + 7 P2" enforces the count
+        // of each priority independently using the row `priority` field, so P2 findings can
+        // no longer be silently ignored behind the aggregate first-integer count.
+        if (string.Equals(category, "finding", StringComparison.Ordinal)
+            && TryReadPriorityCounts(declaration, out int expectedP1, out int expectedP2))
+        {
+            ValidatePriorityCount(document, coverage, categoryRows, category, "P1", expectedP1, diagnostics);
+            ValidatePriorityCount(document, coverage, categoryRows, category, "P2", expectedP2, diagnostics);
+            return;
+        }
+
         if (!TryReadFirstPositiveInteger(declaration, out int expected))
         {
             AddDiagnostic(diagnostics, document, "HXE131", ToolFailureCategory.EvidencePolicy, $"validation.required_coverage.{category}", coverage);
             return;
         }
 
-        int actual = rows.Count(row => string.Equals(GetScalar(row, "category"), category, StringComparison.Ordinal));
+        if (categoryRows.Count < expected)
+        {
+            AddDiagnostic(diagnostics, document, "HXE130", ToolFailureCategory.EvidencePolicy, $"validation.required_coverage.{category}", coverage);
+        }
+    }
+
+    private static void ValidatePriorityCount(
+        ReadinessEvidenceDocument document,
+        YamlMappingNode coverage,
+        IEnumerable<YamlMappingNode> categoryRows,
+        string category,
+        string priority,
+        int expected,
+        List<ToolDiagnostic> diagnostics)
+    {
+        if (expected <= 0)
+        {
+            return;
+        }
+
+        int actual = categoryRows.Count(row => string.Equals(GetScalar(row, "priority"), priority, StringComparison.OrdinalIgnoreCase));
         if (actual < expected)
         {
             AddDiagnostic(diagnostics, document, "HXE130", ToolFailureCategory.EvidencePolicy, $"validation.required_coverage.{category}", coverage);
         }
+    }
+
+    private static bool TryReadPriorityCounts(string? value, out int p1, out int p2)
+    {
+        bool hasP1 = TryReadCountBeforeLabel(value, "P1", out p1);
+        bool hasP2 = TryReadCountBeforeLabel(value, "P2", out p2);
+        return hasP1 || hasP2;
+    }
+
+    private static bool TryReadCountBeforeLabel(string? value, string label, out int count)
+    {
+        count = 0;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        int labelIndex = value.IndexOf(label, StringComparison.OrdinalIgnoreCase);
+        if (labelIndex <= 0)
+        {
+            return false;
+        }
+
+        int index = labelIndex - 1;
+        while (index >= 0 && char.IsWhiteSpace(value[index]))
+        {
+            index--;
+        }
+
+        int end = index + 1;
+        while (index >= 0 && char.IsAsciiDigit(value[index]))
+        {
+            index--;
+        }
+
+        int start = index + 1;
+        return start < end
+            && int.TryParse(value[start..end], out count)
+            && count > 0;
     }
 
     private static void ValidateRangeCoverage(

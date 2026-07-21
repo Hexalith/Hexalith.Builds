@@ -27,7 +27,7 @@ public sealed record ModuleRunEvidenceWriteResult(bool Succeeded, ToolDiagnostic
     public static ModuleRunEvidenceWriteResult Failed() => new(
         false,
         new ToolDiagnostic(
-            "HXE001",
+            "HXE160",
             ToolPhase.Evidence,
             ToolFailureCategory.EvidencePolicy,
             "The module-run evidence artifact could not be written.",

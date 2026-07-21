@@ -41,6 +41,14 @@
       "type": "array",
       "uniqueItems": true,
       "items": { "type": "string" }
+    },
+    "persistedAssertions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "expectedSequences": {
+      "type": "array",
+      "items": { "type": "string" }
     }
   },
   "$defs": {
