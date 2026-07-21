@@ -239,6 +239,31 @@ Code review — **Chunk C (Runtime & test-report orchestration)**, 2026-07-21. S
 
 **Dismissed:** unguarded `Diagnostics[0]` on the invalid-manifest path (`ModuleCommandExecutionService.cs`:87) — the manifest loader guarantees ≥1 diagnostic whenever the manifest is null (`HXM002`/`HXM015`), so it cannot throw today.
 
+### Review Findings — Chunk A (Input contract)
+
+Code review — **Chunk A (Input contract)**, 2026-07-21. Scope: module CLI parsing/hosting, diagnostics, repository-path containment, manifest loading/validation, the module-manifest schema and fixtures, and focused contract tests (baseline `edbaeaed`..HEAD `0e20faa`). Four review layers completed: adversarial, edge-case, verification-gap, and acceptance audit. Severities and routing were assigned after reading reachable call sites. 2 findings were dismissed as noise.
+
+**Patch:**
+
+- [ ] [Review][Patch] HIGH · Enforce one resource-safe deterministic-identifier grammar across schema, runtime, and profile keys: 1–63 characters, leading lowercase letter, and lowercase alphanumeric segments separated by single hyphens. Add a shared schema/runtime parity corpus. **Resolved 2026-07-21 by Jerome: option 1.** [`schemas/hexalith.module-manifest.v1.json`:32]
+- [ ] [Review][Patch] HIGH · Reject blank `--manifest` through the stable usage/manifest diagnostic path instead of throwing before command error handling. [`src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs`:57]
+- [ ] [Review][Patch] HIGH · Stop interpolating unvalidated module IDs and profile names into diagnostic fields, and escape human diagnostic metadata to prevent secret retention and line injection. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleManifestLoader.cs`:256]
+- [ ] [Review][Patch] MEDIUM · Replace broad secret-marker substring matches that reject valid identifiers such as `honeyjar` and `api-key-management` with credential-shaped matching and negative controls. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ManifestSecretDetector.cs`:18]
+- [ ] [Review][Patch] HIGH · Detect common retained credential forms currently missed, including Basic authorization, Azure SAS/account keys, connection-string credentials, and AWS access-key IDs, with representative regression controls. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ManifestSecretDetector.cs`:18]
+- [ ] [Review][Patch] HIGH · Make the schema and runtime enforce the same portable canonical path grammar, including empty-segment rejection and host-independent Windows drive/UNC absolute-path rejection. [`schemas/hexalith.module-manifest.v1.json`:36]
+- [ ] [Review][Patch] MEDIUM · Preserve or revalidate physically resolved paths at consumption so a post-validation symlink swap cannot redirect fixture hashing or later descriptor use outside the repository. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ManifestPathValidator.cs`:137]
+- [ ] [Review][Patch] MEDIUM · Verify referenced descriptor and fixture files are readable during manifest validation rather than checking existence and containment only. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ManifestPathValidator.cs`:125]
+- [ ] [Review][Patch] HIGH · Replace the obsolete EventStore `3.70.0` manifest pin with the accepted P1 normalization pin `3.70.1` and update schema, fixtures, and tests consistently. [`src/libraries/Hexalith.Builds.Tooling/Manifest/SupportedPlatformPins.cs`:14]
+- [ ] [Review][Patch] MEDIUM · Parse placeholder syntaxes precisely so legitimate percent characters are accepted and unresolved `$VAR` forms fail closed. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ManifestPathValidator.cs`:157]
+- [ ] [Review][Patch] HIGH · Bound module-graph complexity or replace recursive cycle traversal so a long dependency chain cannot terminate the process with `StackOverflowException`. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleManifestLoader.cs`:372]
+- [ ] [Review][Patch] MEDIUM · Enforce a manifest byte-size limit before `File.ReadAllText` to prevent unbounded allocation outside the stable diagnostic/exit-code contract. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleManifestLoader.cs`:51]
+- [ ] [Review][Patch] MEDIUM · Expose supported profile classes through an immutable set so callers cannot mutate process-wide validation policy by casting the public `IReadOnlySet`. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleProfileClasses.cs`:16]
+- [ ] [Review][Patch] MEDIUM · Add a multi-error manifest test that pins the complete diagnostic ordering and first-causal CLI rule. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleManifestLoader.cs`:123]
+- [ ] [Review][Patch] MEDIUM · Exercise the executable console-cancellation wiring rather than only passing a pre-cancelled token directly to the command application. [`src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandHost.cs`:18]
+- [ ] [Review][Patch] MEDIUM · Add nested-object and array-element duplicate-property controls so recursive duplicate detection cannot regress unnoticed. [`src/libraries/Hexalith.Builds.Tooling/Manifest/JsonDuplicatePropertyValidator.cs`:33]
+- [ ] [Review][Patch] MEDIUM · Add self-dependency, duplicate-edge, and multi-node cycle controls for `HXM008`. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleManifestLoader.cs`:151]
+- [ ] [Review][Patch] MEDIUM · Pin the complete default human diagnostic rendering, including source, row, field, location, and hint metadata. [`src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs`:47]
+
 ## Dev Notes
 
 ### Authority and Scope
