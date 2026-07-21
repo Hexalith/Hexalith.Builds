@@ -117,7 +117,8 @@ class CommitlintWorkflowTests(unittest.TestCase):
             "1.2.3": False,
             "chore: hide release policy": False,
             "fix: Uppercase subject": False,
-            "fix: " + ("x" * 110): False,
+            "fix: " + ("x" * 195): True,
+            "fix: " + ("x" * 196): False,
         }
         for title, expected in cases.items():
             with self.subTest(title=title), tempfile.TemporaryDirectory() as temporary_directory:
