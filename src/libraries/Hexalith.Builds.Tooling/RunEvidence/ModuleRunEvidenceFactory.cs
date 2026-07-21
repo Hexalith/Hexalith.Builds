@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Filesystem;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
 
@@ -67,12 +68,12 @@ public static partial class ModuleRunEvidenceFactory
         string? manifestHash = HashFile(fullManifestPath);
         ModuleProfile? selectedProfile = GetProfile(manifest, profile);
         string? profileIdentity = selectedProfile is null ? null : profile;
-        string? fixturePath = selectedProfile is null
-            ? null
-            : ToRepositoryRelativePath(Path.Combine(repositoryRoot, selectedProfile.Fixture), repositoryRoot);
-        string? fixtureHash = selectedProfile is null
-            ? null
-            : HashFile(Path.Combine(repositoryRoot, selectedProfile.Fixture));
+        string? resolvedFixturePath = selectedProfile is not null
+            && RepositoryPathResolver.TryResolveExistingFile(repositoryRoot, selectedProfile.Fixture, out string physicalFixturePath)
+                ? physicalFixturePath
+                : null;
+        string? fixturePath = ToRepositoryRelativePath(resolvedFixturePath, repositoryRoot);
+        string? fixtureHash = resolvedFixturePath is null ? null : HashFile(resolvedFixturePath);
         string? filterHash = string.IsNullOrWhiteSpace(filter) ? null : HashString(filter);
 
         return new ModuleRunEvidence(

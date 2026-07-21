@@ -50,7 +50,7 @@ public sealed class ModuleRunEvidenceSerializationTests
                     new ModuleRunModule("orders", "orders", "orders", "orders", "assemblies/orders.dll"),
                     new ModuleRunModule("accounts", "accounts", "accounts", "accounts", "assemblies/accounts.dll"),
                 ],
-                new PlatformPins("3.70.0", "1.18.0", "1.18.4", "4.0.1")),
+                new PlatformPins("3.70.1", "1.18.0", "1.18.4", "4.0.1")),
             [new ModuleRunPhaseOutcome(ToolPhase.Cleanup, ToolFailureCategory.None, "HXI001")],
             new ModuleRunTestCounts(false, 0, 0, 0, 0),
             new Dictionary<string, string>(StringComparer.Ordinal)
@@ -103,6 +103,81 @@ public sealed class ModuleRunEvidenceSerializationTests
         evidence.Environment.RepositoryRevision.Length.ShouldBeGreaterThanOrEqualTo(40);
         _knownDirtyMarkers.ShouldContain(evidence.Environment.RepositoryDirtyMarker);
         evidence.Environment.SdkVersion.ShouldBe("10.0.302");
+    }
+
+    /// <summary>
+    /// Verifies evidence creation revalidates a fixture path after manifest loading and rejects a later symlink escape.
+    /// </summary>
+    [Fact]
+    public void CreateEvidenceRejectsFixtureSymlinkRetargetedAfterValidation()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"hexalith-evidence-fixture-{Guid.NewGuid():N}");
+        string externalDirectory = Path.Combine(Path.GetTempPath(), $"hexalith-evidence-external-{Guid.NewGuid():N}");
+        try
+        {
+            _ = Directory.CreateDirectory(Path.Combine(directory, "assemblies"));
+            _ = Directory.CreateDirectory(Path.Combine(directory, "fixtures"));
+            _ = Directory.CreateDirectory(externalDirectory);
+            File.WriteAllText(Path.Combine(directory, "assemblies", "module.dll"), string.Empty);
+            string internalFixture = Path.Combine(directory, "fixtures", "internal.json");
+            string externalFixture = Path.Combine(externalDirectory, "external.json");
+            string fixtureLink = Path.Combine(directory, "fixtures", "current.json");
+            File.WriteAllText(internalFixture, "{}");
+            File.WriteAllText(externalFixture, "{}");
+            _ = File.CreateSymbolicLink(fixtureLink, internalFixture);
+            string manifestPath = Path.Combine(directory, "manifest.json");
+            const string manifestJson =
+                """
+                {
+                  "schema": "hexalith.module-manifest.v1",
+                  "id": "fixture-swap",
+                  "modules": [{
+                    "id": "module-a",
+                    "descriptorAssembly": "assemblies/module.dll",
+                    "dependencies": [],
+                    "domain": "module-a",
+                    "applicationId": "module-a",
+                    "resourceId": "module-a"
+                  }],
+                  "platform": {
+                    "eventStoreVersion": "3.70.1",
+                    "daprRuntimeVersion": "1.18.0",
+                    "daprSdkVersion": "1.18.4",
+                    "frontComposerVersion": "4.0.1"
+                  },
+                  "profiles": {
+                    "full": {
+                      "fixture": "fixtures/current.json",
+                      "classes": ["pure-domain"]
+                    }
+                  }
+                }
+                """;
+            File.WriteAllText(manifestPath, manifestJson);
+            ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
+            manifestResult.IsValid.ShouldBeTrue();
+
+            File.Delete(fixtureLink);
+            _ = File.CreateSymbolicLink(fixtureLink, externalFixture);
+            ModuleRunEvidence evidence = ModuleRunEvidenceFactory.Create(
+                ModuleInvocationCommand.Test,
+                manifestPath,
+                manifestResult.Manifest,
+                "full",
+                null,
+                new ToolCommandResult("unavailable", ToolOutcome.Passed(), []),
+                new DateTimeOffset(2026, 7, 21, 10, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 7, 21, 10, 1, 0, TimeSpan.Zero),
+                "0123456789abcdef0123456789abcdef");
+
+            evidence.Invocation.FixturePath.ShouldBeNull();
+            evidence.Invocation.FixtureHash.ShouldBeNull();
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+            Directory.Delete(externalDirectory, true);
+        }
     }
 
     private static string FindRepositoryRoot()

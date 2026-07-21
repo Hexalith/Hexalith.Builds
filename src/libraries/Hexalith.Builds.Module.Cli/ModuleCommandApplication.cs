@@ -35,7 +35,7 @@ internal static class ModuleCommandApplication
 
         RootCommand rootCommand = CreateRootCommand(standardOutput);
         ParseResult parseResult = rootCommand.Parse(arguments);
-        return parseResult.Errors.Count > 0
+        return parseResult.Errors.Count > 0 || HasBlankManifestValue(arguments)
             ? await ToolCommandHost.WriteParseFailureAsync(
                 standardOutput,
                 ToolCommandHost.RequestedOutputFormat(arguments)).ConfigureAwait(false)
@@ -102,6 +102,26 @@ internal static class ModuleCommandApplication
         ModuleInvocationCommand.Test => "test",
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unsupported module command."),
     };
+
+    private static bool HasBlankManifestValue(string[] arguments)
+    {
+        const string manifestOption = "--manifest";
+        for (int index = 0; index < arguments.Length; index++)
+        {
+            string argument = arguments[index];
+            if (string.Equals(argument, manifestOption, StringComparison.Ordinal))
+            {
+                return index + 1 >= arguments.Length || string.IsNullOrWhiteSpace(arguments[index + 1]);
+            }
+
+            if (argument.StartsWith($"{manifestOption}=", StringComparison.Ordinal))
+            {
+                return string.IsNullOrWhiteSpace(argument[(manifestOption.Length + 1)..]);
+            }
+        }
+
+        return false;
+    }
 
     private static ToolOutputFormat ParseOutputFormat(string? output) =>
         string.Equals(output, "json", StringComparison.Ordinal)

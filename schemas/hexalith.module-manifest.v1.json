@@ -25,18 +25,20 @@
     "profiles": {
       "type": "object",
       "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/identifier" },
       "additionalProperties": { "$ref": "#/$defs/profile" }
     }
   },
   "$defs": {
     "identifier": {
       "type": "string",
-      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      "maxLength": 63,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
     },
     "repositoryPath": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.{1,2}(?:/|$)).+$"
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\/$).+$"
     },
     "module": {
       "type": "object",
@@ -60,7 +62,7 @@
       "additionalProperties": false,
       "required": ["eventStoreVersion", "daprRuntimeVersion", "daprSdkVersion", "frontComposerVersion"],
       "properties": {
-        "eventStoreVersion": { "const": "3.70.0" },
+        "eventStoreVersion": { "const": "3.70.1" },
         "daprRuntimeVersion": { "const": "1.18.0" },
         "daprSdkVersion": { "const": "1.18.4" },
         "frontComposerVersion": { "const": "4.0.1" }

@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.Tooling.Manifest;
 
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -17,6 +18,8 @@ using Hexalith.Builds.Tooling.Diagnostics;
 public static partial class ModuleManifestLoader
 {
     private const string _manifestSchema = "hexalith.module-manifest.v1";
+    private const int _maximumManifestBytes = 1_048_576;
+    private const int _maximumIdentifierLength = 63;
 
     private static readonly JsonSerializerOptions _serializerOptions = new()
     {
@@ -57,7 +60,34 @@ public static partial class ModuleManifestLoader
         string content;
         try
         {
-            content = File.ReadAllText(fullManifestPath);
+            using FileStream stream = File.Open(fullManifestPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            if (stream.Length > _maximumManifestBytes)
+            {
+                diagnostics.Add(CreateDiagnostic("HXM013", "manifest", "Keep the UTF-8 manifest at or below 1 MiB."));
+                return CreateResult(null, diagnostics);
+            }
+
+            using StreamReader reader = new(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            char[] buffer = new char[_maximumManifestBytes + 1];
+            int charactersRead = 0;
+            while (charactersRead < buffer.Length)
+            {
+                int read = reader.Read(buffer, charactersRead, buffer.Length - charactersRead);
+                if (read == 0)
+                {
+                    break;
+                }
+
+                charactersRead += read;
+            }
+
+            if (charactersRead > _maximumManifestBytes || reader.Peek() >= 0)
+            {
+                diagnostics.Add(CreateDiagnostic("HXM013", "manifest", "Keep the UTF-8 manifest at or below 1 MiB."));
+                return CreateResult(null, diagnostics);
+            }
+
+            content = new string(buffer, 0, charactersRead);
         }
         catch (IOException)
         {
@@ -142,6 +172,7 @@ public static partial class ModuleManifestLoader
         "HXM010" => "The manifest contains a non-deterministic identifier.",
         "HXM011" => "The manifest JSON is invalid.",
         "HXM012" => "The manifest JSON contains a duplicate property.",
+        "HXM013" => "The manifest exceeds the supported size or complexity limit.",
         "HXM014" => "The manifest contains an unsupported profile class.",
         "HXM015" => "A required manifest value is missing.",
         "HXM016" => "The manifest platform pins are not supported by this runner.",
@@ -155,11 +186,18 @@ public static partial class ModuleManifestLoader
             .Select(module => module.Id)
             .ToHashSet(StringComparer.Ordinal);
 
-        foreach (ModuleDescriptor module in manifest.Modules.Where(module => module is not null))
+        for (int moduleIndex = 0; moduleIndex < manifest.Modules.Count; moduleIndex++)
         {
+            ModuleDescriptor? module = manifest.Modules[moduleIndex];
+            if (module is null)
+            {
+                continue;
+            }
+
+            string fieldPrefix = $"modules[{moduleIndex}]";
             if (module.Dependencies is null)
             {
-                diagnostics.Add(CreateDiagnostic("HXM015", $"modules.{module.Id}.dependencies", "Supply a dependency array, including an empty array when none are required."));
+                diagnostics.Add(CreateDiagnostic("HXM015", $"{fieldPrefix}.dependencies", "Supply a dependency array, including an empty array when none are required."));
                 continue;
             }
 
@@ -170,7 +208,7 @@ public static partial class ModuleManifestLoader
                 !moduleIds.Contains(dependency) ||
                 !dependencies.Add(dependency)))
             {
-                diagnostics.Add(CreateDiagnostic("HXM008", $"modules.{module.Id}.dependencies", "Declare unique dependencies on other listed modules."));
+                diagnostics.Add(CreateDiagnostic("HXM008", $"{fieldPrefix}.dependencies", "Declare unique dependencies on other listed modules."));
             }
         }
 
@@ -197,7 +235,7 @@ public static partial class ModuleManifestLoader
         {
             diagnostics.Add(CreateDiagnostic("HXM007", field, "Remove secret-bearing values from the manifest."));
         }
-        else if (!DeterministicIdentifierRegex().IsMatch(value))
+        else if (value.Length > _maximumIdentifierLength || !DeterministicIdentifierRegex().IsMatch(value))
         {
             diagnostics.Add(CreateDiagnostic("HXM010", field, "Use lowercase kebab-case deterministic identifiers."));
         }
@@ -245,22 +283,24 @@ public static partial class ModuleManifestLoader
         HashSet<string> applicationIds = new(StringComparer.Ordinal);
         HashSet<string> resourceIds = new(StringComparer.Ordinal);
 
-        foreach (ModuleDescriptor module in manifest.Modules)
+        for (int moduleIndex = 0; moduleIndex < manifest.Modules.Count; moduleIndex++)
         {
+            ModuleDescriptor? module = manifest.Modules[moduleIndex];
             if (module is null)
             {
                 diagnostics.Add(CreateDiagnostic("HXM015", "modules", "Remove null module descriptors."));
                 continue;
             }
 
-            ValidateIdentifier(module.Id, "modules.id", diagnostics);
-            ValidateIdentifier(module.Domain, $"modules.{module.Id}.domain", diagnostics);
-            ValidateIdentifier(module.ApplicationId, $"modules.{module.Id}.applicationId", diagnostics);
-            ValidateIdentifier(module.ResourceId, $"modules.{module.Id}.resourceId", diagnostics);
+            string fieldPrefix = $"modules[{moduleIndex}]";
+            ValidateIdentifier(module.Id, $"{fieldPrefix}.id", diagnostics);
+            ValidateIdentifier(module.Domain, $"{fieldPrefix}.domain", diagnostics);
+            ValidateIdentifier(module.ApplicationId, $"{fieldPrefix}.applicationId", diagnostics);
+            ValidateIdentifier(module.ResourceId, $"{fieldPrefix}.resourceId", diagnostics);
             _ = ManifestPathValidator.ValidateExistingFile(
                 module.DescriptorAssembly,
                 repositoryRoot,
-                $"modules.{module.Id}.descriptorAssembly",
+                $"{fieldPrefix}.descriptorAssembly",
                 diagnostics);
 
             AddDuplicateDiagnostic(module.Id, moduleIds, "modules.id", diagnostics);
@@ -322,20 +362,25 @@ public static partial class ModuleManifestLoader
         }
 
         string repositoryRoot = ManifestPathValidator.FindRepositoryRoot(fullManifestPath);
-        foreach ((string name, ModuleProfile profile) in profiles)
+        int profileIndex = 0;
+        foreach (KeyValuePair<string, ModuleProfile> entry in profiles.OrderBy(entry => entry.Key, StringComparer.Ordinal))
         {
-            ValidateIdentifier(name, "profiles.key", diagnostics);
+            string name = entry.Key;
+            ModuleProfile? profile = entry.Value;
+            string fieldPrefix = $"profiles[{profileIndex}]";
+            profileIndex++;
+            ValidateIdentifier(name, $"{fieldPrefix}.key", diagnostics);
             if (profile is null)
             {
-                diagnostics.Add(CreateDiagnostic("HXM009", $"profiles.{name}", "Supply a complete profile object."));
+                diagnostics.Add(CreateDiagnostic("HXM009", fieldPrefix, "Supply a complete profile object."));
                 continue;
             }
 
-            _ = ManifestPathValidator.ValidateExistingFile(profile.Fixture, repositoryRoot, $"profiles.{name}.fixture", diagnostics);
+            _ = ManifestPathValidator.ValidateExistingFile(profile.Fixture, repositoryRoot, $"{fieldPrefix}.fixture", diagnostics);
 
             if (profile.Classes is null || profile.Classes.Count == 0)
             {
-                diagnostics.Add(CreateDiagnostic("HXM009", $"profiles.{name}.classes", "Declare one or more supported profile classes."));
+                diagnostics.Add(CreateDiagnostic("HXM009", $"{fieldPrefix}.classes", "Declare one or more supported profile classes."));
                 continue;
             }
 
@@ -344,13 +389,13 @@ public static partial class ModuleManifestLoader
             {
                 if (!classes.Add(profileClass))
                 {
-                    diagnostics.Add(CreateDiagnostic("HXM009", $"profiles.{name}.classes", "Declare each profile class once."));
+                    diagnostics.Add(CreateDiagnostic("HXM009", $"{fieldPrefix}.classes", "Declare each profile class once."));
                     break;
                 }
 
                 if (!ModuleProfileClasses.All.Contains(profileClass))
                 {
-                    diagnostics.Add(CreateDiagnostic("HXM014", $"profiles.{name}.classes", "Use a supported AD-25 profile class."));
+                    diagnostics.Add(CreateDiagnostic("HXM014", $"{fieldPrefix}.classes", "Use a supported AD-25 profile class."));
                     break;
                 }
             }
@@ -376,41 +421,42 @@ public static partial class ModuleManifestLoader
             .GroupBy(module => module.Id, StringComparer.Ordinal)
             .Where(group => group.Count() == 1)
             .ToDictionary(group => group.Key, group => group.Single(), StringComparer.Ordinal);
-        HashSet<string> visiting = new(StringComparer.Ordinal);
-        HashSet<string> visited = new(StringComparer.Ordinal);
+        Dictionary<string, int> dependencyCounts = modulesById.Keys
+            .ToDictionary(moduleId => moduleId, _ => 0, StringComparer.Ordinal);
+        Dictionary<string, List<string>> dependents = modulesById.Keys
+            .ToDictionary(moduleId => moduleId, _ => new List<string>(), StringComparer.Ordinal);
 
-        return modulesById.Keys.Any(moduleId => HasDependencyCycle(moduleId, modulesById, visiting, visited));
+        foreach ((string moduleId, ModuleDescriptor module) in modulesById)
+        {
+            foreach (string dependency in (module.Dependencies ?? [])
+                .Where(dependency => !string.IsNullOrWhiteSpace(dependency) && modulesById.ContainsKey(dependency))
+                .Distinct(StringComparer.Ordinal))
+            {
+                dependencyCounts[moduleId]++;
+                dependents[dependency].Add(moduleId);
+            }
+        }
+
+        Queue<string> ready = new(dependencyCounts
+            .Where(entry => entry.Value == 0)
+            .Select(entry => entry.Key));
+        int visitedCount = 0;
+        while (ready.TryDequeue(out string? moduleId))
+        {
+            visitedCount++;
+            foreach (string dependent in dependents[moduleId])
+            {
+                dependencyCounts[dependent]--;
+                if (dependencyCounts[dependent] == 0)
+                {
+                    ready.Enqueue(dependent);
+                }
+            }
+        }
+
+        return visitedCount != modulesById.Count;
     }
 
-    private static bool HasDependencyCycle(
-        string moduleId,
-        IReadOnlyDictionary<string, ModuleDescriptor> modulesById,
-        HashSet<string> visiting,
-        HashSet<string> visited)
-    {
-        if (visited.Contains(moduleId))
-        {
-            return false;
-        }
-
-        if (!visiting.Add(moduleId))
-        {
-            return true;
-        }
-
-        ModuleDescriptor module = modulesById[moduleId];
-        if (module.Dependencies?.Any(
-                dependency => modulesById.ContainsKey(dependency) &&
-                              HasDependencyCycle(dependency, modulesById, visiting, visited)) == true)
-        {
-            return true;
-        }
-
-        _ = visiting.Remove(moduleId);
-        _ = visited.Add(moduleId);
-        return false;
-    }
-
-    [GeneratedRegex("^[a-z][a-z0-9-]{0,62}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant)]
     private static partial Regex DeterministicIdentifierRegex();
 }

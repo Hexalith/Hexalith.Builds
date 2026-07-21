@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests;
 
+using System.Text.Json;
+
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
 
@@ -41,7 +43,7 @@ public sealed class ModuleCommandApplicationTests
             }
           ],
           "platform": {
-            "eventStoreVersion": "3.70.0",
+            "eventStoreVersion": "3.70.1",
             "daprRuntimeVersion": "1.18.0",
             "daprSdkVersion": "1.18.4",
             "frontComposerVersion": "4.0.1"
@@ -107,6 +109,151 @@ public sealed class ModuleCommandApplicationTests
                 standardError.ToString().ShouldBeEmpty();
             }
         }
+    }
+
+    /// <summary>
+    /// Verifies a present but blank manifest value uses the stable parse-failure contract.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task BlankManifestValueWritesStableJsonUsageDiagnosticAsync()
+    {
+        string[][] argumentCases =
+        [
+            ["run", "--manifest", string.Empty, "--output", "json"],
+            ["run", "--manifest", " ", "--output", "json"],
+            ["run", "--manifest=", "--output", "json"],
+        ];
+        foreach (string[] arguments in argumentCases)
+        {
+            StringWriter standardOutput = new();
+            await using (standardOutput.ConfigureAwait(true))
+            {
+                StringWriter standardError = new();
+                await using (standardError.ConfigureAwait(true))
+                {
+                    int exitCode = await ModuleCommandApplication.InvokeAsync(
+                        arguments,
+                        standardOutput,
+                        standardError,
+                        TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+                    exitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
+                    standardOutput.ToString().ShouldContain("HXC001");
+                    standardError.ToString().ShouldBeEmpty();
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Verifies the first causal CLI rule matches the complete deterministic manifest diagnostic order.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task MultipleManifestErrorsExposeTheFirstDeterministicRuleAsync()
+    {
+        string directory = CreateFixtureDirectory();
+        try
+        {
+            string invalidManifest = _manifestJson
+                .Replace("hexalith.module-manifest.v1", "hexalith.module-manifest.v2", StringComparison.Ordinal)
+                .Replace("\"id\": \"command-fixture\"", "\"id\": \"Invalid\"", StringComparison.Ordinal)
+                .Replace("assemblies/module-a.dll", "assemblies/missing.dll", StringComparison.Ordinal);
+            await File.WriteAllTextAsync(
+                Path.Combine(directory, "manifest.json"),
+                invalidManifest,
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+            StringWriter standardOutput = new();
+            await using (standardOutput.ConfigureAwait(true))
+            {
+                StringWriter standardError = new();
+                await using (standardError.ConfigureAwait(true))
+                {
+                    int exitCode = await ModuleCommandApplication.InvokeAsync(
+                        ["run", "--manifest", Path.Combine(directory, "manifest.json"), "--output", "json"],
+                        standardOutput,
+                        standardError,
+                        TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+                    exitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
+                    using JsonDocument output = JsonDocument.Parse(standardOutput.ToString());
+                    output.RootElement.GetProperty("outcome").GetProperty("ruleId").GetString().ShouldBe("HXM001");
+                    output.RootElement.GetProperty("diagnostics").EnumerateArray()
+                        .Select(diagnostic => diagnostic.GetProperty("ruleId").GetString())
+                        .ShouldBe(["HXM001", "HXM005", "HXM010"]);
+                }
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    /// <summary>
+    /// Verifies the default human output retains all metadata while escaping control characters.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task HumanDiagnosticRenderingIncludesMetadataAndEscapesControlsAsync()
+    {
+        ToolDiagnostic diagnostic = new(
+            "HXM999",
+            ToolPhase.Manifest,
+            ToolFailureCategory.Manifest,
+            "message\ncontinued",
+            "field\nforged",
+            "hint\tvalue",
+            "source.yaml",
+            "12:4",
+            "row-1");
+        ToolCommandResult result = new(
+            "failed",
+            ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, diagnostic.RuleId, ToolExitCode.UsageOrManifest),
+            [diagnostic]);
+        StringWriter writer = new();
+        await using (writer.ConfigureAwait(true))
+        {
+            await ToolDiagnosticFormatter.WriteAsync(
+                writer,
+                result,
+                ToolOutputFormat.Human,
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            writer.ToString().ShouldBe(
+                $"failed: UsageOrManifest{Environment.NewLine}" +
+                $"HXM999 Manifest Manifest source=source.yaml row=row-1 field=field\\nforged location=12:4: message\\ncontinued (hint\\tvalue){Environment.NewLine}");
+        }
+    }
+
+    /// <summary>
+    /// Verifies the injectable console-host seam propagates cancellation and unregisters its callback.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task CancellationRegistrationPropagatesAndUnregistersAsync()
+    {
+        Action? cancel = null;
+        bool unregistered = false;
+
+        int exitCode = await ToolCommandHost.RunWithCancellationRegistrationAsync(
+            cancellationToken =>
+            {
+                cancel.ShouldNotBeNull().Invoke();
+                cancellationToken.IsCancellationRequested.ShouldBeTrue();
+                return Task.FromResult((int)ToolExitCode.Cancelled);
+            },
+            callback => cancel = callback,
+            () =>
+            {
+                unregistered = true;
+                cancel = null;
+            }).ConfigureAwait(true);
+
+        exitCode.ShouldBe((int)ToolExitCode.Cancelled);
+        unregistered.ShouldBeTrue();
+        cancel.ShouldBeNull();
     }
 
     /// <summary>

@@ -5,13 +5,15 @@
 
 namespace Hexalith.Builds.Tooling.Manifest;
 
+using System.Text.RegularExpressions;
+
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Filesystem;
 
 /// <summary>
 /// Validates canonical repository-relative paths used by module manifests.
 /// </summary>
-public static class ManifestPathValidator
+public static partial class ManifestPathValidator
 {
     /// <summary>
     /// Resolves the repository root for a manifest, falling back to its directory for isolated fixtures.
@@ -93,7 +95,7 @@ public static class ManifestPathValidator
             return null;
         }
 
-        if (Path.IsPathRooted(path) ||
+        if (IsPortableRootedPath(path) ||
             path.Contains('\\', StringComparison.Ordinal) ||
             path.Split('/', StringSplitOptions.None).Any(segment =>
                 segment.Length == 0 || string.Equals(segment, ".", StringComparison.Ordinal) || string.Equals(segment, "..", StringComparison.Ordinal)))
@@ -146,6 +148,18 @@ public static class ManifestPathValidator
             return null;
         }
 
+        if (!CanOpenForReading(fullPath))
+        {
+            diagnostics.Add(new ToolDiagnostic(
+                "HXM005",
+                ToolPhase.Manifest,
+                ToolFailureCategory.Manifest,
+                "A manifest path does not resolve to a readable repository file.",
+                field,
+                "Supply a readable file beneath the repository root."));
+            return null;
+        }
+
         return fullPath;
     }
 
@@ -158,5 +172,30 @@ public static class ManifestPathValidator
         !string.IsNullOrEmpty(value) &&
         (value.Contains("${", StringComparison.Ordinal) ||
          value.Contains("{{", StringComparison.Ordinal) ||
-         value.Contains('%', StringComparison.Ordinal));
+         PlaceholderRegex().IsMatch(value));
+
+    private static bool CanOpenForReading(string path)
+    {
+        try
+        {
+            using FileStream stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return stream.CanRead;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    private static bool IsPortableRootedPath(string path) =>
+        Path.IsPathRooted(path)
+        || path.StartsWith("//", StringComparison.Ordinal)
+        || (path.Length >= 2 && char.IsAsciiLetter(path[0]) && path[1] == ':');
+
+    [GeneratedRegex(@"(?:%[A-Za-z_][A-Za-z0-9_]*%|\$(?!\{)[A-Za-z_][A-Za-z0-9_]*)", RegexOptions.CultureInvariant)]
+    private static partial Regex PlaceholderRegex();
 }

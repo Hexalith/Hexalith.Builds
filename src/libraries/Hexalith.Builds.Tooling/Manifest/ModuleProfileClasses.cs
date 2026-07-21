@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.Manifest;
 
+using System.Collections.Frozen;
+
 /// <summary>
 /// Defines the supported AD-25 orchestration profile classes.
 /// </summary>
@@ -13,7 +15,7 @@ public static class ModuleProfileClasses
     /// <summary>
     /// Gets all supported profile class identities.
     /// </summary>
-    public static IReadOnlySet<string> All { get; } = new HashSet<string>(StringComparer.Ordinal)
+    public static IReadOnlySet<string> All { get; } = new[]
     {
         "pure-domain",
         "host-contract",
@@ -23,5 +25,5 @@ public static class ModuleProfileClasses
         "authenticated-browser",
         "authenticated-cli",
         "authenticated-mcp",
-    };
+    }.ToFrozenSet(StringComparer.Ordinal);
 }

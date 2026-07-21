@@ -7,3 +7,4 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Hexalith.Builds.Evidence.Cli")]
 [assembly: InternalsVisibleTo("Hexalith.Builds.Evidence.Tests")]
+[assembly: InternalsVisibleTo("Hexalith.Builds.Module.Tests")]

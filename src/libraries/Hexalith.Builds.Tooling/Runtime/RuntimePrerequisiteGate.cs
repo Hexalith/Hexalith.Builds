@@ -12,7 +12,7 @@ using Hexalith.Builds.Tooling.Manifest;
 /// Prevents a live platform run until its independently owned compatibility disposition is recorded.
 /// </summary>
 /// <remarks>
-/// The manifest pin validates the authorization-time package selection. It cannot itself resolve G-6,
+/// The manifest pin validates the accepted P1 package selection. It cannot itself resolve G-6,
 /// the Dapr runtime-to-SDK support disposition. Keeping this gate in the Builds runner makes an affected
 /// invocation explicitly unavailable instead of treating an absent approval as a skipped or passing lane.
 /// </remarks>

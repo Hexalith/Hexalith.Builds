@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.Tooling.Diagnostics;
 
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -59,17 +60,36 @@ public static class ToolDiagnosticFormatter
 
     private static void AppendDiagnostic(StringBuilder builder, ToolDiagnostic diagnostic)
     {
-        _ = builder.Append(diagnostic.RuleId)
+        AppendEscaped(builder, diagnostic.RuleId);
+        _ = builder
             .Append(' ').Append(diagnostic.Phase)
             .Append(' ').Append(diagnostic.Category);
         AppendField(builder, "source", diagnostic.Source);
         AppendField(builder, "row", diagnostic.Row);
         AppendField(builder, "field", diagnostic.Field);
         AppendField(builder, "location", diagnostic.Location);
-        _ = builder.Append(": ").Append(diagnostic.Message);
+        _ = builder.Append(": ");
+        AppendEscaped(builder, diagnostic.Message);
         if (!string.IsNullOrEmpty(diagnostic.Hint))
         {
-            _ = builder.Append(" (").Append(diagnostic.Hint).Append(')');
+            _ = builder.Append(" (");
+            AppendEscaped(builder, diagnostic.Hint);
+            _ = builder.Append(')');
+        }
+    }
+
+    private static void AppendEscaped(StringBuilder builder, string value)
+    {
+        foreach (char character in value)
+        {
+            _ = character switch
+            {
+                '\r' => builder.Append("\\r"),
+                '\n' => builder.Append("\\n"),
+                '\t' => builder.Append("\\t"),
+                _ when char.IsControl(character) => builder.Append("\\u").Append(((int)character).ToString("X4", CultureInfo.InvariantCulture)),
+                _ => builder.Append(character),
+            };
         }
     }
 
@@ -77,7 +97,8 @@ public static class ToolDiagnosticFormatter
     {
         if (!string.IsNullOrEmpty(value))
         {
-            _ = builder.Append(' ').Append(name).Append('=').Append(value);
+            _ = builder.Append(' ').Append(name).Append('=');
+            AppendEscaped(builder, value);
         }
     }
 }

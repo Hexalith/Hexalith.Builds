@@ -19,23 +19,25 @@ public static class ToolCommandHost
     {
         ArgumentNullException.ThrowIfNull(operation);
 
-        using CancellationTokenSource cancellationTokenSource = new();
-        void HandleCancel(object? sender, ConsoleCancelEventArgs eventArgs)
-        {
-            eventArgs.Cancel = true;
-            cancellationTokenSource.Cancel();
-        }
-
-        ConsoleCancelEventHandler handler = HandleCancel;
-        Console.CancelKeyPress += handler;
-        try
-        {
-            return await operation(cancellationTokenSource.Token).ConfigureAwait(false);
-        }
-        finally
-        {
-            Console.CancelKeyPress -= handler;
-        }
+        ConsoleCancelEventHandler? handler = null;
+        return await RunWithCancellationRegistrationAsync(
+            operation,
+            cancel =>
+            {
+                handler = (_, eventArgs) =>
+                {
+                    eventArgs.Cancel = true;
+                    cancel();
+                };
+                Console.CancelKeyPress += handler;
+            },
+            () =>
+            {
+                if (handler is not null)
+                {
+                    Console.CancelKeyPress -= handler;
+                }
+            }).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -93,5 +95,33 @@ public static class ToolCommandHost
             [diagnostic]);
         await ToolDiagnosticFormatter.WriteAsync(writer, result, format, CancellationToken.None).ConfigureAwait(false);
         return (int)ToolExitCode.UsageOrManifest;
+    }
+
+    /// <summary>
+    /// Invokes a tool operation using an injectable cancellation registration.
+    /// </summary>
+    /// <param name="operation">The operation to invoke.</param>
+    /// <param name="register">Registers the callback that cancels the operation.</param>
+    /// <param name="unregister">Removes the callback registration.</param>
+    /// <returns>The operation exit code.</returns>
+    internal static async Task<int> RunWithCancellationRegistrationAsync(
+        Func<CancellationToken, Task<int>> operation,
+        Action<Action> register,
+        Action unregister)
+    {
+        ArgumentNullException.ThrowIfNull(operation);
+        ArgumentNullException.ThrowIfNull(register);
+        ArgumentNullException.ThrowIfNull(unregister);
+
+        using CancellationTokenSource cancellationTokenSource = new();
+        register(cancellationTokenSource.Cancel);
+        try
+        {
+            return await operation(cancellationTokenSource.Token).ConfigureAwait(false);
+        }
+        finally
+        {
+            unregister();
+        }
     }
 }

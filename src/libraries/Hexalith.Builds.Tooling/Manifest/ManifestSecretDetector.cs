@@ -5,43 +5,13 @@
 
 namespace Hexalith.Builds.Tooling.Manifest;
 
+using System.Text.RegularExpressions;
+
 /// <summary>
 /// Detects prohibited secret-bearing manifest values without retaining those values.
 /// </summary>
-public static class ManifestSecretDetector
+public static partial class ManifestSecretDetector
 {
-    /// <summary>
-    /// High-precision credential markers. Each carries an explicit delimiter, a well-known
-    /// credential prefix, or an unambiguous key body so ordinary metadata (module ids,
-    /// repository-relative paths, versions) is not misclassified as secret-bearing.
-    /// </summary>
-    private static readonly string[] _secretMarkers =
-    [
-        "bearer ",
-        "token=",
-        "secret=",
-        "password=",
-        "passwd=",
-        "pwd=",
-        "pass=",
-        "api-key",
-        "api_key",
-        "apikey=",
-        "client-secret",
-        "client_secret",
-        "private key",       // PEM private-key blocks (-----BEGIN ... PRIVATE KEY-----)
-        "ghp_",              // GitHub personal access token
-        "gho_",              // GitHub OAuth token
-        "ghu_",              // GitHub user-to-server token
-        "ghs_",              // GitHub server-to-server token
-        "ghr_",              // GitHub refresh token
-        "github_pat_",       // GitHub fine-grained token
-        "xoxb-",             // Slack bot token
-        "xoxp-",             // Slack user token
-        "aws_secret_access_key",
-        "eyj",               // JWT header segment (base64url of {")
-    ];
-
     /// <summary>
     /// Determines whether a manifest value appears to contain credential material.
     /// </summary>
@@ -51,6 +21,39 @@ public static class ManifestSecretDetector
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        return Array.Exists(_secretMarkers, marker => value.Contains(marker, StringComparison.OrdinalIgnoreCase));
+        return CredentialAssignmentRegex().IsMatch(value)
+            || AuthorizationRegex().IsMatch(value)
+            || KnownTokenPrefixRegex().IsMatch(value)
+            || JsonWebTokenRegex().IsMatch(value)
+            || PemPrivateKeyRegex().IsMatch(value)
+            || AwsAccessKeyRegex().IsMatch(value);
     }
+
+    [GeneratedRegex(
+        @"(?:^|[/\s?&;])(?:token|secret|password|passwd|pwd|pass|api[-_]?key|client[-_]?secret|accountkey|sharedaccesskey|sharedaccesssignature|sig|aws_access_key_id|aws_secret_access_key)\s*=\s*[^\s;&]+",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex CredentialAssignmentRegex();
+
+    [GeneratedRegex(
+        @"(?:^|[/\s?&;])(?:authorization\s*=\s*)?(?:bearer|basic)\s+[A-Za-z0-9+/_=.-]{8,}",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex AuthorizationRegex();
+
+    [GeneratedRegex(
+        @"(?:gh[pousr]_[A-Za-z0-9]{8,}|github_pat_[A-Za-z0-9_]{8,}|xox[bp]-[A-Za-z0-9-]{8,})",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex KnownTokenPrefixRegex();
+
+    [GeneratedRegex(
+        @"(?:^|[^A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}(?:\.[A-Za-z0-9_-]{5,})?",
+        RegexOptions.CultureInvariant)]
+    private static partial Regex JsonWebTokenRegex();
+
+    [GeneratedRegex(
+        @"-----BEGIN(?: [A-Z0-9]+)? PRIVATE KEY-----",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex PemPrivateKeyRegex();
+
+    [GeneratedRegex(@"(?:AKIA|ASIA)[A-Z0-9]{16}", RegexOptions.CultureInvariant)]
+    private static partial Regex AwsAccessKeyRegex();
 }
