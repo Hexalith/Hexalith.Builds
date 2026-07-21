@@ -86,7 +86,19 @@ public static class NativeTestReportLoader
             return Failed("HXT002", "resultSummary");
         }
 
-        XElement[] counterElements = [.. resultSummaries[0].Elements().Where(element =>
+        XElement resultSummary = resultSummaries[0];
+
+        // VSTest/MTP report a run-level outcome distinct from per-test counters (e.g. a
+        // test-host crash or aborted run can leave clean counters). Only a run explicitly
+        // reported as "Completed" — or a report that omits the attribute entirely — can
+        // represent a pass; every other declared outcome fails closed.
+        string? outcome = resultSummary.Attribute("outcome")?.Value;
+        if (outcome is not null && !string.Equals(outcome, "Completed", StringComparison.Ordinal))
+        {
+            return Failed("HXT006", "outcome");
+        }
+
+        XElement[] counterElements = [.. resultSummary.Elements().Where(element =>
             string.Equals(element.Name.LocalName, "Counters", StringComparison.Ordinal))];
         XElement? counters = counterElements.Length == 1 ? counterElements[0] : null;
         return counters is null || !TryReadCounters(counters, out int total, out int passed, out int failed, out int skipped)
@@ -106,7 +118,6 @@ public static class NativeTestReportLoader
             (0, _, _, _) => Failed("HXT003", "total"),
             (_, _, > 0, _) => Failed("HXT005", "failed"),
             (_, 0, _, _) => Failed("HXT004", "skipped"),
-            (_, _, _, var skippedCount) when skippedCount >= total => Failed("HXT004", "skipped"),
             _ when passed + skipped != total => Failed("HXT002", "counters"),
             _ => new NativeTestReportLoadResult(
                 new NativeTestReport(
@@ -136,6 +147,7 @@ public static class NativeTestReportLoader
         "HXT003" => "Use a filter that matches at least one test.",
         "HXT004" => "Execute at least one non-skipped matching test.",
         "HXT005" => "Resolve failed native test results before recording a pass.",
+        "HXT006" => "Resolve the run-level failure before recording a pass.",
         _ => "Correct the native test report before recording a pass.",
     };
 
@@ -146,6 +158,7 @@ public static class NativeTestReportLoader
         "HXT003" => "The selected test filter matched zero tests.",
         "HXT004" => "All matching tests were skipped or not executed.",
         "HXT005" => "The native test report contains failed test results.",
+        "HXT006" => "The native test report declares a non-passing run-level outcome.",
         _ => "The native test report cannot represent a pass.",
     };
 
@@ -187,8 +200,15 @@ public static class NativeTestReportLoader
         value = 0;
         XAttribute? attribute = counters.Attributes().FirstOrDefault(attribute =>
             string.Equals(attribute.Name.LocalName, name, StringComparison.Ordinal));
-        return attribute is null
-            ? !required
-            : int.TryParse(attribute.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        if (attribute is null)
+        {
+            return !required;
+        }
+
+        // Reject a negative component at the parse boundary: a negative sub-count (e.g. a
+        // corrupt "error=-1") could otherwise cancel out a real failure in the aggregate sum
+        // check and let a failed run report as passing.
+        return int.TryParse(attribute.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out value)
+            && value >= 0;
     }
 }
