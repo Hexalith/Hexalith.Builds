@@ -95,6 +95,17 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
 
+    - name: Setup Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: 'node'
+
+    - name: Install Node.js dependencies
+      run: npm ci
+
+    - name: Verify npm dependency provenance and signatures
+      run: npm audit signatures
+
     - name: Test commitlint workflow contracts
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-commitlint-workflow.ps1

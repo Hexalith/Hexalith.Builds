@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = ROOT / ".github" / "workflows" / "commitlint.yml"
 CALLER = ROOT / ".github" / "workflows" / "commitlint-caller.yml"
+RELEASE = ROOT / ".github" / "workflows" / "build-release.yml"
 STANDARDS = ROOT / ".github" / "workflows" / "ci-cd-standards.md"
 
 
@@ -108,6 +109,18 @@ class CommitlintWorkflowTests(unittest.TestCase):
         self.assertIn("types: [opened, synchronize, reopened, edited]", caller)
         self.assertIn("uses: ./.github/workflows/commitlint.yml", caller)
         self.assertIn("pull-request-title: ${{ github.event.pull_request.title }}", caller)
+
+    def test_release_installs_locked_node_dependencies_before_commitlint_contracts(self):
+        release = RELEASE.read_text(encoding="utf-8")
+
+        setup_index = release.index("uses: actions/setup-node@")
+        install_index = release.index("run: npm ci", setup_index)
+        audit_index = release.index("run: npm audit signatures", install_index)
+        contract_index = release.index("- name: Test commitlint workflow contracts", audit_index)
+
+        self.assertLess(setup_index, install_index)
+        self.assertLess(install_index, audit_index)
+        self.assertLess(audit_index, contract_index)
 
     def test_pinned_commitlint_rejects_malformed_and_default_ignored_titles(self):
         cases = {
