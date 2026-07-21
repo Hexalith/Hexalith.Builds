@@ -1,20 +1,18 @@
 schema: hexalith.readiness-evidence.v1
 project: Hexalith.Builds
-markdown_view: readiness.md
 validation:
-  command: dotnet tool run hexalith-evidence validate test/fixtures/evidence/positive/readiness.yaml
   required_coverage:
-    fr: FR-1..FR-1
+    fr: FR-1..FR-2
     nfr: NFR-1..NFR-1
     finding: "1"
     release: "1"
 status_legend:
-  pending: planned evidence that has not executed
-  blocked-external: evidence blocked by an external prerequisite
-  not-verified: environment unavailable
+  pending: planned evidence
+  blocked-external: external dependency
+  not-verified: unavailable environment
   failed: executed evidence failed
   passed: executed evidence passed
-  skipped: evidence skipped with a declared reason
+  skipped: skipped evidence
 defaults:
   repository: Hexalith.Builds
   owner: Builds Owner
@@ -30,7 +28,7 @@ rows:
     primary_story: "6.1"
     supporting_stories: []
     entry_gates: [G-4]
-    fixture: fixtures/readiness-fr-1
+    fixture: fixtures/fr-1
     verification_command: dotnet tool run hexalith-module test --profile full --filter FR-1
     evidence_artifact: evidence/fr-1.json
     estimate: M
@@ -41,29 +39,29 @@ rows:
     primary_story: "8.1"
     supporting_stories: []
     entry_gates: [G-4]
-    fixture: fixtures/readiness-nfr-1
+    fixture: fixtures/nfr-1
     verification_command: dotnet tool run hexalith-module test --profile full --filter NFR-1
     evidence_artifact: evidence/nfr-1.json
     estimate: M
   - key: finding-001
     category: finding
     ids: [TEST-001]
-    description: audit finding readiness coverage
+    description: finding readiness coverage
     primary_story: "8.1"
     supporting_stories: []
     entry_gates: [G-4]
-    fixture: fixtures/readiness-finding-001
+    fixture: fixtures/finding-001
     verification_command: dotnet tool run hexalith-module test --profile full --filter Finding=TEST-001
     evidence_artifact: evidence/finding-001.json
     estimate: S
-  - key: release-smoke
+  - key: release-coverage
     category: release
     ids: [NFR-11.smoke]
-    description: release smoke evidence
+    description: valid release row with incomplete FR coverage
     primary_story: "8.11"
     supporting_stories: []
     entry_gates: [G-4]
-    fixture: fixtures/readiness-release-smoke
+    fixture: fixtures/release-smoke
     verification_command: dotnet tool run hexalith-module test --profile full --filter Category=smoke
     evidence_artifact: test/fixtures/evidence/positive/evidence/release-passed.json
     estimate: M

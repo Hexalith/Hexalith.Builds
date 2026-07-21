@@ -22,6 +22,7 @@ using Hexalith.Builds.Tooling.Runtime;
 public static partial class ModuleRunEvidenceFactory
 {
     private const string _schema = "hexalith.module-run-evidence.v1";
+    private const int _toolTimeoutMilliseconds = 30_000;
 
     /// <summary>
     /// Creates deterministic evidence content with explicitly identified volatile fields.
@@ -93,7 +94,9 @@ public static partial class ModuleRunEvidenceFactory
             new SortedDictionary<string, string>(StringComparer.Ordinal),
             result.Status,
             result.Outcome,
-            ["runId", "timestamps.completedUtc", "timestamps.startedUtc"]);
+            ["runId", "timestamps.completedUtc", "timestamps.startedUtc"],
+            [],
+            []);
     }
 
     private static string CreateCommand(
@@ -225,10 +228,27 @@ public static partial class ModuleRunEvidenceFactory
                 return null;
             }
 
-            string standardOutput = process.StandardOutput.ReadToEnd();
-            _ = process.StandardError.ReadToEnd();
+            // Drain both pipes via asynchronous callbacks to avoid the classic full-buffer
+            // deadlock, and bound the wait so a hung or slow child cannot block evidence
+            // generation. Standard error is drained but discarded to prevent its buffer filling.
+            List<string> standardOutputLines = [];
+            process.OutputDataReceived += (_, eventArgs) =>
+            {
+                if (eventArgs.Data is not null)
+                {
+                    standardOutputLines.Add(eventArgs.Data);
+                }
+            };
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            if (!process.WaitForExit(_toolTimeoutMilliseconds))
+            {
+                TryKill(process);
+                return null;
+            }
+
             process.WaitForExit();
-            return process.ExitCode == 0 ? standardOutput.Trim() : null;
+            return process.ExitCode == 0 ? string.Join('\n', standardOutputLines).Trim() : null;
         }
         catch (IOException)
         {
@@ -245,6 +265,26 @@ public static partial class ModuleRunEvidenceFactory
         catch (System.ComponentModel.Win32Exception)
         {
             return null;
+        }
+    }
+
+    private static void TryKill(Process process)
+    {
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException)
+        {
+            // The process already exited between the timeout and the kill attempt.
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            // The operating system refused the kill; treat the tool output as unavailable.
+        }
+        catch (NotSupportedException)
+        {
+            // The platform cannot kill the process tree; treat the tool output as unavailable.
         }
     }
 

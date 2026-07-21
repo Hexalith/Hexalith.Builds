@@ -22,6 +22,8 @@ using Hexalith.Builds.Tooling.Diagnostics;
 /// <param name="FinalStatus">The final invocation status.</param>
 /// <param name="Outcome">The first causal tool outcome.</param>
 /// <param name="VolatileFields">The fields excluded by semantic evidence comparisons.</param>
+/// <param name="PersistedAssertions">The persisted-state assertions proven by the run, if any.</param>
+/// <param name="ExpectedSequences">The expected event or projection sequences proven by the run, if any.</param>
 public sealed record ModuleRunEvidence(
     string Schema,
     string RunId,
@@ -34,4 +36,6 @@ public sealed record ModuleRunEvidence(
     IReadOnlyDictionary<string, string> ArtifactHashes,
     string FinalStatus,
     ToolOutcome Outcome,
-    IReadOnlyList<string> VolatileFields);
+    IReadOnlyList<string> VolatileFields,
+    IReadOnlyList<string> PersistedAssertions,
+    IReadOnlyList<string> ExpectedSequences);

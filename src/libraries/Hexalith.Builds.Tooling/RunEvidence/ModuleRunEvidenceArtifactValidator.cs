@@ -85,6 +85,17 @@ internal static class ModuleRunEvidenceArtifactValidator
         "volatileFields",
     };
 
+    /// <summary>
+    /// Additive v1 fields accepted when present so the schema can carry persisted assertions
+    /// and expected sequences without a breaking version bump, but not required, so existing
+    /// artifacts remain valid.
+    /// </summary>
+    private static readonly HashSet<string> _optionalRootProperties = new(StringComparer.Ordinal)
+    {
+        "persistedAssertions",
+        "expectedSequences",
+    };
+
     private static readonly HashSet<string> _testCountProperties = new(StringComparer.Ordinal)
     {
         "reported",
@@ -126,7 +137,7 @@ internal static class ModuleRunEvidenceArtifactValidator
         {
             using JsonDocument document = JsonDocument.Parse(artifactBytes);
             JsonElement root = document.RootElement;
-            if (!HasExactProperties(root, _rootProperties)
+            if (!HasRequiredWithOptionalProperties(root, _rootProperties, _optionalRootProperties)
                 || !IsString(root, "schema", _schema)
                 || !IsLowerHex(root, "runId", 32)
                 || !IsTimestamps(root)
@@ -141,14 +152,25 @@ internal static class ModuleRunEvidenceArtifactValidator
                 return false;
             }
 
-            if (!IsOutcome(root, out int exitCode) || !IsVolatileFields(root))
+            if (!IsOutcome(root, out int exitCode)
+                || !IsVolatileFields(root)
+                || !IsOptionalMetadataStringArray(root, "persistedAssertions")
+                || !IsOptionalMetadataStringArray(root, "expectedSequences"))
             {
                 return false;
             }
 
+            JsonElement invocation = root.GetProperty("invocation");
+            JsonElement profileElement = invocation.GetProperty("profile");
+            JsonElement testCounts = root.GetProperty("testCounts");
             summary = new ModuleRunEvidenceArtifactSummary(
                 root.GetProperty("finalStatus").GetString()!,
-                exitCode);
+                exitCode,
+                invocation.GetProperty("command").GetString()!,
+                profileElement.ValueKind == JsonValueKind.String ? profileElement.GetString() : null,
+                testCounts.GetProperty("reported").GetBoolean(),
+                testCounts.GetProperty("passed").GetInt32(),
+                testCounts.GetProperty("failed").GetInt32());
             return true;
         }
         catch (JsonException)
@@ -169,6 +191,30 @@ internal static class ModuleRunEvidenceArtifactValidator
             && actualProperties.All(property => properties.Contains(property.Name))
             && actualProperties.Select(property => property.Name).Distinct(StringComparer.Ordinal).Count() == actualProperties.Length;
     }
+
+    private static bool HasRequiredWithOptionalProperties(
+        JsonElement element,
+        HashSet<string> required,
+        HashSet<string> optional)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        string[] names = [.. element.EnumerateObject().Select(property => property.Name)];
+        return names.Distinct(StringComparer.Ordinal).Count() == names.Length
+            && names.All(name => required.Contains(name) || optional.Contains(name))
+            && required.All(name => names.Contains(name, StringComparer.Ordinal));
+    }
+
+    private static bool IsOptionalMetadataStringArray(JsonElement root, string propertyName) =>
+        !root.TryGetProperty(propertyName, out JsonElement value)
+        || (value.ValueKind == JsonValueKind.Array
+            && value.EnumerateArray().All(item =>
+                item.ValueKind == JsonValueKind.String
+                && item.GetString() is string text
+                && !ManifestSecretDetector.ContainsSecret(text)));
 
     private static bool IsArtifactHashes(JsonElement root)
     {
@@ -306,7 +352,7 @@ internal static class ModuleRunEvidenceArtifactValidator
 
         bool reported = testCounts.GetProperty("reported").GetBoolean();
         return reported
-            ? passed + failed + skipped == total
+            ? (long)passed + failed + skipped == total
             : total == 0 && passed == 0 && failed == 0 && skipped == 0;
     }
 

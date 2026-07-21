@@ -169,6 +169,8 @@ public static class ModuleRunEvidenceWriter
         WriteTopology(writer, evidence.Topology);
         WritePhaseOutcomes(writer, evidence.PhaseOutcomes);
         WriteTestCounts(writer, evidence.TestCounts);
+        WriteStringArray(writer, "persistedAssertions", evidence.PersistedAssertions);
+        WriteStringArray(writer, "expectedSequences", evidence.ExpectedSequences);
         writer.WritePropertyName("artifactHashes");
         writer.WriteStartObject();
         foreach (KeyValuePair<string, string> artifact in evidence.ArtifactHashes.OrderBy(pair => pair.Key, StringComparer.Ordinal))
@@ -238,6 +240,18 @@ public static class ModuleRunEvidenceWriter
             writer.WriteString("category", phaseOutcome.Category.ToString());
             writer.WriteString("ruleId", phaseOutcome.RuleId);
             writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+    }
+
+    private static void WriteStringArray(Utf8JsonWriter writer, string propertyName, IReadOnlyList<string> values)
+    {
+        writer.WritePropertyName(propertyName);
+        writer.WriteStartArray();
+        foreach (string value in values)
+        {
+            writer.WriteStringValue(value);
         }
 
         writer.WriteEndArray();

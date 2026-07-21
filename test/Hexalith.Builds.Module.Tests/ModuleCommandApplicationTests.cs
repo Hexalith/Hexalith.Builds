@@ -316,7 +316,7 @@ public sealed class ModuleCommandApplicationTests
 
                     exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable);
                     standardOutput.ToString().ShouldContain("HXR002");
-                    standardOutput.ToString().ShouldContain("HXE001");
+                    standardOutput.ToString().ShouldContain("HXE160");
                 }
             }
         }
@@ -359,7 +359,7 @@ public sealed class ModuleCommandApplicationTests
                         TestContext.Current.CancellationToken).ConfigureAwait(true);
 
                     exitCode.ShouldBe((int)ToolExitCode.EvidenceSchemaOrPolicy);
-                    standardOutput.ToString().ShouldContain("HXE001");
+                    standardOutput.ToString().ShouldContain("HXE160");
                     standardOutput.ToString().ShouldNotContain("passed");
                 }
             }
@@ -405,7 +405,7 @@ public sealed class ModuleCommandApplicationTests
                         TestContext.Current.CancellationToken).ConfigureAwait(true);
 
                     exitCode.ShouldBe((int)ToolExitCode.EvidenceSchemaOrPolicy);
-                    standardOutput.ToString().ShouldContain("HXE001");
+                    standardOutput.ToString().ShouldContain("HXE160");
                     File.Exists(Path.Combine(externalDirectory, "escaped.json")).ShouldBeFalse();
                 }
             }

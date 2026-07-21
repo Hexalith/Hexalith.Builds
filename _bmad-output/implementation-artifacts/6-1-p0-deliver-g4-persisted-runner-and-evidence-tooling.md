@@ -176,6 +176,40 @@ so that Projects Story 6.1 and later consumers can prove supported-path behavior
   - [ ] Provide Projects with exact `.config/dotnet-tools.json` pins and manifest/schema guidance without directly modifying Projects in this story.
   - [ ] Obtain Builds Owner, Platform Owner, and Test Architect acceptance and route the immutable evidence record to 6.1-P4.
 
+### Review Findings
+
+Code review — **Chunk B (Evidence tooling)**, 2026-07-21. Scope: `src/libraries/Hexalith.Builds.Tooling/Evidence/*`, `.../RunEvidence/*`, `test/Hexalith.Builds.Evidence.Tests/*`, `test/Hexalith.Builds.Module.Tests/ModuleRunEvidenceSerializationTests.cs`, `test/fixtures/evidence/*` (baseline `edbaeaed`..HEAD `7708256`). Four blind review layers (adversarial, edge-case, verification-gap, acceptance-audit). Severities set by triage. Chunks A (Input contract), C (Runtime), D (Surface & controls) not yet reviewed. 3 findings dismissed as noise.
+
+**Decision-needed — resolved 2026-07-21 by Jerome (all → patch):**
+
+- [x] \[Review]\[Patch] D1 · HIGH · Readiness `passed` rows are not bound to the artifact they cite — only existence + SHA-256 + schema + `finalStatus`/`exitCode` are checked; `invocation.command`/`profile`/`topology` are never compared to the row's `verification_command`/`fixture`. Shipped positive fixture proves it: row `release-smoke` cites `release-passed.json` whose command is `hexalith-module down …`. [`src/libraries/Hexalith.Builds.Tooling/Evidence/ReadinessEvidenceValidator.cs`:986-998] — **Resolved:** bind now — cross-check the artifact command/profile/fixtureHash against the row, and fix the misleading positive fixture.
+- [x] \[Review]\[Patch] D2 · HIGH · `HXE149` ignores test counts — zero-test / all-skipped artifacts satisfy a `passed` row (AC 6/11). [`.../Evidence/ReadinessEvidenceValidator.cs`:993-997; `.../RunEvidence/ModuleRunEvidenceArtifactValidator.cs`:307-310] — **Resolved:** enforce in validator — a `passed` row's artifact must report `reported:true`, `passed>0`, `failed==0`.
+- [x] \[Review]\[Patch] D3 · HIGH · Secret detection is a 6-substring denylist — sole AC-12 enforcement in the artifact validator; misses JWT/`ghp_`/PEM/`Pwd=`/connection strings. [`src/libraries/Hexalith.Builds.Tooling/Manifest/ManifestSecretDetector.cs`:18-28] — **Resolved:** strengthen now — add JWT (`eyJ…`), `ghp_`/`github_pat_`, PEM private-key headers, `pwd=`/`pass=`, and broaden key/secret shapes.
+- [x] \[Review]\[Patch] D4 · MEDIUM · P1/P2 coverage not enforced — `finding` coverage parses only the first integer of e.g. `"9 P1 + 7 P2"`; row `priority` unused (AC 9). [`.../Evidence/ReadinessEvidenceValidator.cs`:1010,1064-1087] — **Resolved:** implement P1/P2 — parse sub-counts and validate each against rows by `priority`.
+- [x] \[Review]\[Patch] D5 · MEDIUM · Evidence envelope cannot represent AC-7 persisted assertions / expected sequences — no field; schema is `additionalProperties:false`. [`.../RunEvidence/ModuleRunEvidence.cs`; `.../RunEvidence/ModuleRunEvidenceArtifactValidator.cs`:72-86] — **Resolved:** extend v1 now — add optional additive `persistedAssertions`/`expectedSequences` fields to the model + schema (factory emits empty for now).
+
+**Patch** (unambiguous fixes):
+
+- [x] \[Review]\[Patch] P1 · HIGH · Human-mode diagnostics violate AC 9 — emits only `Diagnostics[0]` (RuleId/Phase/Category/Message), dropping Source/Row/Field/Location/Hint and later diagnostics; human is the default output. [`src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs`:46-52]
+- [x] \[Review]\[Patch] P2 · MEDIUM · `critical: yes|on|1|y` silently non-critical (compares to `"true"` only) — evades HXE141/142; fail closed on unrecognized values. [`.../Evidence/ReadinessEvidenceValidator.cs`:898-899]
+- [x] \[Review]\[Patch] P3 · MEDIUM · Subprocess capture deadlock + untimed `WaitForExit()`. [`.../RunEvidence/ModuleRunEvidenceFactory.cs`:228-231]
+- [x] \[Review]\[Patch] P4 · MEDIUM · Non-scalar `markdown_view` silently skips HXE151 drift control. [`.../Evidence/ReadinessEvidenceValidator.cs`:804-808]
+- [x] \[Review]\[Patch] P5 · MEDIUM · Duplicate-key vs invalid-YAML keyed on English substring `"duplicate"` in a YamlDotNet exception message. [`.../Evidence/ReadinessEvidenceValidator.cs`:466]
+- [x] \[Review]\[Patch] P6 · MEDIUM · Markdown drift check couples to one renderer (backtick-wrapped first column only). [`.../Evidence/ReadinessEvidenceValidator.cs`:860-874]
+- [x] \[Review]\[Patch] P7 · LOW · Rule ID `HXE001` reused for two meanings (duplicate-key vs evidence-write failure), violating AC-8 stable IDs. [`.../RunEvidence/ModuleRunEvidenceWriteResult.cs`:27-35]
+- [x] \[Review]\[Patch] P8 · LOW · Test-count consistency defeatable by `int` overflow. [`.../RunEvidence/ModuleRunEvidenceArtifactValidator.cs`:309]
+- [x] \[Review]\[Patch] P9 · LOW · Placeholder detection misses `%…%` and `$VAR`, inconsistent with the manifest side. [`.../Evidence/ReadinessEvidenceValidator.cs`:197-203]
+- [x] \[Review]\[Patch] P10 · MEDIUM · No negative fixture/test for HXE149/HXE130/HXE147/HXE146/HXE143/HXE144 — deleting/inverting these branches leaves all tests green. [`test/Hexalith.Builds.Evidence.Tests/ReadinessEvidenceValidatorTests.cs`]
+- [x] \[Review]\[Patch] P11 · MEDIUM · Secret guards untested: `ManifestSecretDetector` has no test; `ShouldNotContain("Bearer")` assertion guards nothing. [`test/Hexalith.Builds.Module.Tests/ModuleRunEvidenceSerializationTests.cs`:67]
+- [x] \[Review]\[Patch] P12 · MEDIUM · Determinism only partially pinned (single-module test hides `OrderBy(Id)`; no golden-byte snapshot; timestamp format unasserted). [`test/Hexalith.Builds.Module.Tests/ModuleRunEvidenceSerializationTests.cs`:30-68]
+- [x] \[Review]\[Patch] P13 · MEDIUM · `ModuleRunEvidenceWriter.WriteAsync` never driven — path containment, `.json` requirement, atomic temp→rename unverified. [`src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceWriter.cs`]
+- [x] \[Review]\[Patch] P14 · LOW · The 6 evidence `.expected.json` snapshots are dead fixtures (no test loads them). [`test/fixtures/evidence/**/*.expected.json`]
+
+**Deferred**:
+
+- [x] \[Review]\[Defer] YAML parse-bomb — deserialized twice with no anchor/alias/depth bound. [`.../Evidence/ReadinessEvidenceValidator.cs`:459-485] — deferred, low priority (semi-trusted in-repo input; YamlDotNet lacks native alias caps).
+- [x] \[Review]\[Defer] `IsArtifactHashes` validates hash values but not keys for path/secret shape. [`.../RunEvidence/ModuleRunEvidenceArtifactValidator.cs`:173-178] — deferred, low priority (keys never propagated to the readiness result).
+
 ## Dev Notes
 
 ### Authority and Scope

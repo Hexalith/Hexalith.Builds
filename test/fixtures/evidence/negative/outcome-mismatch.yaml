@@ -1,6 +1,5 @@
 schema: hexalith.readiness-evidence.v1
 project: Hexalith.Builds
-markdown_view: policy-controls.md
 validation:
   required_coverage:
     fr: FR-1..FR-1
@@ -55,72 +54,18 @@ rows:
     verification_command: dotnet tool run hexalith-module test --profile full --filter Finding=TEST-001
     evidence_artifact: evidence/finding-001.json
     estimate: S
-  - key: release-smoke
+  - key: release-outcome
     category: release
     ids: [NFR-11.smoke]
-    description: undeclared status control
+    description: passed release reporting a non-passing outcome
     primary_story: "8.11"
     supporting_stories: []
     entry_gates: [G-4]
     fixture: fixtures/release-smoke
     verification_command: dotnet tool run hexalith-module test --profile full --filter Category=smoke
-    evidence_artifact: evidence/release-smoke.json
-    estimate: M
-    status: blocked
-  - key: release-unavailable
-    category: release
-    ids: [NFR-11.unavailable]
-    description: passed unavailable control
-    primary_story: "8.11"
-    supporting_stories: []
-    entry_gates: [G-4]
-    fixture: fixtures/release-unavailable
-    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=unavailable
     evidence_artifact: test/fixtures/evidence/positive/evidence/release-passed.json
     estimate: M
     status: passed
-    outcome: unavailable
-    artifact_schema: hexalith.module-run-evidence.v1
-    artifact_sha256: e13c4b1e0b4d92de86bbdd63909f34d083073eec74385eb38bb197d0d78b357a
-  - key: release-failed
-    category: release
-    ids: [NFR-11.failed]
-    description: failed critical control
-    primary_story: "8.11"
-    supporting_stories: []
-    entry_gates: [G-4]
-    fixture: fixtures/release-failed
-    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=failed
-    evidence_artifact: test/fixtures/evidence/positive/evidence/release-passed.json
-    estimate: M
-    status: failed
     outcome: failed
     artifact_schema: hexalith.module-run-evidence.v1
     artifact_sha256: e13c4b1e0b4d92de86bbdd63909f34d083073eec74385eb38bb197d0d78b357a
-  - key: release-skipped
-    category: release
-    ids: [NFR-11.skipped]
-    description: unexplained critical skip control
-    primary_story: "8.11"
-    supporting_stories: []
-    entry_gates: [G-4]
-    fixture: fixtures/release-skipped
-    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=skipped
-    evidence_artifact: evidence/release-skipped.json
-    estimate: M
-    status: skipped
-  - key: release-missing-artifact
-    category: release
-    ids: [NFR-11.missing-artifact]
-    description: missing executed artifact control
-    primary_story: "8.11"
-    supporting_stories: []
-    entry_gates: [G-4]
-    fixture: fixtures/release-missing-artifact
-    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=missing-artifact
-    evidence_artifact: evidence/missing.json
-    estimate: M
-    status: passed
-    outcome: passed
-    artifact_schema: hexalith.module-run-evidence.v1
-    artifact_sha256: 672af04f216a62d10bdf95a4fb0a04fab39ae50dd6415b7c868ea3b7ab2befa9
