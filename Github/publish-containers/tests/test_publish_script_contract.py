@@ -13,6 +13,8 @@ ACTION = SCRIPT_DIRECTORY / "action.yml"
 DOMAIN_RELEASE = SCRIPT_DIRECTORY.parents[1] / ".github" / "workflows" / "domain-release.yml"
 BUILD_RELEASE = SCRIPT_DIRECTORY.parents[1] / ".github" / "workflows" / "build-release.yml"
 RUNTIME_IDENTIFIERS = "linux-musl-x64;linux-musl-arm64"
+# The inventory size the fixture module declares — a per-module value, not a shared invariant.
+FIXTURE_PACKAGE_COUNT = 14
 
 
 def write_executable(path, content):
@@ -23,7 +25,7 @@ def write_executable(path, content):
 def write_package_manifest(root):
     path = root / "release-packages.json"
     path.write_text(
-        json.dumps({"packages": [{"id": f"Package.{index}"} for index in range(14)]}),
+        json.dumps({"packages": [{"id": f"Package.{index}"} for index in range(FIXTURE_PACKAGE_COUNT)]}),
         encoding="utf-8",
     )
     return path
@@ -207,6 +209,10 @@ class PublishScriptContractTests(unittest.TestCase):
             "HEXALITH_RELEASE_PACKAGE_MANIFEST: ${{ inputs.package-manifest }}",
             workflow,
         )
+        self.assertIn(
+            "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}",
+            workflow,
+        )
         self.assertNotIn("HEXALITH_RELEASE_AUTHORITY_URL", workflow)
         self.assertNotIn("HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH", workflow)
         identity_index = workflow.index("- name: Validate approved Builds execution identity")
@@ -351,6 +357,7 @@ class PublishScriptContractTests(unittest.TestCase):
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
                     "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
+                    "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
                     "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
                     "GITHUB_SHA": "b" * 40,
                     "FAKE_DOTNET_ARGUMENTS": str(dotnet_arguments),
@@ -401,6 +408,11 @@ class PublishScriptContractTests(unittest.TestCase):
             self.assertIn("ci.yml", preflight)
             self.assertIn("--package-manifest", preflight)
             self.assertIn(str(package_manifest), preflight)
+            self.assertIn("--expected-package-count", preflight)
+            self.assertEqual(
+                str(FIXTURE_PACKAGE_COUNT),
+                preflight[preflight.index("--expected-package-count") + 1],
+            )
 
     def test_rejected_preflight_blocks_sdk_container_mutation(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -432,6 +444,7 @@ class PublishScriptContractTests(unittest.TestCase):
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
                     "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
+                    "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
                     "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
                     "GITHUB_SHA": "b" * 40,
                     "FAKE_MUTATION_MARKER": str(mutation_marker),
@@ -480,6 +493,7 @@ class PublishScriptContractTests(unittest.TestCase):
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
                     "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
+                    "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
                     "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
                     "GITHUB_SHA": "b" * 40,
                     "FAKE_MUTATION_MARKER": str(mutation_marker),
@@ -499,6 +513,58 @@ class PublishScriptContractTests(unittest.TestCase):
             self.assertIn(f"Container repository '../{escaped_path.name}' is invalid", result.stderr)
             self.assertFalse(mutation_marker.exists())
             self.assertFalse(escaped_path.exists())
+
+    def test_absent_or_invalid_expected_package_count_blocks_publication(self):
+        for declared in (None, "", "0", "-1", "05", "5.0", "five", " 5"):
+            with self.subTest(declared=declared), tempfile.TemporaryDirectory() as temporary_directory:
+                root = Path(temporary_directory)
+                fake_bin = root / "bin"
+                fake_bin.mkdir()
+                project = root / "EventStore.csproj"
+                project.write_text("<Project />\n", encoding="utf-8")
+                mutation_marker = root / "dotnet-ran"
+                package_manifest = write_package_manifest(root)
+                write_executable(fake_bin / "docker", "#!/usr/bin/env bash\ncat >/dev/null\n")
+                write_executable(
+                    fake_bin / "dotnet",
+                    "#!/usr/bin/env bash\ntouch \"$FAKE_MUTATION_MARKER\"\n",
+                )
+                environment = os.environ.copy()
+                environment.pop("HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT", None)
+                environment.update(
+                    {
+                        "PATH": f"{fake_bin}:{environment['PATH']}",
+                        "HEXALITH_CONTAINER_PROJECTS": f"{project}|eventstore",
+                        "HEXALITH_ZOT_USERNAME": "fixture-user",
+                        "HEXALITH_ZOT_API_KEY": "fixture-token",
+                        "HEXALITH_ZOT_REGISTRY": "registry.example.test",
+                        "HEXALITH_OCI_VALIDATOR": "/bin/true",
+                        "HEXALITH_CONTAINER_SMOKE": "/bin/true",
+                        "HEXALITH_PUBLICATION_PREFLIGHT": "/bin/true",
+                        "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
+                        "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
+                        "HEXALITH_RELEASE_ENVIRONMENT": "production",
+                        "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
+                        "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
+                        "GITHUB_SHA": "b" * 40,
+                        "FAKE_MUTATION_MARKER": str(mutation_marker),
+                    }
+                )
+                if declared is not None:
+                    environment["HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT"] = declared
+
+                result = subprocess.run(
+                    ["bash", str(PUBLISHER), "3.76.1"],
+                    cwd=root,
+                    env=environment,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT", result.stderr)
+                self.assertFalse(mutation_marker.exists())
 
 
 if __name__ == "__main__":

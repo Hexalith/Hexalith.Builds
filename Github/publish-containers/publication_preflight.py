@@ -316,7 +316,7 @@ def build_publication_identity(arguments, source_proof=None):
         "container_repository": arguments.container_repository,
         "platforms": list(REQUIRED_PLATFORMS),
         "environment": _validate_environment_name(arguments.environment_name),
-        "packages": _load_package_identity(arguments.package_manifest),
+        "packages": _load_package_identity(arguments.package_manifest, arguments.expected_package_count),
         "builds": {
             "workflow_sha": arguments.builds_execution_sha,
             "action_sha": arguments.builds_execution_sha,
@@ -326,14 +326,17 @@ def build_publication_identity(arguments, source_proof=None):
     }
 
 
-def validate_destination_absence(package_ids, version, container_repository, probe):
-    """Require exactly 14 new package IDs and one new container tag to be absent."""
+def validate_destination_absence(package_ids, version, container_repository, probe, expected_package_count):
+    """Require exactly the caller's declared new package IDs and one new container tag to be absent."""
     if (
-        len(package_ids) != 14
+        len(package_ids) != expected_package_count
         or any(not isinstance(package_id, str) or not package_id.strip() for package_id in package_ids)
-        or len({package_id.lower() for package_id in package_ids}) != 14
+        or len({package_id.lower() for package_id in package_ids}) != expected_package_count
     ):
-        _fail("package-inventory-mismatch", "Release package inventory must contain exactly 14 unique IDs.")
+        _fail(
+            "package-inventory-mismatch",
+            f"Release package inventory must contain exactly {expected_package_count} unique IDs.",
+        )
     if not isinstance(version, str) or SEMVER_PATTERN.fullmatch(version) is None:
         _fail("invalid-version", "Proposed release version is invalid.")
     checked = []
@@ -425,7 +428,7 @@ def _canonical_package_id(package_id):
     return not any(ord(character) < 32 or ord(character) == 127 for character in package_id)
 
 
-def _load_package_identity(path):
+def _load_package_identity(path, expected_package_count):
     try:
         manifest = json.loads(workspace_read_text(Path(path)))
         packages = manifest["packages"]
@@ -435,11 +438,14 @@ def _load_package_identity(path):
     if (
         not isinstance(manifest, dict)
         or not isinstance(packages, list)
-        or len(package_ids) != 14
+        or len(package_ids) != expected_package_count
         or not all(_canonical_package_id(package_id) for package_id in package_ids)
-        or len({package_id.lower() for package_id in package_ids}) != 14
+        or len({package_id.lower() for package_id in package_ids}) != expected_package_count
     ):
-        _fail("package-inventory-mismatch", "Release package inventory must contain exactly 14 unique IDs.")
+        _fail(
+            "package-inventory-mismatch",
+            f"Release package inventory must contain exactly {expected_package_count} unique IDs.",
+        )
     return {
         "ids": package_ids,
         "normalized_ids": [package_id.lower() for package_id in package_ids],
@@ -494,6 +500,13 @@ def _write_evidence(directory, phase, identity, destination_evidence):
     workspace_write_text(phase_path, json.dumps(evidence, indent=2, sort_keys=True) + "\n")
 
 
+def _positive_integer_argument(value):
+    """Return a positive integer argument, rejecting zero, negatives, padding and non-digits."""
+    if POSITIVE_INTEGER_PATTERN.fullmatch(value) is None:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return int(value)
+
+
 def _parse_arguments():
     parser = argparse.ArgumentParser(description="Validate release publication identity and destination absence.")
     parser.add_argument("--repository", required=True)
@@ -505,6 +518,9 @@ def _parse_arguments():
     parser.add_argument("--builds-execution-sha", required=True)
     parser.add_argument("--environment-name", required=True)
     parser.add_argument("--package-manifest", required=True, type=workspace_input_file)
+    # No default: each module declares its own inventory size, and a default would
+    # silently reinstate one module's package count as every other module's gate.
+    parser.add_argument("--expected-package-count", required=True, type=_positive_integer_argument)
     parser.add_argument("--contract-directory", required=True, type=workspace_input_directory)
     parser.add_argument("--evidence-directory", required=True, type=workspace_output_directory)
     parser.add_argument("--phase", required=True, choices=("verify", "publish", "container"))
@@ -518,12 +534,13 @@ def _validate_destinations(arguments, probe):
             arguments.container_repository,
             probe,
         )
-    package_identity = _load_package_identity(arguments.package_manifest)
+    package_identity = _load_package_identity(arguments.package_manifest, arguments.expected_package_count)
     return validate_destination_absence(
         package_identity["ids"],
         arguments.version,
         arguments.container_repository,
         probe,
+        arguments.expected_package_count,
     )
 
 

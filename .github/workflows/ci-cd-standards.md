@@ -87,7 +87,13 @@ test project lists, and operational exceptions in their own docs.
       with:
         environment-name: production
         builds-execution-sha: 0123456789abcdef0123456789abcdef01234567
+        expected-package-count: 5
   ```
+
+  Declare `expected-package-count` as the module's own NuGet package count whenever
+  containers are published. It is caller-declared rather than counted from the
+  package manifest so that gaining or losing a package fails closed until the
+  change is reviewed against the manifest.
 
   Leave `test-projects` empty when the exact source CI already ran those tiers.
 - After environment approval, the reusable workflow independently re-proves
