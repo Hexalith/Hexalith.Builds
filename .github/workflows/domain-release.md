@@ -146,6 +146,7 @@ The recommended organization-level values are:
 
 ```text
 vars.HEXALITH_ZOT_REGISTRY = registry.hexalith.com
+vars.HEXALITH_BUILDS_RELEASE_SHA
 caller repository/organization: secrets.HEXALITH_ZOT_USERNAME
 caller repository/organization: secrets.HEXALITH_ZOT_API_KEY
 caller repository/organization: secrets.NUGET_API_KEY
