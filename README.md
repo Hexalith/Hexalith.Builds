@@ -49,8 +49,8 @@ This repository:
   `domain-release.yml` with a module `.releaserc.json`).
 - `Github/scripts/build-packages.ps1`: Builds library projects during
   semantic-release.
-- `Github/scripts/publish-packages.ps1`: Publishes NuGet packages during
-  semantic-release.
+- `Github/scripts/publish-packages.ps1`: Publishes each primary NuGet package
+  once during semantic-release; `dotnet` publishes its adjacent symbols package.
 
 ### Code Style and Analysis
 

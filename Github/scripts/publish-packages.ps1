@@ -13,14 +13,17 @@ $ErrorActionPreference = 'Stop'
 
 function Publish-Packages {
     param(
-        [string]$Extension,
         [string]$ConfigFile,
         [string]$Source
     )
 
-    $files = Get-ChildItem -Path './src/libraries' -Recurse -Filter "*.$Extension" -ErrorAction SilentlyContinue
+    $files = @(
+        Get-ChildItem -Path './src/libraries' -Recurse -File -Filter '*.nupkg' -ErrorAction SilentlyContinue |
+            Where-Object { $_.Extension -eq '.nupkg' } |
+            Sort-Object -Property FullName
+    )
     if (-not $files) {
-        Write-Host "No *.$Extension packages found to publish."
+        Write-Host 'No primary .nupkg packages found to publish.'
         return
     }
 
@@ -30,9 +33,13 @@ function Publish-Packages {
     # chain's version-collision preflight.
     # The API key comes from the restricted-permission config file rather than
     # argv, so it is not visible in the process table to anything sharing the runner.
-    dotnet nuget push "./src/libraries/**/*.$Extension" --source $Source --configfile $ConfigFile
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to publish *.$Extension packages (exit code $LASTEXITCODE)."
+    # dotnet discovers and publishes an adjacent .snupkg automatically. Submit
+    # each primary package exactly once so symbols are not published a second time.
+    foreach ($file in $files) {
+        dotnet nuget push $file.FullName --source $Source --configfile $ConfigFile
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to publish '$($file.FullName)' (exit code $LASTEXITCODE)."
+        }
     }
 }
 
@@ -75,8 +82,7 @@ Set-Content -LiteralPath $configFile -Encoding utf8 -NoNewline -Value @"
 "@
 
 try {
-    Publish-Packages -Extension 'nupkg' -ConfigFile $configFile -Source $source
-    Publish-Packages -Extension 'snupkg' -ConfigFile $configFile -Source $source
+    Publish-Packages -ConfigFile $configFile -Source $source
 }
 finally {
     Remove-Item -LiteralPath $configFile -Force -ErrorAction SilentlyContinue

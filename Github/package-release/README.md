@@ -19,6 +19,10 @@ and NuGet publish are driven from the semantic-release lifecycle via
 and publish only happen when a release is actually warranted, so there is no
 separate "is a release published?" gate.
 
+The publisher submits each primary `.nupkg` exactly once. `dotnet nuget push`
+discovers and publishes its adjacent `.snupkg`; the symbol package must not be
+submitted separately because NuGet rejects that duplicate upload.
+
 ## Inputs
 
 None.

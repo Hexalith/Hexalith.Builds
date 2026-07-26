@@ -116,6 +116,10 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-commitlint-workflow.ps1
 
+    - name: Test legacy package publisher contracts
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-publish-packages.ps1
+
     - name: Test G-4 tool package publisher contracts
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-publish-g4-tool-packages.ps1
