@@ -36,9 +36,13 @@ on:
         type: string
         default: ''
       node-version:
+        description: >-
+          Node major line used for the semantic-release toolchain. Defaults to the
+          Active LTS major that satisfies semantic-release 25 (>=24.10.0);
+          overridable so a consumer can move ahead deliberately.
         required: false
         type: string
-        default: 'node'
+        default: '24'
       timeout-minutes:
         required: false
         type: number
@@ -172,17 +176,23 @@ jobs:
       - name: Validate test platform input
         if: ${{ inputs.test-platform != 'vstest' && inputs.test-platform != 'microsoft-testing-platform' }}
         shell: bash
+        env:
+          TEST_PLATFORM: ${{ inputs.test-platform }}
         run: |
-          echo "Unsupported test-platform '${{ inputs.test-platform }}'. Expected vstest or microsoft-testing-platform." >&2
+          echo "Unsupported test-platform '$TEST_PLATFORM'. Expected vstest or microsoft-testing-platform." >&2
           exit 1
       - name: Install npm dependencies
         run: npm ci
       - name: Verify npm dependency provenance and signatures
         run: npm audit signatures
       - name: Restore
-        run: dotnet restore ${{ inputs.solution }}
+        env:
+          SOLUTION: ${{ inputs.solution }}
+        run: dotnet restore "$SOLUTION"
       - name: Build
-        run: dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
+        env:
+          SOLUTION: ${{ inputs.solution }}
+        run: dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
         if: ${{ inputs.test-projects != '' }}
         uses: ./.hexalith/builds-execution/Github/dapr-init

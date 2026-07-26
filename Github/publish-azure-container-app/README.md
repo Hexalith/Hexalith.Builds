@@ -4,8 +4,11 @@
 > generation (`domain-ci.yml` / `domain-release.yml`). Kept for existing consumers.
 
 Updates existing Azure Container Apps to use a new image version. The action
-logs in to Azure with `azure/login@master` and updates the Web and API
-container apps with Azure CLI.
+logs in to Azure with `azure/login`, pinned to a full commit SHA with a trailing
+version comment, and updates the Web and API container apps with Azure CLI.
+`version`, `app-id`, `registry` and `resource-group` are validated before use and
+are passed to Azure CLI through the environment, never interpolated into the
+script body.
 
 ## Inputs
 
@@ -67,9 +70,11 @@ Configure these secrets or environment values in the consuming repository:
 
 ## Usage
 
+Reference this action by full commit SHA with a trailing version comment.
+
 ```yaml
 - name: Deploy to Azure Container Apps
-  uses: Hexalith/Hexalith.Builds/Github/publish-azure-container-app@main
+  uses: Hexalith/Hexalith.Builds/Github/publish-azure-container-app@<full-40-hex-sha> # vX.Y.Z
   with:
     version: ${{ needs.build.outputs.version }}
     client-id: ${{ secrets.AZURE_APPLICATIONID }}

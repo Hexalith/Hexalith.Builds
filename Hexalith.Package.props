@@ -21,7 +21,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' != 'Release'">
     <VersionSuffix Condition="'$(GITHUB_RUN_NUMBER)' != ''">preview-$(GITHUB_RUN_NUMBER)</VersionSuffix>
-    <VersionSuffix Condition="'$(GITHUB_RUN_NUMBER)' == ''">$(Date:yyyyMMddHHmmss)</VersionSuffix>
+    <!-- $(Date:...) is Azure Pipelines syntax and expands to nothing in MSBuild,
+         so local non-Release builds silently produced no version suffix. -->
+    <VersionSuffix Condition="'$(GITHUB_RUN_NUMBER)' == ''">$([System.DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))</VersionSuffix>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="">

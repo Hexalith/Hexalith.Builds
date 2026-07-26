@@ -20,7 +20,8 @@ None.
 
 ## Steps
 
-1. Set up Node.js with `actions/setup-node@v6` and `node`.
+1. Set up Node.js with `actions/setup-node` (pinned to the v7.0.0 SHA) on the
+   Node 24 major line.
 2. Install npm dependencies with `npm ci`.
 3. Verify npm package provenance and signatures with `npm audit signatures`.
 4. Run `npx semantic-release` with the caller's `GITHUB_TOKEN` and optional

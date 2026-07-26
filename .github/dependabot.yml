@@ -1,11 +1,37 @@
-# Keeps the pinned third-party actions used by the shared reusable workflows and composite
-# actions up to date. Dependabot opens PRs that bump the SHA and the trailing version comment.
+# Dependency surveillance for every ecosystem this repository actually ships.
+#
+# github-actions: "/" only covers .github/workflows, so the composite actions under
+# Github/*/action.yml need their own directory glob. Without it the SHA pins in the
+# composite actions are never refreshed.
+# nuget: central package versions live in Props/Directory.Packages.props.
+# npm: the semantic-release and commitlint toolchain in package.json.
+#
+# Commit prefixes must stay valid Conventional Commit types, and never `chore`:
+# commitlint rejects it and semantic-release derives releases from these types.
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directory: "/"
+    directories:
+      - "/"
+      - "/Github/*"
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
     commit-message:
       prefix: "ci(deps)"
+
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "build(deps)"

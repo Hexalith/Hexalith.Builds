@@ -146,8 +146,10 @@ jobs:
       - name: Validate test platform input
         if: ${{ inputs.test-platform != 'vstest' && inputs.test-platform != 'microsoft-testing-platform' }}
         shell: bash
+        env:
+          TEST_PLATFORM: ${{ inputs.test-platform }}
         run: |
-          echo "Unsupported test-platform '${{ inputs.test-platform }}'. Expected vstest or microsoft-testing-platform." >&2
+          echo "Unsupported test-platform '$TEST_PLATFORM'. Expected vstest or microsoft-testing-platform." >&2
           exit 1
       - name: Validate Microsoft.Testing.Platform coverage support
         if: ${{ inputs.test-platform == 'microsoft-testing-platform' && inputs.run-coverage-gate }}
@@ -156,9 +158,13 @@ jobs:
           echo "run-coverage-gate is not supported with microsoft-testing-platform until an MTP coverage extension is configured." >&2
           exit 1
       - name: Restore
-        run: dotnet restore ${{ inputs.solution }}
+        env:
+          SOLUTION: ${{ inputs.solution }}
+        run: dotnet restore "$SOLUTION"
       - name: Build
-        run: dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
+        env:
+          SOLUTION: ${{ inputs.solution }}
+        run: dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Validate package consumer references
         if: ${{ inputs.run-consumer-validation }}
         shell: bash
@@ -239,11 +245,13 @@ jobs:
         env:
           COVERAGE_ISOLATION_TARGETS: ${{ inputs.coverage-isolation-targets }}
           COVERAGE_LINE_SCOPE: ${{ inputs.coverage-line-scope }}
+          COVERAGE_MINIMUM_LINE: ${{ inputs.coverage-minimum-line }}
+          COVERAGE_REQUIRED_BRANCH: ${{ inputs.coverage-required-branch }}
         run: |
           set -euo pipefail
           args=(--coverage-root TestResults
-                --minimum-line-coverage ${{ inputs.coverage-minimum-line }}
-                --required-branch-coverage ${{ inputs.coverage-required-branch }})
+                --minimum-line-coverage "$COVERAGE_MINIMUM_LINE"
+                --required-branch-coverage "$COVERAGE_REQUIRED_BRANCH")
           while IFS= read -r tgt; do
             [ -z "$tgt" ] && continue
             args+=(--isolation-auth-target "$tgt")
@@ -287,9 +295,11 @@ jobs:
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
           restore-keys: nuget-
       - name: Restore and Build
+        env:
+          SOLUTION: ${{ inputs.solution }}
         run: |
-          dotnet restore ${{ inputs.solution }}
-          dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
+          dotnet restore "$SOLUTION"
+          dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
         uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
         with:
@@ -299,27 +309,35 @@ jobs:
       - name: Aspire contract tests (Tier 3, non-Performance, VSTest)
         if: ${{ inputs.test-platform == 'vstest' }}
         shell: bash
+        env:
+          ASPIRE_TEST_PROJECT: ${{ inputs.aspire-test-project }}
+          ASPIRE_NON_PERFORMANCE_FILTER: ${{ inputs.aspire-non-performance-filter }}
         run: >
-          dotnet test "${{ inputs.aspire-test-project }}"
+          dotnet test "$ASPIRE_TEST_PROJECT"
           --no-build --configuration Release
-          --filter "${{ inputs.aspire-non-performance-filter }}"
+          --filter "$ASPIRE_NON_PERFORMANCE_FILTER"
           --logger "trx;LogFileName=aspire-results.trx"
           --results-directory TestResults/aspire
       - name: Aspire contract tests (Tier 3, non-Performance, Microsoft.Testing.Platform)
         if: ${{ inputs.test-platform == 'microsoft-testing-platform' }}
         shell: bash
+        env:
+          ASPIRE_TEST_PROJECT: ${{ inputs.aspire-test-project }}
+          ASPIRE_MTP_EXCLUDED_TRAIT: ${{ inputs.aspire-mtp-excluded-trait }}
         run: >
-          dotnet test "${{ inputs.aspire-test-project }}"
+          dotnet test "$ASPIRE_TEST_PROJECT"
           --no-build --configuration Release
-          --filter-not-trait "${{ inputs.aspire-mtp-excluded-trait }}"
+          --filter-not-trait "$ASPIRE_MTP_EXCLUDED_TRAIT"
           --results-directory TestResults/aspire
           --report-xunit-trx
           --report-xunit-trx-filename aspire-results.trx
       - name: Test summary
         if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
-          echo "## Tier 3 Aspire Contract Tests" >> $GITHUB_STEP_SUMMARY
-          echo "Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Tier 3 Aspire Contract Tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "Status: $JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -351,9 +369,11 @@ jobs:
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
           restore-keys: nuget-
       - name: Restore and Build
+        env:
+          SOLUTION: ${{ inputs.solution }}
         run: |
-          dotnet restore ${{ inputs.solution }}
-          dotnet build ${{ inputs.solution }} --no-restore --configuration Release -warnaserror
+          dotnet restore "$SOLUTION"
+          dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
         uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
         with:
@@ -365,13 +385,15 @@ jobs:
         env:
           HEXALITH_EVENTSTORE_RUN_PERFORMANCE_TESTS: '1'
           HEXALITH_TENANTS_RUN_PERFORMANCE_TESTS: '1'
+          ASPIRE_TEST_PROJECT: ${{ inputs.aspire-test-project }}
+          PERFORMANCE_FILTER: ${{ inputs.performance-filter }}
         run: |
           set -euo pipefail
           rm -rf TestResults/performance
           mkdir -p TestResults/performance
-          dotnet test "${{ inputs.aspire-test-project }}" \
+          dotnet test "$ASPIRE_TEST_PROJECT" \
             --no-build --configuration Release \
-            --filter "${{ inputs.performance-filter }}" \
+            --filter "$PERFORMANCE_FILTER" \
             --logger "trx;LogFileName=perf-results.trx" \
             --results-directory TestResults/performance
       - name: Performance tests (Tier 3, nightly only, Microsoft.Testing.Platform)
@@ -381,13 +403,15 @@ jobs:
         env:
           HEXALITH_EVENTSTORE_RUN_PERFORMANCE_TESTS: '1'
           HEXALITH_TENANTS_RUN_PERFORMANCE_TESTS: '1'
+          ASPIRE_TEST_PROJECT: ${{ inputs.aspire-test-project }}
+          PERFORMANCE_MTP_TRAIT: ${{ inputs.performance-mtp-trait }}
         run: |
           set -euo pipefail
           rm -rf TestResults/performance
           mkdir -p TestResults/performance
-          dotnet test "${{ inputs.aspire-test-project }}" \
+          dotnet test "$ASPIRE_TEST_PROJECT" \
             --no-build --configuration Release \
-            --filter-trait "${{ inputs.performance-mtp-trait }}" \
+            --filter-trait "$PERFORMANCE_MTP_TRAIT" \
             --results-directory TestResults/performance \
             --report-xunit-trx \
             --report-xunit-trx-filename perf-results.trx

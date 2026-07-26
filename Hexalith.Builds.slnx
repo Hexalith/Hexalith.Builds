@@ -8,16 +8,26 @@
   <Folder Name="/.github/" />
   <Folder Name="/.github/workflows/">
     <File Path=".github/workflows/build-release.yml" />
-    <File Path=".github/workflows/copy-ai-assistant-instructions.yml" />
+    <File Path=".github/workflows/ci-cd-standards.md" />
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/codeql.yml" />
+    <File Path=".github/workflows/commitlint-caller.yml" />
+    <File Path=".github/workflows/commitlint.yml" />
+    <File Path=".github/workflows/dependency-review.yml" />
+    <File Path=".github/workflows/domain-ci.md" />
+    <File Path=".github/workflows/domain-ci.yml" />
+    <File Path=".github/workflows/domain-release.md" />
+    <File Path=".github/workflows/domain-release.yml" />
   </Folder>
   <Folder Name="/Github/" />
-  <Folder Name="/Github/build-packages/">
-    <File Path="Github/build-packages/action.yml" />
-    <File Path="Github/build-packages/README.md" />
-  </Folder>
+  <Folder Name="/Github/commitlint/" />
   <Folder Name="/Github/create-release/">
     <File Path="Github/create-release/action.yml" />
     <File Path="Github/create-release/README.md" />
+  </Folder>
+  <Folder Name="/Github/dapr-init/">
+    <File Path="Github/dapr-init/action.yml" />
+    <File Path="Github/dapr-init/README.md" />
   </Folder>
   <Folder Name="/Github/initialize-build/">
     <File Path="Github/initialize-build/action.yml" />
@@ -39,17 +49,21 @@
     <File Path="Github/publish-container-to-registry/action.yml" />
     <File Path="Github/publish-container-to-registry/README.md" />
   </Folder>
-  <Folder Name="/Github/publish-packages/">
-    <File Path="Github/publish-packages/action.yml" />
-    <File Path="Github/publish-packages/README.md" />
+  <Folder Name="/Github/publish-containers/">
+    <File Path="Github/publish-containers/action.yml" />
+    <File Path="Github/publish-containers/README.md" />
+  </Folder>
+  <Folder Name="/Github/scripts/">
+    <File Path="Github/scripts/build-packages.ps1" />
+    <File Path="Github/scripts/publish-packages.ps1" />
   </Folder>
   <Folder Name="/Github/unit-tests/">
     <File Path="Github/unit-tests/action.yml" />
     <File Path="Github/unit-tests/README.md" />
   </Folder>
-  <Folder Name="/Github/version/">
-    <File Path="Github/version/action.yml" />
-    <File Path="Github/version/README.md" />
+  <Folder Name="/Github/verify/">
+    <File Path="Github/verify/action.yml" />
+    <File Path="Github/verify/README.md" />
   </Folder>
   <Folder Name="/Props/">
     <File Path="Props/Directory.Packages.props" />
@@ -57,18 +71,21 @@
   </Folder>
   <Folder Name="/Tools/">
     <File Path="Tools/builds-submodule-init.ps1" />
+    <File Path="Tools/README.md" />
   </Folder>
   <Folder Name="/_build/">
-    <File Path=".clinerules" />
-    <File Path=".cursorrules" />
+    <File Path=".editorconfig" />
     <File Path=".gitignore" />
-    <File Path="ai-assistant-instructions.md" />
-    <File Path="ai-commit-prompt.md" />
-    <File Path="Environment.Build.props" />
+    <File Path="AGENTS.md" />
+    <File Path="CLAUDE.md" />
+    <File Path="commitlint.config.mjs" />
+    <File Path="DEVELOPMENT.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
     <File Path="Hexalith.Build.props" />
     <File Path="Hexalith.globalconfig" />
     <File Path="Hexalith.Package.props" />
-    <File Path="Hexalith.Version.props" />
     <File Path="LICENSE" />
     <File Path="package.json" />
     <File Path="README.md" />

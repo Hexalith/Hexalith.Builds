@@ -50,15 +50,23 @@ Supported types and their usual release effect are:
 | `test` | Add or modify tests | None |
 | `build` | Build system or dependency change | None |
 | `ci` | CI/CD change | None |
+| `revert` | Revert a previous commit | None |
+
+Never use `chore`: `commitlint.config.mjs` rejects it, and it hides whether a
+change was a fix, a build change or CI work.
 
 Follow these rules:
 
 1. Write the subject in imperative mood, beginning with lowercase unless it is
    a proper noun.
-2. Keep the subject below 50 characters and omit its final period.
-3. Wrap the body at 72 characters.
+2. Aim for a subject under 50 characters and omit its final period.
+3. Aim to wrap the body at 72 characters.
 4. For a breaking change, include a `BREAKING CHANGE:` footer; it triggers a
    major version release.
+
+Rules 2 and 3 are recommendations for readability. The enforced limits are the
+`header-max-length` and `body-max-line-length` rules in `commitlint.config.mjs`,
+both 200 characters; commitlint fails a commit only when it exceeds those.
 
 For example:
 

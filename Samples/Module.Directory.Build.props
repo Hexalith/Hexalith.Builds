@@ -18,6 +18,11 @@
   <Import Project="$(Hexalith3BuildBuildProps)" Condition="'$(HexalithBuildLoaded)' != 'true'" />
 
   <PropertyGroup>
+    <!-- Set after the imports so it wins over Hexalith.Build.props, which points
+         ProjectRoot at its own parent. In a module that resolves to
+         <module>/references, so Hexalith.Package.props would try to pack
+         <module>/references/README.md, a file that does not exist. -->
+    <ProjectRoot>$(MSBuildThisFileDirectory)</ProjectRoot>
     <Product>Hexalith.MyModule</Product>
     <RepositoryUrl>https://github.com/Hexalith/Hexalith.MyModule.git</RepositoryUrl>
     <PackageProjectUrl>https://github.com/Hexalith/Hexalith.MyModule</PackageProjectUrl>

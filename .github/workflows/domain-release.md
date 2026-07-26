@@ -15,7 +15,7 @@ Dapr-backed tests, and then runs semantic-release.
 | `dapr-version` | No | `1.18.0` | Dapr version used when tests are enabled. |
 | `test-platform` | No | `vstest` | Test command contract. Set `microsoft-testing-platform` for xUnit v3 MTP-native TRX reporting. |
 | `test-projects` | No | `''` | Newline-separated test project paths to run before release. Leave empty when the caller already proved exact-source CI success. |
-| `node-version` | No | `node` | Node.js version passed to `actions/setup-node`. |
+| `node-version` | No | `24` | Node.js major line passed to `actions/setup-node`. Pinned to the Active LTS major that satisfies semantic-release 25 (`>=24.10.0`) and ships the npm major `package-lock.json` was built with; override to move ahead deliberately. |
 | `timeout-minutes` | No | `20` | Timeout for the release job. |
 | `environment-name` | No | `production` | Protected caller-repository environment that supplies human release approval. |
 | `publish-containers` | No | `false` | Whether to prepare semantic-release container publishing for .NET SDK container projects. |

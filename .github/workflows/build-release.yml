@@ -98,10 +98,16 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
-        node-version: 'node'
+        # Pin the major line: 'node' (latest) would silently jump majors on a
+        # publication path. 24 is Active LTS, satisfies semantic-release 25's
+        # >=24.10.0, and ships the npm 11 that package-lock.json was built with.
+        node-version: '24'
 
+    # --ignore-scripts: nothing in this lockfile declares an install script, so
+    # skipping them changes no behavior and denies a compromised transitive
+    # dependency arbitrary code execution on the release runner.
     - name: Install Node.js dependencies
-      run: npm ci
+      run: npm ci --ignore-scripts
 
     - name: Verify npm dependency provenance and signatures
       run: npm audit signatures

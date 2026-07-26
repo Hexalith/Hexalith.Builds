@@ -111,9 +111,6 @@ This repository:
   [domain-ci.md](.github/workflows/domain-ci.md).
 - `.github/workflows/domain-release.yml`: Reusable domain module release
   pipeline. See [domain-release.md](.github/workflows/domain-release.md).
-- `.github/workflows/copy-ai-assistant-instructions.yml`: Copies
-  `ai-assistant-instructions.md` to assistant-specific rule files when that
-  source file exists and is changed.
 
 ## Usage
 

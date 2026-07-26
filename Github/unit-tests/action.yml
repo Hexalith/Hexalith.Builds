@@ -9,10 +9,16 @@ inputs:
 runs:
   using: composite
   steps:
+    # Inputs reach the shell through the environment rather than ${{ }}
+    # interpolation, so a crafted project name cannot execute as shell code.
     - name: Run Unit Tests
       shell: pwsh
-      run: dotnet test -c Release ./test/${{ inputs.project-name }}.Tests/${{ inputs.project-name }}.Tests.csproj -p:GeneratePackageOnBuild=false
+      env:
+        PROJECT_NAME: ${{ inputs.project-name }}
+      run: dotnet test -c Release "./test/$env:PROJECT_NAME.Tests/$env:PROJECT_NAME.Tests.csproj" -p:GeneratePackageOnBuild=false
 
     - name: Clean Solution
       shell: pwsh
-      run: dotnet clean ./test/${{ inputs.project-name }}.Tests/${{ inputs.project-name }}.Tests.csproj
+      env:
+        PROJECT_NAME: ${{ inputs.project-name }}
+      run: dotnet clean "./test/$env:PROJECT_NAME.Tests/$env:PROJECT_NAME.Tests.csproj"
