@@ -38,11 +38,11 @@ on:
       node-version:
         description: >-
           Node major line used for the semantic-release toolchain. Defaults to the
-          pinned major that semantic-release 25 supports (^22.14.0 || >=24.10.0);
+          Active LTS major that satisfies semantic-release 25 (>=24.10.0);
           overridable so a consumer can move ahead deliberately.
         required: false
         type: string
-        default: '22'
+        default: '24'
       timeout-minutes:
         required: false
         type: number

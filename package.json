@@ -4,7 +4,7 @@
   "private": true,
   "description": "Hexalith Build assets",
   "engines": {
-    "node": ">=22.14 <23 || >=24.10"
+    "node": ">=24.10"
   },
   "repository": {
     "type": "git",
