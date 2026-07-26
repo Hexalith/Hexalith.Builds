@@ -1,8 +1,8 @@
 # Dependency surveillance for every ecosystem this repository actually ships.
 #
 # github-actions: "/" only covers .github/workflows, so the composite actions under
-# Github/*/action.yml need their own directory glob. Without it the SHA pins in the
-# composite actions are never refreshed.
+# Github/*/action.yml need their own directory glob. Without it the version tags in
+# the composite actions are never refreshed.
 # nuget: central package versions live in Props/Directory.Packages.props.
 # npm: the semantic-release and commitlint toolchain in package.json.
 #
