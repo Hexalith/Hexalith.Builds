@@ -4,8 +4,8 @@
 > generation (`domain-ci.yml` / `domain-release.yml`). Kept for existing consumers.
 
 Updates existing Azure Container Apps to use a new image version. The action
-logs in to Azure with `azure/login`, pinned to a full commit SHA with a trailing
-version comment, and updates the Web and API container apps with Azure CLI.
+logs in to Azure with `azure/login`, referenced by its latest upstream release
+tag, and updates the Web and API container apps with Azure CLI.
 `version`, `app-id`, `registry` and `resource-group` are validated before use and
 are passed to Azure CLI through the environment, never interpolated into the
 script body.

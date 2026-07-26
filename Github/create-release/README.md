@@ -20,7 +20,7 @@ None.
 
 ## Steps
 
-1. Set up Node.js with `actions/setup-node` (pinned to the v7.0.0 SHA) on the
+1. Set up Node.js with `actions/setup-node` (referenced by its v7.0.0 tag) on the
    Node 24 major line.
 2. Install npm dependencies with `npm ci`.
 3. Verify npm package provenance and signatures with `npm audit signatures`.
@@ -57,7 +57,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 

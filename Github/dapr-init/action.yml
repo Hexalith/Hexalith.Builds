@@ -13,12 +13,12 @@ runs:
     - name: Install Dapr CLI
       # v2 is the exact upstream release tag, not a floating major: dapr/setup-dapr
       # publishes only major-line tags (v1, v2), so there is no vX.Y.Z to pin to.
-      uses: dapr/setup-dapr@8d980918fd43a2765c143ce7f687665b2d46a6b9 # v2
+      uses: dapr/setup-dapr@v2
       with:
         version: ${{ inputs.version }}
 
     - name: Initialize Dapr
-      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      uses: nick-fields/retry@v4.0.0
       env:
         DAPR_DEFAULT_IMAGE_REGISTRY: ghcr
         DAPR_VERSION: ${{ inputs.version }}
