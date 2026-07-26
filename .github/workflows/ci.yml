@@ -1,0 +1,164 @@
+name: CI
+
+# Self-CI for this repository. The shared actions, reusable workflows and
+# PowerShell/Python tooling here are consumed by every Hexalith module, but until
+# now their only execution was inside build-release.yml (workflow_dispatch), so a
+# regression stayed invisible until someone attempted a release.
+#
+# This runs the same non-publishing validation as build-release.yml, stopping
+# before the Create Release step.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  # Unlike the release workflow, superseded CI runs carry no publication risk.
+  group: builds-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: Build and test
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          submodules: false
+          persist-credentials: false
+
+      - name: Initialize .NET
+        uses: ./Github/initialize-dotnet
+        with:
+          global-json-file: global.json
+
+      - name: Validate central package versions
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/validate-central-package-versions.ps1
+
+      - name: Test authoritative package catalog
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-authoritative-package-catalog.ps1
+
+      - name: Test central package version validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-central-package-version-validator.ps1
+
+      - name: Validate Builds consumer package authority
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/validate-consumer-package-authority.ps1 -RepositoryRoot . -CatalogPath ./Props/Directory.Packages.props
+
+      - name: Test consumer package authority validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-consumer-package-authority-validator.ps1
+
+      - name: Validate package version exception inventory
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/validate-package-version-exceptions.ps1 -InventoryPath ./Tools/package-version-exceptions.json -CatalogPath ./Props/Directory.Packages.props
+
+      - name: Test package version exception validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-package-version-exception-validator.ps1
+
+      - name: Validate Dapr package versions
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/validate-dapr-package-versions.ps1
+
+      - name: Test Dapr package validator
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-dapr-package-version-validator.ps1
+
+      - name: Test domain workflow test-platform contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Verify npm dependency provenance and signatures
+        run: npm audit signatures
+
+      - name: Test commitlint workflow contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-commitlint-workflow.ps1
+
+      - name: Restore
+        run: dotnet restore Hexalith.Builds.slnx
+
+      - name: Build
+        run: dotnet build Hexalith.Builds.slnx --no-restore --configuration Release -warnaserror -p:GeneratePackageOnBuild=false
+
+      # One project at a time: solution-level `dotnet test` is not used in this
+      # repository (see the validation harness in DEVELOPMENT.md).
+      - name: Test Hexalith.Builds.Module.Tests
+        run: dotnet test test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj --no-restore --configuration Release
+
+      - name: Test Hexalith.Builds.Evidence.Tests
+        run: dotnet test test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj --no-restore --configuration Release
+
+      - name: Test Hexalith.Builds.Tooling.IntegrationTests
+        run: dotnet test test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj --no-restore --configuration Release
+
+      # Runs the packaged-tool qualification exactly as the release does, so a
+      # missing control fixture or a broken packaged CLI fails on the pull
+      # request rather than at release time.
+      - name: Qualify G-4 tool source and Release packages
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -RequireControls -SkipSourceValidation
+
+      - name: Test multi-platform container publisher contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-publish-containers.ps1
+
+  python-tests:
+    runs-on: ubuntu-latest
+    name: Python contract tests
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: false
+          persist-credentials: false
+
+      - name: Test container publisher helpers
+        working-directory: Github/publish-containers/tests
+        run: python3 -m unittest discover -v
+
+      - name: Test commitlint helpers
+        working-directory: Github/commitlint/tests
+        run: python3 -m unittest discover -v
+
+  codeql:
+    name: CodeQL
+    uses: ./.github/workflows/codeql.yml
+    permissions:
+      contents: read
+      security-events: write
+    with:
+      languages: csharp
+
+  dependency-review:
+    name: Dependency review
+    # Dependency review compares a pull request against its base, so it has
+    # nothing to diff on a push.
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/dependency-review.yml
+    permissions:
+      contents: read
+      pull-requests: write
