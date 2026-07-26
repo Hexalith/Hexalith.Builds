@@ -3,6 +3,9 @@
   "version": "0.0.0-development",
   "private": true,
   "description": "Hexalith Build assets",
+  "engines": {
+    "node": ">=22.14 <23 || >=24.10"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/Hexalith/Hexalith.Builds.git"

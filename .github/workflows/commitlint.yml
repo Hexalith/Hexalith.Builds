@@ -10,9 +10,10 @@ on:
   workflow_call:
     inputs:
       node-version:
+        description: 'Node major line used to run commitlint. Overridable by the caller.'
         required: false
         type: string
-        default: 'node'
+        default: '22'
       pull-request-title:
         description: 'Exact pull request title supplied by a pull_request caller.'
         required: false
