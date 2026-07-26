@@ -25,8 +25,8 @@ registry using .NET container publishing.
    the release commit.
 2. Validate `version` as SemVer without build metadata, and `app-id` and
    `registry` as valid container repository and host segments.
-3. Log in to the target registry with `docker/login-action`, pinned to a full
-   commit SHA with a trailing version comment.
+3. Log in to the target registry with `docker/login-action`, referenced by its
+   latest upstream release tag.
 4. Publish the `HexalithApp.WebServer` project as a Linux x64 container.
 5. Publish the `HexalithApp.ApiServer` project as a Linux x64 container.
 
@@ -97,12 +97,12 @@ jobs:
       packages: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@<full-40-hex-sha> # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
       - name: Initialize .NET
-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@<full-40-hex-sha> # vX.Y.Z
+        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
         with:
           dotnet-version: '10.0.302'
 

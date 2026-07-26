@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@main
+        uses: actions/checkout@v7.0.1
         
       - name: Initialize build environment
         uses: ./Github/initialize-build

@@ -35,10 +35,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@main
+        uses: actions/checkout@v7.0.1
         
       - name: Setup .NET
-        uses: actions/setup-dotnet@main
+        uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: 10.0.302
           

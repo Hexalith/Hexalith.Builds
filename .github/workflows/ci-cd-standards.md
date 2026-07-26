@@ -16,12 +16,20 @@ test project lists, and operational exceptions in their own docs.
 
 ## Action References
 
-- Pin third-party actions to a full commit SHA and record the upstream version in
-  a trailing comment.
-- Do not use mutable action references such as `@main`, `@master`, or floating
-  major tags for third-party actions in shared workflows or actions.
+- Reference third-party actions by their latest upstream release tag, using the
+  most specific tag that upstream publishes: prefer an exact `vX.Y.Z` tag, and
+  fall back to a major-line tag such as `@v2` only when the upstream repository
+  publishes nothing narrower. Record why in a trailing comment when falling back.
+- When an action publishes no usable tag at all, reference its default branch
+  (`@main`, or `@master` when that is the default) instead.
+- A trailing version comment is redundant once the ref is the tag itself; omit it.
+- This trades supply-chain immutability for readability: a tag can be moved by a
+  compromised upstream, whereas a commit SHA cannot. Dependabot's weekly
+  `github-actions` updates for `/` and `/Github/*` are what keep these tags
+  current.
 - Routine, non-publication Hexalith.Builds workflow and action references use
-  the latest `main` branch reference. Publication is the deliberate exception:
+  the latest `main` branch reference, including this repository's own composite
+  actions under `Github/`. Publication is the deliberate exception:
   pin the reusable release workflow to one reviewed full commit SHA and pass
   that identical literal as `builds-execution-sha`. The executed release-tool
   SHA is independent of the caller's development-time
