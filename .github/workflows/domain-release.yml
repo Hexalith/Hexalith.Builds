@@ -77,6 +77,15 @@ on:
         required: false
         type: string
         default: 'tools/release-packages.json'
+      expected-package-count:
+        description: >-
+          Number of NuGet package IDs the caller publishes. Declared by the caller
+          rather than derived from the manifest so an accidental inventory change
+          fails closed. Required whenever the publication preflight runs; the
+          default 0 is rejected as invalid.
+        required: false
+        type: number
+        default: 0
     secrets:
       NUGET_API_KEY:
         description: 'NuGet.org API key supplied explicitly by the caller.'
@@ -146,6 +155,20 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
           restore-keys: nuget-
+      - name: Validate declared package count
+        if: ${{ inputs.publish-containers }}
+        shell: bash
+        env:
+          EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}
+        run: |
+          set -euo pipefail
+          # Fail here rather than inside semantic-release: the container phase reads this value
+          # only after publishCmd has already pushed NuGet packages, so a late rejection would
+          # leave a half-published release.
+          if [[ ! "$EXPECTED_PACKAGE_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+            echo "expected-package-count must declare the caller's package count as a positive integer." >&2
+            exit 1
+          fi
       - name: Validate test platform input
         if: ${{ inputs.test-platform != 'vstest' && inputs.test-platform != 'microsoft-testing-platform' }}
         shell: bash
@@ -228,6 +251,7 @@ jobs:
           HEXALITH_RELEASE_SOURCE_BRANCH: ${{ inputs.source-branch }}
           HEXALITH_RELEASE_SOURCE_CI_WORKFLOW: ${{ inputs.source-ci-workflow }}
           HEXALITH_RELEASE_PACKAGE_MANIFEST: ${{ inputs.package-manifest }}
+          HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}
         run: npx semantic-release
       - name: Upload complete release evidence
         if: ${{ always() && inputs.publish-containers }}

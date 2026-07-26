@@ -24,6 +24,7 @@ Dapr-backed tests, and then runs semantic-release.
 | `source-branch` | No | `main` | Protected source branch revalidated at every publication boundary. |
 | `source-ci-workflow` | No | `ci.yml` | Workflow filename whose successful exact-source `push` run authorizes the source. |
 | `package-manifest` | No | `tools/release-packages.json` | Caller package manifest frozen into publication identity. |
+| `expected-package-count` | No\* | `0` | Number of NuGet package IDs the caller publishes. \*Effectively required when `publish-containers` is `true`: a dedicated workflow step rejects the default `0` and any non-positive-integer value immediately after checkout, before `npm ci` or any publication step. Declared by the caller rather than derived from the manifest, so an accidental inventory change fails closed. |
 
 ## Protected environment and caller secrets
 
@@ -89,6 +90,13 @@ helper logs in to Hexalith Zot only when semantic-release reaches `publishCmd`:
 "publishCmd": "bash scripts/validate-publication-preflight.sh ${nextRelease.version} publish >&2 && dotnet nuget push ./nupkgs/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json && ./.hexalith/release/publish-containers.sh ${nextRelease.version}"
 ```
 
+The caller wrapper must pass `--expected-package-count` with the module's own
+package count, and the caller must set the matching `expected-package-count`
+input so the container phase receives it through
+`HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT`. The count is caller-declared rather
+than derived from the manifest: an inventory that silently gains or loses a
+package must fail closed instead of redefining the gate it is checked against.
+
 ## Usage
 
 The standard caller is manually dispatched. A caller-owned preflight must prove
@@ -125,6 +133,7 @@ jobs:
       environment-name: production
       publish-containers: true
       builds-execution-sha: 0123456789abcdef0123456789abcdef01234567
+      expected-package-count: 5
       container-projects: |
         src/Hexalith.<Module>/Hexalith.<Module>.csproj|module-name
     secrets:

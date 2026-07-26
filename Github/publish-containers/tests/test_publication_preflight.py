@@ -1,5 +1,6 @@
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import sys
@@ -17,6 +18,9 @@ SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
 VALIDATOR_PATH = SCRIPT_DIRECTORY / "publication_preflight.py"
 BUILDS_SHA = "c" * 40
 SOURCE_SHA = "d" * 40
+# The inventory size a fixture module declares. It is deliberately a fixture value,
+# not a shared invariant: every module declares its own count.
+FIXTURE_PACKAGE_COUNT = 14
 sys.path.insert(0, str(SCRIPT_DIRECTORY))
 
 
@@ -70,6 +74,7 @@ class PublicationPreflightTests(unittest.TestCase):
             builds_execution_sha=BUILDS_SHA,
             environment_name="production",
             package_manifest=root / "release-packages.json",
+            expected_package_count=FIXTURE_PACKAGE_COUNT,
             contract_directory=self.create_contract(root),
             evidence_directory=root / "evidence",
             phase=phase,
@@ -77,9 +82,9 @@ class PublicationPreflightTests(unittest.TestCase):
         self.write_manifest(arguments.package_manifest)
         return arguments
 
-    def write_manifest(self, path):
+    def write_manifest(self, path, count=FIXTURE_PACKAGE_COUNT):
         path.write_text(
-            json.dumps({"packages": [{"id": f"Package.{index}"} for index in range(14)]}),
+            json.dumps({"packages": [{"id": f"Package.{index}"} for index in range(count)]}),
             encoding="utf-8",
         )
 
@@ -114,9 +119,9 @@ class PublicationPreflightTests(unittest.TestCase):
             self.assertEqual("production", identity["environment"])
             self.assertEqual("main", identity["source"]["branch"])
             self.assertEqual(29728255746, identity["source"]["ci_run"]["id"])
-            self.assertEqual(14, len(identity["packages"]["normalized_ids"]))
+            self.assertEqual(FIXTURE_PACKAGE_COUNT, len(identity["packages"]["normalized_ids"]))
             self.assertEqual(
-                [f"package.{index}" for index in range(14)],
+                [f"package.{index}" for index in range(FIXTURE_PACKAGE_COUNT)],
                 identity["packages"]["normalized_ids"],
             )
             expected_hash = hashlib.sha256(
@@ -219,7 +224,7 @@ class PublicationPreflightTests(unittest.TestCase):
         self.assertEqual("source-ci-not-successful", context.exception.code)
 
     def test_package_and_container_destinations_must_all_be_absent(self):
-        packages = [f"Package.{index}" for index in range(14)]
+        packages = [f"Package.{index}" for index in range(FIXTURE_PACKAGE_COUNT)]
         calls = []
 
         def absent_probe(kind, identity, version):
@@ -231,10 +236,11 @@ class PublicationPreflightTests(unittest.TestCase):
             "3.78.0",
             "registry.hexalith.com/eventstore",
             absent_probe,
+            FIXTURE_PACKAGE_COUNT,
         )
         self.assertEqual("pass", evidence["result"])
-        self.assertEqual(14, evidence["package_count"])
-        self.assertEqual(15, len(calls))
+        self.assertEqual(FIXTURE_PACKAGE_COUNT, evidence["package_count"])
+        self.assertEqual(FIXTURE_PACKAGE_COUNT + 1, len(calls))
 
         with self.assertRaises(self.validator.PreflightError) as context:
             self.validator.validate_destination_absence(
@@ -242,6 +248,7 @@ class PublicationPreflightTests(unittest.TestCase):
                 "3.78.0",
                 "registry.hexalith.com/eventstore",
                 lambda kind, identity, version: 200 if identity == "Package.7" else 404,
+                FIXTURE_PACKAGE_COUNT,
             )
         self.assertEqual("version-collision", context.exception.code)
 
@@ -254,7 +261,7 @@ class PublicationPreflightTests(unittest.TestCase):
         self.assertEqual("destination-probe-failure", context.exception.code)
 
     def test_case_insensitive_duplicate_or_non_exact_package_inventory_fails_closed(self):
-        packages = [f"Package.{index}" for index in range(14)]
+        packages = [f"Package.{index}" for index in range(FIXTURE_PACKAGE_COUNT)]
         packages[-1] = "package.0"
         with self.assertRaises(self.validator.PreflightError) as context:
             self.validator.validate_destination_absence(
@@ -262,8 +269,125 @@ class PublicationPreflightTests(unittest.TestCase):
                 "3.78.0",
                 "registry.hexalith.com/eventstore",
                 lambda kind, identity, version: 404,
+                FIXTURE_PACKAGE_COUNT,
             )
         self.assertEqual("package-inventory-mismatch", context.exception.code)
+
+    def test_declared_package_count_gates_the_inventory_for_any_module_size(self):
+        for declared, actual in ((5, 5), (14, 14), (1, 1)):
+            with self.subTest(declared=declared):
+                packages = [f"Package.{index}" for index in range(actual)]
+                evidence = self.validator.validate_destination_absence(
+                    packages,
+                    "3.78.0",
+                    "registry.hexalith.com/tenants",
+                    lambda kind, identity, version: 404,
+                    declared,
+                )
+                self.assertEqual(declared, evidence["package_count"])
+
+        for declared, actual in ((5, 4), (5, 6), (14, 5)):
+            with self.subTest(declared=declared, actual=actual):
+                packages = [f"Package.{index}" for index in range(actual)]
+                with self.assertRaises(self.validator.PreflightError) as context:
+                    self.validator.validate_destination_absence(
+                        packages,
+                        "3.78.0",
+                        "registry.hexalith.com/tenants",
+                        lambda kind, identity, version: 404,
+                        declared,
+                    )
+                self.assertEqual("package-inventory-mismatch", context.exception.code)
+
+    def test_duplicate_ids_fail_closed_at_a_small_module_inventory(self):
+        packages = [f"Package.{index}" for index in range(5)]
+        packages[-1] = "package.0"
+        with self.assertRaises(self.validator.PreflightError) as context:
+            self.validator.validate_destination_absence(
+                packages,
+                "3.78.0",
+                "registry.hexalith.com/tenants",
+                lambda kind, identity, version: 404,
+                5,
+            )
+        self.assertEqual("package-inventory-mismatch", context.exception.code)
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            manifest = Path(temporary_directory) / "release-packages.json"
+            manifest.write_text(
+                json.dumps({"packages": [{"id": package_id} for package_id in packages]}),
+                encoding="utf-8",
+            )
+            with self.assertRaises(self.validator.PreflightError) as context:
+                self.validator._load_package_identity(manifest, 5)
+            self.assertEqual("package-inventory-mismatch", context.exception.code)
+
+    def test_manifest_identity_honours_the_declared_count_and_rejects_drift(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            manifest = root / "release-packages.json"
+            self.write_manifest(manifest, count=5)
+
+            identity = self.validator._load_package_identity(manifest, 5)
+            self.assertEqual(5, len(identity["ids"]))
+
+            with self.assertRaises(self.validator.PreflightError) as context:
+                self.validator._load_package_identity(manifest, 6)
+            self.assertEqual("package-inventory-mismatch", context.exception.code)
+
+    def test_expected_package_count_argument_is_required_and_must_be_positive(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            arguments = self.arguments(root)
+            common = [
+                "publication_preflight.py",
+                "--repository",
+                arguments.repository,
+                "--version",
+                arguments.version,
+                "--source-sha",
+                arguments.source_sha,
+                "--container-repository",
+                arguments.container_repository,
+                "--builds-execution-sha",
+                arguments.builds_execution_sha,
+                "--environment-name",
+                arguments.environment_name,
+                "--package-manifest",
+                str(arguments.package_manifest),
+                "--contract-directory",
+                str(arguments.contract_directory),
+                "--evidence-directory",
+                str(arguments.evidence_directory),
+                "--phase",
+                "verify",
+            ]
+            previous_directory = Path.cwd()
+            try:
+                # Every path argument must resolve below the workspace, otherwise these
+                # invocations would be rejected for path confinement instead of the count.
+                os.chdir(root)
+
+                with mock.patch.object(sys, "argv", [*common, "--expected-package-count", "5"]):
+                    self.assertEqual(5, self.validator._parse_arguments().expected_package_count)
+
+                # Omitted entirely, then values a module must never be able to declare.
+                invocations = [common]
+                invocations.extend(
+                    [*common, "--expected-package-count", value]
+                    for value in ("0", "-1", "05", "5.0", "", "five")
+                )
+                for argv in invocations:
+                    with (
+                        self.subTest(count=argv[-1] if argv is not common else "<omitted>"),
+                        mock.patch.object(sys, "argv", argv),
+                        mock.patch("sys.stderr", new=io.StringIO()),
+                        self.assertRaises(SystemExit) as context,
+                    ):
+                        self.validator._parse_arguments()
+                    self.assertNotEqual(0, context.exception.code)
+            finally:
+                os.chdir(previous_directory)
 
     def test_destination_probe_sends_exact_read_only_nuget_and_oci_requests(self):
         captured = []
@@ -327,7 +451,7 @@ class PublicationPreflightTests(unittest.TestCase):
                 with self.assertRaises(urllib.error.HTTPError):
                     handler.redirect_request(request, None, 302, "Found", {}, target)
 
-        packages = [f"Package.{index}" for index in range(14)]
+        packages = [f"Package.{index}" for index in range(FIXTURE_PACKAGE_COUNT)]
         for status in (201, 204, 301, 302, 401, 403, 429, 500, 503):
             with self.subTest(status=status), self.assertRaises(self.validator.PreflightError) as context:
                 self.validator.validate_destination_absence(
@@ -335,6 +459,7 @@ class PublicationPreflightTests(unittest.TestCase):
                     "3.78.0",
                     "registry.hexalith.com/eventstore",
                     lambda kind, identity, version, response_status=status: response_status,
+                    FIXTURE_PACKAGE_COUNT,
                 )
             self.assertEqual("destination-probe-failure", context.exception.code)
 
@@ -402,6 +527,8 @@ class PublicationPreflightTests(unittest.TestCase):
                 arguments.environment_name,
                 "--package-manifest",
                 str(arguments.package_manifest),
+                "--expected-package-count",
+                str(FIXTURE_PACKAGE_COUNT),
                 "--contract-directory",
                 str(arguments.contract_directory),
                 "--evidence-directory",

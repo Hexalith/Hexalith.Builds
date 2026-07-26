@@ -17,6 +17,7 @@ release_environment="${HEXALITH_RELEASE_ENVIRONMENT:-}"
 source_branch="${HEXALITH_RELEASE_SOURCE_BRANCH:-main}"
 source_ci_workflow="${HEXALITH_RELEASE_SOURCE_CI_WORKFLOW:-ci.yml}"
 package_manifest="${HEXALITH_RELEASE_PACKAGE_MANIFEST:-tools/release-packages.json}"
+expected_package_count="${HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT:-}"
 evidence_directory="${HEXALITH_CONTAINER_EVIDENCE_DIRECTORY:-$PWD/.hexalith/release-evidence/$version}"
 semver_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
 
@@ -47,6 +48,8 @@ fail() {
 [[ "$source_branch" = "main" ]] || fail "Release source branch must be exactly main."
 [[ "$source_ci_workflow" =~ ^[A-Za-z0-9_.-]+\.ya?ml$ ]] || fail "Release CI workflow is invalid."
 [[ -f "$package_manifest" ]] || fail "Release package manifest is required."
+[[ "$expected_package_count" =~ ^[1-9][0-9]*$ ]] ||
+  fail "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT must declare the module's package count as a positive integer."
 
 workspace_root="$(realpath -e "$PWD")"
 evidence_directory="$(realpath -m "$evidence_directory")"
@@ -90,6 +93,7 @@ while IFS= read -r raw_line; do
     --builds-execution-sha "$builds_execution_sha" \
     --environment-name "$release_environment" \
     --package-manifest "$package_manifest" \
+    --expected-package-count "$expected_package_count" \
     --contract-directory "$(dirname "$0")" \
     --evidence-directory "${evidence_directory}/preflight" \
     --phase container
