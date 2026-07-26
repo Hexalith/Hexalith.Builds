@@ -461,7 +461,7 @@ public sealed class ManifestValidationTests
                 {
                     eventStoreVersion = "3.70.1",
                     daprRuntimeVersion = "1.18.0",
-                    daprSdkVersion = "1.18.4",
+                    daprSdkVersion = "1.18.5",
                     frontComposerVersion = "4.0.1",
                 },
                 profiles = new
@@ -536,7 +536,7 @@ public sealed class ManifestValidationTests
           "platform": {
             "eventStoreVersion": "3.70.1",
             "daprRuntimeVersion": "1.18.0",
-            "daprSdkVersion": "1.18.4",
+            "daprSdkVersion": "1.18.5",
             "frontComposerVersion": "4.0.1"
           },
           "ui": {
