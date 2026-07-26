@@ -149,6 +149,13 @@ coverage*.json
 coverage*.xml
 coverage*.info
 
+# Test fixtures are versioned contract inputs, not coverage output. The G-4
+# packaged-tool qualification requires every negative fixture expectation to be
+# present in a fresh checkout, so they must never be swallowed by the rules above.
+!test/fixtures/**/coverage*.json
+!test/fixtures/**/coverage*.xml
+!test/fixtures/**/coverage*.info
+
 # Visual Studio code coverage results
 *.coverage
 *.coveragexml

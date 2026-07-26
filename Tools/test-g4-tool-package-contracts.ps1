@@ -179,6 +179,30 @@ function Get-NegativeFixtures {
     return $fixtures
 }
 
+function Assert-FixturesTracked {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Directory
+    )
+
+    # Fixtures are contract inputs: a file that exists only in the local working tree
+    # qualifies locally and then fails the release on a fresh CI checkout. Fail here
+    # instead, where the diagnostic names the offending path.
+    & git -C $repositoryRoot rev-parse --is-inside-work-tree *> $null
+    if ($LASTEXITCODE -ne 0) {
+        return
+    }
+
+    $untracked = @(
+        & git -C $repositoryRoot status --porcelain --ignored=matching --untracked-files=all -- $Directory |
+            Where-Object { $_ -match '^(\?\?|!!) ' }
+    )
+    if ($untracked.Count -gt 0) {
+        $paths = ($untracked | ForEach-Object { $_.Substring(3) }) -join ', '
+        throw "Fixture directory '$Directory' contains files that are untracked or ignored by Git and would be absent from a fresh checkout: $paths."
+    }
+}
+
 function Assert-PositiveResult {
     param(
         [Parameter(Mandatory = $true)]
@@ -326,7 +350,9 @@ try {
         $consumerFixturesRoot = Join-Path $consumerRoot 'test/fixtures'
         $null = New-Item -ItemType Directory -Path $consumerFixturesRoot -Force
         foreach ($fixtureDirectoryName in @('module', 'evidence')) {
-            Copy-Item -LiteralPath (Join-Path $fixtureRootPath $fixtureDirectoryName) -Destination $consumerFixturesRoot -Recurse -Force
+            $sourceFixtureDirectory = Join-Path $fixtureRootPath $fixtureDirectoryName
+            Assert-FixturesTracked -Directory $sourceFixtureDirectory
+            Copy-Item -LiteralPath $sourceFixtureDirectory -Destination $consumerFixturesRoot -Recurse -Force
         }
 
         & git -C $consumerRoot init --quiet
