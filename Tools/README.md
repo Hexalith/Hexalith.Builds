@@ -32,7 +32,8 @@ publication. A prerelease version (one containing `-`) targets
 repository-configured GitHub Packages using `GITHUB_TOKEN`; a stable version
 targets NuGet.org using `NUGET_API_KEY`. The script fails closed if the token,
 package inventory, version, NuGet package, symbol package, or SHA-256 record
-is missing.
+is missing. It submits each primary `.nupkg` once; `dotnet nuget push` discovers
+and publishes the adjacent `.snupkg` automatically.
 
 ```powershell
 .\Tools\publish-g4-tool-packages.ps1 -Version 4.20.0

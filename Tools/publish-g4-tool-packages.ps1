@@ -82,7 +82,9 @@ if ($inventoryPackages.Count -ne 2 -or (($inventoryIds -join '|') -cne ($approve
 }
 
 $expectedArtifactNames = [System.Collections.Generic.List[string]]::new()
+$primaryArtifactNames = [System.Collections.Generic.List[string]]::new()
 foreach ($package in $inventoryPackages) {
+    $primaryArtifactNames.Add([string]$package.nupkg.file)
     foreach ($artifactName in @($package.nupkg.file, $package.snupkg.file)) {
         $expectedArtifactNames.Add([string]$artifactName)
     }
@@ -127,7 +129,9 @@ if ([string]::IsNullOrWhiteSpace($apiKey)) {
 }
 
 Write-Host "Publishing the verified G-4 tool package inventory to $channel."
-foreach ($artifactName in @($expectedArtifactNames | Sort-Object)) {
+# dotnet discovers and publishes the adjacent .snupkg automatically. Submitting
+# the symbol package again produces a duplicate-symbol 409 from NuGet.org.
+foreach ($artifactName in @($primaryArtifactNames | Sort-Object)) {
     $artifactPath = Join-Path $packageDirectoryPath $artifactName
     Invoke-DotNet -Arguments @('nuget', 'push', $artifactPath, '--api-key', $apiKey, '--source', $source)
 }

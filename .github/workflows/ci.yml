@@ -100,6 +100,10 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-commitlint-workflow.ps1
 
+      - name: Test G-4 tool package publisher contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-publish-g4-tool-packages.ps1
+
       - name: Restore
         run: dotnet restore Hexalith.Builds.slnx
 
