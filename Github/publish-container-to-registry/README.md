@@ -20,9 +20,13 @@ registry using .NET container publishing.
 
 ## Steps
 
-1. Initialize the `HexalithApp` and `references/Hexalith.Builds` submodules.
-2. Check out and pull `main` inside both submodules.
-3. Log in to the target registry with `docker/login-action@master`.
+1. Initialize the `HexalithApp` and `references/Hexalith.Builds` submodules at the
+   gitlinks committed by the caller, so the published image is reproducible from
+   the release commit.
+2. Validate `version` as SemVer without build metadata, and `app-id` and
+   `registry` as valid container repository and host segments.
+3. Log in to the target registry with `docker/login-action`, pinned to a full
+   commit SHA with a trailing version comment.
 4. Publish the `HexalithApp.WebServer` project as a Linux x64 container.
 5. Publish the `HexalithApp.ApiServer` project as a Linux x64 container.
 
@@ -59,12 +63,17 @@ references/Hexalith.Builds/
 
 ## Usage
 
+Reference this action by full commit SHA with a trailing version comment, and
+pass a version the release process produced rather than a ref name. `github.ref_name`
+carries whatever branch or tag name was pushed, so it is attacker-influenceable
+and is rejected here unless it happens to be bare SemVer.
+
 ```yaml
 - name: Publish application containers
-  uses: Hexalith/Hexalith.Builds/Github/publish-container-to-registry@main
+  uses: Hexalith/Hexalith.Builds/Github/publish-container-to-registry@<full-40-hex-sha> # vX.Y.Z
   with:
     app-id: myapp
-    version: ${{ github.ref_name }}
+    version: ${{ needs.build.outputs.version }}
     registry: ghcr.io
     username: ${{ github.actor }}
     password: ${{ secrets.GITHUB_TOKEN }}
@@ -88,18 +97,31 @@ jobs:
       packages: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@<full-40-hex-sha> # v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Initialize .NET
-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
+        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@<full-40-hex-sha> # vX.Y.Z
         with:
           dotnet-version: '10.0.302'
 
+      - name: Resolve the release version
+        id: release-version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${REF_NAME#v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] ||
+            { echo "Tag '$REF_NAME' is not a SemVer release tag." >&2; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Publish application containers
-        uses: Hexalith/Hexalith.Builds/Github/publish-container-to-registry@main
+        uses: Hexalith/Hexalith.Builds/Github/publish-container-to-registry@<full-40-hex-sha> # vX.Y.Z
         with:
           app-id: myapp
-          version: ${{ github.ref_name }}
+          version: ${{ steps.release-version.outputs.version }}
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}

@@ -29,15 +29,23 @@ runs:
     - name: Debug Authentication Values
       if: runner.debug == '1'
       shell: bash
+      env:
+        CLIENT_ID_PROVIDED: ${{ inputs.client-id != '' }}
+        TENANT_ID_PROVIDED: ${{ inputs.tenant-id != '' }}
+        SUBSCRIPTION_ID_PROVIDED: ${{ inputs.subscription-id != '' }}
+        RESOURCE_GROUP: ${{ inputs.resource-group }}
+        APP_ID: ${{ inputs.app-id }}
+        REGISTRY: ${{ inputs.registry }}
       run: |
+        set -euo pipefail
         echo "::debug::Checking authentication values..."
-        echo "::debug::Client ID provided: ${{ inputs.client-id != '' }}"
-        echo "::debug::Tenant ID provided: ${{ inputs.tenant-id != '' }}"
-        echo "::debug::Subscription ID provided: ${{ inputs.subscription-id != '' }}"
-        echo "::debug::Resource Group: ${{ inputs.resource-group }}"
-        echo "::debug::App ID: ${{ inputs.app-id }}"
-        echo "::debug::Registry: ${{ inputs.registry }}"
-        
+        echo "::debug::Client ID provided: ${CLIENT_ID_PROVIDED}"
+        echo "::debug::Tenant ID provided: ${TENANT_ID_PROVIDED}"
+        echo "::debug::Subscription ID provided: ${SUBSCRIPTION_ID_PROVIDED}"
+        echo "::debug::Resource Group: ${RESOURCE_GROUP}"
+        echo "::debug::App ID: ${APP_ID}"
+        echo "::debug::Registry: ${REGISTRY}"
+
     - name: Log in to Azure
       uses: azure/login@93381592711f247e165c389ebb30b596c84cdc48 # v3.0.0
       with:
@@ -48,15 +56,35 @@ runs:
         allow-no-subscriptions: true
     - name: Deploy to Azure Container Apps
       shell: bash
+      # Inputs reach the script through the environment, never through ${{ }}
+      # interpolation into the script body, so an attacker-influenceable value such
+      # as github.ref_name cannot break out of the argument and run as shell code.
+      env:
+        APP_ID: ${{ inputs.app-id }}
+        RESOURCE_GROUP: ${{ inputs.resource-group }}
+        REGISTRY: ${{ inputs.registry }}
+        VERSION: ${{ inputs.version }}
       run: |
+        set -euo pipefail
+
+        semver_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+        [[ "$VERSION" =~ $semver_pattern ]] ||
+          { echo "Release version '$VERSION' must be SemVer without build metadata." >&2; exit 1; }
+        [[ "$APP_ID" =~ ^[a-z0-9][a-z0-9._-]*$ ]] ||
+          { echo "Application id '$APP_ID' is not a valid container repository segment." >&2; exit 1; }
+        [[ "$REGISTRY" =~ ^[A-Za-z0-9.:-]+$ ]] ||
+          { echo "Registry '$REGISTRY' is not a valid registry host." >&2; exit 1; }
+        [[ "$RESOURCE_GROUP" =~ ^[A-Za-z0-9._()-]+$ ]] ||
+          { echo "Resource group '$RESOURCE_GROUP' is not a valid Azure resource group name." >&2; exit 1; }
+
         # Function to update container app
         update_container_app() {
-          local app_type=$1
-          
+          local app_type="$1"
+
           az containerapp update \
-            --name ${{ inputs.app-id }}$app_type \
-            --resource-group ${{ inputs.resource-group }} \
-            --image ${{ inputs.registry }}/${{ inputs.app-id }}$app_type:${{ inputs.version }}
+            --name "${APP_ID}${app_type}" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "${REGISTRY}/${APP_ID}${app_type}:${VERSION}"
         }
 
         update_container_app "web"
