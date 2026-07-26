@@ -97,7 +97,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@<full-40-hex-sha> # v7.0.0
+        uses: actions/checkout@<full-40-hex-sha> # v7.0.1
         with:
           persist-credentials: false
 

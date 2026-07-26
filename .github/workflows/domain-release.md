@@ -15,7 +15,7 @@ Dapr-backed tests, and then runs semantic-release.
 | `dapr-version` | No | `1.18.0` | Dapr version used when tests are enabled. |
 | `test-platform` | No | `vstest` | Test command contract. Set `microsoft-testing-platform` for xUnit v3 MTP-native TRX reporting. |
 | `test-projects` | No | `''` | Newline-separated test project paths to run before release. Leave empty when the caller already proved exact-source CI success. |
-| `node-version` | No | `22` | Node.js major line passed to `actions/setup-node`. Pinned to a major that semantic-release 25 supports (`^22.14.0 \|\| >=24.10.0`); override to move ahead deliberately. |
+| `node-version` | No | `24` | Node.js major line passed to `actions/setup-node`. Pinned to the Active LTS major that satisfies semantic-release 25 (`>=24.10.0`) and ships the npm major `package-lock.json` was built with; override to move ahead deliberately. |
 | `timeout-minutes` | No | `20` | Timeout for the release job. |
 | `environment-name` | No | `production` | Protected caller-repository environment that supplies human release approval. |
 | `publish-containers` | No | `false` | Whether to prepare semantic-release container publishing for .NET SDK container projects. |
@@ -146,6 +146,7 @@ The recommended organization-level values are:
 
 ```text
 vars.HEXALITH_ZOT_REGISTRY = registry.hexalith.com
+vars.HEXALITH_BUILDS_RELEASE_SHA
 caller repository/organization: secrets.HEXALITH_ZOT_USERNAME
 caller repository/organization: secrets.HEXALITH_ZOT_API_KEY
 caller repository/organization: secrets.NUGET_API_KEY
