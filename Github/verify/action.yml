@@ -24,4 +24,8 @@ runs:
     # both compiles the code and runs the tests — no publish, no versioning.
     - name: Run unit tests
       shell: bash
-      run: dotnet test -c Release ./test/${{ inputs.project-name }}.Tests/${{ inputs.project-name }}.Tests.csproj -p:GeneratePackageOnBuild=false
+      # The project name reaches the shell through the environment rather than
+      # ${{ }} interpolation, so a crafted value cannot execute as shell code.
+      env:
+        PROJECT_NAME: ${{ inputs.project-name }}
+      run: dotnet test -c Release "./test/${PROJECT_NAME}.Tests/${PROJECT_NAME}.Tests.csproj" -p:GeneratePackageOnBuild=false
