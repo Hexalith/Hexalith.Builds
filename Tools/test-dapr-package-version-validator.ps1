@@ -47,7 +47,7 @@ function Get-RequiredPackageRows {
         }
 
         $identity = if ($IdentityOverrides.ContainsKey($packageId)) { [string] $IdentityOverrides[$packageId] } else { $packageId }
-        $version = if ($VersionOverrides.ContainsKey($packageId)) { [string] $VersionOverrides[$packageId] } else { '1.18.4' }
+        $version = if ($VersionOverrides.ContainsKey($packageId)) { [string] $VersionOverrides[$packageId] } else { '1.18.5' }
         $rows.Add("    <PackageVersion Include=`"$identity`" Version=`"$version`" />")
     }
 
@@ -124,7 +124,7 @@ function Get-RequiredEvaluationItems {
     foreach ($packageId in $requiredPackageIds) {
         $items.Add([pscustomobject] @{
             Identity = $packageId
-            Version = '1.18.4'
+            Version = '1.18.5'
         })
     }
 
@@ -462,7 +462,7 @@ try {
     }
 
     Invoke-Scenario -Name 'aligned additional Dapr family item is allowed' -Body {
-        $rows = Get-RequiredPackageRows -AdditionalRows @('    <PackageVersion Include="Dapr.Extensions.Configuration" Version="1.18.4" />')
+        $rows = Get-RequiredPackageRows -AdditionalRows @('    <PackageVersion Include="Dapr.Extensions.Configuration" Version="1.18.5" />')
         $catalogPath = New-CatalogFixture -Name 'aligned-extra' -PackageRows $rows
         $result = Invoke-Validator -CatalogPath $catalogPath -EvaluatorScriptPath $null
         Assert-ValidatorResult -Result $result -ExpectedExitCode 0 -ExpectedOutput @('7 unique Dapr.* package IDs')
@@ -481,7 +481,7 @@ try {
             $items.Add($item)
         }
 
-        $items.Add([pscustomobject] @{ Identity = 'dApR.cLiEnT'; Version = '1.18.4' })
+        $items.Add([pscustomobject] @{ Identity = 'dApR.cLiEnT'; Version = '1.18.5' })
         $json = Get-EvaluationJson -Items $items.ToArray()
         $evaluatorPath = New-EvaluatorScript -Name 'duplicate' -StandardOutput $json
         $result = Invoke-Validator -CatalogPath $validatorPath -EvaluatorScriptPath $evaluatorPath
@@ -500,7 +500,7 @@ try {
         $catalogPath = New-CatalogFixture `
             -Name 'property-expanded' `
             -PackageRows $rows `
-            -PropertyRows @('    <DaprSdkVersion>1.18.4</DaprSdkVersion>')
+            -PropertyRows @('    <DaprSdkVersion>1.18.5</DaprSdkVersion>')
         $result = Invoke-Validator -CatalogPath $catalogPath -EvaluatorScriptPath $null
         Assert-ValidatorResult -Result $result -ExpectedExitCode 0 -ExpectedOutput @('validation passed')
     }
@@ -516,7 +516,7 @@ try {
     }
 
     Invoke-Scenario -Name 'case-variant bare Dapr ID is rejected' -Body {
-        $rows = Get-RequiredPackageRows -AdditionalRows @('    <PackageVersion Include="dApR" Version="1.18.4" />')
+        $rows = Get-RequiredPackageRows -AdditionalRows @('    <PackageVersion Include="dApR" Version="1.18.5" />')
         $catalogPath = New-CatalogFixture -Name 'bare-dapr' -PackageRows $rows
         $result = Invoke-Validator -CatalogPath $catalogPath -EvaluatorScriptPath $null
         Assert-ValidatorResult -Result $result -ExpectedExitCode 1 -ExpectedOutput @('invalid bare package ID')
@@ -674,7 +674,7 @@ try {
     }
 
     Invoke-Scenario -Name 'blank evaluator identity violates JSON schema' -Body {
-        $json = '{"Items":{"PackageVersion":[{"Identity":" ","Version":"1.18.4"}]}}'
+        $json = '{"Items":{"PackageVersion":[{"Identity":" ","Version":"1.18.5"}]}}'
         $evaluatorPath = New-EvaluatorScript -Name 'blank-identity' -StandardOutput $json
         $result = Invoke-Validator -CatalogPath $validatorPath -EvaluatorScriptPath $evaluatorPath
         Assert-ValidatorResult -Result $result -ExpectedExitCode 1 -ExpectedOutput @('Identity to be a nonblank string')

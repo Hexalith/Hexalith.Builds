@@ -17,7 +17,7 @@ public static class SupportedPlatformPins
     public const string DaprRuntimeVersion = "1.18.0";
 
     /// <summary>Gets the authorized Dapr SDK package pin.</summary>
-    public const string DaprSdkVersion = "1.18.4";
+    public const string DaprSdkVersion = "1.18.5";
 
     /// <summary>Gets the authorized FrontComposer package pin.</summary>
     public const string FrontComposerVersion = "4.0.1";
