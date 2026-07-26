@@ -16,7 +16,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$targetVersion = '1.18.4'
+$targetVersion = '1.18.5'
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
 $requiredPackageIds = @(
     'Dapr.Client'
