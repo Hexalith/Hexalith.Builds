@@ -333,9 +333,11 @@ jobs:
           --report-xunit-trx-filename aspire-results.trx
       - name: Test summary
         if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
-          echo "## Tier 3 Aspire Contract Tests" >> $GITHUB_STEP_SUMMARY
-          echo "Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Tier 3 Aspire Contract Tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "Status: $JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

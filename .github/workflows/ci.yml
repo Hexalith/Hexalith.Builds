@@ -87,8 +87,11 @@ jobs:
           # Must match the release pin so CI proves the toolchain the release uses.
           node-version: '24'
 
+      # --ignore-scripts: nothing in this lockfile declares an install script, so
+      # skipping them changes no behavior and denies a compromised transitive
+      # dependency arbitrary code execution on the runner.
       - name: Install Node.js dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Verify npm dependency provenance and signatures
         run: npm audit signatures
@@ -149,7 +152,7 @@ jobs:
           node-version: '24'
 
       - name: Install Node.js dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Test commitlint helpers
         working-directory: Github/commitlint/tests
