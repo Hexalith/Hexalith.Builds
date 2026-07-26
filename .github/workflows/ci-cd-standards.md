@@ -134,9 +134,9 @@ test project lists, and operational exceptions in their own docs.
   `NuGetAuditMode=all`). Do not disable it globally with `-p:NuGetAudit=false`;
   that silences the scanner across the whole pipeline.
 - When `TreatWarningsAsErrors` is on, exclude the audit advisory codes
-  (`NU1901`–`NU1904`) from `WarningsNotAsErrors` so a transitive advisory that
-  cannot be upgraded immediately does not block CI, while still surfacing it in
-  build logs.
+  (`NU1901`–`NU1904`) from warnings-as-errors by adding them to
+  `WarningsNotAsErrors`, so a transitive advisory that cannot be upgraded
+  immediately does not block CI, while still surfacing it in build logs.
 - Acknowledge or waive an individual advisory with `<NuGetAuditSuppress>` rather
   than turning the whole audit off.
 
