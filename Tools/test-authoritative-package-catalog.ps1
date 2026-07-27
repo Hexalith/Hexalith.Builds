@@ -68,6 +68,7 @@ $requiredPackages = @(
     'YamlDotNet'
     'bunit'
     'Hexalith.EventStore.Contracts'
+    'Hexalith.EventStore.Gateway'
     'OpenTelemetry.Instrumentation.AspNetCore'
     'OpenTelemetry.Instrumentation.Http'
     'OpenTelemetry.Instrumentation.Runtime'
@@ -87,6 +88,7 @@ foreach ($requiredPackage in $requiredPackages) {
 $sharedPackageVersions = [ordered] @{
     'Hexalith.Commons' = [string] $evaluation.Properties.HexalithCommonsVersion
     'Hexalith.EventStore.Contracts' = [string] $evaluation.Properties.HexalithEventStoreVersion
+    'Hexalith.EventStore.Gateway' = [string] $evaluation.Properties.HexalithEventStoreVersion
 }
 foreach ($sharedPackageVersion in $sharedPackageVersions.GetEnumerator()) {
     if ([string]::IsNullOrWhiteSpace($sharedPackageVersion.Value)) {
@@ -104,6 +106,13 @@ foreach ($sharedPackageVersion in $sharedPackageVersions.GetEnumerator()) {
             "Package '$($sharedPackageVersion.Key)' resolved to '$($evaluatedPackages[$sharedPackageVersion.Key])'; expected shared version '$($sharedPackageVersion.Value)'."
         )
     }
+}
+
+$approvedEventStoreVersion = '999.1.20-proof.fa2d1c9910f8'
+if ([string] $evaluation.Properties.HexalithEventStoreVersion -cne $approvedEventStoreVersion) {
+    $failures.Add(
+        "HexalithEventStoreVersion resolved to '$($evaluation.Properties.HexalithEventStoreVersion)'; expected approved Story 1.20 version '$approvedEventStoreVersion'."
+    )
 }
 
 $overrideEnabled = [string] $evaluation.Properties.CentralPackageVersionOverrideEnabled
