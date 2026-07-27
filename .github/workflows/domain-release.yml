@@ -248,6 +248,43 @@ jobs:
         with:
           container-projects: ${{ inputs.container-projects }}
           builds-execution-sha: ${{ inputs.builds-execution-sha }}
+      - name: Revalidate current source before Semantic Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          DISPATCH_SHA: ${{ github.sha }}
+          SOURCE_BRANCH: ${{ inputs.source-branch }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$DISPATCH_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "The dispatched release source must be an exact lowercase commit SHA." >&2
+            exit 1
+          fi
+          if [ "$SOURCE_BRANCH" != "main" ]; then
+            echo "The release source branch must be exactly main." >&2
+            exit 1
+          fi
+
+          checked_out_sha="$(git rev-parse HEAD)"
+          if [[ ! "$checked_out_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "The checked-out release source could not be resolved as an exact lowercase commit SHA." >&2
+            exit 1
+          fi
+          if [ "$checked_out_sha" != "$DISPATCH_SHA" ]; then
+            echo "The checked-out release source does not match the dispatched commit SHA." >&2
+            exit 1
+          fi
+
+          live_source_sha="$(gh api "repos/${REPOSITORY}/git/ref/heads/${SOURCE_BRANCH}" --jq '.object.sha')"
+          if [[ ! "$live_source_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "The live ${SOURCE_BRANCH} SHA could not be resolved as an exact lowercase commit SHA." >&2
+            exit 1
+          fi
+          if [ "$checked_out_sha" != "$live_source_sha" ]; then
+            echo "The release source became stale during setup. Redispatch Release from the new ${SOURCE_BRANCH} tip after exact-source CI succeeds." >&2
+            exit 1
+          fi
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
