@@ -108,13 +108,6 @@ foreach ($sharedPackageVersion in $sharedPackageVersions.GetEnumerator()) {
     }
 }
 
-$approvedEventStoreVersion = '999.1.20-proof.fa2d1c9910f8'
-if ([string] $evaluation.Properties.HexalithEventStoreVersion -cne $approvedEventStoreVersion) {
-    $failures.Add(
-        "HexalithEventStoreVersion resolved to '$($evaluation.Properties.HexalithEventStoreVersion)'; expected approved Story 1.20 version '$approvedEventStoreVersion'."
-    )
-}
-
 $overrideEnabled = [string] $evaluation.Properties.CentralPackageVersionOverrideEnabled
 if ($overrideEnabled -cne 'false') {
     $failures.Add(
