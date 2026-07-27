@@ -67,7 +67,12 @@ GitHub operations. Container publishing uses the organization variable
    install the publisher, immutable OCI validator, publication preflight,
    and child-digest smoke helpers. The action also compares its action/helper
    bytes with the same approved Builds commit.
-10. Run `npx semantic-release`, passing the approved Builds identity, source
+10. Resolve the actual checked-out `HEAD`, require it to equal the exact
+    lowercase caller SHA, then re-resolve live `main` and require the same
+    identity immediately before Semantic Release. This late gate catches a
+    mismatched or stale source while the protected job is setting up or building,
+    before any Semantic Release lifecycle or publication effect can run.
+11. Run `npx semantic-release`, passing the approved Builds identity, source
     proof inputs, package manifest, and protected environment name to the
     caller's publication preflight; always
     upload the complete hidden release-evidence directory afterward.
@@ -96,6 +101,13 @@ input so the container phase receives it through
 `HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT`. The count is caller-declared rather
 than derived from the manifest: an inventory that silently gains or loses a
 package must fail closed instead of redefining the gate it is checked against.
+
+If `main` advances after the caller preflight or environment approval, the late
+source gate exits nonzero before Semantic Release. The failed run is not safe to
+retry against its old dispatch SHA: wait for exact-source push CI to succeed on
+the new `main` tip, then manually dispatch Release from that tip. A `main`
+advance after a completed publication does not invalidate the release; callers
+should verify the published tag resolves to the originally dispatched SHA.
 
 ## Usage
 

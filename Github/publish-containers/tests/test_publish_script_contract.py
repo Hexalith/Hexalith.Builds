@@ -84,6 +84,58 @@ cp "$FAKE_APPROVED/$(basename "$source_url")" "$output"
     return approved, action_path, fake_bin
 
 
+def run_late_source_guard(checked_out_sha, live_source_sha, api_exit_code=0, dispatch_sha=None):
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        fake_bin = Path(temporary_directory) / "bin"
+        fake_bin.mkdir()
+        write_executable(
+            fake_bin / "gh",
+            """#!/usr/bin/env bash
+set -euo pipefail
+expected_endpoint="repos/${REPOSITORY}/git/ref/heads/${SOURCE_BRANCH}"
+if [ "$#" -ne 4 ] || [ "$1" != "api" ] || [ "$2" != "$expected_endpoint" ] || [ "$3" != "--jq" ] || [ "$4" != ".object.sha" ]; then
+  echo "unexpected gh invocation: $*" >&2
+  exit 97
+fi
+if [ "${FAKE_GH_EXIT_CODE:-0}" -ne 0 ]; then
+  echo "simulated GitHub API failure" >&2
+  exit "$FAKE_GH_EXIT_CODE"
+fi
+printf '%s\n' "$FAKE_LIVE_SOURCE_SHA"
+""",
+        )
+        write_executable(
+            fake_bin / "git",
+            """#!/usr/bin/env bash
+set -euo pipefail
+if [ "$#" -ne 2 ] || [ "$1" != "rev-parse" ] || [ "$2" != "HEAD" ]; then
+  echo "unexpected git invocation: $*" >&2
+  exit 97
+fi
+printf '%s\n' "$FAKE_CHECKED_OUT_SHA"
+""",
+        )
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "PATH": f"{fake_bin}:{environment['PATH']}",
+                "DISPATCH_SHA": checked_out_sha if dispatch_sha is None else dispatch_sha,
+                "SOURCE_BRANCH": "main",
+                "REPOSITORY": "Hexalith/Hexalith.EventStore",
+                "FAKE_CHECKED_OUT_SHA": checked_out_sha,
+                "FAKE_LIVE_SOURCE_SHA": live_source_sha,
+                "FAKE_GH_EXIT_CODE": str(api_exit_code),
+            }
+        )
+        return subprocess.run(  # nosec B603  # NOSONAR -- repository-owned workflow script.
+            ["bash", "-c", extract_run_block(DOMAIN_RELEASE, "Revalidate current source before Semantic Release")],
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+
 class PublishScriptContractTests(unittest.TestCase):
     def test_action_installs_immutable_registry_validator(self):
         action = ACTION.read_text(encoding="utf-8")
@@ -244,6 +296,59 @@ class PublishScriptContractTests(unittest.TestCase):
         )
         self.assertNotEqual(0, identity_result.returncode)
         self.assertIn("does not match", identity_result.stderr)
+
+    def test_domain_release_late_source_guard_accepts_matching_source(self):
+        source_sha = "a" * 40
+
+        result = run_late_source_guard(source_sha, source_sha)
+
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_domain_release_late_source_guard_rejects_stale_source_before_semantic_release(self):
+        workflow = DOMAIN_RELEASE.read_text(encoding="utf-8")
+
+        result = run_late_source_guard("a" * 40, "b" * 40)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("became stale", result.stderr)
+        self.assertIn("Redispatch Release", result.stderr)
+        guard_index = workflow.index("- name: Revalidate current source before Semantic Release")
+        semantic_release_index = workflow.index("- name: Semantic Release")
+        self.assertLess(guard_index, semantic_release_index)
+        guard_step = workflow[guard_index:semantic_release_index]
+        self.assertNotIn("continue-on-error:", guard_step)
+        self.assertNotIn("\n        if:", guard_step)
+
+    def test_domain_release_late_source_guard_rejects_checkout_mismatch(self):
+        result = run_late_source_guard("a" * 40, "a" * 40, dispatch_sha="b" * 40)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("does not match the dispatched commit SHA", result.stderr)
+
+    def test_domain_release_late_source_guard_rejects_malformed_source_proofs(self):
+        scenarios = (
+            ("a" * 40, "a" * 40, "", "dispatched release source"),
+            ("a" * 40, "a" * 40, "A" * 40, "dispatched release source"),
+            ("not-a-sha", "a" * 40, "a" * 40, "checked-out release source"),
+            ("a" * 40, "not-a-sha", "a" * 40, "live main SHA"),
+        )
+
+        for checked_out_sha, live_source_sha, dispatch_sha, expected_error in scenarios:
+            with self.subTest(expected_error=expected_error):
+                result = run_late_source_guard(
+                    checked_out_sha,
+                    live_source_sha,
+                    dispatch_sha=dispatch_sha,
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(expected_error, result.stderr)
+
+    def test_domain_release_late_source_guard_fails_closed_on_api_error(self):
+        result = run_late_source_guard("a" * 40, "a" * 40, api_exit_code=22)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("simulated GitHub API failure", result.stderr)
 
     def test_action_byte_mismatch_fails_behaviorally(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
