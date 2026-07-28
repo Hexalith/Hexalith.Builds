@@ -46,6 +46,7 @@ if [ "${1:-}" = run ]; then
     printf '%s\n' 'aarch64'
     exit 0
   fi
+  [[ " $* " == *" --env ASPNETCORE_ENVIRONMENT=Development "* ]] || exit 65
   [[ " $* " == *" --env Authentication__JwtBearer__Issuer=hexalith-container-smoke "* ]] || exit 65
   [[ " $* " == *" --env Authentication__JwtBearer__Audience=hexalith-eventstore "* ]] || exit 65
   [[ " $* " == *" --env Authentication__JwtBearer__SigningKey=hexalith-container-smoke-only-key-not-a-secret "* ]] || exit 65
@@ -154,6 +155,9 @@ class SmokeContainerPlatformsTests(unittest.TestCase):
         self.assertIn(f"registry.example.test/eventstore@{ARM64_DIGEST}", docker_log)
         self.assertIn("--platform\tlinux/amd64", docker_log)
         self.assertIn("--platform\tlinux/arm64", docker_log)
+        # The smoke declares a non-production environment: it has no OIDC authority to offer, and a
+        # service is entitled to refuse the symmetric development key in Production.
+        self.assertIn("ASPNETCORE_ENVIRONMENT=Development", docker_log)
         self.assertIn("ASPNETCORE_URLS=http://+:8080", docker_log)
         self.assertIn("Authentication__JwtBearer__Issuer=hexalith-container-smoke", docker_log)
         self.assertIn("Authentication__JwtBearer__Audience=hexalith-eventstore", docker_log)

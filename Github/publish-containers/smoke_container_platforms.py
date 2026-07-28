@@ -36,6 +36,12 @@ SMOKE_EXECUTABLES = {"curl", "docker"}
 PULL_TIMEOUT_SECONDS = 120
 DIAGNOSTIC_LIMIT = 2048
 DEFAULT_SMOKE_TIMEOUT_SECONDS = "180"
+# The smoke proves the published image starts and serves liveness; it cannot prove a production
+# start, because it has no OIDC authority to offer and cannot mint one. Services are entitled to
+# refuse the symmetric development key outside Development — Hexalith.Tenants does exactly that,
+# by a documented production auth contract — so the run declares a non-production environment
+# instead of requiring every image to accept an insecure key in Production.
+SMOKE_HOSTING_ENVIRONMENT = "Development"
 SMOKE_JWT_ISSUER = "hexalith-container-smoke"
 SMOKE_JWT_AUDIENCE = "hexalith-eventstore"
 SMOKE_JWT_SIGNING_KEY = "hexalith-container-smoke-only-key-not-a-secret"
@@ -203,6 +209,8 @@ def _start_container(platform, container_name, immutable_image):
             platform,
             "--publish",
             "127.0.0.1::8080",
+            "--env",
+            f"ASPNETCORE_ENVIRONMENT={SMOKE_HOSTING_ENVIRONMENT}",
             "--env",
             "ASPNETCORE_URLS=http://+:8080",
             "--env",
