@@ -64,6 +64,38 @@ identities, shared package-family alignment, and
 It does not pin dependency versions, so an intentional version bump remains a
 valid release input.
 
+### Central package freshness audit
+
+`audit-central-package-versions.ps1` evaluates the complete catalog, discovers
+every enabled NuGet V3 source, and records current-version listing state plus
+the latest listed stable and prerelease candidates. It never changes the
+catalog and never treats a missing, unlisted, or unresolved result as a reason
+to downgrade. Run it only when deliberately refreshing the checked-in audit:
+
+```powershell
+.\Tools\audit-central-package-versions.ps1
+```
+
+Review `Tools/package-version-audit.json` by rollback-safe family, apply only
+accepted versions to `Props/Directory.Packages.props`, and record the selected
+version and disposition for every row. Live discovery is intentionally not a
+release gate because feed results vary over time. CI and release instead run
+the deterministic validator and its fail-closed fixtures:
+
+```powershell
+.\Tools\validate-package-version-audit.ps1
+.\Tools\test-package-version-audit-validator.ps1
+```
+
+The validator requires exact catalog coverage, one result per configured
+source, coherent family dispositions and rollback groups, retained-exception
+rationale/removal triggers, and selected versions that exactly match the
+evaluated catalog. Retained rows cannot change. Accepted versions cannot
+downgrade, must be an audited latest stable or prerelease candidate, and cannot
+move an existing stable pin onto a prerelease channel. `Microsoft.OpenApi`
+remains on 2.x until its ASP.NET Core 10 runtime constraint is removed, and a
+missing source result can never advance or downgrade a pin.
+
 ### validate-consumer-package-authority.ps1
 
 Source-scans a consumer repository's tracked MSBuild XML and evaluates every

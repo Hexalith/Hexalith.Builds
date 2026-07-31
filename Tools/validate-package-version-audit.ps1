@@ -1,0 +1,392 @@
+[CmdletBinding()]
+param(
+    [string] $AuditPath = '',
+    [string] $CatalogPath = '',
+    [Parameter(DontShow = $true)][string] $EvaluatorScriptPath = ''
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
+
+function Stop-Validation {
+    param([Parameter(Mandatory = $true)][string] $Message)
+
+    [Console]::Error.WriteLine("Package version audit validation failed: $Message")
+    exit 1
+}
+
+function Get-PropertyValue {
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string] $Name
+    )
+
+    if ($null -eq $Object -or $Object.PSObject.Properties.Name -notcontains $Name) {
+        return $null
+    }
+
+    return $Object.$Name
+}
+
+function Get-RequiredText {
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string] $Name,
+        [Parameter(Mandatory = $true)][string] $Description,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[string]] $Failures
+    )
+
+    $value = Get-PropertyValue -Object $Object -Name $Name
+    $text = if ($null -eq $value) { '' } else { [string] $value }
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        $Failures.Add("$Description has a blank or missing '$Name'.")
+    }
+
+    return $text.Trim()
+}
+
+function Compare-NuGetVersion {
+    param(
+        [Parameter(Mandatory = $true)][string] $Left,
+        [Parameter(Mandatory = $true)][string] $Right
+    )
+
+    $leftWithoutMetadata = $Left.Split('+', 2)[0]
+    $rightWithoutMetadata = $Right.Split('+', 2)[0]
+    $leftParts = $leftWithoutMetadata.Split('-', 2)
+    $rightParts = $rightWithoutMetadata.Split('-', 2)
+    $leftCore = $leftParts[0].Split('.')
+    $rightCore = $rightParts[0].Split('.')
+    for ($index = 0; $index -lt 4; $index++) {
+        $leftNumber = if ($index -lt $leftCore.Count) { [long] $leftCore[$index] } else { 0 }
+        $rightNumber = if ($index -lt $rightCore.Count) { [long] $rightCore[$index] } else { 0 }
+        if ($leftNumber -ne $rightNumber) {
+            return [Math]::Sign($leftNumber - $rightNumber)
+        }
+    }
+
+    $leftPrerelease = if ($leftParts.Count -gt 1) { $leftParts[1] } else { '' }
+    $rightPrerelease = if ($rightParts.Count -gt 1) { $rightParts[1] } else { '' }
+    if ([string]::IsNullOrEmpty($leftPrerelease)) {
+        return $(if ([string]::IsNullOrEmpty($rightPrerelease)) { 0 } else { 1 })
+    }
+
+    if ([string]::IsNullOrEmpty($rightPrerelease)) {
+        return -1
+    }
+
+    $leftIdentifiers = $leftPrerelease.Split('.')
+    $rightIdentifiers = $rightPrerelease.Split('.')
+    $identifierCount = [Math]::Max($leftIdentifiers.Count, $rightIdentifiers.Count)
+    for ($index = 0; $index -lt $identifierCount; $index++) {
+        if ($index -ge $leftIdentifiers.Count) { return -1 }
+        if ($index -ge $rightIdentifiers.Count) { return 1 }
+
+        $leftNumeric = 0L
+        $rightNumeric = 0L
+        $leftIsNumeric = [long]::TryParse($leftIdentifiers[$index], [ref] $leftNumeric)
+        $rightIsNumeric = [long]::TryParse($rightIdentifiers[$index], [ref] $rightNumeric)
+        if ($leftIsNumeric -and $rightIsNumeric -and $leftNumeric -ne $rightNumeric) {
+            return [Math]::Sign($leftNumeric - $rightNumeric)
+        }
+
+        if ($leftIsNumeric -ne $rightIsNumeric) {
+            return $(if ($leftIsNumeric) { -1 } else { 1 })
+        }
+
+        $comparison = [StringComparer]::OrdinalIgnoreCase.Compare($leftIdentifiers[$index], $rightIdentifiers[$index])
+        if ($comparison -ne 0) {
+            return [Math]::Sign($comparison)
+        }
+    }
+
+    return 0
+}
+
+function Invoke-CatalogEvaluation {
+    param(
+        [Parameter(Mandatory = $true)][string] $ResolvedCatalogPath,
+        [AllowEmptyString()][string] $ResolvedEvaluatorScriptPath
+    )
+
+    $output = if ([string]::IsNullOrWhiteSpace($ResolvedEvaluatorScriptPath)) {
+        @(& dotnet msbuild $ResolvedCatalogPath -nologo -getItem:PackageVersion 2>&1)
+    }
+    else {
+        @(& $pwshExecutable -NoLogo -NoProfile -File $ResolvedEvaluatorScriptPath $ResolvedCatalogPath 2>&1)
+    }
+
+    if ($LASTEXITCODE -ne 0) {
+        Stop-Validation "catalog evaluation exited with code $LASTEXITCODE. $([string]::Join("`n", $output))"
+    }
+
+    try {
+        return ([string]::Join("`n", $output) | ConvertFrom-Json -ErrorAction Stop)
+    }
+    catch {
+        Stop-Validation "catalog evaluation returned malformed JSON. $($_.Exception.GetBaseException().Message)"
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($AuditPath)) {
+    $AuditPath = Join-Path $PSScriptRoot 'package-version-audit.json'
+}
+
+if ([string]::IsNullOrWhiteSpace($CatalogPath)) {
+    $CatalogPath = Join-Path $PSScriptRoot '../Props/Directory.Packages.props'
+}
+
+try {
+    $resolvedAuditPath = (Resolve-Path -LiteralPath $AuditPath -ErrorAction Stop).ProviderPath
+    $resolvedCatalogPath = (Resolve-Path -LiteralPath $CatalogPath -ErrorAction Stop).ProviderPath
+    $resolvedEvaluatorScriptPath = if ([string]::IsNullOrWhiteSpace($EvaluatorScriptPath)) {
+        ''
+    }
+    else {
+        (Resolve-Path -LiteralPath $EvaluatorScriptPath -ErrorAction Stop).ProviderPath
+    }
+    $audit = Get-Content -LiteralPath $resolvedAuditPath -Raw | ConvertFrom-Json -ErrorAction Stop
+}
+catch {
+    Stop-Validation "audit, catalog, or evaluator input could not be loaded. $($_.Exception.GetBaseException().Message)"
+}
+
+$evaluation = Invoke-CatalogEvaluation `
+    -ResolvedCatalogPath $resolvedCatalogPath `
+    -ResolvedEvaluatorScriptPath $resolvedEvaluatorScriptPath
+$failures = [System.Collections.Generic.List[string]]::new()
+
+if ((Get-PropertyValue -Object $audit -Name 'schemaVersion') -ne 1) {
+    $failures.Add('schemaVersion must equal 1.')
+}
+
+$auditedAtValue = Get-PropertyValue -Object $audit -Name 'auditedAtUtc'
+$auditedAtUtc = if ($null -eq $auditedAtValue) { '' } else { [string] $auditedAtValue }
+$parsedTimestamp = [DateTimeOffset]::MinValue
+$timestampParsed = if ($auditedAtValue -is [DateTime] -or $auditedAtValue -is [DateTimeOffset]) {
+    $true
+}
+else {
+    [DateTimeOffset]::TryParse($auditedAtUtc, [ref] $parsedTimestamp)
+}
+if ([string]::IsNullOrWhiteSpace($auditedAtUtc) -or -not $timestampParsed) {
+    $failures.Add('auditedAtUtc must be a valid UTC timestamp.')
+}
+
+$generatedFromRevision = Get-RequiredText `
+    -Object $audit -Name 'generatedFromRevision' -Description 'Audit' -Failures $failures
+if ($generatedFromRevision -ne 'NO_VCS' -and $generatedFromRevision -cnotmatch '^[0-9a-f]{40}$') {
+    $failures.Add('generatedFromRevision must be NO_VCS or a full lowercase 40-character Git revision.')
+}
+
+$sources = @((Get-PropertyValue -Object $audit -Name 'sources'))
+if ($sources.Count -eq 0 -or $null -eq $sources[0]) {
+    $failures.Add('Audit must declare at least one configured source.')
+    $sources = @()
+}
+
+$sourceUris = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+foreach ($source in $sources) {
+    $uri = Get-RequiredText -Object $source -Name 'uri' -Description 'Source' -Failures $failures
+    $resolution = Get-RequiredText -Object $source -Name 'resolution' -Description "Source '$uri'" -Failures $failures
+    $null = Get-RequiredText -Object $source -Name 'diagnostic' -Description "Source '$uri'" -Failures $failures
+    if (-not $sourceUris.Add($uri)) {
+        $failures.Add("Configured source '$uri' is duplicated.")
+    }
+
+    if ($resolution -notin @('resolved', 'unresolved')) {
+        $failures.Add("Source '$uri' has invalid resolution '$resolution'.")
+    }
+}
+
+$catalogVersions = @{}
+foreach ($item in @($evaluation.Items.PackageVersion)) {
+    $identity = [string] $item.Identity
+    if ($catalogVersions.ContainsKey($identity)) {
+        $failures.Add("Evaluated catalog contains duplicate package '$identity'.")
+    }
+    else {
+        $catalogVersions[$identity] = [string] $item.Version
+    }
+}
+
+$packages = @((Get-PropertyValue -Object $audit -Name 'packages'))
+$auditPackages = @{}
+foreach ($package in $packages) {
+    $id = Get-RequiredText -Object $package -Name 'id' -Description 'Package evidence' -Failures $failures
+    if ($auditPackages.ContainsKey($id)) {
+        $failures.Add("Package evidence contains duplicate package '$id'.")
+        continue
+    }
+
+    $auditPackages[$id] = $package
+    $auditedVersion = Get-RequiredText -Object $package -Name 'auditedVersion' -Description "Package '$id'" -Failures $failures
+    $selectedVersion = Get-RequiredText -Object $package -Name 'selectedVersion' -Description "Package '$id'" -Failures $failures
+    $listingState = Get-RequiredText -Object $package -Name 'listingState' -Description "Package '$id'" -Failures $failures
+    $family = Get-RequiredText -Object $package -Name 'family' -Description "Package '$id'" -Failures $failures
+    $disposition = Get-RequiredText -Object $package -Name 'disposition' -Description "Package '$id'" -Failures $failures
+    $rollbackGroup = Get-RequiredText -Object $package -Name 'rollbackGroup' -Description "Package '$id'" -Failures $failures
+    $null = Get-RequiredText -Object $package -Name 'rationale' -Description "Package '$id'" -Failures $failures
+    $null = Get-RequiredText -Object $package -Name 'evidence' -Description "Package '$id'" -Failures $failures
+    $removalTrigger = Get-RequiredText -Object $package -Name 'removalTrigger' -Description "Package '$id'" -Failures $failures
+    $latestStableValue = Get-PropertyValue -Object $package -Name 'latestStable'
+    $latestPrereleaseValue = Get-PropertyValue -Object $package -Name 'latestPrerelease'
+    $latestStable = if ($null -eq $latestStableValue) { '' } else { [string] $latestStableValue }
+    $latestPrerelease = if ($null -eq $latestPrereleaseValue) { '' } else { [string] $latestPrereleaseValue }
+
+    if ($listingState -notin @('listed', 'unlisted', 'missing', 'unresolved')) {
+        $failures.Add("Package '$id' has invalid listingState '$listingState'.")
+    }
+
+    if ($disposition -notin @('accepted', 'retained')) {
+        $failures.Add("Package '$id' has invalid disposition '$disposition'.")
+    }
+
+    if (-not $catalogVersions.ContainsKey($id)) {
+        $failures.Add("Package evidence '$id' is not present in the evaluated catalog.")
+    }
+    elseif ($catalogVersions[$id] -cne $selectedVersion) {
+        $failures.Add("Package '$id' selects '$selectedVersion' but the evaluated catalog resolves '$($catalogVersions[$id])'.")
+    }
+
+    if ($listingState -ne 'listed' -and ($disposition -ne 'retained' -or $selectedVersion -cne $auditedVersion)) {
+        $failures.Add("Package '$id' is $listingState and must retain audited version '$auditedVersion'.")
+    }
+
+    if ($disposition -eq 'retained' -and $selectedVersion -cne $auditedVersion) {
+        $failures.Add("Retained package '$id' must select audited version '$auditedVersion'.")
+    }
+
+    if ($disposition -eq 'retained' -and [string]::IsNullOrWhiteSpace($removalTrigger)) {
+        $failures.Add("Retained package '$id' must declare a removal trigger.")
+    }
+
+    if (
+        $disposition -eq 'accepted' -and
+        $selectedVersion -cne $latestStable -and
+        $selectedVersion -cne $latestPrerelease
+    ) {
+        $failures.Add("Accepted package '$id' must select its audited latest stable or prerelease candidate.")
+    }
+
+    if ($disposition -eq 'accepted' -and (Compare-NuGetVersion -Left $selectedVersion -Right $auditedVersion) -lt 0) {
+        $failures.Add("Accepted package '$id' cannot downgrade audited version '$auditedVersion' to '$selectedVersion'.")
+    }
+
+    if ($disposition -eq 'accepted' -and $auditedVersion -notmatch '-' -and $selectedVersion -match '-') {
+        $failures.Add("Accepted stable package '$id' cannot move to prerelease version '$selectedVersion'.")
+    }
+
+    $sourceResults = @((Get-PropertyValue -Object $package -Name 'sourceResults'))
+    $packageSources = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($sourceResult in $sourceResults) {
+        $sourceUri = Get-RequiredText `
+            -Object $sourceResult -Name 'source' -Description "Package '$id' source result" -Failures $failures
+        $sourceState = Get-RequiredText `
+            -Object $sourceResult -Name 'listingState' -Description "Package '$id' source '$sourceUri'" -Failures $failures
+        $null = Get-RequiredText `
+            -Object $sourceResult -Name 'diagnostic' -Description "Package '$id' source '$sourceUri'" -Failures $failures
+        if (-not $packageSources.Add($sourceUri)) {
+            $failures.Add("Package '$id' duplicates source result '$sourceUri'.")
+        }
+
+        if (-not $sourceUris.Contains($sourceUri)) {
+            $failures.Add("Package '$id' references undeclared source '$sourceUri'.")
+        }
+
+        if ($sourceState -notin @('listed', 'unlisted', 'missing', 'unresolved')) {
+            $failures.Add("Package '$id' source '$sourceUri' has invalid listingState '$sourceState'.")
+        }
+    }
+
+    if ($packageSources.Count -ne $sourceUris.Count) {
+        $failures.Add("Package '$id' must contain exactly one result for every configured source.")
+    }
+
+    if ($id -eq 'Microsoft.OpenApi' -and $selectedVersion -notmatch '^2\.') {
+        $failures.Add('Microsoft.OpenApi must remain on the proven 2.x line until compatibility evidence changes the contract.')
+    }
+
+    if ($id -like 'Hexalith.Tenants.*' -and $selectedVersion -cne $auditedVersion) {
+        $failures.Add("Package '$id' changed without a separately validated Tenants release-owner contract.")
+    }
+
+    $package | Add-Member -NotePropertyName _validatedFamily -NotePropertyValue $family -Force
+    $package | Add-Member -NotePropertyName _validatedDisposition -NotePropertyValue $disposition -Force
+    $package | Add-Member -NotePropertyName _validatedRollbackGroup -NotePropertyValue $rollbackGroup -Force
+}
+
+foreach ($catalogEntry in $catalogVersions.GetEnumerator()) {
+    if (-not $auditPackages.ContainsKey($catalogEntry.Key)) {
+        $failures.Add("Evaluated catalog package '$($catalogEntry.Key)' has no audit evidence.")
+    }
+}
+
+$familyDecisions = @((Get-PropertyValue -Object $audit -Name 'familyDecisions'))
+$decisionsByFamily = @{}
+foreach ($decision in $familyDecisions) {
+    $family = Get-RequiredText -Object $decision -Name 'family' -Description 'Family decision' -Failures $failures
+    if ($decisionsByFamily.ContainsKey($family)) {
+        $failures.Add("Family decision '$family' is duplicated.")
+        continue
+    }
+
+    $decisionsByFamily[$family] = $decision
+    $disposition = Get-RequiredText -Object $decision -Name 'disposition' -Description "Family '$family'" -Failures $failures
+    $rollbackGroup = Get-RequiredText -Object $decision -Name 'rollbackGroup' -Description "Family '$family'" -Failures $failures
+    $null = Get-RequiredText -Object $decision -Name 'rationale' -Description "Family '$family'" -Failures $failures
+    $null = Get-RequiredText -Object $decision -Name 'compatibilityEvidence' -Description "Family '$family'" -Failures $failures
+    $removalTrigger = Get-RequiredText -Object $decision -Name 'removalTrigger' -Description "Family '$family'" -Failures $failures
+    $representativeConsumers = @((Get-PropertyValue -Object $decision -Name 'representativeConsumers') | Where-Object {
+            -not [string]::IsNullOrWhiteSpace([string] $_)
+        })
+    if ($disposition -notin @('accepted', 'retained')) {
+        $failures.Add("Family '$family' has invalid disposition '$disposition'.")
+    }
+
+    if ($disposition -eq 'accepted' -and $representativeConsumers.Count -eq 0) {
+        $failures.Add("Accepted family '$family' must name at least one representative consumer.")
+    }
+
+    if ($disposition -eq 'retained' -and [string]::IsNullOrWhiteSpace($removalTrigger)) {
+        $failures.Add("Retained family '$family' must declare a removal trigger.")
+    }
+
+    $declaredIds = @((Get-PropertyValue -Object $decision -Name 'packageIds') | ForEach-Object { [string] $_ })
+    $actualIds = @($packages | Where-Object { $_._validatedFamily -ceq $family } | ForEach-Object { [string] $_.id })
+    $declaredSignature = [string]::Join('|', @($declaredIds | Sort-Object))
+    $actualSignature = [string]::Join('|', @($actualIds | Sort-Object))
+    if ($declaredSignature -cne $actualSignature) {
+        $failures.Add("Family '$family' packageIds do not exactly match its package evidence rows.")
+    }
+
+    foreach ($familyPackage in @($packages | Where-Object { $_._validatedFamily -ceq $family })) {
+        if ($familyPackage._validatedDisposition -cne $disposition) {
+            $failures.Add("Package '$($familyPackage.id)' disposition does not match family '$family'.")
+        }
+
+        if ($familyPackage._validatedRollbackGroup -cne $rollbackGroup) {
+            $failures.Add("Package '$($familyPackage.id)' rollback group does not match family '$family'.")
+        }
+    }
+}
+
+foreach ($package in $packages) {
+    if (-not $decisionsByFamily.ContainsKey($package._validatedFamily)) {
+        $failures.Add("Package '$($package.id)' has no family decision for '$($package._validatedFamily)'.")
+    }
+}
+
+if ($failures.Count -gt 0) {
+    [Console]::Error.WriteLine("Package version audit validation failed with $($failures.Count) error(s):")
+    foreach ($failure in $failures) {
+        [Console]::Error.WriteLine("- $failure")
+    }
+
+    exit 1
+}
+
+[Console]::Out.WriteLine(
+    "Package version audit validation passed for $($packages.Count) packages, $($familyDecisions.Count) families, and $($sources.Count) source(s)."
+)
