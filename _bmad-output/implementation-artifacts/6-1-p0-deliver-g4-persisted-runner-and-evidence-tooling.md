@@ -271,7 +271,7 @@ Code review — **Chunk D (Surface & controls)**, 2026-07-21. Scope: package/pro
 **Decision-needed:**
 
 - [ ] [Review][Patch] SD1 · HIGH · Add an intentional protected prerelease path that publishes to GitHub Packages, retains exact `packages: write`, and preserves the P0 prerelease qualification and rollback contract. [`package.json`:11-13; `.github/workflows/build-release.yml`:18-46] — **Resolved 2026-07-21 by Jerome:** preserve the P0 contract through a protected prerelease release path.
-- [ ] [Review][Decision] SD2 · MEDIUM · Changelog preservation conflicts with the no-release-commit policy — the checked P0 task requires extending semantic-release without replacing the changelog/git plugins, while the current configuration removes both, its release-policy test requires them absent, and README states releases do not commit generated files. Decide whether to restore the changelog/git lifecycle or amend the P0 preservation contract to the newer protected-branch policy. [`package.json`:14-35; `Github/publish-containers/tests/test_publish_script_contract.py`:289-303; `README.md`:304-309]
+- [ ] [Review][Patch] SD2 · MEDIUM · Amend the P0 preservation contract to the protected-branch release policy: retain generated release notes and GitHub releases without changelog/git plugins or generated commits to `main`. [`package.json`:14-35; `Github/publish-containers/tests/test_publish_script_contract.py`:289-303; `README.md`:304-309] — **Resolved 2026-07-21 by Jerome:** adopt the newer protected-branch policy.
 
 **Patch** (unambiguous fixes):
 
