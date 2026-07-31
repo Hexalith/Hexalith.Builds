@@ -84,10 +84,14 @@ the deterministic validator and its fail-closed fixtures:
 
 ```powershell
 .\Tools\validate-package-version-audit.ps1
+.\Tools\test-package-version-audit-generator.ps1
 .\Tools\test-package-version-audit-validator.ps1
 ```
 
-The validator requires exact catalog coverage, one result per configured
+The deterministic generator fixtures cover V3 resource discovery, paged
+registrations, arbitrary-size prerelease ordering, unlisted and missing
+versions, unresolved sources, and output-path safety without accessing a live
+feed. The validator requires exact catalog coverage, one result per configured
 source, coherent family dispositions and rollback groups, retained-exception
 rationale/removal triggers, and selected versions that exactly match the
 evaluated catalog. Retained rows cannot change. Accepted versions cannot

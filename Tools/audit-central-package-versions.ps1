@@ -2,11 +2,30 @@
 param(
     [string] $CatalogPath = '',
     [string] $OutputPath = '',
-    [string[]] $Source = @()
+    [string[]] $Source = @(),
+    [Parameter(DontShow = $true)][string] $RequestFixturePath = ''
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
+$requestFixtures = @{}
+
+if (-not [string]::IsNullOrWhiteSpace($RequestFixturePath)) {
+    try {
+        $fixtureDocument = Get-Content -LiteralPath $RequestFixturePath -Raw -ErrorAction Stop |
+            ConvertFrom-Json -ErrorAction Stop
+        foreach ($property in @($fixtureDocument.responses.PSObject.Properties)) {
+            $requestFixtures[$property.Name] = $property.Value
+        }
+    }
+    catch {
+        [Console]::Error.WriteLine(
+            "Central package freshness audit failed: request fixture could not be loaded. $($_.Exception.GetBaseException().Message)"
+        )
+        exit 1
+    }
+}
 
 function Stop-Audit {
     param([Parameter(Mandatory = $true)][string] $Message)
@@ -30,6 +49,23 @@ function Get-PropertyText {
 
 function Invoke-JsonRequest {
     param([Parameter(Mandatory = $true)][string] $Uri)
+
+    if ($requestFixtures.Count -gt 0) {
+        if (-not $requestFixtures.ContainsKey($Uri)) {
+            throw "Request fixture contains no response for '$Uri'."
+        }
+
+        $fixture = $requestFixtures[$Uri]
+        if ($fixture.PSObject.Properties.Name -contains 'error') {
+            throw [string] $fixture.error
+        }
+
+        if ($fixture.PSObject.Properties.Name -notcontains 'response') {
+            throw "Request fixture response for '$Uri' is malformed."
+        }
+
+        return $fixture.response
+    }
 
     $lastError = ''
     for ($attempt = 1; $attempt -le 3; $attempt++) {
@@ -84,12 +120,12 @@ function Compare-NuGetVersion {
         if ($index -ge $leftIdentifiers.Count) { return -1 }
         if ($index -ge $rightIdentifiers.Count) { return 1 }
 
-        $leftNumeric = 0L
-        $rightNumeric = 0L
-        $leftIsNumeric = [long]::TryParse($leftIdentifiers[$index], [ref] $leftNumeric)
-        $rightIsNumeric = [long]::TryParse($rightIdentifiers[$index], [ref] $rightNumeric)
+        $leftNumeric = [System.Numerics.BigInteger]::Zero
+        $rightNumeric = [System.Numerics.BigInteger]::Zero
+        $leftIsNumeric = [System.Numerics.BigInteger]::TryParse($leftIdentifiers[$index], [ref] $leftNumeric)
+        $rightIsNumeric = [System.Numerics.BigInteger]::TryParse($rightIdentifiers[$index], [ref] $rightNumeric)
         if ($leftIsNumeric -and $rightIsNumeric -and $leftNumeric -ne $rightNumeric) {
-            return [Math]::Sign($leftNumeric - $rightNumeric)
+            return $leftNumeric.CompareTo($rightNumeric)
         }
 
         if ($leftIsNumeric -ne $rightIsNumeric) {
@@ -119,23 +155,18 @@ function Select-LatestVersion {
 }
 
 function Get-PackageFamily {
-    param(
-        [Parameter(Mandatory = $true)][string] $Id,
-        [AllowEmptyString()][string] $SourceVersion
-    )
-
-    $propertyMatch = [regex]::Match($SourceVersion, '^\$\(Hexalith([A-Za-z0-9]+)Version\)$')
-    if ($propertyMatch.Success) {
-        return "hexalith-$($propertyMatch.Groups[1].Value.ToLowerInvariant())"
-    }
+    param([Parameter(Mandatory = $true)][string] $Id)
 
     if ($Id -match '^Hexalith\.([^.]+)') { return "hexalith-$($Matches[1].ToLowerInvariant())" }
     if ($Id -match '^Aspire\.') { return 'aspire' }
     if ($Id -match '^Dapr\.') { return 'dapr' }
     if ($Id -match '^Microsoft\.CodeAnalysis') { return 'roslyn' }
-    if ($Id -match '^(Microsoft\.IdentityModel\.|System\.IdentityModel\.Tokens\.Jwt$)') { return 'identity-model' }
+    if ($Id -match '^(Microsoft\.IdentityModel\.|Microsoft\.Identity\.Web$|System\.IdentityModel\.Tokens\.Jwt$)') {
+        return 'identity-model'
+    }
     if ($Id -match '^OpenTelemetry') { return 'opentelemetry' }
     if ($Id -match '^Microsoft\.FluentUI\.') { return 'fluent-ui' }
+    if ($Id -match '^(AngleSharp|bunit)$') { return 'bunit-html' }
     if ($Id -match '^xunit\.') { return 'xunit' }
     if ($Id -match '^Verify(?:\.|$)') { return 'verify' }
     if ($Id -match '^(Microsoft\.AspNetCore\.|Microsoft\.Extensions\.|System\.Text\.Json$|System\.Collections\.Immutable$)') {
@@ -146,13 +177,21 @@ function Get-PackageFamily {
 }
 
 function Get-ConfiguredSources {
+    param([Parameter(Mandatory = $true)][string] $WorkingDirectory)
+
     if ($Source.Count -gt 0) {
         return @($Source)
     }
 
-    $output = @(& dotnet nuget list source --format short 2>&1)
-    if ($LASTEXITCODE -ne 0) {
-        Stop-Audit "configured NuGet sources could not be listed. $([string]::Join("`n", $output))"
+    Push-Location -LiteralPath $WorkingDirectory
+    try {
+        $output = @(& dotnet nuget list source --format short 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            Stop-Audit "configured NuGet sources could not be listed. $([string]::Join("`n", $output))"
+        }
+    }
+    finally {
+        Pop-Location
     }
 
     return @(
@@ -173,7 +212,6 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
 
 try {
     $resolvedCatalogPath = (Resolve-Path -LiteralPath $CatalogPath -ErrorAction Stop).ProviderPath
-    [xml] $catalogXml = Get-Content -LiteralPath $resolvedCatalogPath -Raw -ErrorAction Stop
 }
 catch {
     Stop-Audit "catalog could not be loaded from '$CatalogPath'. $($_.Exception.GetBaseException().Message)"
@@ -191,12 +229,7 @@ catch {
     Stop-Audit "catalog evaluation returned malformed JSON. $($_.Exception.GetBaseException().Message)"
 }
 
-$sourceVersions = @{}
-foreach ($node in @($catalogXml.SelectNodes("//*[local-name()='PackageVersion']"))) {
-    $sourceVersions[[string] $node.GetAttribute('Include')] = [string] $node.GetAttribute('Version')
-}
-
-$configuredSources = @(Get-ConfiguredSources)
+$configuredSources = @(Get-ConfiguredSources -WorkingDirectory $repositoryRoot)
 if ($configuredSources.Count -eq 0) {
     Stop-Audit 'no enabled NuGet source was discovered.'
 }
@@ -204,6 +237,11 @@ if ($configuredSources.Count -eq 0) {
 $sourceContracts = [System.Collections.Generic.List[object]]::new()
 foreach ($sourceUri in $configuredSources) {
     try {
+        $parsedSourceUri = $null
+        if (-not [Uri]::TryCreate($sourceUri, [UriKind]::Absolute, [ref] $parsedSourceUri)) {
+            throw 'configured source is not an absolute URI'
+        }
+
         $serviceIndex = Invoke-JsonRequest -Uri $sourceUri
         $registrationResources = @($serviceIndex.resources | Where-Object {
                 @($_.'@type') | Where-Object { $_ -match '^RegistrationsBaseUrl/' }
@@ -228,10 +266,19 @@ foreach ($sourceUri in $configuredSources) {
             throw 'required V3 registration or flat-container resource is missing'
         }
 
+        $registrationUri = $null
+        $flatContainerUri = $null
+        if (
+            -not [Uri]::TryCreate([string] $registrationResource[0].'@id', [UriKind]::Absolute, [ref] $registrationUri) -or
+            -not [Uri]::TryCreate([string] $flatResource[0].'@id', [UriKind]::Absolute, [ref] $flatContainerUri)
+        ) {
+            throw 'required V3 resource URI is blank or relative'
+        }
+
         $sourceContracts.Add([pscustomobject] @{
                 Uri = $sourceUri
-                Registration = ([string] $registrationResource[0].'@id').TrimEnd('/')
-                FlatContainer = ([string] $flatResource[0].'@id').TrimEnd('/')
+                Registration = $registrationUri.AbsoluteUri.TrimEnd('/')
+                FlatContainer = $flatContainerUri.AbsoluteUri.TrimEnd('/')
                 Resolution = 'resolved'
                 Diagnostic = 'NuGet V3 registration and flat-container resources resolved.'
             })
@@ -346,7 +393,7 @@ foreach ($item in @($evaluatedItems | Sort-Object Identity)) {
     elseif ($states -contains 'unlisted') { 'unlisted' }
     elseif (@($states | Where-Object { $_ -ne 'unresolved' }).Count -eq 0) { 'unresolved' }
     else { 'missing' }
-    $family = Get-PackageFamily -Id $id -SourceVersion ([string] $sourceVersions[$id])
+    $family = Get-PackageFamily -Id $id
 
     if ($listingState -eq 'listed' -and $latestStable -ieq $currentVersion) {
         $rationale = 'Current pin is the latest listed stable release on the configured sources.'
@@ -394,14 +441,13 @@ foreach ($group in @($packages | Group-Object family | Sort-Object Name)) {
         })
 }
 
-$repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
 $revisionOutput = @(& git -C $repositoryRoot rev-parse HEAD 2>&1)
 $generatedFromRevision = if ($LASTEXITCODE -eq 0) { ([string] $revisionOutput[0]).Trim() } else { 'NO_VCS' }
 $audit = [ordered] @{
     schemaVersion = 1
     auditedAtUtc = [DateTimeOffset]::UtcNow.ToString('O')
     generatedFromRevision = $generatedFromRevision
-    catalogPath = 'Props/Directory.Packages.props'
+    catalogPath = [IO.Path]::GetRelativePath($repositoryRoot, $resolvedCatalogPath).Replace('\', '/')
     sources = @($sourceContracts | ForEach-Object {
             [ordered] @{
                 uri = $_.Uri
@@ -413,12 +459,17 @@ $audit = [ordered] @{
     packages = @($packages)
 }
 
-$outputDirectory = Split-Path -Parent ([IO.Path]::GetFullPath($OutputPath))
+$resolvedOutputPath = [IO.Path]::GetFullPath($OutputPath)
+if ([StringComparer]::OrdinalIgnoreCase.Equals($resolvedOutputPath, $resolvedCatalogPath)) {
+    Stop-Audit 'output path must differ from the package catalog path.'
+}
+
+$outputDirectory = Split-Path -Parent $resolvedOutputPath
 if (-not [string]::IsNullOrWhiteSpace($outputDirectory)) {
     New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 }
 
-$audit | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $OutputPath -Encoding utf8
+$audit | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $resolvedOutputPath -Encoding utf8
 [Console]::Out.WriteLine(
     "Central package freshness audit wrote $($packages.Count) packages from $($sourceContracts.Count) configured source(s) to '$OutputPath'."
 )

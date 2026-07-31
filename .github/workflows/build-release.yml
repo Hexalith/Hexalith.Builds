@@ -71,6 +71,10 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1
 
+    - name: Test package version audit generator
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-package-version-audit-generator.ps1
+
     - name: Test package version audit validator
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-package-version-audit-validator.ps1

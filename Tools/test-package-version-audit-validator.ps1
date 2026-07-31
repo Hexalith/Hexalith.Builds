@@ -5,6 +5,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $validatorPath = Join-Path $PSScriptRoot 'validate-package-version-audit.ps1'
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
+$repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) "package-audit-validator-$([Guid]::NewGuid().ToString('N'))"
 $failures = [System.Collections.Generic.List[string]]::new()
 $scenarioCount = 0
@@ -26,7 +27,7 @@ function New-AuditFixture {
         schemaVersion = 1
         auditedAtUtc = '2026-07-31T12:00:00.0000000+00:00'
         generatedFromRevision = ('a' * 40)
-        catalogPath = 'fixture.props'
+        catalogPath = [IO.Path]::GetRelativePath($repositoryRoot, $catalogPath).Replace('\', '/')
         sources = @(
             [ordered] @{
                 uri = 'https://api.nuget.org/v3/index.json'
@@ -214,6 +215,90 @@ $null = $CatalogPath
     Test-Scenario -Name 'Stable package prerelease move' -AuditPath $prereleasePath -ExpectedExitCode 1 `
         -ExpectedOutput "Accepted stable package 'Fixture.One' cannot move to prerelease version '1.1.0-preview.1'"
 
+    $missingSourceResultPath = New-AuditFixture -Name 'missing-source-result'
+    $missingSourceResultAudit = Get-Content -LiteralPath $missingSourceResultPath -Raw | ConvertFrom-Json
+    $missingSourceResultAudit.sources += [pscustomobject] @{
+        uri = 'https://packages.example.test/v3/index.json'
+        resolution = 'resolved'
+        diagnostic = 'Fixture source resolved.'
+    }
+    Save-Audit -Audit $missingSourceResultAudit -Path $missingSourceResultPath
+    Test-Scenario -Name 'Missing configured source result' -AuditPath $missingSourceResultPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Package 'Fixture.One' must contain exactly one result for every configured source"
+
+    $duplicateSourceResultPath = New-AuditFixture -Name 'duplicate-source-result'
+    $duplicateSourceResultAudit = Get-Content -LiteralPath $duplicateSourceResultPath -Raw | ConvertFrom-Json
+    $duplicateSourceResultAudit.packages[0].sourceResults += $duplicateSourceResultAudit.packages[0].sourceResults[0]
+    Save-Audit -Audit $duplicateSourceResultAudit -Path $duplicateSourceResultPath
+    Test-Scenario -Name 'Duplicate configured source result' -AuditPath $duplicateSourceResultPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Package 'Fixture.One' duplicates source result 'https://api.nuget.org/v3/index.json'"
+
+    $undeclaredSourceResultPath = New-AuditFixture -Name 'undeclared-source-result'
+    $undeclaredSourceResultAudit = Get-Content -LiteralPath $undeclaredSourceResultPath -Raw | ConvertFrom-Json
+    $undeclaredSourceResultAudit.packages[0].sourceResults[0].source = 'https://packages.example.test/v3/index.json'
+    Save-Audit -Audit $undeclaredSourceResultAudit -Path $undeclaredSourceResultPath
+    Test-Scenario -Name 'Undeclared source result' -AuditPath $undeclaredSourceResultPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Package 'Fixture.One' references undeclared source 'https://packages.example.test/v3/index.json'"
+
+    $aggregateMismatchPath = New-AuditFixture -Name 'aggregate-mismatch'
+    $aggregateMismatchAudit = Get-Content -LiteralPath $aggregateMismatchPath -Raw | ConvertFrom-Json
+    $aggregateMismatchAudit.packages[0].latestStable = '9.9.9'
+    Save-Audit -Audit $aggregateMismatchAudit -Path $aggregateMismatchPath
+    Test-Scenario -Name 'Aggregate candidate mismatch' -AuditPath $aggregateMismatchPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Package 'Fixture.One' latestStable '9.9.9' does not match source aggregate '1.0.0'"
+
+    $sourceResolutionPath = New-AuditFixture -Name 'source-resolution-mismatch'
+    $sourceResolutionAudit = Get-Content -LiteralPath $sourceResolutionPath -Raw | ConvertFrom-Json
+    $sourceResolutionAudit.sources[0].resolution = 'unresolved'
+    Save-Audit -Audit $sourceResolutionAudit -Path $sourceResolutionPath
+    Test-Scenario -Name 'Source resolution mismatch' -AuditPath $sourceResolutionPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Package 'Fixture.One' source 'https://api.nuget.org/v3/index.json' must be unresolved"
+
+    $partialSourcePath = New-AuditFixture -Name 'accepted-partial-source'
+    $partialSourceAudit = Get-Content -LiteralPath $partialSourcePath -Raw | ConvertFrom-Json
+    $partialSourceAudit.sources += [pscustomobject] @{
+        uri = 'https://packages.example.test/v3/index.json'
+        resolution = 'unresolved'
+        diagnostic = 'Fixture source unavailable.'
+    }
+    foreach ($package in $partialSourceAudit.packages) {
+        $package.sourceResults += [pscustomobject] @{
+            source = 'https://packages.example.test/v3/index.json'
+            listingState = 'unresolved'
+            latestStable = $null
+            latestPrerelease = $null
+            diagnostic = 'Fixture source unavailable.'
+        }
+        $package.disposition = 'accepted'
+    }
+    $partialSourceAudit.familyDecisions[0].disposition = 'accepted'
+    Save-Audit -Audit $partialSourceAudit -Path $partialSourcePath
+    Test-Scenario -Name 'Accepted partial source visibility' -AuditPath $partialSourcePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Accepted package 'Fixture.One' requires listed evidence from every configured source"
+
+    $orphanFamilyPath = New-AuditFixture -Name 'orphan-family'
+    $orphanFamilyAudit = Get-Content -LiteralPath $orphanFamilyPath -Raw | ConvertFrom-Json
+    $orphanFamilyAudit.familyDecisions += [pscustomobject] @{
+        family = 'orphan-family'
+        disposition = 'retained'
+        rollbackGroup = 'orphan-family'
+        packageIds = @()
+        rationale = 'Fixture orphan.'
+        compatibilityEvidence = 'Fixture evidence.'
+        removalTrigger = 'Delete the orphan.'
+        representativeConsumers = @('Fixture.Consumer')
+    }
+    Save-Audit -Audit $orphanFamilyAudit -Path $orphanFamilyPath
+    Test-Scenario -Name 'Orphan family decision' -AuditPath $orphanFamilyPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Family 'orphan-family' has no package evidence rows"
+
+    $nonUtcPath = New-AuditFixture -Name 'non-utc-timestamp'
+    $nonUtcAudit = Get-Content -LiteralPath $nonUtcPath -Raw | ConvertFrom-Json
+    $nonUtcAudit.auditedAtUtc = '2026-07-31T14:00:00+02:00'
+    Save-Audit -Audit $nonUtcAudit -Path $nonUtcPath
+    Test-Scenario -Name 'Non-UTC timestamp' -AuditPath $nonUtcPath -ExpectedExitCode 1 `
+        -ExpectedOutput 'auditedAtUtc must have a zero UTC offset'
+
     foreach ($workflowRelativePath in @('../.github/workflows/ci.yml', '../.github/workflows/build-release.yml')) {
         $script:scenarioCount++
         $workflowPath = Join-Path $PSScriptRoot $workflowRelativePath
@@ -221,7 +306,21 @@ $null = $CatalogPath
         $validateIndex = $workflow.IndexOf('- name: Validate package version audit', [StringComparison]::Ordinal)
         $testIndex = $workflow.IndexOf('- name: Test package version audit validator', [StringComparison]::Ordinal)
         $consumerIndex = $workflow.IndexOf('- name: Validate Builds consumer package authority', [StringComparison]::Ordinal)
-        if ($validateIndex -lt 0 -or $testIndex -le $validateIndex -or $consumerIndex -le $testIndex) {
+        $validateCommandIndex = $workflow.IndexOf(
+            'run: pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1',
+            [StringComparison]::Ordinal
+        )
+        $testCommandIndex = $workflow.IndexOf(
+            'run: pwsh -NoProfile -File ./Tools/test-package-version-audit-validator.ps1',
+            [StringComparison]::Ordinal
+        )
+        if (
+            $validateIndex -lt 0 -or
+            $validateCommandIndex -le $validateIndex -or
+            $testIndex -le $validateCommandIndex -or
+            $testCommandIndex -le $testIndex -or
+            $consumerIndex -le $testCommandIndex
+        ) {
             $failures.Add("Workflow '$workflowRelativePath' must validate and test the package audit before consumer authority validation.")
         }
     }

@@ -8,6 +8,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
+$repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
 
 function Stop-Validation {
     param([Parameter(Mandatory = $true)][string] $Message)
@@ -83,12 +84,12 @@ function Compare-NuGetVersion {
         if ($index -ge $leftIdentifiers.Count) { return -1 }
         if ($index -ge $rightIdentifiers.Count) { return 1 }
 
-        $leftNumeric = 0L
-        $rightNumeric = 0L
-        $leftIsNumeric = [long]::TryParse($leftIdentifiers[$index], [ref] $leftNumeric)
-        $rightIsNumeric = [long]::TryParse($rightIdentifiers[$index], [ref] $rightNumeric)
+        $leftNumeric = [System.Numerics.BigInteger]::Zero
+        $rightNumeric = [System.Numerics.BigInteger]::Zero
+        $leftIsNumeric = [System.Numerics.BigInteger]::TryParse($leftIdentifiers[$index], [ref] $leftNumeric)
+        $rightIsNumeric = [System.Numerics.BigInteger]::TryParse($rightIdentifiers[$index], [ref] $rightNumeric)
         if ($leftIsNumeric -and $rightIsNumeric -and $leftNumeric -ne $rightNumeric) {
-            return [Math]::Sign($leftNumeric - $rightNumeric)
+            return $leftNumeric.CompareTo($rightNumeric)
         }
 
         if ($leftIsNumeric -ne $rightIsNumeric) {
@@ -102,6 +103,19 @@ function Compare-NuGetVersion {
     }
 
     return 0
+}
+
+function Select-LatestVersion {
+    param([string[]] $Versions)
+
+    $latest = $null
+    foreach ($version in @($Versions | Where-Object { -not [string]::IsNullOrWhiteSpace([string] $_) })) {
+        if ($null -eq $latest -or (Compare-NuGetVersion -Left $version -Right $latest) -gt 0) {
+            $latest = $version
+        }
+    }
+
+    return $latest
 }
 
 function Invoke-CatalogEvaluation {
@@ -146,7 +160,7 @@ try {
     else {
         (Resolve-Path -LiteralPath $EvaluatorScriptPath -ErrorAction Stop).ProviderPath
     }
-    $audit = Get-Content -LiteralPath $resolvedAuditPath -Raw | ConvertFrom-Json -ErrorAction Stop
+    $audit = Get-Content -LiteralPath $resolvedAuditPath -Raw | ConvertFrom-Json -DateKind String -ErrorAction Stop
 }
 catch {
     Stop-Validation "audit, catalog, or evaluator input could not be loaded. $($_.Exception.GetBaseException().Message)"
@@ -164,20 +178,24 @@ if ((Get-PropertyValue -Object $audit -Name 'schemaVersion') -ne 1) {
 $auditedAtValue = Get-PropertyValue -Object $audit -Name 'auditedAtUtc'
 $auditedAtUtc = if ($null -eq $auditedAtValue) { '' } else { [string] $auditedAtValue }
 $parsedTimestamp = [DateTimeOffset]::MinValue
-$timestampParsed = if ($auditedAtValue -is [DateTime] -or $auditedAtValue -is [DateTimeOffset]) {
-    $true
-}
-else {
-    [DateTimeOffset]::TryParse($auditedAtUtc, [ref] $parsedTimestamp)
-}
+$timestampParsed = [DateTimeOffset]::TryParse($auditedAtUtc, [ref] $parsedTimestamp)
 if ([string]::IsNullOrWhiteSpace($auditedAtUtc) -or -not $timestampParsed) {
     $failures.Add('auditedAtUtc must be a valid UTC timestamp.')
+}
+elseif ($parsedTimestamp.Offset -ne [TimeSpan]::Zero) {
+    $failures.Add('auditedAtUtc must have a zero UTC offset.')
 }
 
 $generatedFromRevision = Get-RequiredText `
     -Object $audit -Name 'generatedFromRevision' -Description 'Audit' -Failures $failures
-if ($generatedFromRevision -ne 'NO_VCS' -and $generatedFromRevision -cnotmatch '^[0-9a-f]{40}$') {
-    $failures.Add('generatedFromRevision must be NO_VCS or a full lowercase 40-character Git revision.')
+if ($generatedFromRevision -cnotmatch '^[0-9a-f]{40}$') {
+    $failures.Add('generatedFromRevision must be a full lowercase 40-character Git revision.')
+}
+
+$catalogPathValue = Get-RequiredText -Object $audit -Name 'catalogPath' -Description 'Audit' -Failures $failures
+$expectedCatalogPath = [IO.Path]::GetRelativePath($repositoryRoot, $resolvedCatalogPath).Replace('\', '/')
+if ($catalogPathValue -cne $expectedCatalogPath) {
+    $failures.Add("Audit catalogPath '$catalogPathValue' does not match evaluated catalog '$expectedCatalogPath'.")
 }
 
 $sources = @((Get-PropertyValue -Object $audit -Name 'sources'))
@@ -187,6 +205,7 @@ if ($sources.Count -eq 0 -or $null -eq $sources[0]) {
 }
 
 $sourceUris = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+$sourceResolutions = @{}
 foreach ($source in $sources) {
     $uri = Get-RequiredText -Object $source -Name 'uri' -Description 'Source' -Failures $failures
     $resolution = Get-RequiredText -Object $source -Name 'resolution' -Description "Source '$uri'" -Failures $failures
@@ -197,6 +216,9 @@ foreach ($source in $sources) {
 
     if ($resolution -notin @('resolved', 'unresolved')) {
         $failures.Add("Source '$uri' has invalid resolution '$resolution'.")
+    }
+    else {
+        $sourceResolutions[$uri] = $resolution
     }
 }
 
@@ -209,6 +231,10 @@ foreach ($item in @($evaluation.Items.PackageVersion)) {
     else {
         $catalogVersions[$identity] = [string] $item.Version
     }
+}
+
+if ($catalogVersions.Count -eq 0) {
+    $failures.Add('Evaluated catalog must contain at least one package row.')
 }
 
 $packages = @((Get-PropertyValue -Object $audit -Name 'packages'))
@@ -232,6 +258,12 @@ foreach ($package in $packages) {
     $removalTrigger = Get-RequiredText -Object $package -Name 'removalTrigger' -Description "Package '$id'" -Failures $failures
     $latestStableValue = Get-PropertyValue -Object $package -Name 'latestStable'
     $latestPrereleaseValue = Get-PropertyValue -Object $package -Name 'latestPrerelease'
+    if ($package.PSObject.Properties.Name -notcontains 'latestStable') {
+        $failures.Add("Package '$id' is missing 'latestStable'.")
+    }
+    if ($package.PSObject.Properties.Name -notcontains 'latestPrerelease') {
+        $failures.Add("Package '$id' is missing 'latestPrerelease'.")
+    }
     $latestStable = if ($null -eq $latestStableValue) { '' } else { [string] $latestStableValue }
     $latestPrerelease = if ($null -eq $latestPrereleaseValue) { '' } else { [string] $latestPrereleaseValue }
 
@@ -280,6 +312,9 @@ foreach ($package in $packages) {
 
     $sourceResults = @((Get-PropertyValue -Object $package -Name 'sourceResults'))
     $packageSources = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $sourceStates = [System.Collections.Generic.List[string]]::new()
+    $sourceStableCandidates = [System.Collections.Generic.List[string]]::new()
+    $sourcePrereleaseCandidates = [System.Collections.Generic.List[string]]::new()
     foreach ($sourceResult in $sourceResults) {
         $sourceUri = Get-RequiredText `
             -Object $sourceResult -Name 'source' -Description "Package '$id' source result" -Failures $failures
@@ -287,6 +322,12 @@ foreach ($package in $packages) {
             -Object $sourceResult -Name 'listingState' -Description "Package '$id' source '$sourceUri'" -Failures $failures
         $null = Get-RequiredText `
             -Object $sourceResult -Name 'diagnostic' -Description "Package '$id' source '$sourceUri'" -Failures $failures
+        if ($sourceResult.PSObject.Properties.Name -notcontains 'latestStable') {
+            $failures.Add("Package '$id' source '$sourceUri' is missing 'latestStable'.")
+        }
+        if ($sourceResult.PSObject.Properties.Name -notcontains 'latestPrerelease') {
+            $failures.Add("Package '$id' source '$sourceUri' is missing 'latestPrerelease'.")
+        }
         if (-not $packageSources.Add($sourceUri)) {
             $failures.Add("Package '$id' duplicates source result '$sourceUri'.")
         }
@@ -298,17 +339,59 @@ foreach ($package in $packages) {
         if ($sourceState -notin @('listed', 'unlisted', 'missing', 'unresolved')) {
             $failures.Add("Package '$id' source '$sourceUri' has invalid listingState '$sourceState'.")
         }
+        else {
+            $sourceStates.Add($sourceState)
+        }
+
+        if ($sourceResolutions.ContainsKey($sourceUri) -and $sourceResolutions[$sourceUri] -eq 'unresolved' -and $sourceState -ne 'unresolved') {
+            $failures.Add("Package '$id' source '$sourceUri' must be unresolved because the configured source is unresolved.")
+        }
+
+        $sourceStable = Get-PropertyValue -Object $sourceResult -Name 'latestStable'
+        $sourcePrerelease = Get-PropertyValue -Object $sourceResult -Name 'latestPrerelease'
+        if (-not [string]::IsNullOrWhiteSpace([string] $sourceStable)) {
+            $sourceStableCandidates.Add([string] $sourceStable)
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string] $sourcePrerelease)) {
+            $sourcePrereleaseCandidates.Add([string] $sourcePrerelease)
+        }
     }
 
     if ($packageSources.Count -ne $sourceUris.Count) {
         $failures.Add("Package '$id' must contain exactly one result for every configured source.")
     }
 
+    $expectedListingState = if ($sourceStates -contains 'listed') { 'listed' }
+    elseif ($sourceStates -contains 'unlisted') { 'unlisted' }
+    elseif ($sourceStates.Count -gt 0 -and @($sourceStates | Where-Object { $_ -ne 'unresolved' }).Count -eq 0) { 'unresolved' }
+    else { 'missing' }
+    if ($listingState -cne $expectedListingState) {
+        $failures.Add("Package '$id' listingState '$listingState' does not match source aggregate '$expectedListingState'.")
+    }
+
+    $expectedLatestStable = Select-LatestVersion -Versions @($sourceStableCandidates)
+    $expectedLatestPrerelease = Select-LatestVersion -Versions @($sourcePrereleaseCandidates)
+    if ([string] $latestStable -cne [string] $expectedLatestStable) {
+        $failures.Add("Package '$id' latestStable '$latestStable' does not match source aggregate '$expectedLatestStable'.")
+    }
+    if ([string] $latestPrerelease -cne [string] $expectedLatestPrerelease) {
+        $failures.Add("Package '$id' latestPrerelease '$latestPrerelease' does not match source aggregate '$expectedLatestPrerelease'.")
+    }
+
+    if ($disposition -eq 'accepted' -and @($sourceStates | Where-Object { $_ -ne 'listed' }).Count -gt 0) {
+        $failures.Add("Accepted package '$id' requires listed evidence from every configured source.")
+    }
+
+    $sourceCandidateVersions = @($sourceStableCandidates) + @($sourcePrereleaseCandidates)
+    if ($disposition -eq 'accepted' -and @($sourceCandidateVersions | Where-Object { $_ -ieq $selectedVersion }).Count -eq 0) {
+        $failures.Add("Accepted package '$id' selected version '$selectedVersion' has no configured-source candidate evidence.")
+    }
+
     if ($id -eq 'Microsoft.OpenApi' -and $selectedVersion -notmatch '^2\.') {
         $failures.Add('Microsoft.OpenApi must remain on the proven 2.x line until compatibility evidence changes the contract.')
     }
 
-    if ($id -like 'Hexalith.Tenants.*' -and $selectedVersion -cne $auditedVersion) {
+    if (($id -eq 'Hexalith.Tenants' -or $id -like 'Hexalith.Tenants.*') -and $selectedVersion -cne $auditedVersion) {
         $failures.Add("Package '$id' changed without a separately validated Tenants release-owner contract.")
     }
 
@@ -355,6 +438,9 @@ foreach ($decision in $familyDecisions) {
 
     $declaredIds = @((Get-PropertyValue -Object $decision -Name 'packageIds') | ForEach-Object { [string] $_ })
     $actualIds = @($packages | Where-Object { $_._validatedFamily -ceq $family } | ForEach-Object { [string] $_.id })
+    if ($actualIds.Count -eq 0) {
+        $failures.Add("Family '$family' has no package evidence rows.")
+    }
     $declaredSignature = [string]::Join('|', @($declaredIds | Sort-Object))
     $actualSignature = [string]::Join('|', @($actualIds | Sort-Object))
     if ($declaredSignature -cne $actualSignature) {
@@ -369,6 +455,13 @@ foreach ($decision in $familyDecisions) {
         if ($familyPackage._validatedRollbackGroup -cne $rollbackGroup) {
             $failures.Add("Package '$($familyPackage.id)' rollback group does not match family '$family'.")
         }
+    }
+}
+
+foreach ($rollbackGroup in @($familyDecisions | Group-Object rollbackGroup)) {
+    $groupDispositions = @($rollbackGroup.Group | ForEach-Object { [string] $_.disposition } | Sort-Object -Unique)
+    if ($groupDispositions.Count -gt 1) {
+        $failures.Add("Rollback group '$($rollbackGroup.Name)' contains inconsistent family dispositions.")
     }
 }
 

@@ -403,6 +403,7 @@
       "disposition": "accepted",
       "rollbackGroup": "identity-model",
       "packageIds": [
+        "Microsoft.Identity.Web",
         "Microsoft.IdentityModel.Abstractions",
         "Microsoft.IdentityModel.JsonWebTokens",
         "Microsoft.IdentityModel.Logging",
@@ -411,8 +412,8 @@
         "Microsoft.IdentityModel.Tokens",
         "System.IdentityModel.Tokens.Jwt"
       ],
-      "rationale": "Accept the latest listed 8.x patch for the complete IdentityModel and JWT family.",
-      "compatibilityEvidence": "All seven rows share the listed 8.22.0 candidate and are validated together by the Builds and EventStore Release gates.",
+      "rationale": "Accept Microsoft.Identity.Web 4.14.2 with the complete IdentityModel and JWT family at 8.22.0.",
+      "compatibilityEvidence": "All eight identity rows select their latest listed stable candidates and are validated together by the Builds and EventStore Release gates.",
       "removalTrigger": "Roll back the identity-model group together if authentication or token validation regresses.",
       "representativeConsumers": [
         "Hexalith.EventStore"
@@ -469,15 +470,16 @@
       ]
     },
     {
-      "family": "package:anglesharp",
+      "family": "bunit-html",
       "disposition": "accepted",
-      "rollbackGroup": "package:anglesharp",
+      "rollbackGroup": "bunit-html",
       "packageIds": [
-        "AngleSharp"
+        "AngleSharp",
+        "bunit"
       ],
-      "rationale": "Accept the latest listed stable 1.x release while preserving the existing security floor.",
-      "compatibilityEvidence": "The 1.6.0 candidate remains on the established major line and is validated by EventStore contract and UI test builds.",
-      "removalTrigger": "Roll back this package group if HTML parsing or bUnit compatibility regresses.",
+      "rationale": "Accept AngleSharp 1.6.0 and move bUnit from its superseded preview to stable 2.8.6 as one UI-test rollback group.",
+      "compatibilityEvidence": "Both candidates are latest listed releases on their established major lines and pass the EventStore Admin UI suite together.",
+      "removalTrigger": "Roll back AngleSharp and bUnit together if HTML parsing, discovery, rendering, or component tests regress.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -722,17 +724,15 @@
     },
     {
       "family": "package:azure.monitor.opentelemetry.aspnetcore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "package:azure.monitor.opentelemetry.aspnetcore",
       "packageIds": [
         "Azure.Monitor.OpenTelemetry.AspNetCore"
       ],
-      "rationale": "Accept the latest listed stable 1.x Azure Monitor exporter release.",
-      "compatibilityEvidence": "The 1.6.0 candidate remains on the supported major line and is validated by the EventStore ServiceDefaults build.",
-      "removalTrigger": "Roll back this package group if telemetry startup or export validation regresses.",
-      "representativeConsumers": [
-        "Hexalith.EventStore"
-      ]
+      "rationale": "Retain 1.5.0 because no checked-out source project consumes this catalog row, so the 1.6.0 candidate has no representative compatibility proof.",
+      "compatibilityEvidence": "The complete workspace source scan found no PackageReference for Azure.Monitor.OpenTelemetry.AspNetCore outside the central catalog.",
+      "removalTrigger": "Accept a later candidate only after an actual consumer is identified and its telemetry startup and export path pass validation.",
+      "representativeConsumers": []
     },
     {
       "family": "package:azure.resourcemanager",
@@ -842,20 +842,6 @@
       "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
       "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
       "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
-      "representativeConsumers": [
-        "Hexalith.EventStore"
-      ]
-    },
-    {
-      "family": "package:bunit",
-      "disposition": "accepted",
-      "rollbackGroup": "package:bunit",
-      "packageIds": [
-        "bunit"
-      ],
-      "rationale": "Accept the latest listed 2.x stable release and leave the superseded preview channel.",
-      "compatibilityEvidence": "The stable 2.8.6 candidate is validated by the EventStore UI test project and fresh Release build.",
-      "removalTrigger": "Roll back this package group if bUnit discovery, rendering, or test execution regresses.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -1304,20 +1290,6 @@
       "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
       "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
       "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
-      "representativeConsumers": [
-        "Hexalith.EventStore"
-      ]
-    },
-    {
-      "family": "package:microsoft.identity.web",
-      "disposition": "accepted",
-      "rollbackGroup": "package:microsoft.identity.web",
-      "packageIds": [
-        "Microsoft.Identity.Web"
-      ],
-      "rationale": "Accept the latest listed stable 4.x Microsoft Identity Web release.",
-      "compatibilityEvidence": "The 4.14.2 candidate remains on the established major line and is validated with the aligned IdentityModel family.",
-      "removalTrigger": "Roll back this package group if authentication composition or token acquisition regresses.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -1926,14 +1898,14 @@
     },
     {
       "family": "package:stackexchange.redis",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "package:stackexchange.redis",
       "packageIds": [
         "StackExchange.Redis"
       ],
-      "rationale": "Accept the latest listed stable 3.x release.",
-      "compatibilityEvidence": "The 3.1.0 candidate remains on the established major line and is validated by EventStore SignalR and Release builds.",
-      "removalTrigger": "Roll back this package group if Redis connection, serialization, or SignalR backplane behavior regresses.",
+      "rationale": "Retain 3.0.17 because the required two-instance Redis backplane runtime proof did not reach readiness in the current EventStore host topology.",
+      "compatibilityEvidence": "Restore, build, and SignalR unit tests passed, but the focused Tier-3 proof timed out during pre-readiness hosted-service calls and therefore did not prove cross-instance delivery on 3.1.0.",
+      "removalTrigger": "Accept 3.1.0 or later only after the focused two-instance Redis backplane runtime proof passes with cross-instance delivery and negative controls.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -2183,9 +2155,9 @@
       "latestStable": "1.6.0",
       "latestPrerelease": "1.7.0-beta.583",
       "listingState": "listed",
-      "family": "package:anglesharp",
+      "family": "bunit-html",
       "disposition": "accepted",
-      "rollbackGroup": "package:anglesharp",
+      "rollbackGroup": "bunit-html",
       "rationale": "Accept the latest listed stable 1.x release while preserving the existing security floor.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.6.0, prerelease=1.7.0-beta.583",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
@@ -2892,16 +2864,16 @@
     {
       "id": "Azure.Monitor.OpenTelemetry.AspNetCore",
       "auditedVersion": "1.5.0",
-      "selectedVersion": "1.6.0",
+      "selectedVersion": "1.5.0",
       "latestStable": "1.6.0",
       "latestPrerelease": "1.4.0-beta.1",
       "listingState": "listed",
       "family": "package:azure.monitor.opentelemetry.aspnetcore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "package:azure.monitor.opentelemetry.aspnetcore",
-      "rationale": "Accept the latest listed stable 1.x Azure Monitor exporter release.",
+      "rationale": "Retain 1.5.0 because no checked-out source project consumes this catalog row, so the 1.6.0 candidate has no representative compatibility proof.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.6.0, prerelease=1.4.0-beta.1",
-      "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+      "removalTrigger": "Accept a later candidate only after an actual consumer is identified and its telemetry startup and export path pass validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
@@ -3103,9 +3075,9 @@
       "latestStable": "2.8.6",
       "latestPrerelease": "2.8.4-preview",
       "listingState": "listed",
-      "family": "package:bunit",
+      "family": "bunit-html",
       "disposition": "accepted",
-      "rollbackGroup": "package:bunit",
+      "rollbackGroup": "bunit-html",
       "rationale": "Accept the latest listed 2.x stable release and leave the superseded preview channel.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.8.6, prerelease=2.8.4-preview",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
@@ -6852,9 +6824,9 @@
       "latestStable": "4.14.2",
       "latestPrerelease": "4.4.0-preview.1",
       "listingState": "listed",
-      "family": "package:microsoft.identity.web",
+      "family": "identity-model",
       "disposition": "accepted",
-      "rollbackGroup": "package:microsoft.identity.web",
+      "rollbackGroup": "identity-model",
       "rationale": "Accept the latest listed stable 4.x Microsoft Identity Web release.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.14.2, prerelease=4.4.0-preview.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
@@ -8205,16 +8177,16 @@
     {
       "id": "StackExchange.Redis",
       "auditedVersion": "3.0.17",
-      "selectedVersion": "3.1.0",
+      "selectedVersion": "3.0.17",
       "latestStable": "3.1.0",
       "latestPrerelease": "1.2.0-alpha1",
       "listingState": "listed",
       "family": "package:stackexchange.redis",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "package:stackexchange.redis",
-      "rationale": "Accept the latest listed stable 3.x release.",
+      "rationale": "Retain 3.0.17 because the required two-instance Redis backplane runtime proof did not reach readiness in the current EventStore host topology.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.1.0, prerelease=1.2.0-alpha1",
-      "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+      "removalTrigger": "Accept 3.1.0 or later only after the focused two-instance Redis backplane runtime proof passes with cross-instance delivery and negative controls.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
