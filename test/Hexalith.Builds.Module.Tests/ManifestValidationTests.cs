@@ -195,6 +195,36 @@ public sealed class ManifestValidationTests
     }
 
     /// <summary>
+    /// Verifies the published schema and runtime validator share the same exact platform pins.
+    /// </summary>
+    [Fact]
+    public void PlatformPinSchemaAndRuntimeValidationRemainInParity()
+    {
+        using JsonDocument schema = JsonDocument.Parse(File.ReadAllText(
+            Path.Combine(FindRepositoryRoot(), "schemas", "hexalith.module-manifest.v1.json")));
+        JsonElement platform = schema.RootElement.GetProperty("$defs").GetProperty("platform");
+        string[] required = [.. platform.GetProperty("required").EnumerateArray()
+            .Select(element => element.GetString() ?? string.Empty)];
+        required.ShouldBe([
+            "eventStoreVersion",
+            "daprRuntimeVersion",
+            "daprSdkVersion",
+            "frontComposerVersion",
+        ]);
+
+        JsonElement properties = platform.GetProperty("properties");
+
+        properties.GetProperty("eventStoreVersion").GetProperty("const").GetString()
+            .ShouldBe(SupportedPlatformPins.EventStoreVersion);
+        properties.GetProperty("daprRuntimeVersion").GetProperty("const").GetString()
+            .ShouldBe(SupportedPlatformPins.DaprRuntimeVersion);
+        properties.GetProperty("daprSdkVersion").GetProperty("const").GetString()
+            .ShouldBe(SupportedPlatformPins.DaprSdkVersion);
+        properties.GetProperty("frontComposerVersion").GetProperty("const").GetString()
+            .ShouldBe(SupportedPlatformPins.FrontComposerVersion);
+    }
+
+    /// <summary>
     /// Verifies portable canonical path syntax remains aligned between schema and runtime validation.
     /// </summary>
     [Fact]
@@ -459,7 +489,7 @@ public sealed class ManifestValidationTests
                 modules,
                 platform = new
                 {
-                    eventStoreVersion = "3.70.1",
+                    eventStoreVersion = "3.88.0",
                     daprRuntimeVersion = "1.18.0",
                     daprSdkVersion = "1.18.5",
                     frontComposerVersion = "4.0.1",
@@ -534,7 +564,7 @@ public sealed class ManifestValidationTests
             }
           ],
           "platform": {
-            "eventStoreVersion": "3.70.1",
+            "eventStoreVersion": "3.88.0",
             "daprRuntimeVersion": "1.18.0",
             "daprSdkVersion": "1.18.5",
             "frontComposerVersion": "4.0.1"
