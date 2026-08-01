@@ -519,6 +519,238 @@ class PublishScriptContractTests(unittest.TestCase):
                 preflight[preflight.index("--expected-package-count") + 1],
             )
 
+    def test_three_container_set_is_preflighted_once_before_any_write(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            fake_bin = root / "bin"
+            fake_bin.mkdir()
+            projects = []
+            mappings = []
+            for name in ("parties-ui", "parties", "parties-mcp"):
+                project = root / f"{name}.csproj"
+                project.write_text("<Project />\n", encoding="utf-8")
+                projects.append(project)
+                mappings.append(f"{project}|{name}")
+
+            preflight_arguments = root / "preflight-arguments.txt"
+            preflight_marker = root / "preflight-ran"
+            docker_marker = root / "docker-ran"
+            dotnet_invocations = root / "dotnet-invocations.txt"
+            validator_invocations = root / "validator-invocations.txt"
+            smoke_invocations = root / "smoke-invocations.txt"
+            package_manifest = write_package_manifest(root)
+
+            write_executable(
+                root / "preflight",
+                """#!/usr/bin/env bash
+set -euo pipefail
+[ ! -e "$FAKE_DOCKER_MARKER" ]
+[ ! -e "$FAKE_DOTNET_INVOCATIONS" ]
+printf '%s\n' "$@" > "$FAKE_PREFLIGHT_ARGUMENTS"
+touch "$FAKE_PREFLIGHT_MARKER"
+""",
+            )
+            write_executable(
+                fake_bin / "docker",
+                """#!/usr/bin/env bash
+set -euo pipefail
+[ -e "$FAKE_PREFLIGHT_MARKER" ]
+cat >/dev/null
+touch "$FAKE_DOCKER_MARKER"
+""",
+            )
+            write_executable(
+                fake_bin / "dotnet",
+                """#!/usr/bin/env bash
+set -euo pipefail
+[ -e "$FAKE_PREFLIGHT_MARKER" ]
+[ -e "$FAKE_DOCKER_MARKER" ]
+printf '%s\n' "$*" >> "$FAKE_DOTNET_INVOCATIONS"
+""",
+            )
+            write_executable(
+                root / "validate",
+                "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$*\" >> \"$FAKE_VALIDATOR_INVOCATIONS\"\n",
+            )
+            write_executable(
+                root / "smoke",
+                "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$*\" >> \"$FAKE_SMOKE_INVOCATIONS\"\n",
+            )
+
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PATH": f"{fake_bin}:{environment['PATH']}",
+                    "HEXALITH_CONTAINER_PROJECTS": "\n".join(mappings),
+                    "HEXALITH_ZOT_USERNAME": "fixture-user",
+                    "HEXALITH_ZOT_API_KEY": "fixture-token",
+                    "HEXALITH_ZOT_REGISTRY": "registry.example.test",
+                    "HEXALITH_OCI_VALIDATOR": str(root / "validate"),
+                    "HEXALITH_CONTAINER_SMOKE": str(root / "smoke"),
+                    "HEXALITH_PUBLICATION_PREFLIGHT": str(root / "preflight"),
+                    "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
+                    "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
+                    "HEXALITH_RELEASE_ENVIRONMENT": "production",
+                    "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
+                    "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
+                    "GITHUB_REPOSITORY": "Hexalith/Hexalith.Parties",
+                    "GITHUB_SHA": "b" * 40,
+                    "FAKE_PREFLIGHT_ARGUMENTS": str(preflight_arguments),
+                    "FAKE_PREFLIGHT_MARKER": str(preflight_marker),
+                    "FAKE_DOCKER_MARKER": str(docker_marker),
+                    "FAKE_DOTNET_INVOCATIONS": str(dotnet_invocations),
+                    "FAKE_VALIDATOR_INVOCATIONS": str(validator_invocations),
+                    "FAKE_SMOKE_INVOCATIONS": str(smoke_invocations),
+                }
+            )
+
+            result = subprocess.run(
+                ["bash", str(PUBLISHER), "3.89.0"],
+                cwd=root,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            preflight = preflight_arguments.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(1, preflight.count("--phase"))
+            self.assertEqual("container", preflight[preflight.index("--phase") + 1])
+            self.assertEqual(3, preflight.count("--container-repository"))
+            declared_repositories = [
+                preflight[index + 1]
+                for index, value in enumerate(preflight)
+                if value == "--container-repository"
+            ]
+            self.assertEqual(
+                [f"registry.example.test/{name}" for name in ("parties-ui", "parties", "parties-mcp")],
+                declared_repositories,
+            )
+            self.assertEqual(3, len(dotnet_invocations.read_text(encoding="utf-8").splitlines()))
+            self.assertEqual(3, len(validator_invocations.read_text(encoding="utf-8").splitlines()))
+            self.assertEqual(3, len(smoke_invocations.read_text(encoding="utf-8").splitlines()))
+
+    def test_three_container_collision_blocks_login_and_every_container_write(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            fake_bin = root / "bin"
+            fake_bin.mkdir()
+            mappings = []
+            for name in ("parties", "parties-mcp", "parties-ui"):
+                project = root / f"{name}.csproj"
+                project.write_text("<Project />\n", encoding="utf-8")
+                mappings.append(f"{project}|{name}")
+            mutation_marker = root / "mutation-ran"
+            package_manifest = write_package_manifest(root)
+
+            write_executable(
+                root / "preflight",
+                """#!/usr/bin/env bash
+set -euo pipefail
+arguments=" $* "
+[[ "$arguments" == *" --container-repository registry.example.test/parties "* ]]
+[[ "$arguments" == *" --container-repository registry.example.test/parties-mcp "* ]]
+[[ "$arguments" == *" --container-repository registry.example.test/parties-ui "* ]]
+exit 1
+""",
+            )
+            for command in ("docker", "dotnet"):
+                write_executable(
+                    fake_bin / command,
+                    "#!/usr/bin/env bash\nset -euo pipefail\ntouch \"$FAKE_MUTATION_MARKER\"\n",
+                )
+
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PATH": f"{fake_bin}:{environment['PATH']}",
+                    "HEXALITH_CONTAINER_PROJECTS": "\n".join(mappings),
+                    "HEXALITH_ZOT_USERNAME": "fixture-user",
+                    "HEXALITH_ZOT_API_KEY": "fixture-token",
+                    "HEXALITH_ZOT_REGISTRY": "registry.example.test",
+                    "HEXALITH_OCI_VALIDATOR": "/bin/true",
+                    "HEXALITH_CONTAINER_SMOKE": "/bin/true",
+                    "HEXALITH_PUBLICATION_PREFLIGHT": str(root / "preflight"),
+                    "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
+                    "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
+                    "HEXALITH_RELEASE_ENVIRONMENT": "production",
+                    "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
+                    "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
+                    "GITHUB_REPOSITORY": "Hexalith/Hexalith.Parties",
+                    "GITHUB_SHA": "b" * 40,
+                    "FAKE_MUTATION_MARKER": str(mutation_marker),
+                }
+            )
+
+            result = subprocess.run(
+                ["bash", str(PUBLISHER), "3.89.0"],
+                cwd=root,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertFalse(mutation_marker.exists())
+
+    def test_invalid_later_mapping_blocks_preflight_and_every_mutation(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            fake_bin = root / "bin"
+            fake_bin.mkdir()
+            project = root / "parties.csproj"
+            project.write_text("<Project />\n", encoding="utf-8")
+            mutation_marker = root / "mutation-ran"
+            package_manifest = write_package_manifest(root)
+            for command in ("docker", "dotnet"):
+                write_executable(
+                    fake_bin / command,
+                    "#!/usr/bin/env bash\nset -euo pipefail\ntouch \"$FAKE_MUTATION_MARKER\"\n",
+                )
+            write_executable(
+                root / "preflight",
+                "#!/usr/bin/env bash\nset -euo pipefail\ntouch \"$FAKE_MUTATION_MARKER\"\n",
+            )
+
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PATH": f"{fake_bin}:{environment['PATH']}",
+                    "HEXALITH_CONTAINER_PROJECTS": (
+                        f"{project}|parties\n{root / 'missing.csproj'}|parties-ui"
+                    ),
+                    "HEXALITH_ZOT_USERNAME": "fixture-user",
+                    "HEXALITH_ZOT_API_KEY": "fixture-token",
+                    "HEXALITH_ZOT_REGISTRY": "registry.example.test",
+                    "HEXALITH_OCI_VALIDATOR": "/bin/true",
+                    "HEXALITH_CONTAINER_SMOKE": "/bin/true",
+                    "HEXALITH_PUBLICATION_PREFLIGHT": str(root / "preflight"),
+                    "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
+                    "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
+                    "HEXALITH_RELEASE_ENVIRONMENT": "production",
+                    "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
+                    "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
+                    "GITHUB_REPOSITORY": "Hexalith/Hexalith.Parties",
+                    "GITHUB_SHA": "b" * 40,
+                    "FAKE_MUTATION_MARKER": str(mutation_marker),
+                }
+            )
+
+            result = subprocess.run(
+                ["bash", str(PUBLISHER), "3.89.0"],
+                cwd=root,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("Container project not found", result.stderr)
+            self.assertFalse(mutation_marker.exists())
+
     def test_rejected_preflight_blocks_sdk_container_mutation(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

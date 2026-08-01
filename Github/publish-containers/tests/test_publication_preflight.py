@@ -132,6 +132,44 @@ class PublicationPreflightTests(unittest.TestCase):
                 identity["builds"]["files"]["publication_preflight.py"],
             )
 
+    def test_multi_container_identity_is_a_canonical_order_independent_set(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            arguments = self.arguments(root)
+            arguments.container_repositories = [
+                "REGISTRY.HEXALITH.COM/parties-ui",
+                "registry.hexalith.com/parties",
+                "registry.hexalith.com/parties-mcp",
+            ]
+            with mock.patch.dict(os.environ, self.runtime_environment(), clear=True):
+                identity = self.validator.build_publication_identity(arguments, self.source_proof())
+
+                reordered = SimpleNamespace(**vars(arguments))
+                reordered.container_repositories = list(reversed(arguments.container_repositories))
+                reordered_identity = self.validator.build_publication_identity(reordered, self.source_proof())
+
+            expected = [
+                "registry.hexalith.com/parties",
+                "registry.hexalith.com/parties-mcp",
+                "registry.hexalith.com/parties-ui",
+            ]
+            self.assertEqual(expected, identity["container_repositories"])
+            self.assertNotIn("container_repository", identity)
+            self.assertEqual(identity, reordered_identity)
+
+    def test_container_identity_rejects_empty_duplicate_or_malformed_sets(self):
+        scenarios = (
+            [],
+            ["registry.hexalith.com/parties", "REGISTRY.HEXALITH.COM/parties"],
+            ["registry.hexalith.com/parties", "registry.hexalith.com/../escape"],
+        )
+        for repositories in scenarios:
+            with self.subTest(repositories=repositories), self.assertRaises(
+                self.validator.PreflightError
+            ) as context:
+                self.validator._canonical_container_repositories(repositories)
+            self.assertEqual("container-repository-invalid", context.exception.code)
+
     def test_runtime_repository_source_and_run_mismatches_fail_closed(self):
         mutations = {
             "repository-mismatch": {"GITHUB_REPOSITORY": "Other/Repository"},
@@ -260,6 +298,47 @@ class PublicationPreflightTests(unittest.TestCase):
             )
         self.assertEqual("destination-probe-failure", context.exception.code)
 
+    def test_package_and_multi_container_destinations_are_checked_as_one_set(self):
+        packages = [f"Package.{index}" for index in range(FIXTURE_PACKAGE_COUNT)]
+        repositories = [
+            "registry.hexalith.com/parties-ui",
+            "registry.hexalith.com/parties",
+            "registry.hexalith.com/parties-mcp",
+        ]
+        calls = []
+
+        def absent_probe(kind, identity, version):
+            calls.append((kind, identity, version))
+            return 404
+
+        evidence = self.validator.validate_destination_absence(
+            packages,
+            "3.78.0",
+            repositories,
+            absent_probe,
+            FIXTURE_PACKAGE_COUNT,
+        )
+
+        expected = sorted(repositories)
+        self.assertEqual(3, evidence["container_count"])
+        self.assertEqual(expected, evidence["container_repositories"])
+        self.assertEqual(
+            [("container", repository, "3.78.0") for repository in expected],
+            calls[-3:],
+        )
+
+        with self.assertRaises(self.validator.PreflightError) as context:
+            self.validator.validate_destination_absence(
+                packages,
+                "3.78.0",
+                repositories,
+                lambda kind, identity, version: (
+                    200 if identity == "registry.hexalith.com/parties-ui" else 404
+                ),
+                FIXTURE_PACKAGE_COUNT,
+            )
+        self.assertEqual("version-collision", context.exception.code)
+
     def test_case_insensitive_duplicate_or_non_exact_package_inventory_fails_closed(self):
         packages = [f"Package.{index}" for index in range(FIXTURE_PACKAGE_COUNT)]
         packages[-1] = "package.0"
@@ -369,7 +448,9 @@ class PublicationPreflightTests(unittest.TestCase):
                 os.chdir(root)
 
                 with mock.patch.object(sys, "argv", [*common, "--expected-package-count", "5"]):
-                    self.assertEqual(5, self.validator._parse_arguments().expected_package_count)
+                    parsed = self.validator._parse_arguments()
+                    self.assertEqual(5, parsed.expected_package_count)
+                    self.assertEqual([arguments.container_repository], parsed.container_repositories)
 
                 # Omitted entirely, then values a module must never be able to declare.
                 invocations = [common]
@@ -490,6 +571,31 @@ class PublicationPreflightTests(unittest.TestCase):
                 self.validator._require_frozen_identity(root / "evidence", changed)
             self.assertEqual("publication-identity-changed", context.exception.code)
 
+    def test_multi_container_sequence_rejects_set_drift_before_publish(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            verify = self.arguments(root)
+            verify.container_repositories = [
+                "registry.hexalith.com/parties",
+                "registry.hexalith.com/parties-mcp",
+                "registry.hexalith.com/parties-ui",
+            ]
+            with mock.patch.dict(os.environ, self.runtime_environment(), clear=True):
+                identity = self.validator.build_publication_identity(verify, self.source_proof())
+                changed = SimpleNamespace(**vars(verify))
+                changed.container_repositories = verify.container_repositories[:-1]
+                changed_identity = self.validator.build_publication_identity(changed, self.source_proof())
+
+            self.validator._write_evidence(root / "evidence", "verify", identity, {"result": "pass"})
+            with self.assertRaises(self.validator.PreflightError) as context:
+                self.validator._write_evidence(
+                    root / "evidence",
+                    "publish",
+                    changed_identity,
+                    {"result": "pass"},
+                )
+            self.assertEqual("publication-identity-changed", context.exception.code)
+
     def test_container_phase_requires_publish_recheck(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -558,6 +664,69 @@ class PublicationPreflightTests(unittest.TestCase):
 
             self.assertTrue((root / "evidence" / "publication-preflight.container.json").is_file())
             self.assertEqual(6, source_proof.call_count)
+
+    def test_main_freezes_and_revalidates_three_container_repositories(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            arguments = self.arguments(root)
+            repositories = [
+                "registry.hexalith.com/parties-ui",
+                "registry.hexalith.com/parties",
+                "registry.hexalith.com/parties-mcp",
+            ]
+            common = [
+                "publication_preflight.py",
+                "--repository",
+                arguments.repository,
+                "--version",
+                arguments.version,
+                "--source-sha",
+                arguments.source_sha,
+                "--builds-execution-sha",
+                arguments.builds_execution_sha,
+                "--environment-name",
+                arguments.environment_name,
+                "--package-manifest",
+                str(arguments.package_manifest),
+                "--expected-package-count",
+                str(FIXTURE_PACKAGE_COUNT),
+                "--contract-directory",
+                str(arguments.contract_directory),
+                "--evidence-directory",
+                str(arguments.evidence_directory),
+            ]
+            for repository in repositories:
+                common.extend(("--container-repository", repository))
+
+            probed = []
+
+            def absent_probe(kind, identity, version):
+                probed.append((kind, identity, version))
+                return 404
+
+            previous_directory = Path.cwd()
+            try:
+                os.chdir(root)
+                with (
+                    mock.patch.dict(os.environ, self.runtime_environment(), clear=True),
+                    mock.patch.object(self.validator, "destination_probe", return_value=absent_probe),
+                    mock.patch.object(
+                        self.validator,
+                        "prove_current_green_source",
+                        return_value=self.source_proof(),
+                    ),
+                ):
+                    for phase in ("verify", "publish", "container"):
+                        with mock.patch.object(sys, "argv", [*common, "--phase", phase]):
+                            self.assertEqual(0, self.validator.main())
+            finally:
+                os.chdir(previous_directory)
+
+            frozen = json.loads(
+                (root / "evidence" / "publication-identity.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(sorted(repositories), frozen["container_repositories"])
+            self.assertEqual(9, sum(1 for kind, _, _ in probed if kind == "container"))
 
     def test_source_race_during_probe_blocks_phase_evidence(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

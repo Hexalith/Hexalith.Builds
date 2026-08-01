@@ -58,7 +58,10 @@ case "$evidence_directory/" in
   *) fail "Container evidence directory must remain below the workspace." ;;
 esac
 
-echo "$api_key" | docker login "$registry" --username "$username" --password-stdin
+declare -a container_projects=()
+declare -a container_names=()
+declare -a container_repositories=()
+declare -A seen_repositories=()
 
 while IFS= read -r raw_line; do
   line="$(trim "${raw_line%$'\r'}")"
@@ -80,23 +83,47 @@ while IFS= read -r raw_line; do
     *) fail "Container project must remain below the workspace." ;;
   esac
 
+  full_repository="${registry}/${repository}"
+  [ -z "${seen_repositories[$full_repository]+x}" ] ||
+    fail "Container repository '$repository' is declared more than once."
+  seen_repositories["$full_repository"]=1
+  container_projects+=("$resolved_project")
+  container_names+=("$repository")
+  container_repositories+=("$full_repository")
+done <<< "$projects"
+
+[ "${#container_projects[@]}" -gt 0 ] || fail "HEXALITH_CONTAINER_PROJECTS is empty."
+
+preflight_arguments=(
+  --repository "$release_repository"
+  --version "$version"
+  --source-sha "$source_sha"
+  --source-branch "$source_branch"
+  --source-ci-workflow "$source_ci_workflow"
+  --builds-execution-sha "$builds_execution_sha"
+  --environment-name "$release_environment"
+  --package-manifest "$package_manifest"
+  --expected-package-count "$expected_package_count"
+  --contract-directory "$(dirname "$0")"
+  --evidence-directory "${evidence_directory}/preflight"
+  --phase container
+)
+for repository in "${container_repositories[@]}"; do
+  preflight_arguments+=(--container-repository "$repository")
+done
+
+# Prove the complete frozen destination set is still absent before the first
+# registry login or container write. One phase record covers the whole set.
+"$publication_preflight" "${preflight_arguments[@]}"
+
+echo "$api_key" | docker login "$registry" --username "$username" --password-stdin
+
+for index in "${!container_projects[@]}"; do
+  resolved_project="${container_projects[$index]}"
+  repository="${container_names[$index]}"
+
   mapping_evidence="${evidence_directory}/${repository}"
   mkdir -p "$mapping_evidence"
-
-  "$publication_preflight" \
-    --repository "$release_repository" \
-    --version "$version" \
-    --source-sha "$source_sha" \
-    --source-branch "$source_branch" \
-    --source-ci-workflow "$source_ci_workflow" \
-    --container-repository "${registry}/${repository}" \
-    --builds-execution-sha "$builds_execution_sha" \
-    --environment-name "$release_environment" \
-    --package-manifest "$package_manifest" \
-    --expected-package-count "$expected_package_count" \
-    --contract-directory "$(dirname "$0")" \
-    --evidence-directory "${evidence_directory}/preflight" \
-    --phase container
 
   echo "[publish-containers] Publishing ${registry}/${repository}:${version} from ${resolved_project}"
   dotnet publish "$resolved_project" \
@@ -117,4 +144,4 @@ while IFS= read -r raw_line; do
   "$smoke" \
     --image "${registry}/${repository}:${version}" \
     --evidence-directory "$mapping_evidence"
-done <<< "$projects"
+done

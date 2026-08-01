@@ -14,6 +14,8 @@ The helper:
 - validates the release version is plain SemVer,
 - logs in to the Hexalith Zot registry (`HEXALITH_ZOT_REGISTRY`, default
   `registry.hexalith.com`) with `HEXALITH_ZOT_USERNAME` / `HEXALITH_ZOT_API_KEY`,
+- validates every project/repository mapping and proves the complete canonical
+  container destination set is absent before the registry login or first write,
 - publishes each `path/to/project.csproj|repository` mapping from
   `HEXALITH_CONTAINER_PROJECTS` via .NET SDK container support
   (`/t:PublishContainer`), tagging the image with the release version,
@@ -50,17 +52,21 @@ The protected GitHub environment on the reusable release job supplies human
 publication approval. The installed `publication_preflight.py` supplies the
 machine-verifiable contract without a separate comment or expiring record. It
 freezes the exact repository, version, live current-main and successful push-CI
-proof, normalized package IDs and canonical manifest hash, container repository,
-platforms, environment, GitHub run identity, approved Builds identity, and
-helper hashes. It also requires every package version and the container tag to
-be absent.
+proof, normalized package IDs and canonical manifest hash, sorted unique
+container repository set, platforms, environment, GitHub run identity,
+approved Builds identity, and helper hashes. It also requires every package
+version and every container tag to be absent. A single repository remains the
+same supported caller contract; multi-container callers repeat
+`--container-repository` when invoking the preflight wrapper.
 
 `verifyRelease` re-proves the source, freezes that identity, and checks every
 destination before tag creation. The pre-NuGet `publish` phase requires exact
 identity equality, re-proves the source, and repeats every destination check.
 The publisher then requires the prior two phases, re-proves the source, and
-repeats container-tag absence immediately before `dotnet publish`. Each phase
-is single-use and fail-closed; redirects, ambiguous statuses, duplicate
+repeats absence for the full frozen container set once immediately before the
+first `dotnet publish`. It validates all mappings before that preflight, so a
+malformed or duplicate later mapping cannot allow an earlier image write. Each
+phase is single-use and fail-closed; redirects, ambiguous statuses, duplicate
 skipping, and overwrites are forbidden. The workflow uploads the complete
 hidden release-evidence directory on success or partial failure.
 

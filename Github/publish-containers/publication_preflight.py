@@ -29,7 +29,7 @@ from oci_registry_validator import (
 )
 
 
-PREFLIGHT_SCHEMA = "hexalith.release-publication-preflight.v2"
+PREFLIGHT_SCHEMA = "hexalith.release-publication-preflight.v3"
 REQUIRED_PLATFORMS = ["linux/amd64", "linux/arm64"]
 REQUIRED_CONTRACT_FILES = (
     "publish-containers.sh",
@@ -104,6 +104,40 @@ def _validate_environment_name(value):
     if len(value) > 255:
         _fail("environment-invalid", "Release environment exceeds GitHub's name limit.")
     return value
+
+
+def _canonical_container_repositories(value):
+    """Return one-or-more unique container repositories in canonical set order."""
+    repositories = [value] if isinstance(value, str) else value
+    if not isinstance(repositories, (list, tuple)) or not repositories:
+        _fail(
+            "container-repository-invalid",
+            "At least one container repository is required.",
+        )
+
+    canonical = []
+    for repository in repositories:
+        if (
+            not isinstance(repository, str)
+            or CONTAINER_REPOSITORY_PATTERN.fullmatch(repository) is None
+        ):
+            _fail("container-repository-invalid", "A container repository is invalid.")
+        canonical.append(repository.lower())
+
+    if len(set(canonical)) != len(canonical):
+        _fail(
+            "container-repository-invalid",
+            "Container repositories must be unique.",
+        )
+    return sorted(canonical)
+
+
+def _argument_container_repositories(arguments):
+    """Read the repeatable CLI value while accepting the legacy singular test seam."""
+    repositories = getattr(arguments, "container_repositories", None)
+    if repositories is None:
+        repositories = getattr(arguments, "container_repository", None)
+    return _canonical_container_repositories(repositories)
 
 
 def _runtime_identity(repository, source_sha, source_branch):
@@ -296,8 +330,7 @@ def build_publication_identity(arguments, source_proof=None):
         _fail("source-invalid", "Release source SHA must be an exact lowercase commit SHA.")
     if SHA_PATTERN.fullmatch(arguments.builds_execution_sha) is None:
         _fail("builds-identity-invalid", "Builds execution SHA must be an exact lowercase commit SHA.")
-    if CONTAINER_REPOSITORY_PATTERN.fullmatch(arguments.container_repository) is None:
-        _fail("container-repository-invalid", "Container repository is invalid.")
+    container_repositories = _argument_container_repositories(arguments)
 
     proof = source_proof or prove_current_green_source(
         arguments.repository,
@@ -307,13 +340,13 @@ def build_publication_identity(arguments, source_proof=None):
         os.environ.get("GITHUB_TOKEN", ""),
     )
 
-    return {
+    identity = {
         "schema": PREFLIGHT_SCHEMA,
         "repository": arguments.repository,
         "version": arguments.version,
         "source_sha": arguments.source_sha,
         "source": proof,
-        "container_repository": arguments.container_repository,
+        "container_repositories": container_repositories,
         "platforms": list(REQUIRED_PLATFORMS),
         "environment": _validate_environment_name(arguments.environment_name),
         "packages": _load_package_identity(arguments.package_manifest, arguments.expected_package_count),
@@ -324,10 +357,13 @@ def build_publication_identity(arguments, source_proof=None):
         },
         "run": _runtime_identity(arguments.repository, arguments.source_sha, arguments.source_branch),
     }
+    if len(container_repositories) == 1:
+        identity["container_repository"] = container_repositories[0]
+    return identity
 
 
-def validate_destination_absence(package_ids, version, container_repository, probe, expected_package_count):
-    """Require exactly the caller's declared new package IDs and one new container tag to be absent."""
+def validate_destination_absence(package_ids, version, container_repositories, probe, expected_package_count):
+    """Require the declared package IDs and complete container set to be absent."""
     if (
         len(package_ids) != expected_package_count
         or any(not isinstance(package_id, str) or not package_id.strip() for package_id in package_ids)
@@ -339,6 +375,7 @@ def validate_destination_absence(package_ids, version, container_repository, pro
         )
     if not isinstance(version, str) or SEMVER_PATTERN.fullmatch(version) is None:
         _fail("invalid-version", "Proposed release version is invalid.")
+    repositories = _canonical_container_repositories(container_repositories)
     checked = []
     for package_id in package_ids:
         status = probe("nuget", package_id, version)
@@ -347,34 +384,45 @@ def validate_destination_absence(package_ids, version, container_repository, pro
         if status != 404:
             _fail("destination-probe-failure", "NuGet destination absence could not be proved.")
         checked.append(package_id)
-    status = probe("container", container_repository, version)
-    if status == 200:
-        _fail("version-collision", "The proposed container tag already exists.")
-    if status != 404:
-        _fail("destination-probe-failure", "Container destination absence could not be proved.")
-    return {
+    for repository in repositories:
+        status = probe("container", repository, version)
+        if status == 200:
+            _fail("version-collision", "A proposed container tag already exists.")
+        if status != 404:
+            _fail("destination-probe-failure", "Container destination absence could not be proved.")
+    evidence = {
         "result": "pass",
         "version": version,
         "package_count": len(checked),
         "package_ids": checked,
-        "container_repository": container_repository,
+        "container_count": len(repositories),
+        "container_repositories": repositories,
     }
+    if len(repositories) == 1:
+        evidence["container_repository"] = repositories[0]
+    return evidence
 
 
-def validate_container_absence(version, container_repository, probe):
-    """Require the exact container version tag to remain absent."""
+def validate_container_absence(version, container_repositories, probe):
+    """Require every exact container version tag in the frozen set to remain absent."""
     if not isinstance(version, str) or SEMVER_PATTERN.fullmatch(version) is None:
         _fail("invalid-version", "Proposed release version is invalid.")
-    status = probe("container", container_repository, version)
-    if status == 200:
-        _fail("version-collision", "The proposed container tag already exists.")
-    if status != 404:
-        _fail("destination-probe-failure", "Container destination absence could not be proved.")
-    return {
+    repositories = _canonical_container_repositories(container_repositories)
+    for repository in repositories:
+        status = probe("container", repository, version)
+        if status == 200:
+            _fail("version-collision", "A proposed container tag already exists.")
+        if status != 404:
+            _fail("destination-probe-failure", "Container destination absence could not be proved.")
+    evidence = {
         "result": "pass",
         "version": version,
-        "container_repository": container_repository,
+        "container_count": len(repositories),
+        "container_repositories": repositories,
     }
+    if len(repositories) == 1:
+        evidence["container_repository"] = repositories[0]
+    return evidence
 
 
 def _http_status(request):
@@ -514,7 +562,13 @@ def _parse_arguments():
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--source-branch", required=False, default="main")
     parser.add_argument("--source-ci-workflow", required=False, default="ci.yml")
-    parser.add_argument("--container-repository", required=True)
+    parser.add_argument(
+        "--container-repository",
+        dest="container_repositories",
+        action="append",
+        required=True,
+        help="Container repository in registry/repository form. Repeat for the complete release set.",
+    )
     parser.add_argument("--builds-execution-sha", required=True)
     parser.add_argument("--environment-name", required=True)
     parser.add_argument("--package-manifest", required=True, type=workspace_input_file)
@@ -528,17 +582,18 @@ def _parse_arguments():
 
 
 def _validate_destinations(arguments, probe):
+    container_repositories = _argument_container_repositories(arguments)
     if arguments.phase == "container":
         return validate_container_absence(
             arguments.version,
-            arguments.container_repository,
+            container_repositories,
             probe,
         )
     package_identity = _load_package_identity(arguments.package_manifest, arguments.expected_package_count)
     return validate_destination_absence(
         package_identity["ids"],
         arguments.version,
-        arguments.container_repository,
+        container_repositories,
         probe,
         arguments.expected_package_count,
     )
