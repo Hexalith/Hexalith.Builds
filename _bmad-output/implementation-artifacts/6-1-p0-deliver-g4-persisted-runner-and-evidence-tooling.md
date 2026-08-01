@@ -14,13 +14,25 @@ accountable_owners:
   builds_owner: Jerome
   platform_owner: Jerome
   test_architect: unassigned-required-before-acceptance
-implementation_dependencies: []
-qualification_dependencies: [6.1-P1, G-6]
-parallel_with: [6.1-P1]
+implementation_dependencies: [6.1-P1R]
+qualification_dependencies: [6.1-P1R, G-6]
+parallel_with: []
 unblocks: [6.1-P4]
 target_date: uncommitted
-estimate: L
-risk: high evidence-chain risk
+estimate: XL
+risk: high/critical evidence-chain risk
+delivery_state:
+  contract_and_validator: implemented
+  package_controls: partially-implemented
+  supported_composition: blocked
+  persisted_qualification: not-run
+  published_consumer_pin: absent
+  owner_acceptance: absent
+observed_candidate:
+  builds_revision: b529b66
+  builds_eventstore_version: 3.86.0
+  accepted_runner_and_architecture_version: 3.70.1
+  disposition: owner-revalidation-required
 packages:
   module_cli:
     id: Hexalith.Builds.Module.Cli
@@ -38,6 +50,11 @@ schemas:
   module_manifest: hexalith.module-manifest.v1
   module_run_evidence: hexalith.module-run-evidence.v1
   readiness_evidence: hexalith.readiness-evidence.v1
+  p0_acceptance: hexalith.g4-p0-acceptance.v1
+acceptance_record:
+  path: evidence/g4/6.1-p0-acceptance.json
+  status: absent
+  validator: "dotnet tool run hexalith-evidence validate evidence/g4/6.1-p0-acceptance.json"
 rollback:
   package_pin: none-greenfield
   previous_released_builds_tag: v4.19.2
@@ -111,6 +128,30 @@ so that Projects Story 6.1 and later consumers can prove supported-path behavior
 15. **P0 handoff is complete but does not self-accept Story 6.1.** Given all P0 evidence passes, when Builds Owner, Platform Owner, and Test Architect accept the exact revision, published packages, schemas, commands, persisted fixture, samples, negative-control results, and rollback procedure, then Projects can pin and invoke the tools without copying their implementation and 6.1-P4 may consume the record. P0 completion alone does not satisfy P1/P2/P3, create the P4 entry-gate artifact, or unblock Story 6.1.
 
 ## Tasks / Subtasks
+
+### Approved remaining acceptance stages — 2026-08-01 rebaseline
+
+This binding stage order supersedes the chronological ordering implied by the older task groups below. Preserve completed implementation and its evidence; do not reopen a checked item unless current-head reconciliation disproves it.
+
+- [ ] **Stage 1 — Revalidate the dependency baseline through 6.1-P1R** (AC: 1-6, 13-15)
+  - [ ] Obtain one owner-approved EventStore source/package, Builds catalog, runner manifest/schema, and Architecture Spine pin with clean restore, required API compatibility, live-runner compatibility, and rollback evidence.
+  - [ ] Do not preselect `3.70.1`, `3.86.0`, or another version inside P0; consume the exact P1R result atomically.
+- [ ] **Stage 2 — Reconcile release and package findings against the current Builds head** (AC: 1, 2, 11, 13, 14)
+  - [ ] Recheck SD1, SD2, and SP1-SP13 against the observed candidate; close only findings backed by executable current-head evidence.
+  - [ ] Retain unresolved exact-SHA CI, post-approval live-main recheck, pre-tag qualification, partial-publication recovery, remote verification, credential-scope, installed-command, and rollback controls as open where evidence remains absent.
+- [ ] **Stage 3 — Implement supported runtime composition** (AC: 4-6, 8, 12)
+  - [ ] Remove the unconditional prerequisite stop only after P1R and affected G-6 dependencies are accepted.
+  - [ ] Prove runner-owned EventStore, Dapr, identity, FrontComposer, endpoints, health, telemetry, Aspire lifecycle, run-state isolation, cancellation, and cleanup without consumer-owned topology.
+- [ ] **Stage 4 — Qualify the real two-module persisted fixture** (AC: 5, 6, 11-14)
+  - [ ] Execute persisted write/read, stop/restart/rehydration, retry/idempotency, two-instance access, authenticated access, cross-Tenant denial, stale-state, wrong-sequence, and unavailable-prerequisite controls.
+- [ ] **Stage 5 — Capture native reports and deterministic evidence through packaged tools** (AC: 6-13)
+  - [ ] Bind native report results, evidence hashes, exact commands, fixture/manifest identities, and negative-control outcomes into deterministic metadata-only artifacts.
+  - [ ] Implement fail-closed validation of `hexalith.g4-p0-acceptance.v1` through the packaged `hexalith-evidence` command.
+- [ ] **Stage 6 — Publish, remotely restore, and prove rollback** (AC: 2, 13, 14)
+  - [ ] Publish the exact prerelease, verify both packages and hashes remotely, restore them into a clean consumer using an exact checked-in tool manifest, and exercise duplicate-safe rollback/retry behavior.
+- [ ] **Stage 7 — Obtain owner acceptance and hand off to P4** (AC: 15)
+  - [ ] Emit `evidence/g4/6.1-p0-acceptance.json` with exact revisions/pins, package/feed identities and hashes, commands, live-lane results, native report/evidence hashes, cleanup/rollback results, and dated approvals.
+  - [ ] Require Builds Owner, Platform Owner, and a named Test Architect to approve the exact record before Projects can mark P0 done or P4 can consume it.
 
 - [x] Establish the Builds tool project and package spine (AC: 1, 2, 13)
   - [x] Add root `global.json` pinned to SDK `10.0.302` with the approved patch roll-forward policy.
@@ -226,7 +267,7 @@ Code review — **Chunk C (Runtime & test-report orchestration)**, 2026-07-21. S
 - [x] \[Review]\[Patch] CP4 · LOW · Dead switch arm `skipped >= total` is unreachable after the `passed==0` arm. [`.../TestReports/NativeTestReportLoader.cs`:109]
 - [x] \[Review]\[Patch] CP5 · MEDIUM · Test gaps: no coverage for HXT001 (missing/unreadable report), HXT002 (duplicate/absent `ResultSummary`/`Counters`, malformed XML), the CP1/CP2 fail-opens, or HXR004 (lifecycle exit 3), plus `down` idempotency. [`test/Hexalith.Builds.Module.Tests/NativeTestReportLoaderTests.cs`, `ModuleCommandApplicationTests.cs`] — **Resolved 2026-07-21:** added HXT001/HXT002/HXT006/negative-counter coverage to `NativeTestReportLoaderTests.cs`, and a new `ModuleInvocationStateStoreTests.cs` covering scoped/idempotent `down`, tolerance of a foreign file in the shared state dir, and the manifest-reread `IOException` that maps upstream to HXR004/exit 3 (direct unit-level coverage of that failure mode — driving it through the full CLI race is not deterministically reproducible without an instrumentation hook).
 
-**Deferred (belongs with the live runner — P1/G-6; all latent behind the deferred prerequisite gate):**
+**Deferred (belongs with the live runner — P1R/G-6; all latent behind the deferred prerequisite gate):**
 
 - [x] \[Review]\[Defer] Run-identity teardown scoping — `DownAsync` keys cleanup on manifest hash, not RunId (AC 4). [`.../Runtime/ModuleInvocationStateStore.cs`:83] — deferred, latent (CreateAsync unreachable).
 - [x] \[Review]\[Defer] World-shared state dir `hexalith-builds/runs` is not user-scoped. [`.../Runtime/ModuleInvocationStateStore.cs`:96] — deferred, latent.
@@ -395,13 +436,14 @@ Required owner-acceptance evidence:
 - packaged-command results for every blocking negative control;
 - stable diagnostics/failure-category and metadata/redaction contracts;
 - idempotent teardown and exercised greenfield/prerelease rollback record.
+- independently validated `hexalith.g4-p0-acceptance.v1` record binding exact revisions and pins, package/feed identities and hashes, commands, every required live-lane outcome, native report/evidence hashes, cleanup/rollback results, and dated Builds Owner, Platform Owner, and named Test Architect approvals.
 
 ### Hard Stops
 
 - Stop if implementation would change Projects or another repository without separate authorization.
 - Stop if package IDs, command names, schema IDs, or repository ownership must change; update this authority record first.
-- Stop if P0 chooses the P1 platform baseline or represents the 3.70.0/3.67.3 mismatch as resolved.
-- Stop P0 acceptance, but not implementation, until a named Test Architect, P1 baseline, and G-6 disposition are recorded.
+- Stop if P0 chooses the P1R platform baseline or represents the observed `3.86.0` versus `3.70.1` drift as resolved without owner-approved evidence.
+- Stop implementation that binds the live composition, and stop all P0 acceptance, until a named Test Architect, P1R baseline, and affected G-6 disposition are recorded.
 - Stop if G-6 is unresolved for an affected live lane or an unavailable prerequisite is represented as skipped/pass.
 - Stop if a fake store, handler return, static topology assertion, stale key, or hand-authored JSON is offered as G-4 proof.
 - Stop if source scripts/global tools become alternate public contracts or consumer fixtures own topology, ports, credentials, Dapr, health, telemetry, or Aspire lifecycle.
@@ -465,7 +507,8 @@ GPT-5 Codex
 - Implemented the strict readiness-evidence validator, JSON/human command output, deterministic source/row/rule diagnostics, packaged positive/negative contract corpora, JSON schemas, and documentation.
 - Added Release-only exact-package build/publish/contract scripts and semantic-release lifecycle wiring. No package was published and no consumer pin was invented.
 - Hardened the public contracts against symlink/reparse-point escape, partial/forged evidence artifacts, secret-bearing input retention, unstable parser/Ctrl+C diagnostics, incomplete TRX counter accounting, and missing source/SDK provenance; package qualification now runs the packed tools against consumer-owned copied fixtures and retained invocation evidence.
-- Live persisted qualification, actual EventStore/Dapr composition, P1/G-6 disposition, an exact published version, and named-owner/Test-Architect acceptance remain outstanding; this story remains in progress and does not modify Projects.
+- Live persisted qualification, actual EventStore/Dapr composition, P1R/G-6 disposition, an exact published version, and named-owner/Test-Architect acceptance remain outstanding; this story remains in progress and does not modify Projects.
+- The 2026-08-01 Correct Course rebaseline preserves completed source work, records Builds revision `b529b66` as an unaccepted candidate, adds blocking P1R dependency revalidation, increases remaining effort to XL, and requires a fail-closed machine-checkable P0 acceptance record.
 - Chunk A code-review remediation is complete: 18 patches applied, 2 findings dismissed as noise, and no Chunk A item deferred. The story remains in progress because unreviewed delivery surfaces and external qualification/acceptance dependencies remain.
 
 ### File List
@@ -513,3 +556,4 @@ GPT-5 Codex
 
 - 2026-07-17: Implemented the Builds-owned G-4 tool spine, strict module/evidence contracts, deterministic evidence output, package qualification/release wiring, schemas, fixtures, tests, and adoption documentation; hardened fail-closed physical-path, provenance, artifact, diagnostic, cancellation, and package-consumer behavior; retained live persisted execution and acceptance as explicit external-dependency work.
 - 2026-07-21: Completed Chunk A adversarial code-review remediation (18 patches), expanded boundary/security/verification controls, normalized the accepted EventStore pin to `3.70.1`, and requalified source build/tests plus isolated package restore/help behavior; retained the pre-existing strict-control fixture gap and live qualification as open work.
+- 2026-08-01: Approved Correct Course rebaseline added P1R, separated implemented source contracts from supported capability, reordered remaining work into seven acceptance stages, and made remote restore plus independently validated owner acceptance mandatory.
