@@ -36,7 +36,7 @@ observed_candidate:
   builds_worktree_base_revision: 4132725d8bda647cc65880199679f047f7366048
   runner_candidate_version: 3.88.0
   architecture_version: 3.70.1
-  post_alignment_builds_revision: pending
+  post_alignment_builds_revision: 4351d7cba7545a96661ca2ee2ca2629df6d0a118
   disposition: pending-validation-and-four-owner-acceptance
 packages:
   module_cli:
@@ -513,7 +513,7 @@ GPT-5 Codex
 - Added Release-only exact-package build/publish/contract scripts and semantic-release lifecycle wiring. No package was published and no consumer pin was invented.
 - Hardened the public contracts against symlink/reparse-point escape, partial/forged evidence artifacts, secret-bearing input retention, unstable parser/Ctrl+C diagnostics, incomplete TRX counter accounting, and missing source/SDK provenance; package qualification now runs the packed tools against consumer-owned copied fixtures and retained invocation evidence.
 - Live persisted qualification, actual EventStore/Dapr composition, P1R/G-6 disposition, an exact published version, and named-owner/Test-Architect acceptance remain outstanding; this story remains in progress and does not modify Projects.
-- The 2026-08-01 P1R implementation preserves completed source work, records EventStore/catalog/runner `3.88.0` as an unaccepted candidate based on Builds revision `4132725d8bda647cc65880199679f047f7366048`, retains Architecture `3.70.1`, increases remaining effort to XL, and requires a fail-closed machine-checkable P0 acceptance record.
+- The 2026-08-01 P1R implementation preserves completed source work, records EventStore/catalog/runner `3.88.0` as an unaccepted candidate at Builds revision `4351d7cba7545a96661ca2ee2ca2629df6d0a118`, retains Architecture `3.70.1`, increases remaining effort to XL, and requires a fail-closed machine-checkable P0 acceptance record.
 - Chunk A code-review remediation is complete: 18 patches applied, 2 findings dismissed as noise, and no Chunk A item deferred. The story remains in progress because unreviewed delivery surfaces and external qualification/acceptance dependencies remain.
 
 ### File List

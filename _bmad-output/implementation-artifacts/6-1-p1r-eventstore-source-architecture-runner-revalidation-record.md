@@ -4,6 +4,7 @@ artifact_kind: qualification-record
 created: 2026-08-01
 status: pending-acceptance
 candidate_baseline: 3.88.0
+candidate_builds_revision: 4351d7cba7545a96661ca2ee2ca2629df6d0a118
 rollback_baseline: 3.70.1
 approved_change_proposal: "Hexalith.Projects working tree based on 3fe3c7eea4de1056f69438d8ed94147872506384:_bmad-output/planning-artifacts/sprint-change-proposal-2026-08-01-p1r-baseline-revalidation.md"
 projects_post_change_revision: pending
@@ -37,9 +38,9 @@ revision remains pending and cannot be inferred from working-tree content.
 | EventStore package version | `3.88.0` | Candidate; release-manifest ownership verified, publication and package-mode restore/build/test not proven |
 | EventStore release manifest | `tools/release-packages.json`; SHA-256 `6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae`; 14 package IDs | Candidate source evidence |
 | Builds package catalog | `HexalithEventStoreVersion=3.88.0`; introducing revision `0e51a2115581028c8d9ab9395a93dd186ee51071`; all 13 EventStore package rows evaluate to the shared property | Candidate catalog source aligned |
-| Builds runner source | `src/libraries/Hexalith.Builds.Tooling/Manifest/SupportedPlatformPins.cs`; `EventStoreVersion=3.88.0` | Candidate in pending working tree based on `4132725d8bda647cc65880199679f047f7366048` |
+| Builds runner source | `src/libraries/Hexalith.Builds.Tooling/Manifest/SupportedPlatformPins.cs`; `EventStoreVersion=3.88.0` | Candidate committed at `4351d7cba7545a96661ca2ee2ca2629df6d0a118`, based on `4132725d8bda647cc65880199679f047f7366048`; not accepted |
 | Builds manifest schema | `schemas/hexalith.module-manifest.v1.json`; exact allowed EventStore pin `3.88.0` | Candidate; schema/runtime parity tested |
-| Exact post-alignment Builds revision | pending | Not accepted; working-tree evidence cannot supply an immutable revision |
+| Exact post-alignment Builds runner revision | `4351d7cba7545a96661ca2ee2ca2629df6d0a118` | Immutable candidate implementation revision; owner acceptance remains pending |
 | Approved change proposal | `Hexalith.Projects@working-tree-based-on-3fe3c7eea4de1056f69438d8ed94147872506384:_bmad-output/planning-artifacts/sprint-change-proposal-2026-08-01-p1r-baseline-revalidation.md` | Approved planning authority; exact post-change Projects revision pending |
 | Architecture Spine | `Hexalith.Projects@3fe3c7eea4de1056f69438d8ed94147872506384:_bmad-output/planning-artifacts/architecture/architecture-projects-2026-07-15/ARCHITECTURE-SPINE.md`; binding `3.70.1` | Preserved current binding; candidate rebinding forbidden before acceptance |
 | Accepted tuple and date | pending | No acceptance claimed |
