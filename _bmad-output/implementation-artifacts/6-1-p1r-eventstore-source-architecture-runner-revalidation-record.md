@@ -35,7 +35,7 @@ revision remains pending and cannot be inferred from working-tree content.
 | Surface | Exact value | Disposition |
 | --- | --- | --- |
 | EventStore source | tag `v3.88.0`; revision `4843b492dff7c16a4bc74db67509263f969c78c6` | Candidate; immutable source verified locally |
-| EventStore package version | `3.88.0` | Candidate; release-manifest ownership verified, publication and package-mode restore/build/test not proven |
+| EventStore package version | `3.88.0` | Candidate; all 13 catalog rows are listed stable on NuGet, but publication of the full 14-package release manifest and package-mode restore/build/test are not proven |
 | EventStore release manifest | `tools/release-packages.json`; SHA-256 `6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae`; 14 package IDs | Candidate source evidence |
 | Builds package catalog | `HexalithEventStoreVersion=3.88.0`; introducing revision `0e51a2115581028c8d9ab9395a93dd186ee51071`; all 13 EventStore package rows evaluate to the shared property | Candidate catalog source aligned |
 | Builds runner source | `src/libraries/Hexalith.Builds.Tooling/Manifest/SupportedPlatformPins.cs`; `EventStoreVersion=3.88.0` | Candidate committed at `4351d7cba7545a96661ca2ee2ca2629df6d0a118`, based on `4132725d8bda647cc65880199679f047f7366048`; not accepted |
@@ -90,19 +90,14 @@ Separately, the structural catalog contract was observed passing for 49
 approved package identities and three representative shared bindings; it is
 not a freshness or package-version-history audit.
 
-The deterministic package-version audit is acceptance-blocking and currently
-fails with 13 errors: every EventStore audit row retains `3.86.0` while the
-evaluated catalog resolves `3.88.0`. The audit must be refreshed and pass in a
-timestamped retained qualification run before P1R acceptance.
-
-The exact stale audit rows are `Hexalith.EventStore.Admin.Abstractions`,
-`Hexalith.EventStore.Admin.Server`, `Hexalith.EventStore.Aspire`,
-`Hexalith.EventStore.Client`, `Hexalith.EventStore.Contracts`,
-`Hexalith.EventStore.DomainService`, `Hexalith.EventStore.Gateway`,
-`Hexalith.EventStore.RestApi.Generators`, `Hexalith.EventStore.Server`,
-`Hexalith.EventStore.ServiceDefaults`, `Hexalith.EventStore.SignalR`,
-`Hexalith.EventStore.Testing`, and
-`Hexalith.EventStore.Testing.Integration`.
+The deterministic package-version audit was refreshed from live NuGet metadata
+at `2026-08-01T08:56:31.3453199+00:00`, generated from revision
+`d3239aff003c64b40cbc074e68ec7923924cfc96`. It records all 13 cataloged
+EventStore rows as listed stable `3.88.0`, preserves every unrelated package
+decision, and passes the repository validator for 284 packages, 139 families,
+and one source. `Hexalith.EventStore.Admin.Cli`, the fourteenth source release
+manifest package, is not a Builds catalog row and is not proven published by
+this audit.
 
 Focused runner tests were observed passing, and an isolated consumer restored
 disposable `999.0.0-p1r` G-4 tool packages from a local-only NuGet source. That
@@ -151,7 +146,7 @@ clean qualification run.
 | 2026-08-01 | Builds | `MSBUILDDISABLENODEREUSE=1 dotnet test test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj --configuration Release --no-restore -p:NuGetAudit=false --verbosity minimal` | `0`; 24/24 passed | OBSERVED PASS; NON-QUALIFYING |
 | 2026-08-01 | Builds | Direct MSBuild evaluation of all 13 EventStore package rows through `HexalithEventStoreVersion` | `0`; every row resolves `3.88.0` | OBSERVED PASS; NON-QUALIFYING evaluated-catalog evidence |
 | 2026-08-01 | Builds | `pwsh -NoProfile -File ./Tools/test-authoritative-package-catalog.ps1` | `0`; 49 identities and three representative shared bindings | OBSERVED PASS; NON-QUALIFYING structural catalog contract only |
-| 2026-08-01 | Builds | `pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1` | `1`; 13 `Hexalith.EventStore.*` audit rows select `3.86.0` while the evaluated catalog resolves `3.88.0` | FAIL; ACCEPTANCE-BLOCKING |
+| 2026-08-01 | Builds | `pwsh -NoProfile -File ./Tools/validate-package-version-audit.ps1` | `0`; refreshed live audit validates 284 packages, 139 families, and one source; all 13 cataloged EventStore rows are listed stable `3.88.0` | OBSERVED PASS; NON-QUALIFYING until the final retained qualification run |
 | 2026-08-01 | Builds | JSON parse, four evidence SHA-256 binding, sole-stale-pin, and all-`F` mismatch-preservation assertions | `0` | OBSERVED PASS; NON-QUALIFYING |
 | 2026-08-01 | Builds | Two `dotnet pack <G-4 CLI project> --configuration Release --no-restore --output /tmp/hexalith-p1r-packages.TAHmXY -p:GeneratePackageOnBuild=false -p:IDEBuild=false -p:Version=999.0.0-p1r -p:PackageVersion=999.0.0-p1r -m:1` invocations | `0`; two `.nupkg` plus two `.snupkg` files | OBSERVED PASS; NON-QUALIFYING disposable tool packages only |
 | 2026-08-01 | Isolated consumer | `dotnet tool restore --configfile NuGet.Config --no-http-cache` | `0`; both local-only tools restored | OBSERVED PASS; NON-QUALIFYING |
