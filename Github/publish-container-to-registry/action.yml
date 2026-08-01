@@ -32,7 +32,7 @@ runs:
         git -c submodule.recurse=false submodule update --init HexalithApp
         git -c submodule.recurse=false submodule update --init references/Hexalith.Builds
     - name: Login to the container registry
-      uses: docker/login-action@v4.5.1
+      uses: docker/login-action@v4.6.0
       with:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.username }}
