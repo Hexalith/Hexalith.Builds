@@ -6,12 +6,12 @@
 namespace Hexalith.Builds.Tooling.Manifest;
 
 /// <summary>
-/// Defines the P0 platform pins after applying the accepted P1 EventStore normalization.
+/// Defines the P1R candidate platform pins pending owner acceptance.
 /// </summary>
 public static class SupportedPlatformPins
 {
-    /// <summary>Gets the authorized EventStore package pin.</summary>
-    public const string EventStoreVersion = "3.70.1";
+    /// <summary>Gets the candidate EventStore package pin.</summary>
+    public const string EventStoreVersion = "3.88.0";
 
     /// <summary>Gets the observed Dapr runtime pin whose support disposition remains G-6 dependent.</summary>
     public const string DaprRuntimeVersion = "1.18.0";

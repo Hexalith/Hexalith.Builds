@@ -29,10 +29,15 @@ delivery_state:
   published_consumer_pin: absent
   owner_acceptance: absent
 observed_candidate:
-  builds_revision: b529b66
-  builds_eventstore_version: 3.86.0
-  accepted_runner_and_architecture_version: 3.70.1
-  disposition: owner-revalidation-required
+  eventstore_source_version: 3.88.0
+  eventstore_source_revision: 4843b492dff7c16a4bc74db67509263f969c78c6
+  builds_catalog_version: 3.88.0
+  builds_catalog_introducing_revision: 0e51a2115581028c8d9ab9395a93dd186ee51071
+  builds_worktree_base_revision: 4132725d8bda647cc65880199679f047f7366048
+  runner_candidate_version: 3.88.0
+  architecture_version: 3.70.1
+  post_alignment_builds_revision: 4351d7cba7545a96661ca2ee2ca2629df6d0a118
+  disposition: pending-validation-and-four-owner-acceptance
 packages:
   module_cli:
     id: Hexalith.Builds.Module.Cli
@@ -135,7 +140,7 @@ This binding stage order supersedes the chronological ordering implied by the ol
 
 - [ ] **Stage 1 — Revalidate the dependency baseline through 6.1-P1R** (AC: 1-6, 13-15)
   - [ ] Obtain one owner-approved EventStore source/package, Builds catalog, runner manifest/schema, and Architecture Spine pin with clean restore, required API compatibility, live-runner compatibility, and rollback evidence.
-  - [ ] Do not preselect `3.70.1`, `3.86.0`, or another version inside P0; consume the exact P1R result atomically.
+  - [ ] Treat `3.88.0` only as the P1R candidate; consume the exact owner-accepted P1R result atomically.
 - [ ] **Stage 2 — Reconcile release and package findings against the current Builds head** (AC: 1, 2, 11, 13, 14)
   - [ ] Recheck SD1, SD2, and SP1-SP13 against the observed candidate; close only findings backed by executable current-head evidence.
   - [ ] Retain unresolved exact-SHA CI, post-approval live-main recheck, pre-tag qualification, partial-publication recovery, remote verification, credential-scope, installed-command, and rollback controls as open where evidence remains absent.
@@ -442,7 +447,7 @@ Required owner-acceptance evidence:
 
 - Stop if implementation would change Projects or another repository without separate authorization.
 - Stop if package IDs, command names, schema IDs, or repository ownership must change; update this authority record first.
-- Stop if P0 chooses the P1R platform baseline or represents the observed `3.86.0` versus `3.70.1` drift as resolved without owner-approved evidence.
+- Stop if P0 chooses the P1R platform baseline or represents candidate runner/catalog `3.88.0` versus Architecture `3.70.1` as resolved without owner-approved evidence.
 - Stop implementation that binds the live composition, and stop all P0 acceptance, until a named Test Architect, P1R baseline, and affected G-6 disposition are recorded.
 - Stop if G-6 is unresolved for an affected live lane or an unavailable prerequisite is represented as skipped/pass.
 - Stop if a fake store, handler return, static topology assertion, stale key, or hand-authored JSON is offered as G-4 proof.
@@ -508,7 +513,7 @@ GPT-5 Codex
 - Added Release-only exact-package build/publish/contract scripts and semantic-release lifecycle wiring. No package was published and no consumer pin was invented.
 - Hardened the public contracts against symlink/reparse-point escape, partial/forged evidence artifacts, secret-bearing input retention, unstable parser/Ctrl+C diagnostics, incomplete TRX counter accounting, and missing source/SDK provenance; package qualification now runs the packed tools against consumer-owned copied fixtures and retained invocation evidence.
 - Live persisted qualification, actual EventStore/Dapr composition, P1R/G-6 disposition, an exact published version, and named-owner/Test-Architect acceptance remain outstanding; this story remains in progress and does not modify Projects.
-- The 2026-08-01 Correct Course rebaseline preserves completed source work, records Builds revision `b529b66` as an unaccepted candidate, adds blocking P1R dependency revalidation, increases remaining effort to XL, and requires a fail-closed machine-checkable P0 acceptance record.
+- The 2026-08-01 P1R implementation preserves completed source work, records EventStore/catalog/runner `3.88.0` as an unaccepted candidate at Builds revision `4351d7cba7545a96661ca2ee2ca2629df6d0a118`, retains Architecture `3.70.1`, increases remaining effort to XL, and requires a fail-closed machine-checkable P0 acceptance record.
 - Chunk A code-review remediation is complete: 18 patches applied, 2 findings dismissed as noise, and no Chunk A item deferred. The story remains in progress because unreviewed delivery surfaces and external qualification/acceptance dependencies remain.
 
 ### File List
