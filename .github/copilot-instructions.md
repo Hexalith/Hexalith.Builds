@@ -1,10 +1,10 @@
 # AI Assistant Instructions
 
 This is a location-independent baseline. Its normalized text is intentionally
-shared by Codex, Claude, and GitHub Copilot entry points in the superproject
-and its root-declared submodules. It contains shared safeguards only; repository
-documentation and configuration remain authoritative for repository-specific
-rules.
+shared by Codex, Claude, Cursor, and GitHub Copilot entry points in the
+superproject and its root-declared submodules. It contains shared safeguards
+only; repository documentation and configuration remain authoritative for
+repository-specific rules.
 
 ## Required Hexalith LLM Baseline
 
@@ -46,8 +46,14 @@ Before working in a Hexalith repository, locate, read, and follow
 
 - Before Git work, inspect the current repository's branch, working tree,
   remotes, and recent history.
-- Use Conventional Commits whenever a commit is requested. Never bypass commit
-  validation.
+- Any commit message an assistant creates, suggests, or uses, including Claude,
+  Codex, Cursor, GitHub Copilot, and supported Visual Studio Copilot commit-message
+  generation, must follow Conventional Commits and satisfy both the owning
+  repository's effective commitlint policy and its tracked Git guidance.
+- Before presenting or using a message, an assistant capable of running repository tooling must validate the exact full candidate with the owning repository's pinned commitlint CLI and preserve successful validation evidence.
+  If validation rejects the candidate, report the rule violations, revise the message, and revalidate it; if the validator cannot run, report the exact command and blocker and do not present or use the candidate until validation succeeds. Never bypass commit validation.
+- When repository instructions are enabled, Visual Studio 2026 version 18.6 and later reads `.github/copilot-instructions.md`; older, disabled, or unsupported cases are not controlled by this file.
+  These instructions guide generation but cannot execute commitlint or guarantee compliance; the installed commit-message hook and blocking CI commitlint gate remain enforcement layers.
 - In an umbrella workspace, initialize or update only dependencies declared by
   the top-level workspace `.gitmodules` file.
 - Never initialize or update a submodule's nested submodules unless the user
