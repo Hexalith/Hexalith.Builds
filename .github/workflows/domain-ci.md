@@ -85,6 +85,60 @@ strings because `workflow_call` does not support arrays. The workflow splits
 those strings in bash. Test result folders are derived from each project
 basename under `TestResults/`.
 
+## Governed CI mode (BUILD-REL-1 / GOV-1)
+
+Setting `governed-ci: true` opts the `build-and-test` job into the governed
+contract. Every governed input is optional and defaults to the pre-BUILD-REL-1
+behavior; a caller that leaves them unset gets exactly the previous workflow,
+with `contents: read` as the only permission.
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `governed-ci` | No | `false` | Opt into governed CI: workflow-identity validation and closure provenance. |
+| `builds-execution-sha` | Governed | `''` | Exact approved Hexalith.Builds commit this reusable workflow was called at. |
+| `candidate-commit` | Governed | `''` | Exact candidate commit the CI run evaluates. Must equal the event head. |
+| `dependency-policy-repository` | Governed | `''` | Normalized `github.com/owner/repository` identity owning the active dependency policy. |
+| `dependency-policy-path` | Governed | `''` | Repository-relative path of the active dependency policy. |
+| `dependency-policy-commit` | Governed | `''` | Exact 40-hex commit of the active dependency policy. |
+| `dependency-policy-sha256` | Governed | `''` | Exact 64-hex SHA-256 of the active dependency-policy bytes. |
+| `expected-ci-evaluator-digest` | Governed | `''` | Expected CI evaluator-authorization digest recorded into the provenance. |
+
+Governed CI adds three conditional steps before the build:
+
+1. **Contract validation.** All governed coordinates are validated, and the
+   run proves its own identity: `job.workflow_repository`, `job.workflow_sha`,
+   and `job.workflow_ref` must resolve to
+   `Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml` at
+   `builds-execution-sha`, and the checked-out `HEAD` must equal
+   `candidate-commit`. Every violation is collected and reported together, so a
+   misconfigured caller sees the whole list rather than one failure per run.
+2. **Approved Builds checkout** at `builds-execution-sha`.
+3. **Closure provenance** through `Github/governed-provenance`, loaded from
+   that checkout.
+
+Because governed mode must load Builds-owned composites from the
+reusable-workflow commit itself, the `build-and-test` job carries **two forms**
+of `initialize-build` and `dapr-init`: a governed form using the local
+`./.hexalith/builds-execution/...` path, and a legacy form pinned to a literal
+40-hex commit for callers that never check Builds out. Exactly one of each pair
+runs. The static closure records both, which is intentional: an
+over-approximated closure is safe, an under-approximated one is not.
+
+### Governed outputs
+
+`build-and-test` exposes the provenance the caller needs to assemble its own
+`hexalith.dependency-release-handoff.v1` artifact: `governed-candidate`,
+`governed-provenance-json`, `governed-provenance-sha256`,
+`governed-closure-digest`, `governed-reusable-repository`,
+`governed-reusable-workflow-path`, `governed-reusable-commit`,
+`governed-reusable-blob-sha256`, `governed-actions-json`, and
+`governed-external-actions-json`.
+
+`governed-actions-json` lists the Builds-owned composite sources with their blob
+SHA-256 values; `governed-external-actions-json` lists every third-party action
+in the closure as a pinned 40-hex coordinate. Builds emits provenance only —
+the caller owns its handoff schema and evidence logic.
+
 ## Usage
 
 ```yaml
@@ -112,3 +166,23 @@ Use `Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@main` from
 consuming repositories — Hexalith.Builds references always track `main` (see
 `ci-cd-standards.md`, "Action References"); third-party actions inside the
 shared workflows are the ones pinned to commit SHAs.
+
+A **governed** caller cannot use `@main`. Governed mode validates
+`job.workflow_sha` against `builds-execution-sha`, so the `uses:` revision and
+`builds-execution-sha` must be the same literal 40-character commit:
+
+```yaml
+jobs:
+  ci:
+    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@0123456789abcdef0123456789abcdef01234567
+    with:
+      solution: Hexalith.<Module>.slnx
+      governed-ci: true
+      builds-execution-sha: 0123456789abcdef0123456789abcdef01234567
+      candidate-commit: ${{ github.sha }}
+      dependency-policy-repository: github.com/hexalith/hexalith.<module>
+      dependency-policy-path: eng/dependency-graph-policy.json
+      dependency-policy-commit: ${{ needs.policy.outputs.commit }}
+      dependency-policy-sha256: ${{ needs.policy.outputs.sha256 }}
+      expected-ci-evaluator-digest: ${{ vars.HEXALITH_CI_EVALUATOR_DIGEST }}
+```

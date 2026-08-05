@@ -1,0 +1,135 @@
+name: 'Governed Workflow Provenance'
+description: >-
+  Validates the running job against the approved Hexalith.Builds reusable-workflow
+  identity, evaluates the bounded static uses: closure of that workflow from the exact
+  approved checkout, and emits the workflow/composite provenance a governed caller needs
+  to build its own release handoffs. The action reads no secret and contacts no network
+  service.
+
+inputs:
+  stage:
+    description: 'Governed stage the provenance is produced for: ci or release.'
+    required: true
+  builds-root:
+    description: 'Path of the approved Hexalith.Builds checkout that defines this job.'
+    required: false
+    default: '.hexalith/builds-execution'
+  builds-execution-sha:
+    description: 'Exact approved Hexalith.Builds commit resolved for the reusable workflow.'
+    required: true
+  workflow-path:
+    description: 'Repository-relative path of the governed reusable workflow.'
+    required: true
+  candidate:
+    description: 'Exact candidate commit every governed phase consumes.'
+    required: true
+  dependency-policy-repository:
+    description: 'Normalized github.com/owner/repository identity owning the active dependency policy.'
+    required: false
+    default: ''
+  dependency-policy-path:
+    description: 'Repository-relative path of the active dependency policy.'
+    required: false
+    default: ''
+  dependency-policy-commit:
+    description: 'Exact commit of the active dependency policy.'
+    required: false
+    default: ''
+  dependency-policy-sha256:
+    description: 'Exact SHA-256 of the active dependency-policy bytes.'
+    required: false
+    default: ''
+  expected-evaluator-digest:
+    description: 'Caller-declared evaluator-authorization digest recorded into the provenance.'
+    required: false
+    default: ''
+  output:
+    description: 'Path the provenance document is written to.'
+    required: false
+    default: '.hexalith/release/governed/workflow-provenance.json'
+
+outputs:
+  provenance-path:
+    description: 'Path of the emitted governed-provenance document.'
+    value: ${{ steps.provenance.outputs.provenance-path }}
+  provenance-sha256:
+    description: 'SHA-256 of the emitted governed-provenance document bytes.'
+    value: ${{ steps.provenance.outputs.provenance-sha256 }}
+  candidate:
+    description: 'Exact candidate commit recorded in the provenance.'
+    value: ${{ steps.provenance.outputs.candidate }}
+  closure-digest:
+    description: 'Canonical digest of the evaluated reusable/composite closure.'
+    value: ${{ steps.provenance.outputs.closure-digest }}
+  reusable-repository:
+    description: 'Normalized identity of the repository owning the governed reusable workflow.'
+    value: ${{ steps.provenance.outputs.reusable-repository }}
+  reusable-workflow-path:
+    description: 'Repository-relative path of the governed reusable workflow.'
+    value: ${{ steps.provenance.outputs.reusable-workflow-path }}
+  reusable-commit:
+    description: 'Exact commit the governed reusable workflow executed from.'
+    value: ${{ steps.provenance.outputs.reusable-commit }}
+  reusable-blob-sha256:
+    description: 'SHA-256 of the governed reusable-workflow blob.'
+    value: ${{ steps.provenance.outputs.reusable-blob-sha256 }}
+  actions-json:
+    description: 'Canonical JSON array of the local composite-action sources in the closure.'
+    value: ${{ steps.provenance.outputs.actions-json }}
+  external-actions-json:
+    description: 'Canonical JSON array of the pinned external action coordinates in the closure.'
+    value: ${{ steps.provenance.outputs.external-actions-json }}
+  provenance-json:
+    description: 'Complete governed-provenance document as compact canonical JSON.'
+    value: ${{ steps.provenance.outputs.provenance-json }}
+
+runs:
+  using: composite
+  steps:
+    - name: Evaluate governed workflow closure
+      id: provenance
+      shell: bash
+      env:
+        GOVERNED_STAGE: ${{ inputs.stage }}
+        GOVERNED_BUILDS_ROOT: ${{ inputs.builds-root }}
+        GOVERNED_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+        GOVERNED_WORKFLOW_PATH: ${{ inputs.workflow-path }}
+        GOVERNED_CANDIDATE: ${{ inputs.candidate }}
+        GOVERNED_POLICY_REPOSITORY: ${{ inputs.dependency-policy-repository }}
+        GOVERNED_POLICY_PATH: ${{ inputs.dependency-policy-path }}
+        GOVERNED_POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
+        GOVERNED_POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
+        GOVERNED_EXPECTED_EVALUATOR_DIGEST: ${{ inputs.expected-evaluator-digest }}
+        GOVERNED_OUTPUT: ${{ inputs.output }}
+        RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+        RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}
+        RESOLVED_WORKFLOW_REF: ${{ job.workflow_ref }}
+        RESOLVED_WORKFLOW_FILE_PATH: ${{ job.workflow_file_path }}
+        CALLER_REPOSITORY: ${{ github.repository }}
+        CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
+        CALLER_RUN_ID: ${{ github.run_id }}
+        CALLER_RUN_ATTEMPT: ${{ github.run_attempt }}
+        CALLER_EVENT: ${{ github.event_name }}
+      run: |
+        set -euo pipefail
+        python3 "${GITHUB_ACTION_PATH}/governed_provenance.py" \
+          --stage "$GOVERNED_STAGE" \
+          --builds-root "$GOVERNED_BUILDS_ROOT" \
+          --builds-execution-sha "$GOVERNED_BUILDS_EXECUTION_SHA" \
+          --workflow-path "$GOVERNED_WORKFLOW_PATH" \
+          --workflow-repository "$RESOLVED_WORKFLOW_REPOSITORY" \
+          --workflow-sha "$RESOLVED_WORKFLOW_SHA" \
+          --workflow-ref "$RESOLVED_WORKFLOW_REF" \
+          --workflow-file-path "$RESOLVED_WORKFLOW_FILE_PATH" \
+          --caller-repository "$CALLER_REPOSITORY" \
+          --caller-workflow-ref "$CALLER_WORKFLOW_REF" \
+          --run-id "$CALLER_RUN_ID" \
+          --run-attempt "$CALLER_RUN_ATTEMPT" \
+          --event "$CALLER_EVENT" \
+          --candidate "$GOVERNED_CANDIDATE" \
+          --policy-repository "$GOVERNED_POLICY_REPOSITORY" \
+          --policy-path "$GOVERNED_POLICY_PATH" \
+          --policy-commit "$GOVERNED_POLICY_COMMIT" \
+          --policy-sha256 "$GOVERNED_POLICY_SHA256" \
+          --expected-evaluator-digest "$GOVERNED_EXPECTED_EVALUATOR_DIGEST" \
+          --output "$GOVERNED_OUTPUT"

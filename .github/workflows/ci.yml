@@ -148,6 +148,10 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-publish-containers.ps1
 
+      - name: Test governed workflow provenance
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-governed-provenance.ps1
+
   python-tests:
     runs-on: ubuntu-latest
     name: Python contract tests
@@ -162,6 +166,10 @@ jobs:
 
       - name: Test container publisher helpers
         working-directory: Github/publish-containers/tests
+        run: python3 -m unittest discover -v
+
+      - name: Test governed workflow provenance evaluator
+        working-directory: Github/governed-provenance/tests
         run: python3 -m unittest discover -v
 
       # The commitlint helper tests execute the workflow's inline node script,

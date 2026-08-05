@@ -358,6 +358,15 @@ Apply B01–B10 in order. B11–B12 are opportunity-level and may be deferred, b
 
 ### CHG-B12 — Provenance/attestations and OIDC publishing *(audit opportunities, design task — defer unless prioritized)*
 
+> **Superseded in part by BUILD-REL-1.** Track 1 (artifact attestations) is
+> implemented as the opt-in governed release mode: `domain-release.yml` gained a
+> `governed-release` job that signs a candidate, runs
+> `actions/attest-build-provenance` over those exact `.nupkg` bytes before any
+> publication side effect, and carries `id-token: write` /
+> `attestations: write` on that job alone. Track 2 (NuGet.org Trusted Publishing
+> via OIDC) remains open and still requires its own design pass; governed mode
+> continues to publish with `NUGET_API_KEY`.
+
 **Objective.** Move toward SLSA Build L3 provenance and eliminate long-lived publishing credentials.
 
 **Scope.** This is a larger design change, not a mechanical edit. Two independent tracks:

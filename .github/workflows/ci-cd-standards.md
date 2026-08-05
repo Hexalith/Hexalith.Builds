@@ -35,6 +35,37 @@ test project lists, and operational exceptions in their own docs.
   SHA is independent of the caller's development-time
   `references/Hexalith.Builds` gitlink.
 
+### Governed closure exception
+
+The tag-over-SHA preference above is a readability trade-off, and it stops
+applying wherever a closure has to be *provable*. Inside the governed BUILD-REL-1
+surface — `domain-ci.yml`, `domain-release.yml`, and every composite action
+reachable from them (`Github/initialize-build`, `Github/dapr-init`,
+`Github/publish-containers`, `Github/governed-provenance`) — every `uses:` is
+either a literal lowercase 40-hex commit or a local
+`./.hexalith/builds-execution/...` path. There is no third form:
+
+- A governed run emits a closure digest over the exact bytes that executed. A
+  tag cannot appear in that digest as anything but a promise, so the collector
+  in `Github/governed-provenance` rejects tags, branches, expressions, and
+  `docker://` references outright.
+- Because the ref is no longer self-describing, these references **do** carry a
+  trailing version comment (`# v7.0.1`). This is the inverse of the rule above
+  and is deliberate: the comment is the only remaining human-readable name.
+- Builds-owned composites used by a governed job load from the
+  reusable-workflow commit through the local path, so the composite bytes can
+  never drift from the workflow that invoked them. `domain-ci.yml` keeps a
+  second, 40-hex-pinned form of the same composites for legacy callers, which
+  never check Builds out.
+- `Tools/test-governed-provenance.ps1` evaluates both shipped workflows on every
+  CI run, so a reference that stops being resolvable fails the pull request
+  rather than a release.
+
+Self-pinning has a known consequence: a commit that changes a composite cannot
+also pin itself to its own future SHA. The legacy 40-hex pins in `domain-ci.yml`
+therefore name the previous reviewed commit and must be bumped in a follow-up
+commit after the change that alters those composites merges.
+
 ## Submodules
 
 - Initialize only root-declared submodules.
@@ -122,6 +153,44 @@ test project lists, and operational exceptions in their own docs.
   from caller repository or organization scope; never use `secrets: inherit`.
   The reusable publication job still references the protected environment, so
   those credentials cannot be used until its protection rules pass.
+
+### Release publication freeze
+
+- Every module's publication is gated by the caller variable
+  `HEXALITH_RELEASE_PUBLISH_ENABLED`. Semantic Release runs only when it is
+  exactly the four-character string `true`.
+- **Rollout is fail-closed ecosystem-wide.** A module stops publishing as soon
+  as it re-pins to a Builds commit carrying this gate. Set the variable on every
+  module that should keep publishing before re-pinning it.
+- A frozen module **skips and concludes green**. Freezing is a deliberate
+  operational state, so it must not manufacture a red run on every dispatch.
+- The comparison is a case-sensitive, untrimmed shell comparison, not a workflow
+  expression: GitHub's `==` folds case, so `TRUE` would otherwise unfreeze a
+  module nobody unfroze.
+- Set the variable at **repository** scope on every module, including the ones
+  meant to stay frozen. A repository value shadows the organization value, so an
+  organization-wide `true` silently leaks into every repository that never set
+  its own. Reusable workflows resolve `vars` from the caller's repository and
+  organization, which is why the variable belongs on the module.
+
+### Governed release mode (BUILD-REL-1)
+
+- Governed mode is opt-in (`governed-release: true` / `governed-ci: true`) and
+  default-off. A caller that sets nothing keeps the pre-BUILD-REL-1 contract.
+- `id-token: write` and `attestations: write` live only on the governed release
+  job. Job permissions resolve statically, so the governed path is a separate
+  job rather than a conditional permission block.
+- Governed Release consumes only `release-commit` for checkout, prepare, seal,
+  verify, classify, and publish. The event head authenticates the triggering CI
+  run and nothing else.
+- Candidate packages are packed, signed, timestamped, and attested with
+  `actions/attest-build-provenance` **before** the first publication side
+  effect. A missing or empty attestation bundle fails the run closed.
+- Missing signing secrets fail closed at contract validation, before checkout.
+  Signing material is scoped to the candidate phase and never reaches Semantic
+  Release, the container publisher, or an uploaded artifact.
+- Governed runs always upload their verification data, including when frozen or
+  failed. Unavailable values are explicit `null`; the artifact is never omitted.
 
 ## Artifacts
 

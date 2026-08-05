@@ -48,7 +48,9 @@ on:
         type: number
         default: 20
       environment-name:
-        description: 'Protected GitHub environment that authorizes the release job.'
+        description: >-
+          Protected GitHub environment that authorizes the release job. Governed mode
+          reuses this input rather than declaring a second environment alias.
         required: false
         type: string
         default: 'production'
@@ -90,6 +92,82 @@ on:
         required: false
         type: number
         default: 0
+      governed-release:
+        description: >-
+          Opt into the BUILD-REL-1 governed release contract: signing secrets, a
+          pre-publication candidate phase, build provenance attestation over those exact
+          candidate packages, and GOV-1 exact-candidate handoff I/O. Leave unset to keep
+          the pre-BUILD-REL-1 release contract exactly.
+        required: false
+        type: boolean
+        default: false
+      nuget-signing-timestamper:
+        description: 'RFC 3161 timestamp authority the governed candidate phase signs against.'
+        required: false
+        type: string
+        default: 'http://timestamp.digicert.com'
+      candidate-command:
+        description: >-
+          Caller-owned command the governed candidate phase runs to pack, sign, and
+          timestamp the exact candidate packages. It receives
+          HEXALITH_RELEASE_CANDIDATE_VERSION, HEXALITH_RELEASE_CANDIDATE_DIRECTORY, the
+          timestamp authority, and the signing secrets. Required in governed mode.
+        required: false
+        type: string
+        default: ''
+      candidate-directory:
+        description: 'Workspace directory the governed candidate packages are produced in.'
+        required: false
+        type: string
+        default: '.hexalith/release/candidate'
+      release-commit:
+        description: >-
+          Exact authenticated CI-handoff candidate. In governed mode every checkout,
+          prepare, seal, verify, classify, and publish operation consumes this commit;
+          the event head only authenticates the triggering CI run.
+        required: false
+        type: string
+        default: ''
+      ci-run-id:
+        description: 'Run ID of the authenticated CI run that produced the candidate handoff.'
+        required: false
+        type: string
+        default: ''
+      ci-run-attempt:
+        description: 'Run attempt of the authenticated CI run that produced the candidate handoff.'
+        required: false
+        type: string
+        default: ''
+      ci-handoff-artifact:
+        description: 'Artifact name carrying the authenticated hexalith.dependency-release-handoff.v1 evidence.'
+        required: false
+        type: string
+        default: 'dependency-release-handoff'
+      dependency-policy-repository:
+        description: 'Normalized github.com/owner/repository identity owning the active dependency policy.'
+        required: false
+        type: string
+        default: ''
+      dependency-policy-path:
+        description: 'Repository-relative path of the active dependency policy.'
+        required: false
+        type: string
+        default: ''
+      dependency-policy-commit:
+        description: 'Exact commit of the active dependency policy.'
+        required: false
+        type: string
+        default: ''
+      dependency-policy-sha256:
+        description: 'Exact SHA-256 of the active dependency-policy bytes.'
+        required: false
+        type: string
+        default: ''
+      expected-release-evaluator-digest:
+        description: 'Expected Release evaluator-authorization digest recorded into the governed provenance.'
+        required: false
+        type: string
+        default: ''
     secrets:
       NUGET_API_KEY:
         description: 'NuGet.org API key supplied explicitly by the caller.'
@@ -100,6 +178,43 @@ on:
       HEXALITH_ZOT_API_KEY:
         description: 'Zot API key supplied explicitly by the caller when publishing containers.'
         required: false
+      NUGET_SIGNING_CERTIFICATE_BASE64:
+        description: 'Base64 PKCS#12 signing certificate used only by the governed candidate phase.'
+        required: false
+      NUGET_SIGNING_CERTIFICATE_PASSWORD:
+        description: 'Password of the governed signing certificate, used only by the governed candidate phase.'
+        required: false
+    outputs:
+      governed-candidate:
+        description: 'Exact candidate commit every governed release phase consumed.'
+        value: ${{ jobs.governed-release.outputs.candidate }}
+      governed-provenance-path:
+        description: 'Path of the governed workflow/composite provenance document.'
+        value: ${{ jobs.governed-release.outputs.provenance-path }}
+      governed-provenance-sha256:
+        description: 'SHA-256 of the governed workflow/composite provenance document bytes.'
+        value: ${{ jobs.governed-release.outputs.provenance-sha256 }}
+      governed-closure-digest:
+        description: 'Canonical digest of the evaluated governed reusable/composite closure.'
+        value: ${{ jobs.governed-release.outputs.closure-digest }}
+      governed-reusable-blob-sha256:
+        description: 'SHA-256 of the governed domain-release.yml blob that executed.'
+        value: ${{ jobs.governed-release.outputs.reusable-blob-sha256 }}
+      governed-actions-json:
+        description: 'Canonical JSON array of the local composite-action sources in the governed closure.'
+        value: ${{ jobs.governed-release.outputs.actions-json }}
+      governed-attestation-bundle:
+        description: 'Path of the attestation bundle minted over the exact candidate packages.'
+        value: ${{ jobs.governed-release.outputs.attestation-bundle }}
+      governed-release-version:
+        description: 'Version semantic-release resolved for the governed candidate, when a release was warranted.'
+        value: ${{ jobs.governed-release.outputs.release-version }}
+      governed-verification-data-path:
+        description: 'Path of the durable release-verification handoff data the caller uploads.'
+        value: ${{ jobs.governed-release.outputs.verification-data-path }}
+      governed-publish-enabled:
+        description: 'Whether the common release-freeze gate authorized Semantic Release.'
+        value: ${{ jobs.governed-release.outputs.publish-enabled }}
 permissions:
   actions: read
   contents: write
@@ -108,11 +223,15 @@ permissions:
 
 jobs:
   release:
+    # Legacy contract. Governed callers run the governed-release job instead, because
+    # GitHub resolves job permissions statically: id-token/attestations cannot be granted
+    # conditionally inside one job without also demanding them from every legacy caller.
+    if: ${{ !inputs.governed-release }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
     environment: ${{ inputs.environment-name }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: false
@@ -138,7 +257,7 @@ jobs:
             exit 1
           fi
       - name: Checkout approved Builds actions
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Hexalith/Hexalith.Builds
           ref: ${{ inputs.builds-execution-sha }}
@@ -147,14 +266,14 @@ jobs:
       - name: Initialize root-declared submodules
         uses: ./.hexalith/builds-execution/Github/initialize-build
       - name: Initialize .NET
-        uses: actions/setup-dotnet@v6.0.0
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ inputs.node-version }}
       - name: Cache NuGet packages
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
@@ -230,7 +349,7 @@ jobs:
           done <<< "$TEST_PROJECTS"
       - name: Upload release test evidence
         if: ${{ always() && inputs.test-projects != '' }}
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-test-results
           path: |
@@ -248,6 +367,22 @@ jobs:
         with:
           container-projects: ${{ inputs.container-projects }}
           builds-execution-sha: ${{ inputs.builds-execution-sha }}
+      - name: Resolve release publication freeze
+        id: publish-gate
+        shell: bash
+        env:
+          HEXALITH_RELEASE_PUBLISH_ENABLED: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}
+        run: |
+          set -euo pipefail
+          # Exact, case-sensitive, untrimmed comparison. A GitHub-expression `==` folds case,
+          # so `TRUE` or `True` would silently unfreeze a module its owner never unfroze.
+          if [ "${HEXALITH_RELEASE_PUBLISH_ENABLED-}" = "true" ]; then
+            echo "publish-enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Release publication is enabled for this repository."
+            exit 0
+          fi
+          echo "publish-enabled=false" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Release publication frozen::The calling repository variable HEXALITH_RELEASE_PUBLISH_ENABLED is not exactly the string 'true', so Semantic Release is skipped and this run concludes successfully. Set a repository-level value even when an organization-level value exists: a repository value shadows the organization value, and an organization 'true' otherwise leaks into repositories that never set one."
       - name: Revalidate current source before Semantic Release
         shell: bash
         env:
@@ -255,8 +390,19 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           DISPATCH_SHA: ${{ github.sha }}
           SOURCE_BRANCH: ${{ inputs.source-branch }}
+          PUBLISH_ENABLED: ${{ steps.publish-gate.outputs.publish-enabled }}
         run: |
           set -euo pipefail
+          # Only an explicit frozen verdict skips this gate; an unset or empty value keeps the
+          # guard running so a broken gate cannot quietly disable the staleness proof.
+          publish_enabled="${PUBLISH_ENABLED-true}"
+          if [ -z "$publish_enabled" ]; then
+            publish_enabled="true"
+          fi
+          if [ "$publish_enabled" != "true" ]; then
+            echo "::notice title=Source revalidation skipped::Release publication is frozen, so no publication boundary is reached."
+            exit 0
+          fi
           if [[ ! "$DISPATCH_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo "The dispatched release source must be an exact lowercase commit SHA." >&2
             exit 1
@@ -286,6 +432,7 @@ jobs:
             exit 1
           fi
       - name: Semantic Release
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
@@ -302,7 +449,693 @@ jobs:
         run: npx semantic-release
       - name: Upload complete release evidence
         if: ${{ always() && inputs.publish-containers }}
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .hexalith/release-evidence/**
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+
+  governed-release:
+    # BUILD-REL-1 governed contract. Only this job carries id-token/attestations, and it
+    # never starts for a caller that leaves governed-release unset.
+    if: ${{ inputs.governed-release }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    environment: ${{ inputs.environment-name }}
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+      issues: write
+      pull-requests: write
+    outputs:
+      candidate: ${{ steps.governed-provenance.outputs.candidate }}
+      provenance-path: ${{ steps.governed-provenance.outputs.provenance-path }}
+      provenance-sha256: ${{ steps.governed-provenance.outputs.provenance-sha256 }}
+      closure-digest: ${{ steps.governed-provenance.outputs.closure-digest }}
+      reusable-blob-sha256: ${{ steps.governed-provenance.outputs.reusable-blob-sha256 }}
+      actions-json: ${{ steps.governed-provenance.outputs.actions-json }}
+      attestation-bundle: ${{ steps.candidate-attestation.outputs.bundle-path }}
+      release-version: ${{ steps.governed-candidate.outputs.version }}
+      verification-data-path: ${{ steps.governed-verification-data.outputs.path }}
+      publish-enabled: ${{ steps.publish-gate.outputs.publish-enabled }}
+    steps:
+      # The freeze gate is the first thing the governed job does. A frozen module must not
+      # be told its signing secrets are missing, and must not pay for a build whose only
+      # purpose is a publication that will not happen.
+      - name: Resolve release publication freeze
+        id: publish-gate
+        shell: bash
+        env:
+          HEXALITH_RELEASE_PUBLISH_ENABLED: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}
+        run: |
+          set -euo pipefail
+          # Exact, case-sensitive, untrimmed comparison. A GitHub-expression `==` folds case,
+          # so `TRUE` or `True` would silently unfreeze a module its owner never unfroze.
+          if [ "${HEXALITH_RELEASE_PUBLISH_ENABLED-}" = "true" ]; then
+            echo "publish-enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Release publication is enabled for this repository."
+            exit 0
+          fi
+          echo "publish-enabled=false" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Release publication frozen::The calling repository variable HEXALITH_RELEASE_PUBLISH_ENABLED is not exactly the string 'true', so the governed build, candidate phase, attestation, and Semantic Release are skipped and this run concludes successfully. Set a repository-level value even when an organization-level value exists: a repository value shadows the organization value, and an organization 'true' otherwise leaks into repositories that never set one."
+      - name: Validate governed release contract
+        shell: bash
+        env:
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          CI_RUN_ID: ${{ inputs.ci-run-id }}
+          CI_RUN_ATTEMPT: ${{ inputs.ci-run-attempt }}
+          CI_HANDOFF_ARTIFACT: ${{ inputs.ci-handoff-artifact }}
+          POLICY_REPOSITORY: ${{ inputs.dependency-policy-repository }}
+          POLICY_PATH: ${{ inputs.dependency-policy-path }}
+          POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
+          POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
+          EXPECTED_EVALUATOR_DIGEST: ${{ inputs.expected-release-evaluator-digest }}
+          CANDIDATE_COMMAND: ${{ inputs.candidate-command }}
+          CANDIDATE_DIRECTORY: ${{ inputs.candidate-directory }}
+          EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}
+          SIGNING_TIMESTAMPER: ${{ inputs.nuget-signing-timestamper }}
+          PUBLISH_ENABLED: ${{ steps.publish-gate.outputs.publish-enabled }}
+          # Presence probes only: the expression compares the secret without exposing it.
+          SIGNING_CERTIFICATE_PRESENT: ${{ secrets.NUGET_SIGNING_CERTIFICATE_BASE64 != '' }}
+          SIGNING_PASSWORD_PRESENT: ${{ secrets.NUGET_SIGNING_CERTIFICATE_PASSWORD != '' }}
+        run: |
+          set -euo pipefail
+          failures=0
+          reject() {
+            echo "$1" >&2
+            failures=$((failures + 1))
+          }
+
+          if [[ ! "$RELEASE_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            reject "governed mode requires release-commit to be an exact lowercase 40-character commit SHA."
+          fi
+          if [[ ! "$CI_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
+            reject "governed mode requires ci-run-id to be a positive integer."
+          fi
+          if [[ ! "$CI_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]; then
+            reject "governed mode requires ci-run-attempt to be a positive integer."
+          fi
+          if [ -z "${CI_HANDOFF_ARTIFACT//[[:space:]]/}" ]; then
+            reject "governed mode requires a non-empty ci-handoff-artifact name."
+          fi
+          if [[ ! "$POLICY_REPOSITORY" =~ ^github\.com/[a-z0-9._-]+/[a-z0-9._-]+$ ]]; then
+            reject "governed mode requires dependency-policy-repository as a normalized github.com/owner/repository identity."
+          fi
+          if [ -z "${POLICY_PATH//[[:space:]]/}" ] || [[ "$POLICY_PATH" == /* ]]; then
+            reject "governed mode requires dependency-policy-path as a non-empty relative path."
+          fi
+          if [[ ! "$POLICY_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            reject "governed mode requires dependency-policy-commit to be an exact lowercase 40-character commit SHA."
+          fi
+          if [[ ! "$POLICY_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            reject "governed mode requires dependency-policy-sha256 to be an exact lowercase 64-character SHA-256."
+          fi
+          if [[ ! "$EXPECTED_EVALUATOR_DIGEST" =~ ^[0-9a-f]{64}$ ]]; then
+            reject "governed mode requires expected-release-evaluator-digest to be an exact lowercase 64-character SHA-256."
+          fi
+          if [ -z "${CANDIDATE_COMMAND//[[:space:]]/}" ]; then
+            reject "governed mode requires candidate-command so the exact candidate packages exist before any publication side effect."
+          fi
+          if [[ ! "$EXPECTED_PACKAGE_COUNT" =~ ^[0-9]+$ ]]; then
+            reject "governed mode requires expected-package-count to be a non-negative integer."
+          fi
+
+          # candidate-directory is passed to rm -rf, so a traversing, absolute, or
+          # self-referential value would delete something the caller never named. Validate
+          # every segment before the first delete or write, not at the point of use.
+          candidate_directory_ok=true
+          if [ -z "${CANDIDATE_DIRECTORY//[[:space:]]/}" ]; then
+            reject "governed mode requires candidate-directory as a non-empty relative workspace path."
+            candidate_directory_ok=false
+          elif [[ "$CANDIDATE_DIRECTORY" == /* ]] || [[ "$CANDIDATE_DIRECTORY" == ~* ]]; then
+            reject "governed mode requires candidate-directory to be relative, not '$CANDIDATE_DIRECTORY'."
+            candidate_directory_ok=false
+          elif [[ "$CANDIDATE_DIRECTORY" == *$'\n'* ]] || [[ "$CANDIDATE_DIRECTORY" == *'\'* ]]; then
+            reject "governed mode rejects a candidate-directory containing a newline or backslash."
+            candidate_directory_ok=false
+          fi
+          if [ "$candidate_directory_ok" = "true" ]; then
+            IFS='/' read -r -a candidate_segments <<< "$CANDIDATE_DIRECTORY"
+            for segment in "${candidate_segments[@]}"; do
+              if [ -z "$segment" ] || [ "$segment" = "." ] || [ "$segment" = ".." ]; then
+                reject "governed mode rejects the unsafe candidate-directory segment '${segment}' in '$CANDIDATE_DIRECTORY'."
+                break
+              fi
+            done
+          fi
+
+          if [[ ! "$SIGNING_TIMESTAMPER" =~ ^https?://[^[:space:]]+$ ]]; then
+            reject "governed mode requires nuget-signing-timestamper to be an absolute RFC 3161 timestamp-authority URL."
+          fi
+
+          # Signing material is only needed to produce a candidate. A frozen module never
+          # reaches the candidate phase, so demanding its secrets would turn a deliberate
+          # freeze into a red run.
+          if [ "${PUBLISH_ENABLED-}" = "true" ]; then
+            if [ "$SIGNING_CERTIFICATE_PRESENT" != "true" ]; then
+              reject "governed mode requires the NUGET_SIGNING_CERTIFICATE_BASE64 secret; refusing to publish unsigned packages."
+            fi
+            if [ "$SIGNING_PASSWORD_PRESENT" != "true" ]; then
+              reject "governed mode requires the NUGET_SIGNING_CERTIFICATE_PASSWORD secret; refusing to publish unsigned packages."
+            fi
+          else
+            echo "::notice title=Signing secrets not required::Release publication is frozen, so the governed candidate phase never runs and its signing secrets are not required for this run."
+          fi
+
+          if [ "$failures" -ne 0 ]; then
+            echo "Rejected $failures governed release contract violation(s)." >&2
+            exit 1
+          fi
+      - name: Checkout exact governed release candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.release-commit }}
+          fetch-depth: 0
+          submodules: false
+          persist-credentials: false
+      - name: Validate approved Builds execution identity
+        shell: bash
+        env:
+          BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          RESOLVED_WORKFLOW_REF: ${{ job.workflow_ref }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$BUILD_EXECUTION_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "builds-execution-sha must be an exact lowercase 40-character commit SHA." >&2
+            exit 1
+          fi
+          if [ "$RESOLVED_WORKFLOW_REPOSITORY" != "Hexalith/Hexalith.Builds" ]; then
+            echo "The release job is not defined by the approved Hexalith.Builds repository." >&2
+            exit 1
+          fi
+          if [ "$RESOLVED_WORKFLOW_SHA" != "$BUILD_EXECUTION_SHA" ]; then
+            echo "Resolved reusable-workflow SHA does not match the approved Builds identity." >&2
+            exit 1
+          fi
+          # Repository plus commit still leaves the workflow file itself unproven: a
+          # different reusable workflow in the same approved commit would satisfy both.
+          # Prove the path exactly as governed CI and the provenance evaluator do.
+          if [[ "$RESOLVED_WORKFLOW_REF" != Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@* ]]; then
+            echo "Resolved job.workflow_ref does not name Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml." >&2
+            exit 1
+          fi
+      - name: Checkout approved Builds actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ inputs.builds-execution-sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
+      - name: Initialize root-declared submodules
+        uses: ./.hexalith/builds-execution/Github/initialize-build
+      - name: Evaluate governed workflow provenance
+        id: governed-provenance
+        uses: ./.hexalith/builds-execution/Github/governed-provenance
+        with:
+          stage: release
+          builds-execution-sha: ${{ inputs.builds-execution-sha }}
+          workflow-path: .github/workflows/domain-release.yml
+          candidate: ${{ inputs.release-commit }}
+          dependency-policy-repository: ${{ inputs.dependency-policy-repository }}
+          dependency-policy-path: ${{ inputs.dependency-policy-path }}
+          dependency-policy-commit: ${{ inputs.dependency-policy-commit }}
+          dependency-policy-sha256: ${{ inputs.dependency-policy-sha256 }}
+          expected-evaluator-digest: ${{ inputs.expected-release-evaluator-digest }}
+          output: .hexalith/release/governed/release-workflow-provenance.json
+      # Everything from here to Semantic Release exists only to produce a publication.
+      # A frozen module skips all of it rather than paying for a build it will discard.
+      - name: Initialize .NET
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: ${{ inputs.dotnet-global-json }}
+      - name: Initialize Node.js
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Cache NuGet packages
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
+          restore-keys: nuget-
+      - name: Validate declared package count
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.publish-containers }}
+        shell: bash
+        env:
+          EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$EXPECTED_PACKAGE_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+            echo "expected-package-count must declare the caller's package count as a positive integer." >&2
+            exit 1
+          fi
+      - name: Validate test platform input
+        if: ${{ inputs.test-platform != 'vstest' && inputs.test-platform != 'microsoft-testing-platform' }}
+        shell: bash
+        env:
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+        run: |
+          echo "Unsupported test-platform '$TEST_PLATFORM'. Expected vstest or microsoft-testing-platform." >&2
+          exit 1
+      - name: Install npm dependencies
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
+        run: npm ci
+      - name: Verify npm dependency provenance and signatures
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
+        run: npm audit signatures
+      - name: Restore
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
+        env:
+          SOLUTION: ${{ inputs.solution }}
+        run: dotnet restore "$SOLUTION"
+      - name: Build
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
+        env:
+          SOLUTION: ${{ inputs.solution }}
+        run: dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
+      - name: Install and initialize Dapr
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.test-projects != '' }}
+        uses: ./.hexalith/builds-execution/Github/dapr-init
+        with:
+          version: ${{ inputs.dapr-version }}
+      - name: Run tests (Tier 1 + 2, VSTest)
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.test-projects != '' && inputs.test-platform == 'vstest' }}
+        shell: bash
+        env:
+          TEST_PROJECTS: ${{ inputs.test-projects }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r proj; do
+            [ -z "$proj" ] && continue
+            name=$(basename "$proj")
+            dotnet test "$proj" --no-build --configuration Release \
+              --logger "trx;LogFileName=${name}.trx" \
+              --results-directory "TestResults/${name}" \
+              --collect:"XPlat Code Coverage"
+          done <<< "$TEST_PROJECTS"
+      - name: Run tests (Tier 1 + 2, Microsoft.Testing.Platform)
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.test-projects != '' && inputs.test-platform == 'microsoft-testing-platform' }}
+        shell: bash
+        env:
+          TEST_PROJECTS: ${{ inputs.test-projects }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r proj; do
+            [ -z "$proj" ] && continue
+            name=$(basename "$proj")
+            dotnet test "$proj" --no-build --configuration Release \
+              --results-directory "TestResults/${name}" \
+              --report-xunit-trx \
+              --report-xunit-trx-filename "${name}.trx"
+          done <<< "$TEST_PROJECTS"
+      - name: Upload release test evidence
+        if: ${{ always() && inputs.test-projects != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-test-results
+          path: |
+            TestResults/**/*.trx
+            TestResults/**/coverage.cobertura.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Set up arm64 emulation
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.publish-containers }}
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        with:
+          platforms: arm64
+      - name: Prepare release container publisher
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.publish-containers }}
+        uses: ./.hexalith/builds-execution/Github/publish-containers
+        with:
+          container-projects: ${{ inputs.container-projects }}
+          builds-execution-sha: ${{ inputs.builds-execution-sha }}
+      - name: Revalidate governed release source before Semantic Release
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          SOURCE_BRANCH: ${{ inputs.source-branch }}
+        run: |
+          set -euo pipefail
+          # Governed mode authenticates the CI run from the event head but consumes only
+          # release-commit, so the checked-out tree and live branch are both proved against it.
+          if [ "$SOURCE_BRANCH" != "main" ]; then
+            echo "The release source branch must be exactly main." >&2
+            exit 1
+          fi
+
+          checked_out_sha="$(git rev-parse HEAD)"
+          if [ "$checked_out_sha" != "$RELEASE_COMMIT" ]; then
+            echo "The checked-out governed release source does not match release-commit." >&2
+            exit 1
+          fi
+
+          live_source_sha="$(gh api "repos/${REPOSITORY}/git/ref/heads/${SOURCE_BRANCH}" --jq '.object.sha')"
+          if [[ ! "$live_source_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "The live ${SOURCE_BRANCH} SHA could not be resolved as an exact lowercase commit SHA." >&2
+            exit 1
+          fi
+          if [ "$RELEASE_COMMIT" != "$live_source_sha" ]; then
+            echo "The governed release candidate became stale during setup. Redispatch Release from the new ${SOURCE_BRANCH} tip after exact-candidate CI succeeds." >&2
+            exit 1
+          fi
+      - name: Prepare governed release candidate
+        id: governed-candidate
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CANDIDATE_COMMAND: ${{ inputs.candidate-command }}
+          HEXALITH_RELEASE_CANDIDATE_DIRECTORY: ${{ inputs.candidate-directory }}
+          HEXALITH_RELEASE_GOVERNED: 'true'
+          HEXALITH_RELEASE_COMMIT: ${{ inputs.release-commit }}
+          HEXALITH_RELEASE_ENVIRONMENT: ${{ inputs.environment-name }}
+          HEXALITH_RELEASE_PACKAGE_MANIFEST: ${{ inputs.package-manifest }}
+          HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}
+          HEXALITH_NUGET_SIGNING_TIMESTAMPER: ${{ inputs.nuget-signing-timestamper }}
+          NUGET_SIGNING_CERTIFICATE_BASE64: ${{ secrets.NUGET_SIGNING_CERTIFICATE_BASE64 }}
+          NUGET_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.NUGET_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # Revalidated at the point of use as well as in the contract gate: this is the
+          # only step that deletes a caller-named path, so it must not rely on a check
+          # performed by an earlier step that a future edit could reorder away.
+          case "$HEXALITH_RELEASE_CANDIDATE_DIRECTORY" in
+            ""|/*|~*|*$'\n'*)
+              echo "Refusing to use the unsafe candidate-directory '$HEXALITH_RELEASE_CANDIDATE_DIRECTORY'." >&2
+              exit 1
+              ;;
+          esac
+          IFS='/' read -r -a candidate_segments <<< "$HEXALITH_RELEASE_CANDIDATE_DIRECTORY"
+          for segment in "${candidate_segments[@]}"; do
+            if [ -z "$segment" ] || [ "$segment" = "." ] || [ "$segment" = ".." ]; then
+              echo "Refusing to delete through the unsafe candidate-directory segment '${segment}' in '$HEXALITH_RELEASE_CANDIDATE_DIRECTORY'." >&2
+              exit 1
+            fi
+          done
+          if [ -L "$HEXALITH_RELEASE_CANDIDATE_DIRECTORY" ]; then
+            echo "Refusing to use a symlinked candidate-directory '$HEXALITH_RELEASE_CANDIDATE_DIRECTORY'." >&2
+            exit 1
+          fi
+
+          rm -rf "$HEXALITH_RELEASE_CANDIDATE_DIRECTORY"
+          mkdir -p "$HEXALITH_RELEASE_CANDIDATE_DIRECTORY" .hexalith/release/governed
+
+          # Resolve the exact version semantic-release will publish before any publication
+          # side effect exists, so the attested bytes are the bytes NuGet later receives.
+          dry_run_log="$(mktemp)"
+          if ! HEXALITH_RELEASE_PHASE=candidate npx semantic-release --dry-run >"$dry_run_log" 2>&1; then
+            cat "$dry_run_log" >&2
+            echo "The governed candidate phase could not resolve the next release version." >&2
+            exit 1
+          fi
+          cat "$dry_run_log"
+          version="$(sed -n 's/.*The next release version is \([0-9][0-9A-Za-z.+-]*\).*/\1/p' "$dry_run_log" | tail -n 1)"
+          if [ -z "$version" ]; then
+            echo "release-required=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=No governed candidate::semantic-release resolved no publishable version, so no candidate packages are produced or attested."
+            exit 0
+          fi
+
+          HEXALITH_RELEASE_CANDIDATE_VERSION="$version" \
+          HEXALITH_RELEASE_PHASE=candidate \
+            bash -c "$CANDIDATE_COMMAND"
+
+          shopt -s nullglob
+          packages=("$HEXALITH_RELEASE_CANDIDATE_DIRECTORY"/*.nupkg)
+          if [ "${#packages[@]}" -eq 0 ]; then
+            echo "The governed candidate command produced no .nupkg packages in $HEXALITH_RELEASE_CANDIDATE_DIRECTORY." >&2
+            exit 1
+          fi
+
+          # A symlinked package would let the inventory and the attestation describe bytes
+          # that are not the bytes in the candidate directory, and the link target could be
+          # swapped between hashing and publication.
+          for package in "${packages[@]}"; do
+            if [ -L "$package" ] || [ ! -f "$package" ]; then
+              echo "Refusing to attest '$package': governed candidate packages must be regular files, not symlinks." >&2
+              exit 1
+            fi
+          done
+
+          # expected-package-count is the caller's own declaration of its inventory. When it
+          # is a positive number, a candidate that does not match it is a silent inventory
+          # change and must fail before anything is attested or published.
+          if [[ "$HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+            if [ "${#packages[@]}" -ne "$HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT" ]; then
+              echo "The governed candidate produced ${#packages[@]} package(s) but expected-package-count declares $HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT." >&2
+              exit 1
+            fi
+          fi
+
+          inventory=.hexalith/release/governed/candidate-inventory.json
+          CANDIDATE_VERSION="$version" python3 - "$inventory" "${packages[@]}" <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          destination = Path(sys.argv[1])
+          rows = []
+          for argument in sys.argv[2:]:
+              package = Path(argument)
+              if package.is_symlink() or not package.is_file():
+                  raise SystemExit(f"refusing to inventory non-regular candidate package {argument}")
+              payload = package.read_bytes()
+              rows.append(
+                  {
+                      "name": package.name,
+                      "sha256": hashlib.sha256(payload).hexdigest(),
+                      "size": len(payload),
+                  }
+              )
+          rows.sort(key=lambda row: (row["name"], row["sha256"], row["size"]))
+          destination.write_text(
+              json.dumps(
+                  {
+                      "schema": "hexalith.builds-release-candidate.v1",
+                      "version": os.environ["CANDIDATE_VERSION"],
+                      "directory": os.environ["HEXALITH_RELEASE_CANDIDATE_DIRECTORY"],
+                      "packages": rows,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          {
+            echo "release-required=true"
+            echo "version=$version"
+            echo "package-count=${#packages[@]}"
+            echo "inventory-path=$inventory"
+          } >> "$GITHUB_OUTPUT"
+      - name: Attest governed release candidate
+        id: candidate-attestation
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && steps.governed-candidate.outputs.release-required == 'true' }}
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: ${{ inputs.candidate-directory }}/*.nupkg
+      - name: Verify governed candidate attestation
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && steps.governed-candidate.outputs.release-required == 'true' }}
+        shell: bash
+        env:
+          ATTESTATION_BUNDLE: ${{ steps.candidate-attestation.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ATTESTATION_BUNDLE-}" ] || [ ! -s "$ATTESTATION_BUNDLE" ]; then
+            echo "The governed candidate attestation bundle is missing or empty; refusing to publish." >&2
+            exit 1
+          fi
+          cp "$ATTESTATION_BUNDLE" .hexalith/release/governed/candidate-attestation.jsonl
+      - name: Semantic Release
+        # Both conditions are load-bearing. publish-enabled alone would let a run whose
+        # candidate phase resolved no version -- or failed before producing one -- reach
+        # semantic-release and publish bytes that were never packed, signed, or attested.
+        if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && steps.governed-candidate.outputs.release-required == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          HEXALITH_CONTAINER_PROJECTS: ${{ inputs.container-projects }}
+          HEXALITH_ZOT_REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
+          HEXALITH_ZOT_USERNAME: ${{ secrets.HEXALITH_ZOT_USERNAME }}
+          HEXALITH_ZOT_API_KEY: ${{ secrets.HEXALITH_ZOT_API_KEY }}
+          HEXALITH_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          HEXALITH_RELEASE_ENVIRONMENT: ${{ inputs.environment-name }}
+          HEXALITH_RELEASE_SOURCE_BRANCH: ${{ inputs.source-branch }}
+          HEXALITH_RELEASE_SOURCE_CI_WORKFLOW: ${{ inputs.source-ci-workflow }}
+          HEXALITH_RELEASE_PACKAGE_MANIFEST: ${{ inputs.package-manifest }}
+          HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}
+          HEXALITH_RELEASE_GOVERNED: 'true'
+          HEXALITH_RELEASE_PHASE: 'publish'
+          HEXALITH_RELEASE_COMMIT: ${{ inputs.release-commit }}
+          HEXALITH_RELEASE_CANDIDATE_DIRECTORY: ${{ inputs.candidate-directory }}
+          HEXALITH_RELEASE_CANDIDATE_VERSION: ${{ steps.governed-candidate.outputs.version }}
+          HEXALITH_RELEASE_CANDIDATE_INVENTORY: ${{ steps.governed-candidate.outputs.inventory-path }}
+          HEXALITH_RELEASE_ATTESTATION_BUNDLE: ${{ steps.candidate-attestation.outputs.bundle-path }}
+          HEXALITH_RELEASE_ATTESTATION_ID: ${{ steps.candidate-attestation.outputs.attestation-id }}
+          HEXALITH_RELEASE_ATTESTATION_URL: ${{ steps.candidate-attestation.outputs.attestation-url }}
+          HEXALITH_RELEASE_WORKFLOW_PROVENANCE: ${{ steps.governed-provenance.outputs.provenance-path }}
+          HEXALITH_RELEASE_CI_HANDOFF_ARTIFACT: ${{ inputs.ci-handoff-artifact }}
+          HEXALITH_RELEASE_CI_RUN_ID: ${{ inputs.ci-run-id }}
+          HEXALITH_RELEASE_CI_RUN_ATTEMPT: ${{ inputs.ci-run-attempt }}
+          HEXALITH_RELEASE_POLICY_REPOSITORY: ${{ inputs.dependency-policy-repository }}
+          HEXALITH_RELEASE_POLICY_PATH: ${{ inputs.dependency-policy-path }}
+          HEXALITH_RELEASE_POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
+          HEXALITH_RELEASE_POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
+          HEXALITH_RELEASE_EVALUATOR_DIGEST: ${{ inputs.expected-release-evaluator-digest }}
+        run: npx semantic-release
+      - name: Collect governed release verification data
+        id: governed-verification-data
+        if: ${{ always() }}
+        shell: bash
+        env:
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          RELEASE_WORKFLOW_REF: ${{ github.workflow_ref }}
+          RELEASE_RUN_ID: ${{ github.run_id }}
+          RELEASE_RUN_ATTEMPT: ${{ github.run_attempt }}
+          RELEASE_CONCLUSION: ${{ job.status }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          CI_HANDOFF_ARTIFACT: ${{ inputs.ci-handoff-artifact }}
+          CI_RUN_ID: ${{ inputs.ci-run-id }}
+          CI_RUN_ATTEMPT: ${{ inputs.ci-run-attempt }}
+          POLICY_REPOSITORY: ${{ inputs.dependency-policy-repository }}
+          POLICY_PATH: ${{ inputs.dependency-policy-path }}
+          POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
+          POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
+          EXPECTED_EVALUATOR_DIGEST: ${{ inputs.expected-release-evaluator-digest }}
+          PUBLISH_ENABLED: ${{ steps.publish-gate.outputs.publish-enabled }}
+          RELEASE_REQUIRED: ${{ steps.governed-candidate.outputs.release-required }}
+          RELEASE_VERSION: ${{ steps.governed-candidate.outputs.version }}
+          CANDIDATE_INVENTORY: ${{ steps.governed-candidate.outputs.inventory-path }}
+          ATTESTATION_BUNDLE: ${{ steps.candidate-attestation.outputs.bundle-path }}
+          ATTESTATION_ID: ${{ steps.candidate-attestation.outputs.attestation-id }}
+          WORKFLOW_PROVENANCE: ${{ steps.governed-provenance.outputs.provenance-path }}
+          CLOSURE_DIGEST: ${{ steps.governed-provenance.outputs.closure-digest }}
+        run: |
+          set -euo pipefail
+          # Never omit this evidence. A frozen, failed, or partial governed run still records
+          # the CI/policy projection and uses the closed null representation for whatever the
+          # release never produced.
+          mkdir -p .hexalith/release/governed
+          destination=.hexalith/release/governed/release-verification-data.json
+          python3 - "$destination" <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+
+          def text(name):
+              value = os.environ.get(name, "")
+              return value if value else None
+
+
+          def digest_of(path):
+              if not path:
+                  return None
+              candidate = Path(path)
+              if not candidate.is_file():
+                  return None
+              return hashlib.sha256(candidate.read_bytes()).hexdigest()
+
+
+          def load_json(path):
+              if not path:
+                  return None
+              candidate = Path(path)
+              if not candidate.is_file():
+                  return None
+              try:
+                  return json.loads(candidate.read_text(encoding="utf-8"))
+              except (OSError, ValueError):
+                  return None
+
+
+          inventory = load_json(os.environ.get("CANDIDATE_INVENTORY", ""))
+          assets = sorted(
+              (inventory or {}).get("packages", []),
+              key=lambda row: (row.get("name", ""), row.get("sha256", ""), row.get("size", 0)),
+          )
+          attestation_bundle = os.environ.get("ATTESTATION_BUNDLE", "")
+          published = (
+              os.environ.get("PUBLISH_ENABLED", "") == "true"
+              and os.environ.get("RELEASE_REQUIRED", "") == "true"
+              and os.environ.get("RELEASE_CONCLUSION", "") == "success"
+          )
+          document = {
+              "schema": "hexalith.builds-release-verification-data.v1",
+              "release_run": {
+                  "repository": os.environ.get("RELEASE_REPOSITORY", ""),
+                  "workflow_ref": os.environ.get("RELEASE_WORKFLOW_REF", ""),
+                  "run_id": os.environ.get("RELEASE_RUN_ID", ""),
+                  "run_attempt": os.environ.get("RELEASE_RUN_ATTEMPT", ""),
+                  "conclusion": os.environ.get("RELEASE_CONCLUSION", ""),
+              },
+              "ci_handoff": {
+                  "artifact": text("CI_HANDOFF_ARTIFACT"),
+                  "run_id": text("CI_RUN_ID"),
+                  "run_attempt": text("CI_RUN_ATTEMPT"),
+              },
+              "candidate": text("RELEASE_COMMIT"),
+              "dependency_policy": {
+                  "repository": text("POLICY_REPOSITORY"),
+                  "path": text("POLICY_PATH"),
+                  "commit": text("POLICY_COMMIT"),
+                  "sha256": text("POLICY_SHA256"),
+              },
+              "publication": {
+                  "publish_enabled": os.environ.get("PUBLISH_ENABLED", "") == "true",
+                  "release_required": os.environ.get("RELEASE_REQUIRED", "") == "true",
+                  "published": published,
+                  "version": text("RELEASE_VERSION"),
+              },
+              "attestation": {
+                  "bundle_path": text("ATTESTATION_BUNDLE"),
+                  "bundle_sha256": digest_of(attestation_bundle),
+                  "attestation_id": text("ATTESTATION_ID"),
+              },
+              "assets": assets,
+              "evaluator": {
+                  "expected_definition_digest": text("EXPECTED_EVALUATOR_DIGEST"),
+                  "closure_digest": text("CLOSURE_DIGEST"),
+                  "provenance_path": text("WORKFLOW_PROVENANCE"),
+                  "provenance_sha256": digest_of(os.environ.get("WORKFLOW_PROVENANCE", "")),
+              },
+          }
+          Path(sys.argv[1]).write_text(
+              json.dumps(document, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          echo "path=$destination" >> "$GITHUB_OUTPUT"
+      - name: Upload governed release evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: governed-release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .hexalith/release/governed/**
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+      - name: Upload complete release evidence
+        if: ${{ always() && inputs.publish-containers }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: .hexalith/release-evidence/**

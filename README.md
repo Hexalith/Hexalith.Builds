@@ -81,6 +81,10 @@ This repository:
   `domain-release.yml`).
 - [`Github/dapr-init/`](Github/dapr-init/README.md): Install the Dapr CLI and
   run `dapr init` with retry.
+- [`Github/governed-provenance/`](Github/governed-provenance/README.md):
+  Validate the running job's reusable-workflow identity and emit the bounded
+  static `uses:`-closure provenance the governed BUILD-REL-1 paths in
+  `domain-ci.yml` and `domain-release.yml` hand to their callers.
 - [`Github/initialize-build/`](Github/initialize-build/README.md): Initialize
   root-declared submodules without recursive or remote updates.
 - [`Github/initialize-dotnet/`](Github/initialize-dotnet/README.md): Install

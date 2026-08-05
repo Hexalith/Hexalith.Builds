@@ -4,4 +4,9 @@ paths:
     # GitHub exposes these reusable-workflow identity fields at runtime, but
     # actionlint 1.7.12 does not yet include them in its job-context schema.
     ignore:
-      - 'property "workflow_(repository|sha)" is not defined in object type'
+      - 'property "workflow_(repository|sha|ref|file_path)" is not defined in object type'
+  .github/workflows/domain-ci.yml:
+    # Same actionlint job-context gap: governed CI proves its own reusable-workflow
+    # identity from job.workflow_repository/sha/ref before emitting GOV-1 provenance.
+    ignore:
+      - 'property "workflow_(repository|sha|ref|file_path)" is not defined in object type'

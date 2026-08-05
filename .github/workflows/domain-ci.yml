@@ -118,6 +118,82 @@ on:
         required: false
         type: number
         default: 60
+      governed-ci:
+        description: >-
+          Opt into the BUILD-REL-1 / GOV-1 governed CI contract: validate the actual
+          reusable-workflow identity, evaluate the bounded static workflow/composite
+          closure, and emit the provenance the caller needs for its
+          hexalith.dependency-release-handoff.v1 artifact. Leave unset to keep the
+          pre-BUILD-REL-1 CI contract exactly.
+        required: false
+        type: boolean
+        default: false
+      builds-execution-sha:
+        description: 'Exact approved Hexalith.Builds commit resolved for this reusable workflow. Required in governed mode.'
+        required: false
+        type: string
+        default: ''
+      candidate-commit:
+        description: 'Exact candidate commit the governed CI run evaluates. Required in governed mode.'
+        required: false
+        type: string
+        default: ''
+      dependency-policy-repository:
+        description: 'Normalized github.com/owner/repository identity owning the active dependency policy.'
+        required: false
+        type: string
+        default: ''
+      dependency-policy-path:
+        description: 'Repository-relative path of the active dependency policy.'
+        required: false
+        type: string
+        default: ''
+      dependency-policy-commit:
+        description: 'Exact commit of the active dependency policy.'
+        required: false
+        type: string
+        default: ''
+      dependency-policy-sha256:
+        description: 'Exact SHA-256 of the active dependency-policy bytes.'
+        required: false
+        type: string
+        default: ''
+      expected-ci-evaluator-digest:
+        description: 'Expected CI evaluator-authorization digest recorded into the governed provenance.'
+        required: false
+        type: string
+        default: ''
+    outputs:
+      governed-candidate:
+        description: 'Exact candidate commit the governed CI run evaluated.'
+        value: ${{ jobs.build-and-test.outputs.governed-candidate }}
+      governed-provenance-json:
+        description: 'Complete governed-provenance document as compact canonical JSON.'
+        value: ${{ jobs.build-and-test.outputs.governed-provenance-json }}
+      governed-provenance-sha256:
+        description: 'SHA-256 of the emitted governed-provenance document bytes.'
+        value: ${{ jobs.build-and-test.outputs.governed-provenance-sha256 }}
+      governed-closure-digest:
+        description: 'Canonical digest of the evaluated governed reusable/composite closure.'
+        value: ${{ jobs.build-and-test.outputs.governed-closure-digest }}
+      governed-reusable-repository:
+        description: 'Normalized identity of the repository owning the governed reusable workflow.'
+        value: ${{ jobs.build-and-test.outputs.governed-reusable-repository }}
+      governed-reusable-workflow-path:
+        description: 'Repository-relative path of the governed reusable workflow.'
+        value: ${{ jobs.build-and-test.outputs.governed-reusable-workflow-path }}
+      governed-reusable-commit:
+        description: 'Exact commit the governed reusable workflow executed from.'
+        value: ${{ jobs.build-and-test.outputs.governed-reusable-commit }}
+      governed-reusable-blob-sha256:
+        description: 'SHA-256 of the governed domain-ci.yml blob that executed.'
+        value: ${{ jobs.build-and-test.outputs.governed-reusable-blob-sha256 }}
+      governed-actions-json:
+        description: 'Canonical JSON array of the local composite-action sources in the governed closure.'
+        value: ${{ jobs.build-and-test.outputs.governed-actions-json }}
+      governed-external-actions-json:
+        description: 'Canonical JSON array of the pinned external action coordinates in the governed closure.'
+        value: ${{ jobs.build-and-test.outputs.governed-external-actions-json }}
 
 permissions:
   contents: read
@@ -126,19 +202,126 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.build-timeout-minutes }}
+    outputs:
+      governed-candidate: ${{ steps.governed-provenance.outputs.candidate }}
+      governed-provenance-json: ${{ steps.governed-provenance.outputs.provenance-json }}
+      governed-provenance-sha256: ${{ steps.governed-provenance.outputs.provenance-sha256 }}
+      governed-closure-digest: ${{ steps.governed-provenance.outputs.closure-digest }}
+      governed-reusable-repository: ${{ steps.governed-provenance.outputs.reusable-repository }}
+      governed-reusable-workflow-path: ${{ steps.governed-provenance.outputs.reusable-workflow-path }}
+      governed-reusable-commit: ${{ steps.governed-provenance.outputs.reusable-commit }}
+      governed-reusable-blob-sha256: ${{ steps.governed-provenance.outputs.reusable-blob-sha256 }}
+      governed-actions-json: ${{ steps.governed-provenance.outputs.actions-json }}
+      governed-external-actions-json: ${{ steps.governed-provenance.outputs.external-actions-json }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: false
+      - name: Validate governed CI contract
+        if: ${{ inputs.governed-ci }}
+        shell: bash
+        env:
+          BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          CANDIDATE_COMMIT: ${{ inputs.candidate-commit }}
+          EVENT_HEAD_SHA: ${{ github.sha }}
+          POLICY_REPOSITORY: ${{ inputs.dependency-policy-repository }}
+          POLICY_PATH: ${{ inputs.dependency-policy-path }}
+          POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
+          POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
+          EXPECTED_EVALUATOR_DIGEST: ${{ inputs.expected-ci-evaluator-digest }}
+          RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          RESOLVED_WORKFLOW_REF: ${{ job.workflow_ref }}
+        run: |
+          set -euo pipefail
+          failures=0
+          reject() {
+            echo "$1" >&2
+            failures=$((failures + 1))
+          }
+
+          if [[ ! "$BUILDS_EXECUTION_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            reject "governed CI requires builds-execution-sha to be an exact lowercase 40-character commit SHA."
+          fi
+          if [[ ! "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            reject "governed CI requires candidate-commit to be an exact lowercase 40-character commit SHA."
+          fi
+          if [[ ! "$POLICY_REPOSITORY" =~ ^github\.com/[a-z0-9._-]+/[a-z0-9._-]+$ ]]; then
+            reject "governed CI requires dependency-policy-repository as a normalized github.com/owner/repository identity."
+          fi
+          if [ -z "${POLICY_PATH//[[:space:]]/}" ] || [[ "$POLICY_PATH" == /* ]]; then
+            reject "governed CI requires dependency-policy-path as a non-empty relative path."
+          fi
+          if [[ ! "$POLICY_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            reject "governed CI requires dependency-policy-commit to be an exact lowercase 40-character commit SHA."
+          fi
+          if [[ ! "$POLICY_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            reject "governed CI requires dependency-policy-sha256 to be an exact lowercase 64-character SHA-256."
+          fi
+          if [[ ! "$EXPECTED_EVALUATOR_DIGEST" =~ ^[0-9a-f]{64}$ ]]; then
+            reject "governed CI requires expected-ci-evaluator-digest to be an exact lowercase 64-character SHA-256."
+          fi
+          if [ "$RESOLVED_WORKFLOW_REPOSITORY" != "Hexalith/Hexalith.Builds" ]; then
+            reject "The governed CI job is not defined by the approved Hexalith.Builds repository."
+          fi
+          if [ "$RESOLVED_WORKFLOW_SHA" != "$BUILDS_EXECUTION_SHA" ]; then
+            reject "Resolved reusable-workflow SHA does not match the approved builds-execution-sha."
+          fi
+          if [[ "$RESOLVED_WORKFLOW_REF" != Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@* ]]; then
+            reject "Resolved job.workflow_ref does not name Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml."
+          fi
+          if [ "$CANDIDATE_COMMIT" != "$EVENT_HEAD_SHA" ]; then
+            reject "governed CI candidate-commit must be the exact commit this CI run evaluates."
+          fi
+
+          checked_out_sha="$(git rev-parse HEAD)"
+          if [ "$checked_out_sha" != "$CANDIDATE_COMMIT" ]; then
+            reject "The checked-out CI source does not match the declared exact candidate."
+          fi
+
+          if [ "$failures" -ne 0 ]; then
+            echo "Rejected $failures governed CI contract violation(s)." >&2
+            exit 1
+          fi
+      - name: Checkout approved Builds actions
+        if: ${{ inputs.governed-ci }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ inputs.builds-execution-sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
+      - name: Evaluate governed workflow provenance
+        id: governed-provenance
+        if: ${{ inputs.governed-ci }}
+        uses: ./.hexalith/builds-execution/Github/governed-provenance
+        with:
+          stage: ci
+          builds-execution-sha: ${{ inputs.builds-execution-sha }}
+          workflow-path: .github/workflows/domain-ci.yml
+          candidate: ${{ inputs.candidate-commit }}
+          dependency-policy-repository: ${{ inputs.dependency-policy-repository }}
+          dependency-policy-path: ${{ inputs.dependency-policy-path }}
+          dependency-policy-commit: ${{ inputs.dependency-policy-commit }}
+          dependency-policy-sha256: ${{ inputs.dependency-policy-sha256 }}
+          expected-evaluator-digest: ${{ inputs.expected-ci-evaluator-digest }}
+          output: .hexalith/ci/governed/ci-workflow-provenance.json
+      # Two forms of the same composite. Governed mode must load Builds-owned composites
+      # from the reusable-workflow commit itself, which only the governed checkout above
+      # provides; a legacy caller never checks Builds out, so it consumes the pinned copy.
+      - name: Initialize root-declared submodules (governed)
+        if: ${{ inputs.governed-ci }}
+        uses: ./.hexalith/builds-execution/Github/initialize-build
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
+        if: ${{ !inputs.governed-ci }}
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@824d7ef100455423aabbcd399c8364074000b2e0 # BUILD-REL-1
       - name: Initialize .NET
-        uses: actions/setup-dotnet@v6.0.0
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Cache NuGet packages
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
@@ -204,9 +387,14 @@ jobs:
               --report-xunit-trx \
               --report-xunit-trx-filename "${name}.trx"
           done <<< "$UNIT_TEST_PROJECTS"
+      - name: Install and initialize Dapr (governed)
+        if: ${{ inputs.integration-test-projects != '' && inputs.governed-ci }}
+        uses: ./.hexalith/builds-execution/Github/dapr-init
+        with:
+          version: ${{ inputs.dapr-version }}
       - name: Install and initialize Dapr
-        if: ${{ inputs.integration-test-projects != '' }}
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
+        if: ${{ inputs.integration-test-projects != '' && !inputs.governed-ci }}
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@824d7ef100455423aabbcd399c8364074000b2e0 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
       - name: Integration tests (Tier 2, VSTest)
@@ -263,7 +451,7 @@ jobs:
           python3 scripts/validate-coverage.py "${args[@]}" --summary-file "$GITHUB_STEP_SUMMARY"
       - name: Upload test and coverage evidence
         if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: blocking-test-results
           path: |
@@ -278,18 +466,18 @@ jobs:
     needs: build-and-test
     continue-on-error: ${{ inputs.aspire-continue-on-error }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@824d7ef100455423aabbcd399c8364074000b2e0 # BUILD-REL-1
       - name: Initialize .NET
-        uses: actions/setup-dotnet@v6.0.0
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Cache NuGet packages
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
@@ -301,7 +489,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@824d7ef100455423aabbcd399c8364074000b2e0 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
       # Coverage is not collected here: this tier is advisory (non-blocking by
@@ -340,7 +528,7 @@ jobs:
           echo "Status: $JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: aspire-test-results
           path: "TestResults/**/*.trx"
@@ -352,18 +540,18 @@ jobs:
     timeout-minutes: ${{ inputs.performance-timeout-minutes }}
     needs: build-and-test
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@main
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@824d7ef100455423aabbcd399c8364074000b2e0 # BUILD-REL-1
       - name: Initialize .NET
-        uses: actions/setup-dotnet@v6.0.0
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
       - name: Cache NuGet packages
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
@@ -375,7 +563,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@824d7ef100455423aabbcd399c8364074000b2e0 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
       - name: Performance tests (Tier 3, nightly only, VSTest)
@@ -560,7 +748,7 @@ jobs:
           PY
       - name: Upload performance test results
         if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: performance-test-results
           path: TestResults/performance

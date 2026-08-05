@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import shutil
 import subprocess  # nosec B404 -- tests execute only repository-owned fixture scripts.
 import tempfile
@@ -248,7 +249,16 @@ class PublishScriptContractTests(unittest.TestCase):
             "uses: Hexalith/Hexalith.Builds/Github/publish-containers@main",
             workflow,
         )
-        self.assertNotIn("Hexalith/Hexalith.Builds/", workflow)
+        # Every Builds-owned composite must load from the immutable local checkout. The
+        # check is scoped to `uses:` edges because the governed identity gate legitimately
+        # names Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml as the
+        # workflow_ref path it requires.
+        builds_uses = [
+            match.group("value")
+            for match in re.finditer(r"^\s*(?:-\s+)?uses:\s*(?P<value>\S+)", workflow, re.MULTILINE)
+            if match.group("value").startswith("Hexalith/Hexalith.Builds/")
+        ]
+        self.assertEqual([], builds_uses)
         self.assertIn("builds-execution-sha: ${{ inputs.builds-execution-sha }}", workflow)
         self.assertIn("HEXALITH_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}", workflow)
         self.assertIn("HEXALITH_RELEASE_ENVIRONMENT: ${{ inputs.environment-name }}", workflow)

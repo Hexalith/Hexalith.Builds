@@ -144,6 +144,10 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-publish-containers.ps1
 
+    - name: Test governed workflow provenance
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-governed-provenance.ps1
+
     - name: Create Release
       uses: ./Github/create-release
       env:
