@@ -394,7 +394,7 @@ jobs:
           version: ${{ inputs.dapr-version }}
       - name: Install and initialize Dapr
         if: ${{ inputs.integration-test-projects != '' && !inputs.governed-ci }}
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@824d7ef100455423aabbcd399c8364074000b2e0 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@345e0cecf02964d687bd53a82bebe94d784896c0 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
       - name: Integration tests (Tier 2, VSTest)
@@ -489,7 +489,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@824d7ef100455423aabbcd399c8364074000b2e0 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@345e0cecf02964d687bd53a82bebe94d784896c0 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
       # Coverage is not collected here: this tier is advisory (non-blocking by
@@ -563,7 +563,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@824d7ef100455423aabbcd399c8364074000b2e0 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@345e0cecf02964d687bd53a82bebe94d784896c0 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
       - name: Performance tests (Tier 3, nightly only, VSTest)
