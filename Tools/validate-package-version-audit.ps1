@@ -47,38 +47,115 @@ function Get-RequiredText {
     return $text.Trim()
 }
 
+function ConvertTo-NuGetVersion {
+    param(
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string] $Version
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Version) -or $Version -cne $Version.Trim()) {
+        return $null
+    }
+
+    $metadataParts = $Version.Split('+')
+    if ($metadataParts.Count -gt 2 -or [string]::IsNullOrEmpty($metadataParts[0])) {
+        return $null
+    }
+
+    if ($metadataParts.Count -eq 2) {
+        $metadataIdentifiers = $metadataParts[1].Split('.')
+        if (
+            [string]::IsNullOrEmpty($metadataParts[1]) -or
+            @($metadataIdentifiers | Where-Object { $_ -cnotmatch '^[0-9A-Za-z-]+$' }).Count -gt 0
+        ) {
+            return $null
+        }
+    }
+
+    $versionWithoutMetadata = $metadataParts[0]
+    $prereleaseSeparator = $versionWithoutMetadata.IndexOf('-', [StringComparison]::Ordinal)
+    $coreText = if ($prereleaseSeparator -ge 0) {
+        $versionWithoutMetadata.Substring(0, $prereleaseSeparator)
+    }
+    else {
+        $versionWithoutMetadata
+    }
+    $prereleaseText = if ($prereleaseSeparator -ge 0) {
+        $versionWithoutMetadata.Substring($prereleaseSeparator + 1)
+    }
+    else {
+        ''
+    }
+
+    $coreIdentifiers = $coreText.Split('.')
+    if ($coreIdentifiers.Count -lt 1 -or $coreIdentifiers.Count -gt 4) {
+        return $null
+    }
+
+    $core = [System.Collections.Generic.List[int]]::new()
+    foreach ($identifier in $coreIdentifiers) {
+        $component = 0
+        if (
+            $identifier -cnotmatch '^(0|[1-9][0-9]*)$' -or
+            -not [int]::TryParse($identifier, [ref] $component)
+        ) {
+            return $null
+        }
+        $core.Add($component)
+    }
+
+    $prereleaseIdentifiers = @()
+    if ($prereleaseSeparator -ge 0) {
+        if ([string]::IsNullOrEmpty($prereleaseText)) {
+            return $null
+        }
+        $prereleaseIdentifiers = @($prereleaseText.Split('.'))
+        foreach ($identifier in $prereleaseIdentifiers) {
+            if ($identifier -cnotmatch '^[0-9A-Za-z-]+$') {
+                return $null
+            }
+            if ($identifier -cmatch '^[0-9]+$' -and $identifier.Length -gt 1 -and $identifier.StartsWith('0')) {
+                return $null
+            }
+        }
+    }
+
+    return [pscustomobject] @{
+        Core = @($core)
+        Prerelease = @($prereleaseIdentifiers)
+        IsPrerelease = $prereleaseSeparator -ge 0
+    }
+}
+
 function Compare-NuGetVersion {
     param(
         [Parameter(Mandatory = $true)][string] $Left,
         [Parameter(Mandatory = $true)][string] $Right
     )
 
-    $leftWithoutMetadata = $Left.Split('+', 2)[0]
-    $rightWithoutMetadata = $Right.Split('+', 2)[0]
-    $leftParts = $leftWithoutMetadata.Split('-', 2)
-    $rightParts = $rightWithoutMetadata.Split('-', 2)
-    $leftCore = $leftParts[0].Split('.')
-    $rightCore = $rightParts[0].Split('.')
+    $leftVersion = ConvertTo-NuGetVersion -Version $Left
+    $rightVersion = ConvertTo-NuGetVersion -Version $Right
+    if ($null -eq $leftVersion -or $null -eq $rightVersion) {
+        return $null
+    }
+
     for ($index = 0; $index -lt 4; $index++) {
-        $leftNumber = if ($index -lt $leftCore.Count) { [long] $leftCore[$index] } else { 0 }
-        $rightNumber = if ($index -lt $rightCore.Count) { [long] $rightCore[$index] } else { 0 }
+        $leftNumber = if ($index -lt $leftVersion.Core.Count) { $leftVersion.Core[$index] } else { 0 }
+        $rightNumber = if ($index -lt $rightVersion.Core.Count) { $rightVersion.Core[$index] } else { 0 }
         if ($leftNumber -ne $rightNumber) {
-            return [Math]::Sign($leftNumber - $rightNumber)
+            return $leftNumber.CompareTo($rightNumber)
         }
     }
 
-    $leftPrerelease = if ($leftParts.Count -gt 1) { $leftParts[1] } else { '' }
-    $rightPrerelease = if ($rightParts.Count -gt 1) { $rightParts[1] } else { '' }
-    if ([string]::IsNullOrEmpty($leftPrerelease)) {
-        return $(if ([string]::IsNullOrEmpty($rightPrerelease)) { 0 } else { 1 })
+    if (-not $leftVersion.IsPrerelease) {
+        return $(if (-not $rightVersion.IsPrerelease) { 0 } else { 1 })
     }
 
-    if ([string]::IsNullOrEmpty($rightPrerelease)) {
+    if (-not $rightVersion.IsPrerelease) {
         return -1
     }
 
-    $leftIdentifiers = $leftPrerelease.Split('.')
-    $rightIdentifiers = $rightPrerelease.Split('.')
+    $leftIdentifiers = $leftVersion.Prerelease
+    $rightIdentifiers = $rightVersion.Prerelease
     $identifierCount = [Math]::Max($leftIdentifiers.Count, $rightIdentifiers.Count)
     for ($index = 0; $index -lt $identifierCount; $index++) {
         if ($index -ge $leftIdentifiers.Count) { return -1 }
@@ -268,6 +345,31 @@ foreach ($package in $packages) {
     $latestPrerelease = if ($null -eq $latestPrereleaseValue) { '' } else { [string] $latestPrereleaseValue }
     $isInternalPackage = $id.StartsWith('Hexalith.', [StringComparison]::OrdinalIgnoreCase)
     $catalogSelectedVersion = if ($catalogVersions.ContainsKey($id)) { [string] $catalogVersions[$id] } else { '' }
+    $parsedInternalVersions = @{}
+
+    if ($isInternalPackage) {
+        foreach ($versionEntry in @(
+                @{ Name = 'auditedVersion'; Value = $auditedVersion },
+                @{ Name = 'selectedVersion'; Value = $selectedVersion },
+                @{ Name = 'catalog version'; Value = $catalogSelectedVersion },
+                @{ Name = 'latestStable'; Value = $latestStable },
+                @{ Name = 'latestPrerelease'; Value = $latestPrerelease }
+            )) {
+            if ([string]::IsNullOrWhiteSpace($versionEntry.Value)) {
+                continue
+            }
+
+            $parsedVersion = ConvertTo-NuGetVersion -Version $versionEntry.Value
+            if ($null -eq $parsedVersion) {
+                $failures.Add(
+                    "Internal package '$id' has invalid $($versionEntry.Name) NuGet version '$($versionEntry.Value)'."
+                )
+            }
+            else {
+                $parsedInternalVersions[$versionEntry.Name] = $parsedVersion
+            }
+        }
+    }
 
     if ($listingState -notin @('listed', 'unlisted', 'missing', 'unresolved')) {
         $failures.Add("Package '$id' has invalid listingState '$listingState'.")
@@ -284,16 +386,29 @@ foreach ($package in $packages) {
         $failures.Add("Package '$id' selects '$selectedVersion' but the evaluated catalog resolves '$($catalogVersions[$id])'.")
     }
 
-    if ($isInternalPackage -and -not [string]::IsNullOrWhiteSpace($catalogSelectedVersion)) {
-        if ((Compare-NuGetVersion -Left $catalogSelectedVersion -Right $auditedVersion) -lt 0) {
+    if (
+        $isInternalPackage -and
+        $parsedInternalVersions.ContainsKey('catalog version') -and
+        $parsedInternalVersions.ContainsKey('selectedVersion')
+    ) {
+        $acceptedFloorComparison = Compare-NuGetVersion -Left $catalogSelectedVersion -Right $selectedVersion
+        if ($acceptedFloorComparison -lt 0) {
             $failures.Add(
-                "Internal package '$id' cannot downgrade audited version '$auditedVersion' to catalog version '$catalogSelectedVersion'."
+                "Internal package '$id' cannot downgrade accepted version floor '$selectedVersion' to catalog version '$catalogSelectedVersion'."
+            )
+        }
+        elseif ($acceptedFloorComparison -gt 0) {
+            $failures.Add(
+                "Internal package '$id' catalog version '$catalogSelectedVersion' has no matching accepted audit selection."
             )
         }
 
-        if ($auditedVersion -notmatch '-' -and $catalogSelectedVersion -match '-') {
+        if (
+            -not $parsedInternalVersions['selectedVersion'].IsPrerelease -and
+            $parsedInternalVersions['catalog version'].IsPrerelease
+        ) {
             $failures.Add(
-                "Internal stable package '$id' cannot move audited version '$auditedVersion' to prerelease catalog version '$catalogSelectedVersion'."
+                "Internal stable package '$id' cannot move accepted version '$selectedVersion' to prerelease catalog version '$catalogSelectedVersion'."
             )
         }
     }
@@ -318,11 +433,20 @@ foreach ($package in $packages) {
         $failures.Add("Accepted package '$id' must select its audited latest stable or prerelease candidate.")
     }
 
-    if ($disposition -eq 'accepted' -and (Compare-NuGetVersion -Left $selectedVersion -Right $auditedVersion) -lt 0) {
+    $selectedAuditComparison = Compare-NuGetVersion -Left $selectedVersion -Right $auditedVersion
+    if ($disposition -eq 'accepted' -and $null -ne $selectedAuditComparison -and $selectedAuditComparison -lt 0) {
         $failures.Add("Accepted package '$id' cannot downgrade audited version '$auditedVersion' to '$selectedVersion'.")
     }
 
-    if ($disposition -eq 'accepted' -and $auditedVersion -notmatch '-' -and $selectedVersion -match '-') {
+    $parsedAuditedVersion = ConvertTo-NuGetVersion -Version $auditedVersion
+    $parsedSelectedVersion = ConvertTo-NuGetVersion -Version $selectedVersion
+    if (
+        $disposition -eq 'accepted' -and
+        $null -ne $parsedAuditedVersion -and
+        $null -ne $parsedSelectedVersion -and
+        -not $parsedAuditedVersion.IsPrerelease -and
+        $parsedSelectedVersion.IsPrerelease
+    ) {
         $failures.Add("Accepted stable package '$id' cannot move to prerelease version '$selectedVersion'.")
     }
 
@@ -365,6 +489,21 @@ foreach ($package in $packages) {
 
         $sourceStable = Get-PropertyValue -Object $sourceResult -Name 'latestStable'
         $sourcePrerelease = Get-PropertyValue -Object $sourceResult -Name 'latestPrerelease'
+        if ($isInternalPackage) {
+            foreach ($sourceVersionEntry in @(
+                    @{ Name = "source '$sourceUri' latestStable"; Value = [string] $sourceStable },
+                    @{ Name = "source '$sourceUri' latestPrerelease"; Value = [string] $sourcePrerelease }
+                )) {
+                if (
+                    -not [string]::IsNullOrWhiteSpace($sourceVersionEntry.Value) -and
+                    $null -eq (ConvertTo-NuGetVersion -Version $sourceVersionEntry.Value)
+                ) {
+                    $failures.Add(
+                        "Internal package '$id' has invalid $($sourceVersionEntry.Name) NuGet version '$($sourceVersionEntry.Value)'."
+                    )
+                }
+            }
+        }
         if (-not [string]::IsNullOrWhiteSpace([string] $sourceStable)) {
             $sourceStableCandidates.Add([string] $sourceStable)
         }
@@ -407,7 +546,10 @@ foreach ($package in $packages) {
         $failures.Add('Microsoft.OpenApi must remain on the proven 2.x line until compatibility evidence changes the contract.')
     }
 
-    if (($id -eq 'Hexalith.Tenants' -or $id -like 'Hexalith.Tenants.*') -and $selectedVersion -cne $auditedVersion) {
+    if (
+        ($id -eq 'Hexalith.Tenants' -or $id -like 'Hexalith.Tenants.*') -and
+        $catalogSelectedVersion -cne $selectedVersion
+    ) {
         $failures.Add("Package '$id' changed without a separately validated Tenants release-owner contract.")
     }
 

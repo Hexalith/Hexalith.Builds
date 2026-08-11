@@ -169,10 +169,16 @@ $items = @(
 '@
     $internalAdvanceAudit = Get-Content -LiteralPath $internalAdvancePath -Raw | ConvertFrom-Json
     $internalAdvanceAudit.auditedAtUtc = '2026-07-31T12:00:00.0000000Z'
-    $internalAdvanceAudit.packages[1].auditedVersion = '1.0.0'
-    $internalAdvanceAudit.packages[1].selectedVersion = '1.0.0'
-    $internalAdvanceAudit.packages[1].latestStable = '1.0.0'
-    $internalAdvanceAudit.packages[1].sourceResults[0].latestStable = '1.0.0'
+    foreach ($package in $internalAdvanceAudit.packages) {
+        $package.auditedVersion = '1.0.0'
+        $package.selectedVersion = '1.1.0'
+        $package.latestStable = '1.1.0'
+        $package.listingState = 'listed'
+        $package.disposition = 'accepted'
+        $package.sourceResults[0].listingState = 'listed'
+        $package.sourceResults[0].latestStable = '1.1.0'
+    }
+    $internalAdvanceAudit.familyDecisions[0].disposition = 'accepted'
     $internalAdvanceAudit.catalogPath = [IO.Path]::GetRelativePath(
         $repositoryRoot,
         $internalAdvanceCatalogPath
@@ -186,7 +192,116 @@ $items = @(
 <Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="0.9.0" /><PackageVersion Include="Hexalith.Fixture.Two" Version="0.9.0" /></ItemGroup></Project>
 '@
     Test-Scenario -Name 'Internal family downgrade' -AuditPath $internalAdvancePath -ExpectedExitCode 1 `
-        -ExpectedOutput "Internal package 'Hexalith.Fixture.One' cannot downgrade audited version '1.0.0' to catalog version '0.9.0'"
+        -ExpectedOutput "Internal package 'Hexalith.Fixture.One' cannot downgrade accepted version floor '1.1.0' to catalog version '0.9.0'"
+
+    Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="1.0.5" /><PackageVersion Include="Hexalith.Fixture.Two" Version="1.0.5" /></ItemGroup></Project>
+'@
+    Test-Scenario -Name 'Internal regression above old audited floor' -AuditPath $internalAdvancePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Internal package 'Hexalith.Fixture.One' cannot downgrade accepted version floor '1.1.0' to catalog version '1.0.5'"
+
+    $missingCandidatePath = Join-Path $temporaryRoot 'internal-missing-candidate.json'
+    Copy-Item -LiteralPath $internalAdvancePath -Destination $missingCandidatePath
+    $missingCandidateAudit = Get-Content -LiteralPath $missingCandidatePath -Raw | ConvertFrom-Json
+    $missingCandidateAudit.packages[0].latestStable = '1.0.0'
+    $missingCandidateAudit.packages[0].sourceResults[0].latestStable = '1.0.0'
+    Save-Audit -Audit $missingCandidateAudit -Path $missingCandidatePath
+    Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="1.1.0" /><PackageVersion Include="Hexalith.Fixture.Two" Version="1.1.0" /></ItemGroup></Project>
+'@
+    Test-Scenario -Name 'Internal actual selection missing source candidate' `
+        -AuditPath $missingCandidatePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Accepted package 'Hexalith.Fixture.One' selected version '1.1.0' has no configured-source candidate evidence"
+
+    $missingPublicationPath = Join-Path $temporaryRoot 'internal-missing-publication.json'
+    Copy-Item -LiteralPath $internalAdvancePath -Destination $missingPublicationPath
+    $missingPublicationAudit = Get-Content -LiteralPath $missingPublicationPath -Raw | ConvertFrom-Json
+    $missingPublicationAudit.packages[0].listingState = 'missing'
+    $missingPublicationAudit.packages[0].latestStable = $null
+    $missingPublicationAudit.packages[0].sourceResults[0].listingState = 'missing'
+    $missingPublicationAudit.packages[0].sourceResults[0].latestStable = $null
+    Save-Audit -Audit $missingPublicationAudit -Path $missingPublicationPath
+    Test-Scenario -Name 'Internal actual selection missing publication evidence' `
+        -AuditPath $missingPublicationPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Accepted package 'Hexalith.Fixture.One' requires listed evidence from every configured source"
+
+    $internalPrereleasePath = Join-Path $temporaryRoot 'internal-stable-to-prerelease.json'
+    Copy-Item -LiteralPath $internalAdvancePath -Destination $internalPrereleasePath
+    $internalPrereleaseAudit = Get-Content -LiteralPath $internalPrereleasePath -Raw | ConvertFrom-Json
+    foreach ($package in $internalPrereleaseAudit.packages) {
+        $package.selectedVersion = '1.1.0-preview.1'
+        $package.latestStable = '1.0.0'
+        $package.latestPrerelease = '1.1.0-preview.1'
+        $package.sourceResults[0].latestStable = '1.0.0'
+        $package.sourceResults[0].latestPrerelease = '1.1.0-preview.1'
+    }
+    Save-Audit -Audit $internalPrereleaseAudit -Path $internalPrereleasePath
+    Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="1.1.0-preview.1" /><PackageVersion Include="Hexalith.Fixture.Two" Version="1.1.0-preview.1" /></ItemGroup></Project>
+'@
+    Test-Scenario -Name 'Internal stable package prerelease move' `
+        -AuditPath $internalPrereleasePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Accepted stable package 'Hexalith.Fixture.One' cannot move to prerelease version '1.1.0-preview.1'"
+
+    $metadataPath = Join-Path $temporaryRoot 'internal-stable-build-metadata.json'
+    Copy-Item -LiteralPath $internalAdvancePath -Destination $metadataPath
+    $metadataAudit = Get-Content -LiteralPath $metadataPath -Raw | ConvertFrom-Json
+    foreach ($package in $metadataAudit.packages) {
+        $package.auditedVersion = '1.1.0+sha-feature-1'
+        $package.selectedVersion = '1.1.0+sha-feature-1'
+        $package.latestStable = '1.1.0+sha-feature-1'
+        $package.disposition = 'retained'
+        $package.sourceResults[0].latestStable = '1.1.0+sha-feature-1'
+    }
+    $metadataAudit.familyDecisions[0].disposition = 'retained'
+    Save-Audit -Audit $metadataAudit -Path $metadataPath
+    Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="1.1.0+sha-feature-1" /><PackageVersion Include="Hexalith.Fixture.Two" Version="1.1.0+sha-feature-1" /></ItemGroup></Project>
+'@
+    Test-Scenario -Name 'Internal stable build metadata containing hyphen' `
+        -AuditPath $metadataPath -ExpectedExitCode 0 `
+        -ExpectedOutput 'validation passed for 2 packages, 1 families, and 1 source'
+
+    Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="999999999999999999.0.0" /><PackageVersion Include="Hexalith.Fixture.Two" Version="999999999999999999.0.0" /></ItemGroup></Project>
+'@
+    Test-Scenario -Name 'Internal overflowing catalog version' `
+        -AuditPath $internalAdvancePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Internal package 'Hexalith.Fixture.One' has invalid catalog version NuGet version '999999999999999999.0.0'"
+
+    $malformedVersionPath = Join-Path $temporaryRoot 'internal-malformed-audit-version.json'
+    Copy-Item -LiteralPath $internalAdvancePath -Destination $malformedVersionPath
+    $malformedVersionAudit = Get-Content -LiteralPath $malformedVersionPath -Raw | ConvertFrom-Json
+    $malformedVersionAudit.packages[0].auditedVersion = '1..0'
+    Save-Audit -Audit $malformedVersionAudit -Path $malformedVersionPath
+    Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="1.1.0" /><PackageVersion Include="Hexalith.Fixture.Two" Version="1.1.0" /></ItemGroup></Project>
+'@
+    Test-Scenario -Name 'Internal malformed audit version' `
+        -AuditPath $malformedVersionPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Internal package 'Hexalith.Fixture.One' has invalid auditedVersion NuGet version '1..0'"
+
+    $tenantsDriftPath = New-AuditFixture -Name 'tenants-actual-drift' -PackagePrefix 'Hexalith.Tenants'
+    $tenantsCatalogPath = Join-Path $temporaryRoot 'tenants-actual-drift.props'
+    Write-Utf8File -Path $tenantsCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Hexalith.Tenants.One" Version="1.1.0" /><PackageVersion Include="Hexalith.Tenants.Two" Version="1.1.0" /></ItemGroup></Project>
+'@
+    $tenantsAudit = Get-Content -LiteralPath $tenantsDriftPath -Raw | ConvertFrom-Json
+    foreach ($package in $tenantsAudit.packages) {
+        $package.auditedVersion = '1.0.0'
+        $package.selectedVersion = '1.0.0'
+        $package.latestStable = '1.1.0'
+        $package.listingState = 'listed'
+        $package.sourceResults[0].latestStable = '1.1.0'
+        $package.sourceResults[0].listingState = 'listed'
+    }
+    $tenantsAudit.catalogPath = [IO.Path]::GetRelativePath($repositoryRoot, $tenantsCatalogPath).Replace('\', '/')
+    Save-Audit -Audit $tenantsAudit -Path $tenantsDriftPath
+    $catalogPath = $tenantsCatalogPath
+    Test-Scenario -Name 'Tenants actual selection drift' -AuditPath $tenantsDriftPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Package 'Hexalith.Tenants.One' changed without a separately validated Tenants release-owner contract"
+
+    $catalogPath = $internalAdvanceCatalogPath
 
     Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
 <Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="1.1.0" /><PackageVersion Include="Hexalith.Fixture.Two" Version="1.2.0" /></ItemGroup></Project>

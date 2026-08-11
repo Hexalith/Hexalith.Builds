@@ -96,11 +96,17 @@ source, coherent family dispositions and rollback groups, and retained-exception
 rationale/removal triggers. External-package decisions remain exact: retained
 rows cannot change, while accepted versions cannot downgrade, must be an audited
 latest stable or prerelease candidate, and cannot move an existing stable pin
-onto a prerelease channel. Internal `Hexalith.*` families use the audit as a
-monotonic baseline: catalog versions may advance without rewriting the historical
-snapshot, but cannot downgrade, split an aligned family, or move a stable baseline
-to prerelease. Publication and compatibility of an internal advance are proven by
-the affected module's exact Release/NuGet restore and build. `Microsoft.OpenApi`
+onto a prerelease channel. Internal `Hexalith.*` rows require canonical NuGet
+versions in the catalog and every audit/candidate field. Their checked-in
+`selectedVersion` is the accepted monotonic floor and must exactly match the
+actual catalog selection, so an advance requires an audit refresh and a later
+regression cannot hide above an older `auditedVersion`. An accepted advance must
+be family-aligned, remain stable when the accepted baseline is stable, and carry
+listed configured-source candidate evidence for the actual selection. Numeric
+overflow and malformed version evidence fail as controlled validation errors;
+build-metadata hyphens do not turn a stable version into a prerelease. The Tenants
+release-owner guard likewise compares the actual catalog selection to its accepted
+audit selection. `Microsoft.OpenApi`
 remains on 2.x until its ASP.NET Core 10 runtime constraint is removed, and a
 missing source result can never advance or downgrade an external pin.
 
