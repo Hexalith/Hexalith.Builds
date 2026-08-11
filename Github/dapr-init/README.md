@@ -8,15 +8,17 @@ workflows in consuming repositories (e.g. `Hexalith.Tenants`).
 
 ## Inputs
 
-| Input     | Required | Default    | Description                          |
-|-----------|----------|------------|--------------------------------------|
-| `version` | No       | `1.18.0`   | Dapr runtime/CLI version to install. |
+| Input             | Required | Default  | Description |
+|-------------------|----------|----------|-------------|
+| `version`         | No       | `1.18.0` | Dapr CLI version to install and the legacy runtime fallback. |
+| `runtime-version` | No       | _unset_  | Dapr runtime version used by `dapr init`; falls back to `version`. |
 
 ## Behavior
 
 - Installs the Dapr CLI with the official `dapr/setup-dapr` action.
-- Runs full `dapr init --runtime-version <version>` so the runtime does not
-  drift to Dapr's latest patch release.
+- Runs full `dapr init --runtime-version <runtime-version>` so the runtime does
+  not drift to Dapr's latest patch release. Existing callers that supply only
+  `version` keep the previous shared CLI/runtime behavior.
 - Sets `DAPR_DEFAULT_IMAGE_REGISTRY=ghcr`, matching the Dapr action test
   workflow and avoiding Docker Hub image pulls where possible.
 - Cleans partial Dapr installs before each retry so a failed first attempt does
@@ -31,7 +33,12 @@ workflows in consuming repositories (e.g. `Hexalith.Tenants`).
   uses: Hexalith/Hexalith.Builds/Github/dapr-init@main
   with:
     version: '1.18.0'
+    runtime-version: '1.18.2'
 ```
+
+Omit `runtime-version` when the CLI and runtime use the same release. The action
+then passes `version` to both CLI installation and runtime initialization for
+backward compatibility.
 
 Use `@main` for Hexalith.Builds action references so consuming repositories run
 the latest shared Dapr bootstrap logic.

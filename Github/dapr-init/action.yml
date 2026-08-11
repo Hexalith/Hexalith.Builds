@@ -3,9 +3,12 @@ description: 'Installs the Dapr CLI and runs full dapr init with retry-safe clea
 
 inputs:
   version:
-    description: 'Dapr runtime/CLI version to install'
+    description: 'Dapr CLI version to install and legacy fallback runtime version'
     required: false
     default: '1.18.0'
+  runtime-version:
+    description: 'Dapr runtime version for dapr init; defaults to version when omitted'
+    required: false
 
 runs:
   using: "composite"
@@ -22,7 +25,7 @@ runs:
       uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
       env:
         DAPR_DEFAULT_IMAGE_REGISTRY: ghcr
-        DAPR_VERSION: ${{ inputs.version }}
+        DAPR_RUNTIME_VERSION: ${{ inputs.runtime-version || inputs.version }}
         GITHUB_TOKEN: ${{ github.token }}
       with:
         timeout_minutes: 5
@@ -32,7 +35,7 @@ runs:
           bash <<'BASH'
           set -euo pipefail
 
-          version="${DAPR_VERSION#v}"
+          runtime_version="${DAPR_RUNTIME_VERSION#v}"
 
           cleanup_dapr() {
             echo "Cleaning any partial Dapr installation before init..."
@@ -92,6 +95,6 @@ runs:
           cleanup_dapr
           wait_for_ports_free 60 58080 58081 50005
 
-          dapr init --runtime-version "$version"
+          dapr init --runtime-version "$runtime_version"
           dapr --version
           BASH
