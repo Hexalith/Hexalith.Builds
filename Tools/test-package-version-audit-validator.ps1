@@ -20,7 +20,13 @@ function Write-Utf8File {
 }
 
 function New-AuditFixture {
-    param([Parameter(Mandatory = $true)][string] $Name)
+    param(
+        [Parameter(Mandatory = $true)][string] $Name,
+        [string] $PackagePrefix = 'Fixture'
+    )
+
+    $firstPackageId = "$PackagePrefix.One"
+    $secondPackageId = "$PackagePrefix.Two"
 
     $path = Join-Path $temporaryRoot "$Name.json"
     $audit = [ordered] @{
@@ -40,7 +46,7 @@ function New-AuditFixture {
                 family = 'fixture-family'
                 disposition = 'retained'
                 rollbackGroup = 'fixture-family'
-                packageIds = @('Fixture.One', 'Fixture.Two')
+                packageIds = @($firstPackageId, $secondPackageId)
                 rationale = 'Retained fixture family.'
                 compatibilityEvidence = 'Fixture evidence.'
                 removalTrigger = 'Re-run fixture validation.'
@@ -49,7 +55,7 @@ function New-AuditFixture {
         )
         packages = @(
             [ordered] @{
-                id = 'Fixture.One'
+                id = $firstPackageId
                 auditedVersion = '1.0.0'
                 selectedVersion = '1.0.0'
                 latestStable = '1.0.0'
@@ -72,7 +78,7 @@ function New-AuditFixture {
                 )
             },
             [ordered] @{
-                id = 'Fixture.Two'
+                id = $secondPackageId
                 auditedVersion = '2.0.0'
                 selectedVersion = '2.0.0'
                 latestStable = '2.1.0'
@@ -139,13 +145,56 @@ try {
     $evaluatorPath = Join-Path $temporaryRoot 'evaluate.ps1'
     Write-Utf8File -Path $evaluatorPath -Content @'
 param([string] $CatalogPath)
-$null = $CatalogPath
-[Console]::Out.WriteLine('{"Items":{"PackageVersion":[{"Identity":"Fixture.One","Version":"1.0.0"},{"Identity":"Fixture.Two","Version":"2.0.0"}]}}')
+[xml] $catalog = Get-Content -LiteralPath $CatalogPath -Raw
+$items = @(
+    $catalog.SelectNodes("//*[local-name()='PackageVersion']") |
+        ForEach-Object {
+            [ordered] @{
+                Identity = [string] $_.Include
+                Version = [string] $_.Version
+            }
+        }
+)
+[Console]::Out.WriteLine((@{ Items = @{ PackageVersion = $items } } | ConvertTo-Json -Depth 5 -Compress))
 '@
 
     $validPath = New-AuditFixture -Name 'valid'
     Test-Scenario -Name 'Complete audit' -AuditPath $validPath -ExpectedExitCode 0 `
         -ExpectedOutput 'validation passed for 2 packages, 1 families, and 1 source'
+
+    $internalAdvancePath = New-AuditFixture -Name 'internal-family-advance' -PackagePrefix 'Hexalith.Fixture'
+    $internalAdvanceCatalogPath = Join-Path $temporaryRoot 'internal-family-advance.props'
+    Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="1.1.0" /><PackageVersion Include="Hexalith.Fixture.Two" Version="1.1.0" /></ItemGroup></Project>
+'@
+    $internalAdvanceAudit = Get-Content -LiteralPath $internalAdvancePath -Raw | ConvertFrom-Json
+    $internalAdvanceAudit.auditedAtUtc = '2026-07-31T12:00:00.0000000Z'
+    $internalAdvanceAudit.packages[1].auditedVersion = '1.0.0'
+    $internalAdvanceAudit.packages[1].selectedVersion = '1.0.0'
+    $internalAdvanceAudit.packages[1].latestStable = '1.0.0'
+    $internalAdvanceAudit.packages[1].sourceResults[0].latestStable = '1.0.0'
+    $internalAdvanceAudit.catalogPath = [IO.Path]::GetRelativePath(
+        $repositoryRoot,
+        $internalAdvanceCatalogPath
+    ).Replace('\', '/')
+    Save-Audit -Audit $internalAdvanceAudit -Path $internalAdvancePath
+    $catalogPath = $internalAdvanceCatalogPath
+    Test-Scenario -Name 'Aligned internal family advance' -AuditPath $internalAdvancePath -ExpectedExitCode 0 `
+        -ExpectedOutput 'validation passed for 2 packages, 1 families, and 1 source'
+
+    Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="0.9.0" /><PackageVersion Include="Hexalith.Fixture.Two" Version="0.9.0" /></ItemGroup></Project>
+'@
+    Test-Scenario -Name 'Internal family downgrade' -AuditPath $internalAdvancePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Internal package 'Hexalith.Fixture.One' cannot downgrade audited version '1.0.0' to catalog version '0.9.0'"
+
+    Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="1.1.0" /><PackageVersion Include="Hexalith.Fixture.Two" Version="1.2.0" /></ItemGroup></Project>
+'@
+    Test-Scenario -Name 'Split internal family advance' -AuditPath $internalAdvancePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Internal package family 'fixture-family' must select one aligned catalog version"
+
+    $catalogPath = Join-Path $temporaryRoot 'fixture.props'
 
     $missingPath = New-AuditFixture -Name 'missing-package'
     $missingAudit = Get-Content -LiteralPath $missingPath -Raw | ConvertFrom-Json

@@ -92,13 +92,17 @@ The deterministic generator fixtures cover V3 resource discovery, paged
 registrations, arbitrary-size prerelease ordering, unlisted and missing
 versions, unresolved sources, and output-path safety without accessing a live
 feed. The validator requires exact catalog coverage, one result per configured
-source, coherent family dispositions and rollback groups, retained-exception
-rationale/removal triggers, and selected versions that exactly match the
-evaluated catalog. Retained rows cannot change. Accepted versions cannot
-downgrade, must be an audited latest stable or prerelease candidate, and cannot
-move an existing stable pin onto a prerelease channel. `Microsoft.OpenApi`
+source, coherent family dispositions and rollback groups, and retained-exception
+rationale/removal triggers. External-package decisions remain exact: retained
+rows cannot change, while accepted versions cannot downgrade, must be an audited
+latest stable or prerelease candidate, and cannot move an existing stable pin
+onto a prerelease channel. Internal `Hexalith.*` families use the audit as a
+monotonic baseline: catalog versions may advance without rewriting the historical
+snapshot, but cannot downgrade, split an aligned family, or move a stable baseline
+to prerelease. Publication and compatibility of an internal advance are proven by
+the affected module's exact Release/NuGet restore and build. `Microsoft.OpenApi`
 remains on 2.x until its ASP.NET Core 10 runtime constraint is removed, and a
-missing source result can never advance or downgrade a pin.
+missing source result can never advance or downgrade an external pin.
 
 ### validate-consumer-package-authority.ps1
 

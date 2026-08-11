@@ -266,6 +266,8 @@ foreach ($package in $packages) {
     }
     $latestStable = if ($null -eq $latestStableValue) { '' } else { [string] $latestStableValue }
     $latestPrerelease = if ($null -eq $latestPrereleaseValue) { '' } else { [string] $latestPrereleaseValue }
+    $isInternalPackage = $id.StartsWith('Hexalith.', [StringComparison]::OrdinalIgnoreCase)
+    $catalogSelectedVersion = if ($catalogVersions.ContainsKey($id)) { [string] $catalogVersions[$id] } else { '' }
 
     if ($listingState -notin @('listed', 'unlisted', 'missing', 'unresolved')) {
         $failures.Add("Package '$id' has invalid listingState '$listingState'.")
@@ -278,8 +280,22 @@ foreach ($package in $packages) {
     if (-not $catalogVersions.ContainsKey($id)) {
         $failures.Add("Package evidence '$id' is not present in the evaluated catalog.")
     }
-    elseif ($catalogVersions[$id] -cne $selectedVersion) {
+    elseif (-not $isInternalPackage -and $catalogSelectedVersion -cne $selectedVersion) {
         $failures.Add("Package '$id' selects '$selectedVersion' but the evaluated catalog resolves '$($catalogVersions[$id])'.")
+    }
+
+    if ($isInternalPackage -and -not [string]::IsNullOrWhiteSpace($catalogSelectedVersion)) {
+        if ((Compare-NuGetVersion -Left $catalogSelectedVersion -Right $auditedVersion) -lt 0) {
+            $failures.Add(
+                "Internal package '$id' cannot downgrade audited version '$auditedVersion' to catalog version '$catalogSelectedVersion'."
+            )
+        }
+
+        if ($auditedVersion -notmatch '-' -and $catalogSelectedVersion -match '-') {
+            $failures.Add(
+                "Internal stable package '$id' cannot move audited version '$auditedVersion' to prerelease catalog version '$catalogSelectedVersion'."
+            )
+        }
     }
 
     if ($listingState -ne 'listed' -and ($disposition -ne 'retained' -or $selectedVersion -cne $auditedVersion)) {
@@ -454,6 +470,27 @@ foreach ($decision in $familyDecisions) {
 
         if ($familyPackage._validatedRollbackGroup -cne $rollbackGroup) {
             $failures.Add("Package '$($familyPackage.id)' rollback group does not match family '$family'.")
+        }
+    }
+
+    $internalFamilyPackages = @($packages | Where-Object {
+            $_._validatedFamily -ceq $family -and
+            ([string] $_.id).StartsWith('Hexalith.', [StringComparison]::OrdinalIgnoreCase)
+        })
+    if ($internalFamilyPackages.Count -gt 0) {
+        $selectedFamilyVersions = @(
+            $internalFamilyPackages |
+                ForEach-Object { [string] $catalogVersions[[string] $_.id] } |
+                Sort-Object -Unique
+        )
+        if ($selectedFamilyVersions.Count -ne 1) {
+            $coordinates = @(
+                $internalFamilyPackages |
+                    ForEach-Object { "$($_.id)='$($catalogVersions[[string] $_.id])'" }
+            )
+            $failures.Add(
+                "Internal package family '$family' must select one aligned catalog version; found $([string]::Join(', ', $coordinates))."
+            )
         }
     }
 }
