@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "auditedAtUtc": "2026-08-11T20:25:35.2458436+00:00",
-  "generatedFromRevision": "0a3508b3e5685602dc13983c5371cab7fabaf015",
+  "auditedAtUtc": "2026-08-12T08:37:33.7167652+00:00",
+  "generatedFromRevision": "80f741be10442409e8ab48f996976890637dcaa8",
   "catalogPath": "Props/Directory.Packages.props",
   "sources": [
     {
@@ -29,6 +29,21 @@
         "Aspire.Hosting.Redis",
         "Aspire.Hosting.Testing",
         "Aspire.Microsoft.Azure.Cosmos"
+      ],
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
+      "representativeConsumers": [
+        "Hexalith.EventStore"
+      ]
+    },
+    {
+      "family": "bunit-html",
+      "disposition": "retained",
+      "rollbackGroup": "bunit-html",
+      "packageIds": [
+        "AngleSharp",
+        "bunit"
       ],
       "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
       "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
@@ -124,9 +139,9 @@
         "Microsoft.FluentUI.AspNetCore.Components",
         "Microsoft.FluentUI.AspNetCore.Components.Icons"
       ],
-      "rationale": "Retain the intentional Fluent UI v5 release-candidate family; the listed stable 4.14.4 line is an older major and is not a valid downgrade.",
-      "compatibilityEvidence": "Both component packages resolve the same latest listed v5 prerelease, 5.0.0-rc.4-26180.1.",
-      "removalTrigger": "Move the family together when a newer compatible v5 candidate or stable release passes UI consumer validation.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -155,7 +170,7 @@
       "packageIds": [
         "Hexalith.Chatbot.Contracts"
       ],
-      "rationale": "Retain the previously accepted family floor until every advanced catalog selection has configured-source publication evidence.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
       "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
       "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
@@ -164,7 +179,7 @@
     },
     {
       "family": "hexalith-commons",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
       "packageIds": [
         "Hexalith.Commons",
@@ -176,8 +191,8 @@
         "Hexalith.Commons.StringEncoders",
         "Hexalith.Commons.UniqueIds"
       ],
-      "rationale": "Accepted the aligned family advance from 2.29.0 to 2.30.0.",
-      "compatibilityEvidence": "The checked-in catalog is family-aligned and the refreshed configured-source audit lists the selected version for every family member.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
       "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
@@ -220,7 +235,7 @@
     },
     {
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "packageIds": [
         "Hexalith.EventStore.Admin.Abstractions",
@@ -237,16 +252,16 @@
         "Hexalith.EventStore.Testing",
         "Hexalith.EventStore.Testing.Integration"
       ],
-      "rationale": "Accepted the aligned family advance from 3.88.0 to 3.92.0.",
-      "compatibilityEvidence": "The checked-in catalog is family-aligned and the refreshed configured-source audit lists the selected version for every family member.",
-      "removalTrigger": "Accept the family only after P1R clean validation, executable rollback proof, and EventStore Owner, Builds Owner, Solution Architect, and Test Architect approval.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
     },
     {
       "family": "hexalith-frontcomposer",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
       "packageIds": [
         "Hexalith.FrontComposer.Contracts",
@@ -255,8 +270,8 @@
         "Hexalith.FrontComposer.SourceTools",
         "Hexalith.FrontComposer.Testing"
       ],
-      "rationale": "Accepted the aligned family advance from 4.0.1 to 4.1.1.",
-      "compatibilityEvidence": "The checked-in catalog is family-aligned and the refreshed configured-source audit lists the selected version for every family member.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
       "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
@@ -297,16 +312,16 @@
     },
     {
       "family": "hexalith-memories",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-memories",
       "packageIds": [
         "Hexalith.Memories.Aspire",
         "Hexalith.Memories.Client.Rest",
         "Hexalith.Memories.Contracts"
       ],
-      "rationale": "Accepted the aligned family advance from 2.19.4 to 2.20.7.",
-      "compatibilityEvidence": "The checked-in catalog is family-aligned and the refreshed configured-source audit lists the selected version for every family member.",
-      "removalTrigger": "Accept the complete family after Memories Release validation and owner approval are recorded.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -350,14 +365,14 @@
     },
     {
       "family": "hexalith-polymorphicserializations",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-polymorphicserializations",
       "packageIds": [
         "Hexalith.PolymorphicSerializations",
         "Hexalith.PolymorphicSerializations.CodeGenerators"
       ],
-      "rationale": "Accepted the aligned family advance from 1.19.1 to 1.19.2.",
-      "compatibilityEvidence": "The checked-in catalog is family-aligned and the refreshed configured-source audit lists the selected version for every family member.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
       "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
@@ -391,16 +406,16 @@
         "Hexalith.Tenants.Testing",
         "Hexalith.Tenants.UI"
       ],
-      "rationale": "Retain the previously accepted family floor until every advanced catalog selection has configured-source publication evidence.",
-      "compatibilityEvidence": "All six rows remain aligned through HexalithTenantsVersion and no owner-approved replacement inventory was supplied.",
-      "removalTrigger": "Change the family only after the Tenants release owner approves the common inventory or a documented split.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
     },
     {
       "family": "identity-model",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "identity-model",
       "packageIds": [
         "Microsoft.Identity.Web",
@@ -412,9 +427,9 @@
         "Microsoft.IdentityModel.Tokens",
         "System.IdentityModel.Tokens.Jwt"
       ],
-      "rationale": "Accept Microsoft.Identity.Web 4.14.2 with the complete IdentityModel and JWT family at 8.22.0.",
-      "compatibilityEvidence": "All eight identity rows select their latest listed stable candidates and are validated together by the Builds and EventStore Release gates.",
-      "removalTrigger": "Roll back the identity-model group together if authentication or token validation regresses.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -465,21 +480,6 @@
       "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
       "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
       "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
-      "representativeConsumers": [
-        "Hexalith.EventStore"
-      ]
-    },
-    {
-      "family": "bunit-html",
-      "disposition": "accepted",
-      "rollbackGroup": "bunit-html",
-      "packageIds": [
-        "AngleSharp",
-        "bunit"
-      ],
-      "rationale": "Accept AngleSharp 1.6.0 and move bUnit from its superseded preview to stable 2.8.6 as one UI-test rollback group.",
-      "compatibilityEvidence": "Both candidates are latest listed releases on their established major lines and pass the EventStore Admin UI suite together.",
-      "removalTrigger": "Roll back AngleSharp and bUnit together if HTML parsing, discovery, rendering, or component tests regress.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -729,10 +729,12 @@
       "packageIds": [
         "Azure.Monitor.OpenTelemetry.AspNetCore"
       ],
-      "rationale": "Retain 1.5.0 because no checked-out source project consumes this catalog row, so the 1.6.0 candidate has no representative compatibility proof.",
-      "compatibilityEvidence": "The complete workspace source scan found no PackageReference for Azure.Monitor.OpenTelemetry.AspNetCore outside the central catalog.",
-      "removalTrigger": "Accept a later candidate only after an actual consumer is identified and its telemetry startup and export path pass validation.",
-      "representativeConsumers": []
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
+      "representativeConsumers": [
+        "Hexalith.EventStore"
+      ]
     },
     {
       "family": "package:azure.resourcemanager",
@@ -876,14 +878,14 @@
     },
     {
       "family": "package:communitytoolkit.aspire.hosting.dapr",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "package:communitytoolkit.aspire.hosting.dapr",
       "packageIds": [
         "CommunityToolkit.Aspire.Hosting.Dapr"
       ],
-      "rationale": "Accept the latest listed build on the existing 13.4.1 beta channel.",
-      "compatibilityEvidence": "The beta.687 candidate preserves the intentional channel and is validated with the pinned Aspire 13.4.6 AppHost build.",
-      "removalTrigger": "Roll back this package group if AppHost Dapr resource composition regresses.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -1315,9 +1317,9 @@
       "packageIds": [
         "Microsoft.OpenApi"
       ],
-      "rationale": "Retain the latest proven 2.x line because ASP.NET Core 10 is compiled against the 2.x API and the listed 3.x family is runtime-incompatible.",
-      "compatibilityEvidence": "The catalog's documented compatibility exception binds Microsoft.OpenApi 2.11.0 to Microsoft.AspNetCore.OpenApi 10.x.",
-      "removalTrigger": "Move to 3.x only after ASP.NET Core 10 OpenAPI generation passes explicit runtime compatibility tests.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -1357,9 +1359,9 @@
       "packageIds": [
         "Microsoft.SourceLink.GitHub"
       ],
-      "rationale": "Retain 10.0.302 because the configured source reports only older listed candidates; incomplete visibility must never cause a downgrade.",
-      "compatibilityEvidence": "NuGet registration and flat-container metadata both omit 10.0.302 while reporting 10.0.301 as the latest stable result.",
-      "removalTrigger": "Re-evaluate when a source lists a version newer than 10.0.302 and the SDK/source-link build remains aligned.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -1702,14 +1704,14 @@
     },
     {
       "family": "package:scriban",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "package:scriban",
       "packageIds": [
         "Scriban"
       ],
-      "rationale": "Accept the latest listed stable 7.x patch release.",
-      "compatibilityEvidence": "The 7.2.6 candidate remains on the established minor line and is validated by generator and solution builds.",
-      "removalTrigger": "Roll back this package group if template parsing or generated output regresses.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -1884,14 +1886,14 @@
     },
     {
       "family": "package:sonaranalyzer.csharp",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "package:sonaranalyzer.csharp",
       "packageIds": [
         "SonarAnalyzer.CSharp"
       ],
-      "rationale": "Accept the latest listed 10.x analyzer release.",
-      "compatibilityEvidence": "The analyzer-only 10.31.0.145097 candidate is validated by warning-as-error Builds and EventStore Release builds.",
-      "removalTrigger": "Roll back this package group if the analyzer introduces an unresolvable false-positive build failure.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -1903,9 +1905,9 @@
       "packageIds": [
         "StackExchange.Redis"
       ],
-      "rationale": "Retain 3.0.17 because the required two-instance Redis backplane runtime proof did not reach readiness in the current EventStore host topology.",
-      "compatibilityEvidence": "Restore, build, and SignalR unit tests passed, but the focused Tier-3 proof timed out during pre-readiness hosted-service calls and therefore did not prove cross-instance delivery on 3.1.0.",
-      "removalTrigger": "Accept 3.1.0 or later only after the focused two-instance Redis backplane runtime proof passes with cross-instance delivery and negative controls.",
+      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
+      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
       ]
@@ -2150,23 +2152,23 @@
     },
     {
       "id": "AngleSharp",
-      "auditedVersion": "1.5.2",
+      "auditedVersion": "1.6.0",
       "selectedVersion": "1.6.0",
-      "latestStable": "1.6.0",
-      "latestPrerelease": "1.7.0-beta.583",
+      "latestStable": "1.7.1",
+      "latestPrerelease": "1.8.0-beta.603",
       "listingState": "listed",
       "family": "bunit-html",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "bunit-html",
-      "rationale": "Accept the latest listed stable 1.x release while preserving the existing security floor.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.6.0, prerelease=1.7.0-beta.583",
+      "rationale": "Retain 1.6.0 pending compatibility validation of listed stable candidate 1.7.1.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.7.1, prerelease=1.8.0-beta.603",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "1.6.0",
-          "latestPrerelease": "1.7.0-beta.583",
+          "latestStable": "1.7.1",
+          "latestPrerelease": "1.8.0-beta.603",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -2871,9 +2873,9 @@
       "family": "package:azure.monitor.opentelemetry.aspnetcore",
       "disposition": "retained",
       "rollbackGroup": "package:azure.monitor.opentelemetry.aspnetcore",
-      "rationale": "Retain 1.5.0 because no checked-out source project consumes this catalog row, so the 1.6.0 candidate has no representative compatibility proof.",
+      "rationale": "Retain 1.5.0 pending compatibility validation of listed stable candidate 1.6.0.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.6.0, prerelease=1.4.0-beta.1",
-      "removalTrigger": "Accept a later candidate only after an actual consumer is identified and its telemetry startup and export path pass validation.",
+      "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
@@ -2935,20 +2937,20 @@
       "auditedVersion": "1.4.0",
       "selectedVersion": "1.4.0",
       "latestStable": "1.4.0",
-      "latestPrerelease": "1.5.0-beta.2",
+      "latestPrerelease": "1.5.0-beta.3",
       "listingState": "listed",
       "family": "package:azure.resourcemanager.containerregistry",
       "disposition": "retained",
       "rollbackGroup": "package:azure.resourcemanager.containerregistry",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.4.0, prerelease=1.5.0-beta.2",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.4.0, prerelease=1.5.0-beta.3",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
           "latestStable": "1.4.0",
-          "latestPrerelease": "1.5.0-beta.2",
+          "latestPrerelease": "1.5.0-beta.3",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -3070,22 +3072,22 @@
     },
     {
       "id": "bunit",
-      "auditedVersion": "2.8.4-preview",
+      "auditedVersion": "2.8.6",
       "selectedVersion": "2.8.6",
-      "latestStable": "2.8.6",
+      "latestStable": "2.9.0",
       "latestPrerelease": "2.8.4-preview",
       "listingState": "listed",
       "family": "bunit-html",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "bunit-html",
-      "rationale": "Accept the latest listed 2.x stable release and leave the superseded preview channel.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.8.6, prerelease=2.8.4-preview",
+      "rationale": "Retain 2.8.6 pending compatibility validation of listed stable candidate 2.9.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.9.0, prerelease=2.8.4-preview",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.8.6",
+          "latestStable": "2.9.0",
           "latestPrerelease": "2.8.4-preview",
           "diagnostic": "Registration metadata resolved."
         }
@@ -3139,23 +3141,23 @@
     },
     {
       "id": "CommunityToolkit.Aspire.Hosting.Dapr",
-      "auditedVersion": "13.4.1-beta.686",
+      "auditedVersion": "13.4.1-beta.687",
       "selectedVersion": "13.4.1-beta.687",
       "latestStable": "13.0.0",
-      "latestPrerelease": "13.4.1-beta.687",
+      "latestPrerelease": "13.4.1-beta.706",
       "listingState": "listed",
       "family": "package:communitytoolkit.aspire.hosting.dapr",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "package:communitytoolkit.aspire.hosting.dapr",
-      "rationale": "Accept the latest listed build on the existing 13.4.1 beta channel.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.0.0, prerelease=13.4.1-beta.687",
+      "rationale": "Retain the intentional prerelease channel until its coupled family passes compatibility review.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.0.0, prerelease=13.4.1-beta.706",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
           "latestStable": "13.0.0",
-          "latestPrerelease": "13.4.1-beta.687",
+          "latestPrerelease": "13.4.1-beta.706",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -3394,21 +3396,21 @@
       "id": "Deque.AxeCore.Commons",
       "auditedVersion": "4.12.0",
       "selectedVersion": "4.12.0",
-      "latestStable": "4.12.0",
-      "latestPrerelease": "4.12.0-alpha.130",
+      "latestStable": "4.13.0",
+      "latestPrerelease": "4.13.0-alpha.133",
       "listingState": "listed",
       "family": "package:deque.axecore.commons",
       "disposition": "retained",
       "rollbackGroup": "package:deque.axecore.commons",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.12.0, prerelease=4.12.0-alpha.130",
+      "rationale": "Retain 4.12.0 pending compatibility validation of listed stable candidate 4.13.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.13.0, prerelease=4.13.0-alpha.133",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "4.12.0",
-          "latestPrerelease": "4.12.0-alpha.130",
+          "latestStable": "4.13.0",
+          "latestPrerelease": "4.13.0-alpha.133",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -3417,21 +3419,21 @@
       "id": "Deque.AxeCore.Playwright",
       "auditedVersion": "4.12.0",
       "selectedVersion": "4.12.0",
-      "latestStable": "4.12.0",
-      "latestPrerelease": "4.12.0-alpha.130",
+      "latestStable": "4.13.0",
+      "latestPrerelease": "4.13.0-alpha.133",
       "listingState": "listed",
       "family": "package:deque.axecore.playwright",
       "disposition": "retained",
       "rollbackGroup": "package:deque.axecore.playwright",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.12.0, prerelease=4.12.0-alpha.130",
+      "rationale": "Retain 4.12.0 pending compatibility validation of listed stable candidate 4.13.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.13.0, prerelease=4.13.0-alpha.133",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "4.12.0",
-          "latestPrerelease": "4.12.0-alpha.130",
+          "latestStable": "4.13.0",
+          "latestPrerelease": "4.13.0-alpha.133",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -3555,20 +3557,20 @@
       "id": "Fluxor",
       "auditedVersion": "6.10.0",
       "selectedVersion": "6.10.0",
-      "latestStable": "6.10.0",
+      "latestStable": "6.11.0",
       "latestPrerelease": "6.8.0-Beta1",
       "listingState": "listed",
       "family": "package:fluxor",
       "disposition": "retained",
       "rollbackGroup": "package:fluxor",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.10.0, prerelease=6.8.0-Beta1",
+      "rationale": "Retain 6.10.0 pending compatibility validation of listed stable candidate 6.11.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.11.0, prerelease=6.8.0-Beta1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "6.10.0",
+          "latestStable": "6.11.0",
           "latestPrerelease": "6.8.0-Beta1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -3578,20 +3580,20 @@
       "id": "Fluxor.Blazor.Web",
       "auditedVersion": "6.10.0",
       "selectedVersion": "6.10.0",
-      "latestStable": "6.10.0",
+      "latestStable": "6.11.0",
       "latestPrerelease": "6.8.0-Beta1",
       "listingState": "listed",
       "family": "package:fluxor.blazor.web",
       "disposition": "retained",
       "rollbackGroup": "package:fluxor.blazor.web",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.10.0, prerelease=6.8.0-Beta1",
+      "rationale": "Retain 6.10.0 pending compatibility validation of listed stable candidate 6.11.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.11.0, prerelease=6.8.0-Beta1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "6.10.0",
+          "latestStable": "6.11.0",
           "latestPrerelease": "6.8.0-Beta1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -3716,20 +3718,20 @@
       "id": "Grpc.HealthCheck",
       "auditedVersion": "2.80.0",
       "selectedVersion": "2.80.0",
-      "latestStable": "2.80.0",
+      "latestStable": "2.83.0",
       "latestPrerelease": "2.83.0-pre1",
       "listingState": "listed",
       "family": "package:grpc.healthcheck",
       "disposition": "retained",
       "rollbackGroup": "package:grpc.healthcheck",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.80.0, prerelease=2.83.0-pre1",
+      "rationale": "Retain 2.80.0 pending compatibility validation of listed stable candidate 2.83.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.83.0, prerelease=2.83.0-pre1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.80.0",
+          "latestStable": "2.83.0",
           "latestPrerelease": "2.83.0-pre1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -3739,20 +3741,20 @@
       "id": "Grpc.Net.ClientFactory",
       "auditedVersion": "2.80.0",
       "selectedVersion": "2.80.0",
-      "latestStable": "2.80.0",
+      "latestStable": "2.83.0",
       "latestPrerelease": "2.83.0-pre1",
       "listingState": "listed",
       "family": "package:grpc.net.clientfactory",
       "disposition": "retained",
       "rollbackGroup": "package:grpc.net.clientfactory",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.80.0, prerelease=2.83.0-pre1",
+      "rationale": "Retain 2.80.0 pending compatibility validation of listed stable candidate 2.83.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.83.0, prerelease=2.83.0-pre1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.80.0",
+          "latestStable": "2.83.0",
           "latestPrerelease": "2.83.0-pre1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -3852,15 +3854,15 @@
     },
     {
       "id": "Hexalith.Chatbot.Contracts",
-      "auditedVersion": "1.75.0",
-      "selectedVersion": "1.75.0",
+      "auditedVersion": "1.80.0",
+      "selectedVersion": "1.80.0",
       "latestStable": null,
       "latestPrerelease": null,
       "listingState": "unresolved",
       "family": "hexalith-chatbot",
       "disposition": "retained",
       "rollbackGroup": "hexalith-chatbot",
-      "rationale": "Retain the accepted floor 1.75.0; catalog selection 1.80.0 cannot advance until configured-source publication is demonstrated.",
+      "rationale": "Retain 1.80.0 because its configured-source state is unresolved; incomplete source results must not cause a downgrade.",
       "evidence": "https://api.nuget.org/v3/index.json: state=unresolved, stable=, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -3875,15 +3877,15 @@
     },
     {
       "id": "Hexalith.Commons",
-      "auditedVersion": "2.29.0",
+      "auditedVersion": "2.30.0",
       "selectedVersion": "2.30.0",
       "latestStable": "2.30.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Accepted the family-aligned catalog advance from 2.29.0 to 2.30.0 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.30.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -3898,15 +3900,15 @@
     },
     {
       "id": "Hexalith.Commons.Aspire",
-      "auditedVersion": "2.29.0",
+      "auditedVersion": "2.30.0",
       "selectedVersion": "2.30.0",
       "latestStable": "2.30.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Accepted the family-aligned catalog advance from 2.29.0 to 2.30.0 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.30.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -3921,15 +3923,15 @@
     },
     {
       "id": "Hexalith.Commons.Configurations",
-      "auditedVersion": "2.29.0",
+      "auditedVersion": "2.30.0",
       "selectedVersion": "2.30.0",
       "latestStable": "2.30.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Accepted the family-aligned catalog advance from 2.29.0 to 2.30.0 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.30.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -3944,15 +3946,15 @@
     },
     {
       "id": "Hexalith.Commons.Http",
-      "auditedVersion": "2.29.0",
+      "auditedVersion": "2.30.0",
       "selectedVersion": "2.30.0",
       "latestStable": "2.30.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Accepted the family-aligned catalog advance from 2.29.0 to 2.30.0 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.30.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -3967,15 +3969,15 @@
     },
     {
       "id": "Hexalith.Commons.Metadatas",
-      "auditedVersion": "2.29.0",
+      "auditedVersion": "2.30.0",
       "selectedVersion": "2.30.0",
       "latestStable": "2.30.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Accepted the family-aligned catalog advance from 2.29.0 to 2.30.0 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.30.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -3990,15 +3992,15 @@
     },
     {
       "id": "Hexalith.Commons.ServiceDefaults",
-      "auditedVersion": "2.29.0",
+      "auditedVersion": "2.30.0",
       "selectedVersion": "2.30.0",
       "latestStable": "2.30.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Accepted the family-aligned catalog advance from 2.29.0 to 2.30.0 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.30.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -4013,15 +4015,15 @@
     },
     {
       "id": "Hexalith.Commons.StringEncoders",
-      "auditedVersion": "2.29.0",
+      "auditedVersion": "2.30.0",
       "selectedVersion": "2.30.0",
       "latestStable": "2.30.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Accepted the family-aligned catalog advance from 2.29.0 to 2.30.0 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.30.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -4036,15 +4038,15 @@
     },
     {
       "id": "Hexalith.Commons.UniqueIds",
-      "auditedVersion": "2.29.0",
+      "auditedVersion": "2.30.0",
       "selectedVersion": "2.30.0",
       "latestStable": "2.30.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-commons",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-commons",
-      "rationale": "Accepted the family-aligned catalog advance from 2.29.0 to 2.30.0 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.30.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -4266,22 +4268,22 @@
     },
     {
       "id": "Hexalith.EventStore.Admin.Abstractions",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4289,22 +4291,22 @@
     },
     {
       "id": "Hexalith.EventStore.Admin.Server",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4312,22 +4314,22 @@
     },
     {
       "id": "Hexalith.EventStore.Aspire",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4335,22 +4337,22 @@
     },
     {
       "id": "Hexalith.EventStore.Client",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4358,22 +4360,22 @@
     },
     {
       "id": "Hexalith.EventStore.Contracts",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4381,22 +4383,22 @@
     },
     {
       "id": "Hexalith.EventStore.DomainService",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4404,22 +4406,22 @@
     },
     {
       "id": "Hexalith.EventStore.Gateway",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4427,22 +4429,22 @@
     },
     {
       "id": "Hexalith.EventStore.RestApi.Generators",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4450,22 +4452,22 @@
     },
     {
       "id": "Hexalith.EventStore.Server",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4473,22 +4475,22 @@
     },
     {
       "id": "Hexalith.EventStore.ServiceDefaults",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4496,22 +4498,22 @@
     },
     {
       "id": "Hexalith.EventStore.SignalR",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4519,22 +4521,22 @@
     },
     {
       "id": "Hexalith.EventStore.Testing",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4542,22 +4544,22 @@
     },
     {
       "id": "Hexalith.EventStore.Testing.Integration",
-      "auditedVersion": "3.88.0",
-      "selectedVersion": "3.92.0",
-      "latestStable": "3.92.0",
+      "auditedVersion": "3.93.0",
+      "selectedVersion": "3.93.0",
+      "latestStable": "3.93.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Accepted the family-aligned catalog advance from 3.88.0 to 3.92.0 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.92.0, prerelease=",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.93.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.92.0",
+          "latestStable": "3.93.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4565,15 +4567,15 @@
     },
     {
       "id": "Hexalith.FrontComposer.Contracts",
-      "auditedVersion": "4.0.1",
+      "auditedVersion": "4.1.1",
       "selectedVersion": "4.1.1",
       "latestStable": "4.1.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
-      "rationale": "Accepted the family-aligned catalog advance from 4.0.1 to 4.1.1 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.1.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -4588,15 +4590,15 @@
     },
     {
       "id": "Hexalith.FrontComposer.Mcp",
-      "auditedVersion": "4.0.1",
+      "auditedVersion": "4.1.1",
       "selectedVersion": "4.1.1",
       "latestStable": "4.1.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
-      "rationale": "Accepted the family-aligned catalog advance from 4.0.1 to 4.1.1 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.1.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -4611,15 +4613,15 @@
     },
     {
       "id": "Hexalith.FrontComposer.Shell",
-      "auditedVersion": "4.0.1",
+      "auditedVersion": "4.1.1",
       "selectedVersion": "4.1.1",
       "latestStable": "4.1.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
-      "rationale": "Accepted the family-aligned catalog advance from 4.0.1 to 4.1.1 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.1.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -4634,15 +4636,15 @@
     },
     {
       "id": "Hexalith.FrontComposer.SourceTools",
-      "auditedVersion": "4.0.1",
+      "auditedVersion": "4.1.1",
       "selectedVersion": "4.1.1",
       "latestStable": "4.1.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
-      "rationale": "Accepted the family-aligned catalog advance from 4.0.1 to 4.1.1 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.1.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -4657,15 +4659,15 @@
     },
     {
       "id": "Hexalith.FrontComposer.Testing",
-      "auditedVersion": "4.0.1",
+      "auditedVersion": "4.1.1",
       "selectedVersion": "4.1.1",
       "latestStable": "4.1.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-frontcomposer",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-frontcomposer",
-      "rationale": "Accepted the family-aligned catalog advance from 4.0.1 to 4.1.1 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.1.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -4841,22 +4843,22 @@
     },
     {
       "id": "Hexalith.Memories.Aspire",
-      "auditedVersion": "2.19.4",
+      "auditedVersion": "2.20.7",
       "selectedVersion": "2.20.7",
-      "latestStable": "2.20.7",
+      "latestStable": "2.20.8",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-memories",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-memories",
-      "rationale": "Accepted the family-aligned catalog advance from 2.19.4 to 2.20.7 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.20.7, prerelease=",
+      "rationale": "Retain 2.20.7 pending compatibility validation of listed stable candidate 2.20.8.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.20.8, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.20.7",
+          "latestStable": "2.20.8",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4864,22 +4866,22 @@
     },
     {
       "id": "Hexalith.Memories.Client.Rest",
-      "auditedVersion": "2.19.4",
+      "auditedVersion": "2.20.7",
       "selectedVersion": "2.20.7",
-      "latestStable": "2.20.7",
+      "latestStable": "2.20.8",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-memories",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-memories",
-      "rationale": "Accepted the family-aligned catalog advance from 2.19.4 to 2.20.7 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.20.7, prerelease=",
+      "rationale": "Retain 2.20.7 pending compatibility validation of listed stable candidate 2.20.8.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.20.8, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.20.7",
+          "latestStable": "2.20.8",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4887,22 +4889,22 @@
     },
     {
       "id": "Hexalith.Memories.Contracts",
-      "auditedVersion": "2.19.4",
+      "auditedVersion": "2.20.7",
       "selectedVersion": "2.20.7",
-      "latestStable": "2.20.7",
+      "latestStable": "2.20.8",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-memories",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-memories",
-      "rationale": "Accepted the family-aligned catalog advance from 2.19.4 to 2.20.7 after the configured source listed the selected version.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.20.7, prerelease=",
+      "rationale": "Retain 2.20.7 pending compatibility validation of listed stable candidate 2.20.8.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.20.8, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.20.7",
+          "latestStable": "2.20.8",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -5075,20 +5077,20 @@
       "selectedVersion": "1.0.0",
       "latestStable": null,
       "latestPrerelease": null,
-      "listingState": "missing",
+      "listingState": "unresolved",
       "family": "hexalith-parties",
       "disposition": "retained",
       "rollbackGroup": "hexalith-parties",
-      "rationale": "Retain 1.0.0 because its configured-source state is missing; incomplete source results must not cause a downgrade.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=missing, stable=, prerelease=",
+      "rationale": "Retain 1.0.0 because its configured-source state is unresolved; incomplete source results must not cause a downgrade.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=unresolved, stable=, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
-          "listingState": "missing",
+          "listingState": "unresolved",
           "latestStable": null,
           "latestPrerelease": null,
-          "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/hexalith.parties.server/index.json failed after 3 attempts. Response status code does not indicate success: 404 (Not Found)."
+          "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/hexalith.parties.server/index.json failed after 3 attempts. Response status code does not indicate success: 404 (The specified blob does not exist.)."
         }
       ]
     },
@@ -5098,20 +5100,20 @@
       "selectedVersion": "1.0.0",
       "latestStable": null,
       "latestPrerelease": null,
-      "listingState": "missing",
+      "listingState": "unresolved",
       "family": "hexalith-parties",
       "disposition": "retained",
       "rollbackGroup": "hexalith-parties",
-      "rationale": "Retain 1.0.0 because its configured-source state is missing; incomplete source results must not cause a downgrade.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=missing, stable=, prerelease=",
+      "rationale": "Retain 1.0.0 because its configured-source state is unresolved; incomplete source results must not cause a downgrade.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=unresolved, stable=, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
-          "listingState": "missing",
+          "listingState": "unresolved",
           "latestStable": null,
           "latestPrerelease": null,
-          "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/hexalith.parties.servicedefaults/index.json failed after 3 attempts. Response status code does not indicate success: 404 (Not Found)."
+          "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/hexalith.parties.servicedefaults/index.json failed after 3 attempts. Response status code does not indicate success: 404 (The specified blob does not exist.)."
         }
       ]
     },
@@ -5144,34 +5146,34 @@
       "selectedVersion": "1.0.0",
       "latestStable": null,
       "latestPrerelease": null,
-      "listingState": "missing",
+      "listingState": "unresolved",
       "family": "hexalith-parties",
       "disposition": "retained",
       "rollbackGroup": "hexalith-parties",
-      "rationale": "Retain 1.0.0 because its configured-source state is missing; incomplete source results must not cause a downgrade.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=missing, stable=, prerelease=",
+      "rationale": "Retain 1.0.0 because its configured-source state is unresolved; incomplete source results must not cause a downgrade.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=unresolved, stable=, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
-          "listingState": "missing",
+          "listingState": "unresolved",
           "latestStable": null,
           "latestPrerelease": null,
-          "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/hexalith.parties.ui/index.json failed after 3 attempts. Response status code does not indicate success: 404 (Not Found)."
+          "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/hexalith.parties.ui/index.json failed after 3 attempts. Response status code does not indicate success: 404 (The specified blob does not exist.)."
         }
       ]
     },
     {
       "id": "Hexalith.PolymorphicSerializations",
-      "auditedVersion": "1.19.1",
+      "auditedVersion": "1.19.2",
       "selectedVersion": "1.19.2",
       "latestStable": "1.19.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-polymorphicserializations",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-polymorphicserializations",
-      "rationale": "Accepted the family-aligned catalog advance from 1.19.1 to 1.19.2 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.19.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -5186,15 +5188,15 @@
     },
     {
       "id": "Hexalith.PolymorphicSerializations.CodeGenerators",
-      "auditedVersion": "1.19.1",
+      "auditedVersion": "1.19.2",
       "selectedVersion": "1.19.2",
       "latestStable": "1.19.2",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-polymorphicserializations",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "hexalith-polymorphicserializations",
-      "rationale": "Accepted the family-aligned catalog advance from 1.19.1 to 1.19.2 after the configured source listed the selected version.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.19.2, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -5278,15 +5280,15 @@
     },
     {
       "id": "Hexalith.Tenants.Aspire",
-      "auditedVersion": "5.3.0",
-      "selectedVersion": "5.3.0",
+      "auditedVersion": "5.4.1",
+      "selectedVersion": "5.4.1",
       "latestStable": "5.4.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-tenants",
       "disposition": "retained",
       "rollbackGroup": "hexalith-tenants",
-      "rationale": "Retain the family floor 5.3.0; the 5.4.1 family advance cannot be accepted until every member has configured-source publication evidence.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=5.4.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -5301,15 +5303,15 @@
     },
     {
       "id": "Hexalith.Tenants.Client",
-      "auditedVersion": "5.3.0",
-      "selectedVersion": "5.3.0",
+      "auditedVersion": "5.4.1",
+      "selectedVersion": "5.4.1",
       "latestStable": "5.4.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-tenants",
       "disposition": "retained",
       "rollbackGroup": "hexalith-tenants",
-      "rationale": "Retain the family floor 5.3.0; the 5.4.1 family advance cannot be accepted until every member has configured-source publication evidence.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=5.4.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -5324,15 +5326,15 @@
     },
     {
       "id": "Hexalith.Tenants.Contracts",
-      "auditedVersion": "5.3.0",
-      "selectedVersion": "5.3.0",
+      "auditedVersion": "5.4.1",
+      "selectedVersion": "5.4.1",
       "latestStable": "5.4.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-tenants",
       "disposition": "retained",
       "rollbackGroup": "hexalith-tenants",
-      "rationale": "Retain the family floor 5.3.0; the 5.4.1 family advance cannot be accepted until every member has configured-source publication evidence.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=5.4.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -5347,15 +5349,15 @@
     },
     {
       "id": "Hexalith.Tenants.Server",
-      "auditedVersion": "5.3.0",
-      "selectedVersion": "5.3.0",
+      "auditedVersion": "5.4.1",
+      "selectedVersion": "5.4.1",
       "latestStable": "5.4.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-tenants",
       "disposition": "retained",
       "rollbackGroup": "hexalith-tenants",
-      "rationale": "Retain the family floor 5.3.0; the 5.4.1 family advance cannot be accepted until every member has configured-source publication evidence.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=5.4.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -5370,15 +5372,15 @@
     },
     {
       "id": "Hexalith.Tenants.Testing",
-      "auditedVersion": "5.3.0",
-      "selectedVersion": "5.3.0",
+      "auditedVersion": "5.4.1",
+      "selectedVersion": "5.4.1",
       "latestStable": "5.4.1",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-tenants",
       "disposition": "retained",
       "rollbackGroup": "hexalith-tenants",
-      "rationale": "Retain the family floor 5.3.0; the 5.4.1 family advance cannot be accepted until every member has configured-source publication evidence.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=5.4.1, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -5393,15 +5395,15 @@
     },
     {
       "id": "Hexalith.Tenants.UI",
-      "auditedVersion": "5.3.0",
-      "selectedVersion": "5.3.0",
+      "auditedVersion": "5.4.1",
+      "selectedVersion": "5.4.1",
       "latestStable": null,
       "latestPrerelease": null,
       "listingState": "unresolved",
       "family": "hexalith-tenants",
       "disposition": "retained",
       "rollbackGroup": "hexalith-tenants",
-      "rationale": "Retain the family floor 5.3.0; the 5.4.1 family advance cannot be accepted until every member has configured-source publication evidence.",
+      "rationale": "Retain 5.4.1 because its configured-source state is unresolved; incomplete source results must not cause a downgrade.",
       "evidence": "https://api.nuget.org/v3/index.json: state=unresolved, stable=, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -5418,21 +5420,21 @@
       "id": "HotChocolate",
       "auditedVersion": "16.5.1",
       "selectedVersion": "16.5.1",
-      "latestStable": "16.5.1",
-      "latestPrerelease": "16.6.0-p.12",
+      "latestStable": "16.6.0",
+      "latestPrerelease": "16.6.1-p.1",
       "listingState": "listed",
       "family": "package:hotchocolate",
       "disposition": "retained",
       "rollbackGroup": "package:hotchocolate",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=16.5.1, prerelease=16.6.0-p.12",
+      "rationale": "Retain 16.5.1 pending compatibility validation of listed stable candidate 16.6.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=16.6.0, prerelease=16.6.1-p.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "16.5.1",
-          "latestPrerelease": "16.6.0-p.12",
+          "latestStable": "16.6.0",
+          "latestPrerelease": "16.6.1-p.1",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5579,21 +5581,21 @@
       "id": "Microsoft.AspNetCore.Authentication.Facebook",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5602,21 +5604,21 @@
       "id": "Microsoft.AspNetCore.Authentication.Google",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5625,21 +5627,21 @@
       "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5648,21 +5650,21 @@
       "id": "Microsoft.AspNetCore.Authentication.MicrosoftAccount",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5671,21 +5673,21 @@
       "id": "Microsoft.AspNetCore.Authentication.OpenIdConnect",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5694,21 +5696,21 @@
       "id": "Microsoft.AspNetCore.Authorization",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5717,21 +5719,21 @@
       "id": "Microsoft.AspNetCore.Components.Authorization",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5740,21 +5742,21 @@
       "id": "Microsoft.AspNetCore.Components.CustomElements",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5763,21 +5765,21 @@
       "id": "Microsoft.AspNetCore.Components.Web",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5786,21 +5788,21 @@
       "id": "Microsoft.AspNetCore.Components.WebAssembly",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5809,21 +5811,21 @@
       "id": "Microsoft.AspNetCore.Components.WebAssembly.Authentication",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5832,21 +5834,21 @@
       "id": "Microsoft.AspNetCore.Components.WebAssembly.DevServer",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5855,21 +5857,21 @@
       "id": "Microsoft.AspNetCore.Components.WebAssembly.Server",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5878,21 +5880,21 @@
       "id": "Microsoft.AspNetCore.DataProtection",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5901,21 +5903,21 @@
       "id": "Microsoft.AspNetCore.DataProtection.Abstractions",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5924,20 +5926,20 @@
       "id": "Microsoft.AspNetCore.Identity",
       "auditedVersion": "2.3.11",
       "selectedVersion": "2.3.11",
-      "latestStable": "2.3.11",
+      "latestStable": "2.3.12",
       "latestPrerelease": "2.2.0-preview3-35497",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.3.11, prerelease=2.2.0-preview3-35497",
+      "rationale": "Retain 2.3.11 pending compatibility validation of listed stable candidate 2.3.12.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.3.12, prerelease=2.2.0-preview3-35497",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.3.11",
+          "latestStable": "2.3.12",
           "latestPrerelease": "2.2.0-preview3-35497",
           "diagnostic": "Registration metadata resolved."
         }
@@ -5947,21 +5949,21 @@
       "id": "Microsoft.AspNetCore.Mvc.Testing",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5970,21 +5972,21 @@
       "id": "Microsoft.AspNetCore.OpenApi",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -5993,21 +5995,21 @@
       "id": "Microsoft.AspNetCore.SignalR.Client",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6016,21 +6018,21 @@
       "id": "Microsoft.AspNetCore.SignalR.StackExchangeRedis",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6039,21 +6041,21 @@
       "id": "Microsoft.AspNetCore.TestHost",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6062,21 +6064,21 @@
       "id": "Microsoft.Azure.Cosmos",
       "auditedVersion": "3.62.0",
       "selectedVersion": "3.62.0",
-      "latestStable": "3.62.0",
-      "latestPrerelease": "3.63.0-preview.0",
+      "latestStable": "3.62.1",
+      "latestPrerelease": "3.63.0-preview.1",
       "listingState": "listed",
       "family": "package:microsoft.azure.cosmos",
       "disposition": "retained",
       "rollbackGroup": "package:microsoft.azure.cosmos",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.62.0, prerelease=3.63.0-preview.0",
+      "rationale": "Retain 3.62.0 pending compatibility validation of listed stable candidate 3.62.1.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.62.1, prerelease=3.63.0-preview.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.62.0",
-          "latestPrerelease": "3.63.0-preview.0",
+          "latestStable": "3.62.1",
+          "latestPrerelease": "3.63.0-preview.1",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6223,21 +6225,21 @@
       "id": "Microsoft.Extensions.Configuration",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6246,21 +6248,21 @@
       "id": "Microsoft.Extensions.Configuration.Abstractions",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6269,21 +6271,21 @@
       "id": "Microsoft.Extensions.Configuration.Binder",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6292,21 +6294,21 @@
       "id": "Microsoft.Extensions.Configuration.FileExtensions",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6315,21 +6317,21 @@
       "id": "Microsoft.Extensions.Configuration.UserSecrets",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6338,21 +6340,21 @@
       "id": "Microsoft.Extensions.DependencyInjection",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6361,21 +6363,21 @@
       "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6384,21 +6386,21 @@
       "id": "Microsoft.Extensions.Diagnostics.Abstractions",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6407,21 +6409,21 @@
       "id": "Microsoft.Extensions.Hosting",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6430,21 +6432,21 @@
       "id": "Microsoft.Extensions.Hosting.Abstractions",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6453,21 +6455,21 @@
       "id": "Microsoft.Extensions.Http",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6476,20 +6478,20 @@
       "id": "Microsoft.Extensions.Http.Resilience",
       "auditedVersion": "10.8.0",
       "selectedVersion": "10.8.0",
-      "latestStable": "10.8.0",
+      "latestStable": "10.9.0",
       "latestPrerelease": "9.0.0-preview.9.24507.7",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.8.0, prerelease=9.0.0-preview.9.24507.7",
+      "rationale": "Retain 10.8.0 pending compatibility validation of listed stable candidate 10.9.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.9.0, prerelease=9.0.0-preview.9.24507.7",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.8.0",
+          "latestStable": "10.9.0",
           "latestPrerelease": "9.0.0-preview.9.24507.7",
           "diagnostic": "Registration metadata resolved."
         }
@@ -6501,20 +6503,20 @@
       "selectedVersion": "10.0.9",
       "latestStable": null,
       "latestPrerelease": null,
-      "listingState": "missing",
+      "listingState": "unresolved",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Retain 10.0.9 because its configured-source state is missing; incomplete source results must not cause a downgrade.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=missing, stable=, prerelease=",
+      "rationale": "Retain 10.0.9 because its configured-source state is unresolved; incomplete source results must not cause a downgrade.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=unresolved, stable=, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
-          "listingState": "missing",
+          "listingState": "unresolved",
           "latestStable": null,
           "latestPrerelease": null,
-          "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.identity.http/index.json failed after 3 attempts. Response status code does not indicate success: 404 (Not Found)."
+          "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/microsoft.extensions.identity.http/index.json failed after 3 attempts. Response status code does not indicate success: 404 (The specified blob does not exist.)."
         }
       ]
     },
@@ -6522,21 +6524,21 @@
       "id": "Microsoft.Extensions.Identity.Stores",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6545,21 +6547,21 @@
       "id": "Microsoft.Extensions.Localization",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6568,21 +6570,21 @@
       "id": "Microsoft.Extensions.Localization.Abstractions",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6591,21 +6593,21 @@
       "id": "Microsoft.Extensions.Logging.Abstractions",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6614,21 +6616,21 @@
       "id": "Microsoft.Extensions.Options",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6637,21 +6639,21 @@
       "id": "Microsoft.Extensions.Options.ConfigurationExtensions",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6660,21 +6662,21 @@
       "id": "Microsoft.Extensions.Options.DataAnnotations",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6683,20 +6685,20 @@
       "id": "Microsoft.Extensions.ServiceDiscovery",
       "auditedVersion": "10.8.0",
       "selectedVersion": "10.8.0",
-      "latestStable": "10.8.0",
+      "latestStable": "10.9.0",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.8.0, prerelease=9.0.0-rc.1.24511.1",
+      "rationale": "Retain 10.8.0 pending compatibility validation of listed stable candidate 10.9.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.9.0, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.8.0",
+          "latestStable": "10.9.0",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -6706,20 +6708,20 @@
       "id": "Microsoft.Extensions.TimeProvider.Testing",
       "auditedVersion": "10.8.0",
       "selectedVersion": "10.8.0",
-      "latestStable": "10.8.0",
+      "latestStable": "10.9.0",
       "latestPrerelease": "9.0.0-preview.9.24507.7",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.8.0, prerelease=9.0.0-preview.9.24507.7",
+      "rationale": "Retain 10.8.0 pending compatibility validation of listed stable candidate 10.9.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.9.0, prerelease=9.0.0-preview.9.24507.7",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.8.0",
+          "latestStable": "10.9.0",
           "latestPrerelease": "9.0.0-preview.9.24507.7",
           "diagnostic": "Registration metadata resolved."
         }
@@ -6730,20 +6732,20 @@
       "auditedVersion": "5.0.0-rc.4-26180.1",
       "selectedVersion": "5.0.0-rc.4-26180.1",
       "latestStable": "4.14.4",
-      "latestPrerelease": "5.0.0-rc.4-26180.1",
+      "latestPrerelease": "5.0.0-rc.5-26219.1",
       "listingState": "listed",
       "family": "fluent-ui",
       "disposition": "retained",
       "rollbackGroup": "fluent-ui",
       "rationale": "Retain the intentional prerelease channel until its coupled family passes compatibility review.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.14.4, prerelease=5.0.0-rc.4-26180.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.14.4, prerelease=5.0.0-rc.5-26219.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
           "latestStable": "4.14.4",
-          "latestPrerelease": "5.0.0-rc.4-26180.1",
+          "latestPrerelease": "5.0.0-rc.5-26219.1",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6753,20 +6755,20 @@
       "auditedVersion": "5.0.0-rc.4-26180.1",
       "selectedVersion": "5.0.0-rc.4-26180.1",
       "latestStable": "4.14.4",
-      "latestPrerelease": "5.0.0-rc.4-26180.1",
+      "latestPrerelease": "5.0.0-rc.5-26219.1",
       "listingState": "listed",
       "family": "fluent-ui",
       "disposition": "retained",
       "rollbackGroup": "fluent-ui",
       "rationale": "Retain the intentional prerelease channel until its coupled family passes compatibility review.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.14.4, prerelease=5.0.0-rc.4-26180.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.14.4, prerelease=5.0.0-rc.5-26219.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
           "latestStable": "4.14.4",
-          "latestPrerelease": "5.0.0-rc.4-26180.1",
+          "latestPrerelease": "5.0.0-rc.5-26219.1",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -6775,20 +6777,20 @@
       "id": "Microsoft.Graph",
       "auditedVersion": "6.2.0",
       "selectedVersion": "6.2.0",
-      "latestStable": "6.2.0",
+      "latestStable": "6.5.0",
       "latestPrerelease": "5.0.0-rc.5",
       "listingState": "listed",
       "family": "package:microsoft.graph",
       "disposition": "retained",
       "rollbackGroup": "package:microsoft.graph",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.2.0, prerelease=5.0.0-rc.5",
+      "rationale": "Retain 6.2.0 pending compatibility validation of listed stable candidate 6.5.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.5.0, prerelease=5.0.0-rc.5",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "6.2.0",
+          "latestStable": "6.5.0",
           "latestPrerelease": "5.0.0-rc.5",
           "diagnostic": "Registration metadata resolved."
         }
@@ -6819,15 +6821,15 @@
     },
     {
       "id": "Microsoft.Identity.Web",
-      "auditedVersion": "4.13.2",
+      "auditedVersion": "4.14.2",
       "selectedVersion": "4.14.2",
       "latestStable": "4.14.2",
       "latestPrerelease": "4.4.0-preview.1",
       "listingState": "listed",
       "family": "identity-model",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "identity-model",
-      "rationale": "Accept the latest listed stable 4.x Microsoft Identity Web release.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.14.2, prerelease=4.4.0-preview.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -6842,15 +6844,15 @@
     },
     {
       "id": "Microsoft.IdentityModel.Abstractions",
-      "auditedVersion": "8.21.0",
+      "auditedVersion": "8.22.0",
       "selectedVersion": "8.22.0",
       "latestStable": "8.22.0",
       "latestPrerelease": "8.0.0-preview1",
       "listingState": "listed",
       "family": "identity-model",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "identity-model",
-      "rationale": "Accept the latest listed 8.x patch as part of the complete identity-model rollback group.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=8.22.0, prerelease=8.0.0-preview1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -6865,15 +6867,15 @@
     },
     {
       "id": "Microsoft.IdentityModel.JsonWebTokens",
-      "auditedVersion": "8.21.0",
+      "auditedVersion": "8.22.0",
       "selectedVersion": "8.22.0",
       "latestStable": "8.22.0",
       "latestPrerelease": "8.0.0-preview1",
       "listingState": "listed",
       "family": "identity-model",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "identity-model",
-      "rationale": "Accept the latest listed 8.x patch as part of the complete identity-model rollback group.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=8.22.0, prerelease=8.0.0-preview1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -6888,15 +6890,15 @@
     },
     {
       "id": "Microsoft.IdentityModel.Logging",
-      "auditedVersion": "8.21.0",
+      "auditedVersion": "8.22.0",
       "selectedVersion": "8.22.0",
       "latestStable": "8.22.0",
       "latestPrerelease": "8.0.0-preview1",
       "listingState": "listed",
       "family": "identity-model",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "identity-model",
-      "rationale": "Accept the latest listed 8.x patch as part of the complete identity-model rollback group.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=8.22.0, prerelease=8.0.0-preview1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -6911,15 +6913,15 @@
     },
     {
       "id": "Microsoft.IdentityModel.Protocols",
-      "auditedVersion": "8.21.0",
+      "auditedVersion": "8.22.0",
       "selectedVersion": "8.22.0",
       "latestStable": "8.22.0",
       "latestPrerelease": "8.0.0-preview1",
       "listingState": "listed",
       "family": "identity-model",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "identity-model",
-      "rationale": "Accept the latest listed 8.x patch as part of the complete identity-model rollback group.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=8.22.0, prerelease=8.0.0-preview1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -6934,15 +6936,15 @@
     },
     {
       "id": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
-      "auditedVersion": "8.21.0",
+      "auditedVersion": "8.22.0",
       "selectedVersion": "8.22.0",
       "latestStable": "8.22.0",
       "latestPrerelease": "8.0.0-preview1",
       "listingState": "listed",
       "family": "identity-model",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "identity-model",
-      "rationale": "Accept the latest listed 8.x patch as part of the complete identity-model rollback group.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=8.22.0, prerelease=8.0.0-preview1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -6957,15 +6959,15 @@
     },
     {
       "id": "Microsoft.IdentityModel.Tokens",
-      "auditedVersion": "8.21.0",
+      "auditedVersion": "8.22.0",
       "selectedVersion": "8.22.0",
       "latestStable": "8.22.0",
       "latestPrerelease": "8.0.0-preview1",
       "listingState": "listed",
       "family": "identity-model",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "identity-model",
-      "rationale": "Accept the latest listed 8.x patch as part of the complete identity-model rollback group.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=8.22.0, prerelease=8.0.0-preview1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -7011,9 +7013,9 @@
       "family": "package:microsoft.openapi",
       "disposition": "retained",
       "rollbackGroup": "package:microsoft.openapi",
-      "rationale": "Retain the latest proven 2.x line because Microsoft.AspNetCore.OpenApi 10.x is not compatible with the listed 3.x runtime API.",
+      "rationale": "Retain 2.11.0 pending compatibility validation of listed stable candidate 3.9.0.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.9.0, prerelease=2.0.0-preview.31",
-      "removalTrigger": "Move to 3.x only after ASP.NET Core 10 OpenAPI generation passes explicit runtime compatibility tests.",
+      "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
@@ -7028,20 +7030,20 @@
       "id": "Microsoft.Playwright",
       "auditedVersion": "1.61.0",
       "selectedVersion": "1.61.0",
-      "latestStable": "1.61.0",
+      "latestStable": "1.62.0",
       "latestPrerelease": "1.55.0-beta-4",
       "listingState": "listed",
       "family": "package:microsoft.playwright",
       "disposition": "retained",
       "rollbackGroup": "package:microsoft.playwright",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.61.0, prerelease=1.55.0-beta-4",
+      "rationale": "Retain 1.61.0 pending compatibility validation of listed stable candidate 1.62.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.62.0, prerelease=1.55.0-beta-4",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "1.61.0",
+          "latestStable": "1.62.0",
           "latestPrerelease": "1.55.0-beta-4",
           "diagnostic": "Registration metadata resolved."
         }
@@ -7051,20 +7053,20 @@
       "id": "Microsoft.SemanticKernel",
       "auditedVersion": "1.78.0",
       "selectedVersion": "1.78.0",
-      "latestStable": "1.78.0",
+      "latestStable": "1.79.0",
       "latestPrerelease": "1.18.1-rc",
       "listingState": "listed",
       "family": "package:microsoft.semantickernel",
       "disposition": "retained",
       "rollbackGroup": "package:microsoft.semantickernel",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.78.0, prerelease=1.18.1-rc",
+      "rationale": "Retain 1.78.0 pending compatibility validation of listed stable candidate 1.79.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.79.0, prerelease=1.18.1-rc",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "1.78.0",
+          "latestStable": "1.79.0",
           "latestPrerelease": "1.18.1-rc",
           "diagnostic": "Registration metadata resolved."
         }
@@ -7074,21 +7076,21 @@
       "id": "Microsoft.SourceLink.GitHub",
       "auditedVersion": "10.0.302",
       "selectedVersion": "10.0.302",
-      "latestStable": "10.0.301",
-      "latestPrerelease": "11.0.100-preview.6.26359.118",
+      "latestStable": "10.0.400",
+      "latestPrerelease": "11.0.100-preview.7.26381.103",
       "listingState": "missing",
       "family": "package:microsoft.sourcelink.github",
       "disposition": "retained",
       "rollbackGroup": "package:microsoft.sourcelink.github",
-      "rationale": "Retain 10.0.302 because both configured-source metadata surfaces report only older candidates; never downgrade from an incomplete search result.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=missing, stable=10.0.301, prerelease=11.0.100-preview.6.26359.118",
-      "removalTrigger": "Re-evaluate when a source lists a version newer than 10.0.302 and the SDK/source-link build remains aligned.",
+      "rationale": "Retain 10.0.302 because its configured-source state is missing; incomplete source results must not cause a downgrade.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=missing, stable=10.0.400, prerelease=11.0.100-preview.7.26381.103",
+      "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "missing",
-          "latestStable": "10.0.301",
-          "latestPrerelease": "11.0.100-preview.6.26359.118",
+          "latestStable": "10.0.400",
+          "latestPrerelease": "11.0.100-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -7189,20 +7191,20 @@
       "id": "ModelContextProtocol",
       "auditedVersion": "1.4.1",
       "selectedVersion": "1.4.1",
-      "latestStable": "2.0.0",
+      "latestStable": "2.1.0",
       "latestPrerelease": "2.0.0-rc.2",
       "listingState": "listed",
       "family": "package:modelcontextprotocol",
       "disposition": "retained",
       "rollbackGroup": "package:modelcontextprotocol",
-      "rationale": "Retain 1.4.1 pending compatibility validation of listed stable candidate 2.0.0.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.0, prerelease=2.0.0-rc.2",
+      "rationale": "Retain 1.4.1 pending compatibility validation of listed stable candidate 2.1.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.1.0, prerelease=2.0.0-rc.2",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.0.0",
+          "latestStable": "2.1.0",
           "latestPrerelease": "2.0.0-rc.2",
           "diagnostic": "Registration metadata resolved."
         }
@@ -7212,20 +7214,20 @@
       "id": "ModelContextProtocol.AspNetCore",
       "auditedVersion": "1.4.1",
       "selectedVersion": "1.4.1",
-      "latestStable": "2.0.0",
+      "latestStable": "2.1.0",
       "latestPrerelease": "2.0.0-rc.2",
       "listingState": "listed",
       "family": "package:modelcontextprotocol.aspnetcore",
       "disposition": "retained",
       "rollbackGroup": "package:modelcontextprotocol.aspnetcore",
-      "rationale": "Retain 1.4.1 pending compatibility validation of listed stable candidate 2.0.0.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.0, prerelease=2.0.0-rc.2",
+      "rationale": "Retain 1.4.1 pending compatibility validation of listed stable candidate 2.1.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.1.0, prerelease=2.0.0-rc.2",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.0.0",
+          "latestStable": "2.1.0",
           "latestPrerelease": "2.0.0-rc.2",
           "diagnostic": "Registration metadata resolved."
         }
@@ -7396,20 +7398,20 @@
       "id": "NRedisStack",
       "auditedVersion": "1.6.0",
       "selectedVersion": "1.6.0",
-      "latestStable": "1.7.2",
+      "latestStable": "1.7.3",
       "latestPrerelease": "1.0.0-beta1",
       "listingState": "listed",
       "family": "package:nredisstack",
       "disposition": "retained",
       "rollbackGroup": "package:nredisstack",
-      "rationale": "Retain 1.6.0 pending compatibility validation of listed stable candidate 1.7.2.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.7.2, prerelease=1.0.0-beta1",
+      "rationale": "Retain 1.6.0 pending compatibility validation of listed stable candidate 1.7.3.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.7.3, prerelease=1.0.0-beta1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "1.7.2",
+          "latestStable": "1.7.3",
           "latestPrerelease": "1.0.0-beta1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -7419,20 +7421,20 @@
       "id": "NSubstitute",
       "auditedVersion": "6.0.0",
       "selectedVersion": "6.0.0",
-      "latestStable": "6.0.0",
+      "latestStable": "6.2.0",
       "latestPrerelease": "6.0.0-rc.1",
       "listingState": "listed",
       "family": "package:nsubstitute",
       "disposition": "retained",
       "rollbackGroup": "package:nsubstitute",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.0.0, prerelease=6.0.0-rc.1",
+      "rationale": "Retain 6.0.0 pending compatibility validation of listed stable candidate 6.2.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=6.2.0, prerelease=6.0.0-rc.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "6.0.0",
+          "latestStable": "6.2.0",
           "latestPrerelease": "6.0.0-rc.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -7787,20 +7789,20 @@
       "id": "Radzen.Blazor",
       "auditedVersion": "11.1.7",
       "selectedVersion": "11.1.7",
-      "latestStable": "11.2.0",
+      "latestStable": "11.2.3",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "package:radzen.blazor",
       "disposition": "retained",
       "rollbackGroup": "package:radzen.blazor",
-      "rationale": "Retain 11.1.7 pending compatibility validation of listed stable candidate 11.2.0.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.2.0, prerelease=",
+      "rationale": "Retain 11.1.7 pending compatibility validation of listed stable candidate 11.2.3.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=11.2.3, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "11.2.0",
+          "latestStable": "11.2.3",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -7810,20 +7812,20 @@
       "id": "Roslynator.Analyzers",
       "auditedVersion": "4.15.0",
       "selectedVersion": "4.15.0",
-      "latestStable": "4.15.0",
+      "latestStable": "4.16.0",
       "latestPrerelease": "4.0.0-rc",
       "listingState": "listed",
       "family": "package:roslynator.analyzers",
       "disposition": "retained",
       "rollbackGroup": "package:roslynator.analyzers",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.15.0, prerelease=4.0.0-rc",
+      "rationale": "Retain 4.15.0 pending compatibility validation of listed stable candidate 4.16.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.16.0, prerelease=4.0.0-rc",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "4.15.0",
+          "latestStable": "4.16.0",
           "latestPrerelease": "4.0.0-rc",
           "diagnostic": "Registration metadata resolved."
         }
@@ -7833,20 +7835,20 @@
       "id": "Roslynator.Formatting.Analyzers",
       "auditedVersion": "4.15.0",
       "selectedVersion": "4.15.0",
-      "latestStable": "4.15.0",
+      "latestStable": "4.16.0",
       "latestPrerelease": "4.0.0-rc",
       "listingState": "listed",
       "family": "package:roslynator.formatting.analyzers",
       "disposition": "retained",
       "rollbackGroup": "package:roslynator.formatting.analyzers",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.15.0, prerelease=4.0.0-rc",
+      "rationale": "Retain 4.15.0 pending compatibility validation of listed stable candidate 4.16.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.16.0, prerelease=4.0.0-rc",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "4.15.0",
+          "latestStable": "4.16.0",
           "latestPrerelease": "4.0.0-rc",
           "diagnostic": "Registration metadata resolved."
         }
@@ -7854,15 +7856,15 @@
     },
     {
       "id": "Scriban",
-      "auditedVersion": "7.2.5",
+      "auditedVersion": "7.2.6",
       "selectedVersion": "7.2.6",
       "latestStable": "7.2.6",
       "latestPrerelease": "3.0.0-alpha.9",
       "listingState": "listed",
       "family": "package:scriban",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "package:scriban",
-      "rationale": "Accept the latest listed stable 7.x patch release.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=7.2.6, prerelease=3.0.0-alpha.9",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -8042,20 +8044,20 @@
       "selectedVersion": "8.0.0",
       "latestStable": null,
       "latestPrerelease": null,
-      "listingState": "missing",
+      "listingState": "unresolved",
       "family": "package:serilog.sinks.browser",
       "disposition": "retained",
       "rollbackGroup": "package:serilog.sinks.browser",
-      "rationale": "Retain 8.0.0 because its configured-source state is missing; incomplete source results must not cause a downgrade.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=missing, stable=, prerelease=",
+      "rationale": "Retain 8.0.0 because its configured-source state is unresolved; incomplete source results must not cause a downgrade.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=unresolved, stable=, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
-          "listingState": "missing",
+          "listingState": "unresolved",
           "latestStable": null,
           "latestPrerelease": null,
-          "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/serilog.sinks.browser/index.json failed after 3 attempts. Response status code does not indicate success: 404 (Not Found)."
+          "diagnostic": "GET https://api.nuget.org/v3/registration5-gz-semver2/serilog.sinks.browser/index.json failed after 3 attempts. Response status code does not indicate success: 404 (The specified blob does not exist.)."
         }
       ]
     },
@@ -8153,22 +8155,22 @@
     },
     {
       "id": "SonarAnalyzer.CSharp",
-      "auditedVersion": "10.30.0.144632",
+      "auditedVersion": "10.31.0.145097",
       "selectedVersion": "10.31.0.145097",
-      "latestStable": "10.31.0.145097",
+      "latestStable": "10.32.0.713",
       "latestPrerelease": "8.2.0-RC1",
       "listingState": "listed",
       "family": "package:sonaranalyzer.csharp",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "package:sonaranalyzer.csharp",
-      "rationale": "Accept the latest listed 10.x analyzer release.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.31.0.145097, prerelease=8.2.0-RC1",
+      "rationale": "Retain 10.31.0.145097 pending compatibility validation of listed stable candidate 10.32.0.713.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.32.0.713, prerelease=8.2.0-RC1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.31.0.145097",
+          "latestStable": "10.32.0.713",
           "latestPrerelease": "8.2.0-RC1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -8178,20 +8180,20 @@
       "id": "StackExchange.Redis",
       "auditedVersion": "3.0.17",
       "selectedVersion": "3.0.17",
-      "latestStable": "3.1.0",
+      "latestStable": "3.1.13",
       "latestPrerelease": "1.2.0-alpha1",
       "listingState": "listed",
       "family": "package:stackexchange.redis",
       "disposition": "retained",
       "rollbackGroup": "package:stackexchange.redis",
-      "rationale": "Retain 3.0.17 because the required two-instance Redis backplane runtime proof did not reach readiness in the current EventStore host topology.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.1.0, prerelease=1.2.0-alpha1",
-      "removalTrigger": "Accept 3.1.0 or later only after the focused two-instance Redis backplane runtime proof passes with cross-instance delivery and negative controls.",
+      "rationale": "Retain 3.0.17 pending compatibility validation of listed stable candidate 3.1.13.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.1.13, prerelease=1.2.0-alpha1",
+      "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.1.0",
+          "latestStable": "3.1.13",
           "latestPrerelease": "1.2.0-alpha1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -8270,21 +8272,21 @@
       "id": "System.Collections.Immutable",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -8293,21 +8295,21 @@
       "id": "System.CommandLine",
       "auditedVersion": "2.0.10",
       "selectedVersion": "2.0.10",
-      "latestStable": "2.0.10",
-      "latestPrerelease": "3.0.0-preview.6.26359.118",
+      "latestStable": "2.0.11",
+      "latestPrerelease": "3.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "package:system.commandline",
       "disposition": "retained",
       "rollbackGroup": "package:system.commandline",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.10, prerelease=3.0.0-preview.6.26359.118",
+      "rationale": "Retain 2.0.10 pending compatibility validation of listed stable candidate 2.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.11, prerelease=3.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.0.10",
-          "latestPrerelease": "3.0.0-preview.6.26359.118",
+          "latestStable": "2.0.11",
+          "latestPrerelease": "3.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -8337,15 +8339,15 @@
     },
     {
       "id": "System.IdentityModel.Tokens.Jwt",
-      "auditedVersion": "8.21.0",
+      "auditedVersion": "8.22.0",
       "selectedVersion": "8.22.0",
       "latestStable": "8.22.0",
       "latestPrerelease": "8.0.0-preview1",
       "listingState": "listed",
       "family": "identity-model",
-      "disposition": "accepted",
+      "disposition": "retained",
       "rollbackGroup": "identity-model",
-      "rationale": "Accept the latest listed 8.x patch as part of the complete identity-model rollback group.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=8.22.0, prerelease=8.0.0-preview1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -8385,21 +8387,21 @@
       "id": "System.Text.Json",
       "auditedVersion": "10.0.10",
       "selectedVersion": "10.0.10",
-      "latestStable": "10.0.10",
-      "latestPrerelease": "11.0.0-preview.6.26359.118",
+      "latestStable": "10.0.11",
+      "latestPrerelease": "11.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "dotnet-10",
       "disposition": "retained",
       "rollbackGroup": "dotnet-10",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.10, prerelease=11.0.0-preview.6.26359.118",
+      "rationale": "Retain 10.0.10 pending compatibility validation of listed stable candidate 10.0.11.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.0.11, prerelease=11.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "10.0.10",
-          "latestPrerelease": "11.0.0-preview.6.26359.118",
+          "latestStable": "10.0.11",
+          "latestPrerelease": "11.0.0-preview.7.26381.103",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -8477,21 +8479,21 @@
       "id": "Verify",
       "auditedVersion": "31.27.0",
       "selectedVersion": "31.27.0",
-      "latestStable": "31.27.0",
-      "latestPrerelease": "31.16.0-beta.1",
+      "latestStable": "31.28.0",
+      "latestPrerelease": "32.0.0-beta.1",
       "listingState": "listed",
       "family": "verify",
       "disposition": "retained",
       "rollbackGroup": "verify",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=31.27.0, prerelease=31.16.0-beta.1",
+      "rationale": "Retain 31.27.0 pending compatibility validation of listed stable candidate 31.28.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=31.28.0, prerelease=32.0.0-beta.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "31.27.0",
-          "latestPrerelease": "31.16.0-beta.1",
+          "latestStable": "31.28.0",
+          "latestPrerelease": "32.0.0-beta.1",
           "diagnostic": "Registration metadata resolved."
         }
       ]
@@ -8500,21 +8502,21 @@
       "id": "Verify.XunitV3",
       "auditedVersion": "31.27.0",
       "selectedVersion": "31.27.0",
-      "latestStable": "31.27.0",
-      "latestPrerelease": "31.16.0-beta.1",
+      "latestStable": "31.28.0",
+      "latestPrerelease": "32.0.0-beta.1",
       "listingState": "listed",
       "family": "verify",
       "disposition": "retained",
       "rollbackGroup": "verify",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=31.27.0, prerelease=31.16.0-beta.1",
+      "rationale": "Retain 31.27.0 pending compatibility validation of listed stable candidate 31.28.0.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=31.28.0, prerelease=32.0.0-beta.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "31.27.0",
-          "latestPrerelease": "31.16.0-beta.1",
+          "latestStable": "31.28.0",
+          "latestPrerelease": "32.0.0-beta.1",
           "diagnostic": "Registration metadata resolved."
         }
       ]
