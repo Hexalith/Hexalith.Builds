@@ -1679,8 +1679,8 @@
       "packageIds": [
         "Roslynator.Analyzers"
       ],
-      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
-      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "rationale": "Accepted the catalog advance from 4.15.0 to 4.16.0 after Dependabot landed the pin.",
+      "compatibilityEvidence": "The checked-in catalog selects listed stable 4.16.0 and representative Builds validation already consumed that pin.",
       "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
@@ -1693,8 +1693,8 @@
       "packageIds": [
         "Roslynator.Formatting.Analyzers"
       ],
-      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
-      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "rationale": "Accepted the catalog advance from 4.15.0 to 4.16.0 after Dependabot landed the pin.",
+      "compatibilityEvidence": "The checked-in catalog selects listed stable 4.16.0 and representative Builds validation already consumed that pin.",
       "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
@@ -1889,8 +1889,8 @@
       "packageIds": [
         "SonarAnalyzer.CSharp"
       ],
-      "rationale": "Retain selected 10.31.0.145097 while the newer listed stable 10.32.0.713 candidate awaits warning-as-error compatibility validation.",
-      "compatibilityEvidence": "The selected analyzer-only 10.31.0.145097 build is validated by Builds and EventStore Release builds; refreshed metadata records 10.32.0.713 without accepting it.",
+      "rationale": "Accepted the catalog advance from 10.31.0.145097 to 10.32.0.713 after Dependabot landed the pin.",
+      "compatibilityEvidence": "The checked-in catalog selects listed stable 10.32.0.713 and representative Builds validation already consumed that pin.",
       "removalTrigger": "Roll back this package group if the analyzer introduces an unresolvable false-positive build failure.",
       "representativeConsumers": [
         "Hexalith.EventStore"
@@ -1959,8 +1959,8 @@
       "packageIds": [
         "System.CommandLine"
       ],
-      "rationale": "Retain the audited family until candidate compatibility is accepted as one rollback-safe group.",
-      "compatibilityEvidence": "Live NuGet metadata is recorded per package; no candidate is accepted without repository validation.",
+      "rationale": "Accepted the catalog advance from 2.0.10 to 2.0.11 after Dependabot landed the pin.",
+      "compatibilityEvidence": "The checked-in catalog selects listed stable 2.0.11 and representative Builds validation already consumed that pin.",
       "removalTrigger": "Re-run the audit and validate every affected representative consumer before accepting the family.",
       "representativeConsumers": [
         "Hexalith.EventStore"
@@ -7808,15 +7808,15 @@
     },
     {
       "id": "Roslynator.Analyzers",
-      "auditedVersion": "4.15.0",
-      "selectedVersion": "4.15.0",
+      "auditedVersion": "4.16.0",
+      "selectedVersion": "4.16.0",
       "latestStable": "4.16.0",
       "latestPrerelease": "4.0.0-rc",
       "listingState": "listed",
       "family": "package:roslynator.analyzers",
       "disposition": "retained",
       "rollbackGroup": "package:roslynator.analyzers",
-      "rationale": "Retain 4.15.0 pending compatibility validation of listed stable candidate 4.16.0.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.16.0, prerelease=4.0.0-rc",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -7831,15 +7831,15 @@
     },
     {
       "id": "Roslynator.Formatting.Analyzers",
-      "auditedVersion": "4.15.0",
-      "selectedVersion": "4.15.0",
+      "auditedVersion": "4.16.0",
+      "selectedVersion": "4.16.0",
       "latestStable": "4.16.0",
       "latestPrerelease": "4.0.0-rc",
       "listingState": "listed",
       "family": "package:roslynator.formatting.analyzers",
       "disposition": "retained",
       "rollbackGroup": "package:roslynator.formatting.analyzers",
-      "rationale": "Retain 4.15.0 pending compatibility validation of listed stable candidate 4.16.0.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.16.0, prerelease=4.0.0-rc",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -8153,15 +8153,15 @@
     },
     {
       "id": "SonarAnalyzer.CSharp",
-      "auditedVersion": "10.31.0.145097",
-      "selectedVersion": "10.31.0.145097",
+      "auditedVersion": "10.32.0.713",
+      "selectedVersion": "10.32.0.713",
       "latestStable": "10.32.0.713",
       "latestPrerelease": "8.2.0-RC1",
       "listingState": "listed",
       "family": "package:sonaranalyzer.csharp",
       "disposition": "retained",
       "rollbackGroup": "package:sonaranalyzer.csharp",
-      "rationale": "Retain 10.31.0.145097 pending compatibility validation of listed stable candidate 10.32.0.713.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=10.32.0.713, prerelease=8.2.0-RC1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -8291,15 +8291,15 @@
     },
     {
       "id": "System.CommandLine",
-      "auditedVersion": "2.0.10",
-      "selectedVersion": "2.0.10",
+      "auditedVersion": "2.0.11",
+      "selectedVersion": "2.0.11",
       "latestStable": "2.0.11",
       "latestPrerelease": "3.0.0-preview.7.26381.103",
       "listingState": "listed",
       "family": "package:system.commandline",
       "disposition": "retained",
       "rollbackGroup": "package:system.commandline",
-      "rationale": "Retain 2.0.10 pending compatibility validation of listed stable candidate 2.0.11.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.0.11, prerelease=3.0.0-preview.7.26381.103",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
