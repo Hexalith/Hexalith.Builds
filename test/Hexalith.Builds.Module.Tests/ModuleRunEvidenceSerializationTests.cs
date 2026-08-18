@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Text;
+using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
@@ -102,8 +103,29 @@ public sealed class ModuleRunEvidenceSerializationTests
         evidence.Environment.RepositoryRevision.ShouldNotBe("unavailable");
         evidence.Environment.RepositoryRevision.Length.ShouldBeGreaterThanOrEqualTo(40);
         _knownDirtyMarkers.ShouldContain(evidence.Environment.RepositoryDirtyMarker);
-        evidence.Environment.SdkVersion.ShouldBe("10.0.302");
+
+        // global.json pins the SDK with rollForward: latestPatch, so a runner resolves the highest
+        // patch it has installed in that feature band. Asserting the literal pin made this test fail
+        // as soon as the hosted image shipped a newer patch than the one global.json declares.
+        SatisfiesLatestPatchRollForward(
+            evidence.Environment.SdkVersion,
+            ReadPinnedSdkVersion(repositoryRoot)).ShouldBeTrue(evidence.Environment.SdkVersion);
     }
+
+    /// <summary>
+    /// Verifies the SDK roll-forward rule accepts a newer patch in the pinned feature band and rejects anything else.
+    /// </summary>
+    /// <param name="sdkVersion">The SDK version a runner resolved.</param>
+    /// <param name="expected">Whether the version satisfies latestPatch roll-forward from 10.0.302.</param>
+    [Theory]
+    [InlineData("10.0.302", true)]
+    [InlineData("10.0.303", true)]
+    [InlineData("10.0.399", true)]
+    [InlineData("10.0.301", false)]
+    [InlineData("10.0.401", false)]
+    [InlineData("11.0.302", false)]
+    public void LatestPatchRollForwardAcceptsOnlyNewerPatchesInThePinnedFeatureBand(string sdkVersion, bool expected)
+        => SatisfiesLatestPatchRollForward(sdkVersion, new Version(10, 0, 302)).ShouldBe(expected);
 
     /// <summary>
     /// Verifies evidence creation revalidates a fixture path after manifest loading and rejects a later symlink escape.
@@ -178,6 +200,31 @@ public sealed class ModuleRunEvidenceSerializationTests
             Directory.Delete(directory, true);
             Directory.Delete(externalDirectory, true);
         }
+    }
+
+    private static bool SatisfiesLatestPatchRollForward(string sdkVersion, Version pinned)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sdkVersion);
+
+        int suffixIndex = sdkVersion.IndexOfAny(['-', '+']);
+        Version resolved = Version.Parse(suffixIndex < 0 ? sdkVersion : sdkVersion[..suffixIndex]);
+
+        // latestPatch stays inside the pinned feature band (the hundreds digit of the patch level)
+        // and only ever advances the patch within it.
+        return resolved.Major == pinned.Major
+            && resolved.Minor == pinned.Minor
+            && resolved.Build / 100 == pinned.Build / 100
+            && resolved >= pinned;
+    }
+
+    private static Version ReadPinnedSdkVersion(string repositoryRoot)
+    {
+        using JsonDocument document = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(repositoryRoot, "global.json")));
+        string pinned = document.RootElement.GetProperty("sdk").GetProperty("version").GetString()
+            ?? throw new InvalidOperationException("global.json declares no SDK version.");
+
+        return Version.Parse(pinned);
     }
 
     private static string FindRepositoryRoot()
