@@ -333,6 +333,23 @@ def _embedded_json(value):
     return json.loads(value, object_pairs_hook=_unique_json_object)
 
 
+def _has_release_owner_role(repository, owner, record, token):
+    if record.get("author_association") in {"OWNER", "MEMBER", "COLLABORATOR"}:
+        return True
+
+    repository_path = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
+    owner_path = urllib.parse.quote(owner, safe="")
+    permission = _github_json(
+        f"https://api.github.com/repos/{repository_path}/collaborators/{owner_path}/permission",
+        token,
+    )
+    return isinstance(permission, dict) and permission.get("permission") in {
+        "admin",
+        "maintain",
+        "write",
+    }
+
+
 def validate_publication_authority(arguments, identity, token, now=None):
     """Validate one authenticated, expiring GitHub authority for this exact identity."""
     issue_url, _ = _authority_issue_api_url(arguments.repository, arguments.authority_issue_url)
@@ -373,7 +390,11 @@ def validate_publication_authority(arguments, identity, token, now=None):
     author = record.get("user")
     if not isinstance(author, dict) or author.get("login") != expected_owner:
         _fail("authority-wrong-role", "GitHub authority was not issued by the expected release owner.")
-    if record.get("author_association") not in {"OWNER", "MEMBER", "COLLABORATOR"}:
+    # GitHub can redact a private organization membership as CONTRIBUTOR when
+    # the repository-scoped Actions token reads the comment, even though a
+    # user token with read:org reports MEMBER. Fall back to the repository's
+    # authoritative collaborator permission instead of trusting that hint.
+    if not _has_release_owner_role(arguments.repository, expected_owner, record, token):
         _fail("authority-wrong-role", "GitHub authority issuer has no repository release-owner role.")
     if record.get("issue_url") != issue_url:
         _fail("authority-invalid", "GitHub authority is not attached to the release repository.")

@@ -122,6 +122,7 @@ class PublicationPreflightTests(unittest.TestCase):
         identity,
         *,
         owner="release-owner",
+        author_association="OWNER",
         expires_at="2026-08-20T18:00:00Z",
     ):
         return {
@@ -130,7 +131,7 @@ class PublicationPreflightTests(unittest.TestCase):
             "issue_url": AUTHORITY_ISSUE_URL,
             "html_url": "https://github.com/Hexalith/Hexalith.EventStore/issues/42#issuecomment-123456",
             "user": {"login": owner},
-            "author_association": "OWNER",
+            "author_association": author_association,
             "created_at": "2026-08-20T10:00:00Z",
             "updated_at": "2026-08-20T10:00:00Z",
             "body": json.dumps(
@@ -225,6 +226,49 @@ class PublicationPreflightTests(unittest.TestCase):
                             arguments, identity, "fixture-token", now=now
                         )
                     self.assertEqual(code, context.exception.code)
+
+    def test_github_authority_proves_redacted_role_from_repository_permission(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            arguments = self.arguments(root)
+            with mock.patch.dict(os.environ, self.runtime_environment(), clear=True):
+                identity = self.validator.build_publication_identity(arguments, self.source_proof())
+            record = self.authority_record(identity, author_association="CONTRIBUTOR")
+            now = self.validator.datetime(
+                2026,
+                8,
+                20,
+                11,
+                tzinfo=self.validator.timezone.utc,
+            )
+
+            def validate(permission):
+                with (
+                    mock.patch.object(self.validator, "_github_json_array", return_value=[record]),
+                    mock.patch.object(
+                        self.validator,
+                        "_github_json",
+                        return_value={"permission": permission, "role_name": permission},
+                    ) as github_json,
+                ):
+                    result = self.validator.validate_publication_authority(
+                        arguments,
+                        identity,
+                        "fixture-token",
+                        now=now,
+                    )
+                github_json.assert_called_once_with(
+                    "https://api.github.com/repos/Hexalith/Hexalith.EventStore/"
+                    "collaborators/release-owner/permission",
+                    "fixture-token",
+                )
+                return result
+
+            authority = validate("admin")
+            self.assertEqual("github:release-owner", authority["owner"])
+            with self.assertRaises(self.validator.PreflightError) as context:
+                validate("read")
+            self.assertEqual("authority-wrong-role", context.exception.code)
 
     def test_authority_issue_paginates_and_rejects_ambiguous_or_untrusted_consumption(self):
         pages = [[{"id": index} for index in range(100)], [{"id": 101}]]
