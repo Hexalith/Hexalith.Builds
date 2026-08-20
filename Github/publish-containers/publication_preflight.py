@@ -744,18 +744,10 @@ def _github_version_pages(repository, endpoint, token):
     _fail("version-floor-unavailable", "GitHub release version pagination exceeded the safe limit.")
 
 
-def read_external_version_observations(
-    repository,
-    package_ids,
-    container_repositories,
-    token,
-    registry_username,
-    registry_api_key,
-):
-    """Read versions from GitHub releases/tags, every NuGet ID, and every registry repository."""
+def _github_version_observations(repository, token):
     releases = _github_version_pages(repository, "releases", token)
     tags = _github_version_pages(repository, "tags", token)
-    observations = [
+    return [
         {
             "kind": "github-release",
             "identity": repository,
@@ -775,35 +767,54 @@ def read_external_version_observations(
             ],
         },
     ]
-    for package_id in package_ids:
-        normalized = urllib.parse.quote(package_id.lower(), safe="")
-        document = _read_json_response(
-            f"https://api.nuget.org/v3-flatcontainer/{normalized}/index.json",
-            {"Accept": "application/json"},
-            "version-floor-unavailable",
-        )
-        versions = document.get("versions") if isinstance(document, dict) else None
-        if not isinstance(versions, list):
-            _fail("version-floor-invalid", "NuGet version response is malformed.")
-        observations.append({"kind": "nuget", "identity": package_id, "versions": versions})
+
+
+def _nuget_version_observation(package_id):
+    normalized = urllib.parse.quote(package_id.lower(), safe="")
+    document = _read_json_response(
+        f"https://api.nuget.org/v3-flatcontainer/{normalized}/index.json",
+        {"Accept": "application/json"},
+        "version-floor-unavailable",
+    )
+    versions = document.get("versions") if isinstance(document, dict) else None
+    if not isinstance(versions, list):
+        _fail("version-floor-invalid", "NuGet version response is malformed.")
+    return {"kind": "nuget", "identity": package_id, "versions": versions}
+
+
+def _registry_version_observation(container_repository, authorization):
+    registry, repository_path = container_repository.split("/", 1)
+    document = _read_json_response(
+        f"https://{registry}/v2/{repository_path}/tags/list",
+        {"Accept": "application/json", "Authorization": authorization},
+        "version-floor-unavailable",
+    )
+    versions = document.get("tags") if isinstance(document, dict) else None
+    if not isinstance(versions, list):
+        _fail("version-floor-invalid", "Registry tag response is malformed.")
+    return {"kind": "oci-registry", "identity": container_repository, "versions": versions}
+
+
+def read_external_version_observations(
+    repository,
+    package_ids,
+    container_repositories,
+    token,
+    registry_username,
+    registry_api_key,
+):
+    """Read versions from GitHub releases/tags, every NuGet ID, and every registry repository."""
+    observations = _github_version_observations(repository, token)
+    observations.extend(_nuget_version_observation(package_id) for package_id in package_ids)
     if not registry_username or not registry_api_key:
         _fail("version-floor-unavailable", "Registry credentials are required to prove the version floor.")
     registry_authorization = "Basic " + base64.b64encode(
         f"{registry_username}:{registry_api_key}".encode("utf-8")
     ).decode("ascii")
-    for container_repository in _canonical_container_repositories(container_repositories):
-        registry, repository_path = container_repository.split("/", 1)
-        document = _read_json_response(
-            f"https://{registry}/v2/{repository_path}/tags/list",
-            {"Accept": "application/json", "Authorization": registry_authorization},
-            "version-floor-unavailable",
-        )
-        versions = document.get("tags") if isinstance(document, dict) else None
-        if not isinstance(versions, list):
-            _fail("version-floor-invalid", "Registry tag response is malformed.")
-        observations.append(
-            {"kind": "oci-registry", "identity": container_repository, "versions": versions}
-        )
+    observations.extend(
+        _registry_version_observation(container_repository, registry_authorization)
+        for container_repository in _canonical_container_repositories(container_repositories)
+    )
     return observations
 
 
