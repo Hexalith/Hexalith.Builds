@@ -499,7 +499,7 @@ def consume_publication_authority(authority, identity, token):
     matches = _matching_consumptions(authority, identity, token)
     if len(matches) != 1 or matches[0].get("id") != created.get("id"):
         _fail("authority-replayed", "Publication authority consumption is not unique.")
-    return created
+    return matches[0]
 
 
 def _live_source_sha(repository_path, source_branch, token):

@@ -346,6 +346,38 @@ class PublicationPreflightTests(unittest.TestCase):
                 self.validator.require_authority_state(authority, identity, "container", "token")
             self.assertEqual("authority-replayed", context.exception.code)
 
+    def test_consumption_freezes_reread_comment_instead_of_post_response(self):
+        authority = self.authority_summary()
+        identity = {"run": {"id": "29713052827", "attempt": "1"}}
+        created = {
+            "id": 789,
+            "performed_via_github_app": {"id": 15368},
+        }
+        reread = {
+            "id": 789,
+            "performed_via_github_app": {
+                "id": 15368,
+                "client_id": "Iv1.fixture",
+            },
+        }
+
+        with (
+            mock.patch.object(self.validator, "require_authority_state", return_value=None),
+            mock.patch.object(self.validator, "_github_post_comment", return_value=created),
+            mock.patch.object(
+                self.validator,
+                "_matching_consumptions",
+                return_value=[reread],
+            ),
+        ):
+            frozen = self.validator.consume_publication_authority(
+                authority,
+                identity,
+                "fixture-token",
+            )
+
+        self.assertIs(reread, frozen)
+
     def test_exact_identity_records_repository_source_builds_run_environment_and_hashes(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
