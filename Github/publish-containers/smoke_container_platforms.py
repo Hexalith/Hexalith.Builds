@@ -342,6 +342,9 @@ def run_smoke(image, evidence_directory, timeout_seconds, interval_seconds):
         summary = {
             "result": preflight_outcome,
             "image_repository": repository,
+            "environment": SMOKE_HOSTING_ENVIRONMENT,
+            "endpoint": "/alive",
+            "timeout_seconds": timeout_seconds,
             "platforms": [],
         }
         _write_summary(evidence_directory, summary, [preflight_log])
@@ -373,6 +376,9 @@ def run_smoke(image, evidence_directory, timeout_seconds, interval_seconds):
     summary = {
         "result": overall_result,
         "image_repository": repository,
+        "environment": SMOKE_HOSTING_ENVIRONMENT,
+        "endpoint": "/alive",
+        "timeout_seconds": timeout_seconds,
         "platforms": platform_results,
     }
     _write_summary(evidence_directory, summary, log_paths)

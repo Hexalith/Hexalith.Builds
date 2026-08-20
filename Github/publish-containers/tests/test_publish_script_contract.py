@@ -233,7 +233,7 @@ class PublishScriptContractTests(unittest.TestCase):
             "        required: false",
             workflow,
         )
-        self.assertIn("release-authority-url:", workflow)
+        self.assertIn("release-authority-issue-url:", workflow)
         self.assertNotIn("release-owner-allowlist:", workflow)
         self.assertIn("job.workflow_sha", workflow)
         self.assertIn("job.workflow_repository", workflow)
@@ -275,7 +275,11 @@ class PublishScriptContractTests(unittest.TestCase):
             "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}",
             workflow,
         )
-        self.assertIn("HEXALITH_RELEASE_AUTHORITY_URL: ${{ inputs.release-authority-url }}", workflow)
+        self.assertIn("HEXALITH_RELEASE_RESERVED_VERSION: ${{ inputs.reserved-version }}", workflow)
+        self.assertIn(
+            "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL: ${{ inputs.release-authority-issue-url }}",
+            workflow,
+        )
         self.assertIn("HEXALITH_RELEASE_AUTHORITY_OWNER: ${{ inputs.release-authority-owner }}", workflow)
         self.assertNotIn("HEXALITH_RELEASE_OWNER_ALLOWLIST_PATH", workflow)
         identity_index = workflow.index("- name: Validate approved Builds execution identity")
@@ -472,7 +476,8 @@ class PublishScriptContractTests(unittest.TestCase):
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
-                    "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/comments/123",
+                    "HEXALITH_RELEASE_RESERVED_VERSION": "3.76.1",
+                    "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/123",
                     "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
                     "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
                     "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
@@ -604,7 +609,8 @@ printf '%s\n' "$*" >> "$FAKE_DOTNET_INVOCATIONS"
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
-                    "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/comments/123",
+                    "HEXALITH_RELEASE_RESERVED_VERSION": "3.89.0",
+                    "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/123",
                     "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
                     "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
                     "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
@@ -690,7 +696,8 @@ exit 1
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
-                    "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/comments/123",
+                    "HEXALITH_RELEASE_RESERVED_VERSION": "3.89.0",
+                    "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/123",
                     "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
                     "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
                     "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
@@ -747,7 +754,8 @@ exit 1
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
-                    "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/comments/123",
+                    "HEXALITH_RELEASE_RESERVED_VERSION": "3.89.0",
+                    "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/123",
                     "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
                     "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
                     "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
@@ -799,7 +807,8 @@ exit 1
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
-                    "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/comments/123",
+                    "HEXALITH_RELEASE_RESERVED_VERSION": "3.76.1",
+                    "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/123",
                     "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
                     "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
                     "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
@@ -850,7 +859,8 @@ exit 1
                     "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
                     "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                     "HEXALITH_RELEASE_ENVIRONMENT": "production",
-                    "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/comments/123",
+                    "HEXALITH_RELEASE_RESERVED_VERSION": "3.76.1",
+                    "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/123",
                     "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
                     "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
                     "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
@@ -904,7 +914,8 @@ exit 1
                         "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
                         "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
                         "HEXALITH_RELEASE_ENVIRONMENT": "production",
-                        "HEXALITH_RELEASE_AUTHORITY_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/comments/123",
+                        "HEXALITH_RELEASE_RESERVED_VERSION": "3.76.1",
+                        "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/123",
                         "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
                         "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
                         "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",

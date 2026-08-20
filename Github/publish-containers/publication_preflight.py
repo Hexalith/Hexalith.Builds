@@ -11,7 +11,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from oci_registry_validator import (
@@ -42,6 +42,7 @@ REQUIRED_CONTRACT_FILES = (
 )
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", re.ASCII)
+STABLE_SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+$", re.ASCII)
 REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", re.ASCII)
 CONTAINER_REPOSITORY_PATTERN = re.compile(
     r"^[A-Za-z0-9.-]+(?::[0-9]+)?/[a-z0-9]+(?:[._/-][a-z0-9]+)*$",
@@ -51,6 +52,8 @@ POSITIVE_INTEGER_PATTERN = re.compile(r"^[1-9][0-9]*$", re.ASCII)
 WORKFLOW_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+\.ya?ml$", re.ASCII)
 GITHUB_LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$", re.ASCII)
 NONCE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,128}$", re.ASCII)
+MAX_AUTHORITY_VALIDITY = timedelta(hours=24)
+MAX_AUTHORITY_CLOCK_SKEW = timedelta(minutes=5)
 
 
 class FailClosedRedirectHandler(SafeRedirectHandler):  # noqa: D203,D211
@@ -232,25 +235,39 @@ def _github_json(url, token):
 def _github_json_array(url, token):
     if not token:
         _fail("authority-unavailable", "GITHUB_TOKEN is required to prove publication authority.")
-    request = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {token}",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-        method="GET",
-    )
-    try:
-        with URL_OPENER.open(request, timeout=30) as response:
-            if response.status != 200:
-                _fail("authority-unavailable", "GitHub authority lookup did not return HTTP 200.")
-            document = json.loads(response.read())
-    except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise PreflightError("authority-unavailable", "GitHub authority lookup could not be completed.") from error
-    if not isinstance(document, list):
-        _fail("authority-invalid", "GitHub authority comment list must be a JSON array.")
-    return document
+    parsed = urllib.parse.urlsplit(url)
+    query = urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
+    query = [(key, value) for key, value in query if key not in {"page", "per_page"}]
+    documents = []
+    for page in range(1, 101):
+        page_url = urllib.parse.urlunsplit(
+            parsed._replace(query=urllib.parse.urlencode([*query, ("per_page", "100"), ("page", str(page))]))
+        )
+        request = urllib.request.Request(
+            page_url,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {token}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            method="GET",
+        )
+        try:
+            with URL_OPENER.open(request, timeout=30) as response:
+                if response.status != 200:
+                    _fail("authority-unavailable", "GitHub authority lookup did not return HTTP 200.")
+                document = json.loads(response.read())
+        except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise PreflightError(
+                "authority-unavailable",
+                "GitHub authority lookup could not be completed.",
+            ) from error
+        if not isinstance(document, list):
+            _fail("authority-invalid", "GitHub authority comment list must be a JSON array.")
+        documents.extend(document)
+        if len(document) < 100:
+            return documents
+    _fail("authority-unavailable", "GitHub authority comment pagination exceeded the safe limit.")
 
 
 def _github_post_comment(issue_url, body, token):
@@ -293,46 +310,79 @@ def _parse_timestamp(value, code, field):
     return parsed.astimezone(timezone.utc)
 
 
-def _authority_api_url(repository, value):
-    expected_prefix = f"https://api.github.com/repos/{repository}/issues/comments/"
+def _authority_issue_api_url(repository, value):
+    expected_prefix = f"https://api.github.com/repos/{repository}/issues/"
     if not isinstance(value, str) or not value.startswith(expected_prefix):
-        _fail("authority-url-invalid", "Authority URL must identify a comment in the release repository.")
-    comment_id = value.removeprefix(expected_prefix)
-    if not comment_id.isdigit() or int(comment_id) <= 0:
-        _fail("authority-url-invalid", "Authority URL must end in a positive comment ID.")
-    return value, int(comment_id)
+        _fail("authority-url-invalid", "Authority URL must identify an issue in the release repository.")
+    issue_id = value.removeprefix(expected_prefix)
+    if not issue_id.isdigit() or int(issue_id) <= 0:
+        _fail("authority-url-invalid", "Authority issue URL must end in a positive issue ID.")
+    return value, int(issue_id)
+
+
+def _unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON field")
+        result[key] = value
+    return result
+
+
+def _embedded_json(value):
+    return json.loads(value, object_pairs_hook=_unique_json_object)
 
 
 def validate_publication_authority(arguments, identity, token, now=None):
     """Validate one authenticated, expiring GitHub authority for this exact identity."""
-    authority_url, comment_id = _authority_api_url(arguments.repository, arguments.authority_url)
+    issue_url, _ = _authority_issue_api_url(arguments.repository, arguments.authority_issue_url)
     expected_owner = arguments.authority_owner.removeprefix("github:")
     if (
         arguments.authority_owner != f"github:{expected_owner}"
         or GITHUB_LOGIN_PATTERN.fullmatch(expected_owner) is None
     ):
         _fail("authority-owner-invalid", "Expected release-owner identity is invalid.")
-    record = _github_json(authority_url, token)
-    if record.get("id") != comment_id:
-        _fail("authority-invalid", "GitHub authority comment identity does not match its URL.")
+    expected_identity_sha256 = _sha256_bytes(_canonical_bytes(identity))
+    records = []
+    for candidate in _github_json_array(issue_url.rstrip("/") + "/comments", token):
+        if not isinstance(candidate, dict):
+            continue
+        try:
+            candidate_body = _embedded_json(candidate.get("body", ""))
+        except (TypeError, json.JSONDecodeError, ValueError):
+            continue
+        if (
+            isinstance(candidate_body, dict)
+            and candidate_body.get("schema") == AUTHORITY_SCHEMA
+            and candidate_body.get("identity_sha256") == expected_identity_sha256
+        ):
+            records.append((candidate, candidate_body))
+    if not records:
+        _fail("authority-missing", "No publication authority binds the exact run identity.")
+    if len(records) != 1:
+        _fail("authority-ambiguous", "More than one publication authority binds the exact run identity.")
+    record, body = records[0]
+    comment_id = record.get("id")
+    authority_url = record.get("url")
+    if (
+        not isinstance(comment_id, int)
+        or comment_id <= 0
+        or authority_url != f"https://api.github.com/repos/{arguments.repository}/issues/comments/{comment_id}"
+    ):
+        _fail("authority-invalid", "GitHub authority comment identity is invalid.")
     author = record.get("user")
     if not isinstance(author, dict) or author.get("login") != expected_owner:
         _fail("authority-wrong-role", "GitHub authority was not issued by the expected release owner.")
     if record.get("author_association") not in {"OWNER", "MEMBER", "COLLABORATOR"}:
         _fail("authority-wrong-role", "GitHub authority issuer has no repository release-owner role.")
-    issue_url = record.get("issue_url")
-    expected_issue_prefix = f"https://api.github.com/repos/{arguments.repository}/issues/"
-    if not isinstance(issue_url, str) or not issue_url.startswith(expected_issue_prefix):
+    if record.get("issue_url") != issue_url:
         _fail("authority-invalid", "GitHub authority is not attached to the release repository.")
-    try:
-        body = json.loads(record.get("body", ""))
-    except (TypeError, json.JSONDecodeError) as error:
-        raise PreflightError("authority-invalid", "GitHub authority body is not valid JSON.") from error
-    expected_identity_sha256 = _sha256_bytes(_canonical_bytes(identity))
     if not isinstance(body, dict) or set(body) != {
         "schema",
         "role",
         "identity_sha256",
+        "rationale",
+        "authorized_at",
         "expires_at",
         "nonce",
     }:
@@ -343,13 +393,22 @@ def validate_publication_authority(arguments, identity, token, now=None):
         _fail("authority-mismatch", "GitHub authority does not bind the exact publication identity.")
     if NONCE_PATTERN.fullmatch(body.get("nonce", "")) is None:
         _fail("authority-invalid", "GitHub authority nonce is invalid.")
+    rationale = _required_text(body.get("rationale"), "authority-invalid", "Authority rationale")
+    if len(rationale) > 500:
+        _fail("authority-invalid", "Authority rationale exceeds the retained evidence limit.")
     expires_at = _parse_timestamp(body.get("expires_at"), "authority-invalid", "Authority expiry")
+    authorized_at = _parse_timestamp(body.get("authorized_at"), "authority-invalid", "Authority timestamp")
     checked_at = now or datetime.now(timezone.utc)
     if checked_at >= expires_at:
         _fail("authority-expired", "GitHub publication authority has expired.")
     created_at = _parse_timestamp(record.get("created_at"), "authority-invalid", "Authority creation")
     updated_at = _parse_timestamp(record.get("updated_at"), "authority-invalid", "Authority update")
-    if created_at != updated_at or created_at >= expires_at:
+    if (
+        created_at != updated_at
+        or created_at >= expires_at
+        or expires_at - created_at > MAX_AUTHORITY_VALIDITY
+        or abs(authorized_at - created_at) > MAX_AUTHORITY_CLOCK_SKEW
+    ):
         _fail("authority-invalid", "GitHub authority must be immutable and precede its expiry.")
     return {
         "url": authority_url,
@@ -357,7 +416,9 @@ def validate_publication_authority(arguments, identity, token, now=None):
         "issue_url": issue_url,
         "owner": f"github:{expected_owner}",
         "created_at": record["created_at"],
+        "authorized_at": body["authorized_at"],
         "expires_at": body["expires_at"],
+        "rationale": rationale,
         "nonce": body["nonce"],
         "identity_sha256": expected_identity_sha256,
         "record_sha256": _sha256_bytes(_canonical_bytes(record)),
@@ -378,18 +439,21 @@ def _consumption_body(authority, identity):
 
 def _matching_consumptions(authority, identity, token):
     expected = _consumption_body(authority, identity)
-    comments = _github_json_array(authority["issue_url"].rstrip("/") + "/comments?per_page=100", token)
+    comments = _github_json_array(authority["issue_url"].rstrip("/") + "/comments", token)
     matches = []
     for comment in comments:
         if not isinstance(comment, dict):
             continue
         try:
-            body = json.loads(comment.get("body", ""))
-        except (TypeError, json.JSONDecodeError):
+            body = _embedded_json(comment.get("body", ""))
+        except (TypeError, json.JSONDecodeError, ValueError):
             continue
         if isinstance(body, dict) and body.get("authority_comment_id") == authority["comment_id"]:
             if body != expected:
                 _fail("authority-replayed", "Publication authority already has a mismatched consumption.")
+            user = comment.get("user")
+            if not isinstance(user, dict) or user.get("login") != "github-actions[bot]":
+                _fail("authority-replayed", "Publication authority consumption was not issued by GitHub Actions.")
             matches.append(comment)
     return matches
 
@@ -595,6 +659,165 @@ def validate_destination_absence(package_ids, version, container_repositories, p
     return evidence
 
 
+def _stable_version_tuple(value):
+    if not isinstance(value, str) or STABLE_SEMVER_PATTERN.fullmatch(value) is None:
+        return None
+    return tuple(int(part) for part in value.split("."))
+
+
+def validate_version_floor(version, observations):
+    """Require a stable candidate newer than every stable version observed at every destination."""
+    candidate = _stable_version_tuple(version)
+    if candidate is None:
+        _fail("invalid-version", "Corrective release version must be stable semantic version.")
+    if not isinstance(observations, list) or not observations:
+        _fail("version-floor-unavailable", "No external release version observations are available.")
+    evidence = []
+    for observation in observations:
+        if not isinstance(observation, dict) or set(observation) != {"kind", "identity", "versions"}:
+            _fail("version-floor-invalid", "External release version observation is malformed.")
+        kind = _required_text(observation["kind"], "version-floor-invalid", "Destination kind")
+        identity = _required_text(
+            observation["identity"],
+            "version-floor-invalid",
+            "Destination identity",
+        )
+        versions = observation["versions"]
+        if not isinstance(versions, list) or any(not isinstance(item, str) for item in versions):
+            _fail("version-floor-invalid", "External release version list is malformed.")
+        stable = sorted(
+            {item for item in versions if _stable_version_tuple(item) is not None},
+            key=_stable_version_tuple,
+        )
+        highest = stable[-1] if stable else None
+        if highest is not None and candidate <= _stable_version_tuple(highest):
+            _fail(
+                "version-not-newer",
+                f"Corrective release version is not newer than {kind} destination {identity}.",
+            )
+        evidence.append(
+            {
+                "kind": kind,
+                "identity": identity,
+                "highest_stable": highest,
+                "observed_versions_sha256": _sha256_bytes(_canonical_bytes(versions)),
+            }
+        )
+    return {"result": "pass", "candidate": version, "destinations": evidence}
+
+
+def _read_json_response(url, headers, code):
+    request = urllib.request.Request(url, headers=headers, method="GET")
+    try:
+        with URL_OPENER.open(request, timeout=30) as response:
+            if response.status != 200:
+                _fail(code, "External release version lookup did not return HTTP 200.")
+            return json.loads(response.read())
+    except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise PreflightError(code, "External release version lookup could not be completed.") from error
+
+
+def _github_version_pages(repository, endpoint, token):
+    if not token:
+        _fail("version-floor-unavailable", "GITHUB_TOKEN is required to prove the release version floor.")
+    values = []
+    repository_path = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
+    for page in range(1, 101):
+        url = (
+            f"https://api.github.com/repos/{repository_path}/{endpoint}"
+            f"?per_page=100&page={page}"
+        )
+        document = _read_json_response(
+            url,
+            {
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {token}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            "version-floor-unavailable",
+        )
+        if not isinstance(document, list):
+            _fail("version-floor-invalid", "GitHub release version response is not an array.")
+        values.extend(document)
+        if len(document) < 100:
+            return values
+    _fail("version-floor-unavailable", "GitHub release version pagination exceeded the safe limit.")
+
+
+def _github_version_observations(repository, token):
+    releases = _github_version_pages(repository, "releases", token)
+    tags = _github_version_pages(repository, "tags", token)
+    return [
+        {
+            "kind": "github-release",
+            "identity": repository,
+            "versions": [
+                item.get("tag_name", "").removeprefix("v")
+                for item in releases
+                if isinstance(item, dict) and not item.get("draft", False)
+            ],
+        },
+        {
+            "kind": "git-tag",
+            "identity": repository,
+            "versions": [
+                item.get("name", "").removeprefix("v")
+                for item in tags
+                if isinstance(item, dict)
+            ],
+        },
+    ]
+
+
+def _nuget_version_observation(package_id):
+    normalized = urllib.parse.quote(package_id.lower(), safe="")
+    document = _read_json_response(
+        f"https://api.nuget.org/v3-flatcontainer/{normalized}/index.json",
+        {"Accept": "application/json"},
+        "version-floor-unavailable",
+    )
+    versions = document.get("versions") if isinstance(document, dict) else None
+    if not isinstance(versions, list):
+        _fail("version-floor-invalid", "NuGet version response is malformed.")
+    return {"kind": "nuget", "identity": package_id, "versions": versions}
+
+
+def _registry_version_observation(container_repository, authorization):
+    registry, repository_path = container_repository.split("/", 1)
+    document = _read_json_response(
+        f"https://{registry}/v2/{repository_path}/tags/list",
+        {"Accept": "application/json", "Authorization": authorization},
+        "version-floor-unavailable",
+    )
+    versions = document.get("tags") if isinstance(document, dict) else None
+    if not isinstance(versions, list):
+        _fail("version-floor-invalid", "Registry tag response is malformed.")
+    return {"kind": "oci-registry", "identity": container_repository, "versions": versions}
+
+
+def read_external_version_observations(
+    repository,
+    package_ids,
+    container_repositories,
+    token,
+    registry_username,
+    registry_api_key,
+):
+    """Read versions from GitHub releases/tags, every NuGet ID, and every registry repository."""
+    observations = _github_version_observations(repository, token)
+    observations.extend(_nuget_version_observation(package_id) for package_id in package_ids)
+    if not registry_username or not registry_api_key:
+        _fail("version-floor-unavailable", "Registry credentials are required to prove the version floor.")
+    registry_authorization = "Basic " + base64.b64encode(
+        f"{registry_username}:{registry_api_key}".encode("utf-8")
+    ).decode("ascii")
+    observations.extend(
+        _registry_version_observation(container_repository, registry_authorization)
+        for container_repository in _canonical_container_repositories(container_repositories)
+    )
+    return observations
+
+
 def validate_container_absence(version, container_repositories, probe):
     """Require every exact container version tag in the frozen set to remain absent."""
     if not isinstance(version, str) or SEMVER_PATTERN.fullmatch(version) is None:
@@ -670,10 +893,11 @@ def _canonical_package_id(package_id):
 
 def _load_package_identity(path, expected_package_count):
     try:
-        manifest = json.loads(workspace_read_text(Path(path)))
+        manifest_bytes = workspace_read_bytes(Path(path))
+        manifest = json.loads(manifest_bytes, object_pairs_hook=_unique_json_object)
         packages = manifest["packages"]
         package_ids = [item["id"] for item in packages]
-    except (OSError, json.JSONDecodeError, KeyError, TypeError) as error:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
         raise PreflightError("package-inventory-mismatch", "Package manifest is invalid.") from error
     if (
         not isinstance(manifest, dict)
@@ -689,7 +913,7 @@ def _load_package_identity(path, expected_package_count):
     return {
         "ids": package_ids,
         "normalized_ids": [package_id.lower() for package_id in package_ids],
-        "manifest_sha256": _sha256_bytes(_canonical_bytes(manifest)),
+        "manifest_sha256": _sha256_bytes(manifest_bytes),
     }
 
 
@@ -782,7 +1006,7 @@ def _parse_arguments():
     )
     parser.add_argument("--builds-execution-sha", required=True)
     parser.add_argument("--environment-name", required=True)
-    parser.add_argument("--authority-url", required=True)
+    parser.add_argument("--authority-issue-url", required=True)
     parser.add_argument("--authority-owner", required=True)
     parser.add_argument("--package-manifest", required=True, type=workspace_input_file)
     # No default: each module declares its own inventory size, and a default would
@@ -803,13 +1027,25 @@ def _validate_destinations(arguments, probe):
             probe,
         )
     package_identity = _load_package_identity(arguments.package_manifest, arguments.expected_package_count)
-    return validate_destination_absence(
+    version_floor = validate_version_floor(
+        arguments.version,
+        read_external_version_observations(
+            arguments.repository,
+            package_identity["ids"],
+            container_repositories,
+            os.environ.get("GITHUB_TOKEN", ""),
+            os.environ.get("HEXALITH_ZOT_USERNAME", ""),
+            os.environ.get("HEXALITH_ZOT_API_KEY", ""),
+        ),
+    )
+    absence = validate_destination_absence(
         package_identity["ids"],
         arguments.version,
         container_repositories,
         probe,
         arguments.expected_package_count,
     )
+    return {"result": "pass", "version_floor": version_floor, "absence": absence}
 
 
 def _validate_publication(arguments):
