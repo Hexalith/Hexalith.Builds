@@ -117,6 +117,18 @@ class PublicationPreflightTests(unittest.TestCase):
             }
         ]
 
+    def github_version_observations(self, releases, tags, *self_tag):
+        with mock.patch.object(
+            self.validator,
+            "_github_version_pages",
+            side_effect=(releases, tags),
+        ):
+            return self.validator._github_version_observations(
+                "Hexalith/Hexalith.EventStore",
+                "fixture-token",
+                *self_tag,
+            )
+
     def authority_record(
         self,
         identity,
@@ -809,6 +821,53 @@ class PublicationPreflightTests(unittest.TestCase):
             ) as context:
                 self.validator.validate_version_floor(candidate, observations)
             self.assertEqual(code, context.exception.code)
+
+    def test_publish_floor_allows_only_semantic_release_exact_source_self_tag(self):
+        releases = [{"tag_name": "v3.95.0", "draft": False}]
+        tags = [
+            {"name": "v3.95.0", "commit": {"sha": "c" * 40}},
+            {"name": "v3.96.0", "commit": {"sha": SOURCE_SHA}},
+        ]
+
+        observations = self.github_version_observations(
+            releases,
+            tags,
+            "3.96.0",
+            SOURCE_SHA,
+        )
+
+        git_tags = next(item for item in observations if item["kind"] == "git-tag")
+        self.assertEqual(["3.95.0"], git_tags["versions"])
+        self.assertIn(
+            {
+                "kind": "semantic-release-tag",
+                "identity": (
+                    "Hexalith/Hexalith.EventStore#refs/tags/v3.96.0@"
+                    f"{SOURCE_SHA}"
+                ),
+                "versions": [],
+            },
+            observations,
+        )
+        self.assertEqual(
+            "3.96.0",
+            self.validator.validate_version_floor("3.96.0", observations)["candidate"],
+        )
+
+        verify_observations = self.github_version_observations(releases, tags)
+        with self.assertRaises(self.validator.PreflightError) as context:
+            self.validator.validate_version_floor("3.96.0", verify_observations)
+        self.assertEqual("version-not-newer", context.exception.code)
+
+        wrong_source_tags = [*tags[:-1], {"name": "v3.96.0", "commit": {"sha": "e" * 40}}]
+        with self.assertRaises(self.validator.PreflightError) as context:
+            self.github_version_observations(
+                releases,
+                wrong_source_tags,
+                "3.96.0",
+                SOURCE_SHA,
+            )
+        self.assertEqual("semantic-release-tag-invalid", context.exception.code)
 
     def test_verify_publish_container_sequence_freezes_exact_identity(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

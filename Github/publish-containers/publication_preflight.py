@@ -765,10 +765,54 @@ def _github_version_pages(repository, endpoint, token):
     _fail("version-floor-unavailable", "GitHub release version pagination exceeded the safe limit.")
 
 
-def _github_version_observations(repository, token):
+def _exclude_semantic_release_self_tag(repository, tags, version, source_sha):
+    if _stable_version_tuple(version) is None or SHA_PATTERN.fullmatch(source_sha or "") is None:
+        _fail("semantic-release-tag-invalid", "Semantic Release self-tag proof is invalid.")
+    expected_name = f"v{version}"
+    matching_tags = [
+        item
+        for item in tags
+        if isinstance(item, dict) and item.get("name") == expected_name
+    ]
+    if len(matching_tags) != 1:
+        _fail(
+            "semantic-release-tag-invalid",
+            "Semantic Release must create exactly one reserved-version tag before publishing.",
+        )
+    self_tag = matching_tags[0]
+    if not isinstance(self_tag.get("commit"), dict) or self_tag["commit"].get("sha") != source_sha:
+        _fail(
+            "semantic-release-tag-invalid",
+            "Semantic Release reserved-version tag does not target the approved source.",
+        )
+    return (
+        [item for item in tags if item is not self_tag],
+        {
+            "kind": "semantic-release-tag",
+            "identity": f"{repository}#refs/tags/{expected_name}@{source_sha}",
+            "versions": [],
+        },
+    )
+
+
+def _github_version_observations(
+    repository,
+    token,
+    semantic_release_version=None,
+    source_sha=None,
+):
     releases = _github_version_pages(repository, "releases", token)
     tags = _github_version_pages(repository, "tags", token)
-    return [
+    self_tag_observation = None
+    if semantic_release_version is not None:
+        tags, self_tag_observation = _exclude_semantic_release_self_tag(
+            repository,
+            tags,
+            semantic_release_version,
+            source_sha,
+        )
+
+    observations = [
         {
             "kind": "github-release",
             "identity": repository,
@@ -788,6 +832,9 @@ def _github_version_observations(repository, token):
             ],
         },
     ]
+    if self_tag_observation is not None:
+        observations.append(self_tag_observation)
+    return observations
 
 
 def _nuget_version_observation(package_id):
@@ -823,9 +870,16 @@ def read_external_version_observations(
     token,
     registry_username,
     registry_api_key,
+    semantic_release_version=None,
+    source_sha=None,
 ):
     """Read versions from GitHub releases/tags, every NuGet ID, and every registry repository."""
-    observations = _github_version_observations(repository, token)
+    observations = _github_version_observations(
+        repository,
+        token,
+        semantic_release_version,
+        source_sha,
+    )
     observations.extend(_nuget_version_observation(package_id) for package_id in package_ids)
     if not registry_username or not registry_api_key:
         _fail("version-floor-unavailable", "Registry credentials are required to prove the version floor.")
@@ -1057,6 +1111,8 @@ def _validate_destinations(arguments, probe):
             os.environ.get("GITHUB_TOKEN", ""),
             os.environ.get("HEXALITH_ZOT_USERNAME", ""),
             os.environ.get("HEXALITH_ZOT_API_KEY", ""),
+            arguments.version if arguments.phase == "publish" else None,
+            arguments.source_sha,
         ),
     )
     absence = validate_destination_absence(
