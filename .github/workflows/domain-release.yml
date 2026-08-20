@@ -92,6 +92,16 @@ on:
         required: false
         type: number
         default: 0
+      release-authority-url:
+        description: 'Exact GitHub issue-comment API URL carrying the expiring one-use publication authority.'
+        required: false
+        type: string
+        default: ''
+      release-authority-owner:
+        description: 'Expected authenticated GitHub release-owner identity (github:login).'
+        required: false
+        type: string
+        default: ''
       governed-release:
         description: >-
           Opt into the BUILD-REL-1 governed release contract: signing secrets, a
@@ -446,6 +456,8 @@ jobs:
           HEXALITH_RELEASE_SOURCE_CI_WORKFLOW: ${{ inputs.source-ci-workflow }}
           HEXALITH_RELEASE_PACKAGE_MANIFEST: ${{ inputs.package-manifest }}
           HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}
+          HEXALITH_RELEASE_AUTHORITY_URL: ${{ inputs.release-authority-url }}
+          HEXALITH_RELEASE_AUTHORITY_OWNER: ${{ inputs.release-authority-owner }}
         run: npx semantic-release
       - name: Upload complete release evidence
         if: ${{ always() && inputs.publish-containers }}
@@ -823,6 +835,8 @@ jobs:
           HEXALITH_RELEASE_ENVIRONMENT: ${{ inputs.environment-name }}
           HEXALITH_RELEASE_PACKAGE_MANIFEST: ${{ inputs.package-manifest }}
           HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}
+          HEXALITH_RELEASE_AUTHORITY_URL: ${{ inputs.release-authority-url }}
+          HEXALITH_RELEASE_AUTHORITY_OWNER: ${{ inputs.release-authority-owner }}
           HEXALITH_NUGET_SIGNING_TIMESTAMPER: ${{ inputs.nuget-signing-timestamper }}
           NUGET_SIGNING_CERTIFICATE_BASE64: ${{ secrets.NUGET_SIGNING_CERTIFICATE_BASE64 }}
           NUGET_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.NUGET_SIGNING_CERTIFICATE_PASSWORD }}

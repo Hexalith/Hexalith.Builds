@@ -15,6 +15,9 @@ SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
 REPOSITORY_ROOT = SCRIPT_DIRECTORY.parents[1]
 FIXTURE_ROOT = REPOSITORY_ROOT / "test" / "fixtures" / "publish-containers"
 VALIDATOR_PATH = SCRIPT_DIRECTORY / "oci_registry_validator.py"
+SOURCE_SHA = "d" * 40
+RELEASE_VERSION = "3.76.1"
+REPOSITORY = "Hexalith/Hexalith.EventStore"
 
 
 def compact_json(value):
@@ -49,7 +52,20 @@ def build_capture(root, mutation):
     descriptors = []
 
     for os_name, architecture in platforms:
-        config = {"architecture": architecture, "os": os_name}
+        labels = {
+            "org.opencontainers.image.source": f"https://github.com/{REPOSITORY}",
+            "org.opencontainers.image.url": f"https://github.com/{REPOSITORY}/releases/tag/v{RELEASE_VERSION}",
+            "org.opencontainers.image.documentation": (
+                f"https://github.com/{REPOSITORY}/blob/{SOURCE_SHA}/README.md"
+            ),
+            "org.opencontainers.image.revision": SOURCE_SHA,
+            "org.opencontainers.image.version": RELEASE_VERSION,
+        }
+        if mutation == "truncated-url-label" and architecture == "amd64":
+            labels["org.opencontainers.image.source"] = "https"
+        if mutation == "missing-revision-label" and architecture == "arm64":
+            labels.pop("org.opencontainers.image.revision")
+        config = {"architecture": architecture, "os": os_name, "config": {"Labels": labels}}
         if mutation == "child-config-mismatch" and architecture == "amd64":
             config["architecture"] = "arm64"
         config_body = compact_json(config)
@@ -339,6 +355,24 @@ class OciRegistryValidatorTests(unittest.TestCase):
                     child["config_raw_sha256"],
                     hashlib.sha256(config_path.read_bytes()).hexdigest(),
                 )
+
+    def test_exact_provenance_labels_are_required_in_both_raw_child_configs(self):
+        expected = self.validator.expected_provenance_labels(REPOSITORY, SOURCE_SHA, RELEASE_VERSION)
+        for mutation, expected_result in (
+            ("none", "pass"),
+            ("truncated-url-label", "provenance-label-mismatch"),
+            ("missing-revision-label", "provenance-label-mismatch"),
+        ):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary_directory:
+                capture_root = Path(temporary_directory)
+                build_capture(capture_root, mutation)
+                if expected_result == "pass":
+                    evidence = self.validator.validate_capture(capture_root, expected)
+                    self.assertTrue(all(child["provenance_labels"] == expected for child in evidence["children"]))
+                else:
+                    with self.assertRaises(self.validator.ValidationError) as context:
+                        self.validator.validate_capture(capture_root, expected)
+                    self.assertEqual(expected_result, context.exception.code)
 
 
 if __name__ == "__main__":

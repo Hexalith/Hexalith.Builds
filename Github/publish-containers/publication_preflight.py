@@ -29,7 +29,9 @@ from oci_registry_validator import (
 )
 
 
-PREFLIGHT_SCHEMA = "hexalith.release-publication-preflight.v3"
+PREFLIGHT_SCHEMA = "hexalith.release-publication-preflight.v4"
+AUTHORITY_SCHEMA = "hexalith.release-publication-authority.v1"
+AUTHORITY_CONSUMPTION_SCHEMA = "hexalith.release-publication-authority-consumption.v1"
 REQUIRED_PLATFORMS = ["linux/amd64", "linux/arm64"]
 REQUIRED_CONTRACT_FILES = (
     "publish-containers.sh",
@@ -47,6 +49,8 @@ CONTAINER_REPOSITORY_PATTERN = re.compile(
 )
 POSITIVE_INTEGER_PATTERN = re.compile(r"^[1-9][0-9]*$", re.ASCII)
 WORKFLOW_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+\.ya?ml$", re.ASCII)
+GITHUB_LOGIN_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$", re.ASCII)
+NONCE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,128}$", re.ASCII)
 
 
 class FailClosedRedirectHandler(SafeRedirectHandler):  # noqa: D203,D211
@@ -223,6 +227,194 @@ def _github_json(url, token):
     if not isinstance(document, dict):
         _fail("source-proof-invalid", "GitHub source proof must be a JSON object.")
     return document
+
+
+def _github_json_array(url, token):
+    if not token:
+        _fail("authority-unavailable", "GITHUB_TOKEN is required to prove publication authority.")
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        method="GET",
+    )
+    try:
+        with URL_OPENER.open(request, timeout=30) as response:
+            if response.status != 200:
+                _fail("authority-unavailable", "GitHub authority lookup did not return HTTP 200.")
+            document = json.loads(response.read())
+    except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise PreflightError("authority-unavailable", "GitHub authority lookup could not be completed.") from error
+    if not isinstance(document, list):
+        _fail("authority-invalid", "GitHub authority comment list must be a JSON array.")
+    return document
+
+
+def _github_post_comment(issue_url, body, token):
+    if not token:
+        _fail("authority-unavailable", "GITHUB_TOKEN is required to consume publication authority.")
+    request = urllib.request.Request(
+        issue_url.rstrip("/") + "/comments",
+        data=_canonical_bytes({"body": body}),
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        method="POST",
+    )
+    try:
+        with URL_OPENER.open(request, timeout=30) as response:
+            if response.status != 201:
+                _fail("authority-consumption-failed", "GitHub authority consumption did not return HTTP 201.")
+            document = json.loads(response.read())
+    except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise PreflightError(
+            "authority-consumption-failed",
+            "GitHub authority consumption could not be completed.",
+        ) from error
+    if not isinstance(document, dict):
+        _fail("authority-consumption-failed", "GitHub authority consumption response is invalid.")
+    return document
+
+
+def _parse_timestamp(value, code, field):
+    value = _required_text(value, code, field)
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise PreflightError(code, f"{field} must be an ISO-8601 timestamp.") from error
+    if parsed.tzinfo is None:
+        _fail(code, f"{field} must include a timezone.")
+    return parsed.astimezone(timezone.utc)
+
+
+def _authority_api_url(repository, value):
+    expected_prefix = f"https://api.github.com/repos/{repository}/issues/comments/"
+    if not isinstance(value, str) or not value.startswith(expected_prefix):
+        _fail("authority-url-invalid", "Authority URL must identify a comment in the release repository.")
+    comment_id = value.removeprefix(expected_prefix)
+    if not comment_id.isdigit() or int(comment_id) <= 0:
+        _fail("authority-url-invalid", "Authority URL must end in a positive comment ID.")
+    return value, int(comment_id)
+
+
+def validate_publication_authority(arguments, identity, token, now=None):
+    """Validate one authenticated, expiring GitHub authority for this exact identity."""
+    authority_url, comment_id = _authority_api_url(arguments.repository, arguments.authority_url)
+    expected_owner = arguments.authority_owner.removeprefix("github:")
+    if (
+        arguments.authority_owner != f"github:{expected_owner}"
+        or GITHUB_LOGIN_PATTERN.fullmatch(expected_owner) is None
+    ):
+        _fail("authority-owner-invalid", "Expected release-owner identity is invalid.")
+    record = _github_json(authority_url, token)
+    if record.get("id") != comment_id:
+        _fail("authority-invalid", "GitHub authority comment identity does not match its URL.")
+    author = record.get("user")
+    if not isinstance(author, dict) or author.get("login") != expected_owner:
+        _fail("authority-wrong-role", "GitHub authority was not issued by the expected release owner.")
+    if record.get("author_association") not in {"OWNER", "MEMBER", "COLLABORATOR"}:
+        _fail("authority-wrong-role", "GitHub authority issuer has no repository release-owner role.")
+    issue_url = record.get("issue_url")
+    expected_issue_prefix = f"https://api.github.com/repos/{arguments.repository}/issues/"
+    if not isinstance(issue_url, str) or not issue_url.startswith(expected_issue_prefix):
+        _fail("authority-invalid", "GitHub authority is not attached to the release repository.")
+    try:
+        body = json.loads(record.get("body", ""))
+    except (TypeError, json.JSONDecodeError) as error:
+        raise PreflightError("authority-invalid", "GitHub authority body is not valid JSON.") from error
+    expected_identity_sha256 = _sha256_bytes(_canonical_bytes(identity))
+    if not isinstance(body, dict) or set(body) != {
+        "schema",
+        "role",
+        "identity_sha256",
+        "expires_at",
+        "nonce",
+    }:
+        _fail("authority-invalid", "GitHub authority field set is invalid.")
+    if body.get("schema") != AUTHORITY_SCHEMA or body.get("role") != "release-owner":
+        _fail("authority-wrong-role", "GitHub authority role is invalid.")
+    if body.get("identity_sha256") != expected_identity_sha256:
+        _fail("authority-mismatch", "GitHub authority does not bind the exact publication identity.")
+    if NONCE_PATTERN.fullmatch(body.get("nonce", "")) is None:
+        _fail("authority-invalid", "GitHub authority nonce is invalid.")
+    expires_at = _parse_timestamp(body.get("expires_at"), "authority-invalid", "Authority expiry")
+    checked_at = now or datetime.now(timezone.utc)
+    if checked_at >= expires_at:
+        _fail("authority-expired", "GitHub publication authority has expired.")
+    created_at = _parse_timestamp(record.get("created_at"), "authority-invalid", "Authority creation")
+    updated_at = _parse_timestamp(record.get("updated_at"), "authority-invalid", "Authority update")
+    if created_at != updated_at or created_at >= expires_at:
+        _fail("authority-invalid", "GitHub authority must be immutable and precede its expiry.")
+    return {
+        "url": authority_url,
+        "comment_id": comment_id,
+        "issue_url": issue_url,
+        "owner": f"github:{expected_owner}",
+        "created_at": record["created_at"],
+        "expires_at": body["expires_at"],
+        "nonce": body["nonce"],
+        "identity_sha256": expected_identity_sha256,
+        "record_sha256": _sha256_bytes(_canonical_bytes(record)),
+    }
+
+
+def _consumption_body(authority, identity):
+    return {
+        "schema": AUTHORITY_CONSUMPTION_SCHEMA,
+        "authority_comment_id": authority["comment_id"],
+        "authority_record_sha256": authority["record_sha256"],
+        "identity_sha256": authority["identity_sha256"],
+        "run_id": identity["run"]["id"],
+        "run_attempt": identity["run"]["attempt"],
+        "nonce": authority["nonce"],
+    }
+
+
+def _matching_consumptions(authority, identity, token):
+    expected = _consumption_body(authority, identity)
+    comments = _github_json_array(authority["issue_url"].rstrip("/") + "/comments?per_page=100", token)
+    matches = []
+    for comment in comments:
+        if not isinstance(comment, dict):
+            continue
+        try:
+            body = json.loads(comment.get("body", ""))
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if isinstance(body, dict) and body.get("authority_comment_id") == authority["comment_id"]:
+            if body != expected:
+                _fail("authority-replayed", "Publication authority already has a mismatched consumption.")
+            matches.append(comment)
+    return matches
+
+
+def require_authority_state(authority, identity, phase, token):
+    """Require unconsumed verify/publish authority or its single exact container receipt."""
+    matches = _matching_consumptions(authority, identity, token)
+    if phase in {"verify", "publish"}:
+        if matches:
+            _fail("authority-replayed", "Publication authority has already been consumed.")
+        return None
+    if len(matches) != 1:
+        _fail("authority-consumption-missing", "Container publication requires one exact authority consumption.")
+    return matches[0]
+
+
+def consume_publication_authority(authority, identity, token):
+    """Consume authority once by creating and rereading one exact GitHub receipt."""
+    require_authority_state(authority, identity, "publish", token)
+    body = json.dumps(_consumption_body(authority, identity), sort_keys=True, separators=(",", ":"))
+    created = _github_post_comment(authority["issue_url"], body, token)
+    matches = _matching_consumptions(authority, identity, token)
+    if len(matches) != 1 or matches[0].get("id") != created.get("id"):
+        _fail("authority-replayed", "Publication authority consumption is not unique.")
+    return created
 
 
 def _live_source_sha(repository_path, source_branch, token):
@@ -548,6 +740,25 @@ def _write_evidence(directory, phase, identity, destination_evidence):
     workspace_write_text(phase_path, json.dumps(evidence, indent=2, sort_keys=True) + "\n")
 
 
+def _write_authority_evidence(directory, authority, consumption=None):
+    directory = Path(directory)
+    workspace_make_directory(directory)
+    authority_path = directory / "publication-authority.json"
+    authority_bytes = _canonical_bytes(authority)
+    if workspace_path_exists(authority_path):
+        if workspace_read_bytes(authority_path) != authority_bytes:
+            _fail("authority-mismatch", "Retained publication authority changed between phases.")
+    else:
+        workspace_write_bytes(authority_path, authority_bytes)
+    if consumption is not None:
+        consumption_path = directory / "publication-authority-consumption.json"
+        if workspace_path_exists(consumption_path):
+            if workspace_read_bytes(consumption_path) != _canonical_bytes(consumption):
+                _fail("authority-replayed", "Publication authority consumption evidence changed.")
+        else:
+            workspace_write_bytes(consumption_path, _canonical_bytes(consumption))
+
+
 def _positive_integer_argument(value):
     """Return a positive integer argument, rejecting zero, negatives, padding and non-digits."""
     if POSITIVE_INTEGER_PATTERN.fullmatch(value) is None:
@@ -571,6 +782,8 @@ def _parse_arguments():
     )
     parser.add_argument("--builds-execution-sha", required=True)
     parser.add_argument("--environment-name", required=True)
+    parser.add_argument("--authority-url", required=True)
+    parser.add_argument("--authority-owner", required=True)
     parser.add_argument("--package-manifest", required=True, type=workspace_input_file)
     # No default: each module declares its own inventory size, and a default would
     # silently reinstate one module's package count as every other module's gate.
@@ -601,8 +814,11 @@ def _validate_destinations(arguments, probe):
 
 def _validate_publication(arguments):
     identity = build_publication_identity(arguments)
+    token = os.environ.get("GITHUB_TOKEN", "")
+    authority = validate_publication_authority(arguments, identity, token)
     if arguments.phase != "verify":
         _require_frozen_identity(arguments.evidence_directory, identity)
+    require_authority_state(authority, identity, arguments.phase, token)
     probe = destination_probe(
         os.environ.get("HEXALITH_ZOT_USERNAME", ""),
         os.environ.get("HEXALITH_ZOT_API_KEY", ""),
@@ -611,6 +827,15 @@ def _validate_publication(arguments):
     revalidated_identity = build_publication_identity(arguments)
     if revalidated_identity != identity:
         _fail("publication-identity-changed", "Publication identity changed during destination probing.")
+    revalidated_authority = validate_publication_authority(arguments, revalidated_identity, token)
+    if revalidated_authority != authority:
+        _fail("authority-mismatch", "Publication authority changed during destination probing.")
+    consumption = None
+    if arguments.phase == "publish":
+        consumption = consume_publication_authority(authority, identity, token)
+    elif arguments.phase == "container":
+        consumption = require_authority_state(authority, identity, "container", token)
+    _write_authority_evidence(arguments.evidence_directory, authority, consumption)
     _write_evidence(
         arguments.evidence_directory,
         arguments.phase,

@@ -33,7 +33,9 @@ MANIFEST_ACCEPT = ", ".join(
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 REGISTRY_PATTERN = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)*(?::[1-9]\d{0,4})?$", re.ASCII)
 REPOSITORY_PATTERN = re.compile(r"^[a-z0-9]+(?:[._/-][a-z0-9]+)*$")
+GITHUB_REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", re.ASCII)
 TAG_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", re.ASCII)
+SOURCE_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$", re.ASCII)
 REGISTRY_OBJECT_UNRESOLVED = "Registry object could not be resolved."
 
 
@@ -272,7 +274,23 @@ def _validate_platforms(descriptors):
     return platforms
 
 
-def _validate_child(descriptor, response, body, config_resolver):
+def _validate_labels(config, expected_labels):
+    if expected_labels is None:
+        return None
+    image_config = config.get("config")
+    labels = image_config.get("Labels") if isinstance(image_config, dict) else None
+    if not isinstance(labels, dict):
+        _fail("provenance-labels-missing", "Image config has no provenance labels.")
+    for name, expected in expected_labels.items():
+        if labels.get(name) != expected:
+            _fail(
+                "provenance-label-mismatch",
+                f"Image config label {name} does not match the exact release identity.",
+            )
+    return {name: labels[name] for name in expected_labels}
+
+
+def _validate_child(descriptor, response, body, config_resolver, expected_labels=None):
     child_digest = descriptor["digest"]
     _validate_response_digest(response, body, child_digest, "child-digest-mismatch")
     if len(body) != descriptor["size"]:
@@ -305,6 +323,7 @@ def _validate_child(descriptor, response, body, config_resolver):
     platform = descriptor["platform"]
     if config.get("os") != platform["os"] or config.get("architecture") != platform["architecture"]:
         _fail("config-platform-mismatch", "Image config platform does not match its descriptor.")
+    labels = _validate_labels(config, expected_labels)
 
     return {
         "platform": f"{platform['os']}/{platform['architecture']}",
@@ -316,10 +335,11 @@ def _validate_child(descriptor, response, body, config_resolver):
         "config_media_type": config_media_type,
         "manifest_bytes": body,
         "config_bytes": config_body,
+        "provenance_labels": labels,
     }
 
 
-def _validate_graph(tag_response, immutable_resolver, child_resolver, config_resolver):
+def _validate_graph(tag_response, immutable_resolver, child_resolver, config_resolver, expected_labels=None):
     tag_body = tag_response["body_bytes"]
     reported_digest = _validate_digest(
         tag_response.get("docker_content_digest"),
@@ -343,6 +363,7 @@ def _validate_graph(tag_response, immutable_resolver, child_resolver, config_res
                 child_response,
                 child_response["body_bytes"],
                 config_resolver,
+                expected_labels,
             )
         )
     order = {platform: index for index, platform in enumerate(REQUIRED_PLATFORMS)}
@@ -359,7 +380,7 @@ def _validate_graph(tag_response, immutable_resolver, child_resolver, config_res
     }
 
 
-def validate_capture(capture_root):
+def validate_capture(capture_root, expected_labels=None):
     """Validate a deterministic registry capture rooted at *capture_root*."""
 
     capture_root = Path(capture_root)
@@ -393,6 +414,7 @@ def validate_capture(capture_root):
             (response := resolve_object(reference, "unresolved-config")),
             response["body_bytes"],
         ),
+        expected_labels,
     )
 
 
@@ -452,7 +474,7 @@ def validated_image_reference(value):
     return value
 
 
-def validate_registry(image, username, api_key):
+def validate_registry(image, username, api_key, expected_labels=None):
     """Validate a registry tag and all immutable descendants."""
     registry, repository, tag = _parse_image(image)
     if not username or not api_key:
@@ -467,7 +489,26 @@ def validate_registry(image, username, api_key):
             (response := client.blob(reference)),
             response["body_bytes"],
         ),
+        expected_labels,
     )
+
+
+def expected_provenance_labels(repository, source_sha, version):
+    """Return the exact five-label release identity expected in every child config."""
+    if GITHUB_REPOSITORY_PATTERN.fullmatch(repository or "") is None:
+        _fail("invalid-release-identity", "GitHub repository identity is invalid.")
+    if SOURCE_SHA_PATTERN.fullmatch(source_sha or "") is None:
+        _fail("invalid-release-identity", "Source revision must be an exact lowercase commit SHA.")
+    if TAG_PATTERN.fullmatch(version or "") is None:
+        _fail("invalid-release-identity", "Release version must be plain SemVer.")
+    repository_url = f"https://github.com/{repository}"
+    return {
+        "org.opencontainers.image.source": repository_url,
+        "org.opencontainers.image.url": f"{repository_url}/releases/tag/v{version}",
+        "org.opencontainers.image.documentation": f"{repository_url}/blob/{source_sha}/README.md",
+        "org.opencontainers.image.revision": source_sha,
+        "org.opencontainers.image.version": version,
+    }
 
 
 def write_evidence(evidence_directory, image, evidence):
@@ -511,6 +552,9 @@ def write_evidence(evidence_directory, image, evidence):
 def main():
     parser = argparse.ArgumentParser(description="Validate an exact two-platform OCI index.")
     parser.add_argument("--image", required=True, type=validated_image_reference)
+    parser.add_argument("--repository", required=True)
+    parser.add_argument("--source-sha", required=True)
+    parser.add_argument("--version", required=True)
     parser.add_argument("--evidence-directory", required=True, type=workspace_output_directory)
     arguments = parser.parse_args()
     try:
@@ -518,6 +562,11 @@ def main():
             arguments.image,
             os.environ.get("HEXALITH_ZOT_USERNAME", ""),
             os.environ.get("HEXALITH_ZOT_API_KEY", ""),
+            expected_provenance_labels(
+                arguments.repository,
+                arguments.source_sha,
+                arguments.version,
+            ),
         )
         document = write_evidence(arguments.evidence_directory, arguments.image, evidence)
     except ValidationError as error:

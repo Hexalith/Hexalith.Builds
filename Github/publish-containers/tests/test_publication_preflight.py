@@ -18,6 +18,10 @@ SCRIPT_DIRECTORY = Path(__file__).resolve().parent.parent
 VALIDATOR_PATH = SCRIPT_DIRECTORY / "publication_preflight.py"
 BUILDS_SHA = "c" * 40
 SOURCE_SHA = "d" * 40
+AUTHORITY_COMMENT_ID = 123456
+AUTHORITY_URL = (
+    "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/comments/123456"
+)
 # The inventory size a fixture module declares. It is deliberately a fixture value,
 # not a shared invariant: every module declares its own count.
 FIXTURE_PACKAGE_COUNT = 14
@@ -73,6 +77,8 @@ class PublicationPreflightTests(unittest.TestCase):
             container_repository="registry.hexalith.com/eventstore",
             builds_execution_sha=BUILDS_SHA,
             environment_name="production",
+            authority_url=AUTHORITY_URL,
+            authority_owner="github:release-owner",
             package_manifest=root / "release-packages.json",
             expected_package_count=FIXTURE_PACKAGE_COUNT,
             contract_directory=self.create_contract(root),
@@ -103,6 +109,96 @@ class PublicationPreflightTests(unittest.TestCase):
                 "conclusion": "success",
             },
         }
+
+    def authority_record(self, identity, *, owner="release-owner", expires_at="2099-01-01T00:00:00Z"):
+        return {
+            "id": AUTHORITY_COMMENT_ID,
+            "issue_url": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/42",
+            "html_url": "https://github.com/Hexalith/Hexalith.EventStore/issues/42#issuecomment-123456",
+            "user": {"login": owner},
+            "author_association": "OWNER",
+            "created_at": "2026-08-20T10:00:00Z",
+            "updated_at": "2026-08-20T10:00:00Z",
+            "body": json.dumps(
+                {
+                    "schema": self.validator.AUTHORITY_SCHEMA,
+                    "role": "release-owner",
+                    "identity_sha256": hashlib.sha256(
+                        self.validator._canonical_bytes(identity)
+                    ).hexdigest(),
+                    "expires_at": expires_at,
+                    "nonce": "story-3-14-authority-0001",
+                }
+            ),
+        }
+
+    def authority_summary(self):
+        return {
+            "url": AUTHORITY_URL,
+            "comment_id": AUTHORITY_COMMENT_ID,
+            "issue_url": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/issues/42",
+            "owner": "github:release-owner",
+            "created_at": "2026-08-20T10:00:00Z",
+            "expires_at": "2099-01-01T00:00:00Z",
+            "nonce": "story-3-14-authority-0001",
+            "identity_sha256": "1" * 64,
+            "record_sha256": "2" * 64,
+        }
+
+    def test_github_authority_binds_identity_owner_expiry_and_one_use_consumption(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            arguments = self.arguments(root)
+            with mock.patch.dict(os.environ, self.runtime_environment(), clear=True):
+                identity = self.validator.build_publication_identity(arguments, self.source_proof())
+            record = self.authority_record(identity)
+            with mock.patch.object(self.validator, "_github_json", return_value=record):
+                authority = self.validator.validate_publication_authority(
+                    arguments,
+                    identity,
+                    "fixture-token",
+                    now=self.validator.datetime(2026, 8, 20, 11, tzinfo=self.validator.timezone.utc),
+                )
+            self.assertEqual("github:release-owner", authority["owner"])
+            self.assertEqual(str(identity["run"]["id"]), identity["run"]["id"])
+
+            receipt = {"id": 789, "body": json.dumps(self.validator._consumption_body(authority, identity))}
+            with mock.patch.object(self.validator, "_github_json_array", return_value=[]):
+                self.assertIsNone(
+                    self.validator.require_authority_state(authority, identity, "verify", "fixture-token")
+                )
+            with mock.patch.object(self.validator, "_github_json_array", return_value=[receipt]):
+                self.assertEqual(
+                    receipt,
+                    self.validator.require_authority_state(authority, identity, "container", "fixture-token"),
+                )
+                with self.assertRaises(self.validator.PreflightError) as context:
+                    self.validator.require_authority_state(authority, identity, "verify", "fixture-token")
+                self.assertEqual("authority-replayed", context.exception.code)
+
+    def test_github_authority_rejects_expired_wrong_owner_and_identity_mismatch(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            arguments = self.arguments(root)
+            with mock.patch.dict(os.environ, self.runtime_environment(), clear=True):
+                identity = self.validator.build_publication_identity(arguments, self.source_proof())
+            now = self.validator.datetime(2026, 8, 20, 11, tzinfo=self.validator.timezone.utc)
+            scenarios = (
+                (self.authority_record(identity, expires_at="2026-08-20T10:30:00Z"), "authority-expired"),
+                (self.authority_record(identity, owner="intruder"), "authority-wrong-role"),
+            )
+            changed = self.authority_record(identity)
+            changed_body = json.loads(changed["body"])
+            changed_body["identity_sha256"] = "0" * 64
+            changed["body"] = json.dumps(changed_body)
+            scenarios += ((changed, "authority-mismatch"),)
+            for record, code in scenarios:
+                with self.subTest(code=code), mock.patch.object(self.validator, "_github_json", return_value=record):
+                    with self.assertRaises(self.validator.PreflightError) as context:
+                        self.validator.validate_publication_authority(
+                            arguments, identity, "fixture-token", now=now
+                        )
+                    self.assertEqual(code, context.exception.code)
 
     def test_exact_identity_records_repository_source_builds_run_environment_and_hashes(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -432,6 +528,10 @@ class PublicationPreflightTests(unittest.TestCase):
                 arguments.builds_execution_sha,
                 "--environment-name",
                 arguments.environment_name,
+                "--authority-url",
+                arguments.authority_url,
+                "--authority-owner",
+                arguments.authority_owner,
                 "--package-manifest",
                 str(arguments.package_manifest),
                 "--contract-directory",
@@ -613,7 +713,7 @@ class PublicationPreflightTests(unittest.TestCase):
                 )
             self.assertEqual("preflight-sequence-invalid", context.exception.code)
 
-    def test_main_runs_all_three_fail_closed_destination_phases_without_comments(self):
+    def test_main_runs_all_three_fail_closed_destination_and_authority_phases(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
             arguments = self.arguments(root)
@@ -631,6 +731,10 @@ class PublicationPreflightTests(unittest.TestCase):
                 arguments.builds_execution_sha,
                 "--environment-name",
                 arguments.environment_name,
+                "--authority-url",
+                arguments.authority_url,
+                "--authority-owner",
+                arguments.authority_owner,
                 "--package-manifest",
                 str(arguments.package_manifest),
                 "--expected-package-count",
@@ -655,6 +759,17 @@ class PublicationPreflightTests(unittest.TestCase):
                         "prove_current_green_source",
                         return_value=self.source_proof(),
                     ) as source_proof,
+                    mock.patch.object(
+                        self.validator,
+                        "validate_publication_authority",
+                        return_value=self.authority_summary(),
+                    ),
+                    mock.patch.object(self.validator, "require_authority_state", return_value=None),
+                    mock.patch.object(
+                        self.validator,
+                        "consume_publication_authority",
+                        return_value={"id": 789, "result": "consumed"},
+                    ),
                 ):
                     for phase in ("verify", "publish", "container"):
                         with mock.patch.object(sys, "argv", [*common, "--phase", phase]):
@@ -686,6 +801,10 @@ class PublicationPreflightTests(unittest.TestCase):
                 arguments.builds_execution_sha,
                 "--environment-name",
                 arguments.environment_name,
+                "--authority-url",
+                arguments.authority_url,
+                "--authority-owner",
+                arguments.authority_owner,
                 "--package-manifest",
                 str(arguments.package_manifest),
                 "--expected-package-count",
@@ -714,6 +833,17 @@ class PublicationPreflightTests(unittest.TestCase):
                         self.validator,
                         "prove_current_green_source",
                         return_value=self.source_proof(),
+                    ),
+                    mock.patch.object(
+                        self.validator,
+                        "validate_publication_authority",
+                        return_value=self.authority_summary(),
+                    ),
+                    mock.patch.object(self.validator, "require_authority_state", return_value=None),
+                    mock.patch.object(
+                        self.validator,
+                        "consume_publication_authority",
+                        return_value={"id": 789, "result": "consumed"},
                     ),
                 ):
                     for phase in ("verify", "publish", "container"):
@@ -758,6 +888,12 @@ class PublicationPreflightTests(unittest.TestCase):
                     "destination_probe",
                     return_value=lambda kind, identity, version: 404,
                 ),
+                mock.patch.object(
+                    self.validator,
+                    "validate_publication_authority",
+                    return_value=self.authority_summary(),
+                ),
+                mock.patch.object(self.validator, "require_authority_state", return_value=None),
                 self.assertRaises(self.validator.PreflightError) as context,
             ):
                 self.validator._validate_publication(arguments)
@@ -787,6 +923,12 @@ class PublicationPreflightTests(unittest.TestCase):
                         "destination_probe",
                         return_value=lambda kind, identity, version: 404,
                     ),
+                    mock.patch.object(
+                        self.validator,
+                        "validate_publication_authority",
+                        return_value=self.authority_summary(),
+                    ),
+                    mock.patch.object(self.validator, "require_authority_state", return_value=None),
                 ):
                     self.validator._validate_publication(verify)
                     manifest = json.loads(verify.package_manifest.read_text(encoding="utf-8"))

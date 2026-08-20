@@ -18,6 +18,8 @@ source_branch="${HEXALITH_RELEASE_SOURCE_BRANCH:-main}"
 source_ci_workflow="${HEXALITH_RELEASE_SOURCE_CI_WORKFLOW:-ci.yml}"
 package_manifest="${HEXALITH_RELEASE_PACKAGE_MANIFEST:-tools/release-packages.json}"
 expected_package_count="${HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT:-}"
+authority_url="${HEXALITH_RELEASE_AUTHORITY_URL:-}"
+authority_owner="${HEXALITH_RELEASE_AUTHORITY_OWNER:-}"
 evidence_directory="${HEXALITH_CONTAINER_EVIDENCE_DIRECTORY:-$PWD/.hexalith/release-evidence/$version}"
 semver_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
 
@@ -50,6 +52,9 @@ fail() {
 [[ -f "$package_manifest" ]] || fail "Release package manifest is required."
 [[ "$expected_package_count" =~ ^[1-9][0-9]*$ ]] ||
   fail "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT must declare the module's package count as a positive integer."
+[[ -n "$authority_url" ]] || fail "HEXALITH_RELEASE_AUTHORITY_URL is required."
+[[ "$authority_owner" =~ ^github:[A-Za-z0-9][A-Za-z0-9-]{0,38}$ ]] ||
+  fail "HEXALITH_RELEASE_AUTHORITY_OWNER must identify the expected GitHub release owner."
 
 workspace_root="$(realpath -e "$PWD")"
 evidence_directory="$(realpath -m "$evidence_directory")"
@@ -102,6 +107,8 @@ preflight_arguments=(
   --source-ci-workflow "$source_ci_workflow"
   --builds-execution-sha "$builds_execution_sha"
   --environment-name "$release_environment"
+  --authority-url "$authority_url"
+  --authority-owner "$authority_owner"
   --package-manifest "$package_manifest"
   --expected-package-count "$expected_package_count"
   --contract-directory "$(dirname "$0")"
@@ -136,10 +143,15 @@ for index in "${!container_projects[@]}"; do
     -p:ContainerRegistry="$registry" \
     -p:ContainerRepository="$repository" \
     -p:ContainerImageTag="$version" \
-    -p:Version="$version"
+    -p:Version="$version" \
+    -p:ContainerProvenanceSourceSha="$source_sha" \
+    -p:ContainerProvenanceReleaseVersion="$version"
 
   "$validator" \
     --image "${registry}/${repository}:${version}" \
+    --repository "$release_repository" \
+    --source-sha "$source_sha" \
+    --version "$version" \
     --evidence-directory "$mapping_evidence"
   "$smoke" \
     --image "${registry}/${repository}:${version}" \
