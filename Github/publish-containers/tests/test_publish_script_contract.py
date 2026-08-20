@@ -939,6 +939,72 @@ exit 1
                 self.assertIn("HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT", result.stderr)
                 self.assertFalse(mutation_marker.exists())
 
+    def test_reserved_version_mismatch_blocks_preflight_login_and_dotnet_publication(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            fake_bin = root / "bin"
+            fake_bin.mkdir()
+            project = root / "EventStore.csproj"
+            project.write_text("<Project />\n", encoding="utf-8")
+            package_manifest = write_package_manifest(root)
+            preflight_marker = root / "preflight-ran"
+            login_marker = root / "docker-ran"
+            dotnet_marker = root / "dotnet-ran"
+            write_executable(
+                fake_bin / "docker",
+                "#!/usr/bin/env bash\nset -euo pipefail\ntouch \"$FAKE_LOGIN_MARKER\"\n",
+            )
+            write_executable(
+                fake_bin / "dotnet",
+                "#!/usr/bin/env bash\nset -euo pipefail\ntouch \"$FAKE_DOTNET_MARKER\"\n",
+            )
+            write_executable(
+                root / "preflight",
+                "#!/usr/bin/env bash\nset -euo pipefail\ntouch \"$FAKE_PREFLIGHT_MARKER\"\n",
+            )
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PATH": f"{fake_bin}:{environment['PATH']}",
+                    "HEXALITH_CONTAINER_PROJECTS": f"{project}|eventstore",
+                    "HEXALITH_ZOT_USERNAME": "fixture-user",
+                    "HEXALITH_ZOT_API_KEY": "fixture-token",
+                    "HEXALITH_ZOT_REGISTRY": "registry.example.test",
+                    "HEXALITH_OCI_VALIDATOR": "/bin/true",
+                    "HEXALITH_CONTAINER_SMOKE": "/bin/true",
+                    "HEXALITH_PUBLICATION_PREFLIGHT": str(root / "preflight"),
+                    "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
+                    "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
+                    "HEXALITH_RELEASE_ENVIRONMENT": "production",
+                    "HEXALITH_RELEASE_RESERVED_VERSION": "3.76.1",
+                    "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL":
+                        "https://api.github.com/repos/Hexalith/Fixture/issues/123",
+                    "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
+                    "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
+                    "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
+                    "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
+                    "GITHUB_SHA": "b" * 40,
+                    "FAKE_PREFLIGHT_MARKER": str(preflight_marker),
+                    "FAKE_LOGIN_MARKER": str(login_marker),
+                    "FAKE_DOTNET_MARKER": str(dotnet_marker),
+                }
+            )
+
+            result = subprocess.run(
+                ["bash", str(PUBLISHER), "3.76.2"],
+                cwd=root,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("different from the authorized reservation", result.stderr)
+            self.assertFalse(preflight_marker.exists())
+            self.assertFalse(login_marker.exists())
+            self.assertFalse(dotnet_marker.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -282,6 +282,66 @@ class PublicationPreflightTests(unittest.TestCase):
                 validate("read")
             self.assertEqual("authority-wrong-role", context.exception.code)
 
+    def test_registry_version_observation_follows_same_repository_pagination(self):
+        requested = []
+
+        class FakeResponse:
+            status = 200
+
+            def __init__(self, document, link=None):
+                self.document = document
+                self.headers = {"Link": link} if link else {}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exception_type, exception, traceback):
+                return False
+
+            def read(self):
+                return json.dumps(self.document).encode("utf-8")
+
+        responses = (
+            FakeResponse(
+                {"name": "eventstore", "tags": ["3.95.0", "3.96.0"]},
+                '</v2/eventstore/tags/list?n=100&last=3.96.0>; rel="next"',
+            ),
+            FakeResponse({"name": "eventstore", "tags": ["3.96.1"]}),
+        )
+
+        def open_request(request, timeout):
+            requested.append((request, timeout))
+            return responses[len(requested) - 1]
+
+        with mock.patch.object(self.validator.URL_OPENER, "open", side_effect=open_request):
+            observation = self.validator._registry_version_observation(
+                "registry.hexalith.com/eventstore",
+                "Basic fixture",
+            )
+
+        self.assertEqual(["3.95.0", "3.96.0", "3.96.1"], observation["versions"])
+        self.assertEqual(2, len(requested))
+        self.assertEqual(
+            "https://registry.hexalith.com/v2/eventstore/tags/list?n=100&last=3.96.0",
+            requested[1][0].full_url,
+        )
+        self.assertTrue(all(request.get_header("Authorization") == "Basic fixture" for request, _ in requested))
+        self.assertTrue(all(timeout == 30 for _, timeout in requested))
+
+        escaping = FakeResponse(
+            {"name": "eventstore", "tags": ["3.96.0"]},
+            '<https://attacker.example/v2/eventstore/tags/list?n=100>; rel="next"',
+        )
+        with (
+            mock.patch.object(self.validator.URL_OPENER, "open", return_value=escaping),
+            self.assertRaises(self.validator.PreflightError) as context,
+        ):
+            self.validator._registry_version_observation(
+                "registry.hexalith.com/eventstore",
+                "Basic fixture",
+            )
+        self.assertEqual("version-floor-invalid", context.exception.code)
+
     def test_authority_issue_paginates_and_rejects_ambiguous_or_untrusted_consumption(self):
         pages = [[{"id": index} for index in range(100)], [{"id": 101}]]
         requested = []

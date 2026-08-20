@@ -852,15 +852,45 @@ def _nuget_version_observation(package_id):
 
 def _registry_version_observation(container_repository, authorization):
     registry, repository_path = container_repository.split("/", 1)
-    document = _read_json_response(
-        f"https://{registry}/v2/{repository_path}/tags/list",
-        {"Accept": "application/json", "Authorization": authorization},
-        "version-floor-unavailable",
-    )
-    versions = document.get("tags") if isinstance(document, dict) else None
-    if not isinstance(versions, list):
-        _fail("version-floor-invalid", "Registry tag response is malformed.")
-    return {"kind": "oci-registry", "identity": container_repository, "versions": versions}
+    repository_url_path = "/v2/" + urllib.parse.quote(repository_path, safe="/") + "/tags/list"
+    url = f"https://{registry}{repository_url_path}?n=100"
+    headers = {"Accept": "application/json", "Authorization": authorization}
+    versions = []
+    visited = set()
+    for _ in range(100):
+        if url in visited:
+            _fail("version-floor-invalid", "Registry tag pagination contains a cycle.")
+        visited.add(url)
+        request = urllib.request.Request(url, headers=headers, method="GET")
+        try:
+            with URL_OPENER.open(request, timeout=30) as response:
+                if response.status != 200:
+                    _fail("version-floor-unavailable", "Registry tag lookup did not return HTTP 200.")
+                document = json.loads(response.read())
+                link = response.headers.get("Link")
+        except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise PreflightError(
+                "version-floor-unavailable",
+                "Registry tag lookup could not be completed.",
+            ) from error
+        tags = document.get("tags") if isinstance(document, dict) else None
+        if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):
+            _fail("version-floor-invalid", "Registry tag response is malformed.")
+        versions.extend(tags)
+        if not link:
+            return {"kind": "oci-registry", "identity": container_repository, "versions": versions}
+        links = [part.strip() for part in link.split(",")]
+        next_links = [part for part in links if re.search(r";\s*rel=\"?next\"?\s*$", part)]
+        if len(next_links) != 1:
+            _fail("version-floor-invalid", "Registry tag pagination link is malformed.")
+        match = re.fullmatch(r"<([^>]+)>;\s*rel=\"?next\"?", next_links[0])
+        if match is None:
+            _fail("version-floor-invalid", "Registry tag pagination link is malformed.")
+        url = urllib.parse.urljoin(url, match.group(1))
+        parsed = urllib.parse.urlsplit(url)
+        if parsed.scheme != "https" or parsed.netloc != registry or parsed.path != repository_url_path:
+            _fail("version-floor-invalid", "Registry tag pagination escaped the selected repository.")
+    _fail("version-floor-unavailable", "Registry tag pagination exceeded the safe limit.")
 
 
 def read_external_version_observations(
