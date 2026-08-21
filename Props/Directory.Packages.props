@@ -275,7 +275,7 @@
     <!-- FrontComposer Story 10-3: file-based EventStore REST consumer contracts. -->
     <PackageVersion Include="PactNet" Version="5.0.1" />
     <PackageVersion Include="Radzen.Blazor" Version="11.2.5" />
-    <PackageVersion Include="Roslynator.Analyzers" Version="4.16.0" />
+    <PackageVersion Include="Roslynator.Analyzers" Version="4.16.1" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="4.16.0" />
     <PackageVersion Include="Scriban" Version="7.2.6" />
     <PackageVersion Include="SendGrid" Version="9.29.3" />
