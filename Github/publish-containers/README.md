@@ -49,7 +49,18 @@ them. The caller repository's `references/Hexalith.Builds` submodule pin is not
 treated as executed release-tool identity.
 
 The protected GitHub environment on the reusable release job supplies the
-environment approval. Container publication additionally requires one
+environment approval, and is the only gate an ordinary release requires.
+
+The `require-publication-authority` input adds an opt-in corrective-release gate
+on top of it, for a release that must be individually authorized rather than
+merely approved. It defaults to enabled. A caller that sets it to `false` must
+leave `reserved-version`, `release-authority-issue-url` and
+`release-authority-owner` empty; supplying a value that the disabled posture
+would ignore fails closed, as does a declaration that is neither `true` nor
+`false`. Disabling the gate changes nothing else: source proof, frozen identity,
+version floor, and destination-absence checks all still run.
+
+When the gate is enabled, container publication additionally requires one
 machine-verifiable, expiring, single-use release-owner authority comment on the
 configured repository issue. The comment must use the exact authority schema,
 bind the frozen publication-identity SHA-256, name the `release-owner` role,

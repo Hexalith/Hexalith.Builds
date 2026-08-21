@@ -1280,6 +1280,136 @@ class PublicationPreflightTests(unittest.TestCase):
                         self.validator._validate_publication(publish)
                 self.assertEqual("publication-identity-changed", context.exception.code)
 
+    def test_main_without_an_authority_declaration_skips_the_gate_but_not_destinations(self):
+        """An undeclared authority is a supported posture, not a bypassed check."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            arguments = self.arguments(root)
+            common = [
+                "publication_preflight.py",
+                "--repository",
+                arguments.repository,
+                "--version",
+                arguments.version,
+                "--source-sha",
+                arguments.source_sha,
+                "--container-repository",
+                arguments.container_repository,
+                "--builds-execution-sha",
+                arguments.builds_execution_sha,
+                "--environment-name",
+                arguments.environment_name,
+                "--package-manifest",
+                str(arguments.package_manifest),
+                "--expected-package-count",
+                str(FIXTURE_PACKAGE_COUNT),
+                "--contract-directory",
+                str(arguments.contract_directory),
+                "--evidence-directory",
+                str(arguments.evidence_directory),
+            ]
+            previous_directory = Path.cwd()
+            try:
+                os.chdir(root)
+                with (
+                    mock.patch.dict(os.environ, self.runtime_environment(), clear=True),
+                    mock.patch.object(
+                        self.validator,
+                        "destination_probe",
+                        return_value=lambda kind, identity, version: 404,
+                    ),
+                    mock.patch.object(
+                        self.validator,
+                        "read_external_version_observations",
+                        return_value=self.version_observations(),
+                    ),
+                    mock.patch.object(
+                        self.validator,
+                        "prove_current_green_source",
+                        return_value=self.source_proof(),
+                    ),
+                    mock.patch.object(self.validator, "validate_publication_authority") as validate,
+                    mock.patch.object(self.validator, "require_authority_state") as require,
+                    mock.patch.object(self.validator, "consume_publication_authority") as consume,
+                ):
+                    for phase in ("verify", "publish", "container"):
+                        with mock.patch.object(sys, "argv", [*common, "--phase", phase]):
+                            self.assertEqual(0, self.validator.main())
+            finally:
+                os.chdir(previous_directory)
+
+            self.assertEqual(0, validate.call_count)
+            self.assertEqual(0, require.call_count)
+            self.assertEqual(0, consume.call_count)
+            self.assertFalse((root / "evidence" / "publication-authority.json").exists())
+            # The destination and identity proofs are untouched by the posture.
+            for phase in ("verify", "publish", "container"):
+                self.assertTrue((root / "evidence" / f"publication-preflight.{phase}.json").is_file())
+
+    def test_partial_authority_declaration_fails_closed(self):
+        """Half a declaration must never be read as an absent one."""
+        partial = (
+            (["--authority-issue-url", AUTHORITY_ISSUE_URL], "authority-owner-invalid"),
+            (["--authority-owner", "github:release-owner"], "authority-url-invalid"),
+        )
+        for extra, expected_code in partial:
+            with self.subTest(extra=extra[0]), tempfile.TemporaryDirectory() as temporary_directory:
+                root = Path(temporary_directory)
+                arguments = self.arguments(root)
+                argv = [
+                    "publication_preflight.py",
+                    "--repository",
+                    arguments.repository,
+                    "--version",
+                    arguments.version,
+                    "--source-sha",
+                    arguments.source_sha,
+                    "--container-repository",
+                    arguments.container_repository,
+                    "--builds-execution-sha",
+                    arguments.builds_execution_sha,
+                    "--environment-name",
+                    arguments.environment_name,
+                    "--package-manifest",
+                    str(arguments.package_manifest),
+                    "--expected-package-count",
+                    str(FIXTURE_PACKAGE_COUNT),
+                    "--contract-directory",
+                    str(arguments.contract_directory),
+                    "--evidence-directory",
+                    str(arguments.evidence_directory),
+                    "--phase",
+                    "verify",
+                    *extra,
+                ]
+                previous_directory = Path.cwd()
+                try:
+                    os.chdir(root)
+                    with (
+                        mock.patch.dict(os.environ, self.runtime_environment(), clear=True),
+                        mock.patch.object(
+                            self.validator,
+                            "prove_current_green_source",
+                            return_value=self.source_proof(),
+                        ),
+                        mock.patch.object(sys, "argv", argv),
+                    ):
+                        self.assertEqual(1, self.validator.main())
+                finally:
+                    os.chdir(previous_directory)
+
+                self.assertFalse((root / "evidence" / "publication-preflight.verify.json").exists())
+                self.assertIn(expected_code, self.capture_partial_declaration_code(arguments, extra))
+
+    def capture_partial_declaration_code(self, arguments, extra):
+        """Return the fail-closed code raised for a partial authority declaration."""
+        declared = SimpleNamespace(**vars(arguments))
+        declared.authority_issue_url = AUTHORITY_ISSUE_URL if extra[0] == "--authority-issue-url" else ""
+        declared.authority_owner = "github:release-owner" if extra[0] == "--authority-owner" else ""
+        with self.assertRaises(self.validator.PreflightError) as context:
+            self.validator._authority_is_declared(declared)
+        return context.exception.code
+
 
 if __name__ == "__main__":
     unittest.main()

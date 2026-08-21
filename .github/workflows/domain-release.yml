@@ -107,6 +107,17 @@ on:
         required: false
         type: string
         default: ''
+      require-publication-authority:
+        description: >-
+          Require the dispatch-reserved version and the one-use GitHub issue-comment
+          publication authority before any package or container write. This is an
+          opt-in corrective-release gate: leave it enabled to keep that contract, or
+          set it to false to publish under protected-environment approval alone. When
+          it is false the three reservation inputs above must be left empty, so a
+          supplied value can never be silently ignored.
+        required: false
+        type: boolean
+        default: true
       governed-release:
         description: >-
           Opt into the BUILD-REL-1 governed release contract: signing secrets, a
@@ -464,6 +475,7 @@ jobs:
           HEXALITH_RELEASE_RESERVED_VERSION: ${{ inputs.reserved-version }}
           HEXALITH_RELEASE_AUTHORITY_ISSUE_URL: ${{ inputs.release-authority-issue-url }}
           HEXALITH_RELEASE_AUTHORITY_OWNER: ${{ inputs.release-authority-owner }}
+          HEXALITH_RELEASE_REQUIRE_AUTHORITY: ${{ inputs.require-publication-authority }}
         run: npx semantic-release
       - name: Upload complete release evidence
         if: ${{ always() && inputs.publish-containers }}
@@ -844,6 +856,7 @@ jobs:
           HEXALITH_RELEASE_RESERVED_VERSION: ${{ inputs.reserved-version }}
           HEXALITH_RELEASE_AUTHORITY_ISSUE_URL: ${{ inputs.release-authority-issue-url }}
           HEXALITH_RELEASE_AUTHORITY_OWNER: ${{ inputs.release-authority-owner }}
+          HEXALITH_RELEASE_REQUIRE_AUTHORITY: ${{ inputs.require-publication-authority }}
           HEXALITH_NUGET_SIGNING_TIMESTAMPER: ${{ inputs.nuget-signing-timestamper }}
           NUGET_SIGNING_CERTIFICATE_BASE64: ${{ secrets.NUGET_SIGNING_CERTIFICATE_BASE64 }}
           NUGET_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.NUGET_SIGNING_CERTIFICATE_PASSWORD }}

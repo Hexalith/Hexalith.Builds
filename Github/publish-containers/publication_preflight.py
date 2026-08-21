@@ -1111,8 +1111,8 @@ def _parse_arguments():
     )
     parser.add_argument("--builds-execution-sha", required=True)
     parser.add_argument("--environment-name", required=True)
-    parser.add_argument("--authority-issue-url", required=True)
-    parser.add_argument("--authority-owner", required=True)
+    parser.add_argument("--authority-issue-url", required=False, default="")
+    parser.add_argument("--authority-owner", required=False, default="")
     parser.add_argument("--package-manifest", required=True, type=workspace_input_file)
     # No default: each module declares its own inventory size, and a default would
     # silently reinstate one module's package count as every other module's gate.
@@ -1155,13 +1155,34 @@ def _validate_destinations(arguments, probe):
     return {"result": "pass", "version_floor": version_floor, "absence": absence}
 
 
+def _authority_is_declared(arguments):
+    """Return whether this run declares the one-use GitHub publication authority gate.
+
+    The gate is opt-in per release caller. Absence of BOTH values means the caller
+    publishes under protected-environment approval alone. A partial declaration is
+    rejected rather than treated as absence, so a dropped or misspelled value can
+    never silently disable an authority gate the caller believed was active.
+    """
+    issue_url = (arguments.authority_issue_url or "").strip()
+    owner = (arguments.authority_owner or "").strip()
+    if not issue_url and not owner:
+        return False
+    if not issue_url:
+        _fail("authority-url-invalid", "Authority owner was supplied without an authority issue URL.")
+    if not owner:
+        _fail("authority-owner-invalid", "Authority issue URL was supplied without an authority owner.")
+    return True
+
+
 def _validate_publication(arguments):
     identity = build_publication_identity(arguments)
     token = os.environ.get("GITHUB_TOKEN", "")
-    authority = validate_publication_authority(arguments, identity, token)
+    authority_declared = _authority_is_declared(arguments)
+    authority = validate_publication_authority(arguments, identity, token) if authority_declared else None
     if arguments.phase != "verify":
         _require_frozen_identity(arguments.evidence_directory, identity)
-    require_authority_state(authority, identity, arguments.phase, token)
+    if authority_declared:
+        require_authority_state(authority, identity, arguments.phase, token)
     probe = destination_probe(
         os.environ.get("HEXALITH_ZOT_USERNAME", ""),
         os.environ.get("HEXALITH_ZOT_API_KEY", ""),
@@ -1170,15 +1191,16 @@ def _validate_publication(arguments):
     revalidated_identity = build_publication_identity(arguments)
     if revalidated_identity != identity:
         _fail("publication-identity-changed", "Publication identity changed during destination probing.")
-    revalidated_authority = validate_publication_authority(arguments, revalidated_identity, token)
-    if revalidated_authority != authority:
-        _fail("authority-mismatch", "Publication authority changed during destination probing.")
-    consumption = None
-    if arguments.phase == "publish":
-        consumption = consume_publication_authority(authority, identity, token)
-    elif arguments.phase == "container":
-        consumption = require_authority_state(authority, identity, "container", token)
-    _write_authority_evidence(arguments.evidence_directory, authority, consumption)
+    if authority_declared:
+        revalidated_authority = validate_publication_authority(arguments, revalidated_identity, token)
+        if revalidated_authority != authority:
+            _fail("authority-mismatch", "Publication authority changed during destination probing.")
+        consumption = None
+        if arguments.phase == "publish":
+            consumption = consume_publication_authority(authority, identity, token)
+        elif arguments.phase == "container":
+            consumption = require_authority_state(authority, identity, "container", token)
+        _write_authority_evidence(arguments.evidence_directory, authority, consumption)
     _write_evidence(
         arguments.evidence_directory,
         arguments.phase,
