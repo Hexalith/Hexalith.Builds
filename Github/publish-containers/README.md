@@ -48,16 +48,35 @@ action/helper bytes with the same immutable Builds commit before installing
 them. The caller repository's `references/Hexalith.Builds` submodule pin is not
 treated as executed release-tool identity.
 
-The protected GitHub environment on the reusable release job supplies human
-publication approval. The installed `publication_preflight.py` supplies the
-machine-verifiable contract without a separate comment or expiring record. It
-freezes the exact repository, version, live current-main and successful push-CI
-proof, normalized package IDs and canonical manifest hash, sorted unique
-container repository set, platforms, environment, GitHub run identity,
-approved Builds identity, and helper hashes. It also requires every package
-version and every container tag to be absent. A single repository remains the
-same supported caller contract; multi-container callers repeat
-`--container-repository` when invoking the preflight wrapper.
+The protected GitHub environment on the reusable release job supplies the
+environment approval, and is the only gate an ordinary release requires.
+
+The `require-publication-authority` input adds an opt-in corrective-release gate
+on top of it, for a release that must be individually authorized rather than
+merely approved. It defaults to enabled. A caller that sets it to `false` must
+leave `reserved-version`, `release-authority-issue-url` and
+`release-authority-owner` empty; supplying a value that the disabled posture
+would ignore fails closed, as does a declaration that is neither `true` nor
+`false`. Disabling the gate changes nothing else: source proof, frozen identity,
+version floor, and destination-absence checks all still run.
+
+When the gate is enabled, container publication additionally requires one
+machine-verifiable, expiring, single-use release-owner authority comment on the
+configured repository issue. The comment must use the exact authority schema,
+bind the frozen publication-identity SHA-256, name the `release-owner` role,
+carry a canonical rationale and nonce, and expire no more than 24 hours after
+creation. The publisher verifies the configured GitHub owner and repository
+write role, rejects edited, expired, ambiguous, mismatched, or previously
+consumed authority, and records one exact GitHub Actions consumption receipt
+before the first publication write.
+
+The installed `publication_preflight.py` freezes the exact repository, reserved
+version, live current-main and successful push-CI proof, normalized package IDs
+and canonical manifest hash, sorted unique container repository set, platforms,
+environment, GitHub run identity, approved Builds identity, and helper hashes.
+It also requires every package version and every container tag to be absent. A
+single repository remains the same supported caller contract; multi-container
+callers repeat `--container-repository` when invoking the preflight wrapper.
 
 `verifyRelease` re-proves the source, freezes that identity, and checks every
 destination before tag creation. The pre-NuGet `publish` phase requires exact

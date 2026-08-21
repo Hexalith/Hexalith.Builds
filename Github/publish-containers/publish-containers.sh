@@ -21,6 +21,11 @@ expected_package_count="${HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT:-}"
 reserved_version="${HEXALITH_RELEASE_RESERVED_VERSION:-}"
 authority_issue_url="${HEXALITH_RELEASE_AUTHORITY_ISSUE_URL:-}"
 authority_owner="${HEXALITH_RELEASE_AUTHORITY_OWNER:-}"
+# An unset declaration defaults to the guarded posture, so a direct invocation that
+# never heard of this gate keeps it on. ${VAR-default} rather than ${VAR:-default}:
+# a set-but-empty value is a malformed declaration, not an absent one, and must fail
+# closed loudly instead of being read as either posture.
+require_authority="${HEXALITH_RELEASE_REQUIRE_AUTHORITY-true}"
 evidence_directory="${HEXALITH_CONTAINER_EVIDENCE_DIRECTORY:-$PWD/.hexalith/release-evidence/$version}"
 semver_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
 
@@ -53,13 +58,33 @@ fail() {
 [[ -f "$package_manifest" ]] || fail "Release package manifest is required."
 [[ "$expected_package_count" =~ ^[1-9][0-9]*$ ]] ||
   fail "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT must declare the module's package count as a positive integer."
-[[ "$reserved_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ||
-  fail "HEXALITH_RELEASE_RESERVED_VERSION must be a stable semantic version."
-[[ "$version" == "$reserved_version" ]] ||
-  fail "Semantic Release selected a version different from the authorized reservation."
-[[ -n "$authority_issue_url" ]] || fail "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL is required."
-[[ "$authority_owner" =~ ^github:[A-Za-z0-9][A-Za-z0-9-]{0,38}$ ]] ||
-  fail "HEXALITH_RELEASE_AUTHORITY_OWNER must identify the expected GitHub release owner."
+# The dispatch-reserved version and one-use GitHub authority are an opt-in
+# corrective-release gate, not a precondition of publishing. A caller declares
+# exactly one posture: when the gate is on every input is mandatory, and when it
+# is off every input must be absent so a supplied value can never be silently
+# ignored. Any other declared value fails closed.
+case "$require_authority" in
+  true)
+    [[ "$reserved_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ||
+      fail "HEXALITH_RELEASE_RESERVED_VERSION must be a stable semantic version."
+    [[ "$version" == "$reserved_version" ]] ||
+      fail "Semantic Release selected a version different from the authorized reservation."
+    [[ -n "$authority_issue_url" ]] || fail "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL is required."
+    [[ "$authority_owner" =~ ^github:[A-Za-z0-9][A-Za-z0-9-]{0,38}$ ]] ||
+      fail "HEXALITH_RELEASE_AUTHORITY_OWNER must identify the expected GitHub release owner."
+    ;;
+  false)
+    [[ -z "${reserved_version//[[:space:]]/}" ]] ||
+      fail "HEXALITH_RELEASE_RESERVED_VERSION is set while the publication authority gate is disabled."
+    [[ -z "${authority_issue_url//[[:space:]]/}" ]] ||
+      fail "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL is set while the publication authority gate is disabled."
+    [[ -z "${authority_owner//[[:space:]]/}" ]] ||
+      fail "HEXALITH_RELEASE_AUTHORITY_OWNER is set while the publication authority gate is disabled."
+    ;;
+  *)
+    fail "HEXALITH_RELEASE_REQUIRE_AUTHORITY must be exactly true or false."
+    ;;
+esac
 
 workspace_root="$(realpath -e "$PWD")"
 evidence_directory="$(realpath -m "$evidence_directory")"
@@ -112,8 +137,6 @@ preflight_arguments=(
   --source-ci-workflow "$source_ci_workflow"
   --builds-execution-sha "$builds_execution_sha"
   --environment-name "$release_environment"
-  --authority-issue-url "$authority_issue_url"
-  --authority-owner "$authority_owner"
   --package-manifest "$package_manifest"
   --expected-package-count "$expected_package_count"
   --contract-directory "$(dirname "$0")"
@@ -123,6 +146,12 @@ preflight_arguments=(
 for repository in "${container_repositories[@]}"; do
   preflight_arguments+=(--container-repository "$repository")
 done
+if [[ "$require_authority" = "true" ]]; then
+  preflight_arguments+=(
+    --authority-issue-url "$authority_issue_url"
+    --authority-owner "$authority_owner"
+  )
+fi
 
 # Prove the complete frozen destination set is still absent before the first
 # registry login or container write. One phase record covers the whole set.

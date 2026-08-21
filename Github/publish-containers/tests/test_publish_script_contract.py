@@ -137,6 +137,69 @@ printf '%s\n' "$FAKE_CHECKED_OUT_SHA"
         )
 
 
+def run_publisher_with(overrides, version="3.76.1"):
+    """Run the real publisher against fake tools and return (result, preflight argv, root)."""
+    temporary_directory = tempfile.mkdtemp()
+    root = Path(temporary_directory)
+    fake_bin = root / "bin"
+    fake_bin.mkdir()
+    project = root / "EventStore.csproj"
+    project.write_text("<Project />\n", encoding="utf-8")
+    preflight_arguments = root / "preflight-arguments.txt"
+    package_manifest = write_package_manifest(root)
+
+    write_executable(fake_bin / "docker", "#!/usr/bin/env bash\nset -euo pipefail\ncat >/dev/null\nexit 0\n")
+    write_executable(fake_bin / "dotnet", "#!/usr/bin/env bash\nset -euo pipefail\nexit 0\n")
+    write_executable(root / "validate", "#!/usr/bin/env bash\nset -euo pipefail\nexit 0\n")
+    write_executable(root / "smoke", "#!/usr/bin/env bash\nset -euo pipefail\nexit 0\n")
+    write_executable(
+        root / "preflight",
+        "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$@\" > \"$FAKE_PREFLIGHT_ARGUMENTS\"\n",
+    )
+
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "PATH": f"{fake_bin}:{environment['PATH']}",
+            "HEXALITH_CONTAINER_PROJECTS": f"{project}|eventstore",
+            "HEXALITH_ZOT_USERNAME": "fixture-user",
+            "HEXALITH_ZOT_API_KEY": "fixture-token",
+            "HEXALITH_ZOT_REGISTRY": "registry.example.test",
+            "HEXALITH_OCI_VALIDATOR": str(root / "validate"),
+            "HEXALITH_CONTAINER_SMOKE": str(root / "smoke"),
+            "HEXALITH_PUBLICATION_PREFLIGHT": str(root / "preflight"),
+            "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
+            "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
+            "HEXALITH_RELEASE_ENVIRONMENT": "production",
+            "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
+            "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
+            "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
+            "GITHUB_SHA": "b" * 40,
+            "FAKE_PREFLIGHT_ARGUMENTS": str(preflight_arguments),
+        }
+    )
+    for key, value in overrides.items():
+        if value is None:
+            environment.pop(key, None)
+        else:
+            environment[key] = value
+
+    result = subprocess.run(  # nosec B603  # NOSONAR -- repository-owned publisher script.
+        ["bash", str(PUBLISHER), version],
+        cwd=root,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    argv = (
+        preflight_arguments.read_text(encoding="utf-8").splitlines()
+        if preflight_arguments.exists()
+        else []
+    )
+    return result, argv, root
+
+
 class PublishScriptContractTests(unittest.TestCase):
     def test_action_installs_immutable_registry_validator(self):
         action = ACTION.read_text(encoding="utf-8")
@@ -938,6 +1001,174 @@ exit 1
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn("HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT", result.stderr)
                 self.assertFalse(mutation_marker.exists())
+
+    def test_reserved_version_mismatch_blocks_preflight_login_and_dotnet_publication(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            fake_bin = root / "bin"
+            fake_bin.mkdir()
+            project = root / "EventStore.csproj"
+            project.write_text("<Project />\n", encoding="utf-8")
+            package_manifest = write_package_manifest(root)
+            preflight_marker = root / "preflight-ran"
+            login_marker = root / "docker-ran"
+            dotnet_marker = root / "dotnet-ran"
+            write_executable(
+                fake_bin / "docker",
+                "#!/usr/bin/env bash\nset -euo pipefail\ntouch \"$FAKE_LOGIN_MARKER\"\n",
+            )
+            write_executable(
+                fake_bin / "dotnet",
+                "#!/usr/bin/env bash\nset -euo pipefail\ntouch \"$FAKE_DOTNET_MARKER\"\n",
+            )
+            write_executable(
+                root / "preflight",
+                "#!/usr/bin/env bash\nset -euo pipefail\ntouch \"$FAKE_PREFLIGHT_MARKER\"\n",
+            )
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PATH": f"{fake_bin}:{environment['PATH']}",
+                    "HEXALITH_CONTAINER_PROJECTS": f"{project}|eventstore",
+                    "HEXALITH_ZOT_USERNAME": "fixture-user",
+                    "HEXALITH_ZOT_API_KEY": "fixture-token",
+                    "HEXALITH_ZOT_REGISTRY": "registry.example.test",
+                    "HEXALITH_OCI_VALIDATOR": "/bin/true",
+                    "HEXALITH_CONTAINER_SMOKE": "/bin/true",
+                    "HEXALITH_PUBLICATION_PREFLIGHT": str(root / "preflight"),
+                    "HEXALITH_CONTAINER_EVIDENCE_DIRECTORY": str(root / "evidence"),
+                    "HEXALITH_BUILDS_EXECUTION_SHA": "a" * 40,
+                    "HEXALITH_RELEASE_ENVIRONMENT": "production",
+                    "HEXALITH_RELEASE_RESERVED_VERSION": "3.76.1",
+                    "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL":
+                        "https://api.github.com/repos/Hexalith/Fixture/issues/123",
+                    "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
+                    "HEXALITH_RELEASE_PACKAGE_MANIFEST": str(package_manifest),
+                    "HEXALITH_RELEASE_EXPECTED_PACKAGE_COUNT": str(FIXTURE_PACKAGE_COUNT),
+                    "GITHUB_REPOSITORY": "Hexalith/Hexalith.EventStore",
+                    "GITHUB_SHA": "b" * 40,
+                    "FAKE_PREFLIGHT_MARKER": str(preflight_marker),
+                    "FAKE_LOGIN_MARKER": str(login_marker),
+                    "FAKE_DOTNET_MARKER": str(dotnet_marker),
+                }
+            )
+
+            result = subprocess.run(
+                ["bash", str(PUBLISHER), "3.76.2"],
+                cwd=root,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("different from the authorized reservation", result.stderr)
+            self.assertFalse(preflight_marker.exists())
+            self.assertFalse(login_marker.exists())
+            self.assertFalse(dotnet_marker.exists())
+
+    def test_disabled_authority_gate_publishes_without_reservation_or_authority(self):
+        """The opted-out posture publishes with no reserved version and no authority argument."""
+        result, preflight, _ = run_publisher_with(
+            {
+                "HEXALITH_RELEASE_REQUIRE_AUTHORITY": "false",
+                "HEXALITH_RELEASE_RESERVED_VERSION": None,
+                "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": None,
+                "HEXALITH_RELEASE_AUTHORITY_OWNER": None,
+            }
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertNotIn("--authority-issue-url", preflight)
+        self.assertNotIn("--authority-owner", preflight)
+        # The destination proof itself must still run: opting out of the authority
+        # gate must not opt out of container absence checking.
+        self.assertIn("--phase", preflight)
+        self.assertIn("container", preflight)
+
+    def test_enabled_authority_gate_still_forwards_reservation_and_authority(self):
+        """The guarded posture is unchanged and still reaches the preflight."""
+        result, preflight, _ = run_publisher_with(
+            {
+                "HEXALITH_RELEASE_REQUIRE_AUTHORITY": "true",
+                "HEXALITH_RELEASE_RESERVED_VERSION": "3.76.1",
+                "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/123",
+                "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
+            }
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("--authority-issue-url", preflight)
+        self.assertEqual(
+            "https://api.github.com/repos/Hexalith/Fixture/issues/123",
+            preflight[preflight.index("--authority-issue-url") + 1],
+        )
+        self.assertIn("--authority-owner", preflight)
+        self.assertEqual("github:release-owner", preflight[preflight.index("--authority-owner") + 1])
+
+    def test_unset_authority_declaration_keeps_the_gate_required(self):
+        """Absence of the declaration must not be readable as opting out."""
+        result, preflight, _ = run_publisher_with(
+            {
+                "HEXALITH_RELEASE_REQUIRE_AUTHORITY": None,
+                "HEXALITH_RELEASE_RESERVED_VERSION": None,
+                "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": None,
+                "HEXALITH_RELEASE_AUTHORITY_OWNER": None,
+            }
+        )
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("HEXALITH_RELEASE_RESERVED_VERSION", result.stderr)
+        self.assertEqual([], preflight)
+
+    def test_disabled_authority_gate_rejects_every_silently_ignored_input(self):
+        """A value that the disabled posture would ignore fails closed instead."""
+        ignored = {
+            "HEXALITH_RELEASE_RESERVED_VERSION": "3.76.1",
+            "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": "https://api.github.com/repos/Hexalith/Fixture/issues/123",
+            "HEXALITH_RELEASE_AUTHORITY_OWNER": "github:release-owner",
+        }
+        for name, value in ignored.items():
+            with self.subTest(name=name):
+                overrides = {key: None for key in ignored}
+                overrides["HEXALITH_RELEASE_REQUIRE_AUTHORITY"] = "false"
+                overrides[name] = value
+                result, preflight, _ = run_publisher_with(overrides)
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(name, result.stderr)
+                self.assertIn("authority gate is disabled", result.stderr)
+                self.assertEqual([], preflight)
+
+    def test_authority_declaration_must_be_exactly_true_or_false(self):
+        """Anything other than the two declared postures fails closed."""
+        for declared in ("True", "FALSE", "0", "yes", "", " false"):
+            with self.subTest(declared=declared):
+                result, preflight, _ = run_publisher_with(
+                    {
+                        "HEXALITH_RELEASE_REQUIRE_AUTHORITY": declared,
+                        "HEXALITH_RELEASE_RESERVED_VERSION": None,
+                        "HEXALITH_RELEASE_AUTHORITY_ISSUE_URL": None,
+                        "HEXALITH_RELEASE_AUTHORITY_OWNER": None,
+                    }
+                )
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("must be exactly true or false", result.stderr)
+                self.assertEqual([], preflight)
+
+    def test_reusable_workflow_declares_and_forwards_the_authority_posture(self):
+        """The caller-facing input exists and reaches both release jobs."""
+        workflow = DOMAIN_RELEASE.read_text(encoding="utf-8")
+
+        self.assertIn("      require-publication-authority:", workflow)
+        self.assertEqual(
+            2,
+            workflow.count(
+                "HEXALITH_RELEASE_REQUIRE_AUTHORITY: ${{ inputs.require-publication-authority }}"
+            ),
+        )
 
 
 if __name__ == "__main__":

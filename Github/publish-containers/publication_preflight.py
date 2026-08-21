@@ -852,15 +852,45 @@ def _nuget_version_observation(package_id):
 
 def _registry_version_observation(container_repository, authorization):
     registry, repository_path = container_repository.split("/", 1)
-    document = _read_json_response(
-        f"https://{registry}/v2/{repository_path}/tags/list",
-        {"Accept": "application/json", "Authorization": authorization},
-        "version-floor-unavailable",
-    )
-    versions = document.get("tags") if isinstance(document, dict) else None
-    if not isinstance(versions, list):
-        _fail("version-floor-invalid", "Registry tag response is malformed.")
-    return {"kind": "oci-registry", "identity": container_repository, "versions": versions}
+    repository_url_path = "/v2/" + urllib.parse.quote(repository_path, safe="/") + "/tags/list"
+    url = f"https://{registry}{repository_url_path}?n=100"
+    headers = {"Accept": "application/json", "Authorization": authorization}
+    versions = []
+    visited = set()
+    for _ in range(100):
+        if url in visited:
+            _fail("version-floor-invalid", "Registry tag pagination contains a cycle.")
+        visited.add(url)
+        request = urllib.request.Request(url, headers=headers, method="GET")
+        try:
+            with URL_OPENER.open(request, timeout=30) as response:
+                if response.status != 200:
+                    _fail("version-floor-unavailable", "Registry tag lookup did not return HTTP 200.")
+                document = json.loads(response.read())
+                link = response.headers.get("Link")
+        except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise PreflightError(
+                "version-floor-unavailable",
+                "Registry tag lookup could not be completed.",
+            ) from error
+        tags = document.get("tags") if isinstance(document, dict) else None
+        if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):
+            _fail("version-floor-invalid", "Registry tag response is malformed.")
+        versions.extend(tags)
+        if not link:
+            return {"kind": "oci-registry", "identity": container_repository, "versions": versions}
+        links = [part.strip() for part in link.split(",")]
+        next_links = [part for part in links if re.search(r";\s*rel=\"?next\"?\s*$", part)]
+        if len(next_links) != 1:
+            _fail("version-floor-invalid", "Registry tag pagination link is malformed.")
+        match = re.fullmatch(r"<([^>]+)>;\s*rel=\"?next\"?", next_links[0])
+        if match is None:
+            _fail("version-floor-invalid", "Registry tag pagination link is malformed.")
+        url = urllib.parse.urljoin(url, match.group(1))
+        parsed = urllib.parse.urlsplit(url)
+        if parsed.scheme != "https" or parsed.netloc != registry or parsed.path != repository_url_path:
+            _fail("version-floor-invalid", "Registry tag pagination escaped the selected repository.")
+    _fail("version-floor-unavailable", "Registry tag pagination exceeded the safe limit.")
 
 
 def read_external_version_observations(
@@ -1081,8 +1111,8 @@ def _parse_arguments():
     )
     parser.add_argument("--builds-execution-sha", required=True)
     parser.add_argument("--environment-name", required=True)
-    parser.add_argument("--authority-issue-url", required=True)
-    parser.add_argument("--authority-owner", required=True)
+    parser.add_argument("--authority-issue-url", required=False, default="")
+    parser.add_argument("--authority-owner", required=False, default="")
     parser.add_argument("--package-manifest", required=True, type=workspace_input_file)
     # No default: each module declares its own inventory size, and a default would
     # silently reinstate one module's package count as every other module's gate.
@@ -1125,13 +1155,34 @@ def _validate_destinations(arguments, probe):
     return {"result": "pass", "version_floor": version_floor, "absence": absence}
 
 
+def _authority_is_declared(arguments):
+    """Return whether this run declares the one-use GitHub publication authority gate.
+
+    The gate is opt-in per release caller. Absence of BOTH values means the caller
+    publishes under protected-environment approval alone. A partial declaration is
+    rejected rather than treated as absence, so a dropped or misspelled value can
+    never silently disable an authority gate the caller believed was active.
+    """
+    issue_url = (arguments.authority_issue_url or "").strip()
+    owner = (arguments.authority_owner or "").strip()
+    if not issue_url and not owner:
+        return False
+    if not issue_url:
+        _fail("authority-url-invalid", "Authority owner was supplied without an authority issue URL.")
+    if not owner:
+        _fail("authority-owner-invalid", "Authority issue URL was supplied without an authority owner.")
+    return True
+
+
 def _validate_publication(arguments):
     identity = build_publication_identity(arguments)
     token = os.environ.get("GITHUB_TOKEN", "")
-    authority = validate_publication_authority(arguments, identity, token)
+    authority_declared = _authority_is_declared(arguments)
+    authority = validate_publication_authority(arguments, identity, token) if authority_declared else None
     if arguments.phase != "verify":
         _require_frozen_identity(arguments.evidence_directory, identity)
-    require_authority_state(authority, identity, arguments.phase, token)
+    if authority_declared:
+        require_authority_state(authority, identity, arguments.phase, token)
     probe = destination_probe(
         os.environ.get("HEXALITH_ZOT_USERNAME", ""),
         os.environ.get("HEXALITH_ZOT_API_KEY", ""),
@@ -1140,15 +1191,16 @@ def _validate_publication(arguments):
     revalidated_identity = build_publication_identity(arguments)
     if revalidated_identity != identity:
         _fail("publication-identity-changed", "Publication identity changed during destination probing.")
-    revalidated_authority = validate_publication_authority(arguments, revalidated_identity, token)
-    if revalidated_authority != authority:
-        _fail("authority-mismatch", "Publication authority changed during destination probing.")
-    consumption = None
-    if arguments.phase == "publish":
-        consumption = consume_publication_authority(authority, identity, token)
-    elif arguments.phase == "container":
-        consumption = require_authority_state(authority, identity, "container", token)
-    _write_authority_evidence(arguments.evidence_directory, authority, consumption)
+    if authority_declared:
+        revalidated_authority = validate_publication_authority(arguments, revalidated_identity, token)
+        if revalidated_authority != authority:
+            _fail("authority-mismatch", "Publication authority changed during destination probing.")
+        consumption = None
+        if arguments.phase == "publish":
+            consumption = consume_publication_authority(authority, identity, token)
+        elif arguments.phase == "container":
+            consumption = require_authority_state(authority, identity, "container", token)
+        _write_authority_evidence(arguments.evidence_directory, authority, consumption)
     _write_evidence(
         arguments.evidence_directory,
         arguments.phase,
