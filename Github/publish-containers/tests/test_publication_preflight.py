@@ -341,7 +341,6 @@ class PublicationPreflightTests(unittest.TestCase):
                 "Basic fixture",
             )
         self.assertEqual("version-floor-invalid", context.exception.code)
-
     def test_authority_issue_paginates_and_rejects_ambiguous_or_untrusted_consumption(self):
         pages = [[{"id": index} for index in range(100)], [{"id": 101}]]
         requested = []
