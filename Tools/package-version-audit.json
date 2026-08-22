@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "auditedAtUtc": "2026-08-21T16:46:41.7496308+00:00",
-  "generatedFromRevision": "307a043efac96208494ce8e9651920fe236d6d47",
+  "auditedAtUtc": "2026-08-22T08:21:38.7704382+00:00",
+  "generatedFromRevision": "761dc0187ef60599f12310fef2411dbaf0206742",
   "catalogPath": "Props/Directory.Packages.props",
   "sources": [
     {
@@ -252,11 +252,11 @@
         "Hexalith.EventStore.Testing",
         "Hexalith.EventStore.Testing.Integration"
       ],
-      "rationale": "Advance the aligned EventStore family to 3.96.2 to match the current EventStore source revision.",
-      "compatibilityEvidence": "The selected stable family is covered by Tenants Release restore/build, package governance, and focused test validation.",
-      "removalTrigger": "Roll back the complete EventStore family if a Tenants validation gate rejects 3.96.2.",
+      "rationale": "Advance the aligned EventStore family to the latest listed stable 3.97.0 release; live NuGet V3 metadata confirms all 13 package IDs are listed at that version.",
+      "compatibilityEvidence": "FrontComposer validates its Release Hexalith.EventStore.Aspire package edge, Debug source-mode build, EventStore adapter, and consumer-contract checks; broader provider verification and consumer coverage of the other EventStore packages remain open.",
+      "removalTrigger": "Roll back the aligned family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "representativeConsumers": [
-        "Hexalith.Tenants"
+        "Hexalith.FrontComposer"
       ]
     },
     {
@@ -4268,22 +4268,22 @@
     },
     {
       "id": "Hexalith.EventStore.Admin.Abstractions",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4291,22 +4291,22 @@
     },
     {
       "id": "Hexalith.EventStore.Admin.Server",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4314,22 +4314,22 @@
     },
     {
       "id": "Hexalith.EventStore.Aspire",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4337,22 +4337,22 @@
     },
     {
       "id": "Hexalith.EventStore.Client",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4360,22 +4360,22 @@
     },
     {
       "id": "Hexalith.EventStore.Contracts",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4383,22 +4383,22 @@
     },
     {
       "id": "Hexalith.EventStore.DomainService",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4406,22 +4406,22 @@
     },
     {
       "id": "Hexalith.EventStore.Gateway",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4429,22 +4429,22 @@
     },
     {
       "id": "Hexalith.EventStore.RestApi.Generators",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4452,22 +4452,22 @@
     },
     {
       "id": "Hexalith.EventStore.Server",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4475,22 +4475,22 @@
     },
     {
       "id": "Hexalith.EventStore.ServiceDefaults",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4498,22 +4498,22 @@
     },
     {
       "id": "Hexalith.EventStore.SignalR",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4521,22 +4521,22 @@
     },
     {
       "id": "Hexalith.EventStore.Testing",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -4544,22 +4544,22 @@
     },
     {
       "id": "Hexalith.EventStore.Testing.Integration",
-      "auditedVersion": "3.95.0",
-      "selectedVersion": "3.96.2",
-      "latestStable": "3.96.2",
+      "auditedVersion": "3.97.0",
+      "selectedVersion": "3.97.0",
+      "latestStable": "3.97.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "accepted",
       "rollbackGroup": "hexalith-eventstore",
-      "rationale": "Advance the aligned EventStore family to the latest listed stable release and remove the Debug-source/Release-package version mismatch.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.96.2, prerelease=",
-      "removalTrigger": "Roll back the EventStore family together if Tenants restore, build, package governance, or focused tests reject the selected release.",
+      "rationale": "Select the aligned listed stable 3.97.0 release; live NuGet V3 metadata confirms this package ID is listed at that version.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.97.0, prerelease=",
+      "removalTrigger": "Roll back the aligned EventStore family together if repository-specific compatibility or provider validation rejects 3.97.0.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.96.2",
+          "latestStable": "3.97.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
