@@ -2,7 +2,12 @@
 param(
     [string] $AuditPath = '',
     [string] $CatalogPath = '',
-    [Parameter(DontShow = $true)][string] $EvaluatorScriptPath = ''
+    [Parameter(DontShow = $true)][string] $EvaluatorScriptPath = '',
+    # Root scanned for tracked *.csproj/*.props/*.targets files during independent
+    # PackageReference rediscovery (see Get-TrackedProjectFiles). Defaults to the
+    # repository root. Overridable so tests can point rediscovery at an isolated
+    # fixture tree without touching the real repository.
+    [string] $ConsumerScanRoot = ''
 )
 
 Set-StrictMode -Version Latest
@@ -126,6 +131,63 @@ function ConvertTo-NuGetVersion {
     }
 }
 
+function Get-Sha256Text {
+    param([Parameter(Mandatory = $true)][AllowEmptyString()][string] $Value)
+
+    $bytes = [Text.Encoding]::UTF8.GetBytes($Value)
+    return [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+}
+
+function Get-Sha256File {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
+    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+
+function Get-IdentitySignature {
+    param([AllowEmptyCollection()][object[]] $Values)
+
+    return [string]::Join('|', @($Values | ForEach-Object { [string] $_ } | Sort-Object -CaseSensitive))
+}
+
+function Get-SourceScopeFingerprint {
+    param([AllowEmptyCollection()][object[]] $Sources)
+
+    $material = @($Sources | Where-Object { $null -ne $_ } | ForEach-Object {
+            "$(Get-PropertyValue -Object $_ -Name 'uri')|" +
+            "$(Get-PropertyValue -Object $_ -Name 'resolution')|" +
+            "$(Get-PropertyValue -Object $_ -Name 'diagnostic')"
+        } | Sort-Object -CaseSensitive)
+    return Get-Sha256Text -Value ([string]::Join("`n", $material))
+}
+
+function Get-ConsumerRelationFingerprint {
+    param([AllowEmptyCollection()][object[]] $Entries)
+
+    $material = @($Entries | Where-Object { $null -ne $_ } | ForEach-Object {
+            "$(Get-PropertyValue -Object $_ -Name 'family')|" +
+            "$(Get-PropertyValue -Object $_ -Name 'consumer')|" +
+            "$(Get-PropertyValue -Object $_ -Name 'packageId')|" +
+            "$(Get-PropertyValue -Object $_ -Name 'declarationPath')|" +
+            "$(Get-PropertyValue -Object $_ -Name 'declarationSha256')"
+        } | Sort-Object -CaseSensitive)
+    return Get-Sha256Text -Value ([string]::Join("`n", $material))
+}
+
+function Get-PackageMetadataFingerprint {
+    param([AllowEmptyCollection()][object[]] $PackageRows)
+
+    $material = foreach ($package in @($PackageRows | Sort-Object id)) {
+        $sourceMaterial = [string]::Join(',', @($package.sourceResults | Sort-Object source | ForEach-Object {
+                    "$($_.source)=$($_.listingState):$($_.latestStable):$($_.latestPrerelease)"
+                }))
+        "$($package.id)|$($package.auditedVersion)|$($package.selectedVersion)|$($package.latestStable)|" +
+            "$($package.latestPrerelease)|$($package.listingState)|$sourceMaterial"
+    }
+
+    return Get-Sha256Text -Value ([string]::Join("`n", @($material)))
+}
+
 function Compare-NuGetVersion {
     param(
         [Parameter(Mandatory = $true)][string] $Left,
@@ -193,6 +255,536 @@ function Select-LatestVersion {
     }
 
     return $latest
+}
+
+function Get-TrackedProjectFiles {
+    # Independently rediscovers every *.csproj/*.props/*.targets file the repository
+    # actually tracks, using Git as the source of truth (falling back to a filesystem
+    # walk only when Git is unavailable). This must not reuse the audit's own notion
+    # of "the catalog" or any generator/validator caching: it is the independent
+    # rediscovery leg of the audit-vs-rediscovery set-equality proof.
+    param([Parameter(Mandatory = $true)][string] $Root)
+
+    if ($null -ne (Get-Command git -ErrorAction SilentlyContinue)) {
+        $tracked = @(& git -C $Root ls-files -- '*.csproj' '*.props' '*.targets' 2>$null)
+        if ($LASTEXITCODE -eq 0) {
+            return @(
+                $tracked |
+                    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+                    ForEach-Object { Join-Path $Root $_ }
+            )
+        }
+    }
+
+    return @(
+        Get-ChildItem -LiteralPath $Root -Recurse -File |
+            Where-Object {
+                $_.Extension -in @('.csproj', '.props', '.targets') -and
+                $_.FullName -notmatch '[\\/](?:bin|obj|\.git)[\\/]'
+            } |
+            Select-Object -ExpandProperty FullName
+    )
+}
+
+function Get-PackageReferenceConsumers {
+    # Rediscovers the distinct set of package identities every tracked project file
+    # actually consumes through <PackageReference>/<GlobalPackageReference Include="...">,
+    # independently of MSBuild evaluation and independently of the audit itself. Returns
+    # an ordered map of identity -> repository-relative consumer file paths, so a missing
+    # audit row can be reported against every file that references it.
+    param(
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][string[]] $ProjectFiles,
+        [Parameter(Mandatory = $true)][string] $RepositoryRoot,
+        [Parameter(Mandatory = $true)][string] $ExcludePath
+    )
+
+    $consumers = [ordered] @{}
+    foreach ($projectFile in $ProjectFiles) {
+        $resolvedProjectFile = [IO.Path]::GetFullPath($projectFile)
+        if ([StringComparer]::OrdinalIgnoreCase.Equals($resolvedProjectFile, $ExcludePath)) {
+            # The central catalog declares PackageVersion rows, not PackageReference
+            # consumption; excluding it keeps rediscovery scoped to actual consumers.
+            continue
+        }
+
+        if (-not (Test-Path -LiteralPath $resolvedProjectFile -PathType Leaf)) {
+            continue
+        }
+
+        try {
+            [xml] $xml = Get-Content -LiteralPath $resolvedProjectFile -Raw -ErrorAction Stop
+        }
+        catch {
+            continue
+        }
+
+        $relativePath = [IO.Path]::GetRelativePath($RepositoryRoot, $resolvedProjectFile).Replace('\', '/')
+        foreach ($itemName in @('PackageReference', 'GlobalPackageReference')) {
+            foreach ($item in @($xml.SelectNodes("//*[local-name()='$itemName']"))) {
+                $include = [string] $item.GetAttribute('Include')
+                if ([string]::IsNullOrWhiteSpace($include)) {
+                    continue
+                }
+
+                if (-not $consumers.Contains($include)) {
+                    $consumers[$include] = [System.Collections.Generic.List[string]]::new()
+                }
+
+                if (-not $consumers[$include].Contains($relativePath)) {
+                    $consumers[$include].Add($relativePath)
+                }
+            }
+        }
+    }
+
+    return $consumers
+}
+
+function ConvertTo-OrderedSourceResultRecord {
+    # Projects one per-source package result row (used both at package top level
+    # and, identically shaped, inside a package's historicalContext entries).
+    param([Parameter(Mandatory = $true)] $SourceResult)
+
+    return [ordered] @{
+        source = [string] $SourceResult.source
+        listingState = [string] $SourceResult.listingState
+        latestStable = if ($null -eq $SourceResult.latestStable) { $null } else { [string] $SourceResult.latestStable }
+        latestPrerelease = if ($null -eq $SourceResult.latestPrerelease) { $null } else { [string] $SourceResult.latestPrerelease }
+        diagnostic = [string] $SourceResult.diagnostic
+    }
+}
+
+function ConvertTo-OrderedPreservationRecord {
+    # Projects a preservation-provenance object. Used both at family top level and,
+    # identically shaped but with some fields legitimately absent on older
+    # generations, inside a family's historicalContext entries -- so every field is
+    # read defensively via Get-PropertyValue rather than direct property access.
+    param($Preservation)
+
+    if ($null -eq $Preservation) {
+        return $null
+    }
+
+    $record = [ordered] @{}
+    foreach ($field in @(
+            'status', 'reason', 'catalogPath', 'catalogSha256', 'sourceScopeSha256',
+            'packageMetadataSha256', 'consumerEvidenceSha256'
+        )) {
+        # Historical legacy-unbound records legitimately predate the hash fields.
+        # Preserve property absence exactly rather than silently manufacturing empty
+        # strings during the supposedly lossless typed round trip.
+        if ($Preservation.PSObject.Properties.Name -contains $field) {
+            $record[$field] = [string] (Get-PropertyValue -Object $Preservation -Name $field)
+        }
+    }
+
+    return $record
+}
+
+function ConvertTo-OrderedHistoricalPackageRecord {
+    # Projects one hexalith.package-audit-package-history.v1 entry retained on a
+    # package row: a frozen snapshot of a prior audit's package-shaped fields plus
+    # its own schema/label/provenance envelope and collection-valued sourceResults.
+    param([Parameter(Mandatory = $true)] $Entry)
+
+    return [ordered] @{
+        schema = [string] (Get-PropertyValue -Object $Entry -Name 'schema')
+        label = [string] (Get-PropertyValue -Object $Entry -Name 'label')
+        auditedAtUtc = [string] (Get-PropertyValue -Object $Entry -Name 'auditedAtUtc')
+        generatedFromRevision = [string] (Get-PropertyValue -Object $Entry -Name 'generatedFromRevision')
+        id = [string] (Get-PropertyValue -Object $Entry -Name 'id')
+        auditedVersion = [string] (Get-PropertyValue -Object $Entry -Name 'auditedVersion')
+        selectedVersion = [string] (Get-PropertyValue -Object $Entry -Name 'selectedVersion')
+        latestStable = $(if ($null -eq (Get-PropertyValue -Object $Entry -Name 'latestStable')) { $null } else { [string] (Get-PropertyValue -Object $Entry -Name 'latestStable') })
+        latestPrerelease = $(if ($null -eq (Get-PropertyValue -Object $Entry -Name 'latestPrerelease')) { $null } else { [string] (Get-PropertyValue -Object $Entry -Name 'latestPrerelease') })
+        listingState = [string] (Get-PropertyValue -Object $Entry -Name 'listingState')
+        family = [string] (Get-PropertyValue -Object $Entry -Name 'family')
+        disposition = [string] (Get-PropertyValue -Object $Entry -Name 'disposition')
+        rollbackGroup = [string] (Get-PropertyValue -Object $Entry -Name 'rollbackGroup')
+        rationale = [string] (Get-PropertyValue -Object $Entry -Name 'rationale')
+        evidence = [string] (Get-PropertyValue -Object $Entry -Name 'evidence')
+        removalTrigger = [string] (Get-PropertyValue -Object $Entry -Name 'removalTrigger')
+        sourceResults = @(
+            foreach ($sourceResult in @((Get-PropertyValue -Object $Entry -Name 'sourceResults') | Where-Object { $null -ne $_ })) {
+                ConvertTo-OrderedSourceResultRecord -SourceResult $sourceResult
+            }
+        )
+        supersededBecause = [string] (Get-PropertyValue -Object $Entry -Name 'supersededBecause')
+    }
+}
+
+function ConvertTo-OrderedHistoricalFamilyRecord {
+    # Projects one hexalith.package-audit-family-history.v1 entry retained on a
+    # family decision: a frozen snapshot of a prior audit's family-shaped fields
+    # plus its own schema/label/provenance envelope, nested preservation, and
+    # collection-valued packageIds/representativeConsumers.
+    param([Parameter(Mandatory = $true)] $Entry)
+
+    return [ordered] @{
+        schema = [string] (Get-PropertyValue -Object $Entry -Name 'schema')
+        label = [string] (Get-PropertyValue -Object $Entry -Name 'label')
+        auditedAtUtc = [string] (Get-PropertyValue -Object $Entry -Name 'auditedAtUtc')
+        generatedFromRevision = [string] (Get-PropertyValue -Object $Entry -Name 'generatedFromRevision')
+        family = [string] (Get-PropertyValue -Object $Entry -Name 'family')
+        disposition = [string] (Get-PropertyValue -Object $Entry -Name 'disposition')
+        rollbackGroup = [string] (Get-PropertyValue -Object $Entry -Name 'rollbackGroup')
+        packageIds = @(@(Get-PropertyValue -Object $Entry -Name 'packageIds') | ForEach-Object { [string] $_ })
+        rationale = [string] (Get-PropertyValue -Object $Entry -Name 'rationale')
+        compatibilityEvidence = [string] (Get-PropertyValue -Object $Entry -Name 'compatibilityEvidence')
+        removalTrigger = [string] (Get-PropertyValue -Object $Entry -Name 'removalTrigger')
+        representativeConsumers = @(@(Get-PropertyValue -Object $Entry -Name 'representativeConsumers') | ForEach-Object { [string] $_ })
+        preservation = ConvertTo-OrderedPreservationRecord -Preservation (Get-PropertyValue -Object $Entry -Name 'preservation')
+        supersededBecause = [string] (Get-PropertyValue -Object $Entry -Name 'supersededBecause')
+    }
+}
+
+function ConvertTo-OrderedPackageRecord {
+    # Projects a parsed audit package row onto the complete typed field set the
+    # validator understands. Used both to prove a full read/write round trip and to
+    # detect owner-authored fields the typed model does not yet cover (see
+    # Get-UnknownFieldNames), so drift cannot hide behind a structural/shape check.
+    param([Parameter(Mandatory = $true)] $Package)
+
+    return [ordered] @{
+        id = [string] $Package.id
+        auditedVersion = [string] $Package.auditedVersion
+        selectedVersion = [string] $Package.selectedVersion
+        latestStable = if ($null -eq $Package.latestStable) { $null } else { [string] $Package.latestStable }
+        latestPrerelease = if ($null -eq $Package.latestPrerelease) { $null } else { [string] $Package.latestPrerelease }
+        listingState = [string] $Package.listingState
+        family = [string] $Package.family
+        disposition = [string] $Package.disposition
+        rollbackGroup = [string] $Package.rollbackGroup
+        rationale = [string] $Package.rationale
+        evidence = [string] $Package.evidence
+        removalTrigger = [string] $Package.removalTrigger
+        sourceResults = @(
+            foreach ($sourceResult in @(Get-PropertyValue -Object $Package -Name 'sourceResults')) {
+                ConvertTo-OrderedSourceResultRecord -SourceResult $sourceResult
+            }
+        )
+        historicalContext = @(
+            foreach ($historicalEntry in @((Get-PropertyValue -Object $Package -Name 'historicalContext') | Where-Object { $null -ne $_ })) {
+                ConvertTo-OrderedHistoricalPackageRecord -Entry $historicalEntry
+            }
+        )
+    }
+}
+
+function ConvertTo-OrderedFamilyRecord {
+    # Projects a parsed audit family decision onto the complete typed field set,
+    # mirroring ConvertTo-OrderedPackageRecord for the family-level owner fields,
+    # including its collection-valued provenance fields.
+    param([Parameter(Mandatory = $true)] $Decision)
+
+    return [ordered] @{
+        family = [string] $Decision.family
+        disposition = [string] $Decision.disposition
+        rollbackGroup = [string] $Decision.rollbackGroup
+        packageIds = @(@(Get-PropertyValue -Object $Decision -Name 'packageIds') | ForEach-Object { [string] $_ })
+        rationale = [string] $Decision.rationale
+        compatibilityEvidence = [string] $Decision.compatibilityEvidence
+        removalTrigger = [string] $Decision.removalTrigger
+        representativeConsumers = @(@(Get-PropertyValue -Object $Decision -Name 'representativeConsumers') | ForEach-Object { [string] $_ })
+        preservation = ConvertTo-OrderedPreservationRecord -Preservation (Get-PropertyValue -Object $Decision -Name 'preservation')
+        historicalContext = @(
+            foreach ($historicalEntry in @((Get-PropertyValue -Object $Decision -Name 'historicalContext') | Where-Object { $null -ne $_ })) {
+                ConvertTo-OrderedHistoricalFamilyRecord -Entry $historicalEntry
+            }
+        )
+    }
+}
+
+function Get-UnknownFieldNames {
+    # Reports any JSON property present on $Object that the typed model in
+    # $KnownFields does not project. An owner field the schema does not yet know
+    # about would otherwise be silently dropped by a "round trip" that only
+    # re-serializes the fields it already recognizes; this makes that omission
+    # loud instead of silent.
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string[]] $KnownFields
+    )
+
+    return @(
+        $Object.PSObject.Properties.Name |
+            Where-Object { $_ -notin $KnownFields -and -not $_.StartsWith('_validated', [System.StringComparison]::Ordinal) }
+    )
+}
+
+function Assert-JsonStringFields {
+    # PowerShell casts numbers and booleans to strings very readily. A typed audit
+    # round trip must reject that coercion rather than serialize a different JSON
+    # type on the next write.
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string[]] $Fields,
+        [AllowEmptyCollection()][string[]] $NullableFields = @(),
+        [Parameter(Mandatory = $true)][string] $Description,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[string]] $Failures
+    )
+
+    foreach ($field in $Fields) {
+        $property = $Object.PSObject.Properties[$field]
+        if ($null -eq $property) {
+            $Failures.Add("$Description is missing typed string field '$field'.")
+            continue
+        }
+
+        if ($null -eq $property.Value -and $field -in $NullableFields) {
+            continue
+        }
+        if ($property.Value -isnot [string]) {
+            $Failures.Add("$Description field '$field' must be a JSON string$(if ($field -in $NullableFields) { ' or null' } else { '' }); actual type is '$($property.Value?.GetType().Name)'.")
+        }
+    }
+}
+
+function Assert-JsonStringArrayField {
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string] $Field,
+        [Parameter(Mandatory = $true)][string] $Description,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[string]] $Failures
+    )
+
+    $property = $Object.PSObject.Properties[$Field]
+    if ($null -eq $property -or $property.Value -isnot [array]) {
+        $Failures.Add("$Description field '$Field' must be a JSON array.")
+        return
+    }
+
+    for ($index = 0; $index -lt $property.Value.Count; $index++) {
+        if ($property.Value[$index] -isnot [string]) {
+            $Failures.Add("$Description field '$Field' element $index must be a JSON string.")
+        }
+    }
+}
+
+function Assert-JsonObjectArrayField {
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string] $Field,
+        [Parameter(Mandatory = $true)][string] $Description,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[string]] $Failures
+    )
+
+    $property = $Object.PSObject.Properties[$Field]
+    if ($null -eq $property -or $property.Value -isnot [array]) {
+        $Failures.Add("$Description field '$Field' must be a JSON array.")
+        return
+    }
+
+    for ($index = 0; $index -lt $property.Value.Count; $index++) {
+        $item = $property.Value[$index]
+        if ($null -eq $item -or $item -is [string] -or $item.GetType().IsPrimitive) {
+            $Failures.Add("$Description field '$Field' element $index must be a JSON object.")
+        }
+    }
+}
+
+function Add-UnknownFieldFailures {
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string[]] $KnownFields,
+        [Parameter(Mandatory = $true)][string] $Description,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[string]] $Failures
+    )
+
+    foreach ($unknownField in @(Get-UnknownFieldNames -Object $Object -KnownFields $KnownFields)) {
+        $Failures.Add("$Description declares field '$unknownField' that the typed round-trip model does not cover; it would be silently dropped.")
+    }
+}
+
+function Assert-PackageRoundTrip {
+    # Proves a package record survives a full typed read -> JSON write -> JSON read
+    # cycle byte-for-byte, including every collection-valued field's exact element
+    # count. A structural/shape check (are the required fields present?) cannot
+    # catch a serializer that silently truncates nested depth or collapses a
+    # single-element array to a scalar; this does.
+    param(
+        [Parameter(Mandatory = $true)] $Package,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[string]] $Failures
+    )
+
+    $id = [string] (Get-PropertyValue -Object $Package -Name 'id')
+    Add-UnknownFieldFailures -Object $Package -KnownFields @(
+            'id', 'auditedVersion', 'selectedVersion', 'latestStable', 'latestPrerelease',
+            'listingState', 'family', 'disposition', 'rollbackGroup', 'rationale',
+            'evidence', 'removalTrigger', 'sourceResults', 'historicalContext'
+        ) -Description "Package '$id'" -Failures $Failures
+    Assert-JsonStringFields -Object $Package -Fields @(
+        'id', 'auditedVersion', 'selectedVersion', 'latestStable', 'latestPrerelease',
+        'listingState', 'family', 'disposition', 'rollbackGroup', 'rationale', 'evidence', 'removalTrigger'
+    ) -NullableFields @('latestStable', 'latestPrerelease') -Description "Package '$id'" -Failures $Failures
+    Assert-JsonObjectArrayField -Object $Package -Field 'sourceResults' -Description "Package '$id'" -Failures $Failures
+    Assert-JsonObjectArrayField -Object $Package -Field 'historicalContext' -Description "Package '$id'" -Failures $Failures
+
+    foreach ($sourceResult in @((Get-PropertyValue -Object $Package -Name 'sourceResults') | Where-Object { $null -ne $_ })) {
+        Add-UnknownFieldFailures -Object $sourceResult -KnownFields @(
+                'source', 'listingState', 'latestStable', 'latestPrerelease', 'diagnostic'
+            ) -Description "Package '$id' source result" -Failures $Failures
+        Assert-JsonStringFields -Object $sourceResult -Fields @(
+            'source', 'listingState', 'latestStable', 'latestPrerelease', 'diagnostic'
+        ) -NullableFields @('latestStable', 'latestPrerelease') -Description "Package '$id' source result" -Failures $Failures
+    }
+
+    foreach ($history in @((Get-PropertyValue -Object $Package -Name 'historicalContext') | Where-Object { $null -ne $_ })) {
+        Add-UnknownFieldFailures -Object $history -KnownFields @(
+            'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'id', 'auditedVersion',
+            'selectedVersion', 'latestStable', 'latestPrerelease', 'listingState', 'family',
+            'disposition', 'rollbackGroup', 'rationale', 'evidence', 'removalTrigger',
+            'sourceResults', 'supersededBecause'
+        ) -Description "Package '$id' historical context" -Failures $Failures
+        Assert-JsonStringFields -Object $history -Fields @(
+            'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'id', 'auditedVersion',
+            'selectedVersion', 'latestStable', 'latestPrerelease', 'listingState', 'family',
+            'disposition', 'rollbackGroup', 'rationale', 'evidence', 'removalTrigger', 'supersededBecause'
+        ) -NullableFields @('latestStable', 'latestPrerelease') -Description "Package '$id' historical context" -Failures $Failures
+        Assert-JsonObjectArrayField -Object $history -Field 'sourceResults' -Description "Package '$id' historical context" -Failures $Failures
+        foreach ($historicalSource in @((Get-PropertyValue -Object $history -Name 'sourceResults') | Where-Object { $null -ne $_ })) {
+            Add-UnknownFieldFailures -Object $historicalSource -KnownFields @(
+                'source', 'listingState', 'latestStable', 'latestPrerelease', 'diagnostic'
+            ) -Description "Package '$id' historical source result" -Failures $Failures
+            Assert-JsonStringFields -Object $historicalSource -Fields @(
+                'source', 'listingState', 'latestStable', 'latestPrerelease', 'diagnostic'
+            ) -NullableFields @('latestStable', 'latestPrerelease') `
+                -Description "Package '$id' historical source result" -Failures $Failures
+        }
+    }
+
+    $originalSourceCount = @(Get-PropertyValue -Object $Package -Name 'sourceResults').Count
+    $originalHistoryCount = @((Get-PropertyValue -Object $Package -Name 'historicalContext') | Where-Object { $null -ne $_ }).Count
+    $canonical = ConvertTo-OrderedPackageRecord -Package $Package
+    if (@($canonical.sourceResults).Count -ne $originalSourceCount) {
+        $Failures.Add("Package '$id' sourceResults changed cardinality from $originalSourceCount to $(@($canonical.sourceResults).Count) while building the typed record.")
+    }
+    if (@($canonical.historicalContext).Count -ne $originalHistoryCount) {
+        $Failures.Add("Package '$id' historicalContext changed cardinality from $originalHistoryCount to $(@($canonical.historicalContext).Count) while building the typed record.")
+    }
+
+    $firstPassJson = $canonical | ConvertTo-Json -Depth 12
+    try {
+        $reread = $firstPassJson | ConvertFrom-Json -DateKind String -ErrorAction Stop
+    }
+    catch {
+        $Failures.Add("Package '$id' typed record did not survive re-parsing after serialization. $($_.Exception.GetBaseException().Message)")
+        return
+    }
+
+    $secondPassJson = (ConvertTo-OrderedPackageRecord -Package $reread) | ConvertTo-Json -Depth 12
+    if ($firstPassJson -cne $secondPassJson) {
+        $Failures.Add("Package '$id' typed record did not round-trip identically through a second JSON write/read cycle.")
+    }
+
+    if (@($reread.sourceResults).Count -ne $originalSourceCount) {
+        $Failures.Add("Package '$id' sourceResults changed cardinality from $originalSourceCount to $(@($reread.sourceResults).Count) across a JSON round trip.")
+    }
+    if (@($reread.historicalContext).Count -ne $originalHistoryCount) {
+        $Failures.Add("Package '$id' historicalContext changed cardinality from $originalHistoryCount to $(@($reread.historicalContext).Count) across a JSON round trip.")
+    }
+}
+
+function Assert-FamilyRoundTrip {
+    # Family-level counterpart to Assert-PackageRoundTrip: proves packageIds and
+    # representativeConsumers -- the family's collection-valued provenance -- and
+    # every scalar owner field survive a full read/write cycle unchanged.
+    param(
+        [Parameter(Mandatory = $true)] $Decision,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[string]] $Failures
+    )
+
+    $family = [string] (Get-PropertyValue -Object $Decision -Name 'family')
+    Add-UnknownFieldFailures -Object $Decision -KnownFields @(
+            'family', 'disposition', 'rollbackGroup', 'packageIds', 'rationale',
+            'compatibilityEvidence', 'removalTrigger', 'representativeConsumers',
+            'preservation', 'historicalContext'
+        ) -Description "Family '$family'" -Failures $Failures
+    Assert-JsonStringFields -Object $Decision -Fields @(
+        'family', 'disposition', 'rollbackGroup', 'rationale', 'compatibilityEvidence', 'removalTrigger'
+    ) -Description "Family '$family'" -Failures $Failures
+    Assert-JsonStringArrayField -Object $Decision -Field 'packageIds' -Description "Family '$family'" -Failures $Failures
+    Assert-JsonStringArrayField -Object $Decision -Field 'representativeConsumers' -Description "Family '$family'" -Failures $Failures
+    Assert-JsonObjectArrayField -Object $Decision -Field 'historicalContext' -Description "Family '$family'" -Failures $Failures
+
+    $preservation = Get-PropertyValue -Object $Decision -Name 'preservation'
+    if ($null -ne $preservation) {
+        Add-UnknownFieldFailures -Object $preservation -KnownFields @(
+            'status', 'reason', 'catalogPath', 'catalogSha256', 'sourceScopeSha256',
+            'packageMetadataSha256', 'consumerEvidenceSha256'
+        ) -Description "Family '$family' preservation" -Failures $Failures
+        Assert-JsonStringFields -Object $preservation -Fields @(
+            'status', 'reason', 'catalogPath', 'catalogSha256', 'sourceScopeSha256',
+            'packageMetadataSha256', 'consumerEvidenceSha256'
+        ) -Description "Family '$family' preservation" -Failures $Failures
+    }
+
+    foreach ($history in @((Get-PropertyValue -Object $Decision -Name 'historicalContext') | Where-Object { $null -ne $_ })) {
+        Add-UnknownFieldFailures -Object $history -KnownFields @(
+            'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'family', 'disposition',
+            'rollbackGroup', 'packageIds', 'rationale', 'compatibilityEvidence', 'removalTrigger',
+            'representativeConsumers', 'preservation', 'supersededBecause'
+        ) -Description "Family '$family' historical context" -Failures $Failures
+        Assert-JsonStringFields -Object $history -Fields @(
+            'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'family', 'disposition',
+            'rollbackGroup', 'rationale', 'compatibilityEvidence', 'removalTrigger', 'supersededBecause'
+        ) -Description "Family '$family' historical context" -Failures $Failures
+        Assert-JsonStringArrayField -Object $history -Field 'packageIds' `
+            -Description "Family '$family' historical context" -Failures $Failures
+        Assert-JsonStringArrayField -Object $history -Field 'representativeConsumers' `
+            -Description "Family '$family' historical context" -Failures $Failures
+
+        $historicalPreservation = Get-PropertyValue -Object $history -Name 'preservation'
+        if ($null -ne $historicalPreservation) {
+            Add-UnknownFieldFailures -Object $historicalPreservation -KnownFields @(
+                'status', 'reason', 'catalogPath', 'catalogSha256', 'sourceScopeSha256',
+                'packageMetadataSha256', 'consumerEvidenceSha256'
+            ) -Description "Family '$family' historical preservation" -Failures $Failures
+            Assert-JsonStringFields -Object $historicalPreservation `
+                -Fields @($historicalPreservation.PSObject.Properties.Name) `
+                -Description "Family '$family' historical preservation" -Failures $Failures
+        }
+    }
+
+    $originalPackageIdCount = @(Get-PropertyValue -Object $Decision -Name 'packageIds').Count
+    $originalConsumerCount = @(Get-PropertyValue -Object $Decision -Name 'representativeConsumers').Count
+    $originalHistoryCount = @((Get-PropertyValue -Object $Decision -Name 'historicalContext') | Where-Object { $null -ne $_ }).Count
+    $canonical = ConvertTo-OrderedFamilyRecord -Decision $Decision
+    if (@($canonical.packageIds).Count -ne $originalPackageIdCount) {
+        $Failures.Add("Family '$family' packageIds changed cardinality from $originalPackageIdCount to $(@($canonical.packageIds).Count) while building the typed record.")
+    }
+    if (@($canonical.representativeConsumers).Count -ne $originalConsumerCount) {
+        $Failures.Add("Family '$family' representativeConsumers changed cardinality from $originalConsumerCount to $(@($canonical.representativeConsumers).Count) while building the typed record.")
+    }
+    if (@($canonical.historicalContext).Count -ne $originalHistoryCount) {
+        $Failures.Add("Family '$family' historicalContext changed cardinality from $originalHistoryCount to $(@($canonical.historicalContext).Count) while building the typed record.")
+    }
+
+    $firstPassJson = $canonical | ConvertTo-Json -Depth 12
+    try {
+        $reread = $firstPassJson | ConvertFrom-Json -DateKind String -ErrorAction Stop
+    }
+    catch {
+        $Failures.Add("Family '$family' typed record did not survive re-parsing after serialization. $($_.Exception.GetBaseException().Message)")
+        return
+    }
+
+    $secondPassJson = (ConvertTo-OrderedFamilyRecord -Decision $reread) | ConvertTo-Json -Depth 12
+    if ($firstPassJson -cne $secondPassJson) {
+        $Failures.Add("Family '$family' typed record did not round-trip identically through a second JSON write/read cycle.")
+    }
+
+    if (@($reread.packageIds).Count -ne $originalPackageIdCount) {
+        $Failures.Add("Family '$family' packageIds changed cardinality from $originalPackageIdCount to $(@($reread.packageIds).Count) across a JSON round trip.")
+    }
+
+    if (@($reread.representativeConsumers).Count -ne $originalConsumerCount) {
+        $Failures.Add("Family '$family' representativeConsumers changed cardinality from $originalConsumerCount to $(@($reread.representativeConsumers).Count) across a JSON round trip.")
+    }
+
+    if (@($reread.historicalContext).Count -ne $originalHistoryCount) {
+        $Failures.Add("Family '$family' historicalContext changed cardinality from $originalHistoryCount to $(@($reread.historicalContext).Count) across a JSON round trip.")
+    }
 }
 
 function Invoke-CatalogEvaluation {
@@ -274,6 +866,11 @@ $expectedCatalogPath = [IO.Path]::GetRelativePath($repositoryRoot, $resolvedCata
 if ($catalogPathValue -cne $expectedCatalogPath) {
     $failures.Add("Audit catalogPath '$catalogPathValue' does not match evaluated catalog '$expectedCatalogPath'.")
 }
+$catalogSha256 = Get-RequiredText -Object $audit -Name 'catalogSha256' -Description 'Audit' -Failures $failures
+$actualCatalogSha256 = Get-Sha256File -Path $resolvedCatalogPath
+if ($catalogSha256 -cne $actualCatalogSha256) {
+    $failures.Add('Audit catalogSha256 does not match the evaluated catalog declaration bytes.')
+}
 
 $sources = @((Get-PropertyValue -Object $audit -Name 'sources'))
 if ($sources.Count -eq 0 -or $null -eq $sources[0]) {
@@ -298,6 +895,7 @@ foreach ($source in $sources) {
         $sourceResolutions[$uri] = $resolution
     }
 }
+$sourceScopeSha256 = Get-SourceScopeFingerprint -Sources $sources
 
 $catalogVersions = @{}
 foreach ($item in @($evaluation.Items.PackageVersion)) {
@@ -553,14 +1151,252 @@ foreach ($package in $packages) {
         $failures.Add("Package '$id' changed without a separately validated Tenants release-owner contract.")
     }
 
+    foreach ($historicalEntry in @((Get-PropertyValue -Object $package -Name 'historicalContext') | Where-Object { $null -ne $_ })) {
+        $historicalSchema = [string](Get-PropertyValue -Object $historicalEntry -Name 'schema')
+        if ([string]::IsNullOrWhiteSpace($historicalSchema)) {
+            $failures.Add("Package '$id' has historical context without a typed schema.")
+            continue
+        }
+        if ($historicalSchema -cne 'hexalith.package-audit-package-history.v1') {
+            $failures.Add("Package '$id' has unsupported historical context schema '$historicalSchema'.")
+            continue
+        }
+        foreach ($field in @(
+                'label', 'auditedAtUtc', 'generatedFromRevision', 'id', 'auditedVersion', 'selectedVersion',
+                'listingState', 'family', 'disposition', 'rollbackGroup', 'rationale', 'evidence',
+                'removalTrigger', 'supersededBecause'
+            )) {
+            $null = Get-RequiredText -Object $historicalEntry -Name $field `
+                -Description "Package '$id' historical context" -Failures $failures
+        }
+        if ($historicalEntry.PSObject.Properties.Name -notcontains 'latestStable' -or
+            $historicalEntry.PSObject.Properties.Name -notcontains 'latestPrerelease' -or
+            $historicalEntry.PSObject.Properties.Name -notcontains 'sourceResults') {
+            $failures.Add("Package '$id' historical context must label latestStable, latestPrerelease, and sourceResults.")
+        }
+        $historyTimestamp = [DateTimeOffset]::MinValue
+        $historyTimestampText = [string](Get-PropertyValue -Object $historicalEntry -Name 'auditedAtUtc')
+        if (-not [DateTimeOffset]::TryParse($historyTimestampText, [ref] $historyTimestamp) -or
+            $historyTimestamp.Offset -ne [TimeSpan]::Zero) {
+            $failures.Add("Package '$id' historical context auditedAtUtc must be a valid UTC timestamp.")
+        }
+        if ([string](Get-PropertyValue -Object $historicalEntry -Name 'generatedFromRevision') -cnotmatch '^[0-9a-f]{40}$') {
+            $failures.Add("Package '$id' historical context generatedFromRevision must be a full lowercase Git revision.")
+        }
+        if ([string](Get-PropertyValue -Object $historicalEntry -Name 'id') -cne $id) {
+            $failures.Add("Package '$id' historical context has a mismatched package identity.")
+        }
+        if ([string](Get-PropertyValue -Object $historicalEntry -Name 'family') -cne $family) {
+            $failures.Add("Package '$id' historical context has a mismatched family identity.")
+        }
+        if ([string](Get-PropertyValue -Object $historicalEntry -Name 'listingState') -notin
+            @('listed', 'unlisted', 'missing', 'unresolved', 'unrecorded')) {
+            $failures.Add("Package '$id' historical context has an invalid listingState.")
+        }
+        if ([string](Get-PropertyValue -Object $historicalEntry -Name 'disposition') -notin @('accepted', 'retained')) {
+            $failures.Add("Package '$id' historical context has an invalid disposition.")
+        }
+    }
+
     $package | Add-Member -NotePropertyName _validatedFamily -NotePropertyValue $family -Force
     $package | Add-Member -NotePropertyName _validatedDisposition -NotePropertyValue $disposition -Force
     $package | Add-Member -NotePropertyName _validatedRollbackGroup -NotePropertyValue $rollbackGroup -Force
+
+    Assert-PackageRoundTrip -Package $package -Failures $failures
 }
 
 foreach ($catalogEntry in $catalogVersions.GetEnumerator()) {
     if (-not $auditPackages.ContainsKey($catalogEntry.Key)) {
         $failures.Add("Evaluated catalog package '$($catalogEntry.Key)' has no audit evidence.")
+    }
+}
+
+$consumerEvidence = Get-PropertyValue -Object $audit -Name 'consumerEvidence'
+$consumerEvidenceByFamily = @{}
+$consumerEntries = @()
+$consumerDiscovery = ''
+$consumerPackageRelations = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+if ($null -eq $consumerEvidence) {
+    $failures.Add('Audit must declare owned direct-consumer evidence provenance.')
+}
+else {
+    $consumerSchema = Get-RequiredText `
+        -Object $consumerEvidence -Name 'schema' -Description 'Consumer evidence' -Failures $failures
+    if ($consumerSchema -cne 'hexalith.package-consumer-evidence.v1') {
+        $failures.Add("Consumer evidence schema '$consumerSchema' is unsupported.")
+    }
+    $consumerDiscovery = Get-RequiredText `
+        -Object $consumerEvidence -Name 'discovery' -Description 'Consumer evidence' -Failures $failures
+    if ($consumerDiscovery -notin @('git-ls-files', 'explicit-fixture')) {
+        $failures.Add("Consumer evidence discovery '$consumerDiscovery' is unsupported.")
+    }
+    $consumerFixture = Get-PropertyValue -Object $consumerEvidence -Name 'fixture'
+    $consumerFixtureSha256 = Get-PropertyValue -Object $consumerEvidence -Name 'fixtureSha256'
+    $consumerFixtureMode = Get-PropertyValue -Object $consumerEvidence -Name 'fixtureMode'
+    $explicitFixtureRelations = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    if ($consumerDiscovery -ceq 'explicit-fixture') {
+        if ([string]::IsNullOrWhiteSpace([string] $consumerFixture) -or
+            [string] $consumerFixtureSha256 -cnotmatch '^[0-9a-f]{64}$') {
+            $failures.Add('Explicit consumer evidence must bind its fixture identity and lowercase SHA-256.')
+        }
+        if ([string] $consumerFixtureMode -cne 'synthetic-explicit') {
+            $failures.Add("Explicit consumer evidence must be labeled with fixtureMode 'synthetic-explicit'.")
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string] $consumerFixture)) {
+            $fixtureFullPath = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $resolvedAuditPath) ([string] $consumerFixture)))
+            if (-not (Test-Path -LiteralPath $fixtureFullPath -PathType Leaf)) {
+                $failures.Add("Explicit consumer evidence fixture '$consumerFixture' could not be resolved beside the audit.")
+            }
+            elseif ((Get-Sha256File -Path $fixtureFullPath) -cne [string] $consumerFixtureSha256) {
+                $failures.Add('Explicit consumer evidence fixtureSha256 does not match the fixture bytes.')
+            }
+            else {
+                try {
+                    $fixtureDocument = Get-Content -LiteralPath $fixtureFullPath -Raw -ErrorAction Stop |
+                        ConvertFrom-Json -ErrorAction Stop
+                    foreach ($fixtureEntry in @((Get-PropertyValue -Object $fixtureDocument -Name 'entries'))) {
+                        $fixtureConsumer = [string](Get-PropertyValue -Object $fixtureEntry -Name 'consumer')
+                        $fixturePackageId = [string](Get-PropertyValue -Object $fixtureEntry -Name 'packageId')
+                        if ([string]::IsNullOrWhiteSpace($fixtureConsumer) -or
+                            [string]::IsNullOrWhiteSpace($fixturePackageId) -or
+                            -not $explicitFixtureRelations.Add("$fixtureConsumer|$fixturePackageId")) {
+                            $failures.Add('Explicit consumer evidence fixture contains a blank or duplicate consumer/package relation.')
+                        }
+                    }
+                }
+                catch {
+                    $failures.Add("Explicit consumer evidence fixture is not valid semantic JSON. $($_.Exception.GetBaseException().Message)")
+                }
+            }
+        }
+    }
+    elseif ($null -ne $consumerFixture -or $null -ne $consumerFixtureSha256 -or $null -ne $consumerFixtureMode) {
+        $failures.Add('Git-owned consumer evidence must not declare an external or synthetic fixture binding.')
+    }
+    $consumerRevision = Get-RequiredText `
+        -Object $consumerEvidence -Name 'repositoryRevision' -Description 'Consumer evidence' -Failures $failures
+    if ($consumerRevision -cne $generatedFromRevision) {
+        $failures.Add('Consumer evidence repositoryRevision must match generatedFromRevision.')
+    }
+    $declaredConsumerHash = Get-RequiredText `
+        -Object $consumerEvidence -Name 'sha256' -Description 'Consumer evidence' -Failures $failures
+    $consumerRelations = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $consumerEntries = @((Get-PropertyValue -Object $consumerEvidence -Name 'entries'))
+    foreach ($entry in $consumerEntries) {
+        $family = Get-RequiredText -Object $entry -Name 'family' -Description 'Consumer evidence entry' -Failures $failures
+        $consumer = Get-RequiredText -Object $entry -Name 'consumer' -Description 'Consumer evidence entry' -Failures $failures
+        $packageId = Get-RequiredText -Object $entry -Name 'packageId' -Description 'Consumer evidence entry' -Failures $failures
+        $declarationPath = Get-RequiredText `
+            -Object $entry -Name 'declarationPath' -Description 'Consumer evidence entry' -Failures $failures
+        $declarationSha256 = Get-RequiredText `
+            -Object $entry -Name 'declarationSha256' -Description 'Consumer evidence entry' -Failures $failures
+        if ($declarationSha256 -cnotmatch '^[0-9a-f]{64}$') {
+            $failures.Add("Consumer evidence declaration '$declarationPath' must have a lowercase SHA-256 value.")
+        }
+        if ($consumerDiscovery -ceq 'git-ls-files') {
+            $declarationFullPath = [IO.Path]::GetFullPath((Join-Path $repositoryRoot $declarationPath))
+            if (-not $declarationFullPath.StartsWith("$repositoryRoot$([IO.Path]::DirectorySeparatorChar)", [StringComparison]::Ordinal) -or
+                -not (Test-Path -LiteralPath $declarationFullPath -PathType Leaf)) {
+                $failures.Add("Consumer declaration '$declarationPath' is not a repository-owned file.")
+            }
+            else {
+                $trackedOutput = @(& git -C $repositoryRoot ls-files --error-unmatch -- $declarationPath 2>&1)
+                if ($LASTEXITCODE -ne 0) {
+                    $failures.Add("Consumer declaration '$declarationPath' is not tracked by Git.")
+                }
+                elseif ((Get-Sha256File -Path $declarationFullPath) -cne $declarationSha256) {
+                    $failures.Add("Consumer declaration '$declarationPath' SHA-256 does not match its tracked bytes.")
+                }
+                else {
+                    try {
+                        [xml] $declarationDocument = Get-Content -LiteralPath $declarationFullPath -Raw -ErrorAction Stop
+                        $declaredPackageIds = @(
+                            $declarationDocument.SelectNodes(
+                                "//*[local-name()='PackageReference' or local-name()='GlobalPackageReference']"
+                            ) |
+                                ForEach-Object { [string] $_.GetAttribute('Include') })
+                        if ($consumer -cne $declarationPath -or $declaredPackageIds -cnotcontains $packageId) {
+                            $failures.Add("Consumer evidence relation '$consumer|$packageId' is not declared by '$declarationPath'.")
+                        }
+                    }
+                    catch {
+                        $failures.Add("Consumer declaration '$declarationPath' could not be semantically parsed. $($_.Exception.GetBaseException().Message)")
+                    }
+                }
+            }
+        }
+        elseif ($consumerDiscovery -ceq 'explicit-fixture') {
+            if ($declarationPath -cne [string] $consumerFixture -or
+                $declarationSha256 -cne [string] $consumerFixtureSha256 -or
+                -not $explicitFixtureRelations.Contains("$consumer|$packageId")) {
+                $failures.Add("Explicit consumer evidence relation '$consumer|$packageId' is not exactly bound to its fixture record and bytes.")
+            }
+        }
+        $relation = "$family|$consumer|$packageId"
+        if (-not $consumerRelations.Add($relation)) {
+            $failures.Add("Consumer evidence relation '$relation' is duplicated.")
+        }
+        $null = $consumerPackageRelations.Add("$consumer|$packageId")
+        if (-not $auditPackages.ContainsKey($packageId)) {
+            $failures.Add("Consumer evidence references unknown package '$packageId'.")
+            continue
+        }
+        if ($auditPackages[$packageId]._validatedFamily -cne $family) {
+            $failures.Add("Consumer evidence package '$packageId' does not belong to family '$family'.")
+        }
+        if (-not $consumerEvidenceByFamily.ContainsKey($family)) {
+            $consumerEvidenceByFamily[$family] = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+        }
+        $null = $consumerEvidenceByFamily[$family].Add($consumer)
+    }
+    $computedConsumerHash = Get-ConsumerRelationFingerprint -Entries $consumerEntries
+    if ($declaredConsumerHash -cne $computedConsumerHash) {
+        $failures.Add('Consumer evidence sha256 does not match its ordered direct-consumer relations and declaration bytes.')
+    }
+    if ($consumerDiscovery -ceq 'explicit-fixture' -and $consumerRelations.Count -ne $explicitFixtureRelations.Count) {
+        $failures.Add('Explicit consumer evidence entries do not exactly cover the fixture relations.')
+    }
+}
+
+# Independent PackageReference rediscovery vs. audit relation equality (owned csproj/
+# props/targets only). The catalog can contain unconsumed rows for external repositories,
+# but the locally rediscovered (consumer path, package ID) relations must exactly match
+# the current git-owned consumer-evidence relations.
+$resolvedConsumerScanRoot = if ([string]::IsNullOrWhiteSpace($ConsumerScanRoot)) {
+    $repositoryRoot
+}
+else {
+    (Resolve-Path -LiteralPath $ConsumerScanRoot -ErrorAction Stop).ProviderPath
+}
+$rediscoveredProjectFiles = @(Get-TrackedProjectFiles -Root $resolvedConsumerScanRoot)
+$rediscoveredReferences = Get-PackageReferenceConsumers `
+    -ProjectFiles $rediscoveredProjectFiles -RepositoryRoot $resolvedConsumerScanRoot -ExcludePath $resolvedCatalogPath
+$rediscoveredRelations = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+foreach ($identity in $rediscoveredReferences.Keys) {
+    if (-not $auditPackages.ContainsKey($identity)) {
+        $consumerList = [string]::Join(', ', @($rediscoveredReferences[$identity]))
+        $failures.Add(
+            "PackageReference '$identity' rediscovered from $consumerList has no audit evidence; rediscovery and audit output must not drift."
+        )
+    }
+    foreach ($consumerPath in @($rediscoveredReferences[$identity])) {
+        $null = $rediscoveredRelations.Add("$consumerPath|$identity")
+    }
+}
+if ($consumerDiscovery -ceq 'git-ls-files') {
+    foreach ($relation in $rediscoveredRelations) {
+        if (-not $consumerPackageRelations.Contains($relation)) {
+            $failures.Add(
+                "Rediscovered PackageReference relation '$relation' has no exact consumer-evidence match."
+            )
+        }
+    }
+    foreach ($relation in $consumerPackageRelations) {
+        if (-not $rediscoveredRelations.Contains($relation)) {
+            $failures.Add(
+                "Git-owned consumer-evidence relation '$relation' was not rediscovered from tracked project files."
+            )
+        }
     }
 }
 
@@ -582,6 +1418,109 @@ foreach ($decision in $familyDecisions) {
     $representativeConsumers = @((Get-PropertyValue -Object $decision -Name 'representativeConsumers') | Where-Object {
             -not [string]::IsNullOrWhiteSpace([string] $_)
         })
+    $expectedConsumers = if ($consumerEvidenceByFamily.ContainsKey($family)) {
+        @($consumerEvidenceByFamily[$family])
+    }
+    else {
+        @()
+    }
+    if ((Get-IdentitySignature -Values $representativeConsumers) -cne (Get-IdentitySignature -Values $expectedConsumers)) {
+        $failures.Add("Family '$family' representativeConsumers do not exactly match owned direct-consumer evidence.")
+    }
+    foreach ($historicalEntry in @((Get-PropertyValue -Object $decision -Name 'historicalContext') | Where-Object { $null -ne $_ })) {
+        $historicalSchema = [string](Get-PropertyValue -Object $historicalEntry -Name 'schema')
+        if ([string]::IsNullOrWhiteSpace($historicalSchema)) {
+            $failures.Add("Family '$family' has historical context without a typed schema.")
+            continue
+        }
+        if ($historicalSchema -cne 'hexalith.package-audit-family-history.v1') {
+            $failures.Add("Family '$family' has unsupported historical context schema '$historicalSchema'.")
+            continue
+        }
+        foreach ($field in @(
+                'label', 'auditedAtUtc', 'generatedFromRevision', 'family', 'disposition', 'rollbackGroup',
+                'rationale', 'compatibilityEvidence', 'removalTrigger', 'supersededBecause'
+            )) {
+            $null = Get-RequiredText -Object $historicalEntry -Name $field `
+                -Description "Family '$family' historical context" -Failures $failures
+        }
+        if ($historicalEntry.PSObject.Properties.Name -notcontains 'packageIds' -or
+            $historicalEntry.PSObject.Properties.Name -notcontains 'representativeConsumers' -or
+            $historicalEntry.PSObject.Properties.Name -notcontains 'preservation') {
+            $failures.Add("Family '$family' historical context must label packageIds, representativeConsumers, and preservation.")
+        }
+        $historyTimestamp = [DateTimeOffset]::MinValue
+        $historyTimestampText = [string](Get-PropertyValue -Object $historicalEntry -Name 'auditedAtUtc')
+        if (-not [DateTimeOffset]::TryParse($historyTimestampText, [ref] $historyTimestamp) -or
+            $historyTimestamp.Offset -ne [TimeSpan]::Zero) {
+            $failures.Add("Family '$family' historical context auditedAtUtc must be a valid UTC timestamp.")
+        }
+        if ([string](Get-PropertyValue -Object $historicalEntry -Name 'generatedFromRevision') -cnotmatch '^[0-9a-f]{40}$') {
+            $failures.Add("Family '$family' historical context generatedFromRevision must be a full lowercase Git revision.")
+        }
+        if ([string](Get-PropertyValue -Object $historicalEntry -Name 'family') -cne $family) {
+            $failures.Add("Family '$family' historical context has a mismatched family identity.")
+        }
+        if ([string](Get-PropertyValue -Object $historicalEntry -Name 'disposition') -notin @('accepted', 'retained')) {
+            $failures.Add("Family '$family' historical context has an invalid disposition.")
+        }
+        $historicalPreservation = Get-PropertyValue -Object $historicalEntry -Name 'preservation'
+        if ($null -ne $historicalPreservation) {
+            $historicalPreservationStatus = Get-RequiredText -Object $historicalPreservation -Name 'status' `
+                -Description "Family '$family' historical preservation" -Failures $failures
+            if ($historicalPreservationStatus -notin @('preserved', 'migrated', 'refreshed', 'legacy-unbound')) {
+                $failures.Add("Family '$family' historical context has an invalid preservation status '$historicalPreservationStatus'.")
+            }
+            $null = Get-RequiredText -Object $historicalPreservation -Name 'reason' `
+                -Description "Family '$family' historical preservation" -Failures $failures
+        }
+    }
+    $preservation = Get-PropertyValue -Object $decision -Name 'preservation'
+    if ($null -eq $preservation) {
+        $failures.Add("Family '$family' is missing preservation provenance.")
+    }
+    else {
+        $preservationStatus = Get-RequiredText `
+            -Object $preservation -Name 'status' -Description "Family '$family' preservation" -Failures $failures
+        if ($preservationStatus -notin @('preserved', 'migrated', 'refreshed')) {
+            $failures.Add("Family '$family' has invalid preservation status '$preservationStatus'.")
+        }
+        if ($disposition -eq 'accepted' -and $preservationStatus -cne 'preserved') {
+            $failures.Add("Accepted family '$family' must have preservation status 'preserved'.")
+        }
+        $null = Get-RequiredText `
+            -Object $preservation -Name 'reason' -Description "Family '$family' preservation" -Failures $failures
+        $preservationCatalogPath = Get-RequiredText `
+            -Object $preservation -Name 'catalogPath' -Description "Family '$family' preservation" -Failures $failures
+        if ($preservationCatalogPath -cne $catalogPathValue) {
+            $failures.Add("Family '$family' preservation catalogPath does not match the audit catalogPath.")
+        }
+        foreach ($hashName in @('catalogSha256', 'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256')) {
+            $hash = Get-RequiredText `
+                -Object $preservation -Name $hashName -Description "Family '$family' preservation" -Failures $failures
+            if ($hash -cnotmatch '^[0-9a-f]{64}$') {
+                $failures.Add("Family '$family' preservation $hashName must be a lowercase SHA-256 value.")
+            }
+        }
+        if ((Get-PropertyValue -Object $preservation -Name 'catalogSha256') -cne $catalogSha256) {
+            $failures.Add("Family '$family' preservation catalogSha256 does not match the audit catalog binding.")
+        }
+        if ((Get-PropertyValue -Object $preservation -Name 'sourceScopeSha256') -cne $sourceScopeSha256) {
+            $failures.Add("Family '$family' preservation sourceScopeSha256 does not match the configured source records.")
+        }
+        $expectedPackageMetadataHash = Get-PackageMetadataFingerprint -PackageRows @(
+            $packages | Where-Object { $_._validatedFamily -ceq $family }
+        )
+        if ((Get-PropertyValue -Object $preservation -Name 'packageMetadataSha256') -cne $expectedPackageMetadataHash) {
+            $failures.Add("Family '$family' preservation packageMetadataSha256 does not match its package/source relations.")
+        }
+        $expectedConsumerHash = Get-ConsumerRelationFingerprint -Entries @(
+            $consumerEntries | Where-Object { (Get-PropertyValue -Object $_ -Name 'family') -ceq $family }
+        )
+        if ((Get-PropertyValue -Object $preservation -Name 'consumerEvidenceSha256') -cne $expectedConsumerHash) {
+            $failures.Add("Family '$family' preservation consumerEvidenceSha256 does not match its consumer-package relations and declaration bytes.")
+        }
+    }
     if ($disposition -notin @('accepted', 'retained')) {
         $failures.Add("Family '$family' has invalid disposition '$disposition'.")
     }
@@ -635,6 +1574,8 @@ foreach ($decision in $familyDecisions) {
             )
         }
     }
+
+    Assert-FamilyRoundTrip -Decision $decision -Failures $failures
 }
 
 foreach ($rollbackGroup in @($familyDecisions | Group-Object rollbackGroup)) {

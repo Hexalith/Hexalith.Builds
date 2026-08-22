@@ -1,4 +1,11 @@
 {
+  "status": "failed",
   "exitCode": 6,
-  "ruleId": "HXE148"
+  "phase": "Evidence",
+  "category": "EvidencePolicy",
+  "outcomeRuleId": "HXE148",
+  "ruleIds": [
+    "HXE148"
+  ],
+  "outcomeExitCode": "EvidenceSchemaOrPolicy"
 }

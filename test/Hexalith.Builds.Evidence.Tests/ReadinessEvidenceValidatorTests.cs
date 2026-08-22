@@ -204,15 +204,22 @@ public sealed class ReadinessEvidenceValidatorTests
         AssertRuleAsync("negative/coverage-shortfall.yaml", "HXE130");
 
     /// <summary>
-    /// Verifies the validator matches its checked-in deterministic exit-code and rule-id snapshots.
+    /// Verifies the validator matches its checked-in deterministic result and ordered-diagnostic snapshots.
     /// </summary>
     /// <param name="fixture">The readiness fixture path.</param>
     /// <param name="expectedSnapshot">The expected outcome snapshot path.</param>
     /// <returns>A task that completes after the assertion.</returns>
     [Theory]
+    [InlineData("negative/artifact-hash-mismatch.yaml", "negative/artifact-hash-mismatch.expected.json")]
+    [InlineData("negative/binding-mismatch.yaml", "negative/binding-mismatch.expected.json")]
+    [InlineData("negative/coverage-shortfall.yaml", "negative/coverage-shortfall.expected.json")]
     [InlineData("negative/duplicate-key.yaml", "negative/duplicate-key.yaml.expected.json")]
     [InlineData("negative/invalid-artifact.yaml", "negative/invalid-artifact.expected.json")]
+    [InlineData("negative/missing-artifact-metadata.yaml", "negative/missing-artifact-metadata.expected.json")]
+    [InlineData("negative/no-executed-tests.yaml", "negative/no-executed-tests.expected.json")]
+    [InlineData("negative/outcome-mismatch.yaml", "negative/outcome-mismatch.expected.json")]
     [InlineData("negative/policy-controls.yaml", "negative/policy-controls.yaml.expected.json")]
+    [InlineData("negative/secret-metadata.yaml", "negative/secret-metadata.expected.json")]
     [InlineData("negative/unknown-field.yaml", "negative/unknown-field.yaml.expected.json")]
     [InlineData("negative/unsupported-schema.yaml", "negative/unsupported-schema.yaml.expected.json")]
     [InlineData("positive/readiness.yaml", "positive/readiness.yaml.expected.json")]
@@ -227,8 +234,14 @@ public sealed class ReadinessEvidenceValidatorTests
                 EvidenceFixturePath.Get(expectedSnapshot),
                 TestContext.Current.CancellationToken).ConfigureAwait(true));
 
-        ((int)result.Outcome.ExitCode).ShouldBe(expected.RootElement.GetProperty("exitCode").GetInt32());
-        JsonElement expectedRuleId = expected.RootElement.GetProperty("ruleId");
+        JsonElement expectedRoot = expected.RootElement;
+        result.Status.ShouldBe(expectedRoot.GetProperty("status").GetString());
+        ((int)result.Outcome.ExitCode).ShouldBe(expectedRoot.GetProperty("exitCode").GetInt32());
+        result.Outcome.ExitCode.ToString().ShouldBe(expectedRoot.GetProperty("outcomeExitCode").GetString());
+        result.Outcome.Phase.ToString().ShouldBe(expectedRoot.GetProperty("phase").GetString());
+        result.Outcome.Category.ToString().ShouldBe(expectedRoot.GetProperty("category").GetString());
+
+        JsonElement expectedRuleId = expectedRoot.GetProperty("outcomeRuleId");
         if (expectedRuleId.ValueKind == JsonValueKind.Null)
         {
             result.Outcome.RuleId.ShouldBeNull();
@@ -237,6 +250,9 @@ public sealed class ReadinessEvidenceValidatorTests
         {
             result.Outcome.RuleId.ShouldBe(expectedRuleId.GetString());
         }
+
+        string[] expectedRuleIds = [.. expectedRoot.GetProperty("ruleIds").EnumerateArray().Select(item => item.GetString()!)];
+        result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(expectedRuleIds);
     }
 
     private static async Task AssertRuleAsync(string fixture, string expectedRuleId)

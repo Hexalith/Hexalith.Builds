@@ -51,7 +51,7 @@ public sealed class ModuleRunEvidenceSerializationTests
                     new ModuleRunModule("orders", "orders", "orders", "orders", "assemblies/orders.dll"),
                     new ModuleRunModule("accounts", "accounts", "accounts", "accounts", "assemblies/accounts.dll"),
                 ],
-                new PlatformPins("3.88.0", "1.18.0", "1.18.5", "4.0.1")),
+                new PlatformPins("3.90.0", "1.18.0", "1.18.5", "4.0.1")),
             [new ModuleRunPhaseOutcome(ToolPhase.Cleanup, ToolFailureCategory.None, "HXI001")],
             new ModuleRunTestCounts(false, 0, 0, 0, 0),
             new Dictionary<string, string>(StringComparer.Ordinal)
@@ -162,7 +162,7 @@ public sealed class ModuleRunEvidenceSerializationTests
                     "resourceId": "module-a"
                   }],
                   "platform": {
-                    "eventStoreVersion": "3.88.0",
+                    "eventStoreVersion": "3.90.0",
                     "daprRuntimeVersion": "1.18.0",
                     "daprSdkVersion": "1.18.5",
                     "frontComposerVersion": "4.0.1"

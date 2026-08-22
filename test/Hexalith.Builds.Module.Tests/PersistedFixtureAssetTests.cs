@@ -53,18 +53,27 @@ public sealed class PersistedFixtureAssetTests
     [InlineData("unsupported-profile-class.json")]
     [InlineData("missing-required-value.json")]
     [InlineData("tampered-platform-pin.json")]
+    [InlineData("superseded-platform-pin.json")]
     public void LoadManifestNegativeControlReturnsStableRule(string fileName)
     {
         ManifestLoadResult result = ModuleManifestLoader.Load(FixturePath(Path.Combine("negative", fileName)));
         string expectedPath = FixturePath(Path.Combine("negative", $"{Path.GetFileNameWithoutExtension(fileName)}.expected.json"));
         using JsonDocument expected = JsonDocument.Parse(File.ReadAllText(expectedPath));
         int expectedExitCode = expected.RootElement.GetProperty("exitCode").GetInt32();
-        string expectedRuleId = expected.RootElement.GetProperty("ruleId").GetString() ?? string.Empty;
+        string expectedOutcomeExitCode = expected.RootElement.GetProperty("outcomeExitCode").GetString() ?? string.Empty;
+        IReadOnlyList<string> expectedRuleIds = [.. expected.RootElement
+            .GetProperty("ruleIds")
+            .EnumerateArray()
+            .Select(ruleId => ruleId.GetString() ?? string.Empty)];
+        bool expectedIsValid = expected.RootElement.GetProperty("isValid").GetBoolean();
 
-        result.IsValid.ShouldBeFalse();
+        expectedIsValid.ShouldBeFalse();
+        result.IsValid.ShouldBe(expectedIsValid);
         expectedExitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
-        expectedRuleId.ShouldNotBeNullOrWhiteSpace();
-        result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldContain(expectedRuleId);
+        expectedOutcomeExitCode.ShouldBe(nameof(ToolExitCode.UsageOrManifest));
+        expectedRuleIds.ShouldNotBeEmpty();
+        expectedRuleIds.ShouldAllBe(ruleId => !string.IsNullOrWhiteSpace(ruleId));
+        result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(expectedRuleIds);
 
         string diagnosticText = string.Join('|', result.Diagnostics.Select(diagnostic => diagnostic.Message));
         diagnosticText.ShouldNotContain("fixture-redaction-control");

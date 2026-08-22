@@ -11,7 +11,7 @@ namespace Hexalith.Builds.Tooling.Manifest;
 public static class SupportedPlatformPins
 {
     /// <summary>Gets the candidate EventStore package pin.</summary>
-    public const string EventStoreVersion = "3.88.0";
+    public const string EventStoreVersion = "3.90.0";
 
     /// <summary>Gets the observed Dapr runtime pin whose support disposition remains G-6 dependent.</summary>
     public const string DaprRuntimeVersion = "1.18.0";

@@ -136,6 +136,10 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-publish-g4-tool-packages.ps1
 
+    - name: Test G-4 tool package qualification gate
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contract-gate.ps1
+
     - name: Qualify G-4 tool source and Release packages
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -RequireControls

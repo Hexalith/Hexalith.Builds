@@ -120,6 +120,10 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-publish-g4-tool-packages.ps1
 
+      - name: Test G-4 tool package qualification gate
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contract-gate.ps1
+
       - name: Restore
         run: dotnet restore Hexalith.Builds.slnx
 

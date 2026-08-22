@@ -1,4 +1,12 @@
 {
+  "status": "failed",
   "exitCode": 1,
-  "ruleId": "HXM004"
+  "phase": "Manifest",
+  "category": "Manifest",
+  "outcomeRuleId": "HXM004",
+  "ruleIds": [
+    "HXM004"
+  ],
+  "isValid": false,
+  "outcomeExitCode": "UsageOrManifest"
 }

@@ -6,7 +6,9 @@ param(
     [ValidateNotNullOrEmpty()]
     [string] $Version,
 
-    [string] $OutputDirectory
+    [string] $OutputDirectory,
+
+    [switch] $DeferInventory
 )
 
 Set-StrictMode -Version Latest
@@ -74,14 +76,10 @@ foreach ($tool in $tools) {
 }
 
 if (Test-Path -LiteralPath $packageDirectory) {
-    $existingItems = @(Get-ChildItem -LiteralPath $packageDirectory -Force)
-    if ($existingItems.Count -gt 0) {
-        throw "Package output directory '$packageDirectory' must be empty to prevent stale artifacts from qualifying a release."
-    }
+    throw "Package output directory '$packageDirectory' must not already exist; every package build requires a unique output directory."
 }
-else {
-    $null = New-Item -ItemType Directory -Path $packageDirectory -Force
-}
+
+$null = New-Item -ItemType Directory -Path $packageDirectory
 
 $solutionPath = Join-Path $repositoryRoot 'Hexalith.Builds.slnx'
 if (-not (Test-Path -LiteralPath $solutionPath -PathType Leaf)) {
@@ -121,38 +119,48 @@ if ($difference.Count -gt 0 -or $actualPackages.Count -ne 4) {
     throw "Expected exactly the two approved G-4 tool packages with .nupkg and .snupkg artifacts at version '$Version'. Actual artifacts: $actualDisplay."
 }
 
-$inventoryPackages = foreach ($tool in $tools) {
-    $nupkg = Join-Path $packageDirectory "$($tool.Id).$Version.nupkg"
-    $snupkg = Join-Path $packageDirectory "$($tool.Id).$Version.snupkg"
+if (-not $DeferInventory) {
+    $inventoryPackages = foreach ($tool in $tools) {
+        $nupkg = Join-Path $packageDirectory "$($tool.Id).$Version.nupkg"
+        $snupkg = Join-Path $packageDirectory "$($tool.Id).$Version.snupkg"
 
-    [ordered]@{
-        id = $tool.Id
-        version = $Version
-        nupkg = [ordered]@{
-            file = [System.IO.Path]::GetFileName($nupkg)
-            sha256 = (Get-FileHash -LiteralPath $nupkg -Algorithm SHA256).Hash
-            sizeBytes = (Get-Item -LiteralPath $nupkg).Length
-        }
-        snupkg = [ordered]@{
-            file = [System.IO.Path]::GetFileName($snupkg)
-            sha256 = (Get-FileHash -LiteralPath $snupkg -Algorithm SHA256).Hash
-            sizeBytes = (Get-Item -LiteralPath $snupkg).Length
+        [ordered]@{
+            id = $tool.Id
+            version = $Version
+            nupkg = [ordered]@{
+                file = [System.IO.Path]::GetFileName($nupkg)
+                sha256 = (Get-FileHash -LiteralPath $nupkg -Algorithm SHA256).Hash
+                sizeBytes = (Get-Item -LiteralPath $nupkg).Length
+            }
+            snupkg = [ordered]@{
+                file = [System.IO.Path]::GetFileName($snupkg)
+                sha256 = (Get-FileHash -LiteralPath $snupkg -Algorithm SHA256).Hash
+                sizeBytes = (Get-Item -LiteralPath $snupkg).Length
+            }
         }
     }
-}
 
-$inventory = [ordered]@{
-    schema = 'hexalith.g4-tool-package-inventory.v1'
-    version = $Version
-    configuration = 'Release'
-    packages = @($inventoryPackages)
-}
-$inventoryPath = Join-Path $packageDirectory 'g4-tool-package-inventory.json'
-$inventory | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $inventoryPath -Encoding utf8
+    $inventory = [ordered]@{
+        schema = 'hexalith.g4-tool-package-inventory.v1'
+        version = $Version
+        configuration = 'Release'
+        packages = @($inventoryPackages)
+        qualificationEvidence = @()
+        qualification = [ordered] @{
+            packageBuild = [ordered] @{ mode = 'official'; result = 'passed' }
+            sourceValidation = [ordered] @{ mode = 'skipped'; result = 'not-run' }
+            controls = [ordered] @{ mode = 'skipped'; result = 'not-run' }
+            fixtures = [ordered] @{ mode = 'not-used'; root = $null; sha256 = $null; files = @() }
+            releaseEligible = $false
+        }
+    }
+    $inventoryPath = Join-Path $packageDirectory 'g4-tool-package-inventory.json'
+    $inventory | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $inventoryPath -Encoding utf8
 
-if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_OUTPUT)) {
-    Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "g4_tool_package_directory=$packageDirectory"
-    Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "g4_tool_package_inventory=$inventoryPath"
-}
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_OUTPUT)) {
+        Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "g4_tool_package_directory=$packageDirectory"
+        Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "g4_tool_package_inventory=$inventoryPath"
+    }
 
-Write-Host "G-4 tool package inventory recorded at '$inventoryPath'."
+    Write-Host "G-4 tool package inventory recorded at '$inventoryPath'."
+}
