@@ -278,6 +278,26 @@ class PublicationPreflightTests(unittest.TestCase):
 
             authority = validate("admin")
             self.assertEqual("github:release-owner", authority["owner"])
+            role_evidence = authority["_role_evidence"]
+            self.assertEqual(
+                {
+                    "schema": "hexalith.github-repository-permission-evidence.v1",
+                    "repository": "Hexalith/Hexalith.EventStore",
+                    "request_url": "https://api.github.com/repos/Hexalith/Hexalith.EventStore/"
+                    "collaborators/release-owner/permission",
+                    "response": {"permission": "admin", "role_name": "admin"},
+                },
+                role_evidence,
+            )
+            self.validator._write_authority_evidence(root, authority)
+            retained_role = json.loads(
+                (root / "publication-authority-role.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(role_evidence, retained_role)
+            retained_authority = json.loads(
+                (root / "publication-authority.json").read_text(encoding="utf-8")
+            )
+            self.assertNotIn("_role_evidence", retained_authority)
             with self.assertRaises(self.validator.PreflightError) as context:
                 validate("read")
             self.assertEqual("authority-wrong-role", context.exception.code)

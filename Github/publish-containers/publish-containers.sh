@@ -27,7 +27,9 @@ authority_owner="${HEXALITH_RELEASE_AUTHORITY_OWNER:-}"
 # closed loudly instead of being read as either posture.
 require_authority="${HEXALITH_RELEASE_REQUIRE_AUTHORITY-true}"
 evidence_directory="${HEXALITH_CONTAINER_EVIDENCE_DIRECTORY:-$PWD/.hexalith/release-evidence/$version}"
-semver_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+provenance_created="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+semver_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+)(\.[0-9A-Za-z-]+)*)?$'
+stable_semver_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
 
 trim() {
   local value="$1"
@@ -41,8 +43,27 @@ fail() {
   exit 1
 }
 
+is_semver_without_numeric_padding() {
+  local candidate="$1"
+  local prerelease=""
+  local identifier=""
+  local -a identifiers=()
+  [[ "$candidate" =~ $semver_pattern ]] || return 1
+  [[ "$candidate" == *-* ]] || return 0
+  prerelease="${candidate#*-}"
+  IFS='.' read -r -a identifiers <<< "$prerelease"
+  for identifier in "${identifiers[@]}"; do
+    if [[ "$identifier" =~ ^[0-9]+$ && "$identifier" != "0" && "$identifier" == 0* ]]; then
+      return 1
+    fi
+  done
+}
+
 [[ -n "$version" ]] || fail "Release version argument is required."
-[[ "$version" =~ $semver_pattern ]] || fail "Release version '$version' must be SemVer without build metadata."
+is_semver_without_numeric_padding "$version" ||
+  fail "Release version '$version' must be SemVer without build metadata or leading-zero numeric identifiers."
+[[ "$provenance_created" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] ||
+  fail "Publisher-owned provenance creation time is invalid."
 [[ -n "${projects//[[:space:]]/}" ]] || fail "HEXALITH_CONTAINER_PROJECTS is empty."
 [[ -n "$username" ]] || fail "HEXALITH_ZOT_USERNAME is required to publish containers."
 [[ -n "$api_key" ]] || fail "HEXALITH_ZOT_API_KEY is required to publish containers."
@@ -65,7 +86,7 @@ fail() {
 # ignored. Any other declared value fails closed.
 case "$require_authority" in
   true)
-    [[ "$reserved_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ||
+    [[ "$reserved_version" =~ $stable_semver_pattern ]] ||
       fail "HEXALITH_RELEASE_RESERVED_VERSION must be a stable semantic version."
     [[ "$version" == "$reserved_version" ]] ||
       fail "Semantic Release selected a version different from the authorized reservation."
@@ -179,7 +200,8 @@ for index in "${!container_projects[@]}"; do
     -p:ContainerImageTag="$version" \
     -p:Version="$version" \
     -p:ContainerProvenanceSourceSha="$source_sha" \
-    -p:ContainerProvenanceReleaseVersion="$version"
+    -p:ContainerProvenanceReleaseVersion="$version" \
+    -p:ContainerProvenanceCreated="$provenance_created"
 
   "$validator" \
     --image "${registry}/${repository}:${version}" \

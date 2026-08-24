@@ -571,6 +571,16 @@ class PublishScriptContractTests(unittest.TestCase):
             self.assertIn(f'-p:ContainerRuntimeIdentifiers="{RUNTIME_IDENTIFIERS}"', arguments)
             self.assertIn("-p:ContainerImageFormat=OCI", arguments)
             self.assertIn("-p:UseHexalithProjectReferences=false", arguments)
+            created_arguments = [
+                value
+                for value in arguments
+                if value.startswith("-p:ContainerProvenanceCreated=")
+            ]
+            self.assertEqual(1, len(created_arguments))
+            self.assertRegex(
+                created_arguments[0],
+                r"^-p:ContainerProvenanceCreated=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            )
             self.assertNotIn("--os", arguments)
             self.assertNotIn("--arch", arguments)
             self.assertFalse(any(value.startswith("-p:RuntimeIdentifier=") for value in arguments))
@@ -711,7 +721,15 @@ printf '%s\n' "$*" >> "$FAKE_DOTNET_INVOCATIONS"
                 [f"registry.example.test/{name}" for name in ("parties-ui", "parties", "parties-mcp")],
                 declared_repositories,
             )
-            self.assertEqual(3, len(dotnet_invocations.read_text(encoding="utf-8").splitlines()))
+            invocations = dotnet_invocations.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(3, len(invocations))
+            created_values = {
+                match.group(0)
+                for invocation in invocations
+                for match in [re.search(r"-p:ContainerProvenanceCreated=\S+", invocation)]
+                if match is not None
+            }
+            self.assertEqual(1, len(created_values))
             self.assertEqual(3, len(validator_invocations.read_text(encoding="utf-8").splitlines()))
             self.assertEqual(3, len(smoke_invocations.read_text(encoding="utf-8").splitlines()))
 

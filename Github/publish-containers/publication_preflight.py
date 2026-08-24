@@ -41,8 +41,15 @@ REQUIRED_CONTRACT_FILES = (
     "smoke_container_platforms.py",
 )
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
-SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", re.ASCII)
-STABLE_SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+$", re.ASCII)
+SEMVER_IDENTIFIER = r"(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
+SEMVER_PATTERN = re.compile(
+    rf"^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-{SEMVER_IDENTIFIER}(?:\.{SEMVER_IDENTIFIER})*)?$",
+    re.ASCII,
+)
+STABLE_SEMVER_PATTERN = re.compile(
+    r"^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$",
+    re.ASCII,
+)
 REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", re.ASCII)
 CONTAINER_REPOSITORY_PATTERN = re.compile(
     r"^[A-Za-z0-9.-]+(?::[0-9]+)?/[a-z0-9]+(?:[._/-][a-z0-9]+)*$",
@@ -335,19 +342,23 @@ def _embedded_json(value):
 
 def _has_release_owner_role(repository, owner, record, token):
     if record.get("author_association") in {"OWNER", "MEMBER", "COLLABORATOR"}:
-        return True
+        return True, None
 
     repository_path = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
     owner_path = urllib.parse.quote(owner, safe="")
-    permission = _github_json(
-        f"https://api.github.com/repos/{repository_path}/collaborators/{owner_path}/permission",
-        token,
-    )
-    return isinstance(permission, dict) and permission.get("permission") in {
-        "admin",
-        "maintain",
-        "write",
+    request_url = f"https://api.github.com/repos/{repository_path}/collaborators/{owner_path}/permission"
+    permission = _github_json(request_url, token)
+    evidence = {
+        "schema": "hexalith.github-repository-permission-evidence.v1",
+        "repository": repository,
+        "request_url": request_url,
+        "response": permission,
     }
+    return (
+        isinstance(permission, dict)
+        and permission.get("permission") in {"admin", "maintain", "write"},
+        evidence,
+    )
 
 
 def validate_publication_authority(arguments, identity, token, now=None):
@@ -394,7 +405,13 @@ def validate_publication_authority(arguments, identity, token, now=None):
     # the repository-scoped Actions token reads the comment, even though a
     # user token with read:org reports MEMBER. Fall back to the repository's
     # authoritative collaborator permission instead of trusting that hint.
-    if not _has_release_owner_role(arguments.repository, expected_owner, record, token):
+    has_release_owner_role, role_evidence = _has_release_owner_role(
+        arguments.repository,
+        expected_owner,
+        record,
+        token,
+    )
+    if not has_release_owner_role:
         _fail("authority-wrong-role", "GitHub authority issuer has no repository release-owner role.")
     if record.get("issue_url") != issue_url:
         _fail("authority-invalid", "GitHub authority is not attached to the release repository.")
@@ -431,7 +448,7 @@ def validate_publication_authority(arguments, identity, token, now=None):
         or abs(authorized_at - created_at) > MAX_AUTHORITY_CLOCK_SKEW
     ):
         _fail("authority-invalid", "GitHub authority must be immutable and precede its expiry.")
-    return {
+    result = {
         "url": authority_url,
         "comment_id": comment_id,
         "issue_url": issue_url,
@@ -444,6 +461,9 @@ def validate_publication_authority(arguments, identity, token, now=None):
         "identity_sha256": expected_identity_sha256,
         "record_sha256": _sha256_bytes(_canonical_bytes(record)),
     }
+    if role_evidence is not None:
+        result["_role_evidence"] = role_evidence
+    return result
 
 
 def _consumption_body(authority, identity):
@@ -1073,12 +1093,22 @@ def _write_authority_evidence(directory, authority, consumption=None):
     directory = Path(directory)
     workspace_make_directory(directory)
     authority_path = directory / "publication-authority.json"
-    authority_bytes = _canonical_bytes(authority)
+    role_evidence = authority.get("_role_evidence")
+    authority_summary = {key: value for key, value in authority.items() if key != "_role_evidence"}
+    authority_bytes = _canonical_bytes(authority_summary)
     if workspace_path_exists(authority_path):
         if workspace_read_bytes(authority_path) != authority_bytes:
             _fail("authority-mismatch", "Retained publication authority changed between phases.")
     else:
         workspace_write_bytes(authority_path, authority_bytes)
+    if role_evidence is not None:
+        role_path = directory / "publication-authority-role.json"
+        role_bytes = _canonical_bytes(role_evidence)
+        if workspace_path_exists(role_path):
+            if workspace_read_bytes(role_path) != role_bytes:
+                _fail("authority-mismatch", "Retained publication authority role evidence changed between phases.")
+        else:
+            workspace_write_bytes(role_path, role_bytes)
     if consumption is not None:
         consumption_path = directory / "publication-authority-consumption.json"
         if workspace_path_exists(consumption_path):
