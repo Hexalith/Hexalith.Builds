@@ -618,3 +618,69 @@ revision, final EventStore package/remote-consumption proof, reciprocal
 rollback qualification, P1R transition, and EventStore Owner, Builds Owner,
 Solution Architect, and Test Architect decisions all remain pending. No
 acceptance is inferred from the `.18` implementation pass.
+
+## Stopped `3.97.0` supersession attempt — 2026-08-24
+
+This append-only section supersedes no historical result and records a blocked,
+non-qualifying attempt only. The selected candidate remained the equivalent
+EventStore tuple `v3.97.0` / `3.97.0` /
+`94591f3539ce30372db58e5fdd3ba017ea8c07b8`; current EventStore HEAD
+`da52e2c85ecc5909fa8ce2547e626f3968c056ef` remained an unselected
+observation. Architecture, planning/status, dependency gitlinks, publication,
+release state, and all owner decisions were not changed.
+
+### Completed Builds alignment evidence
+
+A local immutable candidate commit
+`fb05dd84625abdcd1a62d2664e8557379fd631bb` on
+`fix/p1r-397-candidate`, based on
+`2f46aaee2ecb0b3f121d50ab8cc58601901046f4`, aligns the active runner,
+schema, tests, unrelated fixtures, serialized evidence, package-control
+assertions, and coupled hashes to `3.97.0`. It preserves separate `3.88.0`
+and `3.70.1` manifests with exact `HXM016` expectations, invalid-profile
+`HXM009`, and the deliberate all-`F` evidence-hash mismatch. Before the stop,
+static parity passed, the authoritative catalog test passed 49 identities and
+three shared versions, and the complete package audit passed 284 packages, 139
+families, and one source. The exact candidate message
+`fix(runner): align EventStore pin to 3.97.0` passed repository-pinned
+commitlint before and after commit. These results do not qualify the candidate
+because no later clean lane ran.
+
+### First non-passing gate and disposition
+
+The first EventStore coordinate row, `es-001-coordinates`, ran in the isolated
+`94591f3539ce30372db58e5fdd3ba017ea8c07b8` worktree from
+`2026-08-24T16:34:36.095461306Z` to
+`2026-08-24T16:34:36.633336524Z`. It exited `2` and is `FAIL`.
+The evidence-wrapper call placed the inner command in an outer double-quoted
+shell argument, so two intended inner command substitutions executed before
+the wrapper changed to the EventStore worktree. The retained command therefore
+contains malformed `test -z` and `test  -eq 14` assertions and stopped with
+`bash: line 1: test: -eq: unary operator expected`.
+
+The exact failed log is retained at
+`_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-397-20260824/logs/es-001-coordinates.log`
+with SHA-256
+`eb0a2e11dc9bbb2bd4e94377b8a8c544c33f9a5dcc588da63e39a3411a8f1a8e`.
+The partial evidence bundle contains ten hashed artifacts plus its manifest;
+`artifact-manifest.sha256` has SHA-256
+`1c535eac91ae9433a21a20ab1e948e3951a2f62184ac7af137316dfcf0fb0265`.
+The row emitted the 14-ID `v3.97.0` release manifest before failing, but those
+partial observations cannot qualify coordinate selection or substitute for the
+remote-consumption gate.
+
+Per the stop-first rule, the command was not rerun and no later gate started.
+The EventStore source/package/API lanes, 14-package remote restore, clean
+candidate Builds qualification, packaged G-4 controls, rollback commit and
+reciprocal `3.70.1` execution all remain pending. The next authorized attempt
+must retain this failed row, correct the argument boundary, restart at clean
+coordinate capture, and proceed only if that new row passes.
+
+### Pending owner decisions for this attempt
+
+| Role | Named approver | Decision | UTC date | Coordinates/evidence | Required next action |
+| --- | --- | --- | --- | --- | --- |
+| EventStore Owner | pending | pending | pending | `v3.97.0` attempt; stopped bundle above | Authorize or execute a new clean coordinate attempt; no acceptance inferred |
+| Builds Owner | pending | pending | pending | candidate commit `fb05dd84625abdcd1a62d2664e8557379fd631bb`; unqualified | Retain the local commit and await complete candidate plus rollback qualification |
+| Solution Architect | pending | pending | pending | Architecture remains `3.70.1` | Make no rebinding decision until every required lane passes |
+| Test Architect | pending | pending | pending | `es-001-coordinates` = `FAIL` | Require a new clean run beginning at coordinate capture and preserving this failure |
