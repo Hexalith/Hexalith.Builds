@@ -684,3 +684,78 @@ coordinate capture, and proceed only if that new row passes.
 | Builds Owner | pending | pending | pending | candidate commit `fb05dd84625abdcd1a62d2664e8557379fd631bb`; unqualified | Retain the local commit and await complete candidate plus rollback qualification |
 | Solution Architect | pending | pending | pending | Architecture remains `3.70.1` | Make no rebinding decision until every required lane passes |
 | Test Architect | pending | pending | pending | `es-001-coordinates` = `FAIL` | Require a new clean run beginning at coordinate capture and preserving this failure |
+
+## Stopped `3.97.0` supersession attempt 2 — 2026-08-24
+
+This append-only section preserves the earlier stopped attempt and records a
+second blocked, non-qualifying attempt. The selected equivalent EventStore tuple
+remained `v3.97.0` / `3.97.0` /
+`94591f3539ce30372db58e5fdd3ba017ea8c07b8`. Current EventStore HEAD
+`da52e2c85ecc5909fa8ce2547e626f3968c056ef` remained an unselected
+observation. Architecture remained bound to `3.70.1`; planning/status,
+dependency gitlinks, publication, release state, and owner decisions were not
+changed.
+
+### Passed evidence before the stop
+
+The clean coordinate row passed at the selected EventStore revision, which
+described exactly as `v3.97.0` and resolved the package tag to the same commit.
+The 14-ID release manifest retained SHA-256
+`6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae`.
+The unselected HEAD described as `v3.97.0-5-gda52e2c8` and had no `src/`
+diff from the selected tag. Exact selected, HEAD, and rollback dependency
+gitlinks were retained.
+
+The clean Builds candidate at
+`fb05dd84625abdcd1a62d2664e8557379fd631bb` passed static parity, the
+49-identity/three-shared-version catalog contract, and the complete
+284-package/139-family/one-source audit. Its runner, schema, active fixtures,
+serialized evidence, package controls, and coupled hashes bind `3.97.0`; the
+`3.88.0` and `3.70.1` manifests remain exact `HXM016` negatives,
+invalid-profile remains `HXM009`, and the deliberate all-`F` evidence hash
+remains invalid.
+
+The seven-API comparison passed. Selected package/source and unselected HEAD
+blobs were identical. The rollback differs only by the previously recorded
+additive `QueryCursorScope.AddProjectionWatermark(long?)` surface; no compared
+API was removed or changed.
+
+### First non-passing gate and disposition
+
+`es-source-001-restore` ran in the clean selected EventStore worktree from
+`2026-08-24T17:43:55.766785516Z` to
+`2026-08-24T17:43:59.678633800Z`. The exact mandated Debug source-mode restore
+exited `1` and is `FAIL`. Its retained log SHA-256 is
+`d44d2b3788179e9d945e2bbf6aafcb081f28f0e4e9fb853c63e23dd100011ccc`.
+
+The exact EventStore worktree retained empty nested-submodule directories, as
+required by the prohibition on nested initialization. Its import-only
+`Directory.Packages.props` therefore found none of its three relative
+`Hexalith.Builds/Props/Directory.Packages.props` candidates. NuGet Central
+Package Management emitted widespread `NU1010` missing-`PackageVersion`
+diagnostics and ended with a NuGet null-reference error. The post-failure state
+capture proved that the worktree remained clean at the selected revision.
+
+The complete 18-entry artifact manifest is retained at
+`_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-397-20260824-attempt2/artifact-manifest.sha256`
+with SHA-256
+`fbe5596f7dc1dd5d3a3bbc3b3ba02f9ff8b7e9da284b9b890fe5baccfe9f25d4`.
+The command ledger contains six `PASS` rows and one `FAIL` row; every retained
+artifact resolves and verifies.
+
+Per the stop-first rule, no later source build/test, package-source lane,
+remote 14-package restore, clean Builds restore/build/test/package lane,
+rollback commit, or reciprocal rollback execution started. The candidate
+Builds commit remains implemented but unqualified.
+
+### Pending owner decisions for attempt 2
+
+| Role | Named approver | Decision | UTC date | Coordinates/evidence | Required next action |
+| --- | --- | --- | --- | --- | --- |
+| EventStore Owner | pending | pending | pending | equivalent `v3.97.0` tuple; source restore `FAIL` | Select an exact dependency-materialization or import-routing method for the recorded EventStore dependency gitlinks without changing source identity |
+| Builds Owner | pending | pending | pending | candidate `fb05dd84625abdcd1a62d2664e8557379fd631bb`; static/catalog/audit passed only | Attest the exact Builds catalog source made available to a future EventStore lane and retain the unqualified candidate |
+| Solution Architect | pending | pending | pending | Architecture remains `3.70.1`; nested initialization forbidden | Approve a clean-worktree dependency method consistent with AD-6 and the qualification contract |
+| Test Architect | pending | pending | pending | attempt-2 manifest above; `es-source-001-restore` = `FAIL` | Require a new clean attempt from coordinate capture with both stopped bundles preserved |
+
+No acceptance is inferred. P1R, P0, P2, P3, P4, Story 6.1, readiness, and all
+transitive Epic 7/8 gates remain blocked by their own contracts.
