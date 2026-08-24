@@ -759,3 +759,103 @@ Builds commit remains implemented but unqualified.
 
 No acceptance is inferred. P1R, P0, P2, P3, P4, Story 6.1, readiness, and all
 transitive Epic 7/8 gates remain blocked by their own contracts.
+
+## Stopped `3.97.0` supersession attempt 3 — 2026-08-24
+
+This append-only section preserves both earlier stopped attempts and records a
+third blocked, non-qualifying attempt. The selected equivalent EventStore tuple
+remained `v3.97.0` / `3.97.0` /
+`94591f3539ce30372db58e5fdd3ba017ea8c07b8`. Current EventStore HEAD
+`da52e2c85ecc5909fa8ce2547e626f3968c056ef` remained an unselected
+observation. Architecture remained bound to `3.70.1`; planning/status,
+dependency gitlinks, publication, release state, and owner decisions were not
+changed.
+
+### Approved dependency route and passed evidence
+
+The approved route used repository-supported sibling materialization. Each
+clean detached EventStore worktree lived at `<lane>/EventStore`; a separate
+clean detached Builds worktree lived at `<lane>/references/Hexalith.Builds` at
+candidate `fb05dd84625abdcd1a62d2664e8557379fd631bb`. The EventStore
+import search resolved that exact catalog without nested submodule
+initialization, EventStore source changes, dependency-gitlink movement, or
+mandated-command changes.
+
+Before this attempt began, `history-001-preserve` verified every artifact in
+both earlier stopped bundles against manifest SHA-256 values
+`1c535eac91ae9433a21a20ab1e948e3951a2f62184ac7af137316dfcf0fb0265`
+and
+`fbe5596f7dc1dd5d3a3bbc3b3ba02f9ff8b7e9da284b9b890fe5baccfe9f25d4`.
+It also verified the append-only record ancestry from
+`fb82c0caedfa4a98b413164dc630e122b50b2970` through
+`0942bcb351c82dd46c0aa6c02b503992eff90fdf`.
+
+The clean coordinate/routing row passed. The selected revision described
+exactly as `v3.97.0`, the package tag resolved to the same commit, and the
+14-ID manifest retained SHA-256
+`6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae`.
+Unselected HEAD still had no `src/` diff from the selected tag. The exact
+sibling Builds catalog passed with SHA-256
+`c51967e25c5a8770fcae6469f335b38775904c5c56b8a4fc4fb67605a1cb84bb`.
+
+The immutable Builds candidate again passed static parity, the
+49-identity/three-shared-version catalog contract, and the complete
+284-package/139-family/one-source audit. The seven-API comparison passed with
+selected package/source and unselected HEAD blobs identical; rollback differed
+only by the already recorded additive
+`QueryCursorScope.AddProjectionWatermark(long?)` surface.
+
+The exact mandated Debug source-mode restore then passed with the isolated
+cache, proving the sibling catalog route resolved the attempt-2 restore
+blocker. The exact serialized Debug source-mode build passed with zero warnings
+and zero errors.
+
+### First non-passing gate and disposition
+
+`es-source-003-contracts-test` ran in the clean selected EventStore worktree
+from `2026-08-24T18:22:22.543299647Z` to
+`2026-08-24T18:23:51.038975740Z`. The exact mandated Contracts test command
+exited `1` and is `FAIL`: 29 failed, 1503 passed, zero skipped, 1532 total.
+Its retained log SHA-256 is
+`a85c4b7a94f7277000665059b6677f017dceea4836a09d98565bbaa1037130b5`.
+
+The failures prove the sibling catalog is sufficient for MSBuild import and
+compilation but not for repository-governance tests that directly consume
+nested dependency bytes. The earliest failures reported absent
+`Hexalith.Tenants` project content, the absent shared LLM instruction file,
+and absent `Hexalith.Builds/Github/dapr-init/action.yml` at recorded nested
+paths. Other failures reported a Builds tool path unavailable in pinned commit
+`a53166539bf4441d5e33d04281b14c2d59e950c3`, unavailable Git tree
+`a07078ad74d3727bc5a6b6d85d47d56a6e5c9fec`, and consequent OCI/evidence
+mutation assertion failures. No result was filtered, retried, or relabeled.
+
+The administrative post-failure capture proved the EventStore worktree was
+still clean at the selected revision, the sibling Builds worktree was still
+clean at the exact candidate, and all seven recorded nested submodules remained
+uninitialized. The retained attempt-3 bundle contains 27 verified entries.
+Its manifest SHA-256 is
+`efe58b140a3a981d4035c1cd0e88b249e7ebf2463f1c57a946adf9d71070425b`;
+the command ledger contains nine `PASS` rows, including preservation and
+administrative state capture, and one `FAIL` row.
+
+Per the stop-first rule, the remaining source tests, package-source lane,
+remote 14-package restore, clean Builds restore/build/test/package lane,
+official G-4 controls, rollback commit, and reciprocal rollback execution did
+not start. The candidate Builds commit remains implemented but unqualified.
+Any future attempt requires new owner authorization, must preserve all three
+stopped bundles, and must restart at coordinate capture with an exact
+dependency-object/materialization route that satisfies the repository-
+governance tests without nested submodule initialization or source/gitlink
+changes.
+
+### Pending owner decisions for attempt 3
+
+| Role | Named approver | Decision | UTC date | Coordinates/evidence | Required next action |
+| --- | --- | --- | --- | --- | --- |
+| EventStore Owner | pending | pending | pending | equivalent `v3.97.0` tuple; restore/build `PASS`, Contracts `FAIL` | Decide whether to authorize another clean attempt and select an exact dependency-object route; no acceptance inferred |
+| Builds Owner | pending | pending | pending | candidate `fb05dd84625abdcd1a62d2664e8557379fd631bb`; import/static/catalog/audit only | Attest any future nested dependency bytes and retain the unqualified candidate |
+| Solution Architect | pending | pending | pending | Architecture remains `3.70.1`; nested initialization forbidden | Approve no rebinding until every required lane and reciprocal rollback pass |
+| Test Architect | pending | pending | pending | attempt-3 manifest above; `es-source-003-contracts-test` = `FAIL` | Require the retained 29-failure result and a newly authorized run from coordinate capture |
+
+No acceptance is inferred. P1R, P0, P2, P3, P4, Story 6.1, readiness, and all
+transitive Epic 7/8 gates remain blocked by their own contracts.
