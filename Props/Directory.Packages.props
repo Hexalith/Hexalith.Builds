@@ -153,6 +153,7 @@
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="Fluxor" Version="6.11.0" />
     <PackageVersion Include="Fluxor.Blazor.Web" Version="6.11.0" />
+    <PackageVersion Include="FsCheck" Version="3.3.3" />
     <!-- FrontComposer Story 2-1: xUnit v3 integration for property-based tests. -->
     <PackageVersion Include="FsCheck.Xunit.v3" Version="3.3.4" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="3.0.5" />

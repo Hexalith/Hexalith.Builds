@@ -588,11 +588,11 @@ try {
         $result = Invoke-Validator `
             -CatalogPath $validatorPath `
             -EvaluatorScriptPath $evaluatorPath `
-            -EvaluationTimeoutSeconds 1 `
+            -EvaluationTimeoutSeconds 3 `
             -StreamDrainTimeoutSeconds 1 `
             -ParentTimeoutSeconds 8
         $stopwatch.Stop()
-        Assert-ValidatorResult -Result $result -ExpectedExitCode 1 -ExpectedOutput @('timed out after 1 seconds', 'Process-tree termination was attempted', 'Evaluator exit was confirmed')
+        Assert-ValidatorResult -Result $result -ExpectedExitCode 1 -ExpectedOutput @('timed out after 3 seconds', 'Process-tree termination was attempted', 'Evaluator exit was confirmed')
         if ($stopwatch.Elapsed.TotalSeconds -ge 6) {
             throw "The process-tree timeout took $($stopwatch.Elapsed.TotalSeconds) seconds, so it was not meaningfully bounded."
         }
