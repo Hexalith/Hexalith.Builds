@@ -7,7 +7,7 @@
       "owner": "Hexalith.ChatBot",
       "path": "src/Hexalith.ChatBot.AppHost/Hexalith.ChatBot.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",
-      "version": "13.4.6",
+      "version": "13.5.3",
       "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
       "alignmentRule": "exact-catalog-package",
       "catalogPackage": "Aspire.Hosting"
@@ -17,7 +17,7 @@
       "owner": "Hexalith.Conversations",
       "path": "src/Hexalith.Conversations.AppHost/Hexalith.Conversations.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",
-      "version": "13.4.6",
+      "version": "13.5.3",
       "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
       "alignmentRule": "exact-catalog-package",
       "catalogPackage": "Aspire.Hosting"
@@ -27,7 +27,7 @@
       "owner": "Hexalith.EventStore",
       "path": "src/Hexalith.EventStore.AppHost/Hexalith.EventStore.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",
-      "version": "13.4.6",
+      "version": "13.5.3",
       "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
       "alignmentRule": "exact-catalog-package",
       "catalogPackage": "Aspire.Hosting"
@@ -37,7 +37,7 @@
       "owner": "Hexalith.Folders",
       "path": "src/Hexalith.Folders.AppHost/Hexalith.Folders.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",
-      "version": "13.4.6",
+      "version": "13.5.3",
       "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
       "alignmentRule": "exact-catalog-package",
       "catalogPackage": "Aspire.Hosting"
@@ -47,7 +47,7 @@
       "owner": "Hexalith.FrontComposer",
       "path": "src/Hexalith.FrontComposer.AppHost/Hexalith.FrontComposer.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",
-      "version": "13.4.6",
+      "version": "13.5.3",
       "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
       "alignmentRule": "exact-catalog-package",
       "catalogPackage": "Aspire.Hosting"
@@ -57,7 +57,7 @@
       "owner": "Hexalith.Memories",
       "path": "src/Hexalith.Memories.AppHost/Hexalith.Memories.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",
-      "version": "13.4.6",
+      "version": "13.5.3",
       "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
       "alignmentRule": "exact-catalog-package",
       "catalogPackage": "Aspire.Hosting"
@@ -67,7 +67,7 @@
       "owner": "Hexalith.Parties",
       "path": "src/Hexalith.Parties.AppHost/Hexalith.Parties.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",
-      "version": "13.4.6",
+      "version": "13.5.3",
       "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
       "alignmentRule": "exact-catalog-package",
       "catalogPackage": "Aspire.Hosting"
@@ -77,7 +77,7 @@
       "owner": "Hexalith.Projects",
       "path": "src/Hexalith.Projects.AppHost/Hexalith.Projects.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",
-      "version": "13.4.6",
+      "version": "13.5.3",
       "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
       "alignmentRule": "exact-catalog-package",
       "catalogPackage": "Aspire.Hosting"
@@ -87,7 +87,7 @@
       "owner": "Hexalith.Tenants",
       "path": "src/Hexalith.Tenants.AppHost/Hexalith.Tenants.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",
-      "version": "13.4.6",
+      "version": "13.5.3",
       "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
       "alignmentRule": "exact-catalog-package",
       "catalogPackage": "Aspire.Hosting"
@@ -97,7 +97,7 @@
       "owner": "Hexalith.Timesheets",
       "path": "src/Hexalith.Timesheets.AppHost/Hexalith.Timesheets.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",
-      "version": "13.4.6",
+      "version": "13.5.3",
       "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
       "alignmentRule": "exact-catalog-package",
       "catalogPackage": "Aspire.Hosting"
