@@ -342,11 +342,21 @@ function Test-RepositoryScenario {
         [Parameter(Mandatory = $true)][string] $Name,
         [Parameter(Mandatory = $true)][string] $AuditPath,
         [Parameter(Mandatory = $true)][int] $ExpectedExitCode,
-        [Parameter(Mandatory = $true)][string] $ExpectedOutput
+        [Parameter(Mandatory = $true)][string] $ExpectedOutput,
+        [string] $RepositoryRootPath = '',
+        [string] $CatalogPath = ''
     )
 
     $script:scenarioCount++
-    $output = @(& $pwshExecutable -NoLogo -NoProfile -File $validatorPath -AuditPath $AuditPath 2>&1)
+    $arguments = @('-NoLogo', '-NoProfile', '-File', $validatorPath, '-AuditPath', $AuditPath)
+    if (-not [string]::IsNullOrWhiteSpace($RepositoryRootPath)) {
+        $arguments += @('-RepositoryRootPath', $RepositoryRootPath)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($CatalogPath)) {
+        $arguments += @('-CatalogPath', $CatalogPath)
+    }
+
+    $output = @(& $pwshExecutable @arguments 2>&1)
     $result = [string]::Join("`n", @($output | ForEach-Object { [string] $_ }))
     if ($LASTEXITCODE -ne $ExpectedExitCode) {
         $script:failures.Add("$Name expected exit code $ExpectedExitCode but received $LASTEXITCODE. Output: $result")
@@ -819,6 +829,64 @@ $items = @(
 
     $missingRelationPath = Join-Path $temporaryRoot 'repository-consumer-relation-missing.json'
     $productionAuditPath = Join-Path $PSScriptRoot 'package-version-audit.json'
+    $predatingCoveragePath = Join-Path $temporaryRoot 'repository-predating-coverage.json'
+    $predatingCoverageAudit = Get-Content -LiteralPath $productionAuditPath -Raw | ConvertFrom-Json -DateKind String
+    $predatingCoverageAudit.generatedFromRevision = '18742168b0bcdc40e5223f7573b1dcca441d781f'
+    $predatingCoverageAudit.consumerEvidence.repositoryRevision = '18742168b0bcdc40e5223f7573b1dcca441d781f'
+    Save-Audit -Audit $predatingCoverageAudit -Path $predatingCoveragePath
+    Test-RepositoryScenario -Name 'Generated revision predates the audited coverage declaration' `
+        -AuditPath $predatingCoveragePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Generated-from revision '18742168b0bcdc40e5223f7573b1dcca441d781f' does not contain the audited catalog declaration bytes"
+
+    $historyRepository = Join-Path $temporaryRoot 'repository-history'
+    $historyCatalogPath = Join-Path $historyRepository 'Props/Directory.Packages.props'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $historyCatalogPath) -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'Props/Directory.Packages.props') -Destination $historyCatalogPath
+    $declarationPaths = @($predatingCoverageAudit.consumerEvidence.entries |
+            ForEach-Object { [string] $_.declarationPath } |
+            Sort-Object -Unique)
+    foreach ($declarationPath in $declarationPaths) {
+        $destination = Join-Path $historyRepository $declarationPath
+        New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $repositoryRoot $declarationPath) -Destination $destination
+    }
+
+    $changedDeclarationPath = $declarationPaths[0]
+    $changedDeclaration = Join-Path $historyRepository $changedDeclarationPath
+    [IO.File]::AppendAllText($changedDeclaration, "`n<!-- historical consumer bytes -->`n", [Text.UTF8Encoding]::new($false))
+    $null = & git -C $historyRepository init --quiet
+    $null = & git -C $historyRepository config user.name 'Package Audit Validator Tests'
+    $null = & git -C $historyRepository config user.email 'package-audit-validator@example.invalid'
+    $null = & git -C $historyRepository add -- .
+    $null = & git -C $historyRepository commit --quiet -m 'test: historical consumer bytes'
+    $historicalConsumerRevision = [string] @(& git -C $historyRepository rev-parse HEAD)[-1]
+
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot $changedDeclarationPath) -Destination $changedDeclaration -Force
+    $null = & git -C $historyRepository add -- $changedDeclarationPath
+    $null = & git -C $historyRepository commit --quiet -m 'test: current consumer bytes'
+
+    $historicalConsumerAudit = Get-Content -LiteralPath $productionAuditPath -Raw | ConvertFrom-Json -DateKind String
+    $historicalConsumerAudit.generatedFromRevision = $historicalConsumerRevision.Trim()
+    $historicalConsumerAudit.consumerEvidence.repositoryRevision = $historicalConsumerRevision.Trim()
+    $historicalConsumerPath = Join-Path $temporaryRoot 'repository-historical-consumer.json'
+    Save-Audit -Audit $historicalConsumerAudit -Path $historicalConsumerPath
+    Test-RepositoryScenario -Name 'Generated revision predates audited consumer declaration bytes' `
+        -AuditPath $historicalConsumerPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
+        -ExpectedExitCode 1 `
+        -ExpectedOutput "does not contain consumer declaration '$changedDeclarationPath' bytes"
+
+    $currentTree = [string] @(& git -C $historyRepository rev-parse 'HEAD^{tree}')[-1]
+    $unrelatedRevision = [string] @(& git -C $historyRepository commit-tree $currentTree.Trim() -m 'test: unrelated exact tree')[-1]
+    $unrelatedAudit = Get-Content -LiteralPath $productionAuditPath -Raw | ConvertFrom-Json -DateKind String
+    $unrelatedAudit.generatedFromRevision = $unrelatedRevision.Trim()
+    $unrelatedAudit.consumerEvidence.repositoryRevision = $unrelatedRevision.Trim()
+    $unrelatedPath = Join-Path $temporaryRoot 'repository-unrelated-revision.json'
+    Save-Audit -Audit $unrelatedAudit -Path $unrelatedPath
+    Test-RepositoryScenario -Name 'Generated revision is not from audited worktree ancestry' `
+        -AuditPath $unrelatedPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
+        -ExpectedExitCode 1 `
+        -ExpectedOutput "is not an ancestor of the audited worktree HEAD"
+
     $missingRelationAudit = Get-Content -LiteralPath $productionAuditPath -Raw | ConvertFrom-Json -DateKind String
     $removedRelation = @($missingRelationAudit.consumerEvidence.entries | Where-Object {
             [string] $_.packageId -ceq 'Microsoft.NET.Test.Sdk'

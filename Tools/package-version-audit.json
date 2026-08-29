@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "auditedAtUtc": "2026-08-29T11:05:28.4806239+00:00",
-  "generatedFromRevision": "18742168b0bcdc40e5223f7573b1dcca441d781f",
+  "generatedFromRevision": "250cf8772e67c49a34c78b08b1d1e5dd063045ff",
   "catalogPath": "Props/Directory.Packages.props",
   "catalogSha256": "5c1132bbfcf837c7671e55b15ec95b44334da7cb0558470ad09dc62c8a490117",
   "sources": [
@@ -17,7 +17,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "18742168b0bcdc40e5223f7573b1dcca441d781f",
+    "repositoryRevision": "250cf8772e67c49a34c78b08b1d1e5dd063045ff",
     "sha256": "c1926c58e2385c8349db5b54b966696e413dd61cfb25e79f531c7ed20ca0c6f7",
     "entries": [
       {

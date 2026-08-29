@@ -3,6 +3,7 @@ param(
     [string] $AuditPath = '',
     [string] $CatalogPath = '',
     [Parameter(DontShow = $true)][string] $EvaluatorScriptPath = '',
+    [Parameter(DontShow = $true)][string] $RepositoryRootPath = '',
     # Root scanned for tracked *.csproj/*.props/*.targets files during independent
     # PackageReference rediscovery (see Get-TrackedProjectFiles). Defaults to the
     # repository root. Overridable so tests can point rediscovery at an isolated
@@ -13,7 +14,12 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
-$repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
+$repositoryRoot = if ([string]::IsNullOrWhiteSpace($RepositoryRootPath)) {
+    (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
+}
+else {
+    (Resolve-Path -LiteralPath $RepositoryRootPath -ErrorAction Stop).ProviderPath
+}
 
 function Stop-Validation {
     param([Parameter(Mandatory = $true)][string] $Message)
@@ -144,21 +150,71 @@ function Get-Sha256File {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function Get-Sha256Bytes {
+    param([Parameter(Mandatory = $true)][byte[]] $Bytes)
+
+    return [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($Bytes)).ToLowerInvariant()
+}
+
+function Get-GitBlobBytes {
+    param(
+        [Parameter(Mandatory = $true)][string] $Root,
+        [Parameter(Mandatory = $true)][string] $Revision,
+        [Parameter(Mandatory = $true)][string] $Path
+    )
+
+    $startInfo = [Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = 'git'
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    foreach ($argument in @('-C', $Root, 'show', "$Revision`:$Path")) {
+        $null = $startInfo.ArgumentList.Add($argument)
+    }
+
+    $process = [Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    $memory = [IO.MemoryStream]::new()
+    try {
+        $null = $process.Start()
+        $copyTask = $process.StandardOutput.BaseStream.CopyToAsync($memory)
+        $errorTask = $process.StandardError.ReadToEndAsync()
+        $process.WaitForExit()
+        $copyTask.GetAwaiter().GetResult()
+        $diagnostic = $errorTask.GetAwaiter().GetResult().Trim()
+        if ($process.ExitCode -ne 0) {
+            return [pscustomobject] @{ Success = $false; Bytes = [byte[]] @(); Diagnostic = $diagnostic }
+        }
+
+        return [pscustomobject] @{ Success = $true; Bytes = $memory.ToArray(); Diagnostic = '' }
+    }
+    finally {
+        $memory.Dispose()
+        $process.Dispose()
+    }
+}
+
+function Get-CatalogSha256Bytes {
+    param([Parameter(Mandatory = $true)][byte[]] $Bytes)
+
+    $utf8 = [Text.UTF8Encoding]::new($false, $true)
+    $offset = if (
+        $Bytes.Length -ge 3 -and
+        $Bytes[0] -eq 0xEF -and
+        $Bytes[1] -eq 0xBB -and
+        $Bytes[2] -eq 0xBF
+    ) { 3 } else { 0 }
+    $text = $utf8.GetString($Bytes, $offset, $Bytes.Length - $offset)
+    $canonicalText = [regex]::Replace($text, "`r`n|`r|`n", "`r`n")
+    $canonicalBytes = [byte[]] @(0xEF, 0xBB, 0xBF) + $utf8.GetBytes($canonicalText)
+    return Get-Sha256Bytes -Bytes $canonicalBytes
+}
+
 function Get-CatalogSha256 {
     param([Parameter(Mandatory = $true)][string] $Path)
 
-    $utf8 = [Text.UTF8Encoding]::new($false, $true)
     $bytes = [IO.File]::ReadAllBytes($Path)
-    $offset = if (
-        $bytes.Length -ge 3 -and
-        $bytes[0] -eq 0xEF -and
-        $bytes[1] -eq 0xBB -and
-        $bytes[2] -eq 0xBF
-    ) { 3 } else { 0 }
-    $text = $utf8.GetString($bytes, $offset, $bytes.Length - $offset)
-    $canonicalText = [regex]::Replace($text, "`r`n|`r|`n", "`r`n")
-    $canonicalBytes = [byte[]] @(0xEF, 0xBB, 0xBF) + $utf8.GetBytes($canonicalText)
-    return [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($canonicalBytes)).ToLowerInvariant()
+    return Get-CatalogSha256Bytes -Bytes $bytes
 }
 
 function Get-IdentitySignature {
@@ -1295,6 +1351,27 @@ else {
     if ($consumerRevision -cne $generatedFromRevision) {
         $failures.Add('Consumer evidence repositoryRevision must match generatedFromRevision.')
     }
+    if ($consumerDiscovery -ceq 'git-ls-files' -and $generatedFromRevision -cmatch '^[0-9a-f]{40}$') {
+        $null = & git -C $repositoryRoot cat-file -e "$generatedFromRevision^{commit}" 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            $failures.Add("Generated-from revision '$generatedFromRevision' is not an available Git commit.")
+        }
+        else {
+            $null = & git -C $repositoryRoot merge-base --is-ancestor $generatedFromRevision HEAD 2>$null
+            if ($LASTEXITCODE -ne 0) {
+                $failures.Add("Generated-from revision '$generatedFromRevision' is not an ancestor of the audited worktree HEAD.")
+            }
+
+            $catalogBlob = @(Get-GitBlobBytes `
+                -Root $repositoryRoot -Revision $generatedFromRevision -Path $catalogPathValue)[-1]
+            if (-not $catalogBlob.Success -or
+                (Get-CatalogSha256Bytes -Bytes $catalogBlob.Bytes) -cne $catalogSha256) {
+                $failures.Add(
+                    "Generated-from revision '$generatedFromRevision' does not contain the audited catalog declaration bytes."
+                )
+            }
+        }
+    }
     $declaredConsumerHash = Get-RequiredText `
         -Object $consumerEvidence -Name 'sha256' -Description 'Consumer evidence' -Failures $failures
     $consumerRelations = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
@@ -1325,6 +1402,17 @@ else {
                     $failures.Add("Consumer declaration '$declarationPath' SHA-256 does not match its tracked bytes.")
                 }
                 else {
+                    if ($generatedFromRevision -cmatch '^[0-9a-f]{40}$') {
+                        $declarationBlob = @(Get-GitBlobBytes `
+                            -Root $repositoryRoot -Revision $generatedFromRevision -Path $declarationPath)[-1]
+                        if (-not $declarationBlob.Success -or
+                            (Get-Sha256Bytes -Bytes $declarationBlob.Bytes) -cne $declarationSha256) {
+                            $failures.Add(
+                                "Generated-from revision '$generatedFromRevision' does not contain consumer declaration '$declarationPath' bytes."
+                            )
+                        }
+                    }
+
                     try {
                         [xml] $declarationDocument = Get-Content -LiteralPath $declarationFullPath -Raw -ErrorAction Stop
                         $declaredPackageIds = @(
