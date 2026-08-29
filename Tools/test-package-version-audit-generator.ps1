@@ -131,12 +131,21 @@ try {
     Write-Utf8File -Path $fixturePath -Content (
         [ordered] @{ responses = $responses } | ConvertTo-Json -Depth 20
     )
+    $consumerEvidencePath = Join-Path $temporaryRoot 'consumer-evidence.json'
+    Write-Utf8File -Path $consumerEvidencePath -Content (
+        [ordered] @{
+            entries = @(
+                [ordered] @{ consumer = 'Fixture.Consumer'; packageId = 'Fixture.Listed' }
+            )
+        } | ConvertTo-Json -Depth 5
+    )
     $auditPath = Join-Path $temporaryRoot 'audit.json'
     $generatorOutput = @(& $generatorPath `
             -CatalogPath $catalogPath `
             -OutputPath $auditPath `
             -Source @($sourceOne, $sourceTwo) `
-            -RequestFixturePath $fixturePath 2>&1)
+            -RequestFixturePath $fixturePath `
+            -ConsumerEvidencePath $consumerEvidencePath 2>&1)
     if ($LASTEXITCODE -ne 0) {
         $failures.Add("Generator fixture exited with code $LASTEXITCODE. $([string]::Join("`n", $generatorOutput))")
     }
@@ -173,18 +182,10 @@ try {
             $failures.Add("Generated audit did not pass deterministic validation. $([string]::Join("`n", $validatorOutput))")
         }
 
-        if ($audit.consumerEvidence.discovery -cne 'git-ls-files') {
-            $failures.Add("Git-owned consumer discovery was not recorded explicitly.")
+        if ($audit.consumerEvidence.discovery -cne 'explicit-fixture') {
+            $failures.Add("Synthetic consumer discovery was not recorded explicitly.")
         }
 
-        $consumerEvidencePath = Join-Path $temporaryRoot 'consumer-evidence.json'
-        Write-Utf8File -Path $consumerEvidencePath -Content (
-            [ordered] @{
-                entries = @(
-                    [ordered] @{ consumer = 'Fixture.Consumer'; packageId = 'Fixture.Listed' }
-                )
-            } | ConvertTo-Json -Depth 5
-        )
         $responses[$listedPageUri].response.items = @((New-RegistrationLeaf -Version '1.0.0' -Listed $true))
         $preservationFixturePath = Join-Path $temporaryRoot 'preservation-requests.json'
         Write-Utf8File -Path $preservationFixturePath -Content (
