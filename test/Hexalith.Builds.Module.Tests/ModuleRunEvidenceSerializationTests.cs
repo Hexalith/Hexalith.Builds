@@ -116,16 +116,16 @@ public sealed class ModuleRunEvidenceSerializationTests
     /// Verifies the SDK roll-forward rule accepts a newer patch in the pinned feature band and rejects anything else.
     /// </summary>
     /// <param name="sdkVersion">The SDK version a runner resolved.</param>
-    /// <param name="expected">Whether the version satisfies latestPatch roll-forward from 10.0.302.</param>
+    /// <param name="expected">Whether the version satisfies latestPatch roll-forward from 10.0.400.</param>
     [Theory]
-    [InlineData("10.0.302", true)]
-    [InlineData("10.0.303", true)]
-    [InlineData("10.0.399", true)]
-    [InlineData("10.0.301", false)]
-    [InlineData("10.0.401", false)]
-    [InlineData("11.0.302", false)]
+    [InlineData("10.0.400", true)]
+    [InlineData("10.0.401", true)]
+    [InlineData("10.0.499", true)]
+    [InlineData("10.0.399", false)]
+    [InlineData("10.0.500", false)]
+    [InlineData("11.0.400", false)]
     public void LatestPatchRollForwardAcceptsOnlyNewerPatchesInThePinnedFeatureBand(string sdkVersion, bool expected)
-        => SatisfiesLatestPatchRollForward(sdkVersion, new Version(10, 0, 302)).ShouldBe(expected);
+        => SatisfiesLatestPatchRollForward(sdkVersion, new Version(10, 0, 400)).ShouldBe(expected);
 
     /// <summary>
     /// Verifies evidence creation revalidates a fixture path after manifest loading and rejects a later symlink escape.

@@ -40,7 +40,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6.0.0
         with:
-          dotnet-version: 10.0.302
+          dotnet-version: 10.0.400
           
       - name: Run unit tests for Core project
         uses: ./Github/unit-tests

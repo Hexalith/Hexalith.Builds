@@ -26,7 +26,7 @@ public sealed class ToolProjectSpineTests
 
         using JsonDocument globalJson = JsonDocument.Parse(File.ReadAllText(Path.Combine(repositoryRoot, "global.json")));
         JsonElement sdk = globalJson.RootElement.GetProperty("sdk");
-        sdk.GetProperty("version").GetString().ShouldBe("10.0.302");
+        sdk.GetProperty("version").GetString().ShouldBe("10.0.400");
         sdk.GetProperty("rollForward").GetString().ShouldBe("latestPatch");
 
         AssertToolProject(

@@ -104,7 +104,7 @@ jobs:
       - name: Initialize .NET
         uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@main
         with:
-          dotnet-version: '10.0.302'
+          dotnet-version: '10.0.400'
 
       - name: Resolve the release version
         id: release-version
