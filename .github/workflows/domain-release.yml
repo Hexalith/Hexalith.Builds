@@ -327,7 +327,7 @@ jobs:
           echo "Unsupported test-platform '$TEST_PLATFORM'. Expected vstest or microsoft-testing-platform." >&2
           exit 1
       - name: Install npm dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Verify npm dependency provenance and signatures
         run: npm audit signatures
       - name: Restore
@@ -476,7 +476,7 @@ jobs:
           HEXALITH_RELEASE_AUTHORITY_ISSUE_URL: ${{ inputs.release-authority-issue-url }}
           HEXALITH_RELEASE_AUTHORITY_OWNER: ${{ inputs.release-authority-owner }}
           HEXALITH_RELEASE_REQUIRE_AUTHORITY: ${{ inputs.require-publication-authority }}
-        run: npx semantic-release
+        run: npm exec --no -- semantic-release
       - name: Upload complete release evidence
         if: ${{ always() && inputs.publish-containers }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -738,7 +738,7 @@ jobs:
           exit 1
       - name: Install npm dependencies
         if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Verify npm dependency provenance and signatures
         if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' }}
         run: npm audit signatures
@@ -889,7 +889,7 @@ jobs:
           # Resolve the exact version semantic-release will publish before any publication
           # side effect exists, so the attested bytes are the bytes NuGet later receives.
           dry_run_log="$(mktemp)"
-          if ! HEXALITH_RELEASE_PHASE=candidate npx semantic-release --dry-run >"$dry_run_log" 2>&1; then
+          if ! HEXALITH_RELEASE_PHASE=candidate npm exec --no -- semantic-release --dry-run >"$dry_run_log" 2>&1; then
             cat "$dry_run_log" >&2
             echo "The governed candidate phase could not resolve the next release version." >&2
             exit 1
@@ -1032,7 +1032,7 @@ jobs:
           HEXALITH_RELEASE_POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
           HEXALITH_RELEASE_POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
           HEXALITH_RELEASE_EVALUATOR_DIGEST: ${{ inputs.expected-release-evaluator-digest }}
-        run: npx semantic-release
+        run: npm exec --no -- semantic-release
       - name: Collect governed release verification data
         id: governed-verification-data
         if: ${{ always() }}

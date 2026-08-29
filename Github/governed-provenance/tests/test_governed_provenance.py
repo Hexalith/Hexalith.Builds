@@ -8,6 +8,7 @@ checkout, a cycle, and an identity that does not match the approved reusable wor
 
 import hashlib
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -532,8 +533,10 @@ class EndToEndTests(unittest.TestCase):
         provenance = evaluator.build_provenance(self.arguments("ci", ".github/workflows/domain-ci.yml"))
         github_output = Path(self.temporary) / "github-output"
         github_output.touch()
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self.temporary)
         with mock.patch.dict("os.environ", {"GITHUB_OUTPUT": str(github_output)}):
-            outputs = evaluator.write_outputs(provenance, str(self.output))
+            outputs = evaluator.write_outputs(provenance, "provenance.json")
 
         payload = self.output.read_bytes()
         emitted = dict(
@@ -554,8 +557,10 @@ class EndToEndTests(unittest.TestCase):
         provenance = evaluator.build_provenance(self.arguments("ci", ".github/workflows/domain-ci.yml"))
         github_output = Path(self.temporary) / "github-output"
         github_output.touch()
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self.temporary)
         with mock.patch.dict("os.environ", {"GITHUB_OUTPUT": str(github_output)}):
-            outputs = evaluator.write_outputs(provenance, str(self.output))
+            outputs = evaluator.write_outputs(provenance, "provenance.json")
 
         payload = self.output.read_bytes()
 
@@ -563,6 +568,18 @@ class EndToEndTests(unittest.TestCase):
         self.assertEqual(payload, outputs["provenance-json"].encode("utf-8"))
         self.assertEqual(hashlib.sha256(payload).hexdigest(), outputs["provenance-sha256"])
         self.assertFalse(payload.endswith(b"\n"))
+
+    def test_the_output_path_must_stay_inside_the_workspace(self):
+        provenance = evaluator.build_provenance(self.arguments("ci", ".github/workflows/domain-ci.yml"))
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self.temporary)
+        for output_path in ("/tmp/outside.json", "../outside.json", "nested/../../outside.json"):
+            with self.subTest(output_path=output_path):
+                with self.assertRaises(evaluator.ProvenanceError) as raised:
+                    evaluator.write_outputs(provenance, output_path)
+
+                self.assertRegex(str(raised.exception), "relative POSIX path|unsafe path segment|escapes the workspace")
+                self.assertFalse((Path(self.temporary) / "outside.json").exists())
 
     def test_the_expected_evaluator_digest_is_enforced_for_both_stages(self):
         # Recording the expected digest without comparing it would make the field

@@ -157,17 +157,17 @@ def candidate_phase_environment(workspace, **overrides):
 
 
 def stub_semantic_release(workspace, stdout, exit_code=0):
-    """Install an `npx` stub so the candidate phase can run without a real release toolchain."""
+    """Install an `npm` stub so the candidate phase can run without a real release toolchain."""
     binaries = Path(workspace) / "stub-bin"
     binaries.mkdir(exist_ok=True)
-    npx = binaries / "npx"
-    npx.write_text(
+    npm = binaries / "npm"
+    npm.write_text(
         "#!/usr/bin/env bash\n"
         'printf "%s\\n" "$FAKE_SEMANTIC_RELEASE_STDOUT"\n'
         'exit "${FAKE_SEMANTIC_RELEASE_EXIT:-0}"\n',
         encoding="utf-8",
     )
-    npx.chmod(0o755)
+    npm.chmod(0o755)
     return {
         "PATH": f"{binaries}:{os.environ['PATH']}",
         "FAKE_SEMANTIC_RELEASE_STDOUT": stdout,
@@ -247,7 +247,17 @@ class ReleaseFreezeGateTests(unittest.TestCase):
                 semantic_index = source.index("- name: Semantic Release")
                 self.assertLess(gate_index, semantic_index)
                 semantic_step = source[semantic_index:]
-                self.assertIn(condition, semantic_step[: semantic_step.index("run: npx semantic-release")])
+                self.assertIn(
+                    condition, semantic_step[: semantic_step.index("run: npm exec --no -- semantic-release")]
+                )
+
+    def test_release_jobs_install_and_run_lockfile_node_binaries_only(self):
+        workflow = read(DOMAIN_RELEASE)
+
+        self.assertIn("run: npm ci --ignore-scripts", workflow)
+        self.assertIn("run: npm exec --no -- semantic-release", workflow)
+        self.assertNotIn("npx semantic-release", workflow)
+        self.assertNotRegex(workflow, r"(?m)^[ \t]+run: npm ci$")
 
     def test_semantic_release_requires_both_the_gate_and_an_attested_candidate(self):
         # publish-enabled alone would let a run whose candidate phase resolved no version,

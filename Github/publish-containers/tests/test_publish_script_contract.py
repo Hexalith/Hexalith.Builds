@@ -246,6 +246,8 @@ class PublishScriptContractTests(unittest.TestCase):
         self.assertIn("builds-execution-sha:", action)
         self.assertIn("HEXALITH_BUILDS_EXECUTION_SHA", action)
         self.assertIn("raw.githubusercontent.com/Hexalith/Hexalith.Builds", action)
+        self.assertIn("--proto '=https'", action)
+        self.assertIn("--proto-redir '=https'", action)
         self.assertIn("cmp --silent", action)
         self.assertIn(
             'cp "${GITHUB_ACTION_PATH}/publication_preflight.py" '
