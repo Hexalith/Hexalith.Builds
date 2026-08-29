@@ -73,6 +73,58 @@ function Assert-NotContains {
     }
 }
 
+function Assert-Condition {
+    param(
+        [Parameter(Mandatory = $true)][string] $Name,
+        [Parameter(Mandatory = $true)][bool] $Condition,
+        [Parameter(Mandatory = $true)][string] $Failure
+    )
+
+    $script:checkCount++
+    if (-not $Condition) {
+        $script:failures.Add("$Name $Failure")
+    }
+}
+
+function Get-NamedStepBlock {
+    param(
+        [Parameter(Mandatory = $true)][string] $Content,
+        [Parameter(Mandatory = $true)][string] $StepName
+    )
+
+    $escapedName = [regex]::Escape($StepName)
+    $match = [regex]::Match(
+        $Content,
+        "(?ms)^      - name: $escapedName\r?\n.*?(?=^      - name:|\z)"
+    )
+    return $(if ($match.Success) { $match.Value } else { '' })
+}
+
+function Test-MtpCoverageBlock {
+    param([Parameter(Mandatory = $true)][string] $Block)
+
+    if ([string]::IsNullOrWhiteSpace($Block)) {
+        return $false
+    }
+
+    $emptyIndex = $Block.IndexOf('coverage_args=()', [StringComparison]::Ordinal)
+    $guardIndex = $Block.IndexOf('if [ "$RUN_COVERAGE_GATE" = "true" ]; then', [StringComparison]::Ordinal)
+    $coverageIndex = $Block.IndexOf(
+        'coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)',
+        [StringComparison]::Ordinal
+    )
+    $guardEndIndex = $Block.IndexOf("`n            fi", [StringComparison]::Ordinal)
+    $invocationIndex = $Block.IndexOf('"${coverage_args[@]}"', [StringComparison]::Ordinal)
+
+    return $Block.Contains('RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}', [StringComparison]::Ordinal) -and
+        $emptyIndex -ge 0 -and
+        $guardIndex -gt $emptyIndex -and
+        $coverageIndex -gt $guardIndex -and
+        $guardEndIndex -gt $coverageIndex -and
+        $invocationIndex -gt $guardEndIndex -and
+        ([regex]::Matches($Block, [regex]::Escape('coverage_args+=('))).Count -eq 1
+}
+
 $ciWorkflow = Get-Content -LiteralPath $ciWorkflowPath -Raw
 $releaseWorkflow = Get-Content -LiteralPath $releaseWorkflowPath -Raw
 $buildReleaseWorkflow = Get-Content -LiteralPath $buildReleaseWorkflowPath -Raw
@@ -92,9 +144,30 @@ foreach ($workflow in @(
 }
 
 Assert-NotContains -Name 'domain-ci.yml' -Content $ciWorkflow -Unexpected 'run-coverage-gate is not supported with microsoft-testing-platform'
-Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected 'RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}'
-Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected 'coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)'
-Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected '"${coverage_args[@]}"'
+$unitMtpBlock = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Unit tests (Tier 1, Microsoft.Testing.Platform)'
+$integrationMtpBlock = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Integration tests (Tier 2, Microsoft.Testing.Platform)'
+Assert-Condition -Name 'domain-ci.yml unit MTP coverage' -Condition (Test-MtpCoverageBlock -Block $unitMtpBlock) `
+    -Failure 'does not preserve independent enabled and disabled coverage arguments.'
+Assert-Condition -Name 'domain-ci.yml integration MTP coverage' -Condition (Test-MtpCoverageBlock -Block $integrationMtpBlock) `
+    -Failure 'does not preserve independent enabled and disabled coverage arguments.'
+
+$coverageAppend = 'coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)'
+$disabledSeed = 'coverage_args=()'
+Assert-Condition -Name 'domain-ci.yml unit enabled-coverage mutation contract' `
+    -Condition (-not (Test-MtpCoverageBlock -Block $unitMtpBlock.Replace($coverageAppend, '# removed'))) `
+    -Failure 'did not reject removal of the unit enabled-coverage arguments.'
+Assert-Condition -Name 'domain-ci.yml unit disabled-coverage mutation contract' `
+    -Condition (-not (Test-MtpCoverageBlock -Block $unitMtpBlock.Replace($disabledSeed, 'coverage_args=(--coverage)'))) `
+    -Failure 'did not reject pre-populated unit disabled-coverage arguments.'
+Assert-Condition -Name 'domain-ci.yml integration enabled-coverage mutation contract' `
+    -Condition (-not (Test-MtpCoverageBlock -Block $integrationMtpBlock.Replace($coverageAppend, '# removed'))) `
+    -Failure 'did not reject removal of the integration enabled-coverage arguments.'
+Assert-Condition -Name 'domain-ci.yml integration disabled-coverage mutation contract' `
+    -Condition (-not (Test-MtpCoverageBlock -Block $integrationMtpBlock.Replace($disabledSeed, 'coverage_args=(--coverage)'))) `
+    -Failure 'did not reject pre-populated integration disabled-coverage arguments.'
+Assert-Condition -Name 'domain-ci.yml unit/integration isolation' `
+    -Condition ((Test-MtpCoverageBlock -Block $unitMtpBlock) -and (Test-MtpCoverageBlock -Block $integrationMtpBlock)) `
+    -Failure 'does not validate the unit and integration coverage blocks separately.'
 Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected '--filter-not-trait'
 Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected '--filter-trait'
 Assert-Contains -Name 'build-release.yml' -Content $buildReleaseWorkflow -Expected 'test-domain-workflow-test-platforms.ps1'

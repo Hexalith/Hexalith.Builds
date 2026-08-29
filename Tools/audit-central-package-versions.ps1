@@ -62,6 +62,23 @@ function Get-Sha256File {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function Get-CatalogSha256 {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
+    $utf8 = [Text.UTF8Encoding]::new($false, $true)
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    $offset = if (
+        $bytes.Length -ge 3 -and
+        $bytes[0] -eq 0xEF -and
+        $bytes[1] -eq 0xBB -and
+        $bytes[2] -eq 0xBF
+    ) { 3 } else { 0 }
+    $text = $utf8.GetString($bytes, $offset, $bytes.Length - $offset)
+    $canonicalText = [regex]::Replace($text, "`r`n|`r|`n", "`r`n")
+    $canonicalBytes = [byte[]] @(0xEF, 0xBB, 0xBF) + $utf8.GetBytes($canonicalText)
+    return [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($canonicalBytes)).ToLowerInvariant()
+}
+
 function Get-ArrayProperty {
     param(
         [Parameter(Mandatory = $true)] $Object,
@@ -831,7 +848,7 @@ if ($generatedFromRevision -cnotmatch '^[0-9a-f]{40}$') {
 }
 
 $catalogRelativePath = [IO.Path]::GetRelativePath($repositoryRoot, $resolvedCatalogPath).Replace('\', '/')
-$catalogSha256 = Get-Sha256File -Path $resolvedCatalogPath
+$catalogSha256 = Get-CatalogSha256 -Path $resolvedCatalogPath
 $currentSourceFingerprint = Get-SourceScopeFingerprint -Sources @($sourceContracts)
 $priorCatalogPath = if ($null -eq $priorAudit) { '' } else { Get-PropertyText -Object $priorAudit -Name 'catalogPath' }
 $priorCatalogSha256 = if ($null -eq $priorAudit) { '' } else { Get-PropertyText -Object $priorAudit -Name 'catalogSha256' }

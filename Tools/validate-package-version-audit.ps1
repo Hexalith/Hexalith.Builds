@@ -144,6 +144,23 @@ function Get-Sha256File {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function Get-CatalogSha256 {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
+    $utf8 = [Text.UTF8Encoding]::new($false, $true)
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    $offset = if (
+        $bytes.Length -ge 3 -and
+        $bytes[0] -eq 0xEF -and
+        $bytes[1] -eq 0xBB -and
+        $bytes[2] -eq 0xBF
+    ) { 3 } else { 0 }
+    $text = $utf8.GetString($bytes, $offset, $bytes.Length - $offset)
+    $canonicalText = [regex]::Replace($text, "`r`n|`r|`n", "`r`n")
+    $canonicalBytes = [byte[]] @(0xEF, 0xBB, 0xBF) + $utf8.GetBytes($canonicalText)
+    return [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($canonicalBytes)).ToLowerInvariant()
+}
+
 function Get-IdentitySignature {
     param([AllowEmptyCollection()][object[]] $Values)
 
@@ -867,7 +884,7 @@ if ($catalogPathValue -cne $expectedCatalogPath) {
     $failures.Add("Audit catalogPath '$catalogPathValue' does not match evaluated catalog '$expectedCatalogPath'.")
 }
 $catalogSha256 = Get-RequiredText -Object $audit -Name 'catalogSha256' -Description 'Audit' -Failures $failures
-$actualCatalogSha256 = Get-Sha256File -Path $resolvedCatalogPath
+$actualCatalogSha256 = Get-CatalogSha256 -Path $resolvedCatalogPath
 if ($catalogSha256 -cne $actualCatalogSha256) {
     $failures.Add('Audit catalogSha256 does not match the evaluated catalog declaration bytes.')
 }
