@@ -122,6 +122,16 @@ def normalize_path(value, context):
     return value
 
 
+def resolve_workspace_path(value, context):
+    """Resolve a relative POSIX path and reject any escape from the current workspace."""
+    relative = normalize_path(value, context)
+    workspace = Path.cwd().resolve()
+    destination = (workspace / relative).resolve()
+    if not destination.is_relative_to(workspace):
+        raise ProvenanceError(f"{context} escapes the workspace: {value!r}")
+    return destination
+
+
 def strip_yaml_comment(value):
     """Remove a trailing YAML comment from one scalar line, honoring quoting."""
     single = False
@@ -528,7 +538,7 @@ def write_outputs(provenance, output_path):
     ``provenance-sha256`` covers are all that same byte string, so a consumer can hash the
     artifact it received and compare it with the emitted digest without re-serializing.
     """
-    destination = Path(output_path)
+    destination = resolve_workspace_path(output_path, "output path")
     destination.parent.mkdir(parents=True, exist_ok=True)
     payload = canonical_bytes(provenance)
     destination.write_bytes(payload)
