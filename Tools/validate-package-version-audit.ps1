@@ -1464,7 +1464,15 @@ else {
     if ($consumerRevision -cne $generatedFromRevision) {
         $failures.Add('Consumer evidence repositoryRevision must match generatedFromRevision.')
     }
-    if ($consumerDiscovery -ceq 'git-ls-files' -and $generatedFromRevision -cmatch '^[0-9a-f]{40}$') {
+    # Generator fixtures deliberately evaluate a synthetic catalog outside this
+    # repository. Historical object binding applies only to repository-owned
+    # catalog/consumer evidence; fixture bytes retain the existing direct hashes.
+    $catalogIsRepositoryOwned = $catalogPathValue -cnotmatch '^\.\.(?:/|$)'
+    if (
+        $consumerDiscovery -ceq 'git-ls-files' -and
+        $catalogIsRepositoryOwned -and
+        $generatedFromRevision -cmatch '^[0-9a-f]{40}$'
+    ) {
         $null = & git --no-replace-objects -C $repositoryRoot cat-file -e "$generatedFromRevision^{commit}" 2>$null
         if ($LASTEXITCODE -ne 0) {
             $failures.Add("Generated-from revision '$generatedFromRevision' is not an available Git commit.")
