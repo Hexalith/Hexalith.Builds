@@ -4,6 +4,9 @@ param(
     [string] $CatalogPath = '',
     [Parameter(DontShow = $true)][string] $EvaluatorScriptPath = '',
     [Parameter(DontShow = $true)][string] $RepositoryRootPath = '',
+    [Parameter(DontShow = $true)][string] $GitBlobReaderShimPath = '',
+    [Parameter(DontShow = $true)][ValidateRange(1, 60)][int] $GitBlobReadTimeoutSeconds = 10,
+    [Parameter(DontShow = $true)][ValidateRange(1024, 16777216)][int] $GitBlobReadMaxBytes = 1048576,
     # Root scanned for tracked *.csproj/*.props/*.targets files during independent
     # PackageReference rediscovery (see Get-TrackedProjectFiles). Defaults to the
     # repository root. Overridable so tests can point rediscovery at an isolated
@@ -164,31 +167,140 @@ function Get-GitBlobBytes {
     )
 
     $startInfo = [Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = 'git'
+    $startInfo.FileName = if ([string]::IsNullOrWhiteSpace($GitBlobReaderShimPath)) {
+        'git'
+    }
+    else {
+        $pwshExecutable
+    }
     $startInfo.UseShellExecute = $false
     $startInfo.RedirectStandardOutput = $true
     $startInfo.RedirectStandardError = $true
-    foreach ($argument in @('-C', $Root, 'show', "$Revision`:$Path")) {
+    $startInfo.CreateNoWindow = $true
+    $startInfo.Environment['GIT_NO_REPLACE_OBJECTS'] = '1'
+    if (-not [string]::IsNullOrWhiteSpace($GitBlobReaderShimPath)) {
+        foreach ($argument in @('-NoLogo', '-NoProfile', '-File', $GitBlobReaderShimPath)) {
+            $null = $startInfo.ArgumentList.Add($argument)
+        }
+    }
+    foreach ($argument in @('--no-replace-objects', '-C', $Root, 'cat-file', 'blob', "$Revision`:$Path")) {
         $null = $startInfo.ArgumentList.Add($argument)
     }
 
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
     $memory = [IO.MemoryStream]::new()
+    $processStarted = $false
+    $stderrTask = $null
+    $stopwatch = [Diagnostics.Stopwatch]::StartNew()
     try {
-        $null = $process.Start()
-        $copyTask = $process.StandardOutput.BaseStream.CopyToAsync($memory)
-        $errorTask = $process.StandardError.ReadToEndAsync()
-        $process.WaitForExit()
-        $copyTask.GetAwaiter().GetResult()
-        $diagnostic = $errorTask.GetAwaiter().GetResult().Trim()
+        try {
+            $processStarted = $process.Start()
+        }
+        catch {
+            return [pscustomobject] @{
+                Success = $false
+                Bytes = [byte[]] @()
+                Diagnostic = "Historical Git blob read could not start for '$Path'."
+            }
+        }
+        if (-not $processStarted) {
+            return [pscustomobject] @{
+                Success = $false
+                Bytes = [byte[]] @()
+                Diagnostic = "Historical Git blob read could not start for '$Path'."
+            }
+        }
+
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        $buffer = [byte[]]::new(8192)
+        while ($true) {
+            $remainingMilliseconds = ($GitBlobReadTimeoutSeconds * 1000) - [int] $stopwatch.ElapsedMilliseconds
+            if ($remainingMilliseconds -le 0) {
+                return [pscustomobject] @{
+                    Success = $false
+                    Bytes = [byte[]] @()
+                    Diagnostic = "Historical Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
+                }
+            }
+
+            $remainingCapacity = ($GitBlobReadMaxBytes - [int] $memory.Length) + 1
+            $readLength = [Math]::Min($buffer.Length, $remainingCapacity)
+            $readTask = $process.StandardOutput.BaseStream.ReadAsync($buffer, 0, $readLength)
+            if (-not $readTask.Wait($remainingMilliseconds)) {
+                return [pscustomobject] @{
+                    Success = $false
+                    Bytes = [byte[]] @()
+                    Diagnostic = "Historical Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
+                }
+            }
+
+            $read = $readTask.GetAwaiter().GetResult()
+            if ($read -eq 0) {
+                break
+            }
+
+            $memory.Write($buffer, 0, $read)
+            if ($memory.Length -gt $GitBlobReadMaxBytes) {
+                return [pscustomobject] @{
+                    Success = $false
+                    Bytes = [byte[]] @()
+                    Diagnostic = "Historical Git blob read exceeded the $GitBlobReadMaxBytes-byte limit for '$Path'."
+                }
+            }
+        }
+
+        $remainingMilliseconds = ($GitBlobReadTimeoutSeconds * 1000) - [int] $stopwatch.ElapsedMilliseconds
+        if ($remainingMilliseconds -le 0 -or -not $process.WaitForExit($remainingMilliseconds)) {
+            return [pscustomobject] @{
+                Success = $false
+                Bytes = [byte[]] @()
+                Diagnostic = "Historical Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
+            }
+        }
+
         if ($process.ExitCode -ne 0) {
-            return [pscustomobject] @{ Success = $false; Bytes = [byte[]] @(); Diagnostic = $diagnostic }
+            return [pscustomobject] @{
+                Success = $false
+                Bytes = [byte[]] @()
+                Diagnostic = "Historical Git blob read failed for '$Path'."
+            }
         }
 
         return [pscustomobject] @{ Success = $true; Bytes = $memory.ToArray(); Diagnostic = '' }
     }
+    catch {
+        return [pscustomobject] @{
+            Success = $false
+            Bytes = [byte[]] @()
+            Diagnostic = "Historical Git blob read failed for '$Path'."
+        }
+    }
     finally {
+        $stopwatch.Stop()
+        if ($processStarted) {
+            $processStillRunning = $true
+            try {
+                $processStillRunning = -not $process.HasExited
+            }
+            catch {
+                # State is unconfirmed, so bounded best-effort cleanup is still required.
+            }
+            if ($processStillRunning) {
+                try {
+                    $process.Kill($true)
+                }
+                catch {
+                    # The stable validation diagnostic above remains authoritative.
+                }
+                try {
+                    $null = $process.WaitForExit(2000)
+                }
+                catch {
+                    # Cleanup is intentionally bounded.
+                }
+            }
+        }
         $memory.Dispose()
         $process.Dispose()
     }
@@ -339,7 +451,7 @@ function Get-TrackedProjectFiles {
     param([Parameter(Mandatory = $true)][string] $Root)
 
     if ($null -ne (Get-Command git -ErrorAction SilentlyContinue)) {
-        $tracked = @(& git -C $Root ls-files -- '*.csproj' '*.props' '*.targets' 2>$null)
+        $tracked = @(& git --no-replace-objects -C $Root ls-files -- '*.csproj' '*.props' '*.targets' 2>$null)
         if ($LASTEXITCODE -eq 0) {
             return @(
                 $tracked |
@@ -1288,6 +1400,7 @@ $consumerEvidence = Get-PropertyValue -Object $audit -Name 'consumerEvidence'
 $consumerEvidenceByFamily = @{}
 $consumerEntries = @()
 $consumerDiscovery = ''
+$historicalBlobReadsAvailable = $false
 $consumerPackageRelations = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 if ($null -eq $consumerEvidence) {
     $failures.Add('Audit must declare owned direct-consumer evidence provenance.')
@@ -1352,19 +1465,25 @@ else {
         $failures.Add('Consumer evidence repositoryRevision must match generatedFromRevision.')
     }
     if ($consumerDiscovery -ceq 'git-ls-files' -and $generatedFromRevision -cmatch '^[0-9a-f]{40}$') {
-        $null = & git -C $repositoryRoot cat-file -e "$generatedFromRevision^{commit}" 2>$null
+        $null = & git --no-replace-objects -C $repositoryRoot cat-file -e "$generatedFromRevision^{commit}" 2>$null
         if ($LASTEXITCODE -ne 0) {
             $failures.Add("Generated-from revision '$generatedFromRevision' is not an available Git commit.")
         }
         else {
-            $null = & git -C $repositoryRoot merge-base --is-ancestor $generatedFromRevision HEAD 2>$null
+            $null = & git --no-replace-objects -C $repositoryRoot merge-base --is-ancestor $generatedFromRevision HEAD 2>$null
             if ($LASTEXITCODE -ne 0) {
                 $failures.Add("Generated-from revision '$generatedFromRevision' is not an ancestor of the audited worktree HEAD.")
             }
 
             $catalogBlob = @(Get-GitBlobBytes `
                 -Root $repositoryRoot -Revision $generatedFromRevision -Path $catalogPathValue)[-1]
-            if (-not $catalogBlob.Success -or
+            if (-not $catalogBlob.Success) {
+                $failures.Add($catalogBlob.Diagnostic)
+            }
+            else {
+                $historicalBlobReadsAvailable = $true
+            }
+            if ($catalogBlob.Success -and
                 (Get-CatalogSha256Bytes -Bytes $catalogBlob.Bytes) -cne $catalogSha256) {
                 $failures.Add(
                     "Generated-from revision '$generatedFromRevision' does not contain the audited catalog declaration bytes."
@@ -1394,7 +1513,7 @@ else {
                 $failures.Add("Consumer declaration '$declarationPath' is not a repository-owned file.")
             }
             else {
-                $trackedOutput = @(& git -C $repositoryRoot ls-files --error-unmatch -- $declarationPath 2>&1)
+                $trackedOutput = @(& git --no-replace-objects -C $repositoryRoot ls-files --error-unmatch -- $declarationPath 2>&1)
                 if ($LASTEXITCODE -ne 0) {
                     $failures.Add("Consumer declaration '$declarationPath' is not tracked by Git.")
                 }
@@ -1402,11 +1521,14 @@ else {
                     $failures.Add("Consumer declaration '$declarationPath' SHA-256 does not match its tracked bytes.")
                 }
                 else {
-                    if ($generatedFromRevision -cmatch '^[0-9a-f]{40}$') {
+                    if ($historicalBlobReadsAvailable -and $generatedFromRevision -cmatch '^[0-9a-f]{40}$') {
                         $declarationBlob = @(Get-GitBlobBytes `
                             -Root $repositoryRoot -Revision $generatedFromRevision -Path $declarationPath)[-1]
-                        if (-not $declarationBlob.Success -or
-                            (Get-Sha256Bytes -Bytes $declarationBlob.Bytes) -cne $declarationSha256) {
+                        if (-not $declarationBlob.Success) {
+                            $failures.Add($declarationBlob.Diagnostic)
+                            $historicalBlobReadsAvailable = $false
+                        }
+                        elseif ((Get-Sha256Bytes -Bytes $declarationBlob.Bytes) -cne $declarationSha256) {
                             $failures.Add(
                                 "Generated-from revision '$generatedFromRevision' does not contain consumer declaration '$declarationPath' bytes."
                             )

@@ -344,7 +344,10 @@ function Test-RepositoryScenario {
         [Parameter(Mandatory = $true)][int] $ExpectedExitCode,
         [Parameter(Mandatory = $true)][string] $ExpectedOutput,
         [string] $RepositoryRootPath = '',
-        [string] $CatalogPath = ''
+        [string] $CatalogPath = '',
+        [string] $GitBlobReaderShimPath = '',
+        [int] $GitBlobReadTimeoutSeconds = 10,
+        [int] $GitBlobReadMaxBytes = 1048576
     )
 
     $script:scenarioCount++
@@ -355,6 +358,13 @@ function Test-RepositoryScenario {
     if (-not [string]::IsNullOrWhiteSpace($CatalogPath)) {
         $arguments += @('-CatalogPath', $CatalogPath)
     }
+    if (-not [string]::IsNullOrWhiteSpace($GitBlobReaderShimPath)) {
+        $arguments += @('-GitBlobReaderShimPath', $GitBlobReaderShimPath)
+    }
+    $arguments += @(
+        '-GitBlobReadTimeoutSeconds', [string] $GitBlobReadTimeoutSeconds,
+        '-GitBlobReadMaxBytes', [string] $GitBlobReadMaxBytes
+    )
 
     $output = @(& $pwshExecutable @arguments 2>&1)
     $result = [string]::Join("`n", @($output | ForEach-Object { [string] $_ }))
@@ -364,6 +374,50 @@ function Test-RepositoryScenario {
     elseif ($result -notlike "*$ExpectedOutput*") {
         $script:failures.Add("$Name output did not contain '$ExpectedOutput'. Output: $result")
     }
+}
+
+function New-NonTerminatingGitShim {
+    param(
+        [Parameter(Mandatory = $true)][string] $ShimPath,
+        [Parameter(Mandatory = $true)][string] $ShimPidPath,
+        [Parameter(Mandatory = $true)][string] $ChildPidPath
+    )
+
+    $shimPidPathBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($ShimPidPath))
+    $childPidPathBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($ChildPidPath))
+    $content = @'
+param([Parameter(ValueFromRemainingArguments = $true)][string[]] $IgnoredArguments)
+$null = $IgnoredArguments
+$shimPidPath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__SHIM_PID_PATH__'))
+$childPidPath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__CHILD_PID_PATH__'))
+[IO.File]::WriteAllText($shimPidPath, [string] $PID)
+$pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
+$child = Start-Process -FilePath $pwshExecutable `
+    -ArgumentList @('-NoLogo', '-NoProfile', '-Command', 'Start-Sleep -Seconds 30') `
+    -PassThru
+[IO.File]::WriteAllText($childPidPath, [string] $child.Id)
+Start-Sleep -Seconds 30
+'@
+    $content = $content.Replace('__SHIM_PID_PATH__', $shimPidPathBase64)
+    $content = $content.Replace('__CHILD_PID_PATH__', $childPidPathBase64)
+    Write-Utf8File -Path $ShimPath -Content "$content`n"
+}
+
+function Wait-ForProcessGone {
+    param(
+        [Parameter(Mandatory = $true)][int] $ProcessId,
+        [Parameter(Mandatory = $true)][int] $TimeoutMilliseconds
+    )
+
+    $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+    while ($stopwatch.ElapsedMilliseconds -lt $TimeoutMilliseconds) {
+        if ($null -eq (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) {
+            return $true
+        }
+        Start-Sleep -Milliseconds 100
+    }
+
+    return $null -eq (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)
 }
 
 New-Item -ItemType Directory -Path $temporaryRoot -Force | Out-Null
@@ -886,6 +940,68 @@ $items = @(
         -AuditPath $unrelatedPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
         -ExpectedExitCode 1 `
         -ExpectedOutput "is not an ancestor of the audited worktree HEAD"
+
+    $null = & git -C $historyRepository replace $historicalConsumerRevision.Trim() $unrelatedRevision.Trim()
+    Test-RepositoryScenario -Name 'Historical Git reads ignore replacement refs' `
+        -AuditPath $historicalConsumerPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
+        -ExpectedExitCode 1 `
+        -ExpectedOutput "does not contain consumer declaration '$changedDeclarationPath' bytes"
+
+    [IO.File]::AppendAllText(
+        $historyCatalogPath,
+        "`n<!--$('x' * 131072)-->`n",
+        [Text.UTF8Encoding]::new($false)
+    )
+    $null = & git -C $historyRepository add -- 'Props/Directory.Packages.props'
+    $null = & git -C $historyRepository commit --quiet -m 'test: oversized historical catalog'
+    $oversizedRevision = [string] @(& git -C $historyRepository rev-parse HEAD)[-1]
+    $oversizedAudit = Get-Content -LiteralPath $productionAuditPath -Raw | ConvertFrom-Json -DateKind String
+    $oversizedAudit.generatedFromRevision = $oversizedRevision.Trim()
+    $oversizedAudit.consumerEvidence.repositoryRevision = $oversizedRevision.Trim()
+    $oversizedCatalogSha256 = Get-CatalogSha256 -Path $historyCatalogPath
+    $oversizedAudit.catalogSha256 = $oversizedCatalogSha256
+    foreach ($decision in $oversizedAudit.familyDecisions) {
+        $decision.preservation.catalogSha256 = $oversizedCatalogSha256
+    }
+    $oversizedPath = Join-Path $temporaryRoot 'repository-oversized-historical-catalog.json'
+    Save-Audit -Audit $oversizedAudit -Path $oversizedPath
+    Test-RepositoryScenario -Name 'Oversized historical Git blob is rejected at the support-safe bound' `
+        -AuditPath $oversizedPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
+        -GitBlobReadMaxBytes 65536 -ExpectedExitCode 1 `
+        -ExpectedOutput "Historical Git blob read exceeded the 65536-byte limit for 'Props/Directory.Packages.props'."
+
+    $gitShimPath = Join-Path $temporaryRoot 'non-terminating-git-shim.ps1'
+    $gitShimPidPath = Join-Path $temporaryRoot 'non-terminating-git-shim.pid'
+    $gitShimChildPidPath = Join-Path $temporaryRoot 'non-terminating-git-child.pid'
+    New-NonTerminatingGitShim `
+        -ShimPath $gitShimPath `
+        -ShimPidPath $gitShimPidPath `
+        -ChildPidPath $gitShimChildPidPath
+    $timeoutStopwatch = [Diagnostics.Stopwatch]::StartNew()
+    Test-RepositoryScenario -Name 'Non-terminating historical Git read times out and is terminated' `
+        -AuditPath $oversizedPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
+        -GitBlobReaderShimPath $gitShimPath -GitBlobReadTimeoutSeconds 1 -ExpectedExitCode 1 `
+        -ExpectedOutput "Historical Git blob read timed out after 1 seconds for 'Props/Directory.Packages.props'."
+    $timeoutStopwatch.Stop()
+    if ($timeoutStopwatch.Elapsed.TotalSeconds -ge 30) {
+        $failures.Add(
+            "The timed historical Git scenario took $($timeoutStopwatch.Elapsed.TotalSeconds) seconds and reached the shim's natural completion window."
+        )
+    }
+    if (-not (Test-Path -LiteralPath $gitShimPidPath -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $gitShimChildPidPath -PathType Leaf)) {
+        $failures.Add('The non-terminating Git shim did not record both owned process IDs.')
+    }
+    else {
+        $gitShimProcessId = [int] (Get-Content -LiteralPath $gitShimPidPath -Raw)
+        $gitShimChildProcessId = [int] (Get-Content -LiteralPath $gitShimChildPidPath -Raw)
+        if (-not (Wait-ForProcessGone -ProcessId $gitShimProcessId -TimeoutMilliseconds 3000)) {
+            $failures.Add("Historical Git shim process $gitShimProcessId survived process-tree cleanup.")
+        }
+        if (-not (Wait-ForProcessGone -ProcessId $gitShimChildProcessId -TimeoutMilliseconds 3000)) {
+            $failures.Add("Historical Git shim child process $gitShimChildProcessId survived process-tree cleanup.")
+        }
+    }
 
     $missingRelationAudit = Get-Content -LiteralPath $productionAuditPath -Raw | ConvertFrom-Json -DateKind String
     $removedRelation = @($missingRelationAudit.consumerEvidence.entries | Where-Object {
