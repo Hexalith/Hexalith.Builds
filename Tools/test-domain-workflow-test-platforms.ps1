@@ -55,6 +55,24 @@ function Assert-MtpBlocksExcludeVstestOptions {
     }
 }
 
+function Assert-NotContains {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Name,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Content,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Unexpected
+    )
+
+    $script:checkCount++
+    if ($Content.Contains($Unexpected, [StringComparison]::Ordinal)) {
+        $script:failures.Add("$Name unexpectedly contains '$Unexpected'.")
+    }
+}
+
 $ciWorkflow = Get-Content -LiteralPath $ciWorkflowPath -Raw
 $releaseWorkflow = Get-Content -LiteralPath $releaseWorkflowPath -Raw
 $buildReleaseWorkflow = Get-Content -LiteralPath $buildReleaseWorkflowPath -Raw
@@ -73,7 +91,10 @@ foreach ($workflow in @(
     Assert-MtpBlocksExcludeVstestOptions -Name $workflow.Name -Content $workflow.Content
 }
 
-Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected 'run-coverage-gate is not supported with microsoft-testing-platform'
+Assert-NotContains -Name 'domain-ci.yml' -Content $ciWorkflow -Unexpected 'run-coverage-gate is not supported with microsoft-testing-platform'
+Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected 'RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}'
+Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected 'coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)'
+Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected '"${coverage_args[@]}"'
 Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected '--filter-not-trait'
 Assert-Contains -Name 'domain-ci.yml' -Content $ciWorkflow -Expected '--filter-trait'
 Assert-Contains -Name 'build-release.yml' -Content $buildReleaseWorkflow -Expected 'test-domain-workflow-test-platforms.ps1'

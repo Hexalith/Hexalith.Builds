@@ -9,8 +9,11 @@ and artifact upload.
 The `test-platform` input defaults to `vstest` for backward compatibility.
 Callers whose `global.json` selects `Microsoft.Testing.Platform` must set
 `test-platform: microsoft-testing-platform`; those lanes use xUnit v3 MTP-native
-TRX reporters and trait filters. MTP callers cannot enable `run-coverage-gate`
-until they configure an MTP-compatible coverage extension.
+TRX reporters and trait filters. When an MTP caller enables `run-coverage-gate`,
+its test projects must reference the centrally governed
+`Microsoft.Testing.Extensions.CodeCoverage` package; the workflow emits one
+`coverage.cobertura.xml` beneath each project's `TestResults` directory before
+running the caller's unchanged coverage validator.
 
 ## Jobs
 
@@ -149,7 +152,7 @@ jobs:
       solution: Hexalith.<Module>.slnx
       test-platform: microsoft-testing-platform
       run-consumer-validation: true
-      run-coverage-gate: false
+      run-coverage-gate: true
       unit-test-projects: |
         tests/Hexalith.<Module>.Contracts.Tests
         tests/Hexalith.<Module>.Client.Tests

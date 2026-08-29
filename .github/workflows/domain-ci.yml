@@ -29,7 +29,7 @@ on:
       test-platform:
         description: >-
           Test command contract: vstest uses --logger/--collect; microsoft-testing-platform
-          uses the xUnit v3 MTP reporter and trait-filter options.
+          uses the xUnit v3 MTP reporter, trait-filter, and Microsoft coverage options.
         required: false
         type: string
         default: 'vstest'
@@ -334,12 +334,6 @@ jobs:
         run: |
           echo "Unsupported test-platform '$TEST_PLATFORM'. Expected vstest or microsoft-testing-platform." >&2
           exit 1
-      - name: Validate Microsoft.Testing.Platform coverage support
-        if: ${{ inputs.test-platform == 'microsoft-testing-platform' && inputs.run-coverage-gate }}
-        shell: bash
-        run: |
-          echo "run-coverage-gate is not supported with microsoft-testing-platform until an MTP coverage extension is configured." >&2
-          exit 1
       - name: Restore
         env:
           SOLUTION: ${{ inputs.solution }}
@@ -377,15 +371,21 @@ jobs:
         shell: bash
         env:
           UNIT_TEST_PROJECTS: ${{ inputs.unit-test-projects }}
+          RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}
         run: |
           set -euo pipefail
           while IFS= read -r proj; do
             [ -z "$proj" ] && continue
             name=$(basename "$proj")
+            coverage_args=()
+            if [ "$RUN_COVERAGE_GATE" = "true" ]; then
+              coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)
+            fi
             dotnet test "$proj" --no-build --configuration Release \
               --results-directory "TestResults/${name}" \
               --report-xunit-trx \
-              --report-xunit-trx-filename "${name}.trx"
+              --report-xunit-trx-filename "${name}.trx" \
+              "${coverage_args[@]}"
           done <<< "$UNIT_TEST_PROJECTS"
       - name: Install and initialize Dapr (governed)
         if: ${{ inputs.integration-test-projects != '' && inputs.governed-ci }}
@@ -417,15 +417,21 @@ jobs:
         shell: bash
         env:
           INTEGRATION_TEST_PROJECTS: ${{ inputs.integration-test-projects }}
+          RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}
         run: |
           set -euo pipefail
           while IFS= read -r proj; do
             [ -z "$proj" ] && continue
             name=$(basename "$proj")
+            coverage_args=()
+            if [ "$RUN_COVERAGE_GATE" = "true" ]; then
+              coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)
+            fi
             dotnet test "$proj" --no-build --configuration Release \
               --results-directory "TestResults/${name}" \
               --report-xunit-trx \
-              --report-xunit-trx-filename "${name}.trx"
+              --report-xunit-trx-filename "${name}.trx" \
+              "${coverage_args[@]}"
           done <<< "$INTEGRATION_TEST_PROJECTS"
       - name: Validate coverage gates
         if: ${{ inputs.run-coverage-gate }}

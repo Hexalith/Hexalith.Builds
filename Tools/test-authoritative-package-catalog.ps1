@@ -58,6 +58,7 @@ $requiredPackages = @(
     'Microsoft.Extensions.Options.ConfigurationExtensions'
     'Microsoft.Extensions.ServiceDiscovery'
     'Microsoft.NET.Test.Sdk'
+    'Microsoft.Testing.Extensions.CodeCoverage'
     'ModelContextProtocol'
     'ModelContextProtocol.AspNetCore'
     'NSubstitute'
