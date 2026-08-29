@@ -863,23 +863,32 @@ try {
         # complete evidence, but the unproven directories are recorded and
         # permanently foreclose releaseEligible below. No candidate can ever become
         # release-eligible without a passing byte proof.
-        foreach ($fixtureDirectoryName in @('module', 'evidence')) {
-            $copiedFixtureDirectory = Join-Path $consumerFixturesRoot $fixtureDirectoryName
-            try {
-                $matchedFileCount = Assert-TrackedFixtureBytesMatchHead -RepositoryRoot $repositoryRoot `
-                    -SourceRevision $sourceTreeState.Revision `
-                    -FixtureDirectory $copiedFixtureDirectory `
-                    -RepositoryRelativeRoot "$fixtureRootRelativePath/$fixtureDirectoryName"
-                $fixtureProof[$fixtureDirectoryName] = $matchedFileCount
-            }
-            catch {
-                if ($sourceTreeState.Clean) {
-                    throw
-                }
-
+        if ($fixtureProvenanceMode -ceq 'external') {
+            foreach ($fixtureDirectoryName in @('module', 'evidence')) {
                 $fixtureProof[$fixtureDirectoryName] = 'unproven'
-                $fixtureByteProofFailures.Add(
-                    "tracked-fixture-vs-HEAD byte proof did not hold for '$fixtureRootRelativePath/$fixtureDirectoryName': $($_.Exception.Message)")
+            }
+            $fixtureByteProofFailures.Add(
+                'tracked-fixture-vs-HEAD byte proof was not attempted for an external fixture root.')
+        }
+        else {
+            foreach ($fixtureDirectoryName in @('module', 'evidence')) {
+                $copiedFixtureDirectory = Join-Path $consumerFixturesRoot $fixtureDirectoryName
+                try {
+                    $matchedFileCount = Assert-TrackedFixtureBytesMatchHead -RepositoryRoot $repositoryRoot `
+                        -SourceRevision $sourceTreeState.Revision `
+                        -FixtureDirectory $copiedFixtureDirectory `
+                        -RepositoryRelativeRoot "$fixtureRootRelativePath/$fixtureDirectoryName"
+                    $fixtureProof[$fixtureDirectoryName] = $matchedFileCount
+                }
+                catch {
+                    if ($sourceTreeState.Clean) {
+                        throw
+                    }
+
+                    $fixtureProof[$fixtureDirectoryName] = 'unproven'
+                    $fixtureByteProofFailures.Add(
+                        "tracked-fixture-vs-HEAD byte proof did not hold for '$fixtureRootRelativePath/$fixtureDirectoryName': $($_.Exception.Message)")
+                }
             }
         }
         $fixtureManifest['trackedByteMatchCounts'] = $fixtureProof
