@@ -554,10 +554,16 @@ function Test-ReadyRepositoryScenario {
         $null = $startInfo.ArgumentList.Add($argument)
     }
 
+    # The window under test is the validator's own bounded read: from the moment the
+    # shim's atomic readiness record proves both owned processes exist, to validator
+    # exit. Harness start-up and readiness polling are machine-speed costs, not part of
+    # that contract, so they are deliberately outside the measured window -- including
+    # them made this scenario fail intermittently on a loaded machine.
+    $boundedWindowSeconds = $GitBlobReadTimeoutSeconds + 12
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
     $readyRecord = $null
-    $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+    $boundedWindow = $null
     try {
         if (-not $process.Start()) {
             $failures.Add("$Name validator process could not start.")
@@ -583,9 +589,10 @@ function Test-ReadyRepositoryScenario {
             # small startup margin so the timeout is exercised while it is inside
             # its non-terminating phase rather than racing its launch path.
             Start-Sleep -Milliseconds 250
+            $boundedWindow = [Diagnostics.Stopwatch]::StartNew()
         }
 
-        if (-not $process.WaitForExit(20000)) {
+        if (-not $process.WaitForExit($boundedWindowSeconds * 1000)) {
             $failures.Add("$Name validator process exceeded its bounded harness window.")
             try { $process.Kill($true) } catch { }
             try { $null = $process.WaitForExit(3000) } catch { }
@@ -610,9 +617,13 @@ function Test-ReadyRepositoryScenario {
         try { $null = $process.WaitForExit(3000) } catch { }
     }
     finally {
-        $stopwatch.Stop()
-        if ($stopwatch.Elapsed.TotalSeconds -ge 20) {
-            $failures.Add("$Name took $($stopwatch.Elapsed.TotalSeconds) seconds and exceeded its bounded harness window.")
+        if ($null -ne $boundedWindow) {
+            $boundedWindow.Stop()
+            if ($boundedWindow.Elapsed.TotalSeconds -ge $boundedWindowSeconds) {
+                $failures.Add(
+                    "$Name took $($boundedWindow.Elapsed.TotalSeconds) seconds after readiness and exceeded its ${boundedWindowSeconds}-second bounded window."
+                )
+            }
         }
         if ($null -ne $readyRecord -and $readyRecord.Valid) {
             if (-not (Wait-ForProcessGone -ProcessId $readyRecord.ShimProcessId -TimeoutMilliseconds 3000)) {
@@ -1341,6 +1352,20 @@ $items = @(
         -AuditPath $unrelatedPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
         -ExpectedExitCode 1 `
         -ExpectedOutput "is not an ancestor of the audited worktree HEAD"
+
+    # The repository-owned branch compares catalogRawSha256 to the committed blob and is
+    # the branch that guards the shipped artifact in CI; the temp-directory fixtures only
+    # ever reach the worktree-file branch.
+    $rawCatalogRepositoryAudit = Get-Content -LiteralPath $productionAuditPath -Raw | ConvertFrom-Json -DateKind String
+    $rawCatalogRepositoryAudit.generatedFromRevision = $historicalConsumerRevision.Trim()
+    $rawCatalogRepositoryAudit.consumerEvidence.repositoryRevision = $historicalConsumerRevision.Trim()
+    $rawCatalogRepositoryAudit.catalogRawSha256 = '0' * 64
+    $rawCatalogRepositoryPath = Join-Path $temporaryRoot 'repository-raw-catalog-hash-mismatch.json'
+    Save-Audit -Audit $rawCatalogRepositoryAudit -Path $rawCatalogRepositoryPath
+    Test-RepositoryScenario -Name 'Repository-owned raw catalog hash must match the committed blob' `
+        -AuditPath $rawCatalogRepositoryPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
+        -ExpectedExitCode 1 `
+        -ExpectedOutput "does not contain the exact audited catalog bytes"
 
     $null = & git -C $historyRepository replace $historicalConsumerRevision.Trim() $unrelatedRevision.Trim()
     Test-RepositoryScenario -Name 'Historical Git reads ignore replacement refs' `

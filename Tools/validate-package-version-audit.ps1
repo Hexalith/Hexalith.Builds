@@ -1803,10 +1803,14 @@ else {
                 if ($LASTEXITCODE -ne 0) {
                     $failures.Add("Consumer declaration '$declarationPath' is not tracked by Git.")
                 }
-                elseif ((Get-Sha256File -Path $declarationFullPath) -cne $declarationSha256) {
-                    $failures.Add("Consumer declaration '$declarationPath' SHA-256 does not match its tracked bytes.")
-                }
                 else {
+                    # declarationSha256 binds the exact committed blob at the audited
+                    # revision, so the worktree copy is proved against that revision the
+                    # way Git compares tracked content. A raw worktree-byte comparison
+                    # would misread configured EOL normalization as declaration drift on
+                    # any normalizing checkout. The raw-byte comparison is retained only
+                    # when the audited revision cannot supply the blob.
+                    $declarationBoundToRevision = $false
                     if ($historicalBlobReadsAvailable -and $generatedFromRevision -cmatch '^[0-9a-f]{40}$') {
                         $declarationBlob = @(Get-GitBlobBytes `
                             -Root $repositoryRoot -Revision $generatedFromRevision -Path $declarationPath)[-1]
@@ -1814,11 +1818,25 @@ else {
                             $failures.Add($declarationBlob.Diagnostic)
                             $historicalBlobReadsAvailable = $false
                         }
-                        elseif ((Get-Sha256Bytes -Bytes $declarationBlob.Bytes) -cne $declarationSha256) {
-                            $failures.Add(
-                                "Generated-from revision '$generatedFromRevision' does not contain consumer declaration '$declarationPath' bytes."
-                            )
+                        else {
+                            $declarationBoundToRevision = $true
+                            if ((Get-Sha256Bytes -Bytes $declarationBlob.Bytes) -cne $declarationSha256) {
+                                $failures.Add(
+                                    "Generated-from revision '$generatedFromRevision' does not contain consumer declaration '$declarationPath' bytes."
+                                )
+                            }
+                            $null = & git --no-replace-objects -C $repositoryRoot diff --quiet `
+                                $generatedFromRevision -- $declarationPath 2>$null
+                            if ($LASTEXITCODE -ne 0) {
+                                $failures.Add(
+                                    "Consumer declaration '$declarationPath' is dirty relative to generated-from revision '$generatedFromRevision'."
+                                )
+                            }
                         }
+                    }
+                    if (-not $declarationBoundToRevision -and
+                        (Get-Sha256File -Path $declarationFullPath) -cne $declarationSha256) {
+                        $failures.Add("Consumer declaration '$declarationPath' SHA-256 does not match its tracked bytes.")
                     }
 
                     try {

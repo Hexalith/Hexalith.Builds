@@ -5,8 +5,9 @@ param(
     [string[]] $Source = @(),
     [Alias('Family')][string[]] $ChangedFamily = @(),
     [Parameter(DontShow = $true)][string] $RequestFixturePath = '',
-    [Parameter(DontShow = $true)][string] $PriorAuditPath = '',
+    [string] $PriorAuditPath = '',
     [Parameter(DontShow = $true)][string] $ConsumerEvidencePath = '',
+    [Parameter(DontShow = $true)][string] $GitBlobReaderShimPath = '',
     [Parameter(DontShow = $true)][ValidateRange(1, 300)][int] $GitBlobReadTimeoutSeconds = 10,
     [Parameter(DontShow = $true)][ValidateRange(1, 134217728)][int] $GitBlobReadMaxBytes = 1048576
 )
@@ -14,6 +15,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
+$pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
 $requestFixtures = @{}
 
 if (-not [string]::IsNullOrWhiteSpace($RequestFixturePath)) {
@@ -86,12 +88,22 @@ function Get-GitBlobBytes {
     )
 
     $startInfo = [Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = 'git'
+    $startInfo.FileName = if ([string]::IsNullOrWhiteSpace($GitBlobReaderShimPath)) {
+        'git'
+    }
+    else {
+        $pwshExecutable
+    }
     $startInfo.UseShellExecute = $false
     $startInfo.RedirectStandardOutput = $true
     $startInfo.RedirectStandardError = $true
     $startInfo.CreateNoWindow = $true
     $startInfo.Environment['GIT_NO_REPLACE_OBJECTS'] = '1'
+    if (-not [string]::IsNullOrWhiteSpace($GitBlobReaderShimPath)) {
+        foreach ($argument in @('-NoLogo', '-NoProfile', '-File', $GitBlobReaderShimPath)) {
+            $null = $startInfo.ArgumentList.Add($argument)
+        }
+    }
     foreach ($argument in @('--no-replace-objects', '-C', $Root, 'cat-file', 'blob', "$Revision`:$Path")) {
         $null = $startInfo.ArgumentList.Add($argument)
     }
@@ -108,6 +120,12 @@ function Get-GitBlobBytes {
             $processStarted = $process.Start()
         }
         catch {
+            $failure = "Git blob read could not start for '$Path'."
+        }
+        if (-not $processStarted -and [string]::IsNullOrWhiteSpace($failure)) {
+            # Process.Start can report failure without throwing. Without this guard the
+            # function would return zero bytes with no failure, and those bytes would be
+            # hashed straight into catalogRawSha256/declarationSha256.
             $failure = "Git blob read could not start for '$Path'."
         }
         if ($processStarted) {
@@ -1500,24 +1518,30 @@ else {
 $priorRevision = if ($null -eq $priorAudit) { '' } else { Get-PropertyText -Object $priorAudit -Name 'generatedFromRevision' }
 
 if ($refreshMode -ceq 'incremental') {
-    if ([long] $priorSchemaVersion -eq 2L) {
-        Assert-PriorV2AuditEnvelope -PriorAudit $priorAudit
+    # Preserved rows are copied verbatim into the emitted v2 document, so they must first
+    # pass the closed-shape contract. A pre-v2 prior cannot, which is why an incremental
+    # refresh over one fails closed instead of copying unvalidated rows forward; migrate
+    # such an audit with a complete refresh.
+    if ([long] $priorSchemaVersion -ne 2L) {
+        Stop-Audit (
+            "incremental refresh requires a schemaVersion 2 prior audit but '$PriorAuditPath' " +
+            "declares schemaVersion $priorSchemaVersion. Run a complete refresh to migrate it."
+        )
     }
+    Assert-PriorV2AuditEnvelope -PriorAudit $priorAudit
     foreach ($preservedFamily in @(
             $evaluatedItemsByFamily.Keys |
                 Where-Object { -not $refreshedFamilies.Contains($_) } |
                 Sort-Object -CaseSensitive
         )) {
-        if ([long] $priorSchemaVersion -eq 2L) {
-            Assert-PriorV2PreservedFamily `
-                -Family $preservedFamily `
-                -Decision $priorDecisionsByFamily[$preservedFamily] `
-                -PackageRows @($priorPackagesByFamily[$preservedFamily]) `
-                -Sources @(Get-ArrayProperty -Object $priorAudit -Name 'sources') `
-                -ConsumerEntries @($priorConsumerEntries | Where-Object {
-                    (Get-PropertyText -Object $_ -Name 'family') -ceq $preservedFamily
-                })
-        }
+        Assert-PriorV2PreservedFamily `
+            -Family $preservedFamily `
+            -Decision $priorDecisionsByFamily[$preservedFamily] `
+            -PackageRows @($priorPackagesByFamily[$preservedFamily]) `
+            -Sources @(Get-ArrayProperty -Object $priorAudit -Name 'sources') `
+            -ConsumerEntries @($priorConsumerEntries | Where-Object {
+                (Get-PropertyText -Object $_ -Name 'family') -ceq $preservedFamily
+            })
         foreach ($priorPackage in @($priorPackagesByFamily[$preservedFamily])) {
             $packages.Add((Copy-JsonValue -Value $priorPackage))
         }

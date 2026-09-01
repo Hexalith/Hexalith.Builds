@@ -67,6 +67,71 @@ function Assert-Equal {
 }
 
 New-Item -ItemType Directory -Path $temporaryRoot -Force | Out-Null
+function New-NonTerminatingGitShim {
+    param(
+        [Parameter(Mandatory = $true)][string] $ShimPath,
+        [Parameter(Mandatory = $true)][string] $ReadyPath
+    )
+
+    $readyPathBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($ReadyPath))
+    $content = @'
+param([Parameter(ValueFromRemainingArguments = $true)][string[]] $IgnoredArguments)
+$null = $IgnoredArguments
+$readyPath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__READY_PATH__'))
+$pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
+$child = Start-Process -FilePath $pwshExecutable `
+    -ArgumentList @('-NoLogo', '-NoProfile', '-Command', 'Start-Sleep -Seconds 30') `
+    -PassThru
+$readyTemporaryPath = "$readyPath.$PID.tmp"
+[IO.File]::WriteAllText($readyTemporaryPath, "$PID|$($child.Id)")
+[IO.File]::Move($readyTemporaryPath, $readyPath, $true)
+Start-Sleep -Seconds 30
+'@
+    $content = $content.Replace('__READY_PATH__', $readyPathBase64)
+    Write-Utf8File -Path $ShimPath -Content "$content`n"
+}
+
+function Wait-ForProcessGone {
+    param(
+        [Parameter(Mandatory = $true)][int] $ProcessId,
+        [Parameter(Mandatory = $true)][int] $TimeoutMilliseconds
+    )
+
+    $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+    while ($stopwatch.ElapsedMilliseconds -lt $TimeoutMilliseconds) {
+        if ($null -eq (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) {
+            return $true
+        }
+        Start-Sleep -Milliseconds 100
+    }
+
+    return $null -eq (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)
+}
+
+function Read-ReadyProcessRecord {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $null
+    }
+    try {
+        $parts = (Get-Content -LiteralPath $Path -Raw -ErrorAction Stop).Trim().Split('|')
+    }
+    catch {
+        return $null
+    }
+    $shimProcessId = 0
+    $childProcessId = 0
+    if ($parts.Count -ne 2 -or
+        -not [int]::TryParse($parts[0], [ref] $shimProcessId) -or
+        -not [int]::TryParse($parts[1], [ref] $childProcessId) -or
+        $shimProcessId -le 0 -or $childProcessId -le 0) {
+        return $null
+    }
+
+    return [pscustomobject] @{ ShimProcessId = $shimProcessId; ChildProcessId = $childProcessId }
+}
+
 try {
     $catalogPath = Join-Path $temporaryRoot 'fixture.props'
     Write-Utf8File -Path $catalogPath -Content @'
@@ -576,6 +641,30 @@ try {
                     -Expected 'hexalith.package-audit-package-history.v2' -Actual $legacyRefreshPackage.historicalContext[-1].schema
             }
 
+            # A complete refresh migrates a pre-v2 prior (above); an incremental refresh
+            # would instead copy its unvalidated rows verbatim into a v2 document, so it
+            # must fail closed rather than skip the closed-shape prior contract.
+            $legacyIncrementalPath = Join-Path $temporaryRoot 'legacy-incremental.json'
+            $legacyIncrementalOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $generatorPath `
+                    -CatalogPath $catalogPath `
+                    -OutputPath $legacyIncrementalPath `
+                    -PriorAuditPath $legacyPriorPath `
+                    -Family 'package:fixture.listed' `
+                    -Source @($sourceOne) `
+                    -RequestFixturePath $preservationFixturePath `
+                    -ConsumerEvidencePath $consumerEvidencePath 2>&1)
+            $scenarioCount++
+            $legacyIncrementalText = ($legacyIncrementalOutput | ForEach-Object { [string] $_ }) -join "`n"
+            if ($LASTEXITCODE -eq 0 -or
+                $legacyIncrementalText -notmatch 'incremental refresh requires a schemaVersion 2 prior audit') {
+                $failures.Add(
+                    "An incremental refresh over a pre-v2 prior audit was not rejected. $legacyIncrementalText"
+                )
+            }
+            if (Test-Path -LiteralPath $legacyIncrementalPath -PathType Leaf) {
+                $failures.Add('A rejected incremental refresh over a pre-v2 prior audit still wrote output.')
+            }
+
             $driftConsumerEvidencePath = Join-Path $temporaryRoot 'consumer-evidence-drift.json'
             Write-Utf8File -Path $driftConsumerEvidencePath -Content (
                 [ordered] @{
@@ -779,13 +868,18 @@ try {
 *.props text eol=crlf
 *.csproj text eol=crlf
 '@
+    # These two fixture files are the ones .gitattributes normalizes, so they are written
+    # with a trailing line ending: without one there is nothing for eol=crlf to convert
+    # and the checkout below cannot diverge from the committed blob.
     $repositoryCatalogPath = Join-Path $repositoryFixtureProps 'Directory.Packages.props'
     Write-Utf8File -Path $repositoryCatalogPath -Content @'
 <Project><ItemGroup><PackageVersion Include="Fixture.Repository" Version="1.0.0" /></ItemGroup></Project>
+
 '@
     $repositoryConsumerPath = Join-Path $repositoryFixtureRoot 'Consumer.csproj'
     Write-Utf8File -Path $repositoryConsumerPath -Content @'
 <Project><ItemGroup><PackageReference Include="Fixture.Repository" /></ItemGroup></Project>
+
 '@
     $repositoryResponses = [ordered] @{}
     Add-FixtureResponse -Responses $repositoryResponses -Uri $sourceOne -Response ([ordered] @{
@@ -810,7 +904,19 @@ try {
     $null = & git -C $repositoryFixtureRoot config user.email 'package-audit-generator@example.invalid'
     $null = & git -C $repositoryFixtureRoot add -- .
     $null = & git -C $repositoryFixtureRoot commit --quiet -m 'test: repository provenance fixture'
+    # checkout-index does not overwrite files already present, so the worktree copies must
+    # be removed first for the .gitattributes eol=crlf normalization above to actually
+    # produce worktree bytes that differ from the committed LF blobs. Without this the
+    # whole fixture runs with worktree bytes == blob bytes and proves nothing about
+    # normalizing checkouts.
+    Remove-Item -LiteralPath $repositoryCatalogPath, $repositoryConsumerPath -Force
     $null = & git -C $repositoryFixtureRoot checkout-index --force --all
+    foreach ($normalized in @($repositoryCatalogPath, $repositoryConsumerPath)) {
+        $scenarioCount++
+        if ([IO.File]::ReadAllBytes($normalized) -notcontains 13) {
+            $failures.Add("Repository fixture '$normalized' was not checked out with normalized CRLF bytes.")
+        }
+    }
 
     $repositoryGeneratorPath = Join-Path $repositoryFixtureTools 'audit-central-package-versions.ps1'
     $repositoryAuditPath = Join-Path $repositoryFixtureTools 'audit.json'
@@ -822,6 +928,19 @@ try {
         $failures.Add("Clean repository-owned fixture failed. $([string]::Join("`n", $repositoryGeneratorOutput))")
     }
     else {
+        # The generator binds catalog and consumer provenance to committed blob bytes, so
+        # the audit it produces must still validate on a checkout whose worktree bytes are
+        # EOL-normalized away from those blobs.
+        $repositoryValidatorOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $validatorPath `
+                -AuditPath $repositoryAuditPath -RepositoryRootPath $repositoryFixtureRoot `
+                -CatalogPath $repositoryCatalogPath -ConsumerScanRoot $repositoryFixtureRoot 2>&1)
+        $scenarioCount++
+        if ($LASTEXITCODE -ne 0) {
+            $failures.Add(
+                "Repository-owned audit did not pass deterministic validation on a normalizing checkout. $([string]::Join("`n", $repositoryValidatorOutput))"
+            )
+        }
+
         $repositoryAuditHash = (Get-FileHash -LiteralPath $repositoryAuditPath -Algorithm SHA256).Hash
         Write-Utf8File -Path $repositoryCatalogPath -Content (
             (Get-Content -LiteralPath $repositoryCatalogPath -Raw).Replace('Version="1.0.0"', 'Version="1.1.0"')
@@ -893,6 +1012,79 @@ try {
             $failures.Add('An oversized committed catalog blob was not rejected at the generator bound.')
         }
         Assert-Equal -Scenario 'Oversized blob failures preserve prior output atomically' `
+            -Expected $repositoryAuditHash `
+            -Actual (Get-FileHash -LiteralPath $repositoryAuditPath -Algorithm SHA256).Hash
+
+        # The generator's bounded Git reader is the validator's counterpart and must be
+        # proved the same way: only its byte bound was previously exercised, so its
+        # timeout and process-tree termination had no test surface at all.
+        $generatorShimPath = Join-Path $repositoryFixtureRoot 'non-terminating-git-shim.ps1'
+        $generatorShimReadyPath = Join-Path $repositoryFixtureRoot 'non-terminating-git.ready'
+        New-NonTerminatingGitShim -ShimPath $generatorShimPath -ReadyPath $generatorShimReadyPath
+        $timeoutStartInfo = [Diagnostics.ProcessStartInfo]::new()
+        $timeoutStartInfo.FileName = $pwshExecutable
+        $timeoutStartInfo.UseShellExecute = $false
+        $timeoutStartInfo.RedirectStandardOutput = $true
+        $timeoutStartInfo.RedirectStandardError = $true
+        $timeoutStartInfo.CreateNoWindow = $true
+        foreach ($argument in @(
+                '-NoLogo', '-NoProfile', '-File', $repositoryGeneratorPath,
+                '-CatalogPath', $repositoryCatalogPath, '-OutputPath', $repositoryAuditPath,
+                '-Source', $sourceOne, '-RequestFixturePath', $repositoryRequestPath,
+                '-GitBlobReaderShimPath', $generatorShimPath,
+                '-GitBlobReadTimeoutSeconds', '3'
+            )) {
+            $null = $timeoutStartInfo.ArgumentList.Add($argument)
+        }
+        $timeoutProcess = [Diagnostics.Process]::new()
+        $timeoutProcess.StartInfo = $timeoutStartInfo
+        $generatorShimRecord = $null
+        $scenarioCount++
+        try {
+            if (-not $timeoutProcess.Start()) {
+                $failures.Add('The generator timeout scenario could not start.')
+            }
+            else {
+                $timeoutStandardOutput = $timeoutProcess.StandardOutput.ReadToEndAsync()
+                $timeoutStandardError = $timeoutProcess.StandardError.ReadToEndAsync()
+                $readyStopwatch = [Diagnostics.Stopwatch]::StartNew()
+                while ($readyStopwatch.ElapsedMilliseconds -lt 30000) {
+                    $generatorShimRecord = Read-ReadyProcessRecord -Path $generatorShimReadyPath
+                    if ($null -ne $generatorShimRecord -or $timeoutProcess.HasExited) { break }
+                    Start-Sleep -Milliseconds 50
+                }
+                if ($null -eq $generatorShimRecord) {
+                    $failures.Add('The generator timeout scenario never observed the shim readiness handshake.')
+                }
+                if (-not $timeoutProcess.WaitForExit(30000)) {
+                    $failures.Add('The generator did not abandon a non-terminating Git blob read within its bound.')
+                    try { $timeoutProcess.Kill($true) } catch { }
+                    try { $null = $timeoutProcess.WaitForExit(3000) } catch { }
+                }
+                $timeoutText = [string]::Join("`n", @(
+                        $timeoutStandardOutput.GetAwaiter().GetResult(),
+                        $timeoutStandardError.GetAwaiter().GetResult()
+                    ))
+                if ($timeoutProcess.HasExited -and $timeoutProcess.ExitCode -eq 0) {
+                    $failures.Add("A non-terminating generator Git blob read was not rejected. $timeoutText")
+                }
+                elseif ($timeoutText -notmatch 'Git blob read timed out after 3 seconds') {
+                    $failures.Add("The generator timeout diagnostic was not reported. $timeoutText")
+                }
+            }
+        }
+        finally {
+            if ($null -ne $generatorShimRecord) {
+                foreach ($ownedProcessId in @($generatorShimRecord.ShimProcessId, $generatorShimRecord.ChildProcessId)) {
+                    if (-not (Wait-ForProcessGone -ProcessId $ownedProcessId -TimeoutMilliseconds 5000)) {
+                        $failures.Add("Generator-owned process $ownedProcessId survived process-tree cleanup.")
+                        try { Stop-Process -Id $ownedProcessId -Force -ErrorAction SilentlyContinue } catch { }
+                    }
+                }
+            }
+            $timeoutProcess.Dispose()
+        }
+        Assert-Equal -Scenario 'Timed-out Git blob read preserves prior output atomically' `
             -Expected $repositoryAuditHash `
             -Actual (Get-FileHash -LiteralPath $repositoryAuditPath -Algorithm SHA256).Hash
     }

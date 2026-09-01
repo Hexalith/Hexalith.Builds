@@ -122,10 +122,16 @@ family fail before output. The v2 snapshot envelope records `complete` or
 `incremental` mode and an exact, non-overlapping refreshed/preserved partition
 covering every catalog family.
 
+An incremental refresh requires a `schemaVersion` 2 prior audit, because its
+preserved rows are copied verbatim into the emitted document and must first pass
+the closed-shape prior contract. Migrate an older audit with a complete refresh.
+
 Generation compares repository-owned catalog and consumer declarations with the
 claimed revision before any feed request, including staged and unstaged changes
 while respecting Git's configured EOL normalization. Git blob reads are both
-time- and size-bounded. The audit is serialized to a sibling temporary file and
+time- and size-bounded, defaulting to 10 seconds and 1 MiB per blob; override
+them with `-GitBlobReadTimeoutSeconds` and `-GitBlobReadMaxBytes` when a
+repository legitimately exceeds either bound. The audit is serialized to a sibling temporary file and
 atomically moved into place only after the complete document succeeds, so a
 failed refresh leaves the prior output intact.
 
@@ -149,15 +155,18 @@ safety without accessing a live feed. `generatedFromRevision` binds the exact
 ancestor commit whose committed catalog blob and tracked consumer declarations
 are claimed. `catalogSha256` remains the BOM+CRLF-normalized semantic hash;
 `catalogRawSha256` separately binds the exact raw Git blob so BOM or EOL drift
-cannot hide behind normalization.
+cannot hide behind normalization. Consumer `declarationSha256` values likewise
+bind committed blob bytes, and validation proves the worktree copy against the
+audited revision the way Git compares tracked content, so the audit stays valid
+on a checkout whose configured EOL normalization rewrites those files.
 
 Each family owns an observation origin containing its revision/time plus
 ordered family-selection, source-scope, package-metadata, and consumer-evidence
 fingerprints. Package-metadata fingerprints include each source diagnostic as
 well as its listing state and candidates. Incremental generation validates and
-copies every preserved family decision and
-package row unchanged, while a genuinely changed refreshed family alone gains
-one typed family snapshot and its package snapshots. Repeating identical
+copies every preserved family decision and package row unchanged, while a
+genuinely changed refreshed family alone gains one typed family snapshot and its
+package snapshots. Repeating identical
 evidence does not append duplicate history. Explicit test fixtures remain
 labeled synthetic and bound to their exact bytes and semantic relations. The
 validator independently recomputes every closed-shape invariant, exact catalog
@@ -166,8 +175,7 @@ history record, while retaining coherent family dispositions and rollback
 groups, retained-exception rationale/removal triggers, and selected versions
 that exactly match the evaluated catalog.
 
-External-package decisions remain exact: retained
-rows cannot change, while accepted versions cannot downgrade, must be an audited
+External-package decisions remain exact: retained rows cannot change, while accepted versions cannot downgrade, must be an audited
 latest stable or prerelease candidate, and cannot move an existing stable pin
 onto a prerelease channel. Internal `Hexalith.*` rows require canonical NuGet
 versions in the catalog and every audit/candidate field. Their checked-in
