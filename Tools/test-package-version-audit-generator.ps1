@@ -508,9 +508,17 @@ try {
                 }
             }
 
+            # Tampers whose whole point is that the failure is a designed, typed
+            # diagnostic rather than an untyped runtime/parameter-binding exception.
+            $preservedTamperDiagnostics = @{
+                'missing-origin' = 'origin must be a JSON object'
+                'legacy-family-history-origin' = 'must declare only legacy preservation provenance'
+                'legacy-package-history-origin' = 'must not declare a v2 origin'
+            }
             foreach ($preservedTamper in @(
                     'fingerprint', 'unknown-field', 'wrong-type', 'representative-consumers',
-                    'package-history-unknown', 'package-history-wrong-type', 'family-history-unknown'
+                    'package-history-unknown', 'package-history-wrong-type', 'family-history-unknown',
+                    'missing-origin', 'legacy-family-history-origin', 'legacy-package-history-origin'
                 )) {
                 $tamperedPrior = Get-Content -LiteralPath $acceptedPriorPath -Raw | ConvertFrom-Json -DateKind String
                 $tamperedDecision = @($tamperedPrior.familyDecisions | Where-Object family -eq 'package:fixture.missing')[0]
@@ -580,13 +588,27 @@ try {
                         $tamperedDecision.historicalContext[0] |
                             Add-Member -NotePropertyName reviewer -NotePropertyValue 'untyped'
                     }
+                    'missing-origin' { $tamperedDecision.PSObject.Properties.Remove('origin') }
+                    'legacy-family-history-origin' {
+                        $tamperedDecision.historicalContext[0] | Add-Member -NotePropertyName origin `
+                            -NotePropertyValue ($tamperedDecision.origin | ConvertTo-Json -Depth 10 |
+                                ConvertFrom-Json -DateKind String)
+                    }
+                    'legacy-package-history-origin' {
+                        $tamperedPackage.historicalContext[0] | Add-Member -NotePropertyName origin `
+                            -NotePropertyValue ($tamperedDecision.origin | ConvertTo-Json -Depth 10 |
+                                ConvertFrom-Json -DateKind String)
+                    }
                 }
                 $tamperedPriorPath = Join-Path $temporaryRoot "preserved-$preservedTamper-prior.json"
                 Write-Utf8File -Path $tamperedPriorPath -Content ($tamperedPrior | ConvertTo-Json -Depth 30)
                 $tamperedOutputPath = Join-Path $temporaryRoot "preserved-$preservedTamper-output.json"
                 $sentinel = "{`"sentinel`":`"$preservedTamper`"}`n"
                 Write-Utf8File -Path $tamperedOutputPath -Content $sentinel
-                $tamperedOutput = @(& $generatorPath `
+                # Run out-of-process: Stop-Audit writes to [Console]::Error, which an
+                # in-process '&' invocation leaves on the host's raw stderr handle where
+                # 2>&1 cannot capture it, so the diagnostic could not be asserted.
+                $tamperedOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $generatorPath `
                         -CatalogPath $catalogPath `
                         -OutputPath $tamperedOutputPath `
                         -PriorAuditPath $tamperedPriorPath `
@@ -597,6 +619,15 @@ try {
                 $scenarioCount++
                 if ($LASTEXITCODE -eq 0) {
                     $failures.Add("Tampered preserved v2 evidence '$preservedTamper' was not rejected.")
+                }
+                if ($preservedTamperDiagnostics.ContainsKey($preservedTamper)) {
+                    $scenarioCount++
+                    $tamperedText = [string]::Join("`n", $tamperedOutput)
+                    if ($tamperedText -notlike "*$($preservedTamperDiagnostics[$preservedTamper])*") {
+                        $failures.Add(
+                            "Tampered preserved evidence '$preservedTamper' did not fail with its typed diagnostic. $tamperedText"
+                        )
+                    }
                 }
                 Assert-Equal -Scenario "Failed preserved evidence '$preservedTamper' keeps prior output bytes" `
                     -Expected $sentinel -Actual (Get-Content -LiteralPath $tamperedOutputPath -Raw)
