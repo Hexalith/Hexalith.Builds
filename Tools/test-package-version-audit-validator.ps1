@@ -50,7 +50,14 @@ function Get-CatalogSha256 {
 function Get-FamilySelectionFingerprint {
     param([Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]] $Packages)
 
-    $material = @($Packages | Sort-Object id | ForEach-Object { "$($_.id)|$($_.selectedVersion)" })
+    # Must mirror the production helpers in audit-central-package-versions.ps1 and
+    # validate-package-version-audit.ps1 exactly: the projected "id|version" material is
+    # what gets sorted, case-sensitively. Sorting the rows by id instead is a different
+    # order whenever one id is a case variant or a prefix of another, which would let
+    # this harness certify a fingerprint production never computes.
+    $material = @($Packages | Where-Object { $null -ne $_ } | ForEach-Object {
+            "$($_.id)|$($_.selectedVersion)"
+        } | Sort-Object -CaseSensitive)
     return Get-Sha256Text -Value ([string]::Join("`n", $material))
 }
 
@@ -554,12 +561,18 @@ function Test-ReadyRepositoryScenario {
         $null = $startInfo.ArgumentList.Add($argument)
     }
 
-    # The window under test is the validator's own bounded read: from the moment the
-    # shim's atomic readiness record proves both owned processes exist, to validator
-    # exit. Harness start-up and readiness polling are machine-speed costs, not part of
-    # that contract, so they are deliberately outside the measured window -- including
-    # them made this scenario fail intermittently on a loaded machine.
-    $boundedWindowSeconds = $GitBlobReadTimeoutSeconds + 12
+    # The contract under test is the validator's bounded read and its process-tree
+    # cleanup, so the measured window ends when both owned processes are gone -- not at
+    # validator exit. Validator exit also covers the full remaining validation of the
+    # audit document, which for a production-sized audit costs far more than the read
+    # bound; measuring to exit therefore asserted document size, not the bound, and
+    # failed deterministically. The margin covers the validator's own 2-second
+    # kill-confirmation wait plus scheduling slack on a loaded machine, and still fails
+    # a regression that lets the shim run to its 30-second sleep.
+    $boundedWindowSeconds = $GitBlobReadTimeoutSeconds + 8
+    # Liveness guard only: the validator must eventually exit, but the time it spends
+    # validating the rest of the document is not part of the bounded-read contract.
+    $livenessGuardSeconds = 300
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
     $readyRecord = $null
@@ -592,8 +605,22 @@ function Test-ReadyRepositoryScenario {
             $boundedWindow = [Diagnostics.Stopwatch]::StartNew()
         }
 
-        if (-not $process.WaitForExit($boundedWindowSeconds * 1000)) {
-            $failures.Add("$Name validator process exceeded its bounded harness window.")
+        if ($null -ne $boundedWindow) {
+            $ownedProcessesGone =
+                (Wait-ForProcessGone -ProcessId $readyRecord.ShimProcessId `
+                    -TimeoutMilliseconds ($boundedWindowSeconds * 1000)) -and
+                (Wait-ForProcessGone -ProcessId $readyRecord.ChildProcessId `
+                    -TimeoutMilliseconds ($boundedWindowSeconds * 1000))
+            $boundedWindow.Stop()
+            if (-not $ownedProcessesGone) {
+                $failures.Add(
+                    "$Name owned shim process tree survived its ${boundedWindowSeconds}-second bounded read window."
+                )
+            }
+        }
+
+        if (-not $process.WaitForExit($livenessGuardSeconds * 1000)) {
+            $failures.Add("$Name validator process did not exit within the harness liveness guard.")
             try { $process.Kill($true) } catch { }
             try { $null = $process.WaitForExit(3000) } catch { }
         }
@@ -621,7 +648,7 @@ function Test-ReadyRepositoryScenario {
             $boundedWindow.Stop()
             if ($boundedWindow.Elapsed.TotalSeconds -ge $boundedWindowSeconds) {
                 $failures.Add(
-                    "$Name took $($boundedWindow.Elapsed.TotalSeconds) seconds after readiness and exceeded its ${boundedWindowSeconds}-second bounded window."
+                    "$Name took $($boundedWindow.Elapsed.TotalSeconds) seconds after readiness to terminate its owned process tree and exceeded its ${boundedWindowSeconds}-second bounded read window."
                 )
             }
         }
@@ -1366,6 +1393,26 @@ $items = @(
         -AuditPath $rawCatalogRepositoryPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
         -ExpectedExitCode 1 `
         -ExpectedOutput "does not contain the exact audited catalog bytes"
+
+    # The committed-blob branch now proves the worktree through git diff rather than a
+    # raw byte comparison, so uncommitted drift whose committed blob still matches
+    # declarationSha256 is caught only by that dirty check. Nothing else asserts it.
+    $currentConsumerRevision = ([string] @(& git -C $historyRepository rev-parse HEAD)[-1]).Trim()
+    $dirtyDeclarationAudit = Get-Content -LiteralPath $productionAuditPath -Raw | ConvertFrom-Json -DateKind String
+    $dirtyDeclarationAudit.generatedFromRevision = $currentConsumerRevision
+    $dirtyDeclarationAudit.consumerEvidence.repositoryRevision = $currentConsumerRevision
+    $dirtyDeclarationPath = Join-Path $temporaryRoot 'repository-dirty-consumer-declaration.json'
+    Save-Audit -Audit $dirtyDeclarationAudit -Path $dirtyDeclarationPath
+    [IO.File]::AppendAllText(
+        $changedDeclaration,
+        "`n<!-- uncommitted worktree drift -->`n",
+        [Text.UTF8Encoding]::new($false)
+    )
+    Test-RepositoryScenario -Name 'Uncommitted consumer declaration drift is rejected' `
+        -AuditPath $dirtyDeclarationPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
+        -ExpectedExitCode 1 `
+        -ExpectedOutput "Consumer declaration '$changedDeclarationPath' is dirty relative to generated-from revision '$currentConsumerRevision'."
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot $changedDeclarationPath) -Destination $changedDeclaration -Force
 
     $null = & git -C $historyRepository replace $historicalConsumerRevision.Trim() $unrelatedRevision.Trim()
     Test-RepositoryScenario -Name 'Historical Git reads ignore replacement refs' `

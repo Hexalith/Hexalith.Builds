@@ -116,9 +116,10 @@ canonical family list; only those families are queried:
   -Family hexalith-eventstore,hexalith-frontcomposer
 ```
 
-PowerShell callers may also pass an array to `-Family`. Unknown or duplicate
-families, a missing prior audit, and catalog-selection drift in any unrequested
-family fail before output. The v2 snapshot envelope records `complete` or
+`-Family` is an alias of the canonical `-ChangedFamily` parameter, and PowerShell
+callers may pass an array to either name. Unknown or duplicate families, a
+missing prior audit, and catalog-selection drift in any unrequested family fail
+before output. The v2 snapshot envelope records `complete` or
 `incremental` mode and an exact, non-overlapping refreshed/preserved partition
 covering every catalog family.
 
@@ -128,10 +129,14 @@ the closed-shape prior contract. Migrate an older audit with a complete refresh.
 
 Generation compares repository-owned catalog and consumer declarations with the
 claimed revision before any feed request, including staged and unstaged changes
-while respecting Git's configured EOL normalization. Git blob reads are both
-time- and size-bounded, defaulting to 10 seconds and 1 MiB per blob; override
-them with `-GitBlobReadTimeoutSeconds` and `-GitBlobReadMaxBytes` when a
-repository legitimately exceeds either bound. The audit is serialized to a sibling temporary file and
+while respecting Git's configured EOL normalization. Commit a catalog or
+consumer edit before regenerating: a dirty tracked declaration fails the run
+before the first feed request, because the audit can only claim bytes that
+already exist at an ancestor commit. Git blob reads are both time- and
+size-bounded at 10 seconds and 1 MiB per blob. Those bounds are fixed operator
+behavior; `-GitBlobReadTimeoutSeconds` and `-GitBlobReadMaxBytes` are hidden
+diagnostic parameters reserved for the fixture suites, accepting 1-300 seconds
+and 1-134217728 bytes. The audit is serialized to a sibling temporary file and
 atomically moved into place only after the complete document succeeds, so a
 failed refresh leaves the prior output intact.
 
@@ -166,8 +171,10 @@ fingerprints. Package-metadata fingerprints include each source diagnostic as
 well as its listing state and candidates. Incremental generation validates and
 copies every preserved family decision and package row unchanged, while a
 genuinely changed refreshed family alone gains one typed family snapshot and its
-package snapshots. Repeating identical
-evidence does not append duplicate history. Explicit test fixtures remain
+package snapshots. Repeating identical evidence does not append duplicate
+history, so the artifact grows only with genuine per-family refreshes rather
+than with every catalog byte change; Git already retains prior whole artifacts,
+so the document never needs to carry a full run-by-run history. Explicit test fixtures remain
 labeled synthetic and bound to their exact bytes and semantic relations. The
 validator independently recomputes every closed-shape invariant, exact catalog
 coverage, snapshot partition, origin fingerprint, consumer relation, and typed

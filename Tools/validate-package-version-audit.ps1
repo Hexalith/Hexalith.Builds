@@ -1811,12 +1811,19 @@ else {
                     # any normalizing checkout. The raw-byte comparison is retained only
                     # when the audited revision cannot supply the blob.
                     $declarationBoundToRevision = $false
+                    # A failed blob read is a recorded failure for this declaration
+                    # only. It must not disable revision binding for the declarations
+                    # that follow, because the raw-byte fallback below misreads
+                    # configured EOL normalization as drift -- one transient read
+                    # failure would otherwise cascade into spurious drift failures
+                    # across every remaining declaration.
+                    $declarationReadAttempted = $false
                     if ($historicalBlobReadsAvailable -and $generatedFromRevision -cmatch '^[0-9a-f]{40}$') {
+                        $declarationReadAttempted = $true
                         $declarationBlob = @(Get-GitBlobBytes `
                             -Root $repositoryRoot -Revision $generatedFromRevision -Path $declarationPath)[-1]
                         if (-not $declarationBlob.Success) {
                             $failures.Add($declarationBlob.Diagnostic)
-                            $historicalBlobReadsAvailable = $false
                         }
                         else {
                             $declarationBoundToRevision = $true
@@ -1825,16 +1832,21 @@ else {
                                     "Generated-from revision '$generatedFromRevision' does not contain consumer declaration '$declarationPath' bytes."
                                 )
                             }
-                            $null = & git --no-replace-objects -C $repositoryRoot diff --quiet `
-                                $generatedFromRevision -- $declarationPath 2>$null
-                            if ($LASTEXITCODE -ne 0) {
+                            $declarationDiffOutput = @(& git --no-replace-objects -C $repositoryRoot diff --quiet --no-ext-diff `
+                                $generatedFromRevision -- $declarationPath 2>&1)
+                            if ($LASTEXITCODE -eq 1) {
                                 $failures.Add(
                                     "Consumer declaration '$declarationPath' is dirty relative to generated-from revision '$generatedFromRevision'."
                                 )
                             }
+                            elseif ($LASTEXITCODE -ne 0) {
+                                $failures.Add(
+                                    "Consumer declaration '$declarationPath' could not be compared with generated-from revision '$generatedFromRevision'. $([string]::Join("`n", $declarationDiffOutput))"
+                                )
+                            }
                         }
                     }
-                    if (-not $declarationBoundToRevision -and
+                    if (-not $declarationBoundToRevision -and -not $declarationReadAttempted -and
                         (Get-Sha256File -Path $declarationFullPath) -cne $declarationSha256) {
                         $failures.Add("Consumer declaration '$declarationPath' SHA-256 does not match its tracked bytes.")
                     }

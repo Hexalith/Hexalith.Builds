@@ -114,11 +114,17 @@ function Read-ReadyProcessRecord {
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
         return $null
     }
+    # Mirrors the validator harness: a malformed record is a controlled fixture failure
+    # with its own diagnostic, never $null, because $null means "not ready yet" and
+    # would silently degrade a corrupt handshake into a readiness-poll timeout.
     try {
         $parts = (Get-Content -LiteralPath $Path -Raw -ErrorAction Stop).Trim().Split('|')
     }
     catch {
-        return $null
+        return [pscustomobject] @{
+            Valid = $false
+            Diagnostic = "Ready/PID record could not be read: $($_.Exception.GetBaseException().Message)"
+        }
     }
     $shimProcessId = 0
     $childProcessId = 0
@@ -126,10 +132,17 @@ function Read-ReadyProcessRecord {
         -not [int]::TryParse($parts[0], [ref] $shimProcessId) -or
         -not [int]::TryParse($parts[1], [ref] $childProcessId) -or
         $shimProcessId -le 0 -or $childProcessId -le 0) {
-        return $null
+        return [pscustomobject] @{
+            Valid = $false
+            Diagnostic = 'Ready/PID record must contain two positive integer process identifiers.'
+        }
     }
 
-    return [pscustomobject] @{ ShimProcessId = $shimProcessId; ChildProcessId = $childProcessId }
+    return [pscustomobject] @{
+        Valid = $true
+        ShimProcessId = $shimProcessId
+        ChildProcessId = $childProcessId
+    }
 }
 
 try {
@@ -279,6 +292,62 @@ try {
             $acceptedPackage.rollbackGroup = 'owner-approved-rollback-group'
             $acceptedPackage.rationale = 'Package owner accepted this exact version and provenance.'
             $acceptedPackage.removalTrigger = 'Re-open this package decision when its exact provenance changes.'
+
+            # Almost all history in the shipped artifact is v1, so the v1 branch of the
+            # prior contract is the one every real incremental refresh traverses. A
+            # bootstrapped prior carries no history at all, which left that branch -- and
+            # the verbatim copy-forward of legacy records -- entirely unproven. Stamping
+            # legacy records onto the preserved family makes the deep-equality assertions
+            # below cover them.
+            $legacyFamilyDecision = @($acceptedPrior.familyDecisions | Where-Object family -eq 'package:fixture.missing')[0]
+            $legacyPackage = @($acceptedPrior.packages | Where-Object id -eq 'Fixture.Missing')[0]
+            $legacyRevision = 'a' * 40
+            $legacyTimestamp = '2026-01-02T03:04:05Z'
+            $legacyFamilyDecision.historicalContext = @([pscustomobject] [ordered] @{
+                    schema = 'hexalith.package-audit-family-history.v1'
+                    label = 'Legacy v1 family snapshot.'
+                    auditedAtUtc = $legacyTimestamp
+                    generatedFromRevision = $legacyRevision
+                    family = 'package:fixture.missing'
+                    disposition = $legacyFamilyDecision.disposition
+                    rollbackGroup = $legacyFamilyDecision.rollbackGroup
+                    packageIds = @($legacyFamilyDecision.packageIds)
+                    rationale = $legacyFamilyDecision.rationale
+                    compatibilityEvidence = $legacyFamilyDecision.compatibilityEvidence
+                    removalTrigger = $legacyFamilyDecision.removalTrigger
+                    representativeConsumers = @($legacyFamilyDecision.representativeConsumers)
+                    preservation = [pscustomobject] [ordered] @{
+                        status = 'preserved'
+                        reason = 'Legacy v1 preservation envelope.'
+                    }
+                    supersededBecause = 'Superseded by the v2 family origin contract.'
+                })
+            $legacyPackage.historicalContext = @([pscustomobject] [ordered] @{
+                    schema = 'hexalith.package-audit-package-history.v1'
+                    label = 'Legacy v1 package snapshot.'
+                    auditedAtUtc = $legacyTimestamp
+                    generatedFromRevision = $legacyRevision
+                    id = 'Fixture.Missing'
+                    auditedVersion = $legacyPackage.auditedVersion
+                    selectedVersion = $legacyPackage.selectedVersion
+                    latestStable = $null
+                    latestPrerelease = $null
+                    listingState = 'missing'
+                    family = 'package:fixture.missing'
+                    disposition = $legacyPackage.disposition
+                    rollbackGroup = $legacyPackage.rollbackGroup
+                    rationale = $legacyPackage.rationale
+                    evidence = $legacyPackage.evidence
+                    removalTrigger = $legacyPackage.removalTrigger
+                    sourceResults = @([pscustomobject] [ordered] @{
+                            source = $sourceOne
+                            listingState = 'missing'
+                            latestStable = $null
+                            latestPrerelease = $null
+                            diagnostic = ''
+                        })
+                    supersededBecause = 'Superseded by the v2 package origin contract.'
+                })
             Write-Utf8File -Path $acceptedPriorPath -Content ($acceptedPrior | ConvertTo-Json -Depth 20)
 
             $preservedPath = Join-Path $temporaryRoot 'preserved.json'
@@ -904,11 +973,10 @@ try {
     $null = & git -C $repositoryFixtureRoot config user.email 'package-audit-generator@example.invalid'
     $null = & git -C $repositoryFixtureRoot add -- .
     $null = & git -C $repositoryFixtureRoot commit --quiet -m 'test: repository provenance fixture'
-    # checkout-index does not overwrite files already present, so the worktree copies must
-    # be removed first for the .gitattributes eol=crlf normalization above to actually
-    # produce worktree bytes that differ from the committed LF blobs. Without this the
-    # whole fixture runs with worktree bytes == blob bytes and proves nothing about
-    # normalizing checkouts.
+    # The .gitattributes eol=crlf rule above only takes effect when Git materializes the
+    # files again, so the worktree copies are removed and then re-checked out. Without
+    # that re-materialization the whole fixture runs with worktree bytes == blob bytes
+    # and proves nothing about normalizing checkouts.
     Remove-Item -LiteralPath $repositoryCatalogPath, $repositoryConsumerPath -Force
     $null = & git -C $repositoryFixtureRoot checkout-index --force --all
     foreach ($normalized in @($repositoryCatalogPath, $repositoryConsumerPath)) {
@@ -1056,6 +1124,11 @@ try {
                 if ($null -eq $generatorShimRecord) {
                     $failures.Add('The generator timeout scenario never observed the shim readiness handshake.')
                 }
+                elseif (-not $generatorShimRecord.Valid) {
+                    $failures.Add(
+                        "The generator timeout scenario observed a malformed shim readiness record. $($generatorShimRecord.Diagnostic)"
+                    )
+                }
                 if (-not $timeoutProcess.WaitForExit(30000)) {
                     $failures.Add('The generator did not abandon a non-terminating Git blob read within its bound.')
                     try { $timeoutProcess.Kill($true) } catch { }
@@ -1074,7 +1147,7 @@ try {
             }
         }
         finally {
-            if ($null -ne $generatorShimRecord) {
+            if ($null -ne $generatorShimRecord -and $generatorShimRecord.Valid) {
                 foreach ($ownedProcessId in @($generatorShimRecord.ShimProcessId, $generatorShimRecord.ChildProcessId)) {
                     if (-not (Wait-ForProcessGone -ProcessId $ownedProcessId -TimeoutMilliseconds 5000)) {
                         $failures.Add("Generator-owned process $ownedProcessId survived process-tree cleanup.")

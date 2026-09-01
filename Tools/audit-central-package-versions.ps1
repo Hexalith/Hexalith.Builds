@@ -677,7 +677,9 @@ function Get-OriginIdentityFingerprint {
 
 function Assert-ExactObjectShape {
     param(
-        [Parameter(Mandatory = $true)] $Object,
+        # A missing or JSON-null prior field must reach the typed diagnostic below
+        # rather than fail parameter binding with an untyped runtime exception.
+        [Parameter(Mandatory = $true)][AllowNull()] $Object,
         [Parameter(Mandatory = $true)][string[]] $KnownFields,
         [Parameter(Mandatory = $true)][string] $Description
     )
@@ -732,7 +734,7 @@ function Assert-JsonStringArrayProperty {
 
 function Assert-PriorOriginContract {
     param(
-        [Parameter(Mandatory = $true)] $Origin,
+        [Parameter(Mandatory = $true)][AllowNull()] $Origin,
         [Parameter(Mandatory = $true)][string] $Description
     )
 
@@ -765,7 +767,7 @@ function Assert-PriorOriginContract {
 
 function Assert-PriorSourceResultContract {
     param(
-        [Parameter(Mandatory = $true)] $SourceResult,
+        [Parameter(Mandatory = $true)][AllowNull()] $SourceResult,
         [Parameter(Mandatory = $true)][string] $Description
     )
 
@@ -782,7 +784,7 @@ function Assert-PriorSourceResultContract {
 
 function Assert-PriorPackageHistoryContract {
     param(
-        [Parameter(Mandatory = $true)] $History,
+        [Parameter(Mandatory = $true)][AllowNull()] $History,
         [Parameter(Mandatory = $true)][string] $PackageId
     )
 
@@ -845,7 +847,7 @@ function Assert-PriorPackageHistoryContract {
 
 function Assert-PriorFamilyHistoryContract {
     param(
-        [Parameter(Mandatory = $true)] $History,
+        [Parameter(Mandatory = $true)][AllowNull()] $History,
         [Parameter(Mandatory = $true)][string] $Family
     )
 
@@ -918,7 +920,7 @@ function Assert-PriorFamilyHistoryContract {
 function Assert-PriorV2PreservedFamily {
     param(
         [Parameter(Mandatory = $true)][string] $Family,
-        [Parameter(Mandatory = $true)] $Decision,
+        [Parameter(Mandatory = $true)][AllowNull()] $Decision,
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]] $PackageRows,
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]] $Sources,
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]] $ConsumerEntries
@@ -1049,7 +1051,7 @@ function Assert-PriorV2PreservedFamily {
 }
 
 function Assert-PriorV2AuditEnvelope {
-    param([Parameter(Mandatory = $true)] $PriorAudit)
+    param([Parameter(Mandatory = $true)][AllowNull()] $PriorAudit)
 
     Assert-ExactObjectShape -Object $PriorAudit -KnownFields @(
         'schemaVersion', 'generatedFromRevision', 'catalogPath', 'catalogSha256',
