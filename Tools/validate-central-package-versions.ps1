@@ -46,6 +46,36 @@ function Resolve-ExistingFile {
     return $resolved.ProviderPath
 }
 
+function Read-StrictUtf8BomFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Path
+    )
+
+    try {
+        $bytes = [IO.File]::ReadAllBytes($Path)
+    }
+    catch {
+        Stop-Validation "central catalog bytes could not be read. $($_.Exception.GetBaseException().Message)"
+    }
+
+    if (
+        $bytes.Length -lt 3 -or
+        $bytes[0] -ne 0xEF -or
+        $bytes[1] -ne 0xBB -or
+        $bytes[2] -ne 0xBF
+    ) {
+        Stop-Validation 'central catalog must begin with the UTF-8 BOM bytes EF BB BF.'
+    }
+
+    try {
+        return [Text.UTF8Encoding]::new($false, $true).GetString($bytes, 3, $bytes.Length - 3)
+    }
+    catch {
+        Stop-Validation "central catalog is not valid strict UTF-8. $($_.Exception.GetBaseException().Message)"
+    }
+}
+
 function Invoke-CatalogEvaluation {
     param(
         [Parameter(Mandatory = $true)]
@@ -94,7 +124,7 @@ if (-not [string]::IsNullOrWhiteSpace($EvaluatorScriptPath)) {
 }
 
 try {
-    [xml] $catalogXml = Get-Content -LiteralPath $resolvedCatalogPath -Raw -ErrorAction Stop
+    [xml] $catalogXml = Read-StrictUtf8BomFile -Path $resolvedCatalogPath
 }
 catch {
     Stop-Validation "central catalog source is malformed XML. $($_.Exception.GetBaseException().Message)"

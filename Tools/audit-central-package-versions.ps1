@@ -3,6 +3,7 @@ param(
     [string] $CatalogPath = '',
     [string] $OutputPath = '',
     [string[]] $Source = @(),
+    [Alias('Family')][string[]] $ChangedFamily = @(),
     [Parameter(DontShow = $true)][string] $RequestFixturePath = '',
     [Parameter(DontShow = $true)][string] $PriorAuditPath = '',
     [Parameter(DontShow = $true)][string] $ConsumerEvidencePath = ''
@@ -62,6 +63,49 @@ function Get-Sha256File {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function Get-GitBlobBytes {
+    param(
+        [Parameter(Mandatory = $true)][string] $Root,
+        [Parameter(Mandatory = $true)][string] $Revision,
+        [Parameter(Mandatory = $true)][string] $Path
+    )
+
+    $startInfo = [Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = 'git'
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $startInfo.CreateNoWindow = $true
+    $startInfo.Environment['GIT_NO_REPLACE_OBJECTS'] = '1'
+    foreach ($argument in @('--no-replace-objects', '-C', $Root, 'cat-file', 'blob', "$Revision`:$Path")) {
+        $null = $startInfo.ArgumentList.Add($argument)
+    }
+
+    $process = [Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    $memory = [IO.MemoryStream]::new()
+    try {
+        if (-not $process.Start()) {
+            Stop-Audit "Git blob read could not start for '$Path'."
+        }
+        $copyTask = $process.StandardOutput.BaseStream.CopyToAsync($memory)
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit(10000) -or -not $copyTask.Wait(10000)) {
+            try { $process.Kill($true) } catch { }
+            Stop-Audit "Git blob read timed out for '$Path'."
+        }
+        if ($process.ExitCode -ne 0) {
+            $diagnostic = $stderrTask.GetAwaiter().GetResult().Trim()
+            Stop-Audit "Git blob read failed for '$Path'. $diagnostic"
+        }
+        return $memory.ToArray()
+    }
+    finally {
+        $memory.Dispose()
+        $process.Dispose()
+    }
+}
+
 function Get-CatalogSha256 {
     param([Parameter(Mandatory = $true)][string] $Path)
 
@@ -96,6 +140,23 @@ function Get-IdentitySignature {
     param([AllowEmptyCollection()][object[]] $Values)
 
     return [string]::Join('|', @($Values | ForEach-Object { [string] $_ } | Sort-Object -CaseSensitive))
+}
+
+function Get-FamilySelectionFingerprint {
+    param([AllowEmptyCollection()][object[]] $Rows)
+
+    $material = @($Rows | Where-Object { $null -ne $_ } | ForEach-Object {
+            $id = if ($_.PSObject.Properties.Name -contains 'Identity') { [string] $_.Identity } else { Get-PropertyText -Object $_ -Name 'id' }
+            $version = if ($_.PSObject.Properties.Name -contains 'Version') { [string] $_.Version } else { Get-PropertyText -Object $_ -Name 'selectedVersion' }
+            "$id|$version"
+        } | Sort-Object -CaseSensitive)
+    return Get-Sha256Text -Value ([string]::Join("`n", $material))
+}
+
+function Copy-JsonValue {
+    param([Parameter(Mandatory = $true)] $Value)
+
+    return $Value | ConvertTo-Json -Depth 30 | ConvertFrom-Json -DateKind String
 }
 
 function Get-SourceScopeFingerprint {
@@ -294,6 +355,15 @@ function Assert-PriorAuditIdentityRelations {
         if ($resultSources.Count -ne $sourceUris.Count) {
             Stop-Audit "prior audit package '$id' does not contain exactly one result for every source identity."
         }
+        foreach ($history in @(Get-ArrayProperty -Object $package -Name 'historicalContext')) {
+            $historySchema = Get-PropertyText -Object $history -Name 'schema'
+            if ($historySchema -notin @(
+                    'hexalith.package-audit-package-history.v1',
+                    'hexalith.package-audit-package-history.v2'
+                )) {
+                Stop-Audit "prior package history for '$id' uses unsupported schema '$historySchema'."
+            }
+        }
     }
 
     $decisionsByFamily = @{}
@@ -322,6 +392,15 @@ function Assert-PriorAuditIdentityRelations {
             }
             if ((Get-PropertyText -Object $package -Name 'rollbackGroup') -cne $decisionRollbackGroup) {
                 Stop-Audit "prior audit package '$id' rollback group does not match family '$family'."
+            }
+        }
+        foreach ($history in @(Get-ArrayProperty -Object $decision -Name 'historicalContext')) {
+            $historySchema = Get-PropertyText -Object $history -Name 'schema'
+            if ($historySchema -notin @(
+                    'hexalith.package-audit-family-history.v1',
+                    'hexalith.package-audit-family-history.v2'
+                )) {
+                Stop-Audit "prior family history for '$family' uses unsupported schema '$historySchema'."
             }
         }
     }
@@ -476,83 +555,6 @@ function Get-PackageMetadataFingerprint {
     return Get-Sha256Text -Value ([string]::Join("`n", @($material)))
 }
 
-function New-LegacyHistoryPreservation {
-    return [ordered] @{
-        status = 'legacy-unbound'
-        reason = 'The legacy history record predated byte-bound preservation provenance.'
-    }
-}
-
-function ConvertTo-TypedFamilyHistory {
-    param(
-        [Parameter(Mandatory = $true)] $Entry,
-        [Parameter(Mandatory = $true)][string] $Family,
-        [Parameter(Mandatory = $true)][object[]] $PackageIds
-    )
-
-    $schema = Get-PropertyText -Object $Entry -Name 'schema'
-    if ($schema -ceq 'hexalith.package-audit-family-history.v1') {
-        return $Entry
-    }
-    if (-not [string]::IsNullOrWhiteSpace($schema)) {
-        Stop-Audit "prior family history for '$Family' uses unsupported schema '$schema'."
-    }
-
-    return [ordered] @{
-        schema = 'hexalith.package-audit-family-history.v1'
-        label = Get-PropertyText -Object $Entry -Name 'label'
-        auditedAtUtc = Get-PropertyText -Object $Entry -Name 'auditedAtUtc'
-        generatedFromRevision = Get-PropertyText -Object $Entry -Name 'generatedFromRevision'
-        family = $Family
-        disposition = Get-PropertyText -Object $Entry -Name 'disposition'
-        rollbackGroup = '<unrecorded>'
-        packageIds = @($PackageIds)
-        rationale = Get-PropertyText -Object $Entry -Name 'rationale'
-        compatibilityEvidence = Get-PropertyText -Object $Entry -Name 'compatibilityEvidence'
-        removalTrigger = Get-PropertyText -Object $Entry -Name 'removalTrigger'
-        representativeConsumers = @(Get-ArrayProperty -Object $Entry -Name 'representativeConsumers')
-        preservation = New-LegacyHistoryPreservation
-        supersededBecause = Get-PropertyText -Object $Entry -Name 'supersededBecause'
-    }
-}
-
-function ConvertTo-TypedPackageHistory {
-    param(
-        [Parameter(Mandatory = $true)] $Entry,
-        [Parameter(Mandatory = $true)][string] $Id,
-        [Parameter(Mandatory = $true)][string] $Family
-    )
-
-    $schema = Get-PropertyText -Object $Entry -Name 'schema'
-    if ($schema -ceq 'hexalith.package-audit-package-history.v1') {
-        return $Entry
-    }
-    if (-not [string]::IsNullOrWhiteSpace($schema)) {
-        Stop-Audit "prior package history for '$Id' uses unsupported schema '$schema'."
-    }
-
-    return [ordered] @{
-        schema = 'hexalith.package-audit-package-history.v1'
-        label = Get-PropertyText -Object $Entry -Name 'label'
-        auditedAtUtc = Get-PropertyText -Object $Entry -Name 'auditedAtUtc'
-        generatedFromRevision = Get-PropertyText -Object $Entry -Name 'generatedFromRevision'
-        id = $Id
-        auditedVersion = Get-PropertyText -Object $Entry -Name 'auditedVersion'
-        selectedVersion = Get-PropertyText -Object $Entry -Name 'selectedVersion'
-        latestStable = $null
-        latestPrerelease = $null
-        listingState = 'unrecorded'
-        family = $Family
-        disposition = Get-PropertyText -Object $Entry -Name 'disposition'
-        rollbackGroup = '<unrecorded>'
-        rationale = Get-PropertyText -Object $Entry -Name 'rationale'
-        evidence = '<unrecorded>'
-        removalTrigger = Get-PropertyText -Object $Entry -Name 'removalTrigger'
-        sourceResults = @()
-        supersededBecause = Get-PropertyText -Object $Entry -Name 'supersededBecause'
-    }
-}
-
 function Get-ConfiguredSources {
     param([Parameter(Mandatory = $true)][string] $WorkingDirectory)
 
@@ -698,21 +700,95 @@ foreach ($sourceUri in $configuredSources) {
     }
 }
 
-$packages = [System.Collections.Generic.List[object]]::new()
 $evaluatedItems = @($evaluation.Items.PackageVersion)
 $catalogPackageIds = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+$evaluatedItemsByFamily = @{}
 foreach ($evaluatedItem in $evaluatedItems) {
     if (-not $catalogPackageIds.Add([string] $evaluatedItem.Identity)) {
         Stop-Audit "evaluated catalog contains duplicate package identity '$($evaluatedItem.Identity)'."
+    }
+    $evaluatedFamily = Get-PackageFamily -Id ([string] $evaluatedItem.Identity)
+    if (-not $evaluatedItemsByFamily.ContainsKey($evaluatedFamily)) {
+        $evaluatedItemsByFamily[$evaluatedFamily] = [Collections.Generic.List[object]]::new()
+    }
+    $evaluatedItemsByFamily[$evaluatedFamily].Add($evaluatedItem)
+}
+if ($evaluatedItemsByFamily.Count -eq 0) {
+    Stop-Audit 'evaluated catalog contains no package families.'
+}
+
+$requestedFamilies = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+foreach ($requestedFamily in @($ChangedFamily)) {
+    if ([string]::IsNullOrWhiteSpace($requestedFamily) -or -not $requestedFamilies.Add($requestedFamily)) {
+        Stop-Audit "incremental family selection contains a blank or duplicate family '$requestedFamily'."
+    }
+    if (-not $evaluatedItemsByFamily.ContainsKey($requestedFamily)) {
+        Stop-Audit "incremental family selection contains unknown family '$requestedFamily'."
+    }
+}
+
+$refreshMode = if ($requestedFamilies.Count -eq 0) { 'complete' } else { 'incremental' }
+if ($refreshMode -ceq 'incremental' -and $null -eq $priorAudit) {
+    Stop-Audit 'incremental refresh requires a prior audit.'
+}
+
+$priorPackagesByFamily = @{}
+$priorPackagesById = @{}
+$priorDecisionsByFamily = @{}
+if ($null -ne $priorAudit) {
+    $priorSchemaVersion = Get-PropertyText -Object $priorAudit -Name 'schemaVersion'
+    if ($priorSchemaVersion -notin @('1', '2')) {
+        Stop-Audit "prior audit schemaVersion '$priorSchemaVersion' is unsupported."
+    }
+    foreach ($priorPackage in @(Get-ArrayProperty -Object $priorAudit -Name 'packages')) {
+        $priorPackageId = Get-PropertyText -Object $priorPackage -Name 'id'
+        $priorFamily = Get-PropertyText -Object $priorPackage -Name 'family'
+        $priorPackagesById[$priorPackageId] = $priorPackage
+        if (-not $priorPackagesByFamily.ContainsKey($priorFamily)) {
+            $priorPackagesByFamily[$priorFamily] = [Collections.Generic.List[object]]::new()
+        }
+        $priorPackagesByFamily[$priorFamily].Add($priorPackage)
+    }
+    foreach ($priorDecision in @(Get-ArrayProperty -Object $priorAudit -Name 'familyDecisions')) {
+        $priorDecisionsByFamily[(Get-PropertyText -Object $priorDecision -Name 'family')] = $priorDecision
+    }
+}
+
+if ($refreshMode -ceq 'incremental') {
+    foreach ($currentFamily in $evaluatedItemsByFamily.Keys) {
+        if (-not $priorPackagesByFamily.ContainsKey($currentFamily)) {
+            Stop-Audit "catalog family '$currentFamily' is absent from the prior audit and requires a complete refresh."
+        }
+        $currentSelection = Get-FamilySelectionFingerprint -Rows @($evaluatedItemsByFamily[$currentFamily])
+        $priorSelection = Get-FamilySelectionFingerprint -Rows @($priorPackagesByFamily[$currentFamily])
+        if ($currentSelection -cne $priorSelection -and -not $requestedFamilies.Contains($currentFamily)) {
+            Stop-Audit "unrequested family '$currentFamily' changed its catalog selection."
+        }
+    }
+    foreach ($priorFamily in $priorPackagesByFamily.Keys) {
+        if (-not $evaluatedItemsByFamily.ContainsKey($priorFamily)) {
+            Stop-Audit "prior audit family '$priorFamily' is absent from the current catalog and requires a complete refresh."
+        }
     }
 }
 $consumerEvidence = Get-OwnedConsumerEvidence `
     -Root $repositoryRoot `
     -CatalogPackageIds $catalogPackageIds `
     -FixturePath $ConsumerEvidencePath
+$refreshedFamilies = if ($refreshMode -ceq 'complete') {
+    [Collections.Generic.HashSet[string]]::new([string[]] @($evaluatedItemsByFamily.Keys), [StringComparer]::Ordinal)
+}
+else {
+    $requestedFamilies
+}
+$packages = [System.Collections.Generic.List[object]]::new()
 foreach ($item in @($evaluatedItems | Sort-Object Identity)) {
     $id = [string] $item.Identity
     $currentVersion = [string] $item.Version
+    $family = Get-PackageFamily -Id $id
+    if (-not $refreshedFamilies.Contains($family)) {
+        continue
+    }
     $sourceResults = [System.Collections.Generic.List[object]]::new()
     $allStable = [System.Collections.Generic.List[string]]::new()
     $allPrerelease = [System.Collections.Generic.List[string]]::new()
@@ -807,8 +883,6 @@ foreach ($item in @($evaluatedItems | Sort-Object Identity)) {
     elseif ($states -contains 'unlisted') { 'unlisted' }
     elseif (@($states | Where-Object { $_ -ne 'unresolved' }).Count -eq 0) { 'unresolved' }
     else { 'missing' }
-    $family = Get-PackageFamily -Id $id
-
     if ($listingState -eq 'listed' -and $latestStable -ieq $currentVersion) {
         $rationale = 'Current pin is the latest listed stable release on the configured sources.'
     }
@@ -838,10 +912,19 @@ foreach ($item in @($evaluatedItems | Sort-Object Identity)) {
                     }))
             removalTrigger = 'Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.'
             sourceResults = @($sourceResults)
+            historicalContext = @()
         })
 }
 
-$revisionOutput = @(& git -C $repositoryRoot rev-parse HEAD 2>&1)
+if ($refreshMode -ceq 'incremental') {
+    foreach ($preservedFamily in @($evaluatedItemsByFamily.Keys | Where-Object { -not $refreshedFamilies.Contains($_) })) {
+        foreach ($priorPackage in @($priorPackagesByFamily[$preservedFamily])) {
+            $packages.Add((Copy-JsonValue -Value $priorPackage))
+        }
+    }
+}
+
+$revisionOutput = @(& git --no-replace-objects -C $repositoryRoot rev-parse HEAD 2>&1)
 $generatedFromRevision = if ($LASTEXITCODE -eq 0) { ([string] $revisionOutput[0]).Trim() } else { '' }
 if ($generatedFromRevision -cnotmatch '^[0-9a-f]{40}$') {
     Stop-Audit "Git revision discovery did not return a full lowercase revision. $([string]::Join("`n", $revisionOutput))"
@@ -849,131 +932,134 @@ if ($generatedFromRevision -cnotmatch '^[0-9a-f]{40}$') {
 
 $catalogRelativePath = [IO.Path]::GetRelativePath($repositoryRoot, $resolvedCatalogPath).Replace('\', '/')
 $catalogSha256 = Get-CatalogSha256 -Path $resolvedCatalogPath
-$currentSourceFingerprint = Get-SourceScopeFingerprint -Sources @($sourceContracts)
-$priorCatalogPath = if ($null -eq $priorAudit) { '' } else { Get-PropertyText -Object $priorAudit -Name 'catalogPath' }
-$priorCatalogSha256 = if ($null -eq $priorAudit) { '' } else { Get-PropertyText -Object $priorAudit -Name 'catalogSha256' }
-$priorSourceFingerprint = if ($null -eq $priorAudit) {
-    ''
-}
-else {
-    Get-SourceScopeFingerprint -Sources @(Get-ArrayProperty -Object $priorAudit -Name 'sources')
-}
-$priorPackagesByFamily = @{}
-$priorPackagesById = @{}
-$priorDecisionsByFamily = @{}
-if ($null -ne $priorAudit) {
-    foreach ($priorPackage in @(Get-ArrayProperty -Object $priorAudit -Name 'packages')) {
-        $priorPackageId = Get-PropertyText -Object $priorPackage -Name 'id'
-        $priorFamily = Get-PropertyText -Object $priorPackage -Name 'family'
-        $priorPackagesById[$priorPackageId] = $priorPackage
-        if (-not $priorPackagesByFamily.ContainsKey($priorFamily)) {
-            $priorPackagesByFamily[$priorFamily] = [System.Collections.Generic.List[object]]::new()
-        }
-        $priorPackagesByFamily[$priorFamily].Add($priorPackage)
+$catalogRawSha256 = Get-Sha256File -Path $resolvedCatalogPath
+$catalogIsRepositoryOwned = $catalogRelativePath -cnotmatch '^\.\.(?:/|$)'
+if ($catalogIsRepositoryOwned) {
+    $null = & git --no-replace-objects -C $repositoryRoot cat-file -e "$generatedFromRevision^{commit}" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Stop-Audit "generated-from revision '$generatedFromRevision' is not an available Git commit."
     }
-    foreach ($priorDecision in @(Get-ArrayProperty -Object $priorAudit -Name 'familyDecisions')) {
-        $priorDecisionsByFamily[(Get-PropertyText -Object $priorDecision -Name 'family')] = $priorDecision
+    $null = & git --no-replace-objects -C $repositoryRoot diff --quiet -- $catalogRelativePath
+    if ($LASTEXITCODE -ne 0) {
+        Stop-Audit "catalog bytes are dirty relative to generated-from revision '$generatedFromRevision'."
     }
+    $catalogBlobBytes = Get-GitBlobBytes `
+        -Root $repositoryRoot -Revision $generatedFromRevision -Path $catalogRelativePath
+    $catalogRawSha256 = [Convert]::ToHexString(
+        [Security.Cryptography.SHA256]::HashData($catalogBlobBytes)
+    ).ToLowerInvariant()
 }
 
-$priorConsumerEvidenceEntries = if ($null -ne $priorAudit -and
-    $priorAudit.PSObject.Properties.Name -contains 'consumerEvidence') {
+if ($consumerEvidence.discovery -ceq 'git-ls-files') {
+    foreach ($declaration in @($consumerEvidence.entries | Group-Object declarationPath)) {
+        $declarationPath = [string] $declaration.Name
+        $null = & git --no-replace-objects -C $repositoryRoot diff --quiet -- $declarationPath
+        if ($LASTEXITCODE -ne 0) {
+            Stop-Audit "consumer declaration '$declarationPath' is dirty relative to generated-from revision '$generatedFromRevision'."
+        }
+        $declarationBlobBytes = Get-GitBlobBytes `
+            -Root $repositoryRoot -Revision $generatedFromRevision -Path $declarationPath
+        $declarationBlobSha256 = [Convert]::ToHexString(
+            [Security.Cryptography.SHA256]::HashData($declarationBlobBytes)
+        ).ToLowerInvariant()
+        foreach ($entry in $declaration.Group) {
+            $entry.declarationSha256 = $declarationBlobSha256
+        }
+    }
+    $consumerEvidence.sha256 = Get-ConsumerRelationFingerprint -Entries @($consumerEvidence.entries)
+}
+
+$snapshotTime = [DateTimeOffset]::UtcNow.ToString('O')
+$currentSourceFingerprint = Get-SourceScopeFingerprint -Sources @($sourceContracts)
+$priorConsumerEntries = if ($null -ne $priorAudit -and $priorAudit.PSObject.Properties.Name -contains 'consumerEvidence') {
     @(Get-ArrayProperty -Object $priorAudit.consumerEvidence -Name 'entries')
 }
 else {
     @()
 }
-$priorConsumerEvidenceTrusted = $null -ne $priorAudit -and
-    $priorAudit.PSObject.Properties.Name -contains 'consumerEvidence' -and
-    (Get-PropertyText -Object $priorAudit.consumerEvidence -Name 'schema') -ceq 'hexalith.package-consumer-evidence.v1' -and
-    (Get-PropertyText -Object $priorAudit.consumerEvidence -Name 'sha256') -cmatch '^[0-9a-f]{64}$' -and
-    @($priorConsumerEvidenceEntries | Where-Object {
-            (Get-PropertyText -Object $_ -Name 'declarationPath') -eq '' -or
-            (Get-PropertyText -Object $_ -Name 'declarationSha256') -cnotmatch '^[0-9a-f]{64}$'
-        }).Count -eq 0
-$familyDecisions = [System.Collections.Generic.List[object]]::new()
-foreach ($group in @($packages | Group-Object family | Sort-Object Name)) {
-    $family = $group.Name
-    $packageIds = @($group.Group | ForEach-Object { $_.id } | Sort-Object)
-    $currentConsumers = @($consumerEvidence.entries | Where-Object { $_.family -ceq $family } |
-            ForEach-Object { $_.consumer } | Sort-Object -CaseSensitive -Unique)
-    $currentConsumerRelations = @($consumerEvidence.entries | Where-Object { $_.family -ceq $family })
-    $currentConsumerFingerprint = Get-ConsumerRelationFingerprint -Entries $currentConsumerRelations
-    $currentMetadataFingerprint = Get-PackageMetadataFingerprint -PackageRows @($group.Group)
-    $priorDecision = if ($priorDecisionsByFamily.ContainsKey($family)) { $priorDecisionsByFamily[$family] } else { $null }
-    $priorFamilyPackages = @()
-    if ($priorPackagesByFamily.ContainsKey($family)) {
-        $priorFamilyPackages = @($priorPackagesByFamily[$family])
-    }
-    $priorConsumerRelations = if ($priorConsumerEvidenceTrusted) {
-        @($priorConsumerEvidenceEntries | Where-Object {
-                (Get-PropertyText -Object $_ -Name 'packageId') -in $packageIds
-            })
-    }
-    else {
-        @()
-    }
-    $priorConsumerFingerprint = Get-ConsumerRelationFingerprint -Entries $priorConsumerRelations
-    $priorMetadataFingerprint = if ($priorFamilyPackages.Count -gt 0) {
-        Get-PackageMetadataFingerprint -PackageRows $priorFamilyPackages
-    }
-    else {
-        ''
-    }
+$priorSnapshotTime = if ($null -eq $priorAudit) {
+    ''
+}
+elseif ($priorAudit.PSObject.Properties.Name -contains 'snapshot') {
+    Get-PropertyText -Object $priorAudit.snapshot -Name 'auditedAtUtc'
+}
+else {
+    Get-PropertyText -Object $priorAudit -Name 'auditedAtUtc'
+}
+$priorRevision = if ($null -eq $priorAudit) { '' } else { Get-PropertyText -Object $priorAudit -Name 'generatedFromRevision' }
 
-    $preserve = $true
-    $preservationReason = 'prior decision and current provenance are identical'
-    if ($null -eq $priorDecision) {
-        $preserve = $false
-        $preservationReason = 'no prior family decision exists'
+$familyDecisions = [Collections.Generic.List[object]]::new()
+foreach ($familyName in @($evaluatedItemsByFamily.Keys | Sort-Object -CaseSensitive)) {
+    $familyPackageRows = @($packages | Where-Object { (Get-PropertyText -Object $_ -Name 'family') -ceq $familyName } | Sort-Object id)
+    $familyConsumerRows = @($consumerEvidence.entries | Where-Object { $_.family -ceq $familyName })
+    $familyConsumers = @($familyConsumerRows | ForEach-Object { $_.consumer } | Sort-Object -CaseSensitive -Unique)
+    $selectionFingerprint = Get-FamilySelectionFingerprint -Rows @($evaluatedItemsByFamily[$familyName])
+    $metadataFingerprint = Get-PackageMetadataFingerprint -PackageRows $familyPackageRows
+    $consumerFingerprint = Get-ConsumerRelationFingerprint -Entries $familyConsumerRows
+    $priorDecision = if ($priorDecisionsByFamily.ContainsKey($familyName)) { $priorDecisionsByFamily[$familyName] } else { $null }
+    $priorFamilyPackages = if ($priorPackagesByFamily.ContainsKey($familyName)) { @($priorPackagesByFamily[$familyName]) } else { @() }
+    $priorFamilyConsumers = @($priorConsumerEntries | Where-Object { (Get-PropertyText -Object $_ -Name 'family') -ceq $familyName })
+    $priorOrigin = if ($null -ne $priorDecision -and $priorDecision.PSObject.Properties.Name -contains 'origin') {
+        $priorDecision.origin
     }
-    elseif ($priorCatalogPath -cne $catalogRelativePath) {
-        $preserve = $false
-        $preservationReason = 'catalog scope changed'
-    }
-    elseif ($priorCatalogSha256 -cne $catalogSha256) {
-        $preserve = $false
-        $preservationReason = 'tracked catalog declaration bytes changed or were not previously bound'
-    }
-    elseif ($priorSourceFingerprint -cne $currentSourceFingerprint) {
-        $preserve = $false
-        $preservationReason = 'configured source scope changed'
-    }
-    elseif ((Get-IdentitySignature -Values @($priorFamilyPackages | ForEach-Object { $_.id })) -cne
-        (Get-IdentitySignature -Values $packageIds)) {
-        $preserve = $false
-        $preservationReason = 'family package identities changed'
-    }
-    elseif ($priorMetadataFingerprint -cne $currentMetadataFingerprint) {
-        $preserve = $false
-        $preservationReason = 'package or source metadata changed'
-    }
-    elseif ($priorConsumerEvidenceTrusted -and $priorConsumerFingerprint -cne $currentConsumerFingerprint) {
-        $preserve = $false
-        $preservationReason = 'owned direct-consumer relations or tracked declaration bytes changed'
-    }
-    elseif (-not $priorConsumerEvidenceTrusted -and
-        (Get-PropertyText -Object $priorDecision -Name 'disposition') -ceq 'accepted') {
-        $preserve = $false
-        $preservationReason = 'accepted legacy decision lacks trusted consumer declaration provenance'
-    }
-    elseif ((Get-PropertyText -Object $priorDecision -Name 'disposition') -ceq 'accepted' -and $currentConsumers.Count -eq 0) {
-        $preserve = $false
-        $preservationReason = 'accepted decision has no current owned direct-consumer evidence'
-    }
-
-    $historicalContext = [System.Collections.Generic.List[object]]::new()
-    if ($null -ne $priorDecision) {
-        foreach ($historicalEntry in @(Get-ArrayProperty -Object $priorDecision -Name 'historicalContext')) {
-            $historicalContext.Add((ConvertTo-TypedFamilyHistory -Entry $historicalEntry -Family $family -PackageIds $packageIds))
+    elseif ($null -ne $priorDecision) {
+        [pscustomobject] [ordered] @{
+            auditedAtUtc = $priorSnapshotTime
+            generatedFromRevision = $priorRevision
+            familySelectionSha256 = Get-FamilySelectionFingerprint -Rows $priorFamilyPackages
+            sourceScopeSha256 = Get-SourceScopeFingerprint -Sources @(Get-ArrayProperty -Object $priorAudit -Name 'sources')
+            packageMetadataSha256 = Get-PackageMetadataFingerprint -PackageRows $priorFamilyPackages
+            consumerEvidenceSha256 = Get-ConsumerRelationFingerprint -Entries $priorFamilyConsumers
         }
-        if (-not $preserve) {
-            $historicalContext.Add([ordered] @{
-                    schema = 'hexalith.package-audit-family-history.v1'
-                    label = 'Historical prior-audit owner/runtime context; not current metadata or acceptance evidence.'
-                    auditedAtUtc = Get-PropertyText -Object $priorAudit -Name 'auditedAtUtc'
-                    generatedFromRevision = Get-PropertyText -Object $priorAudit -Name 'generatedFromRevision'
-                    family = Get-PropertyText -Object $priorDecision -Name 'family'
+    }
+    else {
+        $null
+    }
+
+    if (-not $refreshedFamilies.Contains($familyName)) {
+        if ((Get-PropertyText -Object $priorOrigin -Name 'familySelectionSha256') -cne $selectionFingerprint) {
+            Stop-Audit "preserved family '$familyName' selection fingerprint changed."
+        }
+        if ((Get-PropertyText -Object $priorOrigin -Name 'sourceScopeSha256') -cne $currentSourceFingerprint) {
+            Stop-Audit "preserved family '$familyName' source scope changed without being requested."
+        }
+        if ((Get-PropertyText -Object $priorOrigin -Name 'consumerEvidenceSha256') -cne $consumerFingerprint) {
+            Stop-Audit "preserved family '$familyName' consumer evidence changed without being requested."
+        }
+
+        $preservedDecision = Copy-JsonValue -Value $priorDecision
+        if ($preservedDecision.PSObject.Properties.Name -notcontains 'origin') {
+            $preservedDecision.PSObject.Properties.Remove('preservation')
+            $preservedDecision | Add-Member -NotePropertyName origin -NotePropertyValue (Copy-JsonValue -Value $priorOrigin)
+        }
+        $familyDecisions.Add($preservedDecision)
+        continue
+    }
+
+    $sameObservation = $null -ne $priorOrigin -and
+        (Get-PropertyText -Object $priorOrigin -Name 'familySelectionSha256') -ceq $selectionFingerprint -and
+        (Get-PropertyText -Object $priorOrigin -Name 'sourceScopeSha256') -ceq $currentSourceFingerprint -and
+        (Get-PropertyText -Object $priorOrigin -Name 'packageMetadataSha256') -ceq $metadataFingerprint -and
+        (Get-PropertyText -Object $priorOrigin -Name 'consumerEvidenceSha256') -ceq $consumerFingerprint
+
+    $familyHistory = [Collections.Generic.List[object]]::new()
+    if ($null -ne $priorDecision) {
+        foreach ($history in @(Get-ArrayProperty -Object $priorDecision -Name 'historicalContext')) {
+            $familyHistory.Add((Copy-JsonValue -Value $history))
+        }
+    }
+    if ($null -ne $priorDecision -and -not $sameObservation) {
+        $historyExists = @($familyHistory | Where-Object {
+                (Get-PropertyText -Object $_ -Name 'auditedAtUtc') -ceq (Get-PropertyText -Object $priorOrigin -Name 'auditedAtUtc') -and
+                (Get-PropertyText -Object $_ -Name 'generatedFromRevision') -ceq (Get-PropertyText -Object $priorOrigin -Name 'generatedFromRevision')
+            }).Count -gt 0
+        if (-not $historyExists) {
+            $familyHistory.Add([pscustomobject] [ordered] @{
+                    schema = 'hexalith.package-audit-family-history.v2'
+                    label = 'Historical prior family observation; not current metadata or acceptance evidence.'
+                    auditedAtUtc = Get-PropertyText -Object $priorOrigin -Name 'auditedAtUtc'
+                    generatedFromRevision = Get-PropertyText -Object $priorOrigin -Name 'generatedFromRevision'
+                    family = $familyName
                     disposition = Get-PropertyText -Object $priorDecision -Name 'disposition'
                     rollbackGroup = Get-PropertyText -Object $priorDecision -Name 'rollbackGroup'
                     packageIds = @(Get-ArrayProperty -Object $priorDecision -Name 'packageIds')
@@ -981,110 +1067,123 @@ foreach ($group in @($packages | Group-Object family | Sort-Object Name)) {
                     compatibilityEvidence = Get-PropertyText -Object $priorDecision -Name 'compatibilityEvidence'
                     removalTrigger = Get-PropertyText -Object $priorDecision -Name 'removalTrigger'
                     representativeConsumers = @(Get-ArrayProperty -Object $priorDecision -Name 'representativeConsumers')
-                    preservation = if ($priorDecision.PSObject.Properties.Name -contains 'preservation') {
-                        $priorDecision.preservation
-                    }
-                    else {
-                        New-LegacyHistoryPreservation
-                    }
-                    supersededBecause = $preservationReason
+                    origin = Copy-JsonValue -Value $priorOrigin
+                    supersededBecause = 'Family-local catalog selection or observation evidence changed.'
                 })
         }
     }
 
-    $disposition = if ($preserve) { Get-PropertyText -Object $priorDecision -Name 'disposition' } else { 'retained' }
-    $rollbackGroup = if ($preserve) { Get-PropertyText -Object $priorDecision -Name 'rollbackGroup' } else { $family }
-    $rationale = if ($preserve) {
+    $disposition = if ($sameObservation) { Get-PropertyText -Object $priorDecision -Name 'disposition' } else { 'retained' }
+    $rollbackGroup = if ($sameObservation) { Get-PropertyText -Object $priorDecision -Name 'rollbackGroup' } else { $familyName }
+    $rationale = if ($sameObservation) {
         Get-PropertyText -Object $priorDecision -Name 'rationale'
     }
     else {
         'Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.'
     }
-    $compatibilityEvidence = if ($preserve) {
+    $compatibilityEvidence = if ($sameObservation) {
         Get-PropertyText -Object $priorDecision -Name 'compatibilityEvidence'
     }
     else {
         'Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.'
     }
-    $removalTrigger = if ($preserve) {
+    $removalTrigger = if ($sameObservation) {
         Get-PropertyText -Object $priorDecision -Name 'removalTrigger'
     }
     else {
         'Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.'
     }
 
-    foreach ($package in $group.Group) {
+    foreach ($package in $familyPackageRows) {
         $priorPackage = if ($priorPackagesById.ContainsKey($package.id)) { $priorPackagesById[$package.id] } else { $null }
-        $packageHistory = [System.Collections.Generic.List[object]]::new()
+        $packageHistory = [Collections.Generic.List[object]]::new()
         if ($null -ne $priorPackage) {
-            foreach ($historicalEntry in @(Get-ArrayProperty -Object $priorPackage -Name 'historicalContext')) {
-                $packageHistory.Add((ConvertTo-TypedPackageHistory -Entry $historicalEntry -Id $package.id -Family $family))
+            foreach ($history in @(Get-ArrayProperty -Object $priorPackage -Name 'historicalContext')) {
+                $packageHistory.Add((Copy-JsonValue -Value $history))
             }
-            if (-not $preserve) {
-                $packageHistory.Add([ordered] @{
-                        schema = 'hexalith.package-audit-package-history.v1'
-                        label = 'Historical prior-audit owner/runtime context; not current package metadata or acceptance evidence.'
-                        auditedAtUtc = Get-PropertyText -Object $priorAudit -Name 'auditedAtUtc'
-                        generatedFromRevision = Get-PropertyText -Object $priorAudit -Name 'generatedFromRevision'
+        }
+        if ($null -ne $priorPackage -and -not $sameObservation) {
+            $packageHistoryExists = @($packageHistory | Where-Object {
+                    (Get-PropertyText -Object $_ -Name 'auditedAtUtc') -ceq (Get-PropertyText -Object $priorOrigin -Name 'auditedAtUtc') -and
+                    (Get-PropertyText -Object $_ -Name 'generatedFromRevision') -ceq (Get-PropertyText -Object $priorOrigin -Name 'generatedFromRevision')
+                }).Count -gt 0
+            if (-not $packageHistoryExists) {
+                $packageHistory.Add([pscustomobject] [ordered] @{
+                        schema = 'hexalith.package-audit-package-history.v2'
+                        label = 'Historical prior package observation; not current package metadata or acceptance evidence.'
+                        auditedAtUtc = Get-PropertyText -Object $priorOrigin -Name 'auditedAtUtc'
+                        generatedFromRevision = Get-PropertyText -Object $priorOrigin -Name 'generatedFromRevision'
                         id = Get-PropertyText -Object $priorPackage -Name 'id'
                         auditedVersion = Get-PropertyText -Object $priorPackage -Name 'auditedVersion'
                         selectedVersion = Get-PropertyText -Object $priorPackage -Name 'selectedVersion'
-                        latestStable = if ($priorPackage.PSObject.Properties.Name -contains 'latestStable') { $priorPackage.latestStable } else { $null }
-                        latestPrerelease = if ($priorPackage.PSObject.Properties.Name -contains 'latestPrerelease') { $priorPackage.latestPrerelease } else { $null }
+                        latestStable = Get-PropertyText -Object $priorPackage -Name 'latestStable'
+                        latestPrerelease = Get-PropertyText -Object $priorPackage -Name 'latestPrerelease'
                         listingState = Get-PropertyText -Object $priorPackage -Name 'listingState'
-                        family = Get-PropertyText -Object $priorPackage -Name 'family'
+                        family = $familyName
                         disposition = Get-PropertyText -Object $priorPackage -Name 'disposition'
                         rollbackGroup = Get-PropertyText -Object $priorPackage -Name 'rollbackGroup'
                         rationale = Get-PropertyText -Object $priorPackage -Name 'rationale'
                         evidence = Get-PropertyText -Object $priorPackage -Name 'evidence'
                         removalTrigger = Get-PropertyText -Object $priorPackage -Name 'removalTrigger'
                         sourceResults = @(Get-ArrayProperty -Object $priorPackage -Name 'sourceResults')
-                        supersededBecause = $preservationReason
+                        origin = Copy-JsonValue -Value $priorOrigin
+                        supersededBecause = 'Family-local catalog selection or observation evidence changed.'
                     })
             }
         }
-
-        if ($preserve -and $null -ne $priorPackage) {
-            $package.disposition = Get-PropertyText -Object $priorPackage -Name 'disposition'
-            $package.rollbackGroup = Get-PropertyText -Object $priorPackage -Name 'rollbackGroup'
-            $package.rationale = Get-PropertyText -Object $priorPackage -Name 'rationale'
-            $package.removalTrigger = Get-PropertyText -Object $priorPackage -Name 'removalTrigger'
+        if ($sameObservation -and $null -ne $priorPackage) {
+            foreach ($field in @('disposition', 'rollbackGroup', 'rationale', 'removalTrigger')) {
+                $package.$field = Get-PropertyText -Object $priorPackage -Name $field
+            }
         }
         else {
             $package.disposition = 'retained'
-            $package.rollbackGroup = $family
+            $package.rollbackGroup = $familyName
         }
-        $package | Add-Member -NotePropertyName historicalContext -NotePropertyValue @($packageHistory) -Force
+        $package.historicalContext = @($packageHistory)
     }
 
-    $familyDecisions.Add([pscustomobject] @{
-            family = $family
+    $origin = if ($sameObservation) {
+        Copy-JsonValue -Value $priorOrigin
+    }
+    else {
+        [pscustomobject] [ordered] @{
+            auditedAtUtc = $snapshotTime
+            generatedFromRevision = $generatedFromRevision
+            familySelectionSha256 = $selectionFingerprint
+            sourceScopeSha256 = $currentSourceFingerprint
+            packageMetadataSha256 = $metadataFingerprint
+            consumerEvidenceSha256 = $consumerFingerprint
+        }
+    }
+    $familyDecisions.Add([pscustomobject] [ordered] @{
+            family = $familyName
             disposition = $disposition
             rollbackGroup = $rollbackGroup
-            packageIds = $packageIds
+            packageIds = @($familyPackageRows | ForEach-Object { $_.id } | Sort-Object -CaseSensitive)
             rationale = $rationale
             compatibilityEvidence = $compatibilityEvidence
             removalTrigger = $removalTrigger
-            representativeConsumers = $currentConsumers
-            preservation = [ordered] @{
-                status = $(if ($preserve) { $(if ($priorConsumerEvidenceTrusted) { 'preserved' } else { 'migrated' }) } else { 'refreshed' })
-                reason = $preservationReason
-                catalogPath = $catalogRelativePath
-                catalogSha256 = $catalogSha256
-                sourceScopeSha256 = $currentSourceFingerprint
-                packageMetadataSha256 = $currentMetadataFingerprint
-                consumerEvidenceSha256 = $currentConsumerFingerprint
-            }
-            historicalContext = @($historicalContext)
+            representativeConsumers = $familyConsumers
+            origin = $origin
+            historicalContext = @($familyHistory)
         })
 }
 
+$preservedFamilyNames = @($evaluatedItemsByFamily.Keys | Where-Object { -not $refreshedFamilies.Contains($_) } | Sort-Object -CaseSensitive)
+$refreshedFamilyNames = @($evaluatedItemsByFamily.Keys | Where-Object { $refreshedFamilies.Contains($_) } | Sort-Object -CaseSensitive)
 $audit = [ordered] @{
-    schemaVersion = 1
-    auditedAtUtc = [DateTimeOffset]::UtcNow.ToString('O')
+    schemaVersion = 2
     generatedFromRevision = $generatedFromRevision
     catalogPath = $catalogRelativePath
     catalogSha256 = $catalogSha256
+    catalogRawSha256 = $catalogRawSha256
+    snapshot = [ordered] @{
+        mode = $refreshMode
+        auditedAtUtc = $snapshotTime
+        refreshedFamilies = $refreshedFamilyNames
+        preservedFamilies = $preservedFamilyNames
+    }
     sources = @($sourceContracts | ForEach-Object {
             [ordered] @{
                 uri = $_.Uri
@@ -1110,8 +1209,8 @@ $audit = [ordered] @{
                 }
             })
     }
-    familyDecisions = @($familyDecisions)
-    packages = @($packages)
+    familyDecisions = @($familyDecisions | Sort-Object family)
+    packages = @($packages | Sort-Object id)
 }
 
 $outputDirectory = Split-Path -Parent $resolvedOutputPath
@@ -1119,7 +1218,8 @@ if (-not [string]::IsNullOrWhiteSpace($outputDirectory)) {
     New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 }
 
-$audit | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $resolvedOutputPath -Encoding utf8
+$audit | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $resolvedOutputPath -Encoding utf8
 [Console]::Out.WriteLine(
-    "Central package freshness audit wrote $($packages.Count) packages from $($sourceContracts.Count) configured source(s) to '$OutputPath'."
+    "Central package freshness audit wrote $($packages.Count) packages in $refreshMode mode " +
+    "($($refreshedFamilyNames.Count) refreshed, $($preservedFamilyNames.Count) preserved) to '$OutputPath'."
 )

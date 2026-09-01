@@ -72,9 +72,11 @@ candidates are not release or owner acceptance evidence.
 
 ### validate-central-package-versions.ps1
 
-Evaluates `Props/Directory.Packages.props` with MSBuild and rejects blank or
-duplicate IDs, blank, unresolved, tag-prefixed, or malformed versions, failed
-evaluation, and source/effective-catalog mismatches before release.
+Requires `Props/Directory.Packages.props` to begin with the exact UTF-8 BOM
+bytes `EF BB BF`, decodes the remainder as strict UTF-8, and only then evaluates
+it with MSBuild. It rejects BOM-free, truncated, or invalid UTF-8 input, blank
+or duplicate IDs, blank, unresolved, tag-prefixed, or malformed versions,
+failed evaluation, and source/effective-catalog mismatches before release.
 
 ```powershell
 .\Tools\validate-central-package-versions.ps1
@@ -104,6 +106,22 @@ to downgrade. Run it only when deliberately refreshing the checked-in audit:
 .\Tools\audit-central-package-versions.ps1
 ```
 
+With no family selector, generation is a complete refresh and queries every
+catalog family. An incremental refresh requires a prior audit and an explicit,
+canonical family list; only those families are queried:
+
+```powershell
+.\Tools\audit-central-package-versions.ps1 `
+  -PriorAuditPath .\Tools\package-version-audit.json `
+  -Family hexalith-eventstore,hexalith-frontcomposer
+```
+
+PowerShell callers may also pass an array to `-Family`. Unknown or duplicate
+families, a missing prior audit, and catalog-selection drift in any unrequested
+family fail before output. The v2 snapshot envelope records `complete` or
+`incremental` mode and an exact, non-overlapping refreshed/preserved partition
+covering every catalog family.
+
 Review `Tools/package-version-audit.json` by rollback-safe family, apply only
 accepted versions to `Props/Directory.Packages.props`, and record the selected
 version and disposition for every row. Live discovery is intentionally not a
@@ -118,17 +136,26 @@ the deterministic validator and its fail-closed fixtures:
 
 The deterministic generator fixtures cover V3 resource discovery, paged
 registrations, arbitrary-size prerelease ordering, unlisted and missing
-versions, unresolved sources, and output-path safety without accessing a live
-feed. Preservation is bound to the exact catalog bytes, configured source
-scope, package metadata, consumer-package relations, and tracked declaration
-bytes across tracked `.csproj`, `.props`, and `.targets` files. Explicit test
-fixtures are labeled synthetic and bound to their exact bytes and semantic
-relations. Legacy accepted evidence without those trusted bindings refreshes to
-a conservative retained decision. The validator independently recomputes those
-hashes and requires complete typed family/package history records, exact catalog
-coverage, one result per configured source, coherent family dispositions and
-rollback groups, retained-exception rationale/removal triggers, and selected
-versions that exactly match the evaluated catalog.
+versions, unresolved sources, complete/incremental partitioning, targeted
+querying, history deduplication, hostile family selections, and output-path
+safety without accessing a live feed. `generatedFromRevision` binds the exact
+ancestor commit whose committed catalog blob and tracked consumer declarations
+are claimed. `catalogSha256` remains the BOM+CRLF-normalized semantic hash;
+`catalogRawSha256` separately binds the exact raw Git blob so BOM or EOL drift
+cannot hide behind normalization.
+
+Each family owns an observation origin containing its revision/time plus
+ordered family-selection, source-scope, package-metadata, and consumer-evidence
+fingerprints. Incremental generation copies every preserved family decision and
+package row unchanged, while a genuinely changed refreshed family alone gains
+one typed family snapshot and its package snapshots. Repeating identical
+evidence does not append duplicate history. Explicit test fixtures remain
+labeled synthetic and bound to their exact bytes and semantic relations. The
+validator independently recomputes every closed-shape invariant, exact catalog
+coverage, snapshot partition, origin fingerprint, consumer relation, and typed
+history record, while retaining coherent family dispositions and rollback
+groups, retained-exception rationale/removal triggers, and selected versions
+that exactly match the evaluated catalog.
 
 External-package decisions remain exact: retained
 rows cannot change, while accepted versions cannot downgrade, must be an audited

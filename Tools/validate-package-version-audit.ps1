@@ -335,6 +335,17 @@ function Get-IdentitySignature {
     return [string]::Join('|', @($Values | ForEach-Object { [string] $_ } | Sort-Object -CaseSensitive))
 }
 
+function Get-FamilySelectionFingerprint {
+    param([AllowEmptyCollection()][object[]] $Rows)
+
+    $material = @($Rows | Where-Object { $null -ne $_ } | ForEach-Object {
+            $id = if ($_.PSObject.Properties.Name -contains 'Identity') { [string] $_.Identity } else { [string] $_.id }
+            $version = if ($_.PSObject.Properties.Name -contains 'Version') { [string] $_.Version } else { [string] $_.selectedVersion }
+            "$id|$version"
+        } | Sort-Object -CaseSensitive)
+    return Get-Sha256Text -Value ([string]::Join("`n", $material))
+}
+
 function Get-SourceScopeFingerprint {
     param([AllowEmptyCollection()][object[]] $Sources)
 
@@ -539,11 +550,31 @@ function ConvertTo-OrderedSourceResultRecord {
     }
 }
 
-function ConvertTo-OrderedPreservationRecord {
+function ConvertTo-OrderedOriginRecord {
     # Projects a preservation-provenance object. Used both at family top level and,
     # identically shaped but with some fields legitimately absent on older
     # generations, inside a family's historicalContext entries -- so every field is
     # read defensively via Get-PropertyValue rather than direct property access.
+    param($Origin)
+
+    if ($null -eq $Origin) {
+        return $null
+    }
+
+    $record = [ordered] @{}
+    foreach ($field in @(
+            'auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+            'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256'
+        )) {
+        if ($Origin.PSObject.Properties.Name -contains $field) {
+            $record[$field] = [string] (Get-PropertyValue -Object $Origin -Name $field)
+        }
+    }
+
+    return $record
+}
+
+function ConvertTo-OrderedPreservationRecord {
     param($Preservation)
 
     if ($null -eq $Preservation) {
@@ -555,14 +586,10 @@ function ConvertTo-OrderedPreservationRecord {
             'status', 'reason', 'catalogPath', 'catalogSha256', 'sourceScopeSha256',
             'packageMetadataSha256', 'consumerEvidenceSha256'
         )) {
-        # Historical legacy-unbound records legitimately predate the hash fields.
-        # Preserve property absence exactly rather than silently manufacturing empty
-        # strings during the supposedly lossless typed round trip.
         if ($Preservation.PSObject.Properties.Name -contains $field) {
             $record[$field] = [string] (Get-PropertyValue -Object $Preservation -Name $field)
         }
     }
-
     return $record
 }
 
@@ -572,7 +599,7 @@ function ConvertTo-OrderedHistoricalPackageRecord {
     # its own schema/label/provenance envelope and collection-valued sourceResults.
     param([Parameter(Mandatory = $true)] $Entry)
 
-    return [ordered] @{
+    $record = [ordered] @{
         schema = [string] (Get-PropertyValue -Object $Entry -Name 'schema')
         label = [string] (Get-PropertyValue -Object $Entry -Name 'label')
         auditedAtUtc = [string] (Get-PropertyValue -Object $Entry -Name 'auditedAtUtc')
@@ -596,6 +623,10 @@ function ConvertTo-OrderedHistoricalPackageRecord {
         )
         supersededBecause = [string] (Get-PropertyValue -Object $Entry -Name 'supersededBecause')
     }
+    if ($Entry.PSObject.Properties.Name -contains 'origin') {
+        $record['origin'] = ConvertTo-OrderedOriginRecord -Origin (Get-PropertyValue -Object $Entry -Name 'origin')
+    }
+    return $record
 }
 
 function ConvertTo-OrderedHistoricalFamilyRecord {
@@ -605,7 +636,7 @@ function ConvertTo-OrderedHistoricalFamilyRecord {
     # collection-valued packageIds/representativeConsumers.
     param([Parameter(Mandatory = $true)] $Entry)
 
-    return [ordered] @{
+    $record = [ordered] @{
         schema = [string] (Get-PropertyValue -Object $Entry -Name 'schema')
         label = [string] (Get-PropertyValue -Object $Entry -Name 'label')
         auditedAtUtc = [string] (Get-PropertyValue -Object $Entry -Name 'auditedAtUtc')
@@ -618,9 +649,15 @@ function ConvertTo-OrderedHistoricalFamilyRecord {
         compatibilityEvidence = [string] (Get-PropertyValue -Object $Entry -Name 'compatibilityEvidence')
         removalTrigger = [string] (Get-PropertyValue -Object $Entry -Name 'removalTrigger')
         representativeConsumers = @(@(Get-PropertyValue -Object $Entry -Name 'representativeConsumers') | ForEach-Object { [string] $_ })
-        preservation = ConvertTo-OrderedPreservationRecord -Preservation (Get-PropertyValue -Object $Entry -Name 'preservation')
         supersededBecause = [string] (Get-PropertyValue -Object $Entry -Name 'supersededBecause')
     }
+    if ($Entry.PSObject.Properties.Name -contains 'preservation') {
+        $record['preservation'] = ConvertTo-OrderedPreservationRecord -Preservation (Get-PropertyValue -Object $Entry -Name 'preservation')
+    }
+    if ($Entry.PSObject.Properties.Name -contains 'origin') {
+        $record['origin'] = ConvertTo-OrderedOriginRecord -Origin (Get-PropertyValue -Object $Entry -Name 'origin')
+    }
+    return $record
 }
 
 function ConvertTo-OrderedPackageRecord {
@@ -671,7 +708,7 @@ function ConvertTo-OrderedFamilyRecord {
         compatibilityEvidence = [string] $Decision.compatibilityEvidence
         removalTrigger = [string] $Decision.removalTrigger
         representativeConsumers = @(@(Get-PropertyValue -Object $Decision -Name 'representativeConsumers') | ForEach-Object { [string] $_ })
-        preservation = ConvertTo-OrderedPreservationRecord -Preservation (Get-PropertyValue -Object $Decision -Name 'preservation')
+        origin = ConvertTo-OrderedOriginRecord -Origin (Get-PropertyValue -Object $Decision -Name 'origin')
         historicalContext = @(
             foreach ($historicalEntry in @((Get-PropertyValue -Object $Decision -Name 'historicalContext') | Where-Object { $null -ne $_ })) {
                 ConvertTo-OrderedHistoricalFamilyRecord -Entry $historicalEntry
@@ -819,7 +856,7 @@ function Assert-PackageRoundTrip {
             'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'id', 'auditedVersion',
             'selectedVersion', 'latestStable', 'latestPrerelease', 'listingState', 'family',
             'disposition', 'rollbackGroup', 'rationale', 'evidence', 'removalTrigger',
-            'sourceResults', 'supersededBecause'
+            'sourceResults', 'supersededBecause', 'origin'
         ) -Description "Package '$id' historical context" -Failures $Failures
         Assert-JsonStringFields -Object $history -Fields @(
             'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'id', 'auditedVersion',
@@ -827,6 +864,17 @@ function Assert-PackageRoundTrip {
             'disposition', 'rollbackGroup', 'rationale', 'evidence', 'removalTrigger', 'supersededBecause'
         ) -NullableFields @('latestStable', 'latestPrerelease') -Description "Package '$id' historical context" -Failures $Failures
         Assert-JsonObjectArrayField -Object $history -Field 'sourceResults' -Description "Package '$id' historical context" -Failures $Failures
+        if ($history.PSObject.Properties.Name -contains 'origin') {
+            $historicalOrigin = Get-PropertyValue -Object $history -Name 'origin'
+            Add-UnknownFieldFailures -Object $historicalOrigin -KnownFields @(
+                'auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+                'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256'
+            ) -Description "Package '$id' historical origin" -Failures $Failures
+            Assert-JsonStringFields -Object $historicalOrigin -Fields @(
+                'auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+                'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256'
+            ) -Description "Package '$id' historical origin" -Failures $Failures
+        }
         foreach ($historicalSource in @((Get-PropertyValue -Object $history -Name 'sourceResults') | Where-Object { $null -ne $_ })) {
             Add-UnknownFieldFailures -Object $historicalSource -KnownFields @(
                 'source', 'listingState', 'latestStable', 'latestPrerelease', 'diagnostic'
@@ -883,7 +931,7 @@ function Assert-FamilyRoundTrip {
     Add-UnknownFieldFailures -Object $Decision -KnownFields @(
             'family', 'disposition', 'rollbackGroup', 'packageIds', 'rationale',
             'compatibilityEvidence', 'removalTrigger', 'representativeConsumers',
-            'preservation', 'historicalContext'
+            'origin', 'historicalContext'
         ) -Description "Family '$family'" -Failures $Failures
     Assert-JsonStringFields -Object $Decision -Fields @(
         'family', 'disposition', 'rollbackGroup', 'rationale', 'compatibilityEvidence', 'removalTrigger'
@@ -892,23 +940,23 @@ function Assert-FamilyRoundTrip {
     Assert-JsonStringArrayField -Object $Decision -Field 'representativeConsumers' -Description "Family '$family'" -Failures $Failures
     Assert-JsonObjectArrayField -Object $Decision -Field 'historicalContext' -Description "Family '$family'" -Failures $Failures
 
-    $preservation = Get-PropertyValue -Object $Decision -Name 'preservation'
-    if ($null -ne $preservation) {
-        Add-UnknownFieldFailures -Object $preservation -KnownFields @(
-            'status', 'reason', 'catalogPath', 'catalogSha256', 'sourceScopeSha256',
-            'packageMetadataSha256', 'consumerEvidenceSha256'
-        ) -Description "Family '$family' preservation" -Failures $Failures
-        Assert-JsonStringFields -Object $preservation -Fields @(
-            'status', 'reason', 'catalogPath', 'catalogSha256', 'sourceScopeSha256',
-            'packageMetadataSha256', 'consumerEvidenceSha256'
-        ) -Description "Family '$family' preservation" -Failures $Failures
+    $origin = Get-PropertyValue -Object $Decision -Name 'origin'
+    if ($null -ne $origin) {
+        Add-UnknownFieldFailures -Object $origin -KnownFields @(
+            'auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+            'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256'
+        ) -Description "Family '$family' origin" -Failures $Failures
+        Assert-JsonStringFields -Object $origin -Fields @(
+            'auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+            'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256'
+        ) -Description "Family '$family' origin" -Failures $Failures
     }
 
     foreach ($history in @((Get-PropertyValue -Object $Decision -Name 'historicalContext') | Where-Object { $null -ne $_ })) {
         Add-UnknownFieldFailures -Object $history -KnownFields @(
             'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'family', 'disposition',
             'rollbackGroup', 'packageIds', 'rationale', 'compatibilityEvidence', 'removalTrigger',
-            'representativeConsumers', 'preservation', 'supersededBecause'
+            'representativeConsumers', 'preservation', 'origin', 'supersededBecause'
         ) -Description "Family '$family' historical context" -Failures $Failures
         Assert-JsonStringFields -Object $history -Fields @(
             'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'family', 'disposition',
@@ -928,6 +976,17 @@ function Assert-FamilyRoundTrip {
             Assert-JsonStringFields -Object $historicalPreservation `
                 -Fields @($historicalPreservation.PSObject.Properties.Name) `
                 -Description "Family '$family' historical preservation" -Failures $Failures
+        }
+        $historicalOrigin = Get-PropertyValue -Object $history -Name 'origin'
+        if ($null -ne $historicalOrigin) {
+            Add-UnknownFieldFailures -Object $historicalOrigin -KnownFields @(
+                'auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+                'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256'
+            ) -Description "Family '$family' historical origin" -Failures $Failures
+            Assert-JsonStringFields -Object $historicalOrigin `
+                -Fields @('auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+                    'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256') `
+                -Description "Family '$family' historical origin" -Failures $Failures
         }
     }
 
@@ -1025,19 +1084,43 @@ $evaluation = Invoke-CatalogEvaluation `
     -ResolvedEvaluatorScriptPath $resolvedEvaluatorScriptPath
 $failures = [System.Collections.Generic.List[string]]::new()
 
-if ((Get-PropertyValue -Object $audit -Name 'schemaVersion') -ne 1) {
-    $failures.Add('schemaVersion must equal 1.')
+Add-UnknownFieldFailures -Object $audit -KnownFields @(
+    'schemaVersion', 'generatedFromRevision', 'catalogPath', 'catalogSha256',
+    'catalogRawSha256', 'snapshot', 'sources', 'consumerEvidence', 'familyDecisions', 'packages'
+) -Description 'Audit' -Failures $failures
+if ((Get-PropertyValue -Object $audit -Name 'schemaVersion') -ne 2) {
+    $failures.Add('schemaVersion must equal 2.')
 }
 
-$auditedAtValue = Get-PropertyValue -Object $audit -Name 'auditedAtUtc'
+$snapshot = Get-PropertyValue -Object $audit -Name 'snapshot'
+if ($null -eq $snapshot) {
+    $failures.Add('Audit must declare a snapshot envelope.')
+    $snapshot = [pscustomobject] @{}
+}
+else {
+    Add-UnknownFieldFailures -Object $snapshot -KnownFields @(
+        'mode', 'auditedAtUtc', 'refreshedFamilies', 'preservedFamilies'
+    ) -Description 'Snapshot' -Failures $failures
+    Assert-JsonStringFields -Object $snapshot -Fields @('mode', 'auditedAtUtc') `
+        -Description 'Snapshot' -Failures $failures
+    Assert-JsonStringArrayField -Object $snapshot -Field 'refreshedFamilies' `
+        -Description 'Snapshot' -Failures $failures
+    Assert-JsonStringArrayField -Object $snapshot -Field 'preservedFamilies' `
+        -Description 'Snapshot' -Failures $failures
+}
+$snapshotMode = Get-RequiredText -Object $snapshot -Name 'mode' -Description 'Snapshot' -Failures $failures
+if ($snapshotMode -notin @('complete', 'incremental')) {
+    $failures.Add("Snapshot mode '$snapshotMode' is unsupported.")
+}
+$auditedAtValue = Get-PropertyValue -Object $snapshot -Name 'auditedAtUtc'
 $auditedAtUtc = if ($null -eq $auditedAtValue) { '' } else { [string] $auditedAtValue }
 $parsedTimestamp = [DateTimeOffset]::MinValue
 $timestampParsed = [DateTimeOffset]::TryParse($auditedAtUtc, [ref] $parsedTimestamp)
 if ([string]::IsNullOrWhiteSpace($auditedAtUtc) -or -not $timestampParsed) {
-    $failures.Add('auditedAtUtc must be a valid UTC timestamp.')
+    $failures.Add('snapshot auditedAtUtc must be a valid UTC timestamp.')
 }
 elseif ($parsedTimestamp.Offset -ne [TimeSpan]::Zero) {
-    $failures.Add('auditedAtUtc must have a zero UTC offset.')
+    $failures.Add('snapshot auditedAtUtc must have a zero UTC offset.')
 }
 
 $generatedFromRevision = Get-RequiredText `
@@ -1055,6 +1138,47 @@ $catalogSha256 = Get-RequiredText -Object $audit -Name 'catalogSha256' -Descript
 $actualCatalogSha256 = Get-CatalogSha256 -Path $resolvedCatalogPath
 if ($catalogSha256 -cne $actualCatalogSha256) {
     $failures.Add('Audit catalogSha256 does not match the evaluated catalog declaration bytes.')
+}
+$catalogRawSha256 = Get-RequiredText -Object $audit -Name 'catalogRawSha256' -Description 'Audit' -Failures $failures
+if ($catalogRawSha256 -cnotmatch '^[0-9a-f]{64}$') {
+    $failures.Add('Audit catalogRawSha256 must be a lowercase SHA-256 value.')
+}
+
+$historicalBlobReadsAvailable = $false
+$catalogIsRepositoryOwned = $catalogPathValue -cnotmatch '^\.\.(?:/|$)'
+if (-not $catalogIsRepositoryOwned -and $catalogRawSha256 -cmatch '^[0-9a-f]{64}$' -and
+    $catalogRawSha256 -cne (Get-Sha256File -Path $resolvedCatalogPath)) {
+    $failures.Add('Audit catalogRawSha256 does not match the exact evaluated catalog bytes.')
+}
+if ($catalogIsRepositoryOwned -and $generatedFromRevision -cmatch '^[0-9a-f]{40}$') {
+    $null = & git --no-replace-objects -C $repositoryRoot cat-file -e "$generatedFromRevision^{commit}" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        $failures.Add("Generated-from revision '$generatedFromRevision' is not an available Git commit.")
+    }
+    else {
+        $null = & git --no-replace-objects -C $repositoryRoot merge-base --is-ancestor $generatedFromRevision HEAD 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            $failures.Add("Generated-from revision '$generatedFromRevision' is not an ancestor of the audited worktree HEAD.")
+        }
+        $catalogBlob = @(Get-GitBlobBytes `
+            -Root $repositoryRoot -Revision $generatedFromRevision -Path $catalogPathValue)[-1]
+        if (-not $catalogBlob.Success) {
+            $failures.Add($catalogBlob.Diagnostic)
+        }
+        else {
+            $historicalBlobReadsAvailable = $true
+            if ((Get-Sha256Bytes -Bytes $catalogBlob.Bytes) -cne $catalogRawSha256) {
+                $failures.Add(
+                    "Generated-from revision '$generatedFromRevision' does not contain the exact audited catalog bytes."
+                )
+            }
+            if ((Get-CatalogSha256Bytes -Bytes $catalogBlob.Bytes) -cne $catalogSha256) {
+                $failures.Add(
+                    "Generated-from revision '$generatedFromRevision' does not contain the audited catalog declaration bytes."
+                )
+            }
+        }
+    }
 }
 
 $sources = @((Get-PropertyValue -Object $audit -Name 'sources'))
@@ -1342,7 +1466,10 @@ foreach ($package in $packages) {
             $failures.Add("Package '$id' has historical context without a typed schema.")
             continue
         }
-        if ($historicalSchema -cne 'hexalith.package-audit-package-history.v1') {
+        if ($historicalSchema -notin @(
+                'hexalith.package-audit-package-history.v1',
+                'hexalith.package-audit-package-history.v2'
+            )) {
             $failures.Add("Package '$id' has unsupported historical context schema '$historicalSchema'.")
             continue
         }
@@ -1358,6 +1485,10 @@ foreach ($package in $packages) {
             $historicalEntry.PSObject.Properties.Name -notcontains 'latestPrerelease' -or
             $historicalEntry.PSObject.Properties.Name -notcontains 'sourceResults') {
             $failures.Add("Package '$id' historical context must label latestStable, latestPrerelease, and sourceResults.")
+        }
+        if ($historicalSchema -ceq 'hexalith.package-audit-package-history.v2' -and
+            $historicalEntry.PSObject.Properties.Name -notcontains 'origin') {
+            $failures.Add("Package '$id' v2 historical context must declare its family origin.")
         }
         $historyTimestamp = [DateTimeOffset]::MinValue
         $historyTimestampText = [string](Get-PropertyValue -Object $historicalEntry -Name 'auditedAtUtc')
@@ -1400,7 +1531,6 @@ $consumerEvidence = Get-PropertyValue -Object $audit -Name 'consumerEvidence'
 $consumerEvidenceByFamily = @{}
 $consumerEntries = @()
 $consumerDiscovery = ''
-$historicalBlobReadsAvailable = $false
 $consumerPackageRelations = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 if ($null -eq $consumerEvidence) {
     $failures.Add('Audit must declare owned direct-consumer evidence provenance.')
@@ -1463,41 +1593,6 @@ else {
         -Object $consumerEvidence -Name 'repositoryRevision' -Description 'Consumer evidence' -Failures $failures
     if ($consumerRevision -cne $generatedFromRevision) {
         $failures.Add('Consumer evidence repositoryRevision must match generatedFromRevision.')
-    }
-    # Generator fixtures deliberately evaluate a synthetic catalog outside this
-    # repository. Historical object binding applies only to repository-owned
-    # catalog/consumer evidence; fixture bytes retain the existing direct hashes.
-    $catalogIsRepositoryOwned = $catalogPathValue -cnotmatch '^\.\.(?:/|$)'
-    if (
-        $consumerDiscovery -ceq 'git-ls-files' -and
-        $catalogIsRepositoryOwned -and
-        $generatedFromRevision -cmatch '^[0-9a-f]{40}$'
-    ) {
-        $null = & git --no-replace-objects -C $repositoryRoot cat-file -e "$generatedFromRevision^{commit}" 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            $failures.Add("Generated-from revision '$generatedFromRevision' is not an available Git commit.")
-        }
-        else {
-            $null = & git --no-replace-objects -C $repositoryRoot merge-base --is-ancestor $generatedFromRevision HEAD 2>$null
-            if ($LASTEXITCODE -ne 0) {
-                $failures.Add("Generated-from revision '$generatedFromRevision' is not an ancestor of the audited worktree HEAD.")
-            }
-
-            $catalogBlob = @(Get-GitBlobBytes `
-                -Root $repositoryRoot -Revision $generatedFromRevision -Path $catalogPathValue)[-1]
-            if (-not $catalogBlob.Success) {
-                $failures.Add($catalogBlob.Diagnostic)
-            }
-            else {
-                $historicalBlobReadsAvailable = $true
-            }
-            if ($catalogBlob.Success -and
-                (Get-CatalogSha256Bytes -Bytes $catalogBlob.Bytes) -cne $catalogSha256) {
-                $failures.Add(
-                    "Generated-from revision '$generatedFromRevision' does not contain the audited catalog declaration bytes."
-                )
-            }
-        }
     }
     $declaredConsumerHash = Get-RequiredText `
         -Object $consumerEvidence -Name 'sha256' -Description 'Consumer evidence' -Failures $failures
@@ -1668,7 +1763,10 @@ foreach ($decision in $familyDecisions) {
             $failures.Add("Family '$family' has historical context without a typed schema.")
             continue
         }
-        if ($historicalSchema -cne 'hexalith.package-audit-family-history.v1') {
+        if ($historicalSchema -notin @(
+                'hexalith.package-audit-family-history.v1',
+                'hexalith.package-audit-family-history.v2'
+            )) {
             $failures.Add("Family '$family' has unsupported historical context schema '$historicalSchema'.")
             continue
         }
@@ -1680,9 +1778,16 @@ foreach ($decision in $familyDecisions) {
                 -Description "Family '$family' historical context" -Failures $failures
         }
         if ($historicalEntry.PSObject.Properties.Name -notcontains 'packageIds' -or
-            $historicalEntry.PSObject.Properties.Name -notcontains 'representativeConsumers' -or
+            $historicalEntry.PSObject.Properties.Name -notcontains 'representativeConsumers') {
+            $failures.Add("Family '$family' historical context must label packageIds and representativeConsumers.")
+        }
+        if ($historicalSchema -ceq 'hexalith.package-audit-family-history.v1' -and
             $historicalEntry.PSObject.Properties.Name -notcontains 'preservation') {
-            $failures.Add("Family '$family' historical context must label packageIds, representativeConsumers, and preservation.")
+            $failures.Add("Family '$family' v1 historical context must declare preservation provenance.")
+        }
+        if ($historicalSchema -ceq 'hexalith.package-audit-family-history.v2' -and
+            $historicalEntry.PSObject.Properties.Name -notcontains 'origin') {
+            $failures.Add("Family '$family' v2 historical context must declare its family origin.")
         }
         $historyTimestamp = [DateTimeOffset]::MinValue
         $historyTimestampText = [string](Get-PropertyValue -Object $historicalEntry -Name 'auditedAtUtc')
@@ -1710,50 +1815,53 @@ foreach ($decision in $familyDecisions) {
                 -Description "Family '$family' historical preservation" -Failures $failures
         }
     }
-    $preservation = Get-PropertyValue -Object $decision -Name 'preservation'
-    if ($null -eq $preservation) {
-        $failures.Add("Family '$family' is missing preservation provenance.")
+    $origin = Get-PropertyValue -Object $decision -Name 'origin'
+    if ($null -eq $origin) {
+        $failures.Add("Family '$family' is missing observation origin provenance.")
     }
     else {
-        $preservationStatus = Get-RequiredText `
-            -Object $preservation -Name 'status' -Description "Family '$family' preservation" -Failures $failures
-        if ($preservationStatus -notin @('preserved', 'migrated', 'refreshed')) {
-            $failures.Add("Family '$family' has invalid preservation status '$preservationStatus'.")
+        $originTimestamp = Get-RequiredText `
+            -Object $origin -Name 'auditedAtUtc' -Description "Family '$family' origin" -Failures $failures
+        $parsedOriginTimestamp = [DateTimeOffset]::MinValue
+        if (-not [DateTimeOffset]::TryParse($originTimestamp, [ref] $parsedOriginTimestamp) -or
+            $parsedOriginTimestamp.Offset -ne [TimeSpan]::Zero) {
+            $failures.Add("Family '$family' origin auditedAtUtc must be a valid UTC timestamp.")
         }
-        if ($disposition -eq 'accepted' -and $preservationStatus -cne 'preserved') {
-            $failures.Add("Accepted family '$family' must have preservation status 'preserved'.")
+        $originRevision = Get-RequiredText `
+            -Object $origin -Name 'generatedFromRevision' -Description "Family '$family' origin" -Failures $failures
+        if ($originRevision -cnotmatch '^[0-9a-f]{40}$') {
+            $failures.Add("Family '$family' origin generatedFromRevision must be a full lowercase Git revision.")
         }
-        $null = Get-RequiredText `
-            -Object $preservation -Name 'reason' -Description "Family '$family' preservation" -Failures $failures
-        $preservationCatalogPath = Get-RequiredText `
-            -Object $preservation -Name 'catalogPath' -Description "Family '$family' preservation" -Failures $failures
-        if ($preservationCatalogPath -cne $catalogPathValue) {
-            $failures.Add("Family '$family' preservation catalogPath does not match the audit catalogPath.")
-        }
-        foreach ($hashName in @('catalogSha256', 'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256')) {
+        foreach ($hashName in @(
+                'familySelectionSha256', 'sourceScopeSha256',
+                'packageMetadataSha256', 'consumerEvidenceSha256'
+            )) {
             $hash = Get-RequiredText `
-                -Object $preservation -Name $hashName -Description "Family '$family' preservation" -Failures $failures
+                -Object $origin -Name $hashName -Description "Family '$family' origin" -Failures $failures
             if ($hash -cnotmatch '^[0-9a-f]{64}$') {
-                $failures.Add("Family '$family' preservation $hashName must be a lowercase SHA-256 value.")
+                $failures.Add("Family '$family' origin $hashName must be a lowercase SHA-256 value.")
             }
         }
-        if ((Get-PropertyValue -Object $preservation -Name 'catalogSha256') -cne $catalogSha256) {
-            $failures.Add("Family '$family' preservation catalogSha256 does not match the audit catalog binding.")
+        $expectedFamilySelectionHash = Get-FamilySelectionFingerprint -Rows @(
+            $packages | Where-Object { $_._validatedFamily -ceq $family }
+        )
+        if ((Get-PropertyValue -Object $origin -Name 'familySelectionSha256') -cne $expectedFamilySelectionHash) {
+            $failures.Add("Family '$family' origin familySelectionSha256 does not match its ordered catalog selections.")
         }
-        if ((Get-PropertyValue -Object $preservation -Name 'sourceScopeSha256') -cne $sourceScopeSha256) {
-            $failures.Add("Family '$family' preservation sourceScopeSha256 does not match the configured source records.")
+        if ((Get-PropertyValue -Object $origin -Name 'sourceScopeSha256') -cne $sourceScopeSha256) {
+            $failures.Add("Family '$family' origin sourceScopeSha256 does not match the configured source records.")
         }
         $expectedPackageMetadataHash = Get-PackageMetadataFingerprint -PackageRows @(
             $packages | Where-Object { $_._validatedFamily -ceq $family }
         )
-        if ((Get-PropertyValue -Object $preservation -Name 'packageMetadataSha256') -cne $expectedPackageMetadataHash) {
-            $failures.Add("Family '$family' preservation packageMetadataSha256 does not match its package/source relations.")
+        if ((Get-PropertyValue -Object $origin -Name 'packageMetadataSha256') -cne $expectedPackageMetadataHash) {
+            $failures.Add("Family '$family' origin packageMetadataSha256 does not match its package/source relations.")
         }
         $expectedConsumerHash = Get-ConsumerRelationFingerprint -Entries @(
             $consumerEntries | Where-Object { (Get-PropertyValue -Object $_ -Name 'family') -ceq $family }
         )
-        if ((Get-PropertyValue -Object $preservation -Name 'consumerEvidenceSha256') -cne $expectedConsumerHash) {
-            $failures.Add("Family '$family' preservation consumerEvidenceSha256 does not match its consumer-package relations and declaration bytes.")
+        if ((Get-PropertyValue -Object $origin -Name 'consumerEvidenceSha256') -cne $expectedConsumerHash) {
+            $failures.Add("Family '$family' origin consumerEvidenceSha256 does not match its consumer-package relations and declaration bytes.")
         }
     }
     if ($disposition -notin @('accepted', 'retained')) {
@@ -1811,6 +1919,38 @@ foreach ($decision in $familyDecisions) {
     }
 
     Assert-FamilyRoundTrip -Decision $decision -Failures $failures
+}
+
+$refreshedPartition = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+$preservedPartition = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+foreach ($family in @((Get-PropertyValue -Object $snapshot -Name 'refreshedFamilies'))) {
+    if ([string]::IsNullOrWhiteSpace([string] $family) -or -not $refreshedPartition.Add([string] $family)) {
+        $failures.Add("Snapshot refreshedFamilies contains a blank or duplicate family '$family'.")
+    }
+}
+foreach ($family in @((Get-PropertyValue -Object $snapshot -Name 'preservedFamilies'))) {
+    if ([string]::IsNullOrWhiteSpace([string] $family) -or -not $preservedPartition.Add([string] $family)) {
+        $failures.Add("Snapshot preservedFamilies contains a blank or duplicate family '$family'.")
+    }
+    elseif ($refreshedPartition.Contains([string] $family)) {
+        $failures.Add("Snapshot family '$family' appears in both refreshed and preserved partitions.")
+    }
+}
+foreach ($family in $decisionsByFamily.Keys) {
+    if (-not $refreshedPartition.Contains($family) -and -not $preservedPartition.Contains($family)) {
+        $failures.Add("Snapshot partition does not cover catalog family '$family'.")
+    }
+}
+foreach ($family in @($refreshedPartition) + @($preservedPartition)) {
+    if (-not $decisionsByFamily.ContainsKey($family)) {
+        $failures.Add("Snapshot partition contains unknown family '$family'.")
+    }
+}
+if ($snapshotMode -ceq 'complete' -and $preservedPartition.Count -ne 0) {
+    $failures.Add('Complete snapshot mode must refresh every family and preserve none.')
+}
+if ($snapshotMode -ceq 'complete' -and $refreshedPartition.Count -ne $decisionsByFamily.Count) {
+    $failures.Add('Complete snapshot mode refreshedFamilies must exactly cover the catalog.')
 }
 
 foreach ($rollbackGroup in @($familyDecisions | Group-Object rollbackGroup)) {

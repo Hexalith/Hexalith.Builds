@@ -43,6 +43,13 @@ function Get-CatalogSha256 {
     return [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($canonicalBytes)).ToLowerInvariant()
 }
 
+function Get-FamilySelectionFingerprint {
+    param([Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]] $Packages)
+
+    $material = @($Packages | Sort-Object id | ForEach-Object { "$($_.id)|$($_.selectedVersion)" })
+    return Get-Sha256Text -Value ([string]::Join("`n", $material))
+}
+
 function Get-SourceScopeFingerprint {
     param([Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]] $Sources)
 
@@ -86,18 +93,21 @@ function Update-AuditProvenance {
     $catalogSha256 = Get-CatalogSha256 -Path $AuditCatalogPath
     $Audit.catalogPath = $catalogRelativePath
     $Audit.catalogSha256 = $catalogSha256
+    $Audit.catalogRawSha256 = (Get-FileHash -LiteralPath $AuditCatalogPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $Audit.snapshot.auditedAtUtc = '2026-07-31T12:00:00.0000000+00:00'
     $Audit.consumerEvidence.sha256 = Get-ConsumerRelationFingerprint -Entries @($Audit.consumerEvidence.entries)
 
     foreach ($decision in $Audit.familyDecisions) {
         $family = [string] $decision.family
         $familyPackages = @($Audit.packages | Where-Object { [string] $_.family -ceq $family })
         $familyConsumers = @($Audit.consumerEvidence.entries | Where-Object { [string] $_.family -ceq $family })
-        $decision.preservation.status = $PreservationStatus
-        $decision.preservation.catalogPath = $catalogRelativePath
-        $decision.preservation.catalogSha256 = $catalogSha256
-        $decision.preservation.sourceScopeSha256 = Get-SourceScopeFingerprint -Sources @($Audit.sources)
-        $decision.preservation.packageMetadataSha256 = Get-PackageMetadataFingerprint -Packages $familyPackages
-        $decision.preservation.consumerEvidenceSha256 = Get-ConsumerRelationFingerprint -Entries $familyConsumers
+        $null = $PreservationStatus
+        $decision.origin.auditedAtUtc = ([DateTimeOffset] $Audit.snapshot.auditedAtUtc).ToString('O')
+        $decision.origin.generatedFromRevision = [string] $Audit.generatedFromRevision
+        $decision.origin.familySelectionSha256 = Get-FamilySelectionFingerprint -Packages $familyPackages
+        $decision.origin.sourceScopeSha256 = Get-SourceScopeFingerprint -Sources @($Audit.sources)
+        $decision.origin.packageMetadataSha256 = Get-PackageMetadataFingerprint -Packages $familyPackages
+        $decision.origin.consumerEvidenceSha256 = Get-ConsumerRelationFingerprint -Entries $familyConsumers
     }
 }
 
@@ -135,11 +145,17 @@ function New-AuditFixture {
         'https://api.nuget.org/v3/index.json=unlisted:2.1.0:3.0.0-preview.1'
     )
     $audit = [ordered] @{
-        schemaVersion = 1
-        auditedAtUtc = '2026-07-31T12:00:00.0000000+00:00'
+        schemaVersion = 2
         generatedFromRevision = ('a' * 40)
         catalogPath = [IO.Path]::GetRelativePath($repositoryRoot, $catalogPath).Replace('\', '/')
         catalogSha256 = $catalogSha256
+        catalogRawSha256 = (Get-FileHash -LiteralPath $catalogPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        snapshot = [ordered] @{
+            mode = 'complete'
+            auditedAtUtc = '2026-07-31T12:00:00.0000000+00:00'
+            refreshedFamilies = @('fixture-family')
+            preservedFamilies = @()
+        }
         sources = @(
             [ordered] @{
                 uri = 'https://api.nuget.org/v3/index.json'
@@ -182,11 +198,12 @@ function New-AuditFixture {
                 compatibilityEvidence = 'Fixture evidence.'
                 removalTrigger = 'Re-run fixture validation.'
                 representativeConsumers = @('Fixture.Consumer')
-                preservation = [ordered] @{
-                    status = 'refreshed'
-                    reason = 'Fixture audit provenance.'
-                    catalogPath = [IO.Path]::GetRelativePath($repositoryRoot, $catalogPath).Replace('\', '/')
-                    catalogSha256 = $catalogSha256
+                origin = [ordered] @{
+                    auditedAtUtc = '2026-07-31T12:00:00.0000000+00:00'
+                    generatedFromRevision = ('a' * 40)
+                    familySelectionSha256 = Get-Sha256Text -Value (
+                        "$firstPackageId|1.0.0`n$secondPackageId|2.0.0"
+                    )
                     sourceScopeSha256 = $sourceScopeSha256
                     packageMetadataSha256 = $packageMetadataSha256
                     consumerEvidenceSha256 = $consumerSha256
@@ -379,27 +396,24 @@ function Test-RepositoryScenario {
 function New-NonTerminatingGitShim {
     param(
         [Parameter(Mandatory = $true)][string] $ShimPath,
-        [Parameter(Mandatory = $true)][string] $ShimPidPath,
-        [Parameter(Mandatory = $true)][string] $ChildPidPath
+        [Parameter(Mandatory = $true)][string] $ReadyPath
     )
 
-    $shimPidPathBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($ShimPidPath))
-    $childPidPathBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($ChildPidPath))
+    $readyPathBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($ReadyPath))
     $content = @'
 param([Parameter(ValueFromRemainingArguments = $true)][string[]] $IgnoredArguments)
 $null = $IgnoredArguments
-$shimPidPath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__SHIM_PID_PATH__'))
-$childPidPath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__CHILD_PID_PATH__'))
-[IO.File]::WriteAllText($shimPidPath, [string] $PID)
+$readyPath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__READY_PATH__'))
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
 $child = Start-Process -FilePath $pwshExecutable `
     -ArgumentList @('-NoLogo', '-NoProfile', '-Command', 'Start-Sleep -Seconds 30') `
     -PassThru
-[IO.File]::WriteAllText($childPidPath, [string] $child.Id)
+$readyTemporaryPath = "$readyPath.$PID.tmp"
+[IO.File]::WriteAllText($readyTemporaryPath, "$PID|$($child.Id)")
+[IO.File]::Move($readyTemporaryPath, $readyPath, $true)
 Start-Sleep -Seconds 30
 '@
-    $content = $content.Replace('__SHIM_PID_PATH__', $shimPidPathBase64)
-    $content = $content.Replace('__CHILD_PID_PATH__', $childPidPathBase64)
+    $content = $content.Replace('__READY_PATH__', $readyPathBase64)
     Write-Utf8File -Path $ShimPath -Content "$content`n"
 }
 
@@ -449,13 +463,44 @@ $items = @(
     Test-Scenario -Name 'Complete audit' -AuditPath $validPath -ExpectedExitCode 0 `
         -ExpectedOutput 'validation passed for 2 packages, 1 families, and 1 source'
 
+    $rawCatalogHashPath = New-AuditFixture -Name 'raw-catalog-hash-mismatch'
+    $rawCatalogHashAudit = Get-Content -LiteralPath $rawCatalogHashPath -Raw | ConvertFrom-Json -DateKind String
+    $rawCatalogHashAudit.catalogRawSha256 = ('0' * 64)
+    Save-Audit -Audit $rawCatalogHashAudit -Path $rawCatalogHashPath
+    Test-Scenario -Name 'Raw catalog byte hash mismatch' -AuditPath $rawCatalogHashPath -ExpectedExitCode 1 `
+        -ExpectedOutput 'catalogRawSha256 does not match the exact evaluated catalog bytes'
+
+    $snapshotGapPath = New-AuditFixture -Name 'snapshot-family-gap'
+    $snapshotGapAudit = Get-Content -LiteralPath $snapshotGapPath -Raw | ConvertFrom-Json -DateKind String
+    $snapshotGapAudit.snapshot.refreshedFamilies = @()
+    Save-Audit -Audit $snapshotGapAudit -Path $snapshotGapPath
+    Test-Scenario -Name 'Snapshot partition family gap' -AuditPath $snapshotGapPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Snapshot partition does not cover catalog family 'fixture-family'"
+
+    $snapshotOverlapPath = New-AuditFixture -Name 'snapshot-family-overlap'
+    $snapshotOverlapAudit = Get-Content -LiteralPath $snapshotOverlapPath -Raw | ConvertFrom-Json -DateKind String
+    $snapshotOverlapAudit.snapshot.mode = 'incremental'
+    $snapshotOverlapAudit.snapshot.preservedFamilies = @('fixture-family')
+    Save-Audit -Audit $snapshotOverlapAudit -Path $snapshotOverlapPath
+    Test-Scenario -Name 'Snapshot partition family overlap' -AuditPath $snapshotOverlapPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Snapshot family 'fixture-family' appears in both refreshed and preserved partitions"
+
+    $unknownSnapshotFieldPath = New-AuditFixture -Name 'unknown-snapshot-field'
+    $unknownSnapshotFieldAudit = Get-Content -LiteralPath $unknownSnapshotFieldPath -Raw | ConvertFrom-Json -DateKind String
+    $unknownSnapshotFieldAudit.snapshot |
+        Add-Member -NotePropertyName reviewer -NotePropertyValue 'untyped-reviewer'
+    Save-Audit -Audit $unknownSnapshotFieldAudit -Path $unknownSnapshotFieldPath
+    Test-Scenario -Name 'Unknown snapshot field would be silently dropped' `
+        -AuditPath $unknownSnapshotFieldPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Snapshot declares field 'reviewer' that the typed round-trip model does not cover"
+
     $internalAdvancePath = New-AuditFixture -Name 'internal-family-advance' -PackagePrefix 'Hexalith.Fixture'
     $internalAdvanceCatalogPath = Join-Path $temporaryRoot 'internal-family-advance.props'
     Write-Utf8File -Path $internalAdvanceCatalogPath -Content @'
 <Project><ItemGroup><PackageVersion Include="Hexalith.Fixture.One" Version="1.1.0" /><PackageVersion Include="Hexalith.Fixture.Two" Version="1.1.0" /></ItemGroup></Project>
 '@
     $internalAdvanceAudit = Get-Content -LiteralPath $internalAdvancePath -Raw | ConvertFrom-Json
-    $internalAdvanceAudit.auditedAtUtc = '2026-07-31T12:00:00.0000000Z'
+    $internalAdvanceAudit.snapshot.auditedAtUtc = '2026-07-31T12:00:00.0000000Z'
     foreach ($package in $internalAdvanceAudit.packages) {
         $package.auditedVersion = '1.0.0'
         $package.selectedVersion = '1.1.0'
@@ -606,17 +651,17 @@ $items = @(
 
     $sourceHashPath = New-AuditFixture -Name 'source-hash-mismatch'
     $sourceHashAudit = Get-Content -LiteralPath $sourceHashPath -Raw | ConvertFrom-Json
-    $sourceHashAudit.familyDecisions[0].preservation.sourceScopeSha256 = ('0' * 64)
+    $sourceHashAudit.familyDecisions[0].origin.sourceScopeSha256 = ('0' * 64)
     Save-Audit -Audit $sourceHashAudit -Path $sourceHashPath
     Test-Scenario -Name 'Source provenance hash mismatch' -AuditPath $sourceHashPath -ExpectedExitCode 1 `
-        -ExpectedOutput 'preservation sourceScopeSha256 does not match the configured source records'
+        -ExpectedOutput 'origin sourceScopeSha256 does not match the configured source records'
 
     $metadataHashPath = New-AuditFixture -Name 'metadata-hash-mismatch'
     $metadataHashAudit = Get-Content -LiteralPath $metadataHashPath -Raw | ConvertFrom-Json
-    $metadataHashAudit.familyDecisions[0].preservation.packageMetadataSha256 = ('0' * 64)
+    $metadataHashAudit.familyDecisions[0].origin.packageMetadataSha256 = ('0' * 64)
     Save-Audit -Audit $metadataHashAudit -Path $metadataHashPath
     Test-Scenario -Name 'Package/source relation hash mismatch' -AuditPath $metadataHashPath -ExpectedExitCode 1 `
-        -ExpectedOutput 'preservation packageMetadataSha256 does not match its package/source relations'
+        -ExpectedOutput 'origin packageMetadataSha256 does not match its package/source relations'
 
     $consumerHashPath = New-AuditFixture -Name 'consumer-hash-mismatch'
     $consumerHashAudit = Get-Content -LiteralPath $consumerHashPath -Raw | ConvertFrom-Json
@@ -634,10 +679,10 @@ $items = @(
 
     $familyConsumerHashPath = New-AuditFixture -Name 'family-consumer-hash-mismatch'
     $familyConsumerHashAudit = Get-Content -LiteralPath $familyConsumerHashPath -Raw | ConvertFrom-Json
-    $familyConsumerHashAudit.familyDecisions[0].preservation.consumerEvidenceSha256 = ('0' * 64)
+    $familyConsumerHashAudit.familyDecisions[0].origin.consumerEvidenceSha256 = ('0' * 64)
     Save-Audit -Audit $familyConsumerHashAudit -Path $familyConsumerHashPath
     Test-Scenario -Name 'Family consumer relation hash mismatch' -AuditPath $familyConsumerHashPath -ExpectedExitCode 1 `
-        -ExpectedOutput 'preservation consumerEvidenceSha256 does not match its consumer-package relations and declaration bytes'
+        -ExpectedOutput 'origin consumerEvidenceSha256 does not match its consumer-package relations and declaration bytes'
 
     $fixtureBindingPath = New-AuditFixture -Name 'fixture-binding-missing'
     $fixtureBindingAudit = Get-Content -LiteralPath $fixtureBindingPath -Raw | ConvertFrom-Json
@@ -702,7 +747,7 @@ $items = @(
     Test-Scenario -Name 'Untyped package history' -AuditPath $untypedPackageHistoryPath -ExpectedExitCode 1 `
         -ExpectedOutput "Package 'Fixture.One' has historical context without a typed schema"
 
-    $acceptedPreservationPath = New-AuditFixture -Name 'accepted-with-refreshed-preservation'
+    $acceptedPreservationPath = New-AuditFixture -Name 'accepted-without-origin'
     $acceptedPreservationAudit = Get-Content -LiteralPath $acceptedPreservationPath -Raw | ConvertFrom-Json
     foreach ($package in $acceptedPreservationAudit.packages) {
         $package.disposition = 'accepted'
@@ -714,9 +759,10 @@ $items = @(
         }
     }
     $acceptedPreservationAudit.familyDecisions[0].disposition = 'accepted'
+    $acceptedPreservationAudit.familyDecisions[0].PSObject.Properties.Remove('origin')
     Save-Audit -Audit $acceptedPreservationAudit -Path $acceptedPreservationPath
-    Test-Scenario -Name 'Accepted decision provenance is not preserved' -AuditPath $acceptedPreservationPath -ExpectedExitCode 1 `
-        -ExpectedOutput "Accepted family 'fixture-family' must have preservation status 'preserved'"
+    Test-Scenario -Name 'Accepted decision origin is missing' -AuditPath $acceptedPreservationPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Family 'fixture-family' is missing observation origin provenance"
 
     $missingPath = New-AuditFixture -Name 'missing-package'
     $missingAudit = Get-Content -LiteralPath $missingPath -Raw | ConvertFrom-Json -DateKind String
@@ -865,7 +911,7 @@ $items = @(
 
     $nonUtcPath = New-AuditFixture -Name 'non-utc-timestamp'
     $nonUtcAudit = Get-Content -LiteralPath $nonUtcPath -Raw | ConvertFrom-Json -DateKind String
-    $nonUtcAudit.auditedAtUtc = '2026-07-31T14:00:00+02:00'
+    $nonUtcAudit.snapshot.auditedAtUtc = '2026-07-31T14:00:00+02:00'
     Save-Audit -Audit $nonUtcAudit -Path $nonUtcPath
     Test-Scenario -Name 'Non-UTC timestamp' -AuditPath $nonUtcPath -ExpectedExitCode 1 `
         -ExpectedOutput 'auditedAtUtc must have a zero UTC offset'
@@ -960,8 +1006,11 @@ $items = @(
     $oversizedAudit.consumerEvidence.repositoryRevision = $oversizedRevision.Trim()
     $oversizedCatalogSha256 = Get-CatalogSha256 -Path $historyCatalogPath
     $oversizedAudit.catalogSha256 = $oversizedCatalogSha256
+    $oversizedAudit.catalogRawSha256 = (Get-FileHash -LiteralPath $historyCatalogPath -Algorithm SHA256).Hash.ToLowerInvariant()
     foreach ($decision in $oversizedAudit.familyDecisions) {
-        $decision.preservation.catalogSha256 = $oversizedCatalogSha256
+        $decision.origin.familySelectionSha256 = Get-FamilySelectionFingerprint -Packages @(
+            $oversizedAudit.packages | Where-Object { [string] $_.family -ceq [string] $decision.family }
+        )
     }
     $oversizedPath = Join-Path $temporaryRoot 'repository-oversized-historical-catalog.json'
     Save-Audit -Audit $oversizedAudit -Path $oversizedPath
@@ -971,30 +1020,31 @@ $items = @(
         -ExpectedOutput "Historical Git blob read exceeded the 65536-byte limit for 'Props/Directory.Packages.props'."
 
     $gitShimPath = Join-Path $temporaryRoot 'non-terminating-git-shim.ps1'
-    $gitShimPidPath = Join-Path $temporaryRoot 'non-terminating-git-shim.pid'
-    $gitShimChildPidPath = Join-Path $temporaryRoot 'non-terminating-git-child.pid'
+    $gitShimReadyPath = Join-Path $temporaryRoot 'non-terminating-git.ready'
     New-NonTerminatingGitShim `
         -ShimPath $gitShimPath `
-        -ShimPidPath $gitShimPidPath `
-        -ChildPidPath $gitShimChildPidPath
+        -ReadyPath $gitShimReadyPath
     $timeoutStopwatch = [Diagnostics.Stopwatch]::StartNew()
     Test-RepositoryScenario -Name 'Non-terminating historical Git read times out and is terminated' `
         -AuditPath $oversizedPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
-        -GitBlobReaderShimPath $gitShimPath -GitBlobReadTimeoutSeconds 1 -ExpectedExitCode 1 `
-        -ExpectedOutput "Historical Git blob read timed out after 1 seconds for 'Props/Directory.Packages.props'."
+        -GitBlobReaderShimPath $gitShimPath -GitBlobReadTimeoutSeconds 5 -ExpectedExitCode 1 `
+        -ExpectedOutput "Historical Git blob read timed out after 5 seconds for 'Props/Directory.Packages.props'."
     $timeoutStopwatch.Stop()
     if ($timeoutStopwatch.Elapsed.TotalSeconds -ge 30) {
         $failures.Add(
             "The timed historical Git scenario took $($timeoutStopwatch.Elapsed.TotalSeconds) seconds and reached the shim's natural completion window."
         )
     }
-    if (-not (Test-Path -LiteralPath $gitShimPidPath -PathType Leaf) -or
-        -not (Test-Path -LiteralPath $gitShimChildPidPath -PathType Leaf)) {
-        $failures.Add('The non-terminating Git shim did not record both owned process IDs.')
+    if (-not (Test-Path -LiteralPath $gitShimReadyPath -PathType Leaf)) {
+        $failures.Add('The non-terminating Git shim did not publish its atomic ready/PID record.')
     }
     else {
-        $gitShimProcessId = [int] (Get-Content -LiteralPath $gitShimPidPath -Raw)
-        $gitShimChildProcessId = [int] (Get-Content -LiteralPath $gitShimChildPidPath -Raw)
+        $readyParts = (Get-Content -LiteralPath $gitShimReadyPath -Raw).Split('|')
+        if ($readyParts.Count -ne 2) {
+            $failures.Add('The non-terminating Git shim ready/PID record is malformed.')
+        }
+        $gitShimProcessId = [int] $readyParts[0]
+        $gitShimChildProcessId = [int] $readyParts[1]
         if (-not (Wait-ForProcessGone -ProcessId $gitShimProcessId -TimeoutMilliseconds 3000)) {
             $failures.Add("Historical Git shim process $gitShimProcessId survived process-tree cleanup.")
         }
@@ -1023,7 +1073,7 @@ $items = @(
     $removedFamilyDecision.representativeConsumers = @(
         $remainingFamilyEntries | ForEach-Object { [string] $_.consumer } | Sort-Object -CaseSensitive -Unique
     )
-    $removedFamilyDecision.preservation.consumerEvidenceSha256 = Get-ConsumerRelationFingerprint `
+    $removedFamilyDecision.origin.consumerEvidenceSha256 = Get-ConsumerRelationFingerprint `
         -Entries $remainingFamilyEntries
     Save-Audit -Audit $missingRelationAudit -Path $missingRelationPath
     $missingRelation = "$($removedRelation.consumer)|$($removedRelation.packageId)"
@@ -1111,11 +1161,11 @@ $items = @(
         }
     )
     $multiCardinalityAudit.familyDecisions[0].representativeConsumers = @('Fixture.Consumer.One', 'Fixture.Consumer.Two')
-    $multiCardinalityAudit.familyDecisions[0].preservation.sourceScopeSha256 = Get-Sha256Text -Value (
+    $multiCardinalityAudit.familyDecisions[0].origin.sourceScopeSha256 = Get-Sha256Text -Value (
         "https://api.nuget.org/v3/index.json|resolved|Fixture source resolved.`n" +
         'https://packages.example.test/v3/index.json|resolved|Fixture second source resolved.'
     )
-    $multiCardinalityAudit.familyDecisions[0].preservation.packageMetadataSha256 = Get-Sha256Text -Value (
+    $multiCardinalityAudit.familyDecisions[0].origin.packageMetadataSha256 = Get-Sha256Text -Value (
         'Fixture.One|1.0.0|1.0.0|1.0.0||listed|' +
         'https://api.nuget.org/v3/index.json=listed:1.0.0:,' +
         'https://packages.example.test/v3/index.json=listed:1.0.0:' + "`n" +
@@ -1123,7 +1173,7 @@ $items = @(
         'https://api.nuget.org/v3/index.json=unlisted:2.1.0:3.0.0-preview.1,' +
         'https://packages.example.test/v3/index.json=unlisted:2.1.0:3.0.0-preview.1'
     )
-    $multiCardinalityAudit.familyDecisions[0].preservation.consumerEvidenceSha256 = $multiCardinalityConsumerSha256
+    $multiCardinalityAudit.familyDecisions[0].origin.consumerEvidenceSha256 = $multiCardinalityConsumerSha256
     Save-Audit -Audit $multiCardinalityAudit -Path $multiCardinalityPath
     Test-Scenario -Name 'Multi-element collections round-trip' -AuditPath $multiCardinalityPath -ExpectedExitCode 0 `
         -ExpectedOutput 'validation passed for 2 packages, 1 families, and 2 source'
@@ -1176,14 +1226,14 @@ $items = @(
         -AuditPath $unknownHistoricalSourceFieldPath -ExpectedExitCode 1 `
         -ExpectedOutput "Package 'Fixture.One' historical source result declares field 'mirrorOf' that the typed round-trip model does not cover"
 
-    $unknownPreservationFieldPath = New-AuditFixture -Name 'unknown-preservation-field'
+    $unknownPreservationFieldPath = New-AuditFixture -Name 'unknown-origin-field'
     $unknownPreservationFieldAudit = Get-Content -LiteralPath $unknownPreservationFieldPath -Raw | ConvertFrom-Json -DateKind String
-    $unknownPreservationFieldAudit.familyDecisions[0].preservation |
+    $unknownPreservationFieldAudit.familyDecisions[0].origin |
         Add-Member -NotePropertyName ownerApproval -NotePropertyValue 'untyped-owner-note'
     Save-Audit -Audit $unknownPreservationFieldAudit -Path $unknownPreservationFieldPath
-    Test-Scenario -Name 'Unknown preservation field would be silently dropped' `
+    Test-Scenario -Name 'Unknown origin field would be silently dropped' `
         -AuditPath $unknownPreservationFieldPath -ExpectedExitCode 1 `
-        -ExpectedOutput "Family 'fixture-family' preservation declares field 'ownerApproval' that the typed round-trip model does not cover"
+        -ExpectedOutput "Family 'fixture-family' origin declares field 'ownerApproval' that the typed round-trip model does not cover"
 
     $unknownFamilyHistoryFieldPath = New-AuditFixture -Name 'unknown-family-history-field'
     $unknownFamilyHistoryFieldAudit = Get-Content -LiteralPath $unknownFamilyHistoryFieldPath -Raw | ConvertFrom-Json -DateKind String

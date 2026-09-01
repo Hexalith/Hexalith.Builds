@@ -202,7 +202,7 @@ try {
             $failures.Add("Accepted-prior bootstrap failed. $([string]::Join("`n", $acceptedBootstrapOutput))")
         }
         else {
-            $acceptedPrior = Get-Content -LiteralPath $acceptedPriorPath -Raw | ConvertFrom-Json
+            $acceptedPrior = Get-Content -LiteralPath $acceptedPriorPath -Raw | ConvertFrom-Json -DateKind String
             $acceptedDecision = @($acceptedPrior.familyDecisions | Where-Object family -eq 'package:fixture.listed')[0]
             $acceptedPackage = @($acceptedPrior.packages | Where-Object id -eq 'Fixture.Listed')[0]
             $acceptedDecision.disposition = 'accepted'
@@ -242,8 +242,8 @@ try {
                     -Expected $acceptedDecision.removalTrigger -Actual $preservedDecision.removalTrigger
                 Assert-Equal -Scenario 'Preserved consumers come from current direct evidence' `
                     -Expected 'Fixture.Consumer' -Actual $preservedDecision.representativeConsumers[0]
-                Assert-Equal -Scenario 'Accepted family preservation status stays preserved' `
-                    -Expected 'preserved' -Actual $preservedDecision.preservation.status
+                Assert-Equal -Scenario 'Accepted family origin stays stable for identical evidence' `
+                    -Expected $acceptedDecision.origin.generatedFromRevision -Actual $preservedDecision.origin.generatedFromRevision
                 $preservedPackage = @($preservedAudit.packages | Where-Object id -eq 'Fixture.Listed')[0]
                 Assert-Equal -Scenario 'Accepted package disposition round-trips exactly' `
                     -Expected $acceptedPackage.disposition -Actual $preservedPackage.disposition
@@ -261,6 +261,123 @@ try {
                     $failures.Add("Preserved owner audit did not pass validation. $([string]::Join("`n", $preservedValidatorOutput))")
                 }
             }
+
+            $incrementalOriginalCatalog = Get-Content -LiteralPath $catalogPath -Raw
+            Write-Utf8File -Path $catalogPath -Content (
+                $incrementalOriginalCatalog.Replace(
+                    'Fixture.Listed" Version="1.0.0"',
+                    'Fixture.Listed" Version="1.1.0"'
+                )
+            )
+            $responses[$listedPageUri].response.items = @(
+                (New-RegistrationLeaf -Version '1.0.0' -Listed $true),
+                (New-RegistrationLeaf -Version '1.1.0' -Listed $true)
+            )
+            $incrementalFixturePath = Join-Path $temporaryRoot 'incremental-requests.json'
+            Write-Utf8File -Path $incrementalFixturePath -Content (
+                [ordered] @{ responses = $responses } | ConvertTo-Json -Depth 20
+            )
+            $incrementalPath = Join-Path $temporaryRoot 'incremental.json'
+            $incrementalOutput = @(& $generatorPath `
+                    -CatalogPath $catalogPath `
+                    -OutputPath $incrementalPath `
+                    -PriorAuditPath $acceptedPriorPath `
+                    -Family 'package:fixture.listed' `
+                    -Source @($sourceOne) `
+                    -RequestFixturePath $incrementalFixturePath `
+                    -ConsumerEvidencePath $consumerEvidencePath 2>&1)
+            if ($LASTEXITCODE -ne 0) {
+                $failures.Add("Incremental family refresh failed. $([string]::Join("`n", $incrementalOutput))")
+            }
+            else {
+                $incrementalAudit = Get-Content -LiteralPath $incrementalPath -Raw | ConvertFrom-Json -DateKind String
+                $incrementalDecision = @($incrementalAudit.familyDecisions | Where-Object family -eq 'package:fixture.listed')[0]
+                $incrementalPackage = @($incrementalAudit.packages | Where-Object id -eq 'Fixture.Listed')[0]
+                $untouchedPriorDecision = @($acceptedPrior.familyDecisions | Where-Object family -eq 'package:fixture.missing')[0]
+                $untouchedDecision = @($incrementalAudit.familyDecisions | Where-Object family -eq 'package:fixture.missing')[0]
+                $untouchedPriorPackage = @($acceptedPrior.packages | Where-Object id -eq 'Fixture.Missing')[0]
+                $untouchedPackage = @($incrementalAudit.packages | Where-Object id -eq 'Fixture.Missing')[0]
+                Assert-Equal -Scenario 'Incremental mode is explicit' -Expected 'incremental' -Actual $incrementalAudit.snapshot.mode
+                Assert-Equal -Scenario 'Incremental refreshed partition contains one family' `
+                    -Expected 'package:fixture.listed' -Actual $incrementalAudit.snapshot.refreshedFamilies[0]
+                Assert-Equal -Scenario 'Incremental preserved partition covers untouched families' `
+                    -Expected 2 -Actual $incrementalAudit.snapshot.preservedFamilies.Count
+                Assert-Equal -Scenario 'Changed family gains one family snapshot' `
+                    -Expected ($acceptedDecision.historicalContext.Count + 1) -Actual $incrementalDecision.historicalContext.Count
+                Assert-Equal -Scenario 'Changed package gains one package snapshot' `
+                    -Expected ($acceptedPackage.historicalContext.Count + 1) -Actual $incrementalPackage.historicalContext.Count
+                Assert-Equal -Scenario 'Untouched family remains deep-equal' `
+                    -Expected ($untouchedPriorDecision | ConvertTo-Json -Depth 30 -Compress) `
+                    -Actual ($untouchedDecision | ConvertTo-Json -Depth 30 -Compress)
+                Assert-Equal -Scenario 'Untouched package remains deep-equal' `
+                    -Expected ($untouchedPriorPackage | ConvertTo-Json -Depth 30 -Compress) `
+                    -Actual ($untouchedPackage | ConvertTo-Json -Depth 30 -Compress)
+
+                $incrementalValidatorOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $validatorPath `
+                        -AuditPath $incrementalPath -CatalogPath $catalogPath -ConsumerScanRoot $temporaryRoot 2>&1)
+                $scenarioCount++
+                if ($LASTEXITCODE -ne 0) {
+                    $failures.Add("Incremental audit did not pass validation. $([string]::Join("`n", $incrementalValidatorOutput))")
+                }
+
+                $deduplicatedPath = Join-Path $temporaryRoot 'incremental-deduplicated.json'
+                $deduplicatedOutput = @(& $generatorPath `
+                        -CatalogPath $catalogPath `
+                        -OutputPath $deduplicatedPath `
+                        -PriorAuditPath $incrementalPath `
+                        -Family 'package:fixture.listed' `
+                        -Source @($sourceOne) `
+                        -RequestFixturePath $incrementalFixturePath `
+                        -ConsumerEvidencePath $consumerEvidencePath 2>&1)
+                if ($LASTEXITCODE -ne 0) {
+                    $failures.Add("Repeated incremental refresh failed. $([string]::Join("`n", $deduplicatedOutput))")
+                }
+                else {
+                    $deduplicatedAudit = Get-Content -LiteralPath $deduplicatedPath -Raw | ConvertFrom-Json -DateKind String
+                    $deduplicatedDecision = @($deduplicatedAudit.familyDecisions | Where-Object family -eq 'package:fixture.listed')[0]
+                    Assert-Equal -Scenario 'Repeated identical refresh deduplicates family history' `
+                        -Expected $incrementalDecision.historicalContext.Count -Actual $deduplicatedDecision.historicalContext.Count
+                }
+            }
+
+            foreach ($invalidSelection in @(
+                    @{ Name = 'unknown'; Values = @('package:unknown') },
+                    @{ Name = 'duplicate'; Values = @('package:fixture.listed', 'package:fixture.listed') }
+                )) {
+                $invalidSelectionOutput = @(& $generatorPath `
+                        -CatalogPath $catalogPath `
+                        -OutputPath (Join-Path $temporaryRoot "invalid-$($invalidSelection.Name).json") `
+                        -PriorAuditPath $acceptedPriorPath `
+                        -Family $invalidSelection.Values `
+                        -Source @($sourceOne) `
+                        -RequestFixturePath $incrementalFixturePath `
+                        -ConsumerEvidencePath $consumerEvidencePath 2>&1)
+                $scenarioCount++
+                if ($LASTEXITCODE -eq 0) {
+                    $failures.Add("Incremental $($invalidSelection.Name) family selection was not rejected.")
+                }
+            }
+
+            Write-Utf8File -Path $catalogPath -Content (
+                (Get-Content -LiteralPath $catalogPath -Raw).Replace(
+                    'Fixture.Missing" Version="3.0.0"',
+                    'Fixture.Missing" Version="3.1.0"'
+                )
+            )
+            $unrequestedOutput = @(& $generatorPath `
+                    -CatalogPath $catalogPath `
+                    -OutputPath (Join-Path $temporaryRoot 'unrequested-drift.json') `
+                    -PriorAuditPath $acceptedPriorPath `
+                    -Family 'package:fixture.listed' `
+                    -Source @($sourceOne) `
+                    -RequestFixturePath $incrementalFixturePath `
+                    -ConsumerEvidencePath $consumerEvidencePath 2>&1)
+            $scenarioCount++
+            if ($LASTEXITCODE -eq 0) {
+                $failures.Add('Unrequested changed family was not rejected before querying.')
+            }
+            Write-Utf8File -Path $catalogPath -Content $incrementalOriginalCatalog
+            $responses[$listedPageUri].response.items = @((New-RegistrationLeaf -Version '1.0.0' -Listed $true))
 
             $originalConsumerEvidence = Get-Content -LiteralPath $consumerEvidencePath -Raw
             Write-Utf8File -Path $consumerEvidencePath -Content "$originalConsumerEvidence`n"
@@ -280,8 +397,7 @@ try {
                 $declarationDriftDecision = @($declarationDriftAudit.familyDecisions | Where-Object family -eq 'package:fixture.listed')[0]
                 Assert-Equal -Scenario 'Tracked declaration byte drift fails closed' -Expected 'retained' -Actual $declarationDriftDecision.disposition
                 Assert-Equal -Scenario 'Tracked declaration byte drift is labeled' `
-                    -Expected 'owned direct-consumer relations or tracked declaration bytes changed' `
-                    -Actual $declarationDriftDecision.preservation.reason
+                    -Expected 1 -Actual $declarationDriftDecision.historicalContext.Count
             }
             Write-Utf8File -Path $consumerEvidencePath -Content $originalConsumerEvidence
 
@@ -301,15 +417,28 @@ try {
             else {
                 $catalogByteDriftAudit = Get-Content -LiteralPath $catalogByteDriftPath -Raw | ConvertFrom-Json
                 $catalogByteDriftDecision = @($catalogByteDriftAudit.familyDecisions | Where-Object family -eq 'package:fixture.listed')[0]
-                Assert-Equal -Scenario 'Catalog declaration byte drift fails closed' `
-                    -Expected 'tracked catalog declaration bytes changed or were not previously bound' `
-                    -Actual $catalogByteDriftDecision.preservation.reason
+                Assert-Equal -Scenario 'Unrelated catalog byte drift preserves family-local decision' `
+                    -Expected 'accepted' -Actual $catalogByteDriftDecision.disposition
+                Assert-Equal -Scenario 'Unrelated catalog byte drift does not grow family history' `
+                    -Expected $acceptedDecision.historicalContext.Count -Actual $catalogByteDriftDecision.historicalContext.Count
             }
             Write-Utf8File -Path $catalogPath -Content $originalCatalog
 
             $legacyPriorPath = Join-Path $temporaryRoot 'legacy-prior.json'
-            $legacyPrior = Get-Content -LiteralPath $acceptedPriorPath -Raw | ConvertFrom-Json
+            $legacyPrior = Get-Content -LiteralPath $acceptedPriorPath -Raw | ConvertFrom-Json -DateKind String
+            $legacyPrior.schemaVersion = 1
+            $legacyPrior | Add-Member -NotePropertyName auditedAtUtc `
+                -NotePropertyValue ([DateTimeOffset]::UtcNow.ToString('O'))
+            $legacyPrior.PSObject.Properties.Remove('snapshot')
+            $legacyPrior.PSObject.Properties.Remove('catalogRawSha256')
             $legacyPrior.PSObject.Properties.Remove('consumerEvidence')
+            foreach ($legacyDecision in $legacyPrior.familyDecisions) {
+                $legacyDecision.PSObject.Properties.Remove('origin')
+                $legacyDecision | Add-Member -NotePropertyName preservation -NotePropertyValue ([pscustomobject] @{
+                        status = 'legacy-unbound'
+                        reason = 'Legacy fixture predates family-local origin provenance.'
+                    })
+            }
             Write-Utf8File -Path $legacyPriorPath -Content ($legacyPrior | ConvertTo-Json -Depth 20)
             $legacyRefreshPath = Join-Path $temporaryRoot 'legacy-refresh.json'
             $legacyRefreshOutput = @(& $generatorPath `
@@ -327,10 +456,10 @@ try {
                 $legacyRefreshDecision = @($legacyRefreshAudit.familyDecisions | Where-Object family -eq 'package:fixture.listed')[0]
                 Assert-Equal -Scenario 'Accepted legacy provenance refreshes retained' -Expected 'retained' -Actual $legacyRefreshDecision.disposition
                 Assert-Equal -Scenario 'Accepted legacy provenance keeps complete typed history' `
-                    -Expected 'hexalith.package-audit-family-history.v1' -Actual $legacyRefreshDecision.historicalContext[-1].schema
+                    -Expected 'hexalith.package-audit-family-history.v2' -Actual $legacyRefreshDecision.historicalContext[-1].schema
                 $legacyRefreshPackage = @($legacyRefreshAudit.packages | Where-Object id -eq 'Fixture.Listed')[0]
                 Assert-Equal -Scenario 'Accepted legacy package provenance keeps typed history' `
-                    -Expected 'hexalith.package-audit-package-history.v1' -Actual $legacyRefreshPackage.historicalContext[-1].schema
+                    -Expected 'hexalith.package-audit-package-history.v2' -Actual $legacyRefreshPackage.historicalContext[-1].schema
             }
 
             $driftConsumerEvidencePath = Join-Path $temporaryRoot 'consumer-evidence-drift.json'
@@ -401,7 +530,7 @@ try {
                 $sourceDriftAudit = Get-Content -LiteralPath $sourceDriftPath -Raw | ConvertFrom-Json
                 $sourceDriftDecision = @($sourceDriftAudit.familyDecisions | Where-Object family -eq 'package:fixture.listed')[0]
                 Assert-Equal -Scenario 'Source drift fails closed' `
-                    -Expected 'configured source scope changed' -Actual $sourceDriftDecision.preservation.reason
+                    -Expected 'retained' -Actual $sourceDriftDecision.disposition
             }
 
             foreach ($malformation in @(
@@ -424,7 +553,7 @@ try {
                     'unknown-package-history-schema',
                     'unknown-family-history-schema'
                 )) {
-                $malformedPrior = Get-Content -LiteralPath $acceptedPriorPath -Raw | ConvertFrom-Json
+                $malformedPrior = Get-Content -LiteralPath $acceptedPriorPath -Raw | ConvertFrom-Json -DateKind String
                 switch ($malformation) {
                     'duplicate-package' { $malformedPrior.packages += $malformedPrior.packages[0] }
                     'missing-package-family' { $malformedPrior.packages[0].family = '' }

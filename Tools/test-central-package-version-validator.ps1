@@ -18,10 +18,12 @@ function Write-Utf8File {
 
         [Parameter(Mandatory = $true)]
         [AllowEmptyString()]
-        [string] $Content
+        [string] $Content,
+
+        [bool] $WithBom = $true
     )
 
-    [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($WithBom))
 }
 
 function ConvertTo-XmlAttributeValue {
@@ -157,6 +159,21 @@ try {
     $fourPartCatalog = New-CatalogFixture -Name 'valid-four-part' -Version '10.28.0.143324'
     Test-Scenario -Name 'Valid four-part NuGet version' -CatalogPath $fourPartCatalog -ExpectedExitCode 0 `
         -ExpectedOutput 'validation passed for 1 entries'
+
+    $bomFreeCatalog = Join-Path $temporaryRoot 'bom-free.props'
+    Write-Utf8File -Path $bomFreeCatalog -Content (Get-Content -LiteralPath $stableCatalog -Raw) -WithBom $false
+    Test-Scenario -Name 'BOM-free catalog' -CatalogPath $bomFreeCatalog -ExpectedExitCode 1 `
+        -ExpectedOutput 'must begin with the UTF-8 BOM bytes EF BB BF'
+
+    $truncatedCatalog = Join-Path $temporaryRoot 'truncated.props'
+    [IO.File]::WriteAllBytes($truncatedCatalog, [byte[]] @(0xEF, 0xBB))
+    Test-Scenario -Name 'Truncated BOM' -CatalogPath $truncatedCatalog -ExpectedExitCode 1 `
+        -ExpectedOutput 'must begin with the UTF-8 BOM bytes EF BB BF'
+
+    $invalidUtf8Catalog = Join-Path $temporaryRoot 'invalid-utf8.props'
+    [IO.File]::WriteAllBytes($invalidUtf8Catalog, [byte[]] @(0xEF, 0xBB, 0xBF, 0xC3, 0x28))
+    Test-Scenario -Name 'Invalid UTF-8 catalog' -CatalogPath $invalidUtf8Catalog -ExpectedExitCode 1 `
+        -ExpectedOutput 'central catalog is not valid strict UTF-8'
 
     $lowerTagCatalog = New-CatalogFixture -Name 'lower-tag-prefix' -Version 'v1.16.3'
     Test-Scenario -Name 'Lowercase tag prefix' -CatalogPath $lowerTagCatalog -ExpectedExitCode 1 `
