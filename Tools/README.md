@@ -122,6 +122,13 @@ family fail before output. The v2 snapshot envelope records `complete` or
 `incremental` mode and an exact, non-overlapping refreshed/preserved partition
 covering every catalog family.
 
+Generation compares repository-owned catalog and consumer declarations with the
+claimed revision before any feed request, including staged and unstaged changes
+while respecting Git's configured EOL normalization. Git blob reads are both
+time- and size-bounded. The audit is serialized to a sibling temporary file and
+atomically moved into place only after the complete document succeeds, so a
+failed refresh leaves the prior output intact.
+
 Review `Tools/package-version-audit.json` by rollback-safe family, apply only
 accepted versions to `Props/Directory.Packages.props`, and record the selected
 version and disposition for every row. Live discovery is intentionally not a
@@ -146,7 +153,9 @@ cannot hide behind normalization.
 
 Each family owns an observation origin containing its revision/time plus
 ordered family-selection, source-scope, package-metadata, and consumer-evidence
-fingerprints. Incremental generation copies every preserved family decision and
+fingerprints. Package-metadata fingerprints include each source diagnostic as
+well as its listing state and candidates. Incremental generation validates and
+copies every preserved family decision and
 package row unchanged, while a genuinely changed refreshed family alone gains
 one typed family snapshot and its package snapshots. Repeating identical
 evidence does not append duplicate history. Explicit test fixtures remain

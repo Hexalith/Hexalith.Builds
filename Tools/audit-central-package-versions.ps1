@@ -6,7 +6,9 @@ param(
     [Alias('Family')][string[]] $ChangedFamily = @(),
     [Parameter(DontShow = $true)][string] $RequestFixturePath = '',
     [Parameter(DontShow = $true)][string] $PriorAuditPath = '',
-    [Parameter(DontShow = $true)][string] $ConsumerEvidencePath = ''
+    [Parameter(DontShow = $true)][string] $ConsumerEvidencePath = '',
+    [Parameter(DontShow = $true)][ValidateRange(1, 300)][int] $GitBlobReadTimeoutSeconds = 10,
+    [Parameter(DontShow = $true)][ValidateRange(1, 134217728)][int] $GitBlobReadMaxBytes = 1048576
 )
 
 Set-StrictMode -Version Latest
@@ -50,6 +52,19 @@ function Get-PropertyText {
     return [string] $Object.$Name
 }
 
+function Get-PropertyValue {
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string] $Name
+    )
+
+    if ($null -eq $Object -or $Object.PSObject.Properties.Name -notcontains $Name) {
+        return $null
+    }
+
+    return $Object.$Name
+}
+
 function Get-Sha256Text {
     param([Parameter(Mandatory = $true)][AllowEmptyString()][string] $Value)
 
@@ -84,25 +99,102 @@ function Get-GitBlobBytes {
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
     $memory = [IO.MemoryStream]::new()
+    $processStarted = $false
+    $failure = ''
+    $result = [byte[]] @()
+    $stopwatch = [Diagnostics.Stopwatch]::StartNew()
     try {
-        if (-not $process.Start()) {
-            Stop-Audit "Git blob read could not start for '$Path'."
+        try {
+            $processStarted = $process.Start()
         }
-        $copyTask = $process.StandardOutput.BaseStream.CopyToAsync($memory)
-        $stderrTask = $process.StandardError.ReadToEndAsync()
-        if (-not $process.WaitForExit(10000) -or -not $copyTask.Wait(10000)) {
-            try { $process.Kill($true) } catch { }
-            Stop-Audit "Git blob read timed out for '$Path'."
+        catch {
+            $failure = "Git blob read could not start for '$Path'."
         }
-        if ($process.ExitCode -ne 0) {
-            $diagnostic = $stderrTask.GetAwaiter().GetResult().Trim()
-            Stop-Audit "Git blob read failed for '$Path'. $diagnostic"
+        if ($processStarted) {
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            $buffer = [byte[]]::new(8192)
+            while ([string]::IsNullOrWhiteSpace($failure)) {
+                $remainingMilliseconds = ($GitBlobReadTimeoutSeconds * 1000) - [int] $stopwatch.ElapsedMilliseconds
+                if ($remainingMilliseconds -le 0) {
+                    $failure = "Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
+                    break
+                }
+
+                $remainingCapacity = ($GitBlobReadMaxBytes - [int] $memory.Length) + 1
+                $readLength = [Math]::Min($buffer.Length, $remainingCapacity)
+                $readTask = $process.StandardOutput.BaseStream.ReadAsync($buffer, 0, $readLength)
+                if (-not $readTask.Wait($remainingMilliseconds)) {
+                    $failure = "Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
+                    break
+                }
+
+                $read = $readTask.GetAwaiter().GetResult()
+                if ($read -eq 0) {
+                    break
+                }
+                $memory.Write($buffer, 0, $read)
+                if ($memory.Length -gt $GitBlobReadMaxBytes) {
+                    $failure = "Git blob read exceeded the $GitBlobReadMaxBytes-byte limit for '$Path'."
+                    break
+                }
+            }
+
+            if ([string]::IsNullOrWhiteSpace($failure)) {
+                $remainingMilliseconds = ($GitBlobReadTimeoutSeconds * 1000) - [int] $stopwatch.ElapsedMilliseconds
+                if ($remainingMilliseconds -le 0 -or -not $process.WaitForExit($remainingMilliseconds)) {
+                    $failure = "Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
+                }
+                elseif ($process.ExitCode -ne 0) {
+                    $diagnostic = $stderrTask.GetAwaiter().GetResult().Trim()
+                    $failure = "Git blob read failed for '$Path'. $diagnostic"
+                }
+                else {
+                    $result = $memory.ToArray()
+                }
+            }
         }
-        return $memory.ToArray()
+    }
+    catch {
+        $failure = "Git blob read failed for '$Path'. $($_.Exception.GetBaseException().Message)"
     }
     finally {
+        $stopwatch.Stop()
+        if ($processStarted) {
+            $processStillRunning = $true
+            try { $processStillRunning = -not $process.HasExited } catch { }
+            if ($processStillRunning) {
+                try { $process.Kill($true) } catch { }
+                try { $null = $process.WaitForExit(2000) } catch { }
+                try { $processStillRunning = -not $process.HasExited } catch { $processStillRunning = $true }
+                if ($processStillRunning) {
+                    $failure = "Git blob read cleanup could not confirm process-tree termination for '$Path'."
+                }
+            }
+        }
         $memory.Dispose()
         $process.Dispose()
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($failure)) {
+        Stop-Audit $failure
+    }
+    return $result
+}
+
+function Assert-RepositoryPathMatchesRevision {
+    param(
+        [Parameter(Mandatory = $true)][string] $Root,
+        [Parameter(Mandatory = $true)][string] $Revision,
+        [Parameter(Mandatory = $true)][string] $Path,
+        [Parameter(Mandatory = $true)][string] $Description
+    )
+
+    $output = @(& git --no-replace-objects -C $Root diff --quiet --no-ext-diff $Revision -- $Path 2>&1)
+    if ($LASTEXITCODE -eq 1) {
+        Stop-Audit "$Description '$Path' is dirty relative to generated-from revision '$Revision'."
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Stop-Audit "$Description '$Path' could not be compared with generated-from revision '$Revision'. $([string]::Join("`n", $output))"
     }
 }
 
@@ -546,13 +638,439 @@ function Get-PackageMetadataFingerprint {
 
     $material = foreach ($package in @($PackageRows | Sort-Object id)) {
         $sourceMaterial = [string]::Join(',', @($package.sourceResults | Sort-Object source | ForEach-Object {
-                    "$($_.source)=$($_.listingState):$($_.latestStable):$($_.latestPrerelease)"
+                    "$($_.source)=$($_.listingState):$($_.latestStable):$($_.latestPrerelease):$($_.diagnostic)"
                 }))
         "$($package.id)|$($package.auditedVersion)|$($package.selectedVersion)|$($package.latestStable)|" +
             "$($package.latestPrerelease)|$($package.listingState)|$sourceMaterial"
     }
 
     return Get-Sha256Text -Value ([string]::Join("`n", @($material)))
+}
+
+function Get-OriginIdentityFingerprint {
+    param([Parameter(Mandatory = $true)] $Origin)
+
+    $material = @(
+        'auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+        'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256'
+    ) | ForEach-Object { "$_=$(Get-PropertyText -Object $Origin -Name $_)" }
+    return Get-Sha256Text -Value ([string]::Join("`n", $material))
+}
+
+function Assert-ExactObjectShape {
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string[]] $KnownFields,
+        [Parameter(Mandatory = $true)][string] $Description
+    )
+
+    if ($null -eq $Object -or $Object -is [string] -or $Object.GetType().IsPrimitive) {
+        Stop-Audit "$Description must be a JSON object."
+    }
+    foreach ($field in @($Object.PSObject.Properties.Name)) {
+        if ($field -notin $KnownFields) {
+            Stop-Audit "$Description declares unsupported field '$field'."
+        }
+    }
+}
+
+function Assert-JsonStringProperty {
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string] $Name,
+        [Parameter(Mandatory = $true)][string] $Description,
+        [switch] $Nullable
+    )
+
+    $property = $Object.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        Stop-Audit "$Description is missing string field '$Name'."
+    }
+    if ($null -eq $property.Value -and $Nullable) {
+        return
+    }
+    if ($property.Value -isnot [string]) {
+        Stop-Audit "$Description field '$Name' must be a JSON string$(if ($Nullable) { ' or null' } else { '' })."
+    }
+}
+
+function Assert-JsonStringArrayProperty {
+    param(
+        [Parameter(Mandatory = $true)] $Object,
+        [Parameter(Mandatory = $true)][string] $Name,
+        [Parameter(Mandatory = $true)][string] $Description
+    )
+
+    $property = $Object.PSObject.Properties[$Name]
+    if ($null -eq $property -or $property.Value -isnot [array]) {
+        Stop-Audit "$Description field '$Name' must be a JSON array."
+    }
+    foreach ($value in $property.Value) {
+        if ($value -isnot [string]) {
+            Stop-Audit "$Description field '$Name' must contain only JSON strings."
+        }
+    }
+}
+
+function Assert-PriorOriginContract {
+    param(
+        [Parameter(Mandatory = $true)] $Origin,
+        [Parameter(Mandatory = $true)][string] $Description
+    )
+
+    Assert-ExactObjectShape -Object $Origin -KnownFields @(
+        'auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+        'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256'
+    ) -Description $Description
+    foreach ($field in @(
+            'auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+            'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256'
+        )) {
+        Assert-JsonStringProperty -Object $Origin -Name $field -Description $Description
+    }
+    $originTimestamp = [DateTimeOffset]::MinValue
+    if (-not [DateTimeOffset]::TryParse(
+            (Get-PropertyText -Object $Origin -Name 'auditedAtUtc'),
+            [ref] $originTimestamp
+        ) -or $originTimestamp.Offset -ne [TimeSpan]::Zero) {
+        Stop-Audit "$Description auditedAtUtc must be a valid UTC timestamp."
+    }
+    if ((Get-PropertyText -Object $Origin -Name 'generatedFromRevision') -cnotmatch '^[0-9a-f]{40}$') {
+        Stop-Audit "$Description revision is malformed."
+    }
+    foreach ($field in @('familySelectionSha256', 'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256')) {
+        if ((Get-PropertyText -Object $Origin -Name $field) -cnotmatch '^[0-9a-f]{64}$') {
+            Stop-Audit "$Description $field is malformed."
+        }
+    }
+}
+
+function Assert-PriorSourceResultContract {
+    param(
+        [Parameter(Mandatory = $true)] $SourceResult,
+        [Parameter(Mandatory = $true)][string] $Description
+    )
+
+    Assert-ExactObjectShape -Object $SourceResult -KnownFields @(
+        'source', 'listingState', 'latestStable', 'latestPrerelease', 'diagnostic'
+    ) -Description $Description
+    foreach ($field in @('source', 'listingState', 'diagnostic')) {
+        Assert-JsonStringProperty -Object $SourceResult -Name $field -Description $Description
+    }
+    foreach ($field in @('latestStable', 'latestPrerelease')) {
+        Assert-JsonStringProperty -Object $SourceResult -Name $field -Description $Description -Nullable
+    }
+}
+
+function Assert-PriorPackageHistoryContract {
+    param(
+        [Parameter(Mandatory = $true)] $History,
+        [Parameter(Mandatory = $true)][string] $PackageId
+    )
+
+    $description = "prior package '$PackageId' historical context"
+    Assert-ExactObjectShape -Object $History -KnownFields @(
+        'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'id', 'auditedVersion',
+        'selectedVersion', 'latestStable', 'latestPrerelease', 'listingState', 'family',
+        'disposition', 'rollbackGroup', 'rationale', 'evidence', 'removalTrigger',
+        'sourceResults', 'supersededBecause', 'origin'
+    ) -Description $description
+    foreach ($field in @(
+            'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'id', 'auditedVersion',
+            'selectedVersion', 'listingState', 'family', 'disposition', 'rollbackGroup',
+            'rationale', 'evidence', 'removalTrigger', 'supersededBecause'
+        )) {
+        Assert-JsonStringProperty -Object $History -Name $field -Description $description
+    }
+    foreach ($field in @('latestStable', 'latestPrerelease')) {
+        Assert-JsonStringProperty -Object $History -Name $field -Description $description -Nullable
+    }
+    $historyTimestamp = [DateTimeOffset]::MinValue
+    if (-not [DateTimeOffset]::TryParse(
+            (Get-PropertyText -Object $History -Name 'auditedAtUtc'),
+            [ref] $historyTimestamp
+        ) -or $historyTimestamp.Offset -ne [TimeSpan]::Zero) {
+        Stop-Audit "$description auditedAtUtc must be a valid UTC timestamp."
+    }
+    if ((Get-PropertyText -Object $History -Name 'generatedFromRevision') -cnotmatch '^[0-9a-f]{40}$') {
+        Stop-Audit "$description generatedFromRevision is malformed."
+    }
+    if ($History.PSObject.Properties['sourceResults']?.Value -isnot [array]) {
+        Stop-Audit "$description sourceResults must be a JSON array."
+    }
+    foreach ($sourceResult in @($History.sourceResults)) {
+        Assert-PriorSourceResultContract -SourceResult $sourceResult -Description "$description source result"
+    }
+    $schema = Get-PropertyText -Object $History -Name 'schema'
+    if ($schema -notin @(
+            'hexalith.package-audit-package-history.v1',
+            'hexalith.package-audit-package-history.v2'
+        )) {
+        Stop-Audit "$description uses unsupported schema '$schema'."
+    }
+    if ($schema -ceq 'hexalith.package-audit-package-history.v2') {
+        if ($History.PSObject.Properties.Name -notcontains 'origin') {
+            Stop-Audit "$description v2 record must declare origin."
+        }
+        Assert-PriorOriginContract -Origin $History.origin -Description "$description origin"
+        if ((Get-PropertyText -Object $History -Name 'auditedAtUtc') -cne
+                (Get-PropertyText -Object $History.origin -Name 'auditedAtUtc') -or
+            (Get-PropertyText -Object $History -Name 'generatedFromRevision') -cne
+                (Get-PropertyText -Object $History.origin -Name 'generatedFromRevision')) {
+            Stop-Audit "$description envelope does not match its v2 origin."
+        }
+    }
+    elseif ($History.PSObject.Properties.Name -contains 'origin') {
+        Stop-Audit "$description v1 record must not declare a v2 origin."
+    }
+}
+
+function Assert-PriorFamilyHistoryContract {
+    param(
+        [Parameter(Mandatory = $true)] $History,
+        [Parameter(Mandatory = $true)][string] $Family
+    )
+
+    $description = "prior family '$Family' historical context"
+    Assert-ExactObjectShape -Object $History -KnownFields @(
+        'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'family', 'disposition',
+        'rollbackGroup', 'packageIds', 'rationale', 'compatibilityEvidence', 'removalTrigger',
+        'representativeConsumers', 'preservation', 'origin', 'supersededBecause'
+    ) -Description $description
+    foreach ($field in @(
+            'schema', 'label', 'auditedAtUtc', 'generatedFromRevision', 'family', 'disposition',
+            'rollbackGroup', 'rationale', 'compatibilityEvidence', 'removalTrigger', 'supersededBecause'
+        )) {
+        Assert-JsonStringProperty -Object $History -Name $field -Description $description
+    }
+    foreach ($field in @('packageIds', 'representativeConsumers')) {
+        Assert-JsonStringArrayProperty -Object $History -Name $field -Description $description
+    }
+    $historyTimestamp = [DateTimeOffset]::MinValue
+    if (-not [DateTimeOffset]::TryParse(
+            (Get-PropertyText -Object $History -Name 'auditedAtUtc'),
+            [ref] $historyTimestamp
+        ) -or $historyTimestamp.Offset -ne [TimeSpan]::Zero) {
+        Stop-Audit "$description auditedAtUtc must be a valid UTC timestamp."
+    }
+    if ((Get-PropertyText -Object $History -Name 'generatedFromRevision') -cnotmatch '^[0-9a-f]{40}$') {
+        Stop-Audit "$description generatedFromRevision is malformed."
+    }
+    $schema = Get-PropertyText -Object $History -Name 'schema'
+    if ($schema -notin @(
+            'hexalith.package-audit-family-history.v1',
+            'hexalith.package-audit-family-history.v2'
+        )) {
+        Stop-Audit "$description uses unsupported schema '$schema'."
+    }
+    if ($schema -ceq 'hexalith.package-audit-family-history.v2') {
+        if ($History.PSObject.Properties.Name -notcontains 'origin' -or
+            $History.PSObject.Properties.Name -contains 'preservation') {
+            Stop-Audit "$description v2 record must declare origin and no legacy preservation envelope."
+        }
+        Assert-PriorOriginContract -Origin $History.origin -Description "$description origin"
+        if ((Get-PropertyText -Object $History -Name 'auditedAtUtc') -cne
+                (Get-PropertyText -Object $History.origin -Name 'auditedAtUtc') -or
+            (Get-PropertyText -Object $History -Name 'generatedFromRevision') -cne
+                (Get-PropertyText -Object $History.origin -Name 'generatedFromRevision')) {
+            Stop-Audit "$description envelope does not match its v2 origin."
+        }
+    }
+    else {
+        if ($History.PSObject.Properties.Name -notcontains 'preservation' -or
+            $History.PSObject.Properties.Name -contains 'origin') {
+            Stop-Audit "$description v1 record must declare only legacy preservation provenance."
+        }
+        $preservation = $History.preservation
+        Assert-ExactObjectShape -Object $preservation -KnownFields @(
+            'status', 'reason', 'catalogPath', 'catalogSha256', 'sourceScopeSha256',
+            'packageMetadataSha256', 'consumerEvidenceSha256'
+        ) -Description "$description preservation"
+        foreach ($field in @($preservation.PSObject.Properties.Name)) {
+            Assert-JsonStringProperty -Object $preservation -Name $field -Description "$description preservation"
+        }
+        foreach ($field in @('status', 'reason')) {
+            if ($preservation.PSObject.Properties.Name -notcontains $field) {
+                Stop-Audit "$description preservation is missing string field '$field'."
+            }
+        }
+    }
+}
+
+function Assert-PriorV2PreservedFamily {
+    param(
+        [Parameter(Mandatory = $true)][string] $Family,
+        [Parameter(Mandatory = $true)] $Decision,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]] $PackageRows,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]] $Sources,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]] $ConsumerEntries
+    )
+
+    Assert-ExactObjectShape -Object $Decision -KnownFields @(
+        'family', 'disposition', 'rollbackGroup', 'packageIds', 'rationale',
+        'compatibilityEvidence', 'removalTrigger', 'representativeConsumers',
+        'origin', 'historicalContext'
+    ) -Description "prior family '$Family'"
+    foreach ($field in @('family', 'disposition', 'rollbackGroup', 'rationale', 'compatibilityEvidence', 'removalTrigger')) {
+        Assert-JsonStringProperty -Object $Decision -Name $field -Description "prior family '$Family'"
+    }
+    foreach ($field in @('packageIds', 'representativeConsumers')) {
+        Assert-JsonStringArrayProperty -Object $Decision -Name $field -Description "prior family '$Family'"
+    }
+    if ($Decision.PSObject.Properties['historicalContext']?.Value -isnot [array]) {
+        Stop-Audit "prior family '$Family' historicalContext must be a JSON array."
+    }
+
+    $origin = Get-PropertyValue -Object $Decision -Name 'origin'
+    Assert-PriorOriginContract -Origin $origin -Description "prior family '$Family' origin"
+    foreach ($history in @($Decision.historicalContext)) {
+        Assert-PriorFamilyHistoryContract -History $history -Family $Family
+    }
+
+    $sourceResolutions = [Collections.Generic.Dictionary[string, string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($source in $Sources) {
+        Assert-ExactObjectShape -Object $source -KnownFields @('uri', 'resolution', 'diagnostic') `
+            -Description 'prior source record'
+        foreach ($field in @('uri', 'resolution', 'diagnostic')) {
+            Assert-JsonStringProperty -Object $source -Name $field -Description 'prior source record'
+        }
+        $sourceUri = Get-PropertyText -Object $source -Name 'uri'
+        $sourceResolution = Get-PropertyText -Object $source -Name 'resolution'
+        $parsedSourceUri = $null
+        if (-not [Uri]::TryCreate($sourceUri, [UriKind]::Absolute, [ref] $parsedSourceUri)) {
+            Stop-Audit "prior source '$sourceUri' must be a valid absolute URI."
+        }
+        if ($sourceResolution -notin @('resolved', 'unresolved')) {
+            Stop-Audit "prior source '$sourceUri' has invalid resolution '$sourceResolution'."
+        }
+        $sourceResolutions[$sourceUri] = $sourceResolution
+    }
+    foreach ($entry in $ConsumerEntries) {
+        Assert-ExactObjectShape -Object $entry -KnownFields @(
+            'family', 'consumer', 'packageId', 'declarationPath', 'declarationSha256'
+        ) -Description 'prior consumer evidence entry'
+        foreach ($field in @('family', 'consumer', 'packageId', 'declarationPath', 'declarationSha256')) {
+            Assert-JsonStringProperty -Object $entry -Name $field -Description 'prior consumer evidence entry'
+        }
+    }
+    foreach ($package in $PackageRows) {
+        $packageId = Get-PropertyText -Object $package -Name 'id'
+        Assert-ExactObjectShape -Object $package -KnownFields @(
+            'id', 'auditedVersion', 'selectedVersion', 'latestStable', 'latestPrerelease',
+            'listingState', 'family', 'disposition', 'rollbackGroup', 'rationale', 'evidence',
+            'removalTrigger', 'sourceResults', 'historicalContext'
+        ) -Description "prior package '$packageId'"
+        foreach ($field in @(
+                'id', 'auditedVersion', 'selectedVersion', 'listingState', 'family',
+                'disposition', 'rollbackGroup', 'rationale', 'evidence', 'removalTrigger'
+            )) {
+            Assert-JsonStringProperty -Object $package -Name $field -Description "prior package '$packageId'"
+        }
+        foreach ($field in @('latestStable', 'latestPrerelease')) {
+            Assert-JsonStringProperty -Object $package -Name $field -Description "prior package '$packageId'" -Nullable
+        }
+        if ($package.PSObject.Properties['sourceResults']?.Value -isnot [array] -or
+            $package.PSObject.Properties['historicalContext']?.Value -isnot [array]) {
+            Stop-Audit "prior package '$packageId' sourceResults and historicalContext must be JSON arrays."
+        }
+        $sourceStates = [Collections.Generic.List[string]]::new()
+        $stableCandidates = [Collections.Generic.List[string]]::new()
+        $prereleaseCandidates = [Collections.Generic.List[string]]::new()
+        foreach ($sourceResult in @($package.sourceResults)) {
+            Assert-PriorSourceResultContract -SourceResult $sourceResult `
+                -Description "prior package '$packageId' source result"
+            $sourceUri = Get-PropertyText -Object $sourceResult -Name 'source'
+            $sourceState = Get-PropertyText -Object $sourceResult -Name 'listingState'
+            if (-not $sourceResolutions.ContainsKey($sourceUri)) {
+                Stop-Audit "prior package '$packageId' references unknown source '$sourceUri'."
+            }
+            if ($sourceState -notin @('listed', 'unlisted', 'missing', 'unresolved')) {
+                Stop-Audit "prior package '$packageId' source '$sourceUri' has invalid listingState '$sourceState'."
+            }
+            if ($sourceResolutions[$sourceUri] -ceq 'unresolved' -and $sourceState -cne 'unresolved') {
+                Stop-Audit "prior package '$packageId' source '$sourceUri' contradicts its unresolved source record."
+            }
+            $sourceStates.Add($sourceState)
+            $stable = Get-PropertyValue -Object $sourceResult -Name 'latestStable'
+            $prerelease = Get-PropertyValue -Object $sourceResult -Name 'latestPrerelease'
+            if (-not [string]::IsNullOrWhiteSpace([string] $stable)) { $stableCandidates.Add([string] $stable) }
+            if (-not [string]::IsNullOrWhiteSpace([string] $prerelease)) { $prereleaseCandidates.Add([string] $prerelease) }
+        }
+        $expectedListingState = if ($sourceStates -contains 'listed') { 'listed' }
+        elseif ($sourceStates -contains 'unlisted') { 'unlisted' }
+        elseif ($sourceStates.Count -gt 0 -and @($sourceStates | Where-Object { $_ -cne 'unresolved' }).Count -eq 0) { 'unresolved' }
+        else { 'missing' }
+        if ((Get-PropertyText -Object $package -Name 'listingState') -cne $expectedListingState -or
+            [string] (Get-PropertyValue -Object $package -Name 'latestStable') -cne
+                [string] (Select-LatestVersion -Versions @($stableCandidates)) -or
+            [string] (Get-PropertyValue -Object $package -Name 'latestPrerelease') -cne
+                [string] (Select-LatestVersion -Versions @($prereleaseCandidates))) {
+            Stop-Audit "prior package '$packageId' aggregate metadata is incoherent with its source results."
+        }
+        foreach ($history in @($package.historicalContext)) {
+            Assert-PriorPackageHistoryContract -History $history -PackageId $packageId
+        }
+    }
+
+    $expected = [ordered] @{
+        familySelectionSha256 = Get-FamilySelectionFingerprint -Rows $PackageRows
+        sourceScopeSha256 = Get-SourceScopeFingerprint -Sources $Sources
+        packageMetadataSha256 = Get-PackageMetadataFingerprint -PackageRows $PackageRows
+        consumerEvidenceSha256 = Get-ConsumerRelationFingerprint -Entries $ConsumerEntries
+    }
+    foreach ($field in $expected.Keys) {
+        if ((Get-PropertyText -Object $origin -Name $field) -cne $expected[$field]) {
+            Stop-Audit "prior family '$Family' origin $field does not match its preserved evidence."
+        }
+    }
+    $expectedConsumers = @($ConsumerEntries | ForEach-Object { Get-PropertyText -Object $_ -Name 'consumer' })
+    if ((Get-IdentitySignature -Values @($Decision.representativeConsumers)) -cne
+        (Get-IdentitySignature -Values $expectedConsumers)) {
+        Stop-Audit "prior family '$Family' representative consumers do not match its preserved consumer evidence."
+    }
+}
+
+function Assert-PriorV2AuditEnvelope {
+    param([Parameter(Mandatory = $true)] $PriorAudit)
+
+    Assert-ExactObjectShape -Object $PriorAudit -KnownFields @(
+        'schemaVersion', 'generatedFromRevision', 'catalogPath', 'catalogSha256',
+        'catalogRawSha256', 'snapshot', 'sources', 'consumerEvidence', 'familyDecisions', 'packages'
+    ) -Description 'prior audit'
+    foreach ($field in @('generatedFromRevision', 'catalogPath', 'catalogSha256', 'catalogRawSha256')) {
+        Assert-JsonStringProperty -Object $PriorAudit -Name $field -Description 'prior audit'
+    }
+    foreach ($field in @('sources', 'familyDecisions', 'packages')) {
+        if ($PriorAudit.PSObject.Properties[$field]?.Value -isnot [array]) {
+            Stop-Audit "prior audit field '$field' must be a JSON array."
+        }
+    }
+
+    $snapshot = Get-PropertyValue -Object $PriorAudit -Name 'snapshot'
+    Assert-ExactObjectShape -Object $snapshot -KnownFields @(
+        'mode', 'auditedAtUtc', 'refreshedFamilies', 'preservedFamilies'
+    ) -Description 'prior snapshot'
+    foreach ($field in @('mode', 'auditedAtUtc')) {
+        Assert-JsonStringProperty -Object $snapshot -Name $field -Description 'prior snapshot'
+    }
+    foreach ($field in @('refreshedFamilies', 'preservedFamilies')) {
+        Assert-JsonStringArrayProperty -Object $snapshot -Name $field -Description 'prior snapshot'
+    }
+
+    $consumerEvidence = Get-PropertyValue -Object $PriorAudit -Name 'consumerEvidence'
+    Assert-ExactObjectShape -Object $consumerEvidence -KnownFields @(
+        'schema', 'discovery', 'fixture', 'fixtureSha256', 'fixtureMode',
+        'repositoryRevision', 'sha256', 'entries'
+    ) -Description 'prior consumer evidence'
+    foreach ($field in @('schema', 'discovery', 'repositoryRevision', 'sha256')) {
+        Assert-JsonStringProperty -Object $consumerEvidence -Name $field -Description 'prior consumer evidence'
+    }
+    foreach ($field in @('fixture', 'fixtureSha256', 'fixtureMode')) {
+        Assert-JsonStringProperty -Object $consumerEvidence -Name $field -Description 'prior consumer evidence' -Nullable
+    }
+    if ($consumerEvidence.PSObject.Properties['entries']?.Value -isnot [array]) {
+        Stop-Audit 'prior consumer evidence entries must be a JSON array.'
+    }
 }
 
 function Get-ConfiguredSources {
@@ -702,7 +1220,7 @@ foreach ($sourceUri in $configuredSources) {
 
 $evaluatedItems = @($evaluation.Items.PackageVersion)
 $catalogPackageIds = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-$evaluatedItemsByFamily = @{}
+$evaluatedItemsByFamily = [Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
 foreach ($evaluatedItem in $evaluatedItems) {
     if (-not $catalogPackageIds.Add([string] $evaluatedItem.Identity)) {
         Stop-Audit "evaluated catalog contains duplicate package identity '$($evaluatedItem.Identity)'."
@@ -732,12 +1250,16 @@ if ($refreshMode -ceq 'incremental' -and $null -eq $priorAudit) {
     Stop-Audit 'incremental refresh requires a prior audit.'
 }
 
-$priorPackagesByFamily = @{}
-$priorPackagesById = @{}
-$priorDecisionsByFamily = @{}
+$priorPackagesByFamily = [Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
+$priorPackagesById = [Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
+$priorDecisionsByFamily = [Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
+$priorSchemaVersion = $null
 if ($null -ne $priorAudit) {
-    $priorSchemaVersion = Get-PropertyText -Object $priorAudit -Name 'schemaVersion'
-    if ($priorSchemaVersion -notin @('1', '2')) {
+    $priorSchemaVersion = Get-PropertyValue -Object $priorAudit -Name 'schemaVersion'
+    if ($priorSchemaVersion -isnot [long] -and $priorSchemaVersion -isnot [int]) {
+        Stop-Audit "prior audit schemaVersion must be a JSON integer."
+    }
+    if ([long] $priorSchemaVersion -notin @(1L, 2L)) {
         Stop-Audit "prior audit schemaVersion '$priorSchemaVersion' is unsupported."
     }
     foreach ($priorPackage in @(Get-ArrayProperty -Object $priorAudit -Name 'packages')) {
@@ -916,14 +1438,6 @@ foreach ($item in @($evaluatedItems | Sort-Object Identity)) {
         })
 }
 
-if ($refreshMode -ceq 'incremental') {
-    foreach ($preservedFamily in @($evaluatedItemsByFamily.Keys | Where-Object { -not $refreshedFamilies.Contains($_) })) {
-        foreach ($priorPackage in @($priorPackagesByFamily[$preservedFamily])) {
-            $packages.Add((Copy-JsonValue -Value $priorPackage))
-        }
-    }
-}
-
 $revisionOutput = @(& git --no-replace-objects -C $repositoryRoot rev-parse HEAD 2>&1)
 $generatedFromRevision = if ($LASTEXITCODE -eq 0) { ([string] $revisionOutput[0]).Trim() } else { '' }
 if ($generatedFromRevision -cnotmatch '^[0-9a-f]{40}$') {
@@ -939,10 +1453,8 @@ if ($catalogIsRepositoryOwned) {
     if ($LASTEXITCODE -ne 0) {
         Stop-Audit "generated-from revision '$generatedFromRevision' is not an available Git commit."
     }
-    $null = & git --no-replace-objects -C $repositoryRoot diff --quiet -- $catalogRelativePath
-    if ($LASTEXITCODE -ne 0) {
-        Stop-Audit "catalog bytes are dirty relative to generated-from revision '$generatedFromRevision'."
-    }
+    Assert-RepositoryPathMatchesRevision `
+        -Root $repositoryRoot -Revision $generatedFromRevision -Path $catalogRelativePath -Description 'catalog'
     $catalogBlobBytes = Get-GitBlobBytes `
         -Root $repositoryRoot -Revision $generatedFromRevision -Path $catalogRelativePath
     $catalogRawSha256 = [Convert]::ToHexString(
@@ -953,10 +1465,9 @@ if ($catalogIsRepositoryOwned) {
 if ($consumerEvidence.discovery -ceq 'git-ls-files') {
     foreach ($declaration in @($consumerEvidence.entries | Group-Object declarationPath)) {
         $declarationPath = [string] $declaration.Name
-        $null = & git --no-replace-objects -C $repositoryRoot diff --quiet -- $declarationPath
-        if ($LASTEXITCODE -ne 0) {
-            Stop-Audit "consumer declaration '$declarationPath' is dirty relative to generated-from revision '$generatedFromRevision'."
-        }
+        Assert-RepositoryPathMatchesRevision `
+            -Root $repositoryRoot -Revision $generatedFromRevision -Path $declarationPath `
+            -Description 'consumer declaration'
         $declarationBlobBytes = Get-GitBlobBytes `
             -Root $repositoryRoot -Revision $generatedFromRevision -Path $declarationPath
         $declarationBlobSha256 = [Convert]::ToHexString(
@@ -987,6 +1498,31 @@ else {
     Get-PropertyText -Object $priorAudit -Name 'auditedAtUtc'
 }
 $priorRevision = if ($null -eq $priorAudit) { '' } else { Get-PropertyText -Object $priorAudit -Name 'generatedFromRevision' }
+
+if ($refreshMode -ceq 'incremental') {
+    if ([long] $priorSchemaVersion -eq 2L) {
+        Assert-PriorV2AuditEnvelope -PriorAudit $priorAudit
+    }
+    foreach ($preservedFamily in @(
+            $evaluatedItemsByFamily.Keys |
+                Where-Object { -not $refreshedFamilies.Contains($_) } |
+                Sort-Object -CaseSensitive
+        )) {
+        if ([long] $priorSchemaVersion -eq 2L) {
+            Assert-PriorV2PreservedFamily `
+                -Family $preservedFamily `
+                -Decision $priorDecisionsByFamily[$preservedFamily] `
+                -PackageRows @($priorPackagesByFamily[$preservedFamily]) `
+                -Sources @(Get-ArrayProperty -Object $priorAudit -Name 'sources') `
+                -ConsumerEntries @($priorConsumerEntries | Where-Object {
+                    (Get-PropertyText -Object $_ -Name 'family') -ceq $preservedFamily
+                })
+        }
+        foreach ($priorPackage in @($priorPackagesByFamily[$preservedFamily])) {
+            $packages.Add((Copy-JsonValue -Value $priorPackage))
+        }
+    }
+}
 
 $familyDecisions = [Collections.Generic.List[object]]::new()
 foreach ($familyName in @($evaluatedItemsByFamily.Keys | Sort-Object -CaseSensitive)) {
@@ -1049,9 +1585,10 @@ foreach ($familyName in @($evaluatedItemsByFamily.Keys | Sort-Object -CaseSensit
         }
     }
     if ($null -ne $priorDecision -and -not $sameObservation) {
+        $priorOriginIdentity = Get-OriginIdentityFingerprint -Origin $priorOrigin
         $historyExists = @($familyHistory | Where-Object {
-                (Get-PropertyText -Object $_ -Name 'auditedAtUtc') -ceq (Get-PropertyText -Object $priorOrigin -Name 'auditedAtUtc') -and
-                (Get-PropertyText -Object $_ -Name 'generatedFromRevision') -ceq (Get-PropertyText -Object $priorOrigin -Name 'generatedFromRevision')
+                $_.PSObject.Properties.Name -contains 'origin' -and
+                (Get-OriginIdentityFingerprint -Origin $_.origin) -ceq $priorOriginIdentity
             }).Count -gt 0
         if (-not $historyExists) {
             $familyHistory.Add([pscustomobject] [ordered] @{
@@ -1103,9 +1640,10 @@ foreach ($familyName in @($evaluatedItemsByFamily.Keys | Sort-Object -CaseSensit
             }
         }
         if ($null -ne $priorPackage -and -not $sameObservation) {
+            $priorOriginIdentity = Get-OriginIdentityFingerprint -Origin $priorOrigin
             $packageHistoryExists = @($packageHistory | Where-Object {
-                    (Get-PropertyText -Object $_ -Name 'auditedAtUtc') -ceq (Get-PropertyText -Object $priorOrigin -Name 'auditedAtUtc') -and
-                    (Get-PropertyText -Object $_ -Name 'generatedFromRevision') -ceq (Get-PropertyText -Object $priorOrigin -Name 'generatedFromRevision')
+                    $_.PSObject.Properties.Name -contains 'origin' -and
+                    (Get-OriginIdentityFingerprint -Origin $_.origin) -ceq $priorOriginIdentity
                 }).Count -gt 0
             if (-not $packageHistoryExists) {
                 $packageHistory.Add([pscustomobject] [ordered] @{
@@ -1116,8 +1654,8 @@ foreach ($familyName in @($evaluatedItemsByFamily.Keys | Sort-Object -CaseSensit
                         id = Get-PropertyText -Object $priorPackage -Name 'id'
                         auditedVersion = Get-PropertyText -Object $priorPackage -Name 'auditedVersion'
                         selectedVersion = Get-PropertyText -Object $priorPackage -Name 'selectedVersion'
-                        latestStable = Get-PropertyText -Object $priorPackage -Name 'latestStable'
-                        latestPrerelease = Get-PropertyText -Object $priorPackage -Name 'latestPrerelease'
+                        latestStable = Get-PropertyValue -Object $priorPackage -Name 'latestStable'
+                        latestPrerelease = Get-PropertyValue -Object $priorPackage -Name 'latestPrerelease'
                         listingState = Get-PropertyText -Object $priorPackage -Name 'listingState'
                         family = $familyName
                         disposition = Get-PropertyText -Object $priorPackage -Name 'disposition'
@@ -1143,18 +1681,13 @@ foreach ($familyName in @($evaluatedItemsByFamily.Keys | Sort-Object -CaseSensit
         $package.historicalContext = @($packageHistory)
     }
 
-    $origin = if ($sameObservation) {
-        Copy-JsonValue -Value $priorOrigin
-    }
-    else {
-        [pscustomobject] [ordered] @{
-            auditedAtUtc = $snapshotTime
-            generatedFromRevision = $generatedFromRevision
-            familySelectionSha256 = $selectionFingerprint
-            sourceScopeSha256 = $currentSourceFingerprint
-            packageMetadataSha256 = $metadataFingerprint
-            consumerEvidenceSha256 = $consumerFingerprint
-        }
+    $origin = [pscustomobject] [ordered] @{
+        auditedAtUtc = $snapshotTime
+        generatedFromRevision = $generatedFromRevision
+        familySelectionSha256 = $selectionFingerprint
+        sourceScopeSha256 = $currentSourceFingerprint
+        packageMetadataSha256 = $metadataFingerprint
+        consumerEvidenceSha256 = $consumerFingerprint
     }
     $familyDecisions.Add([pscustomobject] [ordered] @{
             family = $familyName
@@ -1218,7 +1751,20 @@ if (-not [string]::IsNullOrWhiteSpace($outputDirectory)) {
     New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 }
 
-$audit | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $resolvedOutputPath -Encoding utf8
+$temporaryOutputPath = Join-Path $outputDirectory ".$([IO.Path]::GetFileName($resolvedOutputPath)).$PID.$([Guid]::NewGuid().ToString('N')).tmp"
+try {
+    $serializedAudit = ($audit | ConvertTo-Json -Depth 30) + [Environment]::NewLine
+    [IO.File]::WriteAllText($temporaryOutputPath, $serializedAudit, [Text.UTF8Encoding]::new($false))
+    [IO.File]::Move($temporaryOutputPath, $resolvedOutputPath, $true)
+}
+catch {
+    Stop-Audit "output could not be atomically written to '$resolvedOutputPath'. $($_.Exception.GetBaseException().Message)"
+}
+finally {
+    if (Test-Path -LiteralPath $temporaryOutputPath -PathType Leaf) {
+        Remove-Item -LiteralPath $temporaryOutputPath -Force -ErrorAction SilentlyContinue
+    }
+}
 [Console]::Out.WriteLine(
     "Central package freshness audit wrote $($packages.Count) packages in $refreshMode mode " +
     "($($refreshedFamilyNames.Count) refreshed, $($preservedFamilyNames.Count) preserved) to '$OutputPath'."

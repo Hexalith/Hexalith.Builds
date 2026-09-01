@@ -273,9 +273,14 @@ try {
                 (New-RegistrationLeaf -Version '1.0.0' -Listed $true),
                 (New-RegistrationLeaf -Version '1.1.0' -Listed $true)
             )
+            $incrementalResponses = [ordered] @{}
+            $incrementalResponses[$sourceOne] = $responses[$sourceOne]
+            $incrementalResponses["$registrationBase/fixture.listed/index.json"] = `
+                $responses["$registrationBase/fixture.listed/index.json"]
+            $incrementalResponses[$listedPageUri] = $responses[$listedPageUri]
             $incrementalFixturePath = Join-Path $temporaryRoot 'incremental-requests.json'
             Write-Utf8File -Path $incrementalFixturePath -Content (
-                [ordered] @{ responses = $responses } | ConvertTo-Json -Depth 20
+                [ordered] @{ responses = $incrementalResponses } | ConvertTo-Json -Depth 20
             )
             $incrementalPath = Join-Path $temporaryRoot 'incremental.json'
             $incrementalOutput = @(& $generatorPath `
@@ -306,6 +311,10 @@ try {
                     -Expected ($acceptedDecision.historicalContext.Count + 1) -Actual $incrementalDecision.historicalContext.Count
                 Assert-Equal -Scenario 'Changed package gains one package snapshot' `
                     -Expected ($acceptedPackage.historicalContext.Count + 1) -Actual $incrementalPackage.historicalContext.Count
+                $scenarioCount++
+                if ($null -ne $incrementalPackage.historicalContext[-1].latestPrerelease) {
+                    $failures.Add('Historical null candidate was coerced away from JSON null.')
+                }
                 Assert-Equal -Scenario 'Untouched family remains deep-equal' `
                     -Expected ($untouchedPriorDecision | ConvertTo-Json -Depth 30 -Compress) `
                     -Actual ($untouchedDecision | ConvertTo-Json -Depth 30 -Compress)
@@ -335,14 +344,21 @@ try {
                 else {
                     $deduplicatedAudit = Get-Content -LiteralPath $deduplicatedPath -Raw | ConvertFrom-Json -DateKind String
                     $deduplicatedDecision = @($deduplicatedAudit.familyDecisions | Where-Object family -eq 'package:fixture.listed')[0]
+                    $deduplicatedPackage = @($deduplicatedAudit.packages | Where-Object id -eq 'Fixture.Listed')[0]
                     Assert-Equal -Scenario 'Repeated identical refresh deduplicates family history' `
                         -Expected $incrementalDecision.historicalContext.Count -Actual $deduplicatedDecision.historicalContext.Count
+                    Assert-Equal -Scenario 'Repeated identical refresh deduplicates package history' `
+                        -Expected $incrementalPackage.historicalContext.Count -Actual $deduplicatedPackage.historicalContext.Count
+                    Assert-Equal -Scenario 'Repeated package history remains deep-equal' `
+                        -Expected ($incrementalPackage.historicalContext | ConvertTo-Json -Depth 30 -Compress) `
+                        -Actual ($deduplicatedPackage.historicalContext | ConvertTo-Json -Depth 30 -Compress)
                 }
             }
 
             foreach ($invalidSelection in @(
                     @{ Name = 'unknown'; Values = @('package:unknown') },
-                    @{ Name = 'duplicate'; Values = @('package:fixture.listed', 'package:fixture.listed') }
+                    @{ Name = 'duplicate'; Values = @('package:fixture.listed', 'package:fixture.listed') },
+                    @{ Name = 'case-variant'; Values = @('PACKAGE:FIXTURE.LISTED') }
                 )) {
                 $invalidSelectionOutput = @(& $generatorPath `
                         -CatalogPath $catalogPath `
@@ -358,13 +374,107 @@ try {
                 }
             }
 
+            foreach ($preservedTamper in @(
+                    'fingerprint', 'unknown-field', 'wrong-type', 'representative-consumers',
+                    'package-history-unknown', 'package-history-wrong-type', 'family-history-unknown'
+                )) {
+                $tamperedPrior = Get-Content -LiteralPath $acceptedPriorPath -Raw | ConvertFrom-Json -DateKind String
+                $tamperedDecision = @($tamperedPrior.familyDecisions | Where-Object family -eq 'package:fixture.missing')[0]
+                $tamperedPackage = @($tamperedPrior.packages | Where-Object family -eq 'package:fixture.missing')[0]
+                if ($preservedTamper -like 'package-history-*') {
+                    $historyOrigin = $tamperedDecision.origin | ConvertTo-Json -Depth 10 |
+                        ConvertFrom-Json -DateKind String
+                    $tamperedPackage.historicalContext = @([pscustomobject][ordered] @{
+                            schema = 'hexalith.package-audit-package-history.v2'
+                            label = 'Preserved historical package fixture.'
+                            auditedAtUtc = $historyOrigin.auditedAtUtc
+                            generatedFromRevision = $historyOrigin.generatedFromRevision
+                            id = $tamperedPackage.id
+                            auditedVersion = $tamperedPackage.auditedVersion
+                            selectedVersion = $tamperedPackage.selectedVersion
+                            latestStable = $tamperedPackage.latestStable
+                            latestPrerelease = $tamperedPackage.latestPrerelease
+                            listingState = $tamperedPackage.listingState
+                            family = $tamperedPackage.family
+                            disposition = $tamperedPackage.disposition
+                            rollbackGroup = $tamperedPackage.rollbackGroup
+                            rationale = $tamperedPackage.rationale
+                            evidence = $tamperedPackage.evidence
+                            removalTrigger = $tamperedPackage.removalTrigger
+                            sourceResults = @($tamperedPackage.sourceResults)
+                            origin = $historyOrigin
+                            supersededBecause = 'Preserved history fixture.'
+                        })
+                }
+                elseif ($preservedTamper -ceq 'family-history-unknown') {
+                    $historyOrigin = $tamperedDecision.origin | ConvertTo-Json -Depth 10 |
+                        ConvertFrom-Json -DateKind String
+                    $tamperedDecision.historicalContext = @([pscustomobject][ordered] @{
+                            schema = 'hexalith.package-audit-family-history.v2'
+                            label = 'Preserved historical family fixture.'
+                            auditedAtUtc = $historyOrigin.auditedAtUtc
+                            generatedFromRevision = $historyOrigin.generatedFromRevision
+                            family = $tamperedDecision.family
+                            disposition = $tamperedDecision.disposition
+                            rollbackGroup = $tamperedDecision.rollbackGroup
+                            packageIds = @($tamperedDecision.packageIds)
+                            rationale = $tamperedDecision.rationale
+                            compatibilityEvidence = $tamperedDecision.compatibilityEvidence
+                            removalTrigger = $tamperedDecision.removalTrigger
+                            representativeConsumers = @($tamperedDecision.representativeConsumers)
+                            origin = $historyOrigin
+                            supersededBecause = 'Preserved history fixture.'
+                        })
+                }
+                switch ($preservedTamper) {
+                    'fingerprint' { $tamperedDecision.origin.packageMetadataSha256 = ('0' * 64) }
+                    'unknown-field' {
+                        $tamperedPackage | Add-Member -NotePropertyName reviewer -NotePropertyValue 'untyped'
+                    }
+                    'wrong-type' { $tamperedDecision.origin.sourceScopeSha256 = 42 }
+                    'representative-consumers' {
+                        $tamperedDecision.representativeConsumers = @('Fixture.Unrelated.Consumer')
+                    }
+                    'package-history-unknown' {
+                        $tamperedPackage.historicalContext[0] |
+                            Add-Member -NotePropertyName reviewer -NotePropertyValue 'untyped'
+                    }
+                    'package-history-wrong-type' {
+                        $tamperedPackage.historicalContext[0].sourceResults[0].diagnostic = 42
+                    }
+                    'family-history-unknown' {
+                        $tamperedDecision.historicalContext[0] |
+                            Add-Member -NotePropertyName reviewer -NotePropertyValue 'untyped'
+                    }
+                }
+                $tamperedPriorPath = Join-Path $temporaryRoot "preserved-$preservedTamper-prior.json"
+                Write-Utf8File -Path $tamperedPriorPath -Content ($tamperedPrior | ConvertTo-Json -Depth 30)
+                $tamperedOutputPath = Join-Path $temporaryRoot "preserved-$preservedTamper-output.json"
+                $sentinel = "{`"sentinel`":`"$preservedTamper`"}`n"
+                Write-Utf8File -Path $tamperedOutputPath -Content $sentinel
+                $tamperedOutput = @(& $generatorPath `
+                        -CatalogPath $catalogPath `
+                        -OutputPath $tamperedOutputPath `
+                        -PriorAuditPath $tamperedPriorPath `
+                        -Family 'package:fixture.listed' `
+                        -Source @($sourceOne) `
+                        -RequestFixturePath $incrementalFixturePath `
+                        -ConsumerEvidencePath $consumerEvidencePath 2>&1)
+                $scenarioCount++
+                if ($LASTEXITCODE -eq 0) {
+                    $failures.Add("Tampered preserved v2 evidence '$preservedTamper' was not rejected.")
+                }
+                Assert-Equal -Scenario "Failed preserved evidence '$preservedTamper' keeps prior output bytes" `
+                    -Expected $sentinel -Actual (Get-Content -LiteralPath $tamperedOutputPath -Raw)
+            }
+
             Write-Utf8File -Path $catalogPath -Content (
                 (Get-Content -LiteralPath $catalogPath -Raw).Replace(
                     'Fixture.Missing" Version="3.0.0"',
                     'Fixture.Missing" Version="3.1.0"'
                 )
             )
-            $unrequestedOutput = @(& $generatorPath `
+            $unrequestedOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $generatorPath `
                     -CatalogPath $catalogPath `
                     -OutputPath (Join-Path $temporaryRoot 'unrequested-drift.json') `
                     -PriorAuditPath $acceptedPriorPath `
@@ -375,6 +485,10 @@ try {
             $scenarioCount++
             if ($LASTEXITCODE -eq 0) {
                 $failures.Add('Unrequested changed family was not rejected before querying.')
+            }
+            elseif ((($unrequestedOutput | ForEach-Object { [string] $_ }) -join "`n") -notmatch
+                "unrequested family 'package:fixture\.missing' changed") {
+                $failures.Add('Unrequested catalog drift did not fail before any package request was attempted.')
             }
             Write-Utf8File -Path $catalogPath -Content $incrementalOriginalCatalog
             $responses[$listedPageUri].response.items = @((New-RegistrationLeaf -Version '1.0.0' -Listed $true))
@@ -515,6 +629,58 @@ try {
                 Assert-Equal -Scenario 'Metadata drift fails closed' -Expected 'retained' -Actual $metadataDriftDecision.disposition
             }
 
+            $diagnosticResponsesA = $responses | ConvertTo-Json -Depth 20 | ConvertFrom-Json -AsHashtable
+            $diagnosticResponsesA["$registrationBase/fixture.listed/index.json"] = @{
+                error = 'Diagnostic fixture A.'
+            }
+            $diagnosticFixtureA = Join-Path $temporaryRoot 'diagnostic-a-requests.json'
+            Write-Utf8File -Path $diagnosticFixtureA -Content (
+                [ordered] @{ responses = $diagnosticResponsesA } | ConvertTo-Json -Depth 20
+            )
+            $diagnosticPriorPath = Join-Path $temporaryRoot 'diagnostic-prior.json'
+            $diagnosticPriorOutput = @(& $generatorPath `
+                    -CatalogPath $catalogPath `
+                    -OutputPath $diagnosticPriorPath `
+                    -Source @($sourceOne) `
+                    -RequestFixturePath $diagnosticFixtureA `
+                    -ConsumerEvidencePath $consumerEvidencePath 2>&1)
+            if ($LASTEXITCODE -ne 0) {
+                $failures.Add("Diagnostic prior fixture failed. $([string]::Join("`n", $diagnosticPriorOutput))")
+            }
+            else {
+                $diagnosticResponsesB = $diagnosticResponsesA | ConvertTo-Json -Depth 20 | ConvertFrom-Json -AsHashtable
+                $diagnosticResponsesB["$registrationBase/fixture.listed/index.json"].error = 'Diagnostic fixture B.'
+                $diagnosticFixtureB = Join-Path $temporaryRoot 'diagnostic-b-requests.json'
+                Write-Utf8File -Path $diagnosticFixtureB -Content (
+                    [ordered] @{ responses = $diagnosticResponsesB } | ConvertTo-Json -Depth 20
+                )
+                $diagnosticDriftPath = Join-Path $temporaryRoot 'diagnostic-drift.json'
+                $diagnosticDriftOutput = @(& $generatorPath `
+                        -CatalogPath $catalogPath `
+                        -OutputPath $diagnosticDriftPath `
+                        -PriorAuditPath $diagnosticPriorPath `
+                        -Source @($sourceOne) `
+                        -RequestFixturePath $diagnosticFixtureB `
+                        -ConsumerEvidencePath $consumerEvidencePath 2>&1)
+                if ($LASTEXITCODE -ne 0) {
+                    $failures.Add("Diagnostic drift fixture failed. $([string]::Join("`n", $diagnosticDriftOutput))")
+                }
+                else {
+                    $diagnosticPrior = Get-Content -LiteralPath $diagnosticPriorPath -Raw | ConvertFrom-Json -DateKind String
+                    $diagnosticDrift = Get-Content -LiteralPath $diagnosticDriftPath -Raw | ConvertFrom-Json -DateKind String
+                    $diagnosticPriorDecision = @($diagnosticPrior.familyDecisions | Where-Object family -eq 'package:fixture.listed')[0]
+                    $diagnosticDriftDecision = @($diagnosticDrift.familyDecisions | Where-Object family -eq 'package:fixture.listed')[0]
+                    $scenarioCount++
+                    if ($diagnosticPriorDecision.origin.packageMetadataSha256 -ceq `
+                        $diagnosticDriftDecision.origin.packageMetadataSha256) {
+                        $failures.Add('Diagnostic-only source-result drift did not change packageMetadataSha256.')
+                    }
+                    Assert-Equal -Scenario 'Diagnostic-only drift gains one family history record' `
+                        -Expected ($diagnosticPriorDecision.historicalContext.Count + 1) `
+                        -Actual $diagnosticDriftDecision.historicalContext.Count
+                }
+            }
+
             $sourceDriftPath = Join-Path $temporaryRoot 'source-drift.json'
             $sourceDriftOutput = @(& $generatorPath `
                     -CatalogPath $catalogPath `
@@ -602,6 +768,133 @@ try {
                 }
             }
         }
+    }
+
+    $repositoryFixtureRoot = Join-Path $temporaryRoot 'repository-owned'
+    $repositoryFixtureTools = Join-Path $repositoryFixtureRoot 'Tools'
+    $repositoryFixtureProps = Join-Path $repositoryFixtureRoot 'Props'
+    New-Item -ItemType Directory -Path $repositoryFixtureTools, $repositoryFixtureProps -Force | Out-Null
+    Copy-Item -LiteralPath $generatorPath -Destination (Join-Path $repositoryFixtureTools 'audit-central-package-versions.ps1')
+    Write-Utf8File -Path (Join-Path $repositoryFixtureRoot '.gitattributes') -Content @'
+*.props text eol=crlf
+*.csproj text eol=crlf
+'@
+    $repositoryCatalogPath = Join-Path $repositoryFixtureProps 'Directory.Packages.props'
+    Write-Utf8File -Path $repositoryCatalogPath -Content @'
+<Project><ItemGroup><PackageVersion Include="Fixture.Repository" Version="1.0.0" /></ItemGroup></Project>
+'@
+    $repositoryConsumerPath = Join-Path $repositoryFixtureRoot 'Consumer.csproj'
+    Write-Utf8File -Path $repositoryConsumerPath -Content @'
+<Project><ItemGroup><PackageReference Include="Fixture.Repository" /></ItemGroup></Project>
+'@
+    $repositoryResponses = [ordered] @{}
+    Add-FixtureResponse -Responses $repositoryResponses -Uri $sourceOne -Response ([ordered] @{
+            resources = @(
+                [ordered] @{ '@id' = $registrationBase; '@type' = 'RegistrationsBaseUrl/3.6.0' },
+                [ordered] @{ '@id' = $flatBase; '@type' = 'PackageBaseAddress/3.0.0' }
+            )
+        })
+    Add-FixtureResponse -Responses $repositoryResponses `
+        -Uri "$registrationBase/fixture.repository/index.json" -Response ([ordered] @{
+            items = @([ordered] @{
+                    '@id' = "$registrationBase/fixture.repository/page.json"
+                    items = @((New-RegistrationLeaf -Version '1.0.0' -Listed $true))
+                })
+        })
+    $repositoryRequestPath = Join-Path $repositoryFixtureRoot 'requests.json'
+    Write-Utf8File -Path $repositoryRequestPath -Content (
+        [ordered] @{ responses = $repositoryResponses } | ConvertTo-Json -Depth 20
+    )
+    $null = & git -C $repositoryFixtureRoot init --quiet
+    $null = & git -C $repositoryFixtureRoot config user.name 'Package Audit Generator Tests'
+    $null = & git -C $repositoryFixtureRoot config user.email 'package-audit-generator@example.invalid'
+    $null = & git -C $repositoryFixtureRoot add -- .
+    $null = & git -C $repositoryFixtureRoot commit --quiet -m 'test: repository provenance fixture'
+    $null = & git -C $repositoryFixtureRoot checkout-index --force --all
+
+    $repositoryGeneratorPath = Join-Path $repositoryFixtureTools 'audit-central-package-versions.ps1'
+    $repositoryAuditPath = Join-Path $repositoryFixtureTools 'audit.json'
+    $repositoryGeneratorOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $repositoryGeneratorPath `
+            -CatalogPath $repositoryCatalogPath -OutputPath $repositoryAuditPath `
+            -Source @($sourceOne) -RequestFixturePath $repositoryRequestPath 2>&1)
+    $scenarioCount++
+    if ($LASTEXITCODE -ne 0) {
+        $failures.Add("Clean repository-owned fixture failed. $([string]::Join("`n", $repositoryGeneratorOutput))")
+    }
+    else {
+        $repositoryAuditHash = (Get-FileHash -LiteralPath $repositoryAuditPath -Algorithm SHA256).Hash
+        Write-Utf8File -Path $repositoryCatalogPath -Content (
+            (Get-Content -LiteralPath $repositoryCatalogPath -Raw).Replace('Version="1.0.0"', 'Version="1.1.0"')
+        )
+        $null = & git -C $repositoryFixtureRoot add -- 'Props/Directory.Packages.props'
+        $stagedCatalogOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $repositoryGeneratorPath `
+                -CatalogPath $repositoryCatalogPath -OutputPath $repositoryAuditPath `
+                -Source @($sourceOne) -RequestFixturePath $repositoryRequestPath 2>&1)
+        $scenarioCount++
+        $stagedCatalogExitCode = $LASTEXITCODE
+        $stagedCatalogText = ($stagedCatalogOutput | ForEach-Object { [string] $_ }) -join "`n"
+        if ($stagedCatalogExitCode -eq 0 -or $stagedCatalogText -notmatch "catalog 'Props/Directory\.Packages\.props' is dirty") {
+            $failures.Add('A staged repository-owned catalog edit was not rejected against HEAD.')
+        }
+        Assert-Equal -Scenario 'Staged catalog failure preserves prior output atomically' `
+            -Expected $repositoryAuditHash `
+            -Actual (Get-FileHash -LiteralPath $repositoryAuditPath -Algorithm SHA256).Hash
+        $null = & git -C $repositoryFixtureRoot restore --staged --worktree -- 'Props/Directory.Packages.props'
+
+        [IO.File]::AppendAllText($repositoryConsumerPath, "`n<!-- staged consumer edit -->`n", [Text.UTF8Encoding]::new($false))
+        $null = & git -C $repositoryFixtureRoot add -- 'Consumer.csproj'
+        $stagedConsumerOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $repositoryGeneratorPath `
+                -CatalogPath $repositoryCatalogPath -OutputPath $repositoryAuditPath `
+                -Source @($sourceOne) -RequestFixturePath $repositoryRequestPath 2>&1)
+        $scenarioCount++
+        $stagedConsumerExitCode = $LASTEXITCODE
+        $stagedConsumerText = ($stagedConsumerOutput | ForEach-Object { [string] $_ }) -join "`n"
+        if ($stagedConsumerExitCode -eq 0 -or $stagedConsumerText -notmatch "consumer declaration 'Consumer\.csproj' is dirty") {
+            $failures.Add('A staged repository-owned consumer edit was not rejected against HEAD.')
+        }
+        Assert-Equal -Scenario 'Staged consumer failure preserves prior output atomically' `
+            -Expected $repositoryAuditHash `
+            -Actual (Get-FileHash -LiteralPath $repositoryAuditPath -Algorithm SHA256).Hash
+        $null = & git -C $repositoryFixtureRoot restore --staged --worktree -- 'Consumer.csproj'
+
+        [IO.File]::AppendAllText(
+            $repositoryConsumerPath,
+            "`n<!--$('x' * 4096)-->`n",
+            [Text.UTF8Encoding]::new($false)
+        )
+        $null = & git -C $repositoryFixtureRoot add -- 'Consumer.csproj'
+        $null = & git -C $repositoryFixtureRoot commit --quiet -m 'test: oversized consumer blob'
+        $oversizedConsumerOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $repositoryGeneratorPath `
+                -CatalogPath $repositoryCatalogPath -OutputPath $repositoryAuditPath `
+                -Source @($sourceOne) -RequestFixturePath $repositoryRequestPath -GitBlobReadMaxBytes 1024 2>&1)
+        $scenarioCount++
+        $oversizedConsumerExitCode = $LASTEXITCODE
+        $oversizedConsumerText = ($oversizedConsumerOutput | ForEach-Object { [string] $_ }) -join "`n"
+        if ($oversizedConsumerExitCode -eq 0 -or $oversizedConsumerText -notmatch "exceeded the 1024-byte limit for 'Consumer\.csproj'") {
+            $failures.Add('An oversized committed consumer declaration blob was not rejected at the generator bound.')
+        }
+
+        $null = & git -C $repositoryFixtureRoot checkout 'HEAD^' -- 'Consumer.csproj'
+        $null = & git -C $repositoryFixtureRoot commit --quiet -m 'test: restore consumer fixture'
+        [IO.File]::AppendAllText(
+            $repositoryCatalogPath,
+            "`n<!--$('x' * 4096)-->`n",
+            [Text.UTF8Encoding]::new($false)
+        )
+        $null = & git -C $repositoryFixtureRoot add -- 'Props/Directory.Packages.props'
+        $null = & git -C $repositoryFixtureRoot commit --quiet -m 'test: oversized catalog blob'
+        $oversizedCatalogOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $repositoryGeneratorPath `
+                -CatalogPath $repositoryCatalogPath -OutputPath $repositoryAuditPath `
+                -Source @($sourceOne) -RequestFixturePath $repositoryRequestPath -GitBlobReadMaxBytes 1024 2>&1)
+        $scenarioCount++
+        $oversizedCatalogExitCode = $LASTEXITCODE
+        $oversizedCatalogText = ($oversizedCatalogOutput | ForEach-Object { [string] $_ }) -join "`n"
+        if ($oversizedCatalogExitCode -eq 0 -or $oversizedCatalogText -notmatch "exceeded the 1024-byte limit for 'Props/Directory\.Packages\.props'") {
+            $failures.Add('An oversized committed catalog blob was not rejected at the generator bound.')
+        }
+        Assert-Equal -Scenario 'Oversized blob failures preserve prior output atomically' `
+            -Expected $repositoryAuditHash `
+            -Actual (Get-FileHash -LiteralPath $repositoryAuditPath -Algorithm SHA256).Hash
     }
 
     $productionAuditPath = Join-Path $PSScriptRoot 'package-version-audit.json'

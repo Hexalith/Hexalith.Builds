@@ -6,6 +6,10 @@ $ErrorActionPreference = 'Stop'
 $validatorPath = Join-Path $PSScriptRoot 'validate-package-version-audit.ps1'
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
+$repositoryRevision = ([string] @(& git --no-replace-objects -C $repositoryRoot rev-parse HEAD 2>$null)[-1]).Trim()
+if ($LASTEXITCODE -ne 0 -or $repositoryRevision -cnotmatch '^[0-9a-f]{40}$') {
+    throw "Could not resolve the validator fixture repository revision."
+}
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) "package-audit-validator-$([Guid]::NewGuid().ToString('N'))"
 $failures = [System.Collections.Generic.List[string]]::new()
 $scenarioCount = 0
@@ -73,7 +77,7 @@ function Get-PackageMetadataFingerprint {
 
     $material = foreach ($package in @($Packages | Sort-Object id)) {
         $sourceMaterial = [string]::Join(',', @($package.sourceResults | Sort-Object source | ForEach-Object {
-                    "$($_.source)=$($_.listingState):$($_.latestStable):$($_.latestPrerelease)"
+                    "$($_.source)=$($_.listingState):$($_.latestStable):$($_.latestPrerelease):$($_.diagnostic)"
                 }))
         "$($package.id)|$($package.auditedVersion)|$($package.selectedVersion)|$($package.latestStable)|" +
             "$($package.latestPrerelease)|$($package.listingState)|$sourceMaterial"
@@ -140,13 +144,13 @@ function New-AuditFixture {
     )
     $packageMetadataSha256 = Get-Sha256Text -Value (
         "$firstPackageId|1.0.0|1.0.0|1.0.0||listed|" +
-        'https://api.nuget.org/v3/index.json=listed:1.0.0:' + "`n" +
+        'https://api.nuget.org/v3/index.json=listed:1.0.0::Registration metadata resolved.' + "`n" +
         "$secondPackageId|2.0.0|2.0.0|2.1.0|3.0.0-preview.1|unlisted|" +
-        'https://api.nuget.org/v3/index.json=unlisted:2.1.0:3.0.0-preview.1'
+        'https://api.nuget.org/v3/index.json=unlisted:2.1.0:3.0.0-preview.1:Registration metadata resolved.'
     )
     $audit = [ordered] @{
         schemaVersion = 2
-        generatedFromRevision = ('a' * 40)
+        generatedFromRevision = $repositoryRevision
         catalogPath = [IO.Path]::GetRelativePath($repositoryRoot, $catalogPath).Replace('\', '/')
         catalogSha256 = $catalogSha256
         catalogRawSha256 = (Get-FileHash -LiteralPath $catalogPath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -169,7 +173,7 @@ function New-AuditFixture {
             fixture = 'validator-fixture.json'
             fixtureSha256 = $declarationSha256
             fixtureMode = 'synthetic-explicit'
-            repositoryRevision = ('a' * 40)
+            repositoryRevision = $repositoryRevision
             sha256 = $consumerSha256
             entries = @(
                 [ordered] @{
@@ -200,7 +204,7 @@ function New-AuditFixture {
                 representativeConsumers = @('Fixture.Consumer')
                 origin = [ordered] @{
                     auditedAtUtc = '2026-07-31T12:00:00.0000000+00:00'
-                    generatedFromRevision = ('a' * 40)
+                    generatedFromRevision = $repositoryRevision
                     familySelectionSha256 = Get-Sha256Text -Value (
                         "$firstPackageId|1.0.0`n$secondPackageId|2.0.0"
                     )
@@ -329,6 +333,55 @@ function Add-CompleteHistoricalContexts {
         })
 }
 
+function Add-V2HistoricalContexts {
+    param([Parameter(Mandatory = $true)] $Audit)
+
+    $historyTimestamp = '2026-07-30T12:00:00.0000000+00:00'
+    $family = $Audit.familyDecisions[0]
+    $origin = $family.origin | ConvertTo-Json -Depth 10 | ConvertFrom-Json -DateKind String
+    $origin.auditedAtUtc = $historyTimestamp
+
+    $package = $Audit.packages[0]
+    $package.historicalContext = @([pscustomobject][ordered] @{
+            schema = 'hexalith.package-audit-package-history.v2'
+            label = 'Historical package observation fixture.'
+            auditedAtUtc = $historyTimestamp
+            generatedFromRevision = $repositoryRevision
+            id = $package.id
+            auditedVersion = $package.auditedVersion
+            selectedVersion = $package.selectedVersion
+            latestStable = $package.latestStable
+            latestPrerelease = $package.latestPrerelease
+            listingState = $package.listingState
+            family = $package.family
+            disposition = $package.disposition
+            rollbackGroup = $package.rollbackGroup
+            rationale = $package.rationale
+            evidence = $package.evidence
+            removalTrigger = $package.removalTrigger
+            sourceResults = @($package.sourceResults)
+            origin = $origin
+            supersededBecause = 'Superseded by the current fixture observation.'
+        })
+
+    $family.historicalContext = @([pscustomobject][ordered] @{
+            schema = 'hexalith.package-audit-family-history.v2'
+            label = 'Historical family observation fixture.'
+            auditedAtUtc = $historyTimestamp
+            generatedFromRevision = $repositoryRevision
+            family = $family.family
+            disposition = $family.disposition
+            rollbackGroup = $family.rollbackGroup
+            packageIds = @($family.packageIds)
+            rationale = $family.rationale
+            compatibilityEvidence = $family.compatibilityEvidence
+            removalTrigger = $family.removalTrigger
+            representativeConsumers = @($family.representativeConsumers)
+            origin = ($origin | ConvertTo-Json -Depth 10 | ConvertFrom-Json -DateKind String)
+            supersededBecause = 'Superseded by the current fixture observation.'
+        })
+}
+
 function Test-Scenario {
     param(
         [Parameter(Mandatory = $true)][string] $Name,
@@ -338,13 +391,14 @@ function Test-Scenario {
         # Isolated by default so the PackageReference-rediscovery leg (task 6) only
         # ever sees this script's own fixture project files, never the real
         # repository tree, unless a scenario explicitly opts in.
-        [string] $ConsumerScanRoot = $emptyConsumerScanRoot
+        [string] $ConsumerScanRoot = $emptyConsumerScanRoot,
+        [string] $RepositoryRootPath = $repositoryRoot
     )
 
     $script:scenarioCount++
     $output = @(& $pwshExecutable -NoLogo -NoProfile -File $validatorPath `
             -AuditPath $AuditPath -CatalogPath $catalogPath -EvaluatorScriptPath $evaluatorPath `
-            -ConsumerScanRoot $ConsumerScanRoot 2>&1)
+            -ConsumerScanRoot $ConsumerScanRoot -RepositoryRootPath $RepositoryRootPath 2>&1)
     $result = [string]::Join("`n", @($output | ForEach-Object { [string] $_ }))
     if ($LASTEXITCODE -ne $ExpectedExitCode) {
         $script:failures.Add("$Name expected exit code $ExpectedExitCode but received $LASTEXITCODE. Output: $result")
@@ -434,6 +488,144 @@ function Wait-ForProcessGone {
     return $null -eq (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)
 }
 
+function Read-ReadyProcessRecord {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $null
+    }
+    try {
+        $parts = (Get-Content -LiteralPath $Path -Raw -ErrorAction Stop).Trim().Split('|')
+    }
+    catch {
+        return [pscustomobject] @{
+            Valid = $false
+            Diagnostic = "Ready/PID record could not be read: $($_.Exception.GetBaseException().Message)"
+        }
+    }
+    $shimProcessId = 0
+    $childProcessId = 0
+    if ($parts.Count -ne 2 -or
+        -not [int]::TryParse($parts[0], [ref] $shimProcessId) -or
+        -not [int]::TryParse($parts[1], [ref] $childProcessId) -or
+        $shimProcessId -le 0 -or $childProcessId -le 0) {
+        return [pscustomobject] @{
+            Valid = $false
+            Diagnostic = 'Ready/PID record must contain two positive integer process identifiers.'
+        }
+    }
+
+    return [pscustomobject] @{
+        Valid = $true
+        ShimProcessId = $shimProcessId
+        ChildProcessId = $childProcessId
+        Diagnostic = ''
+    }
+}
+
+function Test-ReadyRepositoryScenario {
+    param(
+        [Parameter(Mandatory = $true)][string] $Name,
+        [Parameter(Mandatory = $true)][string] $AuditPath,
+        [Parameter(Mandatory = $true)][string] $RepositoryRootPath,
+        [Parameter(Mandatory = $true)][string] $CatalogPath,
+        [Parameter(Mandatory = $true)][string] $GitBlobReaderShimPath,
+        [Parameter(Mandatory = $true)][string] $ReadyPath,
+        [Parameter(Mandatory = $true)][int] $GitBlobReadTimeoutSeconds,
+        [Parameter(Mandatory = $true)][string] $ExpectedOutput
+    )
+
+    $script:scenarioCount++
+    $startInfo = [Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $pwshExecutable
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $startInfo.CreateNoWindow = $true
+    foreach ($argument in @(
+            '-NoLogo', '-NoProfile', '-File', $validatorPath,
+            '-AuditPath', $AuditPath,
+            '-RepositoryRootPath', $RepositoryRootPath,
+            '-CatalogPath', $CatalogPath,
+            '-GitBlobReaderShimPath', $GitBlobReaderShimPath,
+            '-GitBlobReadTimeoutSeconds', [string] $GitBlobReadTimeoutSeconds,
+            '-GitBlobReadMaxBytes', '1048576'
+        )) {
+        $null = $startInfo.ArgumentList.Add($argument)
+    }
+
+    $process = [Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    $readyRecord = $null
+    $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+    try {
+        if (-not $process.Start()) {
+            $failures.Add("$Name validator process could not start.")
+            return
+        }
+        $standardOutputTask = $process.StandardOutput.ReadToEndAsync()
+        $standardErrorTask = $process.StandardError.ReadToEndAsync()
+
+        $readyStopwatch = [Diagnostics.Stopwatch]::StartNew()
+        while ($readyStopwatch.ElapsedMilliseconds -lt 15000) {
+            $readyRecord = Read-ReadyProcessRecord -Path $ReadyPath
+            if ($null -ne $readyRecord -or $process.HasExited) { break }
+            Start-Sleep -Milliseconds 50
+        }
+        if ($null -eq $readyRecord) {
+            $failures.Add("$Name did not observe the shim's atomic readiness handshake before validator exit/timeout.")
+        }
+        elseif (-not $readyRecord.Valid) {
+            $failures.Add("$Name observed a malformed shim readiness record. $($readyRecord.Diagnostic)")
+        }
+        else {
+            # The atomic record proves both owned processes exist. Give the shim a
+            # small startup margin so the timeout is exercised while it is inside
+            # its non-terminating phase rather than racing its launch path.
+            Start-Sleep -Milliseconds 250
+        }
+
+        if (-not $process.WaitForExit(20000)) {
+            $failures.Add("$Name validator process exceeded its bounded harness window.")
+            try { $process.Kill($true) } catch { }
+            try { $null = $process.WaitForExit(3000) } catch { }
+        }
+        else {
+            $process.WaitForExit()
+        }
+        $result = [string]::Join("`n", @(
+                $standardOutputTask.GetAwaiter().GetResult(),
+                $standardErrorTask.GetAwaiter().GetResult()
+            ))
+        if ($process.HasExited -and $process.ExitCode -ne 1) {
+            $failures.Add("$Name expected exit code 1 but received $($process.ExitCode). Output: $result")
+        }
+        elseif ($result -notlike "*$ExpectedOutput*") {
+            $failures.Add("$Name output did not contain '$ExpectedOutput'. Output: $result")
+        }
+    }
+    catch {
+        $failures.Add("$Name harness failed closed. $($_.Exception.GetBaseException().Message)")
+        try { if (-not $process.HasExited) { $process.Kill($true) } } catch { }
+        try { $null = $process.WaitForExit(3000) } catch { }
+    }
+    finally {
+        $stopwatch.Stop()
+        if ($stopwatch.Elapsed.TotalSeconds -ge 20) {
+            $failures.Add("$Name took $($stopwatch.Elapsed.TotalSeconds) seconds and exceeded its bounded harness window.")
+        }
+        if ($null -ne $readyRecord -and $readyRecord.Valid) {
+            if (-not (Wait-ForProcessGone -ProcessId $readyRecord.ShimProcessId -TimeoutMilliseconds 3000)) {
+                $failures.Add("$Name shim process $($readyRecord.ShimProcessId) survived process-tree cleanup.")
+            }
+            if (-not (Wait-ForProcessGone -ProcessId $readyRecord.ChildProcessId -TimeoutMilliseconds 3000)) {
+                $failures.Add("$Name shim child process $($readyRecord.ChildProcessId) survived process-tree cleanup.")
+            }
+        }
+        $process.Dispose()
+    }
+}
+
 New-Item -ItemType Directory -Path $temporaryRoot -Force | Out-Null
 try {
     $catalogPath = Join-Path $temporaryRoot 'fixture.props'
@@ -462,6 +654,161 @@ $items = @(
     $validPath = New-AuditFixture -Name 'valid'
     Test-Scenario -Name 'Complete audit' -AuditPath $validPath -ExpectedExitCode 0 `
         -ExpectedOutput 'validation passed for 2 packages, 1 families, and 1 source'
+
+    $stringSchemaPath = New-AuditFixture -Name 'string-schema-version'
+    $stringSchemaAudit = Get-Content -LiteralPath $stringSchemaPath -Raw | ConvertFrom-Json -DateKind String
+    $stringSchemaAudit.schemaVersion = '2'
+    Save-Audit -Audit $stringSchemaAudit -Path $stringSchemaPath
+    Test-Scenario -Name 'Schema version must be a JSON integer' -AuditPath $stringSchemaPath -ExpectedExitCode 1 `
+        -ExpectedOutput 'schemaVersion must be the JSON integer 2'
+
+    $unknownConfiguredSourcePath = New-AuditFixture -Name 'unknown-configured-source-field'
+    $unknownConfiguredSourceAudit = Get-Content -LiteralPath $unknownConfiguredSourcePath -Raw | ConvertFrom-Json -DateKind String
+    $unknownConfiguredSourceAudit.sources[0] | Add-Member -NotePropertyName mirror -NotePropertyValue $true
+    Save-Audit -Audit $unknownConfiguredSourceAudit -Path $unknownConfiguredSourcePath
+    Test-Scenario -Name 'Configured source has a closed shape' -AuditPath $unknownConfiguredSourcePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Source record declares field 'mirror'"
+
+    $wrongConfiguredSourceTypePath = New-AuditFixture -Name 'wrong-configured-source-type'
+    $wrongConfiguredSourceTypeAudit = Get-Content -LiteralPath $wrongConfiguredSourceTypePath -Raw | ConvertFrom-Json -DateKind String
+    $wrongConfiguredSourceTypeAudit.sources[0].diagnostic = 42
+    Save-Audit -Audit $wrongConfiguredSourceTypeAudit -Path $wrongConfiguredSourceTypePath
+    Test-Scenario -Name 'Configured source fields retain JSON types' `
+        -AuditPath $wrongConfiguredSourceTypePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Source record field 'diagnostic' must be a JSON string"
+
+    $relativeConfiguredSourcePath = New-AuditFixture -Name 'relative-configured-source-uri'
+    $relativeConfiguredSourceAudit = Get-Content -LiteralPath $relativeConfiguredSourcePath -Raw | ConvertFrom-Json -DateKind String
+    $relativeConfiguredSourceAudit.sources[0].uri = '../feed/index.json'
+    Save-Audit -Audit $relativeConfiguredSourceAudit -Path $relativeConfiguredSourcePath
+    Test-Scenario -Name 'Configured source URI must be absolute' `
+        -AuditPath $relativeConfiguredSourcePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Configured source '../feed/index.json' must be a valid absolute URI"
+
+    $unknownConsumerEnvelopePath = New-AuditFixture -Name 'unknown-consumer-envelope-field'
+    $unknownConsumerEnvelopeAudit = Get-Content -LiteralPath $unknownConsumerEnvelopePath -Raw | ConvertFrom-Json -DateKind String
+    $unknownConsumerEnvelopeAudit.consumerEvidence | Add-Member -NotePropertyName reviewer -NotePropertyValue 'owner'
+    Save-Audit -Audit $unknownConsumerEnvelopeAudit -Path $unknownConsumerEnvelopePath
+    Test-Scenario -Name 'Consumer evidence envelope has a closed shape' `
+        -AuditPath $unknownConsumerEnvelopePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Consumer evidence declares field 'reviewer'"
+
+    $wrongConsumerEnvelopeTypePath = New-AuditFixture -Name 'wrong-consumer-envelope-type'
+    $wrongConsumerEnvelopeTypeAudit = Get-Content -LiteralPath $wrongConsumerEnvelopeTypePath -Raw | ConvertFrom-Json -DateKind String
+    $wrongConsumerEnvelopeTypeAudit.consumerEvidence.repositoryRevision = 42
+    Save-Audit -Audit $wrongConsumerEnvelopeTypeAudit -Path $wrongConsumerEnvelopeTypePath
+    Test-Scenario -Name 'Consumer evidence envelope fields retain JSON types' `
+        -AuditPath $wrongConsumerEnvelopeTypePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Consumer evidence field 'repositoryRevision' must be a JSON string"
+
+    $unknownConsumerEntryPath = New-AuditFixture -Name 'unknown-consumer-entry-field'
+    $unknownConsumerEntryAudit = Get-Content -LiteralPath $unknownConsumerEntryPath -Raw | ConvertFrom-Json -DateKind String
+    $unknownConsumerEntryAudit.consumerEvidence.entries[0] | Add-Member -NotePropertyName transitive -NotePropertyValue $false
+    Save-Audit -Audit $unknownConsumerEntryAudit -Path $unknownConsumerEntryPath
+    Test-Scenario -Name 'Consumer evidence entries have a closed shape' `
+        -AuditPath $unknownConsumerEntryPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Consumer evidence entry declares field 'transitive'"
+
+    $wrongConsumerEntryTypePath = New-AuditFixture -Name 'wrong-consumer-entry-type'
+    $wrongConsumerEntryTypeAudit = Get-Content -LiteralPath $wrongConsumerEntryTypePath -Raw | ConvertFrom-Json -DateKind String
+    $wrongConsumerEntryTypeAudit.consumerEvidence.entries[0].consumer = 42
+    Save-Audit -Audit $wrongConsumerEntryTypeAudit -Path $wrongConsumerEntryTypePath
+    Test-Scenario -Name 'Consumer evidence entry fields retain JSON types' `
+        -AuditPath $wrongConsumerEntryTypePath -ExpectedExitCode 1 `
+        -ExpectedOutput "Consumer evidence entry field 'consumer' must be a JSON string"
+
+    $diagnosticDriftPath = New-AuditFixture -Name 'source-diagnostic-drift'
+    $diagnosticDriftAudit = Get-Content -LiteralPath $diagnosticDriftPath -Raw | ConvertFrom-Json -DateKind String
+    $diagnosticDriftAudit.packages[0].sourceResults[0].diagnostic = 'Different registration diagnostic.'
+    Save-Audit -Audit $diagnosticDriftAudit -Path $diagnosticDriftPath
+    Test-Scenario -Name 'Source diagnostic participates in metadata fingerprint' `
+        -AuditPath $diagnosticDriftPath -ExpectedExitCode 1 `
+        -ExpectedOutput 'origin packageMetadataSha256 does not match its package/source relations'
+
+    $emptyIncrementalPath = New-AuditFixture -Name 'empty-incremental-refresh'
+    $emptyIncrementalAudit = Get-Content -LiteralPath $emptyIncrementalPath -Raw | ConvertFrom-Json -DateKind String
+    $emptyIncrementalAudit.snapshot.mode = 'incremental'
+    $emptyIncrementalAudit.snapshot.refreshedFamilies = @()
+    $emptyIncrementalAudit.snapshot.preservedFamilies = @('fixture-family')
+    Save-Audit -Audit $emptyIncrementalAudit -Path $emptyIncrementalPath
+    Test-Scenario -Name 'Incremental snapshot refresh is nonempty' `
+        -AuditPath $emptyIncrementalPath -ExpectedExitCode 1 `
+        -ExpectedOutput 'Incremental snapshot mode must refresh at least one family'
+
+    $futureOriginPath = New-AuditFixture -Name 'future-current-origin'
+    $futureOriginAudit = Get-Content -LiteralPath $futureOriginPath -Raw | ConvertFrom-Json -DateKind String
+    $futureOriginAudit.familyDecisions[0].origin.auditedAtUtc = '2026-08-01T12:00:00.0000000+00:00'
+    Save-Audit -Audit $futureOriginAudit -Path $futureOriginPath
+    Test-Scenario -Name 'Current origin cannot postdate snapshot' `
+        -AuditPath $futureOriginPath -ExpectedExitCode 1 `
+        -ExpectedOutput "origin auditedAtUtc must not be later than the snapshot timestamp"
+
+    $refreshedOriginPath = New-AuditFixture -Name 'refreshed-origin-mismatch'
+    $refreshedOriginAudit = Get-Content -LiteralPath $refreshedOriginPath -Raw | ConvertFrom-Json -DateKind String
+    $refreshedOriginAudit.familyDecisions[0].origin.auditedAtUtc = '2026-07-30T12:00:00.0000000+00:00'
+    Save-Audit -Audit $refreshedOriginAudit -Path $refreshedOriginPath
+    Test-Scenario -Name 'Refreshed origin equals current snapshot' `
+        -AuditPath $refreshedOriginPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Refreshed family 'fixture-family' origin must equal the current snapshot revision and timestamp"
+
+    $unavailableOriginPath = New-AuditFixture -Name 'unavailable-current-origin'
+    $unavailableOriginAudit = Get-Content -LiteralPath $unavailableOriginPath -Raw | ConvertFrom-Json -DateKind String
+    $unavailableOriginAudit.familyDecisions[0].origin.generatedFromRevision = ('0' * 40)
+    Save-Audit -Audit $unavailableOriginAudit -Path $unavailableOriginPath
+    Test-Scenario -Name 'Current origin revision must be available' `
+        -AuditPath $unavailableOriginPath -ExpectedExitCode 1 `
+        -ExpectedOutput "origin revision '$('0' * 40)' is not an available Git commit"
+
+    $preservedCurrentOriginPath = New-AuditFixture -Name 'preserved-current-origin'
+    $preservedCurrentOriginAudit = Get-Content -LiteralPath $preservedCurrentOriginPath -Raw | ConvertFrom-Json -DateKind String
+    $preservedCurrentOriginAudit.snapshot.mode = 'incremental'
+    $preservedCurrentOriginAudit.snapshot.refreshedFamilies = @()
+    $preservedCurrentOriginAudit.snapshot.preservedFamilies = @('fixture-family')
+    Save-Audit -Audit $preservedCurrentOriginAudit -Path $preservedCurrentOriginPath
+    Test-Scenario -Name 'Preserved origin cannot claim current refresh' `
+        -AuditPath $preservedCurrentOriginPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Preserved family 'fixture-family' origin must differ from the current refresh revision/timestamp pair"
+
+    $originRepository = Join-Path $temporaryRoot 'origin-repository'
+    New-Item -ItemType Directory -Path $originRepository -Force | Out-Null
+    Write-Utf8File -Path (Join-Path $originRepository 'README.md') -Content "origin fixture`n"
+    $null = & git -C $originRepository init --quiet
+    $null = & git -C $originRepository config user.name 'Package Audit Validator Tests'
+    $null = & git -C $originRepository config user.email 'package-audit-validator@example.invalid'
+    $null = & git -C $originRepository add -- .
+    $null = & git -C $originRepository commit --quiet -m 'test: origin base'
+    $originRepositoryRevision = ([string] @(& git -C $originRepository rev-parse HEAD)[-1]).Trim()
+    $originTree = ([string] @(& git -C $originRepository rev-parse 'HEAD^{tree}')[-1]).Trim()
+    $nonAncestorOriginRevision = ([string] @(
+            & git -C $originRepository commit-tree $originTree -m 'test: unrelated origin'
+        )[-1]).Trim()
+
+    $nonAncestorOriginPath = New-AuditFixture -Name 'non-ancestor-current-origin'
+    $nonAncestorOriginAudit = Get-Content -LiteralPath $nonAncestorOriginPath -Raw | ConvertFrom-Json -DateKind String
+    $nonAncestorOriginAudit.generatedFromRevision = $originRepositoryRevision
+    $nonAncestorOriginAudit.consumerEvidence.repositoryRevision = $originRepositoryRevision
+    $nonAncestorOriginAudit.catalogPath = [IO.Path]::GetRelativePath($originRepository, $catalogPath).Replace('\', '/')
+    $nonAncestorOriginAudit.familyDecisions[0].origin.generatedFromRevision = $nonAncestorOriginRevision
+    Save-Audit -Audit $nonAncestorOriginAudit -Path $nonAncestorOriginPath
+    Test-Scenario -Name 'Current origin revision must be an ancestor' `
+        -AuditPath $nonAncestorOriginPath -RepositoryRootPath $originRepository -ExpectedExitCode 1 `
+        -ExpectedOutput "origin revision '$nonAncestorOriginRevision' is not an ancestor of generatedFromRevision '$originRepositoryRevision'"
+
+    $nonAncestorHistoryPath = New-AuditFixture -Name 'non-ancestor-history-origin'
+    $nonAncestorHistoryAudit = Get-Content -LiteralPath $nonAncestorHistoryPath -Raw | ConvertFrom-Json -DateKind String
+    $nonAncestorHistoryAudit.generatedFromRevision = $originRepositoryRevision
+    $nonAncestorHistoryAudit.consumerEvidence.repositoryRevision = $originRepositoryRevision
+    $nonAncestorHistoryAudit.catalogPath = [IO.Path]::GetRelativePath($originRepository, $catalogPath).Replace('\', '/')
+    $nonAncestorHistoryAudit.familyDecisions[0].origin.generatedFromRevision = $originRepositoryRevision
+    Add-V2HistoricalContexts -Audit $nonAncestorHistoryAudit
+    $nonAncestorHistoryAudit.packages[0].historicalContext[0].generatedFromRevision = $nonAncestorOriginRevision
+    $nonAncestorHistoryAudit.packages[0].historicalContext[0].origin.generatedFromRevision = $nonAncestorOriginRevision
+    $nonAncestorHistoryAudit.familyDecisions[0].historicalContext[0].generatedFromRevision = $originRepositoryRevision
+    $nonAncestorHistoryAudit.familyDecisions[0].historicalContext[0].origin.generatedFromRevision = $originRepositoryRevision
+    Save-Audit -Audit $nonAncestorHistoryAudit -Path $nonAncestorHistoryPath
+    Test-Scenario -Name 'Historical origin revision must be an ancestor' `
+        -AuditPath $nonAncestorHistoryPath -RepositoryRootPath $originRepository -ExpectedExitCode 1 `
+        -ExpectedOutput "historical context origin revision '$nonAncestorOriginRevision' is not an ancestor of generatedFromRevision '$originRepositoryRevision'"
 
     $rawCatalogHashPath = New-AuditFixture -Name 'raw-catalog-hash-mismatch'
     $rawCatalogHashAudit = Get-Content -LiteralPath $rawCatalogHashPath -Raw | ConvertFrom-Json -DateKind String
@@ -697,6 +1044,14 @@ $items = @(
     Save-Audit -Audit $fixtureModeAudit -Path $fixtureModePath
     Test-Scenario -Name 'Explicit fixture mode missing' -AuditPath $fixtureModePath -ExpectedExitCode 1 `
         -ExpectedOutput "fixtureMode 'synthetic-explicit'"
+
+    $fixtureTraversalPath = New-AuditFixture -Name 'fixture-path-traversal'
+    $fixtureTraversalAudit = Get-Content -LiteralPath $fixtureTraversalPath -Raw | ConvertFrom-Json -DateKind String
+    $fixtureTraversalAudit.consumerEvidence.fixture = '../escaped-validator-fixture.json'
+    Save-Audit -Audit $fixtureTraversalAudit -Path $fixtureTraversalPath
+    Test-Scenario -Name 'Explicit fixture path cannot escape audit directory' `
+        -AuditPath $fixtureTraversalPath -ExpectedExitCode 1 `
+        -ExpectedOutput "fixture '../escaped-validator-fixture.json' escapes the audit directory"
 
     $fixtureTamperPath = New-AuditFixture -Name 'fixture-byte-tamper'
     Write-Utf8File -Path (Join-Path $temporaryRoot 'validator-fixture.json') -Content '{"entries":[]}'
@@ -1019,38 +1374,25 @@ $items = @(
         -GitBlobReadMaxBytes 65536 -ExpectedExitCode 1 `
         -ExpectedOutput "Historical Git blob read exceeded the 65536-byte limit for 'Props/Directory.Packages.props'."
 
-    $gitShimPath = Join-Path $temporaryRoot 'non-terminating-git-shim.ps1'
-    $gitShimReadyPath = Join-Path $temporaryRoot 'non-terminating-git.ready'
-    New-NonTerminatingGitShim `
-        -ShimPath $gitShimPath `
-        -ReadyPath $gitShimReadyPath
-    $timeoutStopwatch = [Diagnostics.Stopwatch]::StartNew()
-    Test-RepositoryScenario -Name 'Non-terminating historical Git read times out and is terminated' `
-        -AuditPath $oversizedPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
-        -GitBlobReaderShimPath $gitShimPath -GitBlobReadTimeoutSeconds 5 -ExpectedExitCode 1 `
-        -ExpectedOutput "Historical Git blob read timed out after 5 seconds for 'Props/Directory.Packages.props'."
-    $timeoutStopwatch.Stop()
-    if ($timeoutStopwatch.Elapsed.TotalSeconds -ge 30) {
-        $failures.Add(
-            "The timed historical Git scenario took $($timeoutStopwatch.Elapsed.TotalSeconds) seconds and reached the shim's natural completion window."
-        )
+    $malformedReadyPath = Join-Path $temporaryRoot 'malformed-git-shim.ready'
+    Write-Utf8File -Path $malformedReadyPath -Content 'not-a-pid|still-not-a-pid'
+    $scenarioCount++
+    $malformedReadyRecord = Read-ReadyProcessRecord -Path $malformedReadyPath
+    if ($null -eq $malformedReadyRecord -or $malformedReadyRecord.Valid -or
+        $malformedReadyRecord.Diagnostic -notlike '*two positive integer process identifiers*') {
+        $failures.Add('Malformed/non-numeric shim readiness records must be handled as bounded harness failures.')
     }
-    if (-not (Test-Path -LiteralPath $gitShimReadyPath -PathType Leaf)) {
-        $failures.Add('The non-terminating Git shim did not publish its atomic ready/PID record.')
-    }
-    else {
-        $readyParts = (Get-Content -LiteralPath $gitShimReadyPath -Raw).Split('|')
-        if ($readyParts.Count -ne 2) {
-            $failures.Add('The non-terminating Git shim ready/PID record is malformed.')
-        }
-        $gitShimProcessId = [int] $readyParts[0]
-        $gitShimChildProcessId = [int] $readyParts[1]
-        if (-not (Wait-ForProcessGone -ProcessId $gitShimProcessId -TimeoutMilliseconds 3000)) {
-            $failures.Add("Historical Git shim process $gitShimProcessId survived process-tree cleanup.")
-        }
-        if (-not (Wait-ForProcessGone -ProcessId $gitShimChildProcessId -TimeoutMilliseconds 3000)) {
-            $failures.Add("Historical Git shim child process $gitShimChildProcessId survived process-tree cleanup.")
-        }
+
+    foreach ($attempt in 1..3) {
+        $gitShimPath = Join-Path $temporaryRoot "non-terminating-git-shim-$attempt.ps1"
+        $gitShimReadyPath = Join-Path $temporaryRoot "non-terminating-git-$attempt.ready"
+        New-NonTerminatingGitShim -ShimPath $gitShimPath -ReadyPath $gitShimReadyPath
+        Test-ReadyRepositoryScenario `
+            -Name "Non-terminating historical Git read attempt $attempt times out and terminates its process tree" `
+            -AuditPath $oversizedPath -RepositoryRootPath $historyRepository -CatalogPath $historyCatalogPath `
+            -GitBlobReaderShimPath $gitShimPath -ReadyPath $gitShimReadyPath `
+            -GitBlobReadTimeoutSeconds 3 `
+            -ExpectedOutput "Historical Git blob read timed out after 3 seconds for 'Props/Directory.Packages.props'."
     }
 
     $missingRelationAudit = Get-Content -LiteralPath $productionAuditPath -Raw | ConvertFrom-Json -DateKind String
@@ -1167,16 +1509,127 @@ $items = @(
     )
     $multiCardinalityAudit.familyDecisions[0].origin.packageMetadataSha256 = Get-Sha256Text -Value (
         'Fixture.One|1.0.0|1.0.0|1.0.0||listed|' +
-        'https://api.nuget.org/v3/index.json=listed:1.0.0:,' +
-        'https://packages.example.test/v3/index.json=listed:1.0.0:' + "`n" +
+        'https://api.nuget.org/v3/index.json=listed:1.0.0::Registration metadata resolved.,' +
+        'https://packages.example.test/v3/index.json=listed:1.0.0::Registration metadata resolved.' + "`n" +
         'Fixture.Two|2.0.0|2.0.0|2.1.0|3.0.0-preview.1|unlisted|' +
-        'https://api.nuget.org/v3/index.json=unlisted:2.1.0:3.0.0-preview.1,' +
-        'https://packages.example.test/v3/index.json=unlisted:2.1.0:3.0.0-preview.1'
+        'https://api.nuget.org/v3/index.json=unlisted:2.1.0:3.0.0-preview.1:Registration metadata resolved.,' +
+        'https://packages.example.test/v3/index.json=unlisted:2.1.0:3.0.0-preview.1:Registration metadata resolved.'
     )
     $multiCardinalityAudit.familyDecisions[0].origin.consumerEvidenceSha256 = $multiCardinalityConsumerSha256
     Save-Audit -Audit $multiCardinalityAudit -Path $multiCardinalityPath
     Test-Scenario -Name 'Multi-element collections round-trip' -AuditPath $multiCardinalityPath -ExpectedExitCode 0 `
         -ExpectedOutput 'validation passed for 2 packages, 1 families, and 2 source'
+
+    $v2HistoryPath = New-AuditFixture -Name 'v2-history-round-trip'
+    $v2HistoryAudit = Get-Content -LiteralPath $v2HistoryPath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $v2HistoryAudit
+    Save-Audit -Audit $v2HistoryAudit -Path $v2HistoryPath
+    Test-Scenario -Name 'Complete v2 package and family history round-trip' `
+        -AuditPath $v2HistoryPath -ExpectedExitCode 0 `
+        -ExpectedOutput 'validation passed for 2 packages, 1 families, and 1 source'
+
+    $futureHistoryPath = New-AuditFixture -Name 'future-v2-history-origin'
+    $futureHistoryAudit = Get-Content -LiteralPath $futureHistoryPath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $futureHistoryAudit
+    $futureHistoryAudit.packages[0].historicalContext[0].auditedAtUtc = '2026-08-01T12:00:00.0000000+00:00'
+    $futureHistoryAudit.packages[0].historicalContext[0].origin.auditedAtUtc = '2026-08-01T12:00:00.0000000+00:00'
+    Save-Audit -Audit $futureHistoryAudit -Path $futureHistoryPath
+    Test-Scenario -Name 'Historical origin cannot postdate snapshot' `
+        -AuditPath $futureHistoryPath -ExpectedExitCode 1 `
+        -ExpectedOutput 'historical context origin auditedAtUtc must not be later than the snapshot timestamp'
+
+    $historyEnvelopeMismatchPath = New-AuditFixture -Name 'v2-history-envelope-mismatch'
+    $historyEnvelopeMismatchAudit = Get-Content -LiteralPath $historyEnvelopeMismatchPath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $historyEnvelopeMismatchAudit
+    $historyEnvelopeMismatchAudit.packages[0].historicalContext[0].origin.auditedAtUtc = '2026-07-29T12:00:00.0000000+00:00'
+    Save-Audit -Audit $historyEnvelopeMismatchAudit -Path $historyEnvelopeMismatchPath
+    Test-Scenario -Name 'Historical origin matches history envelope' `
+        -AuditPath $historyEnvelopeMismatchPath -ExpectedExitCode 1 `
+        -ExpectedOutput 'historical context envelope revision/timestamp must exactly match its origin'
+
+    $historyHashPath = New-AuditFixture -Name 'v2-history-origin-hash'
+    $historyHashAudit = Get-Content -LiteralPath $historyHashPath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $historyHashAudit
+    $historyHashAudit.familyDecisions[0].historicalContext[0].origin.sourceScopeSha256 = 'invalid'
+    Save-Audit -Audit $historyHashAudit -Path $historyHashPath
+    Test-Scenario -Name 'Historical origin hashes have exact format' `
+        -AuditPath $historyHashPath -ExpectedExitCode 1 `
+        -ExpectedOutput 'historical context origin sourceScopeSha256 must be a lowercase SHA-256 value'
+
+    $historyRevisionPath = New-AuditFixture -Name 'v2-history-unavailable-revision'
+    $historyRevisionAudit = Get-Content -LiteralPath $historyRevisionPath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $historyRevisionAudit
+    $historyRevisionAudit.packages[0].historicalContext[0].generatedFromRevision = ('0' * 40)
+    $historyRevisionAudit.packages[0].historicalContext[0].origin.generatedFromRevision = ('0' * 40)
+    Save-Audit -Audit $historyRevisionAudit -Path $historyRevisionPath
+    Test-Scenario -Name 'Historical origin revision must be available' `
+        -AuditPath $historyRevisionPath -ExpectedExitCode 1 `
+        -ExpectedOutput "historical context origin revision '$('0' * 40)' is not an available Git commit"
+
+    $historySourceUriPath = New-AuditFixture -Name 'v2-history-relative-source'
+    $historySourceUriAudit = Get-Content -LiteralPath $historySourceUriPath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $historySourceUriAudit
+    $historySourceUriAudit.packages[0].historicalContext[0].sourceResults[0].source = '../feed/index.json'
+    Save-Audit -Audit $historySourceUriAudit -Path $historySourceUriPath
+    Test-Scenario -Name 'Historical source URI must be absolute' `
+        -AuditPath $historySourceUriPath -ExpectedExitCode 1 `
+        -ExpectedOutput "historical context source '../feed/index.json' must be a valid absolute URI"
+
+    $historySourceStatePath = New-AuditFixture -Name 'v2-history-source-state'
+    $historySourceStateAudit = Get-Content -LiteralPath $historySourceStatePath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $historySourceStateAudit
+    $historySourceStateAudit.packages[0].historicalContext[0].sourceResults[0].listingState = 'unknown'
+    Save-Audit -Audit $historySourceStateAudit -Path $historySourceStatePath
+    Test-Scenario -Name 'Historical source state has closed vocabulary' `
+        -AuditPath $historySourceStatePath -ExpectedExitCode 1 `
+        -ExpectedOutput "historical context source 'https://api.nuget.org/v3/index.json' has invalid listingState 'unknown'"
+
+    $historySourceCoveragePath = New-AuditFixture -Name 'v2-history-source-coverage'
+    $historySourceCoverageAudit = Get-Content -LiteralPath $historySourceCoveragePath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $historySourceCoverageAudit
+    $historySourceCoverageAudit.packages[0].historicalContext[0].sourceResults = @()
+    Save-Audit -Audit $historySourceCoverageAudit -Path $historySourceCoveragePath
+    Test-Scenario -Name 'Historical source scope coverage is exact when embedded' `
+        -AuditPath $historySourceCoveragePath -ExpectedExitCode 1 `
+        -ExpectedOutput 'historical context does not exactly cover the configured sources bound by its origin'
+
+    $duplicatePackageHistoryPath = New-AuditFixture -Name 'duplicate-v2-package-history'
+    $duplicatePackageHistoryAudit = Get-Content -LiteralPath $duplicatePackageHistoryPath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $duplicatePackageHistoryAudit
+    $duplicatePackageHistoryAudit.packages[0].historicalContext = @(
+        $duplicatePackageHistoryAudit.packages[0].historicalContext[0],
+        $duplicatePackageHistoryAudit.packages[0].historicalContext[0]
+    )
+    Save-Audit -Audit $duplicatePackageHistoryAudit -Path $duplicatePackageHistoryPath
+    Test-Scenario -Name 'Exact duplicate package history is rejected' `
+        -AuditPath $duplicatePackageHistoryPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Package 'Fixture.One' contains an exact duplicate historical context record"
+
+    $duplicateFamilyHistoryPath = New-AuditFixture -Name 'duplicate-v2-family-history'
+    $duplicateFamilyHistoryAudit = Get-Content -LiteralPath $duplicateFamilyHistoryPath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $duplicateFamilyHistoryAudit
+    $duplicateFamilyHistoryAudit.familyDecisions[0].historicalContext = @(
+        $duplicateFamilyHistoryAudit.familyDecisions[0].historicalContext[0],
+        $duplicateFamilyHistoryAudit.familyDecisions[0].historicalContext[0]
+    )
+    Save-Audit -Audit $duplicateFamilyHistoryAudit -Path $duplicateFamilyHistoryPath
+    Test-Scenario -Name 'Exact duplicate family history is rejected' `
+        -AuditPath $duplicateFamilyHistoryPath -ExpectedExitCode 1 `
+        -ExpectedOutput "Family 'fixture-family' contains an exact duplicate historical context record"
+
+    $duplicateHistoryOriginPath = New-AuditFixture -Name 'duplicate-v2-history-origin'
+    $duplicateHistoryOriginAudit = Get-Content -LiteralPath $duplicateHistoryOriginPath -Raw | ConvertFrom-Json -DateKind String
+    Add-V2HistoricalContexts -Audit $duplicateHistoryOriginAudit
+    $secondHistory = $duplicateHistoryOriginAudit.packages[0].historicalContext[0] |
+        ConvertTo-Json -Depth 12 | ConvertFrom-Json -DateKind String
+    $secondHistory.label = 'Different label but the same origin identity.'
+    $duplicateHistoryOriginAudit.packages[0].historicalContext = @(
+        $duplicateHistoryOriginAudit.packages[0].historicalContext[0], $secondHistory
+    )
+    Save-Audit -Audit $duplicateHistoryOriginAudit -Path $duplicateHistoryOriginPath
+    Test-Scenario -Name 'Duplicate historical origin identity is rejected' `
+        -AuditPath $duplicateHistoryOriginPath -ExpectedExitCode 1 `
+        -ExpectedOutput 'historical context duplicates a historical origin identity'
 
     $completeHistoryPath = New-AuditFixture -Name 'complete-history-round-trip'
     $completeHistoryAudit = Get-Content -LiteralPath $completeHistoryPath -Raw | ConvertFrom-Json -DateKind String

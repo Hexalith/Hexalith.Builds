@@ -191,118 +191,88 @@ function Get-GitBlobBytes {
     $process.StartInfo = $startInfo
     $memory = [IO.MemoryStream]::new()
     $processStarted = $false
-    $stderrTask = $null
+    $diagnostic = ''
+    $bytes = [byte[]] @()
     $stopwatch = [Diagnostics.Stopwatch]::StartNew()
     try {
-        try {
-            $processStarted = $process.Start()
-        }
-        catch {
-            return [pscustomobject] @{
-                Success = $false
-                Bytes = [byte[]] @()
-                Diagnostic = "Historical Git blob read could not start for '$Path'."
-            }
-        }
+        try { $processStarted = $process.Start() } catch { }
         if (-not $processStarted) {
-            return [pscustomobject] @{
-                Success = $false
-                Bytes = [byte[]] @()
-                Diagnostic = "Historical Git blob read could not start for '$Path'."
-            }
+            $diagnostic = "Historical Git blob read could not start for '$Path'."
         }
+        else {
+            $null = $process.StandardError.ReadToEndAsync()
+            $buffer = [byte[]]::new(8192)
+            while ([string]::IsNullOrWhiteSpace($diagnostic)) {
+                $remainingMilliseconds = ($GitBlobReadTimeoutSeconds * 1000) - [int] $stopwatch.ElapsedMilliseconds
+                if ($remainingMilliseconds -le 0) {
+                    $diagnostic = "Historical Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
+                    break
+                }
 
-        $stderrTask = $process.StandardError.ReadToEndAsync()
-        $buffer = [byte[]]::new(8192)
-        while ($true) {
-            $remainingMilliseconds = ($GitBlobReadTimeoutSeconds * 1000) - [int] $stopwatch.ElapsedMilliseconds
-            if ($remainingMilliseconds -le 0) {
-                return [pscustomobject] @{
-                    Success = $false
-                    Bytes = [byte[]] @()
-                    Diagnostic = "Historical Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
+                $remainingCapacity = ($GitBlobReadMaxBytes - [int] $memory.Length) + 1
+                $readLength = [Math]::Min($buffer.Length, $remainingCapacity)
+                $readTask = $process.StandardOutput.BaseStream.ReadAsync($buffer, 0, $readLength)
+                if (-not $readTask.Wait($remainingMilliseconds)) {
+                    $diagnostic = "Historical Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
+                    break
+                }
+                $read = $readTask.GetAwaiter().GetResult()
+                if ($read -eq 0) { break }
+                $memory.Write($buffer, 0, $read)
+                if ($memory.Length -gt $GitBlobReadMaxBytes) {
+                    $diagnostic = "Historical Git blob read exceeded the $GitBlobReadMaxBytes-byte limit for '$Path'."
+                    break
                 }
             }
 
-            $remainingCapacity = ($GitBlobReadMaxBytes - [int] $memory.Length) + 1
-            $readLength = [Math]::Min($buffer.Length, $remainingCapacity)
-            $readTask = $process.StandardOutput.BaseStream.ReadAsync($buffer, 0, $readLength)
-            if (-not $readTask.Wait($remainingMilliseconds)) {
-                return [pscustomobject] @{
-                    Success = $false
-                    Bytes = [byte[]] @()
-                    Diagnostic = "Historical Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
+            if ([string]::IsNullOrWhiteSpace($diagnostic)) {
+                $remainingMilliseconds = ($GitBlobReadTimeoutSeconds * 1000) - [int] $stopwatch.ElapsedMilliseconds
+                if ($remainingMilliseconds -le 0 -or -not $process.WaitForExit($remainingMilliseconds)) {
+                    $diagnostic = "Historical Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
                 }
-            }
-
-            $read = $readTask.GetAwaiter().GetResult()
-            if ($read -eq 0) {
-                break
-            }
-
-            $memory.Write($buffer, 0, $read)
-            if ($memory.Length -gt $GitBlobReadMaxBytes) {
-                return [pscustomobject] @{
-                    Success = $false
-                    Bytes = [byte[]] @()
-                    Diagnostic = "Historical Git blob read exceeded the $GitBlobReadMaxBytes-byte limit for '$Path'."
+                elseif ($process.ExitCode -ne 0) {
+                    $diagnostic = "Historical Git blob read failed for '$Path'."
+                }
+                else {
+                    $bytes = $memory.ToArray()
                 }
             }
         }
-
-        $remainingMilliseconds = ($GitBlobReadTimeoutSeconds * 1000) - [int] $stopwatch.ElapsedMilliseconds
-        if ($remainingMilliseconds -le 0 -or -not $process.WaitForExit($remainingMilliseconds)) {
-            return [pscustomobject] @{
-                Success = $false
-                Bytes = [byte[]] @()
-                Diagnostic = "Historical Git blob read timed out after $GitBlobReadTimeoutSeconds seconds for '$Path'."
-            }
-        }
-
-        if ($process.ExitCode -ne 0) {
-            return [pscustomobject] @{
-                Success = $false
-                Bytes = [byte[]] @()
-                Diagnostic = "Historical Git blob read failed for '$Path'."
-            }
-        }
-
-        return [pscustomobject] @{ Success = $true; Bytes = $memory.ToArray(); Diagnostic = '' }
     }
     catch {
-        return [pscustomobject] @{
-            Success = $false
-            Bytes = [byte[]] @()
-            Diagnostic = "Historical Git blob read failed for '$Path'."
-        }
+        $diagnostic = "Historical Git blob read failed for '$Path'."
     }
     finally {
         $stopwatch.Stop()
         if ($processStarted) {
             $processStillRunning = $true
-            try {
-                $processStillRunning = -not $process.HasExited
-            }
-            catch {
-                # State is unconfirmed, so bounded best-effort cleanup is still required.
-            }
+            try { $processStillRunning = -not $process.HasExited } catch { }
             if ($processStillRunning) {
+                $killSucceeded = $false
                 try {
                     $process.Kill($true)
+                    $killSucceeded = $true
                 }
-                catch {
-                    # The stable validation diagnostic above remains authoritative.
+                catch { }
+                $waitSucceeded = $false
+                if ($killSucceeded) {
+                    try { $waitSucceeded = $process.WaitForExit(2000) } catch { }
                 }
-                try {
-                    $null = $process.WaitForExit(2000)
-                }
-                catch {
-                    # Cleanup is intentionally bounded.
+                try { $processStillRunning = -not $process.HasExited } catch { $processStillRunning = $true }
+                if (-not $killSucceeded -or -not $waitSucceeded -or $processStillRunning) {
+                    $diagnostic = "Historical Git blob read cleanup could not confirm process-tree termination for '$Path'."
+                    $bytes = [byte[]] @()
                 }
             }
         }
         $memory.Dispose()
         $process.Dispose()
+    }
+
+    return [pscustomobject] @{
+        Success = [string]::IsNullOrWhiteSpace($diagnostic)
+        Bytes = $bytes
+        Diagnostic = $diagnostic
     }
 }
 
@@ -375,7 +345,7 @@ function Get-PackageMetadataFingerprint {
 
     $material = foreach ($package in @($PackageRows | Sort-Object id)) {
         $sourceMaterial = [string]::Join(',', @($package.sourceResults | Sort-Object source | ForEach-Object {
-                    "$($_.source)=$($_.listingState):$($_.latestStable):$($_.latestPrerelease)"
+                    "$($_.source)=$($_.listingState):$($_.latestStable):$($_.latestPrerelease):$($_.diagnostic)"
                 }))
         "$($package.id)|$($package.auditedVersion)|$($package.selectedVersion)|$($package.latestStable)|" +
             "$($package.latestPrerelease)|$($package.listingState)|$sourceMaterial"
@@ -818,6 +788,142 @@ function Add-UnknownFieldFailures {
     }
 }
 
+function Assert-RevisionAvailableAncestor {
+    param(
+        [Parameter(Mandatory = $true)][string] $Revision,
+        [Parameter(Mandatory = $true)][string] $GeneratedRevision,
+        [Parameter(Mandatory = $true)][string] $Description,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[string]] $Failures,
+        [Parameter(Mandatory = $true)] $Cache
+    )
+
+    if ($Revision -cnotmatch '^[0-9a-f]{40}$' -or $GeneratedRevision -cnotmatch '^[0-9a-f]{40}$') {
+        return
+    }
+    $cacheKey = "$Revision|$GeneratedRevision"
+    if (-not $Cache.ContainsKey($cacheKey)) {
+        $null = & git --no-replace-objects -C $repositoryRoot cat-file -e "$Revision^{commit}" 2>$null
+        $available = $LASTEXITCODE -eq 0
+        $ancestor = $false
+        if ($available) {
+            $null = & git --no-replace-objects -C $repositoryRoot merge-base --is-ancestor $Revision $GeneratedRevision 2>$null
+            $ancestor = $LASTEXITCODE -eq 0
+        }
+        $Cache[$cacheKey] = [pscustomobject] @{ Available = $available; Ancestor = $ancestor }
+    }
+    $result = $Cache[$cacheKey]
+    if (-not $result.Available) {
+        $Failures.Add("$Description revision '$Revision' is not an available Git commit.")
+    }
+    elseif (-not $result.Ancestor) {
+        $Failures.Add("$Description revision '$Revision' is not an ancestor of generatedFromRevision '$GeneratedRevision'.")
+    }
+}
+
+function Get-OriginIdentityFingerprint {
+    param([Parameter(Mandatory = $true)] $Origin)
+
+    $material = @(
+        'auditedAtUtc', 'generatedFromRevision', 'familySelectionSha256',
+        'sourceScopeSha256', 'packageMetadataSha256', 'consumerEvidenceSha256'
+    ) | ForEach-Object { "$_=$(Get-PropertyValue -Object $Origin -Name $_)" }
+    return Get-Sha256Text -Value ([string]::Join("`n", $material))
+}
+
+function Assert-HistoricalOrigin {
+    param(
+        [Parameter(Mandatory = $true)] $Entry,
+        [Parameter(Mandatory = $true)][string] $Description,
+        [Parameter(Mandatory = $true)][string] $GeneratedRevision,
+        [Parameter(Mandatory = $true)][DateTimeOffset] $SnapshotTimestamp,
+        [Parameter(Mandatory = $true)][bool] $SnapshotTimestampValid,
+        [Parameter(Mandatory = $true)] $SeenOrigins,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[string]] $Failures,
+        [Parameter(Mandatory = $true)] $RevisionCache
+    )
+
+    $origin = Get-PropertyValue -Object $Entry -Name 'origin'
+    if ($null -eq $origin) { return }
+    $originTimestampText = [string] (Get-PropertyValue -Object $origin -Name 'auditedAtUtc')
+    $originTimestamp = [DateTimeOffset]::MinValue
+    if (-not [DateTimeOffset]::TryParse($originTimestampText, [ref] $originTimestamp) -or
+        $originTimestamp.Offset -ne [TimeSpan]::Zero) {
+        $Failures.Add("$Description origin auditedAtUtc must be a valid UTC timestamp.")
+    }
+    elseif ($SnapshotTimestampValid -and $originTimestamp -gt $SnapshotTimestamp) {
+        $Failures.Add("$Description origin auditedAtUtc must not be later than the snapshot timestamp.")
+    }
+    $originRevision = [string] (Get-PropertyValue -Object $origin -Name 'generatedFromRevision')
+    if ($originRevision -cnotmatch '^[0-9a-f]{40}$') {
+        $Failures.Add("$Description origin generatedFromRevision must be a full lowercase Git revision.")
+    }
+    Assert-RevisionAvailableAncestor `
+        -Revision $originRevision -GeneratedRevision $GeneratedRevision -Description "$Description origin" `
+        -Failures $Failures -Cache $RevisionCache
+    if ($originTimestampText -cne [string] (Get-PropertyValue -Object $Entry -Name 'auditedAtUtc') -or
+        $originRevision -cne [string] (Get-PropertyValue -Object $Entry -Name 'generatedFromRevision')) {
+        $Failures.Add("$Description envelope revision/timestamp must exactly match its origin.")
+    }
+    foreach ($hashName in @(
+            'familySelectionSha256', 'sourceScopeSha256',
+            'packageMetadataSha256', 'consumerEvidenceSha256'
+        )) {
+        if ([string] (Get-PropertyValue -Object $origin -Name $hashName) -cnotmatch '^[0-9a-f]{64}$') {
+            $Failures.Add("$Description origin $hashName must be a lowercase SHA-256 value.")
+        }
+    }
+    $originIdentity = Get-OriginIdentityFingerprint -Origin $origin
+    if (-not $SeenOrigins.Add($originIdentity)) {
+        $Failures.Add("$Description duplicates a historical origin identity.")
+    }
+}
+
+function Assert-HistoricalSourceResults {
+    param(
+        [Parameter(Mandatory = $true)] $Entry,
+        [Parameter(Mandatory = $true)][string] $Description,
+        [Parameter(Mandatory = $true)] $ConfiguredSourceUris,
+        [Parameter(Mandatory = $true)][string] $CurrentSourceScopeSha256,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[string]] $Failures
+    )
+
+    $seenSources = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $states = [Collections.Generic.List[string]]::new()
+    foreach ($sourceResult in @((Get-PropertyValue -Object $Entry -Name 'sourceResults'))) {
+        if ($null -eq $sourceResult -or $sourceResult -is [string] -or $sourceResult.GetType().IsPrimitive) {
+            continue
+        }
+        $source = [string] (Get-PropertyValue -Object $sourceResult -Name 'source')
+        $parsedUri = $null
+        if (-not [Uri]::TryCreate($source, [UriKind]::Absolute, [ref] $parsedUri)) {
+            $Failures.Add("$Description source '$source' must be a valid absolute URI.")
+        }
+        if (-not $seenSources.Add($source)) {
+            $Failures.Add("$Description duplicates historical source result '$source'.")
+        }
+        $state = [string] (Get-PropertyValue -Object $sourceResult -Name 'listingState')
+        if ($state -notin @('listed', 'unlisted', 'missing', 'unresolved')) {
+            $Failures.Add("$Description source '$source' has invalid listingState '$state'.")
+        }
+        else {
+            $states.Add($state)
+        }
+    }
+    $expectedState = if ($states -contains 'listed') { 'listed' }
+    elseif ($states -contains 'unlisted') { 'unlisted' }
+    elseif ($states.Count -gt 0 -and @($states | Where-Object { $_ -ne 'unresolved' }).Count -eq 0) { 'unresolved' }
+    else { 'missing' }
+    if ([string] (Get-PropertyValue -Object $Entry -Name 'listingState') -cne $expectedState) {
+        $Failures.Add("$Description listingState does not match its historical source-result aggregate.")
+    }
+    $origin = Get-PropertyValue -Object $Entry -Name 'origin'
+    if ($null -ne $origin -and
+        [string] (Get-PropertyValue -Object $origin -Name 'sourceScopeSha256') -ceq $CurrentSourceScopeSha256 -and
+        (Get-IdentitySignature -Values @($seenSources)) -cne (Get-IdentitySignature -Values @($ConfiguredSourceUris))) {
+        $Failures.Add("$Description does not exactly cover the configured sources bound by its origin.")
+    }
+}
+
 function Assert-PackageRoundTrip {
     # Proves a package record survives a full typed read -> JSON write -> JSON read
     # cycle byte-for-byte, including every collection-valued field's exact element
@@ -1083,13 +1189,15 @@ $evaluation = Invoke-CatalogEvaluation `
     -ResolvedCatalogPath $resolvedCatalogPath `
     -ResolvedEvaluatorScriptPath $resolvedEvaluatorScriptPath
 $failures = [System.Collections.Generic.List[string]]::new()
+$revisionRelationCache = [Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
 
 Add-UnknownFieldFailures -Object $audit -KnownFields @(
     'schemaVersion', 'generatedFromRevision', 'catalogPath', 'catalogSha256',
     'catalogRawSha256', 'snapshot', 'sources', 'consumerEvidence', 'familyDecisions', 'packages'
 ) -Description 'Audit' -Failures $failures
-if ((Get-PropertyValue -Object $audit -Name 'schemaVersion') -ne 2) {
-    $failures.Add('schemaVersion must equal 2.')
+$schemaVersion = Get-PropertyValue -Object $audit -Name 'schemaVersion'
+if (($schemaVersion -isnot [long] -and $schemaVersion -isnot [int]) -or [long] $schemaVersion -ne 2L) {
+    $failures.Add('schemaVersion must be the JSON integer 2.')
 }
 
 $snapshot = Get-PropertyValue -Object $audit -Name 'snapshot'
@@ -1121,6 +1229,25 @@ if ([string]::IsNullOrWhiteSpace($auditedAtUtc) -or -not $timestampParsed) {
 }
 elseif ($parsedTimestamp.Offset -ne [TimeSpan]::Zero) {
     $failures.Add('snapshot auditedAtUtc must have a zero UTC offset.')
+}
+
+$refreshedPartition = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+$preservedPartition = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+foreach ($family in @((Get-PropertyValue -Object $snapshot -Name 'refreshedFamilies'))) {
+    if ([string]::IsNullOrWhiteSpace([string] $family) -or -not $refreshedPartition.Add([string] $family)) {
+        $failures.Add("Snapshot refreshedFamilies contains a blank or duplicate family '$family'.")
+    }
+}
+foreach ($family in @((Get-PropertyValue -Object $snapshot -Name 'preservedFamilies'))) {
+    if ([string]::IsNullOrWhiteSpace([string] $family) -or -not $preservedPartition.Add([string] $family)) {
+        $failures.Add("Snapshot preservedFamilies contains a blank or duplicate family '$family'.")
+    }
+    elseif ($refreshedPartition.Contains([string] $family)) {
+        $failures.Add("Snapshot family '$family' appears in both refreshed and preserved partitions.")
+    }
+}
+if ($snapshotMode -ceq 'incremental' -and $refreshedPartition.Count -eq 0) {
+    $failures.Add('Incremental snapshot mode must refresh at least one family.')
 }
 
 $generatedFromRevision = Get-RequiredText `
@@ -1181,6 +1308,7 @@ if ($catalogIsRepositoryOwned -and $generatedFromRevision -cmatch '^[0-9a-f]{40}
     }
 }
 
+Assert-JsonObjectArrayField -Object $audit -Field 'sources' -Description 'Audit' -Failures $failures
 $sources = @((Get-PropertyValue -Object $audit -Name 'sources'))
 if ($sources.Count -eq 0 -or $null -eq $sources[0]) {
     $failures.Add('Audit must declare at least one configured source.')
@@ -1190,11 +1318,22 @@ if ($sources.Count -eq 0 -or $null -eq $sources[0]) {
 $sourceUris = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 $sourceResolutions = @{}
 foreach ($source in $sources) {
+    if ($null -eq $source -or $source -is [string] -or $source.GetType().IsPrimitive) {
+        continue
+    }
+    Add-UnknownFieldFailures -Object $source -KnownFields @('uri', 'resolution', 'diagnostic') `
+        -Description 'Source record' -Failures $failures
+    Assert-JsonStringFields -Object $source -Fields @('uri', 'resolution', 'diagnostic') `
+        -Description 'Source record' -Failures $failures
     $uri = Get-RequiredText -Object $source -Name 'uri' -Description 'Source' -Failures $failures
     $resolution = Get-RequiredText -Object $source -Name 'resolution' -Description "Source '$uri'" -Failures $failures
     $null = Get-RequiredText -Object $source -Name 'diagnostic' -Description "Source '$uri'" -Failures $failures
     if (-not $sourceUris.Add($uri)) {
         $failures.Add("Configured source '$uri' is duplicated.")
+    }
+    $parsedSourceUri = $null
+    if (-not [Uri]::TryCreate($uri, [UriKind]::Absolute, [ref] $parsedSourceUri)) {
+        $failures.Add("Configured source '$uri' must be a valid absolute URI.")
     }
 
     if ($resolution -notin @('resolved', 'unresolved')) {
@@ -1460,7 +1599,13 @@ foreach ($package in $packages) {
         $failures.Add("Package '$id' changed without a separately validated Tenants release-owner contract.")
     }
 
+    $packageHistoryRecords = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $packageHistoryOrigins = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     foreach ($historicalEntry in @((Get-PropertyValue -Object $package -Name 'historicalContext') | Where-Object { $null -ne $_ })) {
+        $historyRecord = $historicalEntry | ConvertTo-Json -Depth 20 -Compress
+        if (-not $packageHistoryRecords.Add($historyRecord)) {
+            $failures.Add("Package '$id' contains an exact duplicate historical context record.")
+        }
         $historicalSchema = [string](Get-PropertyValue -Object $historicalEntry -Name 'schema')
         if ([string]::IsNullOrWhiteSpace($historicalSchema)) {
             $failures.Add("Package '$id' has historical context without a typed schema.")
@@ -1512,6 +1657,17 @@ foreach ($package in $packages) {
         if ([string](Get-PropertyValue -Object $historicalEntry -Name 'disposition') -notin @('accepted', 'retained')) {
             $failures.Add("Package '$id' historical context has an invalid disposition.")
         }
+        if ($historicalSchema -ceq 'hexalith.package-audit-package-history.v2') {
+            Assert-HistoricalOrigin `
+                -Entry $historicalEntry -Description "Package '$id' historical context" `
+                -GeneratedRevision $generatedFromRevision -SnapshotTimestamp $parsedTimestamp `
+                -SnapshotTimestampValid $timestampParsed -SeenOrigins $packageHistoryOrigins `
+                -Failures $failures -RevisionCache $revisionRelationCache
+            Assert-HistoricalSourceResults `
+                -Entry $historicalEntry -Description "Package '$id' historical context" `
+                -ConfiguredSourceUris $sourceUris -CurrentSourceScopeSha256 $sourceScopeSha256 `
+                -Failures $failures
+        }
     }
 
     $package | Add-Member -NotePropertyName _validatedFamily -NotePropertyValue $family -Force
@@ -1536,6 +1692,16 @@ if ($null -eq $consumerEvidence) {
     $failures.Add('Audit must declare owned direct-consumer evidence provenance.')
 }
 else {
+    Add-UnknownFieldFailures -Object $consumerEvidence -KnownFields @(
+        'schema', 'discovery', 'fixture', 'fixtureSha256', 'fixtureMode',
+        'repositoryRevision', 'sha256', 'entries'
+    ) -Description 'Consumer evidence' -Failures $failures
+    Assert-JsonStringFields -Object $consumerEvidence -Fields @(
+        'schema', 'discovery', 'fixture', 'fixtureSha256', 'fixtureMode', 'repositoryRevision', 'sha256'
+    ) -NullableFields @('fixture', 'fixtureSha256', 'fixtureMode') `
+        -Description 'Consumer evidence' -Failures $failures
+    Assert-JsonObjectArrayField -Object $consumerEvidence -Field 'entries' `
+        -Description 'Consumer evidence' -Failures $failures
     $consumerSchema = Get-RequiredText `
         -Object $consumerEvidence -Name 'schema' -Description 'Consumer evidence' -Failures $failures
     if ($consumerSchema -cne 'hexalith.package-consumer-evidence.v1') {
@@ -1559,8 +1725,16 @@ else {
             $failures.Add("Explicit consumer evidence must be labeled with fixtureMode 'synthetic-explicit'.")
         }
         if (-not [string]::IsNullOrWhiteSpace([string] $consumerFixture)) {
-            $fixtureFullPath = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $resolvedAuditPath) ([string] $consumerFixture)))
-            if (-not (Test-Path -LiteralPath $fixtureFullPath -PathType Leaf)) {
+            $auditDirectory = [IO.Path]::GetFullPath((Split-Path -Parent $resolvedAuditPath))
+            $fixtureFullPath = [IO.Path]::GetFullPath((Join-Path $auditDirectory ([string] $consumerFixture)))
+            $fixtureIsContained = $fixtureFullPath.StartsWith(
+                "$auditDirectory$([IO.Path]::DirectorySeparatorChar)",
+                [StringComparison]::Ordinal
+            )
+            if (-not $fixtureIsContained) {
+                $failures.Add("Explicit consumer evidence fixture '$consumerFixture' escapes the audit directory.")
+            }
+            elseif (-not (Test-Path -LiteralPath $fixtureFullPath -PathType Leaf)) {
                 $failures.Add("Explicit consumer evidence fixture '$consumerFixture' could not be resolved beside the audit.")
             }
             elseif ((Get-Sha256File -Path $fixtureFullPath) -cne [string] $consumerFixtureSha256) {
@@ -1599,6 +1773,15 @@ else {
     $consumerRelations = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     $consumerEntries = @((Get-PropertyValue -Object $consumerEvidence -Name 'entries'))
     foreach ($entry in $consumerEntries) {
+        if ($null -eq $entry -or $entry -is [string] -or $entry.GetType().IsPrimitive) {
+            continue
+        }
+        Add-UnknownFieldFailures -Object $entry -KnownFields @(
+            'family', 'consumer', 'packageId', 'declarationPath', 'declarationSha256'
+        ) -Description 'Consumer evidence entry' -Failures $failures
+        Assert-JsonStringFields -Object $entry -Fields @(
+            'family', 'consumer', 'packageId', 'declarationPath', 'declarationSha256'
+        ) -Description 'Consumer evidence entry' -Failures $failures
         $family = Get-RequiredText -Object $entry -Name 'family' -Description 'Consumer evidence entry' -Failures $failures
         $consumer = Get-RequiredText -Object $entry -Name 'consumer' -Description 'Consumer evidence entry' -Failures $failures
         $packageId = Get-RequiredText -Object $entry -Name 'packageId' -Description 'Consumer evidence entry' -Failures $failures
@@ -1757,7 +1940,13 @@ foreach ($decision in $familyDecisions) {
     if ((Get-IdentitySignature -Values $representativeConsumers) -cne (Get-IdentitySignature -Values $expectedConsumers)) {
         $failures.Add("Family '$family' representativeConsumers do not exactly match owned direct-consumer evidence.")
     }
+    $familyHistoryRecords = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $familyHistoryOrigins = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     foreach ($historicalEntry in @((Get-PropertyValue -Object $decision -Name 'historicalContext') | Where-Object { $null -ne $_ })) {
+        $historyRecord = $historicalEntry | ConvertTo-Json -Depth 20 -Compress
+        if (-not $familyHistoryRecords.Add($historyRecord)) {
+            $failures.Add("Family '$family' contains an exact duplicate historical context record.")
+        }
         $historicalSchema = [string](Get-PropertyValue -Object $historicalEntry -Name 'schema')
         if ([string]::IsNullOrWhiteSpace($historicalSchema)) {
             $failures.Add("Family '$family' has historical context without a typed schema.")
@@ -1804,6 +1993,13 @@ foreach ($decision in $familyDecisions) {
         if ([string](Get-PropertyValue -Object $historicalEntry -Name 'disposition') -notin @('accepted', 'retained')) {
             $failures.Add("Family '$family' historical context has an invalid disposition.")
         }
+        if ($historicalSchema -ceq 'hexalith.package-audit-family-history.v2') {
+            Assert-HistoricalOrigin `
+                -Entry $historicalEntry -Description "Family '$family' historical context" `
+                -GeneratedRevision $generatedFromRevision -SnapshotTimestamp $parsedTimestamp `
+                -SnapshotTimestampValid $timestampParsed -SeenOrigins $familyHistoryOrigins `
+                -Failures $failures -RevisionCache $revisionRelationCache
+        }
         $historicalPreservation = Get-PropertyValue -Object $historicalEntry -Name 'preservation'
         if ($null -ne $historicalPreservation) {
             $historicalPreservationStatus = Get-RequiredText -Object $historicalPreservation -Name 'status' `
@@ -1827,10 +2023,24 @@ foreach ($decision in $familyDecisions) {
             $parsedOriginTimestamp.Offset -ne [TimeSpan]::Zero) {
             $failures.Add("Family '$family' origin auditedAtUtc must be a valid UTC timestamp.")
         }
+        elseif ($timestampParsed -and $parsedOriginTimestamp -gt $parsedTimestamp) {
+            $failures.Add("Family '$family' origin auditedAtUtc must not be later than the snapshot timestamp.")
+        }
         $originRevision = Get-RequiredText `
             -Object $origin -Name 'generatedFromRevision' -Description "Family '$family' origin" -Failures $failures
         if ($originRevision -cnotmatch '^[0-9a-f]{40}$') {
             $failures.Add("Family '$family' origin generatedFromRevision must be a full lowercase Git revision.")
+        }
+        Assert-RevisionAvailableAncestor `
+            -Revision $originRevision -GeneratedRevision $generatedFromRevision `
+            -Description "Family '$family' origin" -Failures $failures -Cache $revisionRelationCache
+        if ($refreshedPartition.Contains($family) -and
+            ($originRevision -cne $generatedFromRevision -or $originTimestamp -cne $auditedAtUtc)) {
+            $failures.Add("Refreshed family '$family' origin must equal the current snapshot revision and timestamp.")
+        }
+        if ($preservedPartition.Contains($family) -and
+            $originRevision -ceq $generatedFromRevision -and $originTimestamp -ceq $auditedAtUtc) {
+            $failures.Add("Preserved family '$family' origin must differ from the current refresh revision/timestamp pair.")
         }
         foreach ($hashName in @(
                 'familySelectionSha256', 'sourceScopeSha256',
@@ -1921,21 +2131,6 @@ foreach ($decision in $familyDecisions) {
     Assert-FamilyRoundTrip -Decision $decision -Failures $failures
 }
 
-$refreshedPartition = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-$preservedPartition = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-foreach ($family in @((Get-PropertyValue -Object $snapshot -Name 'refreshedFamilies'))) {
-    if ([string]::IsNullOrWhiteSpace([string] $family) -or -not $refreshedPartition.Add([string] $family)) {
-        $failures.Add("Snapshot refreshedFamilies contains a blank or duplicate family '$family'.")
-    }
-}
-foreach ($family in @((Get-PropertyValue -Object $snapshot -Name 'preservedFamilies'))) {
-    if ([string]::IsNullOrWhiteSpace([string] $family) -or -not $preservedPartition.Add([string] $family)) {
-        $failures.Add("Snapshot preservedFamilies contains a blank or duplicate family '$family'.")
-    }
-    elseif ($refreshedPartition.Contains([string] $family)) {
-        $failures.Add("Snapshot family '$family' appears in both refreshed and preserved partitions.")
-    }
-}
 foreach ($family in $decisionsByFamily.Keys) {
     if (-not $refreshedPartition.Contains($family) -and -not $preservedPartition.Contains($family)) {
         $failures.Add("Snapshot partition does not cover catalog family '$family'.")
