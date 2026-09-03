@@ -47,7 +47,7 @@ runs:
         echo "::debug::Registry: ${REGISTRY}"
 
     - name: Log in to Azure
-      uses: azure/login@v3.0.1
+      uses: azure/login@v3.0.2
       with:
         client-id: ${{ inputs.client-id }}
         tenant-id: ${{ inputs.tenant-id }}
