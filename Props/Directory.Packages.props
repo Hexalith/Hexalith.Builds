@@ -6,8 +6,8 @@
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.30.0</HexalithCommonsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.2</HexalithPolymorphicSerializationsVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.102.0</HexalithEventStoreVersion>
-    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.2.0</HexalithFrontComposerVersion>
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.22.1</HexalithMemoriesVersion>
+    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.3.0</HexalithFrontComposerVersion>
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.24.1</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.6.0</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.0.0</HexalithPartiesVersion>
     <HexalithChatbotVersion Condition="'$(HexalithChatbotVersion)' == ''">1.80.0</HexalithChatbotVersion>
