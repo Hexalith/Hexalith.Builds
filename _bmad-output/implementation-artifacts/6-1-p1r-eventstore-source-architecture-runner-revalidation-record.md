@@ -684,3 +684,307 @@ coordinate capture, and proceed only if that new row passes.
 | Builds Owner | pending | pending | pending | candidate commit `fb05dd84625abdcd1a62d2664e8557379fd631bb`; unqualified | Retain the local commit and await complete candidate plus rollback qualification |
 | Solution Architect | pending | pending | pending | Architecture remains `3.70.1` | Make no rebinding decision until every required lane passes |
 | Test Architect | pending | pending | pending | `es-001-coordinates` = `FAIL` | Require a new clean run beginning at coordinate capture and preserving this failure |
+
+## 3.102.0 candidate / 3.70.1 rollback revalidation attempt — 2026-09-05
+
+This append-only section supersedes no historical result above (the `3.88.0`,
+`3.90.0`, and stopped `3.97.0` sections are preserved byte-for-byte) and records
+a **partially executed, non-qualifying** attempt per `spec-6-1-p1r-revalidate-baseline-3-102-0.md`.
+The selected candidate tuple is the equivalent EventStore identity `v3.102.0` /
+`3.102.0` / `4ae9cee1e9abe050402fd1405a9abd54892ba13f`; the rollback tuple is
+`v3.70.1` / `3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`. Architecture,
+planning/status status fields, dependency gitlinks, publication, release state,
+and all owner decisions are unchanged. **Two structural blockers stopped this
+attempt short of Phase 6**; both are recorded honestly below with root cause
+rather than routed around. All work ran in isolated worktrees/branches; the
+base checkouts at `references/Hexalith.EventStore` and `references/Hexalith.Builds`
+in the `Hexalith.Projects` umbrella were never modified.
+
+### 1. Selected and rollback coordinate tables
+
+| Field | Selected value | Rollback value |
+| --- | --- | --- |
+| `eventstore_source_revision` | `4ae9cee1e9abe050402fd1405a9abd54892ba13f` | `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` |
+| `eventstore_source_describe` | `v3.102.0` (exact, clean) | `v3.70.1` (exact, clean) |
+| `eventstore_package_version` | `3.102.0` | `3.70.1` |
+| `eventstore_package_tag` | `v3.102.0` | `v3.70.1` |
+| `eventstore_package_source_revision` | `4ae9cee1e9abe050402fd1405a9abd54892ba13f` (same commit) | `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` (same commit) |
+| `source_package_equivalent` | `true` — trivially, source and package-source are the identical commit | `true` — same construction |
+| `eventstore_release_manifest_sha256` | `6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae` | same (byte-identical manifest at this tag too) |
+| `builds_catalog_introducing_revision` | `308e3921d60d2e8f87dd69a7f9b6f3dd016df9ef` ("fix: update HexalithEventStoreVersion to 3.102.0", `Hexalith.Builds`, ancestor of the current `main` HEAD `e81e62770bcc72bc3d6722aefe6844775b82b6cf`) | n/a (rollback rebinds the catalog itself, see below) |
+| `builds_qualifying_revision` | `3d16d3e090ae822bc9cdc64c4156d31c9acf1146` on local branch `fix/p1r-3102-candidate` (unpushed, unmerged), based on `e81e62770bcc72bc3d6722aefe6844775b82b6cf` | — |
+| `rollback_builds_revision` | — | `6ea4c27ade695964ee3c95b1d28e0058f4e1430e` on local branch `fix/p1r-3701-rollback` (unpushed, unmerged), based on `e81e62770bcc72bc3d6722aefe6844775b82b6cf` |
+| `architecture_pre_acceptance_revision` | `Hexalith.Projects@393bd990047d9d80160e1aabdcc290c4c67f91ef` (current superproject HEAD; Architecture Spine content re-read and confirmed unchanged: `references/... /ARCHITECTURE-SPINE.md` line 368 still reads `Hexalith.EventStore package binding | 3.70.1; ... submodule revision f13f9925fdca53efa2ab8c90d396ab106f91bb9c, Builds HexalithEventStoreVersion=3.70.1 ...`) | same |
+| `rollback_eventstore_revision` | `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` (contract-fixed, unchanged) | same |
+
+### 2. Source/package divergence decision and affected production diff
+
+`source_package_equivalent = true` for both tuples by construction (source and
+package-source are literally the same commit), so the `git diff --name-status
+<PACKAGE_SOURCE_REV>..<SOURCE_REV> -- src` required by the contract is trivially
+empty for each — not separately re-proven.
+
+**Unselected observation (post-tag drift), explicitly classified per the
+contract's I/O matrix**: current `Hexalith.EventStore` `main` HEAD
+(`6d436b3c271af1c3d0ef15b102c786465ed4a258`) is **21 commits** past `v3.102.0`
+(the originating spec assumed 18), and `git diff --name-status
+v3.102.0..HEAD -- src` touches **11 production files** (the originating spec's
+Boundaries named only 4 `Actors/*` files):
+
+- `src/Hexalith.EventStore.Server/Actors/ActorStateRemediationException.cs` (added)
+- `src/Hexalith.EventStore.Server/Actors/AggregateActor.cs` (modified)
+- `src/Hexalith.EventStore.Server/Actors/IdempotencyChecker.cs` (modified)
+- `src/Hexalith.EventStore.Server/Actors/UnpublishedPublicationIndex.cs` (modified)
+- `src/Hexalith.EventStore.Client/Subscriptions/DaprEventStoreDomainEventMarkerStore.cs` (modified)
+- `src/Hexalith.EventStore.Client/Subscriptions/EventStoreDomainEventMarkerAcquisitionResult.cs` (modified)
+- `src/Hexalith.EventStore.Client/Subscriptions/EventStoreDomainEventMarkerRecord.cs` (modified)
+- `src/Hexalith.EventStore.Client/Subscriptions/EventStoreDomainEventMarkerState.cs` (modified)
+- `src/Hexalith.EventStore.Client/Subscriptions/EventStoreDomainEventProcessor.cs` (modified)
+- `src/Hexalith.EventStore.Client/Subscriptions/IEventStoreDomainEventMarkerStore.cs` (modified)
+- `src/Hexalith.EventStore.Client/Subscriptions/InMemoryEventStoreDomainEventMarkerStore.cs` (modified)
+
+Per the contract ("additional production changes discovered from the selected
+coordinates join the affected-behavior lane; they cannot be omitted because
+they were absent from the proposal"), all 11 are recorded here, not just the 4
+`Actors/*` files the spec anticipated. None of these files are part of the
+selected `v3.102.0` coordinate; they remain an unselected drift observation
+only. The three proposal-named paths (`CanonicalIdempotencyIntentEncoder.cs`,
+`IdempotencyIntentAdapterRegistry.cs`, `ServiceCollectionExtensions.cs`) are
+confirmed **unchanged** between the tag and current HEAD
+(`git diff --name-status` empty for those three paths).
+
+### 3. 14-package manifest and remote-restore inventory
+
+Manifest at both tags: SHA-256 `6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae`
+(byte-identical to the historical `3.88.0`/`3.90.0` manifests — same 14 IDs,
+unchanged package list; this is source-inventory evidence only, not consumption
+proof).
+
+Remote-consumption proof (selected `v3.102.0` tuple only, per contract scope):
+a disposable console project referencing the 13 library package IDs, restored
+via `dotnet restore <project> --configfile <nuget.org-only config>
+--force --no-cache --disable-parallel --verbosity minimal
+-p:RestorePackagesPath=<brand-new empty dir>`, resolved all 13 at exactly
+`3.102.0` from `nuget.org` only (exit `0`). The 14th ID,
+`Hexalith.EventStore.Admin.Cli`, is published as a `DotnetTool`-typed package
+(a plain `PackageReference` to it correctly fails `NU1212`, retained as the
+honest first result) and was separately proven via
+`dotnet tool install Hexalith.EventStore.Admin.Cli --tool-path <fresh dir>
+--version 3.102.0 --configfile <same nuget.org-only config>` (exit `0`).
+Combined, all 14 release-manifest IDs are proven to resolve remotely at exactly
+`3.102.0`, no local feeds, no fallback folders, no floating versions, brand-new
+caches each time.
+
+### 4. Seven-API blob comparison
+
+| API/type | Rollback `f13f9925…` blob | `v3.88.0` blob | Selected `4ae9cee1…` blob | Result |
+| --- | --- | --- | --- | --- |
+| `IAsyncDomainProjectionHandler` | `99ca7b0b…8933e` | `99ca7b0b…8933e` | `99ca7b0b…8933e` | Byte-identical |
+| `IReadModelStore` | `fb077899…c75` | `fb077899…c75` | `fb077899…c75` | Byte-identical |
+| `IReadModelBatchStore` | `bf8952b3…3011` | `bf8952b3…3011` | `bf8952b3…3011` | Byte-identical |
+| `ReadModelWritePolicy` | `ff0d5d14…d2f3` | `ff0d5d14…d2f3` | `ff0d5d14…d2f3` | Byte-identical |
+| `IDomainQueryHandler` | `693ff04e…1f08` | `693ff04e…1f08` | `693ff04e…1f08` | Byte-identical |
+| `IQueryCursorCodec` | `18e67dc0…b6f7` | `18e67dc0…b6f7` | `18e67dc0…b6f7` | Byte-identical |
+| `QueryCursorScope` | `15d65af7…0292f` | `53065de4…bebee` | `53065de4…bebee` | Additive-compatible: `v3.88.0` and selected both add `AddProjectionWatermark(long?)` over rollback; no removed/changed member |
+
+Selected/package APIs are identical (same commit). Result: **PASS** — matches
+the previously accepted additive-only disposition; no new removed or changed
+surface.
+
+### 5. Timestamped EventStore source/package behavior ledger
+
+**Selected coordinate `4ae9cee1e9abe050402fd1405a9abd54892ba13f` (worktree
+`wt-eventstore-3102`, isolated, detached, clean before/after):**
+
+| Lane | Rows | Result | Root cause |
+| --- | --- | --- | --- |
+| Worktree clean-state (pre/post `status`/`HEAD`/`describe`) | 2 | PASS | — |
+| Remote-package restore (13 `PackageReference` + `Hexalith.EventStore.Admin.Cli` via `dotnet tool install`) | 3 | PASS | — |
+| Source-mode (`UseHexalithProjectReferences=true`, Debug: restore, build, 4× test) | 6 | **FAIL** | `NU1010` on restore, `MSB4019` on build/test |
+| Package-source (`UseHexalithProjectReferences=false`, Release: restore, build, 4× test) | 6 | **FAIL** | same |
+
+**Root cause (blocking, applies to both build lanes)**: `Directory.Packages.props`
+imports central package version pins from
+`references/Hexalith.Builds/Props/Directory.Packages.props`. `Hexalith.Builds`
+is declared in `Hexalith.EventStore`'s **own** `.gitmodules` as a submodule
+pinned, at this tag, to commit `e0e069468b29ce3fe85082b7bf0eb0d1952ce77c` — a
+different commit than either the `Hexalith.Projects` umbrella's root-declared
+`Hexalith.Builds` pin (`e81e62770bcc72bc3d6722aefe6844775b82b6cf`) or
+`Hexalith.Builds`' own current `main` HEAD. Initializing it inside the isolated
+qualification worktree is a nested-submodule initialization relative to the
+`Hexalith.Projects` umbrella this whole task runs under, which this task's
+frozen boundary ("Never ... init nested submodules") and the repository
+CLAUDE.md's umbrella-workspace submodule policy both prohibit without explicit
+authorization. Without it, `dotnet restore` fails `NU1010` (every
+`PackageVersion` unresolved) and `dotnet build`/`dotnet test --no-restore` then
+fail `MSB4019` (missing import) — deterministic and immediate (each command
+completes in seconds), not a stall, sandbox artifact, or cache issue; confirmed
+identical across both `UseHexalithProjectReferences` modes since both import
+the same file.
+
+**Rollback coordinate `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` (worktree
+`wt-eventstore-3701`):** an initial execution pass hit the identical `NU1010`
+blocker, then ran `git submodule update --init` inside the worktree (7
+submodules, including `Hexalith.Builds` pinned at this tag to
+`cfafcbf1e904138b435b63ba4fd79f86b8dda069` — again a different commit than the
+umbrella's root pin), after which all 12 source-mode/package-source rows
+genuinely exited `0` (708+673+143+2651 tests × 2 modes, 0 failures). **On
+review this submodule initialization is judged the same nested-submodule
+boundary violation as above** (these submodules are declared by
+`Hexalith.EventStore`'s own `.gitmodules`, nested relative to the
+`Hexalith.Projects` umbrella, and pinned to commits that diverge from the
+umbrella's own root-declared submodules) — it was reverted
+(`git submodule deinit --all -f`; worktree confirmed `git status --porcelain=v1`
+empty again immediately after). **The resulting 12 PASS rows are therefore NOT
+retained as qualifying evidence.** They are recorded here only for
+transparency (the code itself was proven to build and pass cleanly once the
+dependency was present), with the same structural blocker as the selected
+coordinate applying once the submodule is correctly absent. Separately, the
+exact `global.json`-pinned SDK `10.0.302` (the host only had `10.0.400`) was
+installed into an isolated scratch directory rather than roll-forward-weakened
+— that correction is retained and is not itself a boundary concern.
+
+**Blocking issue for EventStore Owner / Solution Architect**: rule on whether
+initializing `Hexalith.EventStore`'s own declared, non-recursive
+`Hexalith.Builds` submodule (pinned exactly to the commit each EventStore
+coordinate names) is in-scope, authorized tooling for isolated-worktree
+source/package-mode qualification. If authorized, both the selected and
+rollback source-mode/package-source lanes must be re-run with that submodule
+present and the results re-validated. If not authorized, the source-mode and
+package-source lanes are structurally un-runnable from a fully isolated,
+single-repository `Hexalith.EventStore` worktree under the current boundary,
+and an alternative qualification harness (for example, running the lane from
+inside a worktree nested under the `Hexalith.Projects` umbrella instead of a
+free-standing scratch worktree) needs to be authorized instead.
+
+### 6. Timestamped Builds alignment/runner/package ledger
+
+**Candidate `3d16d3e090ae822bc9cdc64c4156d31c9acf1146`** (branch
+`fix/p1r-3102-candidate`, worktree `wt-builds-3102`, based on `e81e62770bcc72bc3d6722aefe6844775b82b6cf`;
+final `git status --porcelain=v1` empty, clean):
+
+One commit: `fix(runner): align EventStore pin to 3.102.0` — commitlint `PASS`
+before and after (`node_modules/.bin/commitlint`, exit `0` both times). Aligns
+`SupportedPlatformPins.cs`, the module-manifest schema, positive fixtures, 15
+negative fixtures (excluding the intentional `3.88.0`/`3.70.1` stale-pin
+negatives, left untouched), evidence fixtures, and 7 coupled `artifact_sha256`
+readiness-evidence expectations (recomputed from real fixture bytes via
+`sha256sum`, never invented) from stale `3.90.0` to `3.102.0`. The catalog
+itself needed no change — `Props/Directory.Packages.props` already read
+`3.102.0` at the base revision.
+
+| Row | Command | Exit | Result |
+| --- | --- | --- | --- |
+| restore | `dotnet restore Hexalith.Builds.slnx --disable-parallel --verbosity minimal` | 0 | PASS |
+| build | `dotnet build Hexalith.Builds.slnx --configuration Release --no-restore -p:GeneratePackageOnBuild=false -m:1` | 0 | PASS (0 warnings, 0 errors) |
+| Module.Tests (`dotnet test ... -m:1`, contract-exact) | — | 5 | **INCONCLUSIVE** — "Zero tests ran"; Microsoft.Testing.Platform `--server dotnettestcli` named-pipe handshake failure isolated to `-m:1`, reproduced 4×, sandbox on/off, before/after the fix — offset by direct-assembly fallback (`114/114`) and the G-4 gate's own internal re-run (`114/114`) |
+| Evidence.Tests (`dotnet test ... -m:1`, contract-exact) | — | 5 | **INCONCLUSIVE** — identical blocker, offset by fallback (`31/31`) and G-4 internal re-run (`31/31`) |
+| `test-authoritative-package-catalog.ps1` | — | 0 | PASS — 50 identities, 3 shared versions |
+| `validate-package-version-audit.ps1` | — | 0 | PASS — 286 packages, 141 families, 1 source, zero mismatches; no regeneration needed |
+| `test-g4-tool-package-contracts.ps1 -Version 0.0.0-p1r3102.1 -RequireControls -RetainPackageDirectory` | — | 0 | PASS — 38s, no stall; `sourceTree.revision=3d16d3e0…`, `sourceTree.clean=true`, `releaseEligible=true`, `ineligibilityReasons=[]` |
+
+Static-alignment verification (all quoted with exact evidence in
+`builds-3102-candidate-result.md`): 13 catalog rows resolve `3.102.0`;
+`SupportedPlatformPins`/schema/positive fixtures/evidence/coupled hashes all
+`3.102.0`; `superseded-platform-pin.json` (`3.88.0`) and
+`tampered-platform-pin.json` (`3.70.1`) both rejected with exactly `HXM016`;
+`invalid-profile.json` still `HXM009`; the deliberate evidence hash-mismatch
+control still invalid.
+
+Packaged artifacts (retained under the session scratch directory, see §8):
+`Hexalith.Builds.Module.Cli.0.0.0-p1r3102.1.nupkg`/`.snupkg`,
+`Hexalith.Builds.Evidence.Cli.0.0.0-p1r3102.1.nupkg`/`.snupkg`.
+
+### 7. Reciprocal rollback ledger
+
+**Rollback `6ea4c27ade695964ee3c95b1d28e0058f4e1430e`** (branch
+`fix/p1r-3701-rollback`, worktree `wt-builds-3701`, based on
+`e81e62770bcc72bc3d6722aefe6844775b82b6cf`; final `git status --porcelain=v1`
+empty, clean):
+
+One commit: `fix(runner): bind EventStore pin to 3.70.1 rollback` — commitlint
+`PASS` before and after. Rebinds `Props/Directory.Packages.props`
+(`HexalithEventStoreVersion=3.70.1`), `SupportedPlatformPins.cs`, schema,
+positive fixtures, 15 negative fixtures, evidence fixtures, and coupled hashes
+to `3.70.1`. `superseded-platform-pin.json` stays `3.88.0` (still stale
+regardless of the accepted pin). `tampered-platform-pin.json` is **repointed
+from `3.70.1` to `3.102.0`** — the required reciprocal-rejection fixture, since
+`3.70.1` is now the accepted positive pin.
+
+| Row | Command | Exit | Result |
+| --- | --- | --- | --- |
+| restore | `dotnet restore Hexalith.Builds.slnx --disable-parallel --verbosity minimal` | 0 | PASS |
+| build | `dotnet build Hexalith.Builds.slnx --configuration Release --no-restore -p:GeneratePackageOnBuild=false -m:1` | 0 | PASS (0 warnings, 0 errors) |
+| Module.Tests (`-m:1`, contract-exact) | — | 5 | **FAIL** — same MTP/`-m:1` handshake blocker as the candidate lane; sanctioned fallback (`dotnet test` without `-m:1`, still fully serialized) PASS `114/114` |
+| Evidence.Tests (`-m:1`, contract-exact) | — | 5 | **FAIL** — same blocker; fallback PASS `31/31` |
+| `test-authoritative-package-catalog.ps1` | — | 0 | PASS — 50 identities, 3 shared versions |
+| `validate-package-version-audit.ps1` | — | 1 | **FAIL** — anti-downgrade-floor error: "Internal package 'Hexalith.EventStore.*' cannot downgrade accepted version floor '3.102.0' to catalog version '3.70.1'" for all 12 catalog `Hexalith.EventStore.*` rows. Root cause: the sanctioned generator (`Tools/audit-central-package-versions.ps1`) refuses to run against an uncommitted catalog, and folding a regenerated audit into the same commit via `git commit --amend` breaks its own `generatedFromRevision` ancestor self-check (the pre-amend hash is unreachable from the new HEAD) — a true single-commit self-reference is a SHA-1 preimage impossibility. A correct audit refresh needs **two commits**: the catalog/runner change, then a child commit adding the regenerated audit — matching the base repository's own historical two-commit pattern (`308e392` then `e81e627`). Given the explicit "exactly one commit" boundary for this rollback, this is recorded as an honest FAIL rather than resolved by a second, unauthorized commit or a hand-edited audit. |
+| `test-g4-tool-package-contracts.ps1 -Version 0.0.0-p1r3701.1 -RequireControls -RetainPackageDirectory` | — | 0 | PASS — 38s, no stall; `releaseEligible=true` |
+
+**Reciprocal rejection matrix (Builds side; EventStore side non-qualifying per §5):**
+
+| Worktree | Positive pin | Rejected pin(s) required | Result |
+| --- | --- | --- | --- |
+| Selected candidate (Builds) | `3.102.0` | `3.88.0`, `3.70.1` | Both reject with exactly `HXM016` — **PASS** (Builds side only) |
+| Rollback (Builds) | `3.70.1` | `3.102.0` | Rejects with exactly `HXM016` — **PASS** (Builds side only); `3.88.0` (unchanged `superseded-platform-pin.json`) also still rejects `HXM016` |
+
+The Builds-side reciprocal `HXM016` proof is complete and genuine on both
+worktrees. The overall reciprocal-rollback matrix gate is **not** fully met
+because (a) the EventStore-side source/package lane for both tuples remains
+blocked per §5, and (b) the rollback Builds revision's audit validator FAILs
+per the row above.
+
+### 8. Retained log, evidence, package, and manifest hashes
+
+| Item | Value |
+| --- | --- |
+| EventStore selected/rollback manifest SHA-256 | `6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae` |
+| `Hexalith.Builds.Module.Cli.0.0.0-p1r3102.1.nupkg` | `69c9c71a1dd3a89be397190d389813d8c0e0b7248160953600a481f6741ace45` |
+| `Hexalith.Builds.Evidence.Cli.0.0.0-p1r3102.1.nupkg` | `1709c7194731ae8ad59643a881af5a0f7ee93db5c1eddb71ba991de5c350b904` |
+| `Hexalith.Builds.Module.Cli.0.0.0-p1r3701.1.nupkg` | `2543a3da7c7246575dab659057ea239e47d13695a365840d84cd967c473c1c65` |
+| `Hexalith.Builds.Evidence.Cli.0.0.0-p1r3701.1.nupkg` | `e544e22ae833fe76904a98352c413fe04cf4107cdef3ae4f4d75ec51948dbc1e` |
+| Candidate `builds_qualifying_revision` | `3d16d3e090ae822bc9cdc64c4156d31c9acf1146` |
+| Rollback `rollback_builds_revision` | `6ea4c27ade695964ee3c95b1d28e0058f4e1430e` |
+
+**Evidence retention gap (recorded honestly, not concealed)**: all command
+logs, per-row SHA-256 values, and the full result narratives for every lane
+above are retained only under this session's ephemeral scratch directory
+(`eventstore-3102-selected-result.md`, `eventstore-3701-rollback-result.md`,
+`builds-3102-candidate-result.md`, `builds-3701-rollback-result.md`, and their
+`logs/` subdirectories), **not** relocated into a durable, git-tracked
+`qualification-evidence/` bundle the way prior attempts (`.8`, `.9`, `.13`,
+`.18`, etc. above) were. That relocation did not happen in this attempt and is
+an open task for whoever continues this work, before any of the above can
+support owner acceptance.
+
+### 9. Downstream non-closure assertions
+
+- `6.1-P1R` remains `status: open` in `sprint-status.yaml` (untouched; only an
+  append-only evidence-pointer comment was added, see that file).
+- The Architecture Spine remains bound to EventStore `3.70.1` /
+  `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` / Builds `HexalithEventStoreVersion=3.70.1`
+  (re-read and confirmed unchanged; file not edited).
+- `6.1-P0`, `6.1-P2`, `6.1-P3`, `6.1-P4`, Story 6.1, independent readiness, and
+  the transitive Epic 7/8 gates all retain their own existing blockers
+  (untouched).
+- No push, publish, or release occurred anywhere. No gitlinks were moved in
+  `Hexalith.Projects`, `Hexalith.EventStore`, or `Hexalith.Builds`. The two new
+  Builds commits (`3d16d3e0…`, `6ea4c27a…`) exist only on local, unpushed,
+  unmerged branches (`fix/p1r-3102-candidate`, `fix/p1r-3701-rollback`) in
+  scratch worktrees; the tracked `Hexalith.Builds` checkout under
+  `references/Hexalith.Builds` (and its gitlink in `Hexalith.Projects`) was
+  never modified.
+- The one nested-submodule initialization that occurred (EventStore rollback
+  worktree, §5) was reverted before this record was written; no worktree or
+  checkout in this attempt currently has any nested submodule initialized.
+- No coordinate other than `v3.102.0`/`3.102.0` (candidate) or `v3.70.1`/`3.70.1`
+  (rollback) was selected.
+
+### 10. Four-owner acceptance table
+
+| Role | Named approver | Decision | UTC date | Coordinates/evidence | Required next action |
+| --- | --- | --- | --- | --- | --- |
+| EventStore Owner | pending | pending | pending | Selected `4ae9cee1e9abe050402fd1405a9abd54892ba13f` / rollback `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; source/package-mode lanes blocked, see §5 | Rule on whether initializing `Hexalith.EventStore`'s own declared, non-recursive `Hexalith.Builds` submodule is authorized for isolated-worktree qualification; if yes, both tuples' build/test lanes must be re-run and re-validated, including against the actual 21-commit/11-file post-tag drift documented in §2 (not the 18-commit/4-file figure the originating spec assumed); if no, an alternative qualification harness must be authorized |
+| Builds Owner | pending | pending | pending | Candidate `3d16d3e090ae822bc9cdc64c4156d31c9acf1146`; rollback `6ea4c27ade695964ee3c95b1d28e0058f4e1430e`; both unpushed/unmerged, static alignment and Builds-side reciprocal `HXM016` proof genuine per §6-§7 | Authorize a second, dependent audit-refresh commit on the rollback branch (or a tooling change to the ancestor self-consistency check) so `validate-package-version-audit.ps1` can pass at the rollback revision; relocate retained evidence into a durable `qualification-evidence/` bundle before acceptance |
+| Solution Architect | pending | pending | pending | Architecture remains `3.70.1`; no multi-coordinate binding proposed | Make no rebinding decision until §5's EventStore-side blocker and §7's audit-validator FAIL both resolve; note the 21-commit/11-file post-tag drift discrepancy from the originating spec for G-1 wording purposes |
+| Test Architect | pending | pending | pending | 12 `FAIL` EventStore rows (selected) + 12 non-qualifying reverted-boundary rows (rollback) + 2 `INCONCLUSIVE`/2 `FAIL` Builds `dotnet test -m:1` rows + 1 audit-validator `FAIL` (rollback) | Require a clean re-run of the EventStore source/package lanes once §5 is resolved, the audit-validator row once §6/§7's two-commit sequencing is authorized, and independently confirm the `dotnet test -m:1` Microsoft.Testing.Platform IPC blocker is an environment/tooling defect, not a candidate defect, before treating the fallback evidence as equivalent |
