@@ -1,1 +1,4 @@
 Props/Directory.Packages.props text eol=crlf
+*.cs whitespace=cr-at-eol
+test/fixtures/**/*.json text eol=lf
+test/fixtures/**/*.yaml text eol=lf

@@ -6,9 +6,11 @@
 namespace Hexalith.Builds.Tooling.Evidence;
 
 using System.Security.Cryptography;
+using System.Text;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Filesystem;
+using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.RunEvidence;
 
 using YamlDotNet.Core;
@@ -1043,7 +1045,11 @@ internal static class ReadinessEvidenceValidator
             {
                 AddDiagnostic(diagnostics, document, "HXE149", ToolFailureCategory.EvidencePolicy, "evidence_artifact", row, rowKey);
             }
-            else if (!ArtifactBindsToRow(artifactSummary, GetScalar(row, "verification_command")))
+            else if (!ArtifactBindsToRow(
+                artifactSummary,
+                document.RepositoryRoot,
+                GetScalar(row, "verification_command"),
+                GetEffectiveScalar(row, defaults, "fixture")))
             {
                 AddDiagnostic(diagnostics, document, "HXE152", ToolFailureCategory.EvidencePolicy, "evidence_artifact", row, rowKey);
             }
@@ -1059,27 +1065,97 @@ internal static class ReadinessEvidenceValidator
     /// <summary>
     /// Binds a passing readiness row to the artifact it cites: the artifact must be a
     /// <c>test</c> invocation (never <c>run</c>/<c>down</c>), its module subcommand must match
-    /// the row's verification command when both are resolvable, and a declared profile must match.
+    /// the row's verification command, profile fixture, and current repository input bytes.
     /// </summary>
     /// <param name="summary">The validated artifact summary.</param>
+    /// <param name="repositoryRoot">The readiness document's repository root.</param>
     /// <param name="verificationCommand">The row's declared verification command.</param>
+    /// <param name="fixture">The row's declared fixture path.</param>
     /// <returns><see langword="true"/> when the artifact binds to the row.</returns>
-    private static bool ArtifactBindsToRow(ModuleRunEvidenceArtifactSummary summary, string? verificationCommand)
+    private static bool ArtifactBindsToRow(
+        ModuleRunEvidenceArtifactSummary summary,
+        string repositoryRoot,
+        string? verificationCommand,
+        string? fixture)
     {
-        string? artifactSubcommand = ExtractModuleSubcommand(summary.Command);
-        if (artifactSubcommand is null || !string.Equals(artifactSubcommand, "test", StringComparison.Ordinal))
+        string? canonicalArtifactCommand = CreateCanonicalArtifactCommand(summary);
+        if (canonicalArtifactCommand is null
+            || !string.Equals(summary.Command, canonicalArtifactCommand, StringComparison.Ordinal))
         {
             return false;
         }
 
         string? rowSubcommand = ExtractModuleSubcommand(verificationCommand);
-        if (rowSubcommand is not null && !string.Equals(rowSubcommand, artifactSubcommand, StringComparison.Ordinal))
+        if (!string.Equals(rowSubcommand, "test", StringComparison.Ordinal))
         {
             return false;
         }
 
+        string? rowManifestPath = ExtractCommandOption(verificationCommand, "--manifest");
         string? rowProfile = ExtractCommandOption(verificationCommand, "--profile");
-        return rowProfile is null || string.Equals(rowProfile, summary.Profile, StringComparison.Ordinal);
+        string? rowFilter = ExtractCommandOption(verificationCommand, "--filter");
+        if (string.IsNullOrWhiteSpace(rowManifestPath)
+            || string.IsNullOrWhiteSpace(summary.ManifestPath)
+            || !IsCanonicalRelativePath(rowManifestPath)
+            || !string.Equals(rowManifestPath, summary.ManifestPath, StringComparison.Ordinal)
+            || string.IsNullOrWhiteSpace(rowProfile)
+            || !string.Equals(rowProfile, summary.Profile, StringComparison.Ordinal)
+            || string.IsNullOrWhiteSpace(rowFilter)
+            || string.IsNullOrWhiteSpace(summary.FilterHash)
+            || !string.Equals(HashString(rowFilter), summary.FilterHash, StringComparison.Ordinal)
+            || string.IsNullOrWhiteSpace(fixture)
+            || string.IsNullOrWhiteSpace(summary.FixturePath)
+            || !IsCanonicalRelativePath(fixture)
+            || !string.Equals(fixture, summary.FixturePath, StringComparison.Ordinal)
+            || !RepositoryFileMatchesHash(repositoryRoot, summary.ManifestPath, summary.ManifestHash)
+            || !RepositoryFileMatchesHash(repositoryRoot, summary.FixturePath, summary.FixtureHash))
+        {
+            return false;
+        }
+
+        if (!RepositoryPathResolver.TryResolveExistingFile(repositoryRoot, summary.ManifestPath, out string manifestPath))
+        {
+            return false;
+        }
+
+        ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
+        return manifestResult.IsValid
+            && manifestResult.Manifest!.Profiles.TryGetValue(rowProfile, out ModuleProfile? profile)
+            && string.Equals(profile.Fixture, summary.FixturePath, StringComparison.Ordinal);
+    }
+
+    private static string? CreateCanonicalArtifactCommand(ModuleRunEvidenceArtifactSummary summary) =>
+        string.IsNullOrWhiteSpace(summary.ManifestPath)
+        || string.IsNullOrWhiteSpace(summary.Profile)
+        || string.IsNullOrWhiteSpace(summary.FilterHash)
+            ? null
+            : $"hexalith-module test --manifest {summary.ManifestPath} --profile {summary.Profile} --filter-sha256 {summary.FilterHash}";
+
+    private static string HashString(string value) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+
+    private static bool RepositoryFileMatchesHash(string repositoryRoot, string path, string? expectedHash)
+    {
+        if (!IsCanonicalRelativePath(path)
+            || string.IsNullOrWhiteSpace(expectedHash)
+            || !RepositoryPathResolver.TryResolveExistingFile(repositoryRoot, path, out string resolvedPath))
+        {
+            return false;
+        }
+
+        try
+        {
+            string actualHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(resolvedPath)));
+            return string.Equals(actualHash, expectedHash, StringComparison.Ordinal);
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     private static string? ExtractModuleSubcommand(string? command) =>
@@ -1096,8 +1172,29 @@ internal static class ReadinessEvidenceValidator
         }
 
         string[] tokens = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        int index = Array.IndexOf(tokens, token);
-        return index >= 0 && index + 1 < tokens.Length ? tokens[index + 1] : null;
+        int index = -1;
+        for (int candidateIndex = 0; candidateIndex < tokens.Length; candidateIndex++)
+        {
+            if (!string.Equals(tokens[candidateIndex], token, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (index >= 0)
+            {
+                return null;
+            }
+
+            index = candidateIndex;
+        }
+
+        if (index < 0 || index + 1 >= tokens.Length)
+        {
+            return null;
+        }
+
+        string value = tokens[index + 1];
+        return value.StartsWith("--", StringComparison.Ordinal) ? null : value;
     }
 
     private static void ValidateCoverage(

@@ -156,6 +156,45 @@ public sealed class ReadinessEvidenceValidatorTests
         AssertRuleAsync("negative/binding-mismatch.yaml", "HXE152");
 
     /// <summary>
+    /// Verifies every declared readiness input identity fails closed under the stable binding rule.
+    /// </summary>
+    /// <param name="fixture">The isolated identity-mismatch fixture.</param>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Theory]
+    [InlineData("negative/artifact-command-filter-mismatch.yaml")]
+    [InlineData("negative/artifact-command-manifest-mismatch.yaml")]
+    [InlineData("negative/artifact-command-profile-mismatch.yaml")]
+    [InlineData("negative/artifact-duplicate-option-mismatch.yaml")]
+    [InlineData("negative/artifact-raw-filter-equals-mismatch.yaml")]
+    [InlineData("negative/artifact-raw-filter-mismatch.yaml")]
+    [InlineData("negative/filter-hash-mismatch.yaml")]
+    [InlineData("negative/fixture-path-mismatch.yaml")]
+    [InlineData("negative/fixture-hash-mismatch.yaml")]
+    [InlineData("negative/malformed-row-option-mismatch.yaml")]
+    [InlineData("negative/manifest-path-mismatch.yaml")]
+    [InlineData("negative/manifest-hash-mismatch.yaml")]
+    [InlineData("negative/manifest-profile-fixture-mismatch.yaml")]
+    [InlineData("negative/row-profile-mismatch.yaml")]
+    public Task PassedRowIdentityMismatchFailsClosedAsync(string fixture) =>
+        AssertRuleAsync(fixture, "HXE152");
+
+    /// <summary>
+    /// Verifies a filter mismatch diagnostic does not retain the raw filter value.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task FilterHashMismatchDoesNotExposeRawFilterAsync()
+    {
+        const string rawFilter = "Category=identity-drift";
+        ToolCommandResult result = await ReadinessEvidenceValidator.ValidateAsync(
+            EvidenceFixturePath.Get("negative/filter-hash-mismatch.yaml"),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(["HXE152"]);
+        JsonSerializer.Serialize(result.Diagnostics).Contains(rawFilter, StringComparison.Ordinal).ShouldBeFalse();
+    }
+
+    /// <summary>
     /// Verifies a passed row cannot be satisfied by a run that reported no executed tests.
     /// </summary>
     /// <returns>A task that completes after the assertion.</returns>
@@ -210,16 +249,30 @@ public sealed class ReadinessEvidenceValidatorTests
     /// <param name="expectedSnapshot">The expected outcome snapshot path.</param>
     /// <returns>A task that completes after the assertion.</returns>
     [Theory]
+    [InlineData("negative/artifact-command-filter-mismatch.yaml", "negative/artifact-command-filter-mismatch.expected.json")]
+    [InlineData("negative/artifact-command-manifest-mismatch.yaml", "negative/artifact-command-manifest-mismatch.expected.json")]
+    [InlineData("negative/artifact-command-profile-mismatch.yaml", "negative/artifact-command-profile-mismatch.expected.json")]
+    [InlineData("negative/artifact-duplicate-option-mismatch.yaml", "negative/artifact-duplicate-option-mismatch.expected.json")]
+    [InlineData("negative/artifact-raw-filter-equals-mismatch.yaml", "negative/artifact-raw-filter-equals-mismatch.expected.json")]
+    [InlineData("negative/artifact-raw-filter-mismatch.yaml", "negative/artifact-raw-filter-mismatch.expected.json")]
     [InlineData("negative/artifact-hash-mismatch.yaml", "negative/artifact-hash-mismatch.expected.json")]
     [InlineData("negative/binding-mismatch.yaml", "negative/binding-mismatch.expected.json")]
     [InlineData("negative/coverage-shortfall.yaml", "negative/coverage-shortfall.expected.json")]
     [InlineData("negative/duplicate-key.yaml", "negative/duplicate-key.yaml.expected.json")]
+    [InlineData("negative/filter-hash-mismatch.yaml", "negative/filter-hash-mismatch.expected.json")]
+    [InlineData("negative/fixture-hash-mismatch.yaml", "negative/fixture-hash-mismatch.expected.json")]
+    [InlineData("negative/fixture-path-mismatch.yaml", "negative/fixture-path-mismatch.expected.json")]
     [InlineData("negative/invalid-artifact.yaml", "negative/invalid-artifact.expected.json")]
+    [InlineData("negative/malformed-row-option-mismatch.yaml", "negative/malformed-row-option-mismatch.expected.json")]
+    [InlineData("negative/manifest-hash-mismatch.yaml", "negative/manifest-hash-mismatch.expected.json")]
+    [InlineData("negative/manifest-path-mismatch.yaml", "negative/manifest-path-mismatch.expected.json")]
+    [InlineData("negative/manifest-profile-fixture-mismatch.yaml", "negative/manifest-profile-fixture-mismatch.expected.json")]
     [InlineData("negative/missing-artifact-metadata.yaml", "negative/missing-artifact-metadata.expected.json")]
     [InlineData("negative/no-executed-tests.yaml", "negative/no-executed-tests.expected.json")]
     [InlineData("negative/outcome-mismatch.yaml", "negative/outcome-mismatch.expected.json")]
     [InlineData("negative/policy-controls.yaml", "negative/policy-controls.yaml.expected.json")]
     [InlineData("negative/secret-metadata.yaml", "negative/secret-metadata.expected.json")]
+    [InlineData("negative/row-profile-mismatch.yaml", "negative/row-profile-mismatch.expected.json")]
     [InlineData("negative/unknown-field.yaml", "negative/unknown-field.yaml.expected.json")]
     [InlineData("negative/unsupported-schema.yaml", "negative/unsupported-schema.yaml.expected.json")]
     [InlineData("positive/readiness.yaml", "positive/readiness.yaml.expected.json")]

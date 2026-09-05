@@ -918,13 +918,16 @@ try {
         }
         $packagedToolVersion = "$Version+$sourceRevision"
         $packagedManifestHash = (Get-FileHash -LiteralPath $modulePositive.FullName -Algorithm SHA256).Hash
+        $readinessFilterHash = [Convert]::ToHexString(
+            [Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes('Category=smoke')))
         $packagedFilterHash = [Convert]::ToHexString(
             [Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes('Bearer packaged-redaction-control')))
         $sourceEvidencePath = Join-Path $fixtureRootPath 'evidence/positive/evidence/release-passed.json'
         $null = Assert-ModuleEvidence -Path $sourceEvidencePath -FinalStatus 'completed' -ExitCode 0 -RuleId $null `
-            -Phase 'None' -Category 'None' -Command 'hexalith-module test --profile full' `
+            -Phase 'None' -Category 'None' `
+            -Command "hexalith-module test --manifest $moduleManifestPath --profile full --filter-sha256 $readinessFilterHash" `
             -ToolVersion '0.0.0-contract' -RepositoryRevision '0123456789abcdef0123456789abcdef01234567' `
-            -RepositoryDirtyMarker 'clean' -ManifestHash ('A' * 64) `
+            -RepositoryDirtyMarker 'clean' -ManifestHash $packagedManifestHash `
             -Description 'Source readiness evidence'
 
         Copy-Item -LiteralPath $sourceEvidencePath -Destination (Join-Path $qualificationEvidenceRoot 'source-release-passed.json')

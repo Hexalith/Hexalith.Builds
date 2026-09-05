@@ -162,12 +162,22 @@ internal static class ModuleRunEvidenceArtifactValidator
 
             JsonElement invocation = root.GetProperty("invocation");
             JsonElement profileElement = invocation.GetProperty("profile");
+            JsonElement manifestPathElement = invocation.GetProperty("manifestPath");
+            JsonElement manifestHashElement = invocation.GetProperty("manifestHash");
+            JsonElement fixturePathElement = invocation.GetProperty("fixturePath");
+            JsonElement fixtureHashElement = invocation.GetProperty("fixtureHash");
+            JsonElement filterHashElement = invocation.GetProperty("filterHash");
             JsonElement testCounts = root.GetProperty("testCounts");
             summary = new ModuleRunEvidenceArtifactSummary(
                 root.GetProperty("finalStatus").GetString()!,
                 exitCode,
                 invocation.GetProperty("command").GetString()!,
+                manifestPathElement.ValueKind == JsonValueKind.String ? manifestPathElement.GetString() : null,
+                manifestHashElement.ValueKind == JsonValueKind.String ? manifestHashElement.GetString() : null,
                 profileElement.ValueKind == JsonValueKind.String ? profileElement.GetString() : null,
+                fixturePathElement.ValueKind == JsonValueKind.String ? fixturePathElement.GetString() : null,
+                fixtureHashElement.ValueKind == JsonValueKind.String ? fixtureHashElement.GetString() : null,
+                filterHashElement.ValueKind == JsonValueKind.String ? filterHashElement.GetString() : null,
                 testCounts.GetProperty("reported").GetBoolean(),
                 testCounts.GetProperty("passed").GetInt32(),
                 testCounts.GetProperty("failed").GetInt32());

@@ -54,18 +54,18 @@ rows:
     verification_command: dotnet tool run hexalith-module test --profile full --filter Finding=TEST-001
     evidence_artifact: evidence/finding-001.json
     estimate: S
-  - key: release-outcome
+  - key: release-row-profile
     category: release
     ids: [NFR-11.smoke]
-    description: passed release reporting a non-passing outcome
+    description: passed release whose row profile differs from artifact identity
     primary_story: "8.11"
     supporting_stories: []
     entry_gates: [G-4]
     fixture: test/fixtures/module/profiles/p0-two-module-full.fixture.json
-    verification_command: dotnet tool run hexalith-module test --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json --profile full --filter Category=smoke
+    verification_command: dotnet tool run hexalith-module test --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json --profile persisted --filter Category=smoke
     evidence_artifact: test/fixtures/evidence/positive/evidence/release-passed.json
     estimate: M
     status: passed
-    outcome: failed
+    outcome: passed
     artifact_schema: hexalith.module-run-evidence.v1
     artifact_sha256: fa6a9cd2225abccbbabceacaa34e2bba02e65be9f9ec6a35fee3ee65fb374256

@@ -61,11 +61,11 @@ rows:
     primary_story: "8.11"
     supporting_stories: []
     entry_gates: [G-4]
-    fixture: fixtures/release-smoke
-    verification_command: dotnet tool run hexalith-module test --profile full --filter Category=smoke
+    fixture: test/fixtures/module/profiles/p0-two-module-full.fixture.json
+    verification_command: dotnet tool run hexalith-module test --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json --profile full --filter Category=smoke
     evidence_artifact: test/fixtures/evidence/negative/evidence/test-no-tests.json
     estimate: M
     status: passed
     outcome: passed
     artifact_schema: hexalith.module-run-evidence.v1
-    artifact_sha256: 1d744ec2543afbaa37015f7c58ea6a69dbe7f92d6a5e35e60573bf519b4a9772
+    artifact_sha256: 77370532488e655e6d11af5274b45ef440bbaec47736e832b34bab7a310369c5

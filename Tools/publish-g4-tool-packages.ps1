@@ -248,6 +248,8 @@ foreach ($evidenceFile in $actualQualificationEvidence) {
 $moduleManifestPath = Join-Path $fixtureRoot 'module/positive/hexalith.module-manifest.v1.json'
 $moduleManifestHash = (Get-FileHash -LiteralPath $moduleManifestPath -Algorithm SHA256).Hash
 $packagedToolVersion = "$Version+$qualifiedSourceRevision"
+$readinessFilterHash = [Convert]::ToHexString(
+    [Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes('Category=smoke')))
 $packagedFilterHash = [Convert]::ToHexString(
     [Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes('Bearer packaged-redaction-control')))
 
@@ -260,9 +262,10 @@ if (-not [System.Linq.Enumerable]::SequenceEqual(
 }
 $null = Assert-ModuleRunEvidenceContent -FilePath $sourceEvidencePath `
     -ExpectedFinalStatus 'completed' -ExpectedExitCode 0 -ExpectedRuleId $null -ExpectedPhase 'None' -ExpectedCategory 'None' `
-    -ExpectedCommand 'hexalith-module test --profile full' -ExpectedToolVersion '0.0.0-contract' `
+    -ExpectedCommand "hexalith-module test --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json --profile full --filter-sha256 $readinessFilterHash" `
+    -ExpectedToolVersion '0.0.0-contract' `
     -ExpectedRepositoryRevision '0123456789abcdef0123456789abcdef01234567' -ExpectedRepositoryDirtyMarker 'clean' `
-    -ExpectedManifestHash ('A' * 64)
+    -ExpectedManifestHash $moduleManifestHash
 
 $null = Assert-ModuleRunEvidenceContent `
     -FilePath $evidencePathsByName['qualification-evidence/packaged-down-evidence.json'] `
