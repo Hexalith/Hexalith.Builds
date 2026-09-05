@@ -1,0 +1,71 @@
+schema: hexalith.readiness-evidence.v1
+project: Hexalith.Builds
+validation:
+  required_coverage:
+    fr: FR-1..FR-1
+    nfr: NFR-1..NFR-1
+    finding: "1"
+    release: "1"
+status_legend:
+  pending: planned evidence
+  blocked-external: external dependency
+  not-verified: unavailable environment
+  failed: executed evidence failed
+  passed: executed evidence passed
+  skipped: skipped evidence
+defaults:
+  repository: Hexalith.Builds
+  owner: Builds Owner
+  environment: deterministic-local
+  pinned_revision: 0123456789abcdef
+  status: pending
+  release_disposition: release-blocking
+rows:
+  - key: fr-1
+    category: fr
+    ids: [FR-1]
+    description: functional readiness coverage
+    primary_story: "6.1"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/fr-1
+    verification_command: dotnet tool run hexalith-module test --profile full --filter FR-1
+    evidence_artifact: evidence/fr-1.json
+    estimate: M
+  - key: nfr-1
+    category: nfr
+    ids: [NFR-1]
+    description: non-functional readiness coverage
+    primary_story: "8.1"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/nfr-1
+    verification_command: dotnet tool run hexalith-module test --profile full --filter NFR-1
+    evidence_artifact: evidence/nfr-1.json
+    estimate: M
+  - key: finding-001
+    category: finding
+    ids: [TEST-001]
+    description: finding readiness coverage
+    primary_story: "8.1"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: fixtures/finding-001
+    verification_command: dotnet tool run hexalith-module test --profile full --filter Finding=TEST-001
+    evidence_artifact: evidence/finding-001.json
+    estimate: S
+  - key: release-duplicate-row-option
+    category: release
+    ids: [NFR-11.smoke]
+    description: passed release whose row command repeats an identity option
+    primary_story: "8.11"
+    supporting_stories: []
+    entry_gates: [G-4]
+    fixture: test/fixtures/module/profiles/p0-two-module-full.fixture.json
+    verification_command: dotnet tool run hexalith-module test --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json --profile full --profile persisted --filter Category=smoke
+    evidence_artifact: test/fixtures/evidence/positive/evidence/release-passed.json
+    estimate: M
+    status: passed
+    outcome: passed
+    artifact_schema: hexalith.module-run-evidence.v1
+    artifact_sha256: fa6a9cd2225abccbbabceacaa34e2bba02e65be9f9ec6a35fee3ee65fb374256

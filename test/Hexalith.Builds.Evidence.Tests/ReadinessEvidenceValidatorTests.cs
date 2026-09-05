@@ -168,26 +168,34 @@ public sealed class ReadinessEvidenceValidatorTests
     [InlineData("negative/artifact-raw-filter-equals-mismatch.yaml")]
     [InlineData("negative/artifact-raw-filter-mismatch.yaml")]
     [InlineData("negative/filter-hash-mismatch.yaml")]
-    [InlineData("negative/fixture-path-mismatch.yaml")]
     [InlineData("negative/fixture-hash-mismatch.yaml")]
+    [InlineData("negative/fixture-path-mismatch.yaml")]
     [InlineData("negative/malformed-row-option-mismatch.yaml")]
-    [InlineData("negative/manifest-path-mismatch.yaml")]
     [InlineData("negative/manifest-hash-mismatch.yaml")]
+    [InlineData("negative/manifest-path-mismatch.yaml")]
     [InlineData("negative/manifest-profile-fixture-mismatch.yaml")]
+    [InlineData("negative/row-duplicate-option-mismatch.yaml")]
+    [InlineData("negative/row-missing-filter-mismatch.yaml")]
+    [InlineData("negative/row-missing-manifest-mismatch.yaml")]
     [InlineData("negative/row-profile-mismatch.yaml")]
     public Task PassedRowIdentityMismatchFailsClosedAsync(string fixture) =>
         AssertRuleAsync(fixture, "HXE152");
 
     /// <summary>
-    /// Verifies a filter mismatch diagnostic does not retain the raw filter value.
+    /// Verifies a filter mismatch diagnostic retains neither the row's raw filter value nor a
+    /// raw filter embedded in the artifact command.
     /// </summary>
+    /// <param name="fixture">The isolated filter-mismatch fixture.</param>
+    /// <param name="rawFilter">The raw filter value that must never reach a diagnostic.</param>
     /// <returns>A task that completes after the assertion.</returns>
-    [Fact]
-    public async Task FilterHashMismatchDoesNotExposeRawFilterAsync()
+    [Theory]
+    [InlineData("negative/artifact-raw-filter-equals-mismatch.yaml", "Category=smoke")]
+    [InlineData("negative/artifact-raw-filter-mismatch.yaml", "Category=smoke")]
+    [InlineData("negative/filter-hash-mismatch.yaml", "Category=identity-drift")]
+    public async Task FilterMismatchDoesNotExposeRawFilterAsync(string fixture, string rawFilter)
     {
-        const string rawFilter = "Category=identity-drift";
         ToolCommandResult result = await ReadinessEvidenceValidator.ValidateAsync(
-            EvidenceFixturePath.Get("negative/filter-hash-mismatch.yaml"),
+            EvidenceFixturePath.Get(fixture),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(["HXE152"]);
@@ -271,8 +279,11 @@ public sealed class ReadinessEvidenceValidatorTests
     [InlineData("negative/no-executed-tests.yaml", "negative/no-executed-tests.expected.json")]
     [InlineData("negative/outcome-mismatch.yaml", "negative/outcome-mismatch.expected.json")]
     [InlineData("negative/policy-controls.yaml", "negative/policy-controls.yaml.expected.json")]
-    [InlineData("negative/secret-metadata.yaml", "negative/secret-metadata.expected.json")]
+    [InlineData("negative/row-duplicate-option-mismatch.yaml", "negative/row-duplicate-option-mismatch.expected.json")]
+    [InlineData("negative/row-missing-filter-mismatch.yaml", "negative/row-missing-filter-mismatch.expected.json")]
+    [InlineData("negative/row-missing-manifest-mismatch.yaml", "negative/row-missing-manifest-mismatch.expected.json")]
     [InlineData("negative/row-profile-mismatch.yaml", "negative/row-profile-mismatch.expected.json")]
+    [InlineData("negative/secret-metadata.yaml", "negative/secret-metadata.expected.json")]
     [InlineData("negative/unknown-field.yaml", "negative/unknown-field.yaml.expected.json")]
     [InlineData("negative/unsupported-schema.yaml", "negative/unsupported-schema.yaml.expected.json")]
     [InlineData("positive/readiness.yaml", "positive/readiness.yaml.expected.json")]

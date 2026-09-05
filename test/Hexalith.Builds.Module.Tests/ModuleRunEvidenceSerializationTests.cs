@@ -202,6 +202,51 @@ public sealed class ModuleRunEvidenceSerializationTests
         }
     }
 
+    /// <summary>
+    /// Verifies a produced <c>test</c> artifact serializes the exact canonical command that
+    /// readiness binding reconstructs from the artifact's own identity fields, and populates
+    /// every identity that binding requires.
+    /// </summary>
+    [Fact]
+    public void CreateTestEvidenceMatchesReadinessCanonicalBindingCommand()
+    {
+        string repositoryRoot = FindRepositoryRoot();
+        string manifestPath = Path.Combine(
+            repositoryRoot,
+            "test",
+            "fixtures",
+            "module",
+            "positive",
+            "hexalith.module-manifest.v1.json");
+        ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
+        manifestResult.IsValid.ShouldBeTrue();
+
+        ModuleRunEvidence evidence = ModuleRunEvidenceFactory.Create(
+            ModuleInvocationCommand.Test,
+            manifestPath,
+            manifestResult.Manifest,
+            "full",
+            "Category=smoke",
+            new ToolCommandResult("completed", ToolOutcome.Passed(), []),
+            new DateTimeOffset(2026, 7, 17, 10, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 7, 17, 10, 1, 0, TimeSpan.Zero),
+            "0123456789abcdef0123456789abcdef");
+
+        evidence.Invocation.ManifestPath.ShouldNotBeNullOrWhiteSpace();
+        evidence.Invocation.ManifestHash.ShouldNotBeNullOrWhiteSpace();
+        evidence.Invocation.Profile.ShouldBe("full");
+        evidence.Invocation.FixturePath.ShouldNotBeNullOrWhiteSpace();
+        evidence.Invocation.FixtureHash.ShouldNotBeNullOrWhiteSpace();
+        evidence.Invocation.FilterHash.ShouldNotBeNullOrWhiteSpace();
+
+        // Readiness binding accepts a passing row only when the artifact command equals this
+        // reconstruction; reordering or renaming a producer segment breaks every real artifact.
+        evidence.Invocation.Command.ShouldBe(
+            $"hexalith-module test --manifest {evidence.Invocation.ManifestPath}"
+            + $" --profile {evidence.Invocation.Profile}"
+            + $" --filter-sha256 {evidence.Invocation.FilterHash}");
+    }
+
     private static bool SatisfiesLatestPatchRollForward(string sdkVersion, Version pinned)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sdkVersion);

@@ -285,6 +285,18 @@ remain valid for `pending`, `blocked-external`, and `not-verified` rows.
 The positive evidence fixture is a schema/validator contract sample only; it
 is not persisted-runtime acceptance evidence.
 
+A `passed` row is additionally bound to the exact inputs its artifact records.
+Its `verification_command` must be the canonical space-delimited `test`
+invocation carrying `--manifest`, `--profile`, and `--filter` once each, its
+`fixture` must be the repository-relative fixture the named manifest profile
+selects, and the artifact's own command must be the canonical
+`--filter-sha256` form the runner emits. The declared manifest and fixture are
+re-hashed from the current checkout, so a `passed` row cannot cite inputs that
+have since changed. Every mismatch is the stable `HXE152` policy failure, and
+the raw filter is never retained in a diagnostic. Because those hashes are
+byte identities, check out byte-bound manifests and fixtures with LF endings
+on every platform, as this repository pins for its own evidence fixtures.
+
 ### Metadata and Troubleshooting
 
 Do not put bearer tokens, credentials, source payloads, raw environment dumps,

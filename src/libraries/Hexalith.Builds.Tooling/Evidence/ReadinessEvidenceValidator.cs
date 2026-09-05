@@ -339,7 +339,7 @@ internal static class ReadinessEvidenceValidator
         "HXE149" => "Passed readiness must reference a successful module-run artifact.",
         "HXE150" => "The Markdown view does not resolve to a readable file.",
         "HXE151" => "The Markdown view row identities drift from the YAML source of truth.",
-        "HXE152" => "Passed readiness must cite an artifact matching the row's verification command.",
+        "HXE152" => "Passed readiness must cite an artifact whose canonical command and manifest, profile, filter, and fixture identities match the row and current bytes.",
         "HXE153" => "Passed readiness must cite an artifact with executed passing tests.",
         _ => "The readiness evidence is invalid.",
     };
@@ -376,7 +376,7 @@ internal static class ReadinessEvidenceValidator
         "HXE149" => "Reference a completed run-evidence artifact with a successful outcome.",
         "HXE150" => "Supply the configured Markdown view beside the YAML source.",
         "HXE151" => "Regenerate the Markdown view from the YAML row identities.",
-        "HXE152" => "Cite the test-command run-evidence artifact produced for this row.",
+        "HXE152" => "Cite the test-command artifact for this row and declare the same manifest, profile, filter, and profile fixture whose current bytes match its hashes.",
         "HXE153" => "Reference a run-evidence artifact reporting executed passing tests and no failures.",
         _ => "Correct the readiness evidence and run validation again.",
     };
