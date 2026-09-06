@@ -63,7 +63,7 @@ primary `.nupkg` once; `dotnet nuget push` discovers and publishes the adjacent
 The version shown above is illustrative. Semantic-release supplies the actual
 version; never create a consumer tool manifest with an unpublished version.
 
-The preserved P1R `3.90.0` candidate bundles live in the umbrella workspace at
+The preserved P1R `3.102.0` candidate bundles live in the umbrella workspace at
 `_bmad-output/implementation-artifacts/qualification-evidence/`. Its README
 and the P1R revalidation record bind the preserved `.8`, `.9`, `.13`, and
 loop-5 diagnostic/final results. The final loop-5 bundle truthfully remains
