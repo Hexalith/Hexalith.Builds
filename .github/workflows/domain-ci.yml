@@ -22,10 +22,15 @@ on:
         type: string
         default: 'Directory.Packages.props, global.json, references/Hexalith.Builds/Props/Directory.Packages.props'
       dapr-version:
-        description: 'Dapr version for integration/aspire tiers.'
+        description: 'Dapr CLI version for integration/aspire tiers.'
         required: false
         type: string
         default: '1.18.0'
+      dapr-runtime-version:
+        description: 'Dapr runtime version for integration/aspire tiers.'
+        required: false
+        type: string
+        default: '1.18.2'
       test-platform:
         description: >-
           Test command contract: vstest uses --logger/--collect; microsoft-testing-platform
@@ -392,11 +397,13 @@ jobs:
         uses: ./.hexalith/builds-execution/Github/dapr-init
         with:
           version: ${{ inputs.dapr-version }}
+          runtime-version: ${{ inputs.dapr-runtime-version }}
       - name: Install and initialize Dapr
         if: ${{ inputs.integration-test-projects != '' && !inputs.governed-ci }}
         uses: Hexalith/Hexalith.Builds/Github/dapr-init@7e84ff177d72c3706ab8a955283e6d182348f010 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
+          runtime-version: ${{ inputs.dapr-runtime-version }}
       - name: Integration tests (Tier 2, VSTest)
         if: ${{ inputs.integration-test-projects != '' && inputs.test-platform == 'vstest' }}
         shell: bash
@@ -498,6 +505,7 @@ jobs:
         uses: Hexalith/Hexalith.Builds/Github/dapr-init@7e84ff177d72c3706ab8a955283e6d182348f010 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
+          runtime-version: ${{ inputs.dapr-runtime-version }}
       # Coverage is not collected here: this tier is advisory (non-blocking by
       # default) and its coverage is intentionally excluded from the gates.
       - name: Aspire contract tests (Tier 3, non-Performance, VSTest)
@@ -572,6 +580,7 @@ jobs:
         uses: Hexalith/Hexalith.Builds/Github/dapr-init@7e84ff177d72c3706ab8a955283e6d182348f010 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
+          runtime-version: ${{ inputs.dapr-runtime-version }}
       - name: Performance tests (Tier 3, nightly only, VSTest)
         if: ${{ inputs.test-platform == 'vstest' }}
         id: performance-tests-vstest

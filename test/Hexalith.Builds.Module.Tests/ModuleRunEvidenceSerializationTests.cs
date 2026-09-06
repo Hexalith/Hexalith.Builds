@@ -163,7 +163,7 @@ public sealed class ModuleRunEvidenceSerializationTests
                   }],
                   "platform": {
                     "eventStoreVersion": "3.90.0",
-                    "daprRuntimeVersion": "1.18.0",
+                    "daprRuntimeVersion": "1.18.2",
                     "daprSdkVersion": "1.18.5",
                     "frontComposerVersion": "4.0.1"
                   },

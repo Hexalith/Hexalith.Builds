@@ -6,6 +6,10 @@ modules. It factors the common skeleton: checkout with submodules, .NET SDK from
 consumer validation, Dapr bootstrap, multi-tier tests, optional coverage gate,
 and artifact upload.
 
+`dapr-version` pins the CLI (`1.18.0`) while `dapr-runtime-version` separately
+pins the approved runtime exception (`1.18.2`). Both values are passed to every
+Dapr bootstrap tier.
+
 The `test-platform` input defaults to `vstest` for backward compatibility.
 Callers whose `global.json` selects `Microsoft.Testing.Platform` must set
 `test-platform: microsoft-testing-platform`; those lanes use xUnit v3 MTP-native

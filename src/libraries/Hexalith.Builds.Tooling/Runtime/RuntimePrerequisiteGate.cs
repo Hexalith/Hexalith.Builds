@@ -9,12 +9,11 @@ using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 
 /// <summary>
-/// Prevents a live platform run until its independently owned compatibility disposition is recorded.
+/// Enforces the independently owned G-6 compatibility disposition.
 /// </summary>
 /// <remarks>
-/// The manifest pin validates the accepted P1 package selection. It cannot itself resolve G-6,
-/// the Dapr runtime-to-SDK support disposition. Keeping this gate in the Builds runner makes an affected
-/// invocation explicitly unavailable instead of treating an absent approval as a skipped or passing lane.
+/// G-6 approves only the exact Dapr runtime/package exception tuple. The separate descriptor-ABI
+/// prerequisite remains enforced by <c>ModuleCommandExecutionService</c> after this check succeeds.
 /// </remarks>
 public static class RuntimePrerequisiteGate
 {
@@ -22,18 +21,24 @@ public static class RuntimePrerequisiteGate
     /// Checks whether a validated manifest may enter the live Aspire composition phase.
     /// </summary>
     /// <param name="manifest">The already validated module manifest.</param>
-    /// <returns>A fail-closed prerequisite decision.</returns>
+    /// <returns>A fail-closed prerequisite decision for the approved exception tuple.</returns>
     public static RuntimePrerequisiteCheck Check(ModuleManifest manifest)
     {
         ArgumentNullException.ThrowIfNull(manifest);
+
+        if (string.Equals(manifest.Platform.DaprRuntimeVersion, SupportedPlatformPins.DaprRuntimeVersion, StringComparison.Ordinal)
+            && string.Equals(manifest.Platform.DaprSdkVersion, SupportedPlatformPins.DaprSdkVersion, StringComparison.Ordinal))
+        {
+            return new RuntimePrerequisiteCheck(true, null);
+        }
 
         ToolDiagnostic diagnostic = new(
             "HXR002",
             ToolPhase.Prerequisite,
             ToolFailureCategory.PrerequisiteUnavailable,
-            "The Dapr runtime-to-SDK compatibility disposition required by G-6 is not approved.",
-            "platform.daprRuntimeVersion",
-            "Record the G-6 disposition before running a live persisted platform lane.");
+            "The manifest does not select the owner-approved G-6 Dapr exception tuple.",
+            "platform",
+            "Use Dapr runtime 1.18.2 with Dapr .NET packages 1.18.5 before retrying.");
         return new RuntimePrerequisiteCheck(false, diagnostic);
     }
 }

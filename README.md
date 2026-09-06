@@ -265,10 +265,12 @@ tests, all-skipped tests, and failed test counts are explicit non-passing
 product/test outcomes once a live test invocation supplies a report. Parser
 coverage alone is not persisted-runtime proof.
 
-Live persisted composition remains explicitly unavailable while the separately
-owned G-6 Dapr runtime-to-SDK disposition is unresolved. That result is a
-non-passing prerequisite outcome, never a skipped or passing qualification.
-`down` remains idempotent and only removes runner-owned invocation metadata.
+G-6 accepts only the explicit Dapr runtime `1.18.2` / .NET package `1.18.5`
+exception recorded in `Tools/runtime-toolchain-baseline.json`; it is not a
+support-table-listed pair. Live persisted composition remains explicitly
+unavailable at the separate descriptor-ABI prerequisite (`HXR003`), preserving
+the G-4 boundary. `down` remains idempotent and only removes runner-owned
+invocation metadata.
 
 ### Evidence Validator Contract
 

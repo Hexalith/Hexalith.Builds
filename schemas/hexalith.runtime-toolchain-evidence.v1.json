@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.dev/schemas/hexalith.runtime-toolchain-evidence.v1.json",
+  "title": "Hexalith G-6 runtime and toolchain evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "baseline", "capturedUtc", "repositories", "artifacts",
+    "observedVersions", "testCounts", "topology", "lifecycle", "approval",
+    "sentinelScan", "rollback", "containment", "status"
+  ],
+  "properties": {
+    "schema": { "const": "hexalith.runtime-toolchain-evidence.v1" },
+    "baseline": { "$ref": "#/$defs/pathHash" },
+    "capturedUtc": { "type": "string", "format": "date-time" },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "path", "revision", "diffSha256"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "revision": { "$ref": "#/$defs/gitRevision" },
+          "diffSha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": { "$ref": "#/$defs/artifact" },
+      "allOf": [
+        { "contains": { "$ref": "#/$defs/source-state" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/baseline-governance" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/evidence-schema" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/evidence-validator" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/mutation-tests" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/central-catalog" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/observed-versions" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/command-record" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/dispositions" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/eventstore-observations" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/eventstore-qualification-results" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/eventstore-support-results" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/eventstore-capture-validation" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/failed-attempt-diagnostic" }, "minContains": 1, "maxContains": 1 }
+      ]
+    },
+    "observedVersions": { "$ref": "#/$defs/tuple" },
+    "testCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["qualification", "support"],
+      "properties": {
+        "qualification": { "$ref": "#/$defs/counts" },
+        "support": { "$ref": "#/$defs/counts" }
+      }
+    },
+    "topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventStoreProcesses", "eventStoreSidecars", "independentProcessIdentities", "sharedStateStore"],
+      "properties": {
+        "eventStoreProcesses": { "const": 2 },
+        "eventStoreSidecars": { "const": 2 },
+        "independentProcessIdentities": { "const": true },
+        "sharedStateStore": { "const": "state.postgresql" }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["singleExecution", "duplicateWork", "ownerStopped", "survivorReplayExact", "ownerRestarted", "restartedReplayExact", "authorityUnchanged", "persistedStateExact"],
+      "properties": {
+        "singleExecution": { "const": true },
+        "duplicateWork": { "const": 0 },
+        "ownerStopped": { "const": true },
+        "survivorReplayExact": { "const": true },
+        "ownerRestarted": { "const": true },
+        "restartedReplayExact": { "const": true },
+        "authorityUnchanged": { "const": true },
+        "persistedStateExact": { "const": true }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approvedBy", "approvedOn", "ownerRoles", "supportTableListed", "decision"],
+      "properties": {
+        "approvedBy": { "const": "Jérôme Piquot" },
+        "approvedOn": { "const": "2026-09-06" },
+        "ownerRoles": { "const": ["Builds", "Platform", "FrontComposer/Web"] },
+        "supportTableListed": { "const": false },
+        "decision": { "const": "approved-explicit-exception" }
+      }
+    },
+    "sentinelScan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "matches", "rawDiagnosticsRetained"],
+      "properties": {
+        "passed": { "const": true },
+        "matches": { "const": 0 },
+        "rawDiagnosticsRetained": { "const": false }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requiresDomainDataMutation", "action"],
+      "properties": {
+        "requiresDomainDataMutation": { "const": false },
+        "action": { "type": "string", "minLength": 1 }
+      }
+    },
+    "containment": { "$ref": "#/$defs/containment" },
+    "status": { "const": "accepted" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "gitRevision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "sha256"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "source-state", "baseline-governance", "evidence-schema", "evidence-validator",
+            "mutation-tests", "central-catalog", "observed-versions", "command-record", "dispositions",
+            "eventstore-observations", "eventstore-qualification-results", "eventstore-support-results",
+            "eventstore-capture-validation", "failed-attempt-diagnostic"
+          ]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "source-state": { "properties": { "kind": { "const": "source-state" } }, "required": ["kind"] },
+    "baseline-governance": { "properties": { "kind": { "const": "baseline-governance" } }, "required": ["kind"] },
+    "evidence-schema": { "properties": { "kind": { "const": "evidence-schema" } }, "required": ["kind"] },
+    "evidence-validator": { "properties": { "kind": { "const": "evidence-validator" } }, "required": ["kind"] },
+    "mutation-tests": { "properties": { "kind": { "const": "mutation-tests" } }, "required": ["kind"] },
+    "central-catalog": { "properties": { "kind": { "const": "central-catalog" } }, "required": ["kind"] },
+    "observed-versions": { "properties": { "kind": { "const": "observed-versions" } }, "required": ["kind"] },
+    "command-record": { "properties": { "kind": { "const": "command-record" } }, "required": ["kind"] },
+    "dispositions": { "properties": { "kind": { "const": "dispositions" } }, "required": ["kind"] },
+    "eventstore-observations": { "properties": { "kind": { "const": "eventstore-observations" } }, "required": ["kind"] },
+    "eventstore-qualification-results": { "properties": { "kind": { "const": "eventstore-qualification-results" } }, "required": ["kind"] },
+    "eventstore-support-results": { "properties": { "kind": { "const": "eventstore-support-results" } }, "required": ["kind"] },
+    "eventstore-capture-validation": { "properties": { "kind": { "const": "eventstore-capture-validation" } }, "required": ["kind"] },
+    "failed-attempt-diagnostic": { "properties": { "kind": { "const": "failed-attempt-diagnostic" } }, "required": ["kind"] },
+    "pathHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selectors", "total", "passed", "failed", "skipped"],
+      "properties": {
+        "selectors": { "type": "integer", "minimum": 1 },
+        "total": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "tuple": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dotnetSdk", "aspireSdk", "aspireCli", "communityToolkitAspireDapr", "daprCli", "daprRuntime", "daprDotnetPackages", "fluentUi", "nSubstitute", "fluxor"],
+      "properties": {
+        "dotnetSdk": { "const": "10.0.400" },
+        "aspireSdk": { "const": "13.5.3" },
+        "aspireCli": { "const": "13.5.3" },
+        "communityToolkitAspireDapr": { "const": "13.5.0-preview.1.260825-0345" },
+        "daprCli": { "const": "1.18.0" },
+        "daprRuntime": { "const": "1.18.2" },
+        "daprDotnetPackages": { "const": "1.18.5" },
+        "fluentUi": { "const": "5.0.0-rc.5-26219.1" },
+        "nSubstitute": { "const": "6.2.0" },
+        "fluxor": { "const": "6.11.0" }
+      }
+    },
+    "containment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["g4Approved", "g5Approved", "deploymentApproved", "releaseApproved"],
+      "properties": {
+        "g4Approved": { "const": false },
+        "g5Approved": { "const": false },
+        "deploymentApproved": { "const": false },
+        "releaseApproved": { "const": false }
+      }
+    }
+  }
+}

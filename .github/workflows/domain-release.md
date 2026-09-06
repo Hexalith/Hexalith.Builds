@@ -12,7 +12,8 @@ Dapr-backed tests, and then runs semantic-release.
 | `solution` | Yes | - | Path to the `.slnx` or `.sln` file to restore and build. |
 | `dotnet-global-json` | No | `global.json` | Path to the SDK-pinning `global.json` file. |
 | `packages-lock-file` | No | `Directory.Packages.props` | File used to build the NuGet cache key. |
-| `dapr-version` | No | `1.18.0` | Dapr version used when tests are enabled. |
+| `dapr-version` | No | `1.18.0` | Dapr CLI version used when tests are enabled. |
+| `dapr-runtime-version` | No | `1.18.2` | Dapr runtime version used when tests are enabled. |
 | `test-platform` | No | `vstest` | Test command contract. Set `microsoft-testing-platform` for xUnit v3 MTP-native TRX reporting. |
 | `test-projects` | No | `''` | Newline-separated test project paths to run before release. Leave empty when the caller already proved exact-source CI success. |
 | `node-version` | No | `24` | Node.js major line passed to `actions/setup-node`. Pinned to the Active LTS major that satisfies semantic-release 25 (`>=24.10.0`) and ships the npm major `package-lock.json` was built with; override to move ahead deliberately. |

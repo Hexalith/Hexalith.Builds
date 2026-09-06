@@ -1,0 +1,93 @@
+{
+  "schema": "hexalith.runtime-toolchain-baseline.v1",
+  "approvedBy": "Jérôme Piquot",
+  "approvedOn": "2026-09-06",
+  "ownerRoles": [
+    "Builds",
+    "Platform",
+    "FrontComposer/Web"
+  ],
+  "tuple": {
+    "dotnetSdk": "10.0.400",
+    "aspireSdk": "13.5.3",
+    "aspireCli": "13.5.3",
+    "communityToolkitAspireDapr": "13.5.0-preview.1.260825-0345",
+    "daprCli": "1.18.0",
+    "daprRuntime": "1.18.2",
+    "daprDotnetPackages": "1.18.5",
+    "fluentUi": "5.0.0-rc.5-26219.1",
+    "nSubstitute": "6.2.0",
+    "fluxor": "6.11.0"
+  },
+  "dispositions": {
+    "dapr": {
+      "supportTableListed": false,
+      "listedRuntime": "1.18.0",
+      "listedDotnetSdk": "1.18.1",
+      "decision": "approved-explicit-exception"
+    },
+    "communityToolkitAspireDapr": "approved-prerelease-exception",
+    "fluentUi": "approved-release-candidate-exception",
+    "nSubstitute": "stable",
+    "fluxor": "stable",
+    "Dapr": "catalog-only-not-activated",
+    "Dapr.Workflow": "catalog-only-unselected"
+  },
+  "rollback": {
+    "requiresDomainDataMutation": false,
+    "action": "restore the prior repository pins and rerun restore/build/qualification; retained PostgreSQL data is not rewritten"
+  },
+  "containment": {
+    "g4Approved": false,
+    "g5Approved": false,
+    "deploymentApproved": false,
+    "releaseApproved": false
+  },
+  "pinAudit": {
+    "globalJson": [
+      "global.json",
+      "references/Hexalith.Builds/global.json",
+      "references/Hexalith.Conversations/global.json",
+      "references/Hexalith.EventStore/global.json",
+      "references/Hexalith.Folders/global.json",
+      "references/Hexalith.FrontComposer/global.json",
+      "references/Hexalith.Memories/global.json",
+      "references/Hexalith.Parties/global.json",
+      "references/Hexalith.Tenants/global.json"
+    ],
+    "appHostProjects": [
+      "src/Hexalith.Projects.AppHost/Hexalith.Projects.AppHost.csproj",
+      "references/Hexalith.Conversations/src/Hexalith.Conversations.AppHost/Hexalith.Conversations.AppHost.csproj",
+      "references/Hexalith.EventStore/src/Hexalith.EventStore.AppHost/Hexalith.EventStore.AppHost.csproj",
+      "references/Hexalith.Folders/src/Hexalith.Folders.AppHost/Hexalith.Folders.AppHost.csproj",
+      "references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.AppHost/Hexalith.FrontComposer.AppHost.csproj",
+      "references/Hexalith.Memories/src/Hexalith.Memories.AppHost/Hexalith.Memories.AppHost.csproj",
+      "references/Hexalith.Parties/src/Hexalith.Parties.AppHost/Hexalith.Parties.AppHost.csproj",
+      "references/Hexalith.Tenants/src/Hexalith.Tenants.AppHost/Hexalith.Tenants.AppHost.csproj"
+    ],
+    "literalPins": [
+      { "path": ".github/workflows/ci.yml", "value": "dapr-version: '1.18.0'" },
+      { "path": ".github/workflows/ci.yml", "value": "dapr-runtime-version: '1.18.2'" },
+      { "path": ".github/workflows/ci.yml", "value": "version: '1.18.0'" },
+      { "path": ".github/workflows/ci.yml", "value": "runtime-version: '1.18.2'" },
+      { "path": ".github/workflows/ci.yml", "value": "run: dotnet tool install --global Aspire.Cli --version 13.5.3" },
+      { "path": ".github/workflows/release.yml", "value": "dapr-version: '1.18.0'" },
+      { "path": "references/Hexalith.Builds/.github/workflows/domain-ci.yml", "value": "default: '1.18.0'" },
+      { "path": "references/Hexalith.Builds/.github/workflows/domain-ci.yml", "value": "default: '1.18.2'" },
+      { "path": "references/Hexalith.Builds/.github/workflows/domain-release.yml", "value": "default: '1.18.0'" },
+      { "path": "references/Hexalith.Builds/.github/workflows/domain-release.yml", "value": "default: '1.18.2'" },
+      { "path": "references/Hexalith.EventStore/.github/workflows/integration.yml", "value": "DAPR_CLI_VERSION: '1.18.0'" },
+      { "path": "references/Hexalith.EventStore/.github/workflows/integration.yml", "value": "DAPR_RUNTIME_VERSION: '1.18.2'" },
+      { "path": "references/Hexalith.FrontComposer/.github/workflows/quality.yml", "value": "run: dotnet tool install --global Aspire.Cli --version 13.5.3" },
+      { "path": "references/Hexalith.FrontComposer/.github/workflows/quality.yml", "value": "version: '1.18.0'" },
+      { "path": "references/Hexalith.FrontComposer/.github/workflows/quality.yml", "value": "dapr init --runtime-version 1.18.2" },
+      { "path": "references/Hexalith.Memories/.github/workflows/ci.yml", "value": "DAPR_CLI_VERSION: '1.18.0'" },
+      { "path": "references/Hexalith.Memories/.github/workflows/ci.yml", "value": "DAPR_RUNTIME_VERSION: '1.18.2'" },
+      { "path": "references/Hexalith.Memories/.github/workflows/nightly.yml", "value": "DAPR_CLI_VERSION: '1.18.0'" },
+      { "path": "references/Hexalith.Memories/.github/workflows/nightly.yml", "value": "DAPR_RUNTIME_VERSION: '1.18.2'" },
+      { "path": "references/Hexalith.Memories/tools/verify-production-deployment.ps1", "value": "[string]$DaprRuntimeVersion = \"1.18.2\"," },
+      { "path": "references/Hexalith.Parties/.github/workflows/ci.yml", "value": "dapr-version: '1.18.0'" },
+      { "path": "references/Hexalith.Parties/.github/workflows/ci.yml", "value": "dapr-runtime-version: '1.18.2'" }
+    ]
+  }
+}

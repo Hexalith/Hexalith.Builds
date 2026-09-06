@@ -44,7 +44,7 @@ public sealed class ModuleCommandApplicationTests
           ],
           "platform": {
             "eventStoreVersion": "3.90.0",
-            "daprRuntimeVersion": "1.18.0",
+            "daprRuntimeVersion": "1.18.2",
             "daprSdkVersion": "1.18.5",
             "frontComposerVersion": "4.0.1"
           },
@@ -395,11 +395,11 @@ public sealed class ModuleCommandApplicationTests
     }
 
     /// <summary>
-    /// Verifies an unresolved live platform prerequisite remains unavailable rather than passing or skipping.
+    /// Verifies G-6 passes only to the separately governed descriptor-ABI prerequisite.
     /// </summary>
     /// <returns>A task that completes after the assertion.</returns>
     [Fact]
-    public async Task RunWithValidManifestReturnsExplicitPrerequisiteUnavailableAsync()
+    public async Task RunWithApprovedG6ManifestRetainsDescriptorAbiBlockerAsync()
     {
         string directory = CreateFixtureDirectory();
 
@@ -418,7 +418,7 @@ public sealed class ModuleCommandApplicationTests
                         TestContext.Current.CancellationToken).ConfigureAwait(true);
 
                     exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable);
-                    standardOutput.ToString().ShouldContain("HXR002");
+                    standardOutput.ToString().ShouldContain("HXR003");
                     standardOutput.ToString().ShouldNotContain("passed");
                 }
             }
@@ -430,11 +430,11 @@ public sealed class ModuleCommandApplicationTests
     }
 
     /// <summary>
-    /// Verifies a later evidence failure cannot replace the first causal prerequisite outcome.
+    /// Verifies a later evidence failure cannot replace the first causal descriptor-ABI outcome.
     /// </summary>
     /// <returns>A task that completes after the assertion.</returns>
     [Fact]
-    public async Task RunWithUnavailablePrerequisiteAndInvalidEvidenceRetainsPrerequisiteExitCodeAsync()
+    public async Task RunWithDescriptorAbiUnavailableAndInvalidEvidenceRetainsPrerequisiteExitCodeAsync()
     {
         string directory = CreateFixtureDirectory();
         string invalidEvidencePath = Path.Combine(Path.GetTempPath(), $"hexalith-evidence-{Guid.NewGuid():N}.json");
@@ -462,7 +462,7 @@ public sealed class ModuleCommandApplicationTests
                         TestContext.Current.CancellationToken).ConfigureAwait(true);
 
                     exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable);
-                    standardOutput.ToString().ShouldContain("HXR002");
+                    standardOutput.ToString().ShouldContain("HXR003");
                     standardOutput.ToString().ShouldContain("HXE160");
                 }
             }

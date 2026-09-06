@@ -20,6 +20,10 @@ on:
         required: false
         type: string
         default: '1.18.0'
+      dapr-runtime-version:
+        required: false
+        type: string
+        default: '1.18.2'
       test-platform:
         description: >-
           Test command contract: vstest uses --logger/--collect; microsoft-testing-platform
@@ -343,6 +347,7 @@ jobs:
         uses: ./.hexalith/builds-execution/Github/dapr-init
         with:
           version: ${{ inputs.dapr-version }}
+          runtime-version: ${{ inputs.dapr-runtime-version }}
       - name: Run tests (Tier 1 + 2, VSTest)
         if: ${{ inputs.test-projects != '' && inputs.test-platform == 'vstest' }}
         shell: bash
@@ -757,6 +762,7 @@ jobs:
         uses: ./.hexalith/builds-execution/Github/dapr-init
         with:
           version: ${{ inputs.dapr-version }}
+          runtime-version: ${{ inputs.dapr-runtime-version }}
       - name: Run tests (Tier 1 + 2, VSTest)
         if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.test-projects != '' && inputs.test-platform == 'vstest' }}
         shell: bash
