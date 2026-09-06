@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+  "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
   "catalogPath": "Props/Directory.Packages.props",
   "catalogSha256": "b50f9984247cf1cdc1daa9ef0f7345ea753bebcbd9228f3eecf975ec9c1df216",
   "catalogRawSha256": "a4337bf932d58d8c30f2315daaf3b8939c1a1e9bb070f0daff4b429fc0293c01",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
+    "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
     "refreshedFamilies": [
       "hexalith-applications",
       "hexalith-chatbot",
@@ -166,7 +166,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+    "repositoryRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
     "sha256": "c1926c58e2385c8349db5b54b966696e413dd61cfb25e79f531c7ed20ca0c6f7",
     "entries": [
       {
@@ -3226,8 +3226,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "1b40642f33ae9e7021b9175bf1bcc21fe8a6b5b346e54095410b23dca6297ad9",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "54690052fe8f90a9740a3fee74c3d97028700410426052153975d843a48785d0",
@@ -3621,8 +3621,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "f26ce5b78f031ce8209b67126b7380828a445f97dee9162f9fea62b88643860e",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "6f45a16a16393410d349d92f00a2b830dbf8dece732bbc82645b6c48d45a357d",
@@ -4083,8 +4083,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "c30dd2149cbc7af2aef85fa470a847438d5a62ea55b04c6363b82b25af931d77",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "26758be079392cbfb67737a2b8685172413495674062f65d3eea035185967c8b",
@@ -4566,8 +4566,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "a5bf2eece90b5a317f9a0a17d85cfb1a82ce70a30e90ef0155517c11f507d8db",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "164301e49b4a4338e5d223aaf942c6072a453ac2665b5fb191c3030a10d3b8c7",
@@ -5001,8 +5001,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "1b9651ba3d9daeac559cd28198dc3700ecf7110b38b318e21fae15d4e262482b",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a384f19893ab288231ca227c40ef330a213b1bf26a15728387e80be4649caa5d",
@@ -5382,8 +5382,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
@@ -6119,8 +6119,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "40d5e12f8d88db94cf3616c9d4f1c6db9ef8f1981b596c34690b2097158dd7a2",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "4f43e4f32691f52070550e79cedcdcc815770652bbc75b410232599997e4608c",
@@ -6616,8 +6616,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "bc02a3667e0bc45f9ced35e023dc8f8b51f3ad517ae5877b3b43ca1c315fafcf",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "9a0b7f10479263875a4abc8dfba645b48e288f2648a6c9eed688e5a1f6004ad5",
@@ -7001,8 +7001,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "7df7e89aacc7c7e64bc3d88594cb86fa7ebe24f3209e8f572948d6a9e68a2272",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "fa6ee498120500af29f2cdee8e0ddce2f7219ae83b3a61305133b535ba9a254b",
@@ -7398,8 +7398,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "6702489be6b0bce6f68145a13512bba3f3f913486065c74b3c27b34d8a14ac70",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "627e010132436617f3531ac4adb59815b9ad677d28100edda9071d635ce8397c",
@@ -7996,8 +7996,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "ee39b24d926688ff278a2639130972366bf40dee04c8a7410998f4ff54013cce",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "032b40fa5732854f619abaf489af422a7390968437767cc443cb78c2360ec55f",
@@ -8373,8 +8373,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "0d5b73d0dfa701fc59d933e6f01419f64ac7f6ac3f6cacd68908aad890de185c",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "333cdf5686ae493f8a1a767f1da79fb613d834e3802126f42d0a3631cac79ea4",
@@ -8965,8 +8965,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "4d33af601d2bb2641fdf661465552ea4de5a344aea8162a3310efc22d5841067",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "38b1fc97921e2532f7e7b1befa440e79cb95bc5992465a98125ae8d775cec524",
@@ -9360,8 +9360,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "663cd6e6b7c85fac90aadc0c81b470c21ef387fc9e3881bfcfc7d973285edd80",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "a038cc625f5e3771ba8663bcf275e39c623f8cd72173d5a46deb314b48b39da1",
@@ -9747,8 +9747,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-06T12:23:50.1896943+00:00",
-        "generatedFromRevision": "9111ac10752b2fb4919584e1dc40c2466c177adf",
+        "auditedAtUtc": "2026-09-06T13:18:44.4147449+00:00",
+        "generatedFromRevision": "29df2d251b6f537a4713fc7e391f4187c6fd08db",
         "familySelectionSha256": "f513e06e45dcd8b900b22d48d667ac77f2c1758b060012af7fb2a2b4adb9c15f",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "0f71f509c34812bfc659c36fe60201aae9610d1f82a4f0cd602f2e953a1ff66e",
