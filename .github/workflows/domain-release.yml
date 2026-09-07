@@ -590,8 +590,8 @@ jobs:
           if [ -z "${CANDIDATE_COMMAND//[[:space:]]/}" ]; then
             reject "governed mode requires candidate-command so the exact candidate packages exist before any publication side effect."
           fi
-          if [[ ! "$EXPECTED_PACKAGE_COUNT" =~ ^[0-9]+$ ]]; then
-            reject "governed mode requires expected-package-count to be a non-negative integer."
+          if [[ ! "$EXPECTED_PACKAGE_COUNT" =~ ^[0-9]+$ ]] || [[ "$EXPECTED_PACKAGE_COUNT" =~ ^0[0-9]+$ ]]; then
+            reject "governed mode requires expected-package-count to be a canonical non-negative integer."
           fi
 
           # candidate-directory is passed to rm -rf, so a traversing, absolute, or
@@ -846,6 +846,7 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ inputs.release-commit }}
           CANDIDATE_COMMAND: ${{ inputs.candidate-command }}
           HEXALITH_RELEASE_CANDIDATE_DIRECTORY: ${{ inputs.candidate-directory }}
           HEXALITH_RELEASE_GOVERNED: 'true'
@@ -871,6 +872,10 @@ jobs:
               exit 1
               ;;
           esac
+          if [[ "$HEXALITH_RELEASE_CANDIDATE_DIRECTORY" == *'\'* ]]; then
+            echo "Refusing to use the unsafe candidate-directory '$HEXALITH_RELEASE_CANDIDATE_DIRECTORY'." >&2
+            exit 1
+          fi
           IFS='/' read -r -a candidate_segments <<< "$HEXALITH_RELEASE_CANDIDATE_DIRECTORY"
           for segment in "${candidate_segments[@]}"; do
             if [ -z "$segment" ] || [ "$segment" = "." ] || [ "$segment" = ".." ]; then
@@ -897,6 +902,11 @@ jobs:
           cat "$dry_run_log"
           version="$(sed -n 's/.*The next release version is \([0-9][0-9A-Za-z.+-]*\).*/\1/p' "$dry_run_log" | tail -n 1)"
           if [ -z "$version" ]; then
+            if grep -q "The next release version is " "$dry_run_log"; then
+              cat "$dry_run_log" >&2
+              echo "The governed candidate phase could not parse the next release version from the dry-run log." >&2
+              exit 1
+            fi
             echo "release-required=false" >> "$GITHUB_OUTPUT"
             echo "::notice title=No governed candidate::semantic-release resolved no publishable version, so no candidate packages are produced or attested."
             exit 0
@@ -1003,6 +1013,7 @@ jobs:
         if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && steps.governed-candidate.outputs.release-required == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ inputs.release-commit }}
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
           HEXALITH_CONTAINER_PROJECTS: ${{ inputs.container-projects }}
           HEXALITH_ZOT_REGISTRY: ${{ vars.HEXALITH_ZOT_REGISTRY || 'registry.hexalith.com' }}
@@ -1106,7 +1117,12 @@ jobs:
               (inventory or {}).get("packages", []),
               key=lambda row: (row.get("name", ""), row.get("sha256", ""), row.get("size", 0)),
           )
-          attestation_bundle = os.environ.get("ATTESTATION_BUNDLE", "")
+          durable_attestation = ".hexalith/release/governed/candidate-attestation.jsonl"
+          action_attestation = os.environ.get("ATTESTATION_BUNDLE", "")
+          if Path(durable_attestation).is_file():
+              attestation_bundle = durable_attestation
+          else:
+              attestation_bundle = action_attestation
           published = (
               os.environ.get("PUBLISH_ENABLED", "") == "true"
               and os.environ.get("RELEASE_REQUIRED", "") == "true"
@@ -1140,7 +1156,7 @@ jobs:
                   "version": text("RELEASE_VERSION"),
               },
               "attestation": {
-                  "bundle_path": text("ATTESTATION_BUNDLE"),
+                  "bundle_path": attestation_bundle if attestation_bundle else None,
                   "bundle_sha256": digest_of(attestation_bundle),
                   "attestation_id": text("ATTESTATION_ID"),
               },

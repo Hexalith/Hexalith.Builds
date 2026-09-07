@@ -35,6 +35,7 @@ MAX_CLOSURE_DEPTH = 16
 MAX_CLOSURE_SOURCES = 256
 MAX_SOURCE_BLOB_BYTES = 1_048_576
 MAX_SOURCE_TOTAL_BYTES = 16_777_216
+GITHUB_OUTPUT_LIMIT_BYTES = 1_000_000
 
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$", re.ASCII)
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$", re.ASCII)
@@ -561,6 +562,12 @@ def write_outputs(provenance, output_path):
     if github_output:
         with Path(github_output).open("a", encoding="utf-8") as stream:
             for name, value in outputs.items():
+                encoded = value.encode("utf-8")
+                if len(encoded) > GITHUB_OUTPUT_LIMIT_BYTES:
+                    raise ProvenanceError(
+                        f"{name} exceeds the GitHub Actions 1MB output limit "
+                        f"({len(encoded)} bytes)"
+                    )
                 stream.write(f"{name}={value}\n")
     return outputs
 

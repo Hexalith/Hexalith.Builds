@@ -581,6 +581,19 @@ class EndToEndTests(unittest.TestCase):
                 self.assertRegex(str(raised.exception), "relative POSIX path|unsafe path segment|escapes the workspace")
                 self.assertFalse((Path(self.temporary) / "outside.json").exists())
 
+    def test_github_output_values_must_fit_the_actions_limit(self):
+        provenance = evaluator.build_provenance(self.arguments("ci", ".github/workflows/domain-ci.yml"))
+        provenance["caller"]["workflow_ref"] = "x" * (evaluator.GITHUB_OUTPUT_LIMIT_BYTES + 1)
+        github_output = Path(self.temporary) / "github-output"
+        github_output.touch()
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self.temporary)
+        with mock.patch.dict("os.environ", {"GITHUB_OUTPUT": str(github_output)}):
+            with self.assertRaises(evaluator.ProvenanceError) as raised:
+                evaluator.write_outputs(provenance, "provenance.json")
+
+        self.assertIn("1MB output limit", str(raised.exception))
+
     def test_the_expected_evaluator_digest_is_enforced_for_both_stages(self):
         # Recording the expected digest without comparing it would make the field
         # decorative: the caller would believe it authorized one closure while any closure
