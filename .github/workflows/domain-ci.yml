@@ -357,21 +357,51 @@ jobs:
           python3 scripts/validate-nuget-packages.py ./nupkgs
           python3 scripts/validate-consumer-package-references.py ./nupkgs
       - name: Unit tests (Tier 1, VSTest)
+        id: unit-tests-vstest
         if: ${{ inputs.unit-test-projects != '' && inputs.test-platform == 'vstest' }}
         shell: bash
         env:
           UNIT_TEST_PROJECTS: ${{ inputs.unit-test-projects }}
         run: |
           set -euo pipefail
+          failures=0
+          {
+            echo "## Tier 1 Unit Tests (VSTest)"
+            echo
+            echo "| Project | Status | Exit code |"
+            echo "| --- | --- | ---: |"
+          } >> "$GITHUB_STEP_SUMMARY"
           while IFS= read -r proj; do
             [ -z "$proj" ] && continue
             name=$(basename "$proj")
-            dotnet test "$proj" --no-build --configuration Release \
-              --logger "trx;LogFileName=${name}.trx" \
-              --results-directory "TestResults/${name}" \
-              --collect:"XPlat Code Coverage"
+            result_file="TestResults/${name}/${name}.trx"
+            if dotnet test "$proj" --no-build --configuration Release \
+                --logger "trx;LogFileName=${name}.trx" \
+                --results-directory "TestResults/${name}" \
+                --collect:"XPlat Code Coverage"; then
+              status=PASS
+              exit_code=0
+            else
+              exit_code=$?
+              annotation_proj=${proj//%/%25}
+              if [ ! -f "$result_file" ]; then
+                printf '::error title=Test shard infrastructure failure::%s exited with code %d without producing %s.\n' \
+                  "$annotation_proj" "$exit_code" "$result_file"
+                exit "$exit_code"
+              fi
+              status=FAIL
+              failures=$((failures + 1))
+              printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            summary_proj=${proj//\\/\\\\}
+            summary_proj=${summary_proj//|/\\|}
+            summary_proj=${summary_proj//\`/\\\`}
+            printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$UNIT_TEST_PROJECTS"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          printf 'failure-count=%d\n' "$failures" >> "$GITHUB_OUTPUT"
       - name: Unit tests (Tier 1, Microsoft.Testing.Platform)
+        id: unit-tests-mtp
         if: ${{ inputs.unit-test-projects != '' && inputs.test-platform == 'microsoft-testing-platform' }}
         shell: bash
         env:
@@ -379,19 +409,47 @@ jobs:
           RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}
         run: |
           set -euo pipefail
+          failures=0
+          {
+            echo "## Tier 1 Unit Tests (Microsoft.Testing.Platform)"
+            echo
+            echo "| Project | Status | Exit code |"
+            echo "| --- | --- | ---: |"
+          } >> "$GITHUB_STEP_SUMMARY"
           while IFS= read -r proj; do
             [ -z "$proj" ] && continue
             name=$(basename "$proj")
+            result_file="TestResults/${name}/${name}.trx"
             coverage_args=()
             if [ "$RUN_COVERAGE_GATE" = "true" ]; then
               coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)
             fi
-            dotnet test "$proj" --no-build --configuration Release \
-              --results-directory "TestResults/${name}" \
-              --report-xunit-trx \
-              --report-xunit-trx-filename "${name}.trx" \
-              "${coverage_args[@]}"
+            if dotnet test "$proj" --no-build --configuration Release \
+                --results-directory "TestResults/${name}" \
+                --report-xunit-trx \
+                --report-xunit-trx-filename "${name}.trx" \
+                "${coverage_args[@]}"; then
+              status=PASS
+              exit_code=0
+            else
+              exit_code=$?
+              annotation_proj=${proj//%/%25}
+              if [ ! -f "$result_file" ]; then
+                printf '::error title=Test shard infrastructure failure::%s exited with code %d without producing %s.\n' \
+                  "$annotation_proj" "$exit_code" "$result_file"
+                exit "$exit_code"
+              fi
+              status=FAIL
+              failures=$((failures + 1))
+              printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            summary_proj=${proj//\\/\\\\}
+            summary_proj=${summary_proj//|/\\|}
+            summary_proj=${summary_proj//\`/\\\`}
+            printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$UNIT_TEST_PROJECTS"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          printf 'failure-count=%d\n' "$failures" >> "$GITHUB_OUTPUT"
       - name: Install and initialize Dapr (governed)
         if: ${{ inputs.integration-test-projects != '' && inputs.governed-ci }}
         uses: ./.hexalith/builds-execution/Github/dapr-init
@@ -405,21 +463,51 @@ jobs:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
       - name: Integration tests (Tier 2, VSTest)
+        id: integration-tests-vstest
         if: ${{ inputs.integration-test-projects != '' && inputs.test-platform == 'vstest' }}
         shell: bash
         env:
           INTEGRATION_TEST_PROJECTS: ${{ inputs.integration-test-projects }}
         run: |
           set -euo pipefail
+          failures=0
+          {
+            echo "## Tier 2 Integration Tests (VSTest)"
+            echo
+            echo "| Project | Status | Exit code |"
+            echo "| --- | --- | ---: |"
+          } >> "$GITHUB_STEP_SUMMARY"
           while IFS= read -r proj; do
             [ -z "$proj" ] && continue
             name=$(basename "$proj")
-            dotnet test "$proj" --no-build --configuration Release \
-              --logger "trx;LogFileName=${name}.trx" \
-              --results-directory "TestResults/${name}" \
-              --collect:"XPlat Code Coverage"
+            result_file="TestResults/${name}/${name}.trx"
+            if dotnet test "$proj" --no-build --configuration Release \
+                --logger "trx;LogFileName=${name}.trx" \
+                --results-directory "TestResults/${name}" \
+                --collect:"XPlat Code Coverage"; then
+              status=PASS
+              exit_code=0
+            else
+              exit_code=$?
+              annotation_proj=${proj//%/%25}
+              if [ ! -f "$result_file" ]; then
+                printf '::error title=Test shard infrastructure failure::%s exited with code %d without producing %s.\n' \
+                  "$annotation_proj" "$exit_code" "$result_file"
+                exit "$exit_code"
+              fi
+              status=FAIL
+              failures=$((failures + 1))
+              printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            summary_proj=${proj//\\/\\\\}
+            summary_proj=${summary_proj//|/\\|}
+            summary_proj=${summary_proj//\`/\\\`}
+            printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$INTEGRATION_TEST_PROJECTS"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          printf 'failure-count=%d\n' "$failures" >> "$GITHUB_OUTPUT"
       - name: Integration tests (Tier 2, Microsoft.Testing.Platform)
+        id: integration-tests-mtp
         if: ${{ inputs.integration-test-projects != '' && inputs.test-platform == 'microsoft-testing-platform' }}
         shell: bash
         env:
@@ -427,19 +515,47 @@ jobs:
           RUN_COVERAGE_GATE: ${{ inputs.run-coverage-gate }}
         run: |
           set -euo pipefail
+          failures=0
+          {
+            echo "## Tier 2 Integration Tests (Microsoft.Testing.Platform)"
+            echo
+            echo "| Project | Status | Exit code |"
+            echo "| --- | --- | ---: |"
+          } >> "$GITHUB_STEP_SUMMARY"
           while IFS= read -r proj; do
             [ -z "$proj" ] && continue
             name=$(basename "$proj")
+            result_file="TestResults/${name}/${name}.trx"
             coverage_args=()
             if [ "$RUN_COVERAGE_GATE" = "true" ]; then
               coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)
             fi
-            dotnet test "$proj" --no-build --configuration Release \
-              --results-directory "TestResults/${name}" \
-              --report-xunit-trx \
-              --report-xunit-trx-filename "${name}.trx" \
-              "${coverage_args[@]}"
+            if dotnet test "$proj" --no-build --configuration Release \
+                --results-directory "TestResults/${name}" \
+                --report-xunit-trx \
+                --report-xunit-trx-filename "${name}.trx" \
+                "${coverage_args[@]}"; then
+              status=PASS
+              exit_code=0
+            else
+              exit_code=$?
+              annotation_proj=${proj//%/%25}
+              if [ ! -f "$result_file" ]; then
+                printf '::error title=Test shard infrastructure failure::%s exited with code %d without producing %s.\n' \
+                  "$annotation_proj" "$exit_code" "$result_file"
+                exit "$exit_code"
+              fi
+              status=FAIL
+              failures=$((failures + 1))
+              printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            summary_proj=${proj//\\/\\\\}
+            summary_proj=${summary_proj//|/\\|}
+            summary_proj=${summary_proj//\`/\\\`}
+            printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$INTEGRATION_TEST_PROJECTS"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          printf 'failure-count=%d\n' "$failures" >> "$GITHUB_OUTPUT"
       - name: Validate coverage gates
         if: ${{ inputs.run-coverage-gate }}
         shell: bash
@@ -462,6 +578,57 @@ jobs:
             args+=(--line-scope "$prefix")
           done <<< "$COVERAGE_LINE_SCOPE"
           python3 scripts/validate-coverage.py "${args[@]}" --summary-file "$GITHUB_STEP_SUMMARY"
+      - name: Fail on blocking test failures
+        if: always()
+        shell: bash
+        env:
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          UNIT_TEST_PROJECTS: ${{ inputs.unit-test-projects }}
+          INTEGRATION_TEST_PROJECTS: ${{ inputs.integration-test-projects }}
+          UNIT_VSTEST_FAILURE_COUNT: ${{ steps.unit-tests-vstest.outputs.failure-count }}
+          UNIT_MTP_FAILURE_COUNT: ${{ steps.unit-tests-mtp.outputs.failure-count }}
+          INTEGRATION_VSTEST_FAILURE_COUNT: ${{ steps.integration-tests-vstest.outputs.failure-count }}
+          INTEGRATION_MTP_FAILURE_COUNT: ${{ steps.integration-tests-mtp.outputs.failure-count }}
+        run: |
+          set -euo pipefail
+          if [ "$TEST_PLATFORM" = "vstest" ]; then
+            if [ -n "$UNIT_TEST_PROJECTS" ] && [ -z "$UNIT_VSTEST_FAILURE_COUNT" ]; then
+              echo '::error title=Missing test shard output::Tier 1 VSTest did not report a failure count.'
+              exit 1
+            fi
+            if [ -n "$INTEGRATION_TEST_PROJECTS" ] && [ -z "$INTEGRATION_VSTEST_FAILURE_COUNT" ]; then
+              echo '::error title=Missing test shard output::Tier 2 VSTest did not report a failure count.'
+              exit 1
+            fi
+          elif [ "$TEST_PLATFORM" = "microsoft-testing-platform" ]; then
+            if [ -n "$UNIT_TEST_PROJECTS" ] && [ -z "$UNIT_MTP_FAILURE_COUNT" ]; then
+              echo '::error title=Missing test shard output::Tier 1 Microsoft.Testing.Platform did not report a failure count.'
+              exit 1
+            fi
+            if [ -n "$INTEGRATION_TEST_PROJECTS" ] && [ -z "$INTEGRATION_MTP_FAILURE_COUNT" ]; then
+              echo '::error title=Missing test shard output::Tier 2 Microsoft.Testing.Platform did not report a failure count.'
+              exit 1
+            fi
+          fi
+
+          total_failures=0
+          for failure_count in \
+            "$UNIT_VSTEST_FAILURE_COUNT" \
+            "$UNIT_MTP_FAILURE_COUNT" \
+            "$INTEGRATION_VSTEST_FAILURE_COUNT" \
+            "$INTEGRATION_MTP_FAILURE_COUNT"; do
+            [ -z "$failure_count" ] && continue
+            if [[ ! "$failure_count" =~ ^[0-9]+$ ]]; then
+              printf '::error title=Invalid test shard output::Expected a numeric failure count, received %s.\n' "$failure_count"
+              exit 1
+            fi
+            total_failures=$((total_failures + 10#$failure_count))
+          done
+
+          if [ "$total_failures" -ne 0 ]; then
+            printf '::error title=Blocking test failures::%d test project(s) failed across the blocking tiers.\n' "$total_failures"
+            exit 1
+          fi
       - name: Upload test and coverage evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

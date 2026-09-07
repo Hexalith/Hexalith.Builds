@@ -34,6 +34,25 @@ coverage is deliberately not collected and is excluded from the coverage gates;
 TRX results are always uploaded as the `aspire-test-results` artifact. Set
 `aspire-continue-on-error: false` in a module that wants the tier blocking.
 
+## Blocking Test Shard Results
+
+Each active Tier 1 and Tier 2 step runs every configured project, even when an
+earlier `dotnet test` process returns nonzero. This behavior is identical for
+VSTest and Microsoft.Testing.Platform and does not change either platform's TRX
+or coverage arguments. Each failed project emits a workflow error annotation,
+and every attempted project is appended to the GitHub step summary with its
+PASS/FAIL status and exit code.
+
+The shard steps expose their numeric failure counts without failing immediately,
+which allows later projects and the next blocking tier to run. After optional
+coverage validation, one always-run gate validates and sums the outputs from the
+active shard steps and returns nonzero when any project failed. Outputs from
+inactive platform or empty-project steps are absent and ignored. Unexpected
+shell or infrastructure errors still fail the step where they occur. A nonzero
+test process is aggregated only when it produced the expected TRX; without that
+evidence, its shard step fails immediately. Test and coverage evidence remains
+uploaded through the existing always-run upload.
+
 ## Scheduled Performance Evidence
 
 The scheduled performance step sets both
