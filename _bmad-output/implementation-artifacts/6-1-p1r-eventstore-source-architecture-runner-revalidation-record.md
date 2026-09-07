@@ -1440,3 +1440,149 @@ correction.
   the EventStore Owner should now be read through §D of this section.
 - `sprint-status.yaml` received an append-only, non-status evidence-pointer
   comment only.
+
+## Correction addendum — 2026-09-07 (second append, same date)
+
+Review of the append above found four defects in it. This addendum corrects them
+by appending, not by editing: every byte of every earlier section, including the
+first 2026-09-07 append, stands unchanged. It changes no status, qualifies no
+coordinate, runs no qualification lane, moves no gitlink, initializes no
+submodule, and pushes nothing. `6.1-P1R` remains `open` with all four owner
+decisions pending.
+
+### H. §B attributed the import failures to a lane that never had one
+
+§B closes by naming both `logs/eventstore-3102/` and `logs/eventstore-3701/` as
+holding the `NU1010`/`MSB4019` rows. **Only `logs/eventstore-3102/` does.**
+Counted in the relocated bundle:
+
+| Lane log directory | Files containing `NU1010` or `MSB4019` | `.meta` rows |
+| --- | ---: | --- |
+| `logs/eventstore-3102/` | 12 — `src-01…06-*` and `pkg-01…06-*` | the failing rows §5 tabulates |
+| `logs/eventstore-3701/` | **0** | 12 rows, `s1…s6` and `p1…p6`, **every one `EXIT=0`** |
+
+So §B's conclusion — that flat worktree placement, not a boundary conflict,
+produced the import failures — is correct for the **selected** `3.102.0` lane
+and is evidenced by `logs/eventstore-3102/` alone. The rollback `3.70.1` lane
+failed no import at all, for the reason in §I.
+
+### I. Why the rollback lane passed, and what that does and does not prove
+
+The relocated `logs/eventstore-3701/00b-submodule-init.log` is the missing piece
+the first append passed over in silence. It records `git submodule update --init`
+inside `wt-eventstore-3701` registering and cloning **all seven** of
+`Hexalith.EventStore`'s declared submodules and checking each out at the exact
+gitlink SHA `v3.70.1` names (`Hexalith.Builds` at
+`cfafcbf1e904138b435b63ba4fd79f86b8dda069`, `Hexalith.Tenants` at
+`211b4d4ae59d85cdbeb0cddf99bf3ad86b361f30`, and so on). With those bytes present
+at `<eventstore-root>/references/<Name>`, that lane then passed **all twelve**
+rows — six source-mode and six package-source — including
+`s3-test-contracts` and `p3-test-contracts` at `708/708` passed, 0 failed.
+
+**This is the reverted, non-qualifying route.** §5 above already records that the
+initialization was judged a nested-submodule boundary violation, was reverted
+with `git submodule deinit --all -f`, and that its 12 PASS rows are **not**
+retained as qualifying evidence. Nothing here changes that. What was missing was
+the reconciliation, so owners weigh decision 2 against retained evidence rather
+than against silence:
+
+**What the 3701 rows do support.** Dependency bytes materialized at EventStore's
+own exact gitlink SHAs, at `<eventstore-root>/references/<Name>`, are sufficient
+for that coordinate's repository-governance reads: at `v3.70.1` both
+`ReleasePackageManifestTests` and `ContractsPackageDependencyTests` reference
+`references/Hexalith.Builds`, and both passed. Decision 2 differs from what
+produced these rows only in **how** the bytes arrive — read-only materialization
+into disposable lane directories versus `git submodule update --init` inside the
+worktree — not in **what** ends up on disk. The end state decision 2 asks for is
+therefore a state this project has already observed working, once.
+
+**What they do not support.** They are not evidence for the selected coordinate's
+governance surface, which is materially larger:
+
+| | `v3.70.1` (`f13f9925…`) | `v3.103.0` (`059f6a89…`) |
+| --- | ---: | ---: |
+| `Hexalith.EventStore.Contracts.Tests` `.cs` files | 54 | 70 |
+| `Packaging/*.cs` files | 3 | 19 |
+| test files referencing `Hexalith.Builds` | 2 | 8 |
+| `ContainerPublishingGovernanceTests.cs` present | **no** | **yes** |
+
+`ContainerPublishingGovernanceTests` is the test that does not merely read files
+but runs `git ls-tree HEAD references/Hexalith.Builds` from the EventStore root
+and then `git cat-file -e` and `git merge-base --is-ancestor` **inside**
+`references/Hexalith.Builds`. It did not exist at `v3.70.1`, so the 3701 rows say
+nothing about it. Conversely, attempt-3 (2026-08-24, `v3.97.0`, sibling catalog
+only, **no** materialization at `<eventstore-root>/references/`) failed 29
+contracts tests whose earliest causes are exactly these absent dependency bytes.
+
+Read together: sibling-only materialization is known to fail this surface, full
+materialization at the coordinate's own gitlink SHAs is known to satisfy the
+older, smaller surface, and no evidence yet exists either way for
+`v3.103.0`'s `ContainerPublishingGovernanceTests`. That is the honest state
+decision 2 must be judged against.
+
+### J. Two harness layouts both work, through different import candidates
+
+§B verified one placement. The deferred-work entry that carries this work
+(DW-68, extending DW-35) describes a different one. Both resolve the catalog
+import with no nested submodule, but **through different candidates** of the
+four §B tabulates, and an executor who "fixes" one into the other can break a
+working lane. Both were verified on 2026-09-07 by evaluation-only MSBuild probes:
+
+| Layout | EventStore root | Builds at | Resolves through | Missing |
+| --- | --- | --- | --- | --- |
+| DW-68 / umbrella-shaped | `<lane>/references/Hexalith.EventStore` | `<lane>/references/Hexalith.Builds` | **candidate 3**, `../../references/Hexalith.Builds` | candidate 2 path does not exist |
+| Attempt-3 / §B | `<lane>/EventStore` | `<lane>/references/Hexalith.Builds` | **candidate 2**, `../references/Hexalith.Builds` | — |
+
+Both probes evaluated `HexalithEventStoreVersion` to `3.102.0` from the Builds
+catalog at `071ef99733ba398362ae838e4696b4b1641ed07a`, exit `0`, with zero
+nested submodules initialized. Neither layout is preferred by this record; what
+matters is that the executor records which candidate their layout resolves
+through, so a later reader can tell a working lane from a coincidence.
+
+### K. Superseded values from the first append, and the bundle's tracking state
+
+Acting on this review changed the bundle: it gained a `.gitattributes` pinning
+`-text` (the umbrella `.gitattributes` sets only `* whitespace=cr-at-eol` and
+pins no text or eol handling, so a clone with `core.autocrlf=true` would rewrite
+line endings and break every text entry in the manifest), its `.gitignore`
+negations were extended and its cited umbrella rules corrected, and its
+`README.md` counts were corrected. The manifest was regenerated. **The following
+values in §A are superseded by this addendum**; §A's text stands as written.
+
+| Item | §A value (superseded) | Current value |
+| --- | --- | --- |
+| Manifest entries | 214 | **215** |
+| Manifest SHA-256 | `da901517665b66606e3f03d270d72a992ca45afee85968efd39b3a38bb2fa107` | **`de3b59d4f4d84b2e568f56a9f1aa0f41119bfaa09beedb7412e1e8b7c89cf423`** |
+| Re-hash verification | 214/214 OK | **215/215 OK, 0 failed** |
+| Copy fidelity | "213/213 relocated files" | **211/211 relocated files byte-identical** |
+| `manifest-verification.txt` SHA-256 | not recorded | **`497bcaf44db6a39b6f198bf1fc6939affa172080497698526167b3b92ca2a9f7`**, now recorded in the bundle `README.md` |
+
+The bundle holds 217 files: 211 relocated byte-for-byte, 1 derived
+(`packages-cache-inventory.txt`), and 5 authored (`README.md`, `.gitignore`,
+`.gitattributes`, `artifact-manifest.sha256`, `manifest-verification.txt`). The
+manifest covers 215 — all but itself and `manifest-verification.txt`, whose
+SHA-256 the `README.md` records, so no bundle file is unattested. The manifest
+deliberately does not appear inside `manifest-verification.txt`, and the
+`README.md` deliberately does not quote the manifest hash: a manifest covering a
+README that quotes that manifest's own hash is the same unsatisfiable
+self-reference §7 records for `generatedFromRevision`. The manifest hash is
+attested here and in the `sprint-status.yaml` evidence pointer instead.
+
+**Tracking state.** §A calls the bundle tracked. It is not tracked yet:
+`git ls-files` over it returns zero. The umbrella working-tree changes for this
+correction — the bundle, the `qualification-evidence/README.md` index rows, the
+`sprint-status.yaml` comment, and the deferred-work entry — are deliberately
+left uncommitted for the user to review and commit. The bundle-local
+`.gitignore` and `.gitattributes` mean all 217 files are trackable the moment
+that commit happens (verified: `git add -n` lists 217 of 217, `git check-ignore`
+matches none, `git diff --check` reports none). Until then the bundle is durable
+against scratch pruning but not against `git clean -xdf`.
+
+### L. What this addendum does not do
+
+No qualification lane was run; the only MSBuild invocations were evaluation-only
+probes of synthetic projects in a disposable scratch directory. No coordinate was
+qualified, no gate closed, no gitlink moved, no submodule initialized, nothing
+pushed or published, and no owner acceptance inferred. The Architecture Spine
+remains bound to EventStore `3.70.1`. §10's four-owner table stands with all four
+rows pending.
