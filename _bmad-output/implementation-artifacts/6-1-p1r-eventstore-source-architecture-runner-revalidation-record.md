@@ -1163,3 +1163,280 @@ support owner acceptance.
 | Builds Owner | pending | pending | pending | Candidate `3d16d3e090ae822bc9cdc64c4156d31c9acf1146`; rollback `6ea4c27ade695964ee3c95b1d28e0058f4e1430e`; both unpushed/unmerged, static alignment and Builds-side reciprocal `HXM016` proof genuine per §6-§7 | Authorize a second, dependent audit-refresh commit on the rollback branch (or a tooling change to the ancestor self-consistency check) so `validate-package-version-audit.ps1` can pass at the rollback revision; relocate retained evidence into a durable `qualification-evidence/` bundle before acceptance |
 | Solution Architect | pending | pending | pending | Architecture remains `3.70.1`; no multi-coordinate binding proposed | Make no rebinding decision until §5's EventStore-side blocker and §7's audit-validator FAIL both resolve; note the 21-commit/11-file post-tag drift discrepancy from the originating spec for G-1 wording purposes |
 | Test Architect | pending | pending | pending | 12 `FAIL` EventStore rows (selected) + 12 non-qualifying reverted-boundary rows (rollback) + 2 `INCONCLUSIVE`/2 `FAIL` Builds `dotnet test -m:1` rows + 1 audit-validator `FAIL` (rollback) | Require a clean re-run of the EventStore source/package lanes once §5 is resolved, the audit-validator row once §6/§7's two-commit sequencing is authorized, and independently confirm the `dotnet test -m:1` Microsoft.Testing.Platform IPC blocker is an environment/tooling defect, not a candidate defect, before treating the fallback evidence as equivalent |
+
+## Correction and evidence relocation — 2026-09-07
+
+This append-only section corrects the "3.102.0 candidate / 3.70.1 rollback
+revalidation attempt — 2026-09-05" section above **without altering one byte of
+it**, and closes the evidence retention gap that section's §8 recorded honestly.
+
+It changes no status field, selects nothing, qualifies nothing, runs no
+qualification lane, moves no gitlink, initializes no submodule, and pushes and
+publishes nothing. `6.1-P1R` remains `open`. All four owner decisions remain
+pending. Every earlier section — `3.88.0`, `3.90.0`, the three stopped `3.97.0`
+attempts, and the 2026-09-05 attempt — stands exactly as written.
+
+Authority: `_bmad-output/implementation-artifacts/spec-6-1-p1r-requalify-with-sibling-materialization.md`
+in `Hexalith.Projects` at baseline `dffdd677e0058240d5951f507cbd2b159b9643a5`.
+
+### A. Evidence relocation — the 2026-09-05 §8 retention gap is closed
+
+The 2026-09-05 §8 recorded that all command logs, per-row hashes, and result
+narratives lived only in an ephemeral session scratch directory and had not been
+relocated into a durable bundle. That scratch directory was still present and
+readable on 2026-09-07, and its surviving contents have now been relocated
+byte-for-byte to:
+
+```
+Hexalith.Projects@_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3102-20260905/
+```
+
+| Item | Value |
+| --- | --- |
+| Bundle manifest | `artifact-manifest.sha256`, 214 entries |
+| Manifest SHA-256 | `da901517665b66606e3f03d270d72a992ca45afee85968efd39b3a38bb2fa107` |
+| Re-hash verification | `sha256sum -c` — **214/214 OK, 0 failed**, recorded in `manifest-verification.txt` |
+| Copy fidelity | 213/213 relocated files byte-identical to their scratch source; `diff -rq` clean for all four `logs/` trees and both `retained-packages/` trees |
+| Artifacts absent | **none** — nothing was listed as absent, and nothing was reconstructed, re-derived, re-run, or reformatted |
+
+The bundle carries the four lane result narratives, both commit messages, all
+117 per-row log and `.meta` files across `logs/{eventstore-3102,eventstore-3701,builds-3102,builds-3701}/`,
+both retained release manifests, `p1r-diff.txt`, the disposable remote-consumer
+project and its nuget.org-only `NuGet.Config` bytes, and the retained G-4
+packaged-command artifacts for both lanes under `retained-packages/`.
+
+That last set independently corroborates this record's own §8 table: the four
+retained `.nupkg` files re-hash on 2026-09-07 to exactly the four published
+values (`69c9c71a…`, `1709c719…`, `2543a3da…`, `e544e22a…`). The relocated
+release manifests hash to `6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae`,
+matching §3.
+
+Deliberately excluded and labelled as such in the bundle `README.md` — not
+missing: the 630 MiB disposable restore cache (replaced by a derived
+`packages-cache-inventory.txt` recording all 222 restored `<id>/<version>` pairs,
+including the 13 `hexalith.eventstore.*` libraries at exactly `3.102.0` and the
+`dotnet tool install` store path for the 14th ID), and roughly 8.5 GiB of
+disposable Git worktrees, per-lane scoped environments, and the isolated
+`global.json`-pinned SDK `10.0.302` install. Those are execution environments,
+not artifacts.
+
+The three prior stopped `3.97.0` bundles were re-verified unchanged on the same
+date (`sha256sum -c` passes for `6-1-p1r-397-20260824`, `-attempt2`, and
+`-attempt3`); none was modified.
+
+### B. 2026-09-07 sibling-import verification — method and result
+
+The 2026-09-05 §5 root-cause paragraph is factually wrong about the mechanism,
+and this subsection states the method that shows it, so the finding can be
+re-checked rather than taken on assertion.
+
+`Hexalith.EventStore/Directory.Packages.props` defines **four** catalog import
+candidates and tries them in order:
+
+| # | Property | Path relative to the EventStore root | Guarded by `Exists()` |
+| --- | --- | --- | --- |
+| 1 | `Hexalith1BuildPackageProps` | `references/Hexalith.Builds/Props/Directory.Packages.props` (the nested submodule path) | yes |
+| 2 | `Hexalith2BuildPackageProps` | `../references/Hexalith.Builds/Props/Directory.Packages.props` (**sibling fallback**) | yes |
+| 3 | `Hexalith3BuildPackageProps` | `../../references/Hexalith.Builds/Props/Directory.Packages.props` | yes |
+| 4 | `Hexalith4BuildPackageProps` | `../../references/Hexalith.Builds/Props/Directory.Packages.props` (same path as 3) | **no** |
+
+Candidate 4 is unconditional. When 1–3 all miss, candidate 4 is the import that
+raises `MSB4019`, and `Directory.Packages.props` never sets any `PackageVersion`,
+which is what produces the `NU1010` wave on restore. This file is byte-identical
+at `v3.102.0` and `v3.103.0` (SHA-256 `4fe25096ceefd11e8ffffe1ab6a1854e18ac36c853a6805fa72285433b03b638`)
+and structurally identical at `v3.70.1` (`f3855b55b8e8184fcb05968b4f94bb40cc377131d7aaaecc3ba014cabca01130`).
+
+**Method (read-only; no qualification lane, no restore, no build, no test).**
+Two synthetic layouts were built in a disposable scratch directory:
+
+- `flat/EventStore/` — the 2026-09-05 placement: an EventStore root with no
+  sibling `references/` directory beside it.
+- `lane/EventStore/` plus `lane/references/Hexalith.Builds/` — the attempt-3
+  placement: an EventStore root with the Builds catalog as its sibling.
+
+`Directory.Packages.props` was extracted read-only with
+`git show 059f6a8917bfab26b85775be464840a1610dfdeb:Directory.Packages.props`
+into both layouts. The Builds `Props/` directory was extracted read-only with
+`git archive 071ef99733ba398362ae838e4696b4b1641ed07a Props`; the resulting
+`Props/Directory.Packages.props` has SHA-256
+`b50f9984247cf1cdc1daa9ef0f7345ea753bebcbd9228f3eecf975ec9c1df216` and imports
+nothing further. A minimal `Microsoft.NET.Sdk` probe project was placed in each
+EventStore root and **evaluated only**:
+
+```text
+dotnet msbuild Probe.csproj -getProperty:HexalithEventStoreVersion
+```
+
+**Results.**
+
+| Case | Layout | Exit | Observed |
+| --- | --- | ---: | --- |
+| A | flat (2026-09-05) | `1` | `error MSB4019: The imported project ".../references/Hexalith.Builds/Props/Directory.Packages.props" was not found ... "$(Hexalith4BuildPackageProps)"` |
+| B | sibling (attempt-3) | `0` | `HexalithEventStoreVersion` = `3.102.0`; `HexalithVersionsLoaded` = `true`; `ManagePackageVersionsCentrally` = `true` |
+
+Case B resolved with **no nested submodule initialized anywhere**. Confirmed on
+the same date in the umbrella checkout: `git -C references/Hexalith.EventStore
+submodule status` reports all seven entries with the uninitialized `-` prefix,
+and all seven `references/*` directories are empty (0 entries).
+
+**Therefore**: the 2026-09-05 EventStore lanes did not fail because a
+nested-submodule boundary made catalog import impossible. They failed because
+their worktrees were placed **flat** (`<scratch>/wt-eventstore-3102`,
+`<scratch>/wt-eventstore-3701`, and their `-source`/`-package` siblings), where
+`<scratch>/references/Hexalith.Builds` never existed, so all four import
+candidates missed. The `NU1010`/`MSB4019` rows now retained under
+`qualification-evidence/6-1-p1r-3102-20260905/logs/eventstore-3102/` and
+`logs/eventstore-3701/` are evidence of a **worktree-placement defect in the
+harness**, not of a structural boundary blocker in the repository.
+
+### C. Attempt-3 corroboration (2026-08-24)
+
+This is not a new finding; it is a rediscovery of one this record already holds.
+The "Stopped `3.97.0` supersession attempt 3 — 2026-08-24" section above, and
+`Hexalith.Builds` branch `docs/p1r-397-attempt3-record` (`6b42f74`, now an
+ancestor of local `main`), already document the same route end to end under the
+name **repository-supported sibling materialization**: each detached EventStore
+worktree at `<lane>/EventStore` with a detached Builds worktree at
+`<lane>/references/Hexalith.Builds`. On that layout the exact mandated Debug
+source-mode restore (`es-source-001-restore`) and the exact mandated serialized
+Debug build (`es-source-002-build`, zero warnings, zero errors) both **passed**,
+with no nested submodule initialized, no EventStore source edited, and no
+gitlink moved.
+
+Import and compilation through a sibling catalog are a solved problem, proven by
+execution on 2026-08-24 and re-verified by evaluation on 2026-09-07.
+
+### D. Restatement of the 2026-09-05 §5 open question
+
+§5's closing paragraph asks the EventStore Owner and Solution Architect to rule
+on whether initializing EventStore's own declared `Hexalith.Builds` submodule is
+authorized for isolated-worktree qualification, and states that without such a
+ruling the source-mode and package-source lanes are "structurally un-runnable".
+**That question is moot as posed.** Sibling materialization already satisfies
+MSBuild import and compilation without any nested submodule, so no owner ruling
+is required to make the lanes runnable.
+
+The real blocker sits one layer below, and attempt-3 reached it: EventStore's
+repository-governance tests do not go through MSBuild. They read dependency
+**bytes**, and Git **objects**, at `<eventstore-root>/references/<Name>`:
+
+- `tests/Hexalith.EventStore.Contracts.Tests/Packaging/ReleasePackageManifestTests.cs`
+  — `Live_sidecar_workflow_targets_live_project_outside_release_gate` and
+  `Live_sidecar_workflow_guardrail_rejects_forbidden_mutations` both call
+  `File.ReadAllText(Path.Combine(root, "references", "Hexalith.Builds", "Github", "dapr-init", "action.yml"))`.
+- `tests/Hexalith.EventStore.Contracts.Tests/Packaging/ContainerPublishingGovernanceTests.cs`
+  — runs `git ls-tree HEAD references/Hexalith.Builds` from the EventStore root
+  to read the gitlink SHA, then runs `git cat-file -e <ApprovedBuildsReleaseSha>^{commit}`
+  and `git merge-base --is-ancestor <ApprovedBuildsReleaseSha> <gitlinkSha>`
+  **inside** `references/Hexalith.Builds`. That path must therefore be a real
+  Git repository whose object store contains the approved release SHA — a plain
+  file copy or a bare directory does not satisfy it.
+- Attempt-3's 29 failures additionally named absent `Hexalith.Tenants` project
+  content, the absent shared LLM instruction file, an unavailable Builds tool
+  path at a pinned commit, and an unresolvable Git tree.
+
+So the question owners should be asked is **not** "may nested submodules be
+initialized so the catalog import works" — import is solved — but:
+
+> How do repository-governance tests obtain real dependency bytes and real Git
+> objects at `<eventstore-root>/references/<Name>`, at the exact SHAs the
+> selected EventStore coordinate itself names, without initializing nested
+> submodules under the umbrella and without moving any gitlink?
+
+Feasibility observation for that question (2026-09-07, read-only, non-qualifying).
+At `v3.103.0` EventStore's own gitlinks are:
+
+| Dependency | Gitlink SHA at `v3.103.0` | Object available locally? |
+| --- | --- | --- |
+| `Hexalith.AI.Tools` | `5f93d2ec8239494852c97032c819cb1689939e36` | yes — umbrella module store |
+| `Hexalith.Builds` | `071ef99733ba398362ae838e4696b4b1641ed07a` | yes — umbrella module store |
+| `Hexalith.Commons` | `6da79aed2daa4e199689331ee3196f7872c0988a` | yes — umbrella module store |
+| `Hexalith.FrontComposer` | `97a4e6b2d28fab470cad4870694fe3e2b012306a` | yes — umbrella module store |
+| `Hexalith.Memories` | `7e9c2c387ee84b4d5c96c27f4cf613e13ff2c9e2` | yes — umbrella module store |
+| `Hexalith.PolymorphicSerializations` | `8aeed1d27c9a050bc4bec6d89051aa00de306a69` | **no local repository** — needs a fetch from its declared URL |
+| `Hexalith.Tenants` | `e7f366623733abdb64f173e9843edc7fc7d22193` | yes — umbrella module store |
+
+Six of the seven are already resolvable from objects the umbrella holds. Note
+also that `v3.103.0`'s `Hexalith.Builds` gitlink `071ef99…` is exactly the
+`Hexalith.Builds` revision the umbrella working tree currently has checked out.
+
+### E. Decisions taken 2026-09-07
+
+Recorded here as decisions of record. They are not reopened by this section and
+this section does not execute any of them.
+
+1. **Selected coordinate moves to EventStore `v3.103.0`
+   (`059f6a8917bfab26b85775be464840a1610dfdeb`)**, superseding the `3.102.0`
+   candidate whose Builds alignment is `3d16d3e090ae822bc9cdc64c4156d31c9acf1146`.
+   The 2026-09-05 `3.102.0` coordinate tables, ledgers, and evidence remain
+   valid preserved history for the superseded candidate.
+2. **The dependency-bytes route for repository-governance tests is read-only
+   materialization at EventStore's own exact gitlink SHAs, inside disposable
+   qualification worktrees**: no `git submodule update --init`, no gitlink
+   movement, no EventStore source edit, and nothing written into any live
+   checkout. This is recorded as an **explicit judgement call** against the
+   umbrella's nested-submodule rule: the rule forbids initializing nested
+   submodules in the workspace, and this route does not do that — it materializes
+   dependency content and Git objects into throwaway lane directories at the
+   SHAs the selected coordinate itself names. Whoever executes must keep that
+   distinction demonstrable in the post-lane state capture, exactly as attempt-3
+   did.
+3. **The rollback audit gets a second, dependent child commit**, not a change to
+   `Tools/validate-package-version-audit.ps1`. §7 above recorded the rollback
+   audit `FAIL` and correctly diagnosed it as a single-commit self-reference
+   impossibility in `generatedFromRevision`. The resolution is the base
+   repository's own historical two-commit pattern (`308e392` then `e81e627`):
+   commit the catalog/runner rebind, then a child commit adding the regenerated
+   audit. The validator itself is not to be relaxed, hand-edited, or bypassed.
+
+### F. Observed state changes since 2026-09-05 (observations only)
+
+Recorded so that the 2026-09-05 statements above are read with their correct
+as-of date. None of these is corrected in place, and none was caused by this
+correction.
+
+- §9 recorded that both new Builds commits were "unpushed, unmerged". That was
+  true on 2026-09-05. Since then the candidate branch was merged by separate
+  user work: `3d16d3e090ae822bc9cdc64c4156d31c9acf1146` is now an ancestor of
+  local `main` via `aee36f40037b41d25c8bd8da6a0dd68671faa823`
+  ("build: merge fix/p1r-3102-candidate into main via /pushall").
+  `fix/p1r-3701-rollback` (`6ea4c27ade695964ee3c95b1d28e0058f4e1430e`) is still
+  unmerged. This does not qualify or accept the candidate; alignment is not
+  qualification.
+- The `Hexalith.Builds` checkout under `Hexalith.Projects/references/Hexalith.Builds`
+  was at `main` = `071ef99733ba398362ae838e4696b4b1641ed07a` when this section
+  was written, one commit behind `origin/main` = `7b0b1837ce368e314b5e11b011b73603637a17e1`
+  ("build(deps): update EventStore to 3.103.0 and Memories to 2.26.2"). This
+  correction is committed on top of the local checkout's `071ef99…` and is
+  therefore **not** a descendant of `origin/main`; it needs a merge or rebase
+  before any push. Nothing was pushed.
+- `7b0b183…` changes `Props/Directory.Packages.props` only. On `origin/main`,
+  `SupportedPlatformPins.EventStoreVersion` still reads `3.102.0`. So under
+  decision E-1 the catalog is already at `3.103.0` upstream while the runner
+  pin, manifest schema, positive fixtures, negative fixtures, evidence fixtures,
+  and coupled `artifact_sha256` values are **not** yet rebound to `3.103.0`.
+  That rebind is outstanding work for the next authorized attempt; no such
+  change was made here.
+- EventStore `v3.103.0` (`059f6a89…`) is tagged as of 2026-09-07. Its
+  `tools/release-packages.json` hashes to the same 14-ID manifest
+  `6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae`. Source
+  inventory observation only — not a remote listing, not consumption proof, and
+  not a qualification of `3.103.0`.
+
+### G. What this correction does not do
+
+- No qualification lane was run — no restore, no build, no test, no runner, no
+  packaged command. The only MSBuild invocation was an evaluation-only probe of
+  a synthetic project in a disposable scratch directory (§B).
+- No coordinate was qualified and no gate was closed. `6.1-P1R` stays `open`;
+  `6.1-P0`, `6.1-P2`, `6.1-P3`, `6.1-P4`, Story 6.1, independent readiness, and
+  the transitive Epic 7/8 gates keep their own blockers.
+- The Architecture Spine is untouched and still binds EventStore `3.70.1` /
+  `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` / Builds
+  `HexalithEventStoreVersion=3.70.1`.
+- No gitlink was moved, no submodule was initialized or deinitialized, nothing
+  was pushed, published, or released, and no owner acceptance is inferred. §10's
+  four-owner table stands with all four rows pending; §10's next-action text for
+  the EventStore Owner should now be read through §D of this section.
+- `sprint-status.yaml` received an append-only, non-status evidence-pointer
+  comment only.
