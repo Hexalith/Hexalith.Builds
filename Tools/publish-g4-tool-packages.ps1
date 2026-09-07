@@ -275,13 +275,13 @@ $null = Assert-ModuleRunEvidenceContent `
     -ExpectedManifestHash $moduleManifestHash
 $null = Assert-ModuleRunEvidenceContent `
     -FilePath $evidencePathsByName['qualification-evidence/packaged-test-evidence.json'] `
-    -ExpectedFinalStatus 'unavailable' -ExpectedExitCode 2 -ExpectedRuleId 'HXR002' -ExpectedPhase 'Prerequisite' -ExpectedCategory 'PrerequisiteUnavailable' `
+    -ExpectedFinalStatus 'unavailable' -ExpectedExitCode 2 -ExpectedRuleId 'HXR003' -ExpectedPhase 'Prerequisite' -ExpectedCategory 'PrerequisiteUnavailable' `
     -ExpectedCommand 'hexalith-module test --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json --profile full' `
     -ExpectedToolVersion $packagedToolVersion -ExpectedRepositoryRevision 'unavailable' -ExpectedRepositoryDirtyMarker 'dirty' `
     -ExpectedManifestHash $moduleManifestHash
 $null = Assert-ModuleRunEvidenceContent `
     -FilePath $evidencePathsByName['qualification-evidence/packaged-unavailable-evidence.json'] `
-    -ExpectedFinalStatus 'unavailable' -ExpectedExitCode 2 -ExpectedRuleId 'HXR002' -ExpectedPhase 'Prerequisite' -ExpectedCategory 'PrerequisiteUnavailable' `
+    -ExpectedFinalStatus 'unavailable' -ExpectedExitCode 2 -ExpectedRuleId 'HXR003' -ExpectedPhase 'Prerequisite' -ExpectedCategory 'PrerequisiteUnavailable' `
     -ExpectedCommand 'hexalith-module run --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json' `
     -ExpectedToolVersion $packagedToolVersion -ExpectedRepositoryRevision 'unavailable' -ExpectedRepositoryDirtyMarker 'dirty' `
     -ExpectedManifestHash $moduleManifestHash
@@ -294,8 +294,8 @@ foreach ($name in @('packaged-test-output', 'packaged-unavailable-output')) {
     $null = Assert-QualificationEvidenceContent `
         -FilePath $evidencePathsByName["qualification-evidence/$name.json"] -Kind ExactNonPassing `
         -ExpectedStatus 'unavailable' -ExpectedOutcomeExitCode 'PrerequisiteUnavailable' `
-        -ExpectedPhase 'Prerequisite' -ExpectedCategory 'PrerequisiteUnavailable' -ExpectedRuleId 'HXR002' `
-        -ExpectedDiagnosticRuleIds @('HXR002')
+        -ExpectedPhase 'Prerequisite' -ExpectedCategory 'PrerequisiteUnavailable' -ExpectedRuleId 'HXR003' `
+        -ExpectedDiagnosticRuleIds @('HXR003')
 }
 $null = Assert-QualificationEvidenceContent `
     -FilePath $evidencePathsByName['qualification-evidence/packaged-readiness-output.json'] -Kind Positive `

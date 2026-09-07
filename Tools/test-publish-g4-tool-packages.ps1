@@ -298,11 +298,11 @@ function New-PackageInventory {
             }
             'qualification-evidence/packaged-test-output.json' {
                 New-ToolResultContent -Status 'unavailable' -OutcomeExitCode 'PrerequisiteUnavailable' `
-                    -Phase 'Prerequisite' -Category 'PrerequisiteUnavailable' -RuleId 'HXR002' -RuleIds @('HXR002')
+                    -Phase 'Prerequisite' -Category 'PrerequisiteUnavailable' -RuleId 'HXR003' -RuleIds @('HXR003')
             }
             'qualification-evidence/packaged-unavailable-output.json' {
                 New-ToolResultContent -Status 'unavailable' -OutcomeExitCode 'PrerequisiteUnavailable' `
-                    -Phase 'Prerequisite' -Category 'PrerequisiteUnavailable' -RuleId 'HXR002' -RuleIds @('HXR002')
+                    -Phase 'Prerequisite' -Category 'PrerequisiteUnavailable' -RuleId 'HXR003' -RuleIds @('HXR003')
             }
             'qualification-evidence/packaged-readiness-output.json' {
                 New-ToolResultContent -Status 'passed' -OutcomeExitCode 'Success' -Phase 'None' -Category 'None' `
@@ -316,13 +316,13 @@ function New-PackageInventory {
                     -ToolVersion $packagedToolVersion -ManifestHash $manifestHash
             }
             'qualification-evidence/packaged-test-evidence.json' {
-                New-ModuleEvidenceContent -FinalStatus 'unavailable' -ExitCode 2 -RuleId 'HXR002' `
+                New-ModuleEvidenceContent -FinalStatus 'unavailable' -ExitCode 2 -RuleId 'HXR003' `
                     -Phase 'Prerequisite' -Category 'PrerequisiteUnavailable' `
                     -Command 'hexalith-module test --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json --profile full' `
                     -ToolVersion $packagedToolVersion -ManifestHash $manifestHash
             }
             'qualification-evidence/packaged-unavailable-evidence.json' {
-                New-ModuleEvidenceContent -FinalStatus 'unavailable' -ExitCode 2 -RuleId 'HXR002' `
+                New-ModuleEvidenceContent -FinalStatus 'unavailable' -ExitCode 2 -RuleId 'HXR003' `
                     -Phase 'Prerequisite' -Category 'PrerequisiteUnavailable' `
                     -Command 'hexalith-module run --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json' `
                     -ToolVersion $packagedToolVersion -ManifestHash $manifestHash

@@ -987,12 +987,12 @@ try {
             '--output',
             'json'
         ) -WorkingDirectory $consumerRoot
-        Assert-ExactNonPassingResult -Result $testResult -ExitCode 2 -RuleId 'HXR002' `
+        Assert-ExactNonPassingResult -Result $testResult -ExitCode 2 -RuleId 'HXR003' `
             -Description 'Positive packaged module test command path'
         $qualificationEvidenceEntries.Add((Save-QualificationEvidence -EvidenceDirectory $qualificationEvidenceRoot -Name 'packaged-test-output' -Content $testResult.Output))
 
         $testEvidencePath = Join-Path $consumerRoot 'evidence/test-unavailable.json'
-        $null = Assert-ModuleEvidence -Path $testEvidencePath -FinalStatus 'unavailable' -ExitCode 2 -RuleId 'HXR002' `
+        $null = Assert-ModuleEvidence -Path $testEvidencePath -FinalStatus 'unavailable' -ExitCode 2 -RuleId 'HXR003' `
             -Phase 'Prerequisite' -Category 'PrerequisiteUnavailable' `
             -Command "hexalith-module test --manifest $moduleManifestPath --profile full" `
             -ToolVersion $packagedToolVersion -RepositoryRevision 'unavailable' -RepositoryDirtyMarker 'dirty' `
@@ -1009,11 +1009,11 @@ try {
             '--output',
             'json'
         ) -WorkingDirectory $consumerRoot
-        Assert-ExactNonPassingResult -Result $unavailableResult -ExitCode 2 -RuleId 'HXR002' -Description 'Unavailable platform prerequisite control'
+        Assert-ExactNonPassingResult -Result $unavailableResult -ExitCode 2 -RuleId 'HXR003' -Description 'Unavailable platform prerequisite control'
         $qualificationEvidenceEntries.Add((Save-QualificationEvidence -EvidenceDirectory $qualificationEvidenceRoot -Name 'packaged-unavailable-output' -Content $unavailableResult.Output))
 
         $unavailableEvidencePath = Join-Path $consumerRoot 'evidence/unavailable.json'
-        $null = Assert-ModuleEvidence -Path $unavailableEvidencePath -FinalStatus 'unavailable' -ExitCode 2 -RuleId 'HXR002' `
+        $null = Assert-ModuleEvidence -Path $unavailableEvidencePath -FinalStatus 'unavailable' -ExitCode 2 -RuleId 'HXR003' `
             -Phase 'Prerequisite' -Category 'PrerequisiteUnavailable' `
             -Command "hexalith-module run --manifest $moduleManifestPath" `
             -ToolVersion $packagedToolVersion -RepositoryRevision 'unavailable' -RepositoryDirtyMarker 'dirty' `
@@ -1044,7 +1044,8 @@ try {
         # merely hashed, sized, and named. The paired `*-evidence.json` artifacts
         # above are already exhaustively content-validated by Assert-ModuleEvidence.
         $expectedRuleIdsByName = @{
-            'packaged-unavailable-output' = 'HXR002'
+            'packaged-test-output' = 'HXR003'
+            'packaged-unavailable-output' = 'HXR003'
         }
         foreach ($fixture in $moduleNegatives) {
             $expectedRuleIdsByName["module-negative-$($fixture.BaseName)-output"] =
@@ -1065,7 +1066,7 @@ try {
                 $null = Assert-QualificationEvidenceContent -FilePath $entryPath -Kind 'ExactNonPassing' -ExpectedRuleId $expectedRuleIdsByName[$entryName]
             }
             elseif ($entryName -eq 'packaged-test-output') {
-                $null = Assert-QualificationEvidenceContent -FilePath $entryPath -Kind 'ExactNonPassing'
+                $null = Assert-QualificationEvidenceContent -FilePath $entryPath -Kind 'ExactNonPassing' -ExpectedRuleId $expectedRuleIdsByName[$entryName]
             }
             elseif ($entryName -in @('packaged-down-output', 'packaged-readiness-output')) {
                 $null = Assert-QualificationEvidenceContent -FilePath $entryPath -Kind 'Positive'
