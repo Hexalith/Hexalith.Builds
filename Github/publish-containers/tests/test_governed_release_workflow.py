@@ -6,6 +6,7 @@ unset keeps the pre-BUILD-REL-1 contract, governed mode fails closed without its
 secrets, and every governed path proves its workflow identity from immutable references.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -203,14 +204,26 @@ class ReleaseFreezeGateTests(unittest.TestCase):
         self.assertIn("publish-enabled=true", output)
 
     def test_missing_or_malformed_values_skip_without_failing(self):
-        for value in (None, "", "TRUE", "True", "tRue", " true", "true ", "1", "yes", "false"):
-            with self.subTest(value=value):
-                result, output = run_freeze_gate(value)
+        for occurrence in (0, 1):
+            for value in (None, "", "TRUE", "True", "tRue", " true", "true ", "1", "yes", "false"):
+                with self.subTest(occurrence=occurrence, value=value):
+                    result, output = run_freeze_gate(value, occurrence)
 
-                self.assertEqual(0, result.returncode, result.stderr)
-                self.assertIn("publish-enabled=false", output)
-                self.assertNotIn("publish-enabled=true", output)
-                self.assertIn("::notice title=Release publication frozen::", result.stdout)
+                    self.assertEqual(0, result.returncode, result.stderr)
+                    self.assertIn("publish-enabled=false", output)
+                    self.assertNotIn("publish-enabled=true", output)
+                    self.assertIn("::notice title=Release publication frozen::", result.stdout)
+
+    def test_both_freeze_gates_bind_the_caller_repository_variable(self):
+        workflow = read(DOMAIN_RELEASE)
+
+        for occurrence in (0, 1):
+            with self.subTest(occurrence=occurrence):
+                start = step_indices(workflow, "Resolve release publication freeze")[occurrence]
+                self.assertIn(
+                    "HEXALITH_RELEASE_PUBLISH_ENABLED: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}",
+                    workflow[start: start + 500],
+                )
 
     def test_the_notice_documents_the_repository_over_organization_shadowing_hazard(self):
         result, _output = run_freeze_gate("")
@@ -446,6 +459,7 @@ class GovernedReleaseContractTests(unittest.TestCase):
             ({"CANDIDATE_COMMAND": ""}, "candidate-command"),
             ({"CANDIDATE_DIRECTORY": "/tmp/candidate"}, "candidate-directory"),
             ({"EXPECTED_PACKAGE_COUNT": "many"}, "expected-package-count"),
+            ({"EXPECTED_PACKAGE_COUNT": "09"}, "expected-package-count"),
             ({"SIGNING_TIMESTAMPER": "timestamp.example.test"}, "nuget-signing-timestamper"),
         )
 
@@ -498,6 +512,7 @@ class GovernedReleaseContractTests(unittest.TestCase):
         self.assertIn("ref: ${{ inputs.release-commit }}", source)
         self.assertIn("HEXALITH_RELEASE_COMMIT: ${{ inputs.release-commit }}", source)
         self.assertIn("candidate: ${{ inputs.release-commit }}", source)
+        self.assertGreaterEqual(source.count("GITHUB_SHA: ${{ inputs.release-commit }}"), 2)
         self.assertNotIn("DISPATCH_SHA", source)
 
         guard = extract_run_block(DOMAIN_RELEASE, "Revalidate governed release source before Semantic Release")
@@ -588,6 +603,87 @@ class GovernedReleaseContractTests(unittest.TestCase):
         self.assertEqual([], document["assets"])
         self.assertEqual("failure", document["release_run"]["conclusion"])
 
+    def test_verification_data_records_a_successful_governed_publication(self):
+        script = extract_run_block(DOMAIN_RELEASE, "Collect governed release verification data")
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            workspace = Path(temporary_directory)
+            governed = workspace / ".hexalith" / "release" / "governed"
+            governed.mkdir(parents=True)
+            inventory = governed / "candidate-inventory.json"
+            inventory.write_text(
+                json.dumps(
+                    {
+                        "schema": "hexalith.builds-release-candidate.v1",
+                        "version": "1.2.3",
+                        "directory": "nupkgs",
+                        "packages": [
+                            {"name": "Hexalith.A.1.2.3.nupkg", "sha256": "ab" * 32, "size": 4}
+                        ],
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            durable = governed / "candidate-attestation.jsonl"
+            durable.write_text("attestation-bundle\n", encoding="utf-8")
+            output_path = workspace / "github-output"
+            output_path.touch()
+            result = run_block(
+                script,
+                {
+                    "GITHUB_OUTPUT": str(output_path),
+                    "RELEASE_REPOSITORY": "Hexalith/Hexalith.FrontComposer",
+                    "RELEASE_WORKFLOW_REF": (
+                        "Hexalith/Hexalith.FrontComposer/.github/workflows/release.yml@refs/heads/main"
+                    ),
+                    "RELEASE_RUN_ID": "77",
+                    "RELEASE_RUN_ATTEMPT": "1",
+                    "RELEASE_CONCLUSION": "success",
+                    "RELEASE_COMMIT": GOVERNED_CANDIDATE,
+                    "CI_HANDOFF_ARTIFACT": "dependency-release-handoff",
+                    "CI_RUN_ID": "42",
+                    "CI_RUN_ATTEMPT": "1",
+                    "POLICY_REPOSITORY": "github.com/hexalith/hexalith.frontcomposer",
+                    "POLICY_PATH": "eng/dependency-graph-policy.json",
+                    "POLICY_COMMIT": GOVERNED_POLICY_COMMIT,
+                    "POLICY_SHA256": GOVERNED_SHA256,
+                    "EXPECTED_EVALUATOR_DIGEST": "b" * 64,
+                    "PUBLISH_ENABLED": "true",
+                    "RELEASE_REQUIRED": "true",
+                    "RELEASE_VERSION": "1.2.3",
+                    "CANDIDATE_INVENTORY": str(inventory),
+                    "ATTESTATION_BUNDLE": str(workspace / "missing-temp-bundle.jsonl"),
+                    "ATTESTATION_ID": "attest-1",
+                    "WORKFLOW_PROVENANCE": "",
+                    "CLOSURE_DIGEST": "c" * 64,
+                },
+                cwd=temporary_directory,
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            document = json.loads(
+                (governed / "release-verification-data.json").read_text(encoding="utf-8")
+            )
+
+        self.assertTrue(document["publication"]["published"])
+        self.assertTrue(document["publication"]["publish_enabled"])
+        self.assertTrue(document["publication"]["release_required"])
+        self.assertEqual("1.2.3", document["publication"]["version"])
+        self.assertEqual(
+            [{"name": "Hexalith.A.1.2.3.nupkg", "sha256": "ab" * 32, "size": 4}],
+            document["assets"],
+        )
+        self.assertEqual(
+            ".hexalith/release/governed/candidate-attestation.jsonl",
+            document["attestation"]["bundle_path"],
+        )
+        self.assertEqual(
+            hashlib.sha256(b"attestation-bundle\n").hexdigest(),
+            document["attestation"]["bundle_sha256"],
+        )
+
     def test_governed_evidence_upload_never_omits_the_artifact(self):
         source = job_slice(read(DOMAIN_RELEASE), "governed-release")
         upload_index = source.index("- name: Upload governed release evidence")
@@ -647,6 +743,17 @@ class GovernedCandidatePhaseTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual("false", outputs["release-required"])
         self.assertNotIn("version", outputs)
+
+    def test_an_unparseable_dry_run_version_line_fails_closed(self):
+        result, outputs = run_candidate_phase(
+            self.workspace,
+            stubs=stub_semantic_release(self.workspace, "The next release version is not-a-version"),
+            CANDIDATE_COMMAND="exit 1",
+        )
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("could not parse the next release version", result.stderr)
+        self.assertEqual({}, outputs)
 
     def test_a_failed_dry_run_fails_closed_instead_of_publishing(self):
         result, outputs = run_candidate_phase(
@@ -728,7 +835,7 @@ class GovernedCandidatePhaseTests(unittest.TestCase):
         sentinel = Path(self.workspace) / "keep.txt"
         sentinel.write_text("must survive", encoding="utf-8")
 
-        for value in ("", ".", "..", "../escape", "nupkgs/../../etc", "/tmp/candidate"):
+        for value in ("", ".", "..", "../escape", "nupkgs/../../etc", "/tmp/candidate", r"nupkgs\out"):
             with self.subTest(candidate_directory=value):
                 result, _outputs = run_candidate_phase(
                     self.workspace, HEXALITH_RELEASE_CANDIDATE_DIRECTORY=value
@@ -939,14 +1046,24 @@ class GovernedOffParityTests(unittest.TestCase):
         self.assertIn("permissions:\n  contents: read\n", workflow)
         self.assertNotIn("id-token", workflow)
         self.assertNotIn("attestations", workflow)
-        for step in (
-            "Validate governed CI contract",
-            "Checkout approved Builds actions",
-            "Evaluate governed workflow provenance",
+        for step, expected_if in (
+            ("Validate governed CI contract", "if: ${{ inputs.governed-ci }}"),
+            ("Checkout approved Builds actions", "if: ${{ inputs.governed-ci }}"),
+            ("Evaluate governed workflow provenance", "if: ${{ inputs.governed-ci }}"),
+            ("Initialize root-declared submodules (governed)", "if: ${{ inputs.governed-ci }}"),
+            ("Initialize root-declared submodules", "if: ${{ !inputs.governed-ci }}"),
+            (
+                "Install and initialize Dapr (governed)",
+                "if: ${{ inputs.integration-test-projects != '' && inputs.governed-ci }}",
+            ),
+            (
+                "Install and initialize Dapr",
+                "if: ${{ inputs.integration-test-projects != '' && !inputs.governed-ci }}",
+            ),
         ):
             with self.subTest(step=step):
-                index = workflow.index(f"- name: {step}")
-                self.assertIn("if: ${{ inputs.governed-ci }}", workflow[index: index + 400])
+                index = workflow.index(f"- name: {step}\n")
+                self.assertIn(expected_if, workflow[index: index + 400])
 
 
 class ShellBlockSyntaxTests(unittest.TestCase):
