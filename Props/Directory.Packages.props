@@ -133,7 +133,7 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="ByteAether.Ulid" Version="1.4.0" />
     <PackageVersion Include="Cocona" Version="2.2.0" />
-    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="13.5.0-preview.1.260825-0345" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="13.5.1-beta.748" />
     <PackageVersion Include="CompareNETObjects" Version="4.84.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="Dapr.Client" Version="1.18.7" />
