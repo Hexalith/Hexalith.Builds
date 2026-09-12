@@ -15,13 +15,13 @@ from typing import Any
 
 
 EXPECTED_TUPLE = {
-    "dotnetSdk": "10.0.400",
+    "dotnetSdk": "10.0.401",
     "aspireSdk": "13.5.3",
     "aspireCli": "13.5.3",
     "communityToolkitAspireDapr": "13.5.0-preview.1.260825-0345",
     "daprCli": "1.18.0",
     "daprRuntime": "1.18.2",
-    "daprDotnetPackages": "1.18.5",
+    "daprDotnetPackages": "1.18.7",
     "fluentUi": "5.0.0-rc.5-26219.1",
     "nSubstitute": "6.2.0",
     "fluxor": "6.11.0",

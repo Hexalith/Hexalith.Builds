@@ -265,7 +265,7 @@ tests, all-skipped tests, and failed test counts are explicit non-passing
 product/test outcomes once a live test invocation supplies a report. Parser
 coverage alone is not persisted-runtime proof.
 
-G-6 accepts only the explicit Dapr runtime `1.18.2` / .NET package `1.18.5`
+G-6 accepts only the explicit Dapr runtime `1.18.2` / .NET package `1.18.7`
 exception recorded in `Tools/runtime-toolchain-baseline.json`; it is not a
 support-table-listed pair. Live persisted composition remains explicitly
 unavailable at the separate descriptor-ABI prerequisite (`HXR003`), preserving

@@ -171,7 +171,7 @@ def main() -> int:
             outcome = "passed"
             if purpose == "observe exact tool versions":
                 command = "dotnet --version && aspire --version && dapr --version"
-                outcome = ".NET SDK 10.0.400; Aspire CLI 13.5.3; Dapr CLI 1.18.0; runtime 1.18.2"
+                outcome = ".NET SDK 10.0.401; Aspire CLI 13.5.3; Dapr CLI 1.18.0; runtime 1.18.2"
             elif purpose == "G-6 mutation controls":
                 outcome = "22 scenarios passed"
             elif purpose == "managed restart smoke credential preflight":

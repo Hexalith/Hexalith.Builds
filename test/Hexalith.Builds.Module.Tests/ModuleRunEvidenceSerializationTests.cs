@@ -51,7 +51,7 @@ public sealed class ModuleRunEvidenceSerializationTests
                     new ModuleRunModule("orders", "orders", "orders", "orders", "assemblies/orders.dll"),
                     new ModuleRunModule("accounts", "accounts", "accounts", "accounts", "assemblies/accounts.dll"),
                 ],
-                new PlatformPins("3.102.0", "1.18.0", "1.18.5", "4.0.1")),
+                new PlatformPins("3.102.0", "1.18.0", "1.18.7", "4.0.1")),
             [new ModuleRunPhaseOutcome(ToolPhase.Cleanup, ToolFailureCategory.None, "HXI001")],
             new ModuleRunTestCounts(false, 0, 0, 0, 0),
             new Dictionary<string, string>(StringComparer.Ordinal)
@@ -116,16 +116,16 @@ public sealed class ModuleRunEvidenceSerializationTests
     /// Verifies the SDK roll-forward rule accepts a newer patch in the pinned feature band and rejects anything else.
     /// </summary>
     /// <param name="sdkVersion">The SDK version a runner resolved.</param>
-    /// <param name="expected">Whether the version satisfies latestPatch roll-forward from 10.0.400.</param>
+    /// <param name="expected">Whether the version satisfies latestPatch roll-forward from 10.0.401.</param>
     [Theory]
-    [InlineData("10.0.400", true)]
+    [InlineData("10.0.400", false)]
     [InlineData("10.0.401", true)]
     [InlineData("10.0.499", true)]
     [InlineData("10.0.399", false)]
     [InlineData("10.0.500", false)]
     [InlineData("11.0.400", false)]
     public void LatestPatchRollForwardAcceptsOnlyNewerPatchesInThePinnedFeatureBand(string sdkVersion, bool expected)
-        => SatisfiesLatestPatchRollForward(sdkVersion, new Version(10, 0, 400)).ShouldBe(expected);
+        => SatisfiesLatestPatchRollForward(sdkVersion, new Version(10, 0, 401)).ShouldBe(expected);
 
     /// <summary>
     /// Verifies evidence creation revalidates a fixture path after manifest loading and rejects a later symlink escape.
@@ -164,7 +164,7 @@ public sealed class ModuleRunEvidenceSerializationTests
                   "platform": {
                     "eventStoreVersion": "3.102.0",
                     "daprRuntimeVersion": "1.18.2",
-                    "daprSdkVersion": "1.18.5",
+                    "daprSdkVersion": "1.18.7",
                     "frontComposerVersion": "4.0.1"
                   },
                   "profiles": {

@@ -23,7 +23,7 @@ public sealed class RuntimePrerequisiteGateTests
     [Fact]
     public void ApprovedExceptionTupleIsAvailable()
     {
-        RuntimePrerequisiteCheck result = RuntimePrerequisiteGate.Check(CreateManifest("1.18.2", "1.18.5"));
+        RuntimePrerequisiteCheck result = RuntimePrerequisiteGate.Check(CreateManifest("1.18.2", "1.18.7"));
 
         result.IsAvailable.ShouldBeTrue();
         result.Diagnostic.ShouldBeNull();
@@ -35,7 +35,7 @@ public sealed class RuntimePrerequisiteGateTests
     [Fact]
     public void StaleRuntimeTupleIsUnavailable()
     {
-        RuntimePrerequisiteCheck result = RuntimePrerequisiteGate.Check(CreateManifest("1.18.1", "1.18.5"));
+        RuntimePrerequisiteCheck result = RuntimePrerequisiteGate.Check(CreateManifest("1.18.1", "1.18.7"));
 
         result.IsAvailable.ShouldBeFalse();
         result.Diagnostic.ShouldNotBeNull().RuleId.ShouldBe("HXR002");
