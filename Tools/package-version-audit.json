@@ -1,20 +1,17 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "2c931365ffb4cb8e10a32bbcefd161fb470d08f6",
+  "generatedFromRevision": "3eac4a86b68d2a92ef926aae4fe53d896c241be6",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "ca304355cb96f67d134cda303d372885be57dd76c798decc73b64368a758785a",
-  "catalogRawSha256": "222768ccaeb38adab43cb29c661e6b316ede2dd0eb8925a21138932cade935f4",
+  "catalogSha256": "7203d39b6e40cd9e1b278f8f089104d36548c74ea710b37354f102f64800b197",
+  "catalogRawSha256": "b92d43e3137f5b1b61adbce75ca4235facb00a1974028f2fe7e221c1ad4a7acb",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-09-13T11:50:15.0944805+00:00",
+    "auditedAtUtc": "2026-09-13T12:54:57.4660022+00:00",
     "refreshedFamilies": [
-      "hexalith-eventstore",
-      "package:communitytoolkit.aspire.hosting.dapr",
-      "xunit"
+      "bunit-html"
     ],
     "preservedFamilies": [
       "aspire",
-      "bunit-html",
       "dapr",
       "dotnet-10",
       "fluent-ui",
@@ -23,6 +20,7 @@
       "hexalith-commons",
       "hexalith-documents",
       "hexalith-domains",
+      "hexalith-eventstore",
       "hexalith-frontcomposer",
       "hexalith-identitystores",
       "hexalith-keyvaluestorages",
@@ -64,6 +62,7 @@
       "package:benchmarkdotnet",
       "package:byteaether.ulid",
       "package:cocona",
+      "package:communitytoolkit.aspire.hosting.dapr",
       "package:comparenetobjects",
       "package:coverlet.collector",
       "package:deque.axecore.commons",
@@ -150,7 +149,8 @@
       "package:threenine.data",
       "package:yamldotnet",
       "roslyn",
-      "verify"
+      "verify",
+      "xunit"
     ]
   },
   "sources": [
@@ -166,7 +166,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "2c931365ffb4cb8e10a32bbcefd161fb470d08f6",
+    "repositoryRevision": "3eac4a86b68d2a92ef926aae4fe53d896c241be6",
     "sha256": "c1926c58e2385c8349db5b54b966696e413dd61cfb25e79f531c7ed20ca0c6f7",
     "entries": [
       {
@@ -828,11 +828,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
-        "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
-        "familySelectionSha256": "0ebd7d35eed761a43f53679e52be419be7f3c816f41c1f18004e63c0fc05ae95",
+        "auditedAtUtc": "2026-09-13T12:54:57.4660022+00:00",
+        "generatedFromRevision": "3eac4a86b68d2a92ef926aae4fe53d896c241be6",
+        "familySelectionSha256": "339b025624a339e747b94e0b17b03fd9173c52cccc2f4577bfbb5e5621a5d15a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "13ae3eef730c8bab06907fda76c5a5776eec07c9ed6fbef28ec4695d3c217344",
+        "packageMetadataSha256": "9396e1e03f57a6008c70d024d845bfb4d93d6b3a89d31256213f137bb8c42cbe",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -1255,6 +1255,32 @@
             "familySelectionSha256": "24368a69f3aeed780a81a2a6ca92925357540dda66b84362bfbccadf6d783ffa",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "184a57a42351955c473f3fbd0dc5f8a4a18e4ca8d1bc7b69005353ac1656cf01",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+          "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+          "family": "bunit-html",
+          "disposition": "retained",
+          "rollbackGroup": "bunit-html",
+          "packageIds": [
+            "AngleSharp",
+            "bunit"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+            "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+            "familySelectionSha256": "0ebd7d35eed761a43f53679e52be419be7f3c816f41c1f18004e63c0fc05ae95",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "13ae3eef730c8bab06907fda76c5a5776eec07c9ed6fbef28ec4695d3c217344",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -56780,20 +56806,20 @@
       "auditedVersion": "1.8.1",
       "selectedVersion": "1.8.1",
       "latestStable": "1.8.1",
-      "latestPrerelease": "1.8.2-beta.712",
+      "latestPrerelease": "1.8.2-beta.715",
       "listingState": "listed",
       "family": "bunit-html",
       "disposition": "retained",
       "rollbackGroup": "bunit-html",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.8.1, prerelease=1.8.2-beta.712",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.8.1, prerelease=1.8.2-beta.715",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
           "latestStable": "1.8.1",
-          "latestPrerelease": "1.8.2-beta.712",
+          "latestPrerelease": "1.8.2-beta.715",
           "diagnostic": "Registration metadata resolved."
         }
       ],
@@ -57250,6 +57276,42 @@
             "familySelectionSha256": "24368a69f3aeed780a81a2a6ca92925357540dda66b84362bfbccadf6d783ffa",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "184a57a42351955c473f3fbd0dc5f8a4a18e4ca8d1bc7b69005353ac1656cf01",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+          "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+          "id": "AngleSharp",
+          "auditedVersion": "1.8.1",
+          "selectedVersion": "1.8.1",
+          "latestStable": "1.8.1",
+          "latestPrerelease": "1.8.2-beta.712",
+          "listingState": "listed",
+          "family": "bunit-html",
+          "disposition": "retained",
+          "rollbackGroup": "bunit-html",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=1.8.1, prerelease=1.8.2-beta.712",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "1.8.1",
+              "latestPrerelease": "1.8.2-beta.712",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+            "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+            "familySelectionSha256": "0ebd7d35eed761a43f53679e52be419be7f3c816f41c1f18004e63c0fc05ae95",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "13ae3eef730c8bab06907fda76c5a5776eec07c9ed6fbef28ec4695d3c217344",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -72609,22 +72671,22 @@
     },
     {
       "id": "bunit",
-      "auditedVersion": "2.10.3",
-      "selectedVersion": "2.10.3",
-      "latestStable": "2.10.3",
+      "auditedVersion": "2.11.3",
+      "selectedVersion": "2.11.3",
+      "latestStable": "2.11.3",
       "latestPrerelease": "2.8.4-preview",
       "listingState": "listed",
       "family": "bunit-html",
       "disposition": "retained",
       "rollbackGroup": "bunit-html",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.10.3, prerelease=2.8.4-preview",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.11.3, prerelease=2.8.4-preview",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "2.10.3",
+          "latestStable": "2.11.3",
           "latestPrerelease": "2.8.4-preview",
           "diagnostic": "Registration metadata resolved."
         }
@@ -73082,6 +73144,42 @@
             "familySelectionSha256": "24368a69f3aeed780a81a2a6ca92925357540dda66b84362bfbccadf6d783ffa",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "184a57a42351955c473f3fbd0dc5f8a4a18e4ca8d1bc7b69005353ac1656cf01",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+          "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+          "id": "bunit",
+          "auditedVersion": "2.10.3",
+          "selectedVersion": "2.10.3",
+          "latestStable": "2.10.3",
+          "latestPrerelease": "2.8.4-preview",
+          "listingState": "listed",
+          "family": "bunit-html",
+          "disposition": "retained",
+          "rollbackGroup": "bunit-html",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=2.10.3, prerelease=2.8.4-preview",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "2.10.3",
+              "latestPrerelease": "2.8.4-preview",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+            "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+            "familySelectionSha256": "0ebd7d35eed761a43f53679e52be419be7f3c816f41c1f18004e63c0fc05ae95",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "13ae3eef730c8bab06907fda76c5a5776eec07c9ed6fbef28ec4695d3c217344",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
