@@ -1,19 +1,21 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+  "generatedFromRevision": "2c931365ffb4cb8e10a32bbcefd161fb470d08f6",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "611a073ea130c1530791bdbfc7c60aa9325eacbbef5a03d7156fd0e3c1045428",
-  "catalogRawSha256": "2099eee175e0c2f82f1313d21f9b6ba44098851e4079c3b20c085b78edfcb4e2",
+  "catalogSha256": "ca304355cb96f67d134cda303d372885be57dd76c798decc73b64368a758785a",
+  "catalogRawSha256": "222768ccaeb38adab43cb29c661e6b316ede2dd0eb8925a21138932cade935f4",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+    "auditedAtUtc": "2026-09-13T11:50:15.0944805+00:00",
     "refreshedFamilies": [
-      "aspire",
-      "dapr",
-      "package:communitytoolkit.aspire.hosting.dapr"
+      "hexalith-eventstore",
+      "package:communitytoolkit.aspire.hosting.dapr",
+      "xunit"
     ],
     "preservedFamilies": [
+      "aspire",
       "bunit-html",
+      "dapr",
       "dotnet-10",
       "fluent-ui",
       "hexalith-applications",
@@ -21,7 +23,6 @@
       "hexalith-commons",
       "hexalith-documents",
       "hexalith-domains",
-      "hexalith-eventstore",
       "hexalith-frontcomposer",
       "hexalith-identitystores",
       "hexalith-keyvaluestorages",
@@ -149,8 +150,7 @@
       "package:threenine.data",
       "package:yamldotnet",
       "roslyn",
-      "verify",
-      "xunit"
+      "verify"
     ]
   },
   "sources": [
@@ -166,7 +166,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+    "repositoryRevision": "2c931365ffb4cb8e10a32bbcefd161fb470d08f6",
     "sha256": "c1926c58e2385c8349db5b54b966696e413dd61cfb25e79f531c7ed20ca0c6f7",
     "entries": [
       {
@@ -5636,11 +5636,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
-        "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
-        "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+        "auditedAtUtc": "2026-09-13T11:50:15.0944805+00:00",
+        "generatedFromRevision": "2c931365ffb4cb8e10a32bbcefd161fb470d08f6",
+        "familySelectionSha256": "eff755719574692bfa3ab24a3a1ee330a62404d5701a5381544ceff9a98d9db8",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
+        "packageMetadataSha256": "6845f48f828c71d3e52cd40abb84d1da517f4bb6f7c50de09d07c7b4664d62c9",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -6388,6 +6388,43 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "packageIds": [
+            "Hexalith.EventStore.Admin.Abstractions",
+            "Hexalith.EventStore.Admin.Server",
+            "Hexalith.EventStore.Aspire",
+            "Hexalith.EventStore.Client",
+            "Hexalith.EventStore.Contracts",
+            "Hexalith.EventStore.DomainService",
+            "Hexalith.EventStore.Gateway",
+            "Hexalith.EventStore.RestApi.Generators",
+            "Hexalith.EventStore.Server",
+            "Hexalith.EventStore.ServiceDefaults",
+            "Hexalith.EventStore.SignalR",
+            "Hexalith.EventStore.Testing",
+            "Hexalith.EventStore.Testing.Integration"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -22478,11 +22515,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
-        "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
-        "familySelectionSha256": "564adca30ce79c612017943a27a191895e0b07fb3afc8bc3f8295c2aebe75d70",
+        "auditedAtUtc": "2026-09-13T11:50:15.0944805+00:00",
+        "generatedFromRevision": "2c931365ffb4cb8e10a32bbcefd161fb470d08f6",
+        "familySelectionSha256": "9226a0a1786f581977deaa76f96596c96aebc6418fa29ba1838a19d8bd1e6951",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "4235e2795e35d9d33ab4e356cd627a0376deba7a5cf3e62f481d9d77ddf40bb5",
+        "packageMetadataSha256": "2b13aac6673a8fdb43140a16556df9ad12abdd5474ab07956f4f86ac49db2b7a",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -22965,6 +23002,31 @@
             "familySelectionSha256": "dfa1ed7124f219a93fe3ae043dc31fcd4ebc87ac9323ff20c71eee22e703e97c",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "e83a3a5b612f748446a001704c1b2ae51816a9aa95a7ddb136ac22b8d3cf281c",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "family": "package:communitytoolkit.aspire.hosting.dapr",
+          "disposition": "retained",
+          "rollbackGroup": "package:communitytoolkit.aspire.hosting.dapr",
+          "packageIds": [
+            "CommunityToolkit.Aspire.Hosting.Dapr"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "564adca30ce79c612017943a27a191895e0b07fb3afc8bc3f8295c2aebe75d70",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "4235e2795e35d9d33ab4e356cd627a0376deba7a5cf3e62f481d9d77ddf40bb5",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -55470,11 +55532,11 @@
         "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
-        "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
-        "familySelectionSha256": "c524e16b59c94ac1be1927c9fd64765916d0cee6228a35f4de6c30f069b50040",
+        "auditedAtUtc": "2026-09-13T11:50:15.0944805+00:00",
+        "generatedFromRevision": "2c931365ffb4cb8e10a32bbcefd161fb470d08f6",
+        "familySelectionSha256": "45760a7038b12ca0cd1e7854e305bbac9af8704a005b2415accf71273fd853ea",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "4f3ead037e97f3f09b7c855142028ffe24335eeac818f54dd0ef6813dccc6f98",
+        "packageMetadataSha256": "41a8938403c9141f11cdf8326543be240c34936381d98b4c05014537ae5e3104",
         "consumerEvidenceSha256": "6bfe9840c2a4dd5a3e1f23ac2eb748707b4bced75cc6d6e589b2b80563ddf58d"
       },
       "historicalContext": [
@@ -55898,6 +55960,38 @@
             "consumerEvidenceSha256": "6bfe9840c2a4dd5a3e1f23ac2eb748707b4bced75cc6d6e589b2b80563ddf58d"
           },
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "family": "xunit",
+          "disposition": "retained",
+          "rollbackGroup": "xunit",
+          "packageIds": [
+            "xunit.runner.visualstudio",
+            "xunit.v3",
+            "xunit.v3.assert",
+            "xunit.v3.extensibility.core"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [
+            "test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj",
+            "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj",
+            "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "c524e16b59c94ac1be1927c9fd64765916d0cee6228a35f4de6c30f069b50040",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "4f3ead037e97f3f09b7c855142028ffe24335eeac818f54dd0ef6813dccc6f98",
+            "consumerEvidenceSha256": "6bfe9840c2a4dd5a3e1f23ac2eb748707b4bced75cc6d6e589b2b80563ddf58d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     }
@@ -73774,23 +73868,23 @@
     },
     {
       "id": "CommunityToolkit.Aspire.Hosting.Dapr",
-      "auditedVersion": "13.5.1-beta.751",
-      "selectedVersion": "13.5.1-beta.751",
+      "auditedVersion": "13.5.1-beta.752",
+      "selectedVersion": "13.5.1-beta.752",
       "latestStable": "13.0.0",
-      "latestPrerelease": "13.5.1-beta.751",
+      "latestPrerelease": "13.5.1-beta.752",
       "listingState": "listed",
       "family": "package:communitytoolkit.aspire.hosting.dapr",
       "disposition": "retained",
       "rollbackGroup": "package:communitytoolkit.aspire.hosting.dapr",
       "rationale": "Retain the intentional prerelease channel until its coupled family passes compatibility review.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.0.0, prerelease=13.5.1-beta.751",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.0.0, prerelease=13.5.1-beta.752",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
           "latestStable": "13.0.0",
-          "latestPrerelease": "13.5.1-beta.751",
+          "latestPrerelease": "13.5.1-beta.752",
           "diagnostic": "Registration metadata resolved."
         }
       ],
@@ -74347,6 +74441,42 @@
             "familySelectionSha256": "dfa1ed7124f219a93fe3ae043dc31fcd4ebc87ac9323ff20c71eee22e703e97c",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "e83a3a5b612f748446a001704c1b2ae51816a9aa95a7ddb136ac22b8d3cf281c",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "CommunityToolkit.Aspire.Hosting.Dapr",
+          "auditedVersion": "13.5.1-beta.751",
+          "selectedVersion": "13.5.1-beta.751",
+          "latestStable": "13.0.0",
+          "latestPrerelease": "13.5.1-beta.751",
+          "listingState": "listed",
+          "family": "package:communitytoolkit.aspire.hosting.dapr",
+          "disposition": "retained",
+          "rollbackGroup": "package:communitytoolkit.aspire.hosting.dapr",
+          "rationale": "Retain the intentional prerelease channel until its coupled family passes compatibility review.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.0.0, prerelease=13.5.1-beta.751",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.0.0",
+              "latestPrerelease": "13.5.1-beta.751",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "564adca30ce79c612017943a27a191895e0b07fb3afc8bc3f8295c2aebe75d70",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "4235e2795e35d9d33ab4e356cd627a0376deba7a5cf3e62f481d9d77ddf40bb5",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -94312,22 +94442,22 @@
     },
     {
       "id": "Hexalith.EventStore.Admin.Abstractions",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -94921,6 +95051,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.Admin.Abstractions",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -94929,22 +95095,22 @@
     },
     {
       "id": "Hexalith.EventStore.Admin.Server",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -95538,6 +95704,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.Admin.Server",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -95546,22 +95748,22 @@
     },
     {
       "id": "Hexalith.EventStore.Aspire",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -96155,6 +96357,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.Aspire",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -96163,22 +96401,22 @@
     },
     {
       "id": "Hexalith.EventStore.Client",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -96772,6 +97010,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.Client",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -96780,22 +97054,22 @@
     },
     {
       "id": "Hexalith.EventStore.Contracts",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -97389,6 +97663,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.Contracts",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -97397,22 +97707,22 @@
     },
     {
       "id": "Hexalith.EventStore.DomainService",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -98006,6 +98316,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.DomainService",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -98014,22 +98360,22 @@
     },
     {
       "id": "Hexalith.EventStore.Gateway",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -98623,6 +98969,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.Gateway",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -98631,22 +99013,22 @@
     },
     {
       "id": "Hexalith.EventStore.RestApi.Generators",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -99240,6 +99622,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.RestApi.Generators",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -99248,22 +99666,22 @@
     },
     {
       "id": "Hexalith.EventStore.Server",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -99857,6 +100275,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.Server",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -99865,22 +100319,22 @@
     },
     {
       "id": "Hexalith.EventStore.ServiceDefaults",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -100474,6 +100928,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.ServiceDefaults",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -100482,22 +100972,22 @@
     },
     {
       "id": "Hexalith.EventStore.SignalR",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -101091,6 +101581,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.SignalR",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -101099,22 +101625,22 @@
     },
     {
       "id": "Hexalith.EventStore.Testing",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -101708,6 +102234,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.Testing",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -101716,22 +102278,22 @@
     },
     {
       "id": "Hexalith.EventStore.Testing.Integration",
-      "auditedVersion": "3.103.0",
-      "selectedVersion": "3.103.0",
-      "latestStable": "3.103.0",
+      "auditedVersion": "3.104.0",
+      "selectedVersion": "3.104.0",
+      "latestStable": "3.104.0",
       "latestPrerelease": null,
       "listingState": "listed",
       "family": "hexalith-eventstore",
       "disposition": "retained",
       "rollbackGroup": "hexalith-eventstore",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.104.0, prerelease=",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "3.103.0",
+          "latestStable": "3.104.0",
           "latestPrerelease": null,
           "diagnostic": "Registration metadata resolved."
         }
@@ -102325,6 +102887,42 @@
             "familySelectionSha256": "700a544c628da1fb4cfbf4f0d7ff33a22aafc8a6e42329f9c7040d2220f9da40",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "ddff5f8d15ca95baf3b4ce51bb2f39e748255c251f21a96e2225f70362583de5",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "Hexalith.EventStore.Testing.Integration",
+          "auditedVersion": "3.103.0",
+          "selectedVersion": "3.103.0",
+          "latestStable": "3.103.0",
+          "latestPrerelease": null,
+          "listingState": "listed",
+          "family": "hexalith-eventstore",
+          "disposition": "retained",
+          "rollbackGroup": "hexalith-eventstore",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=3.103.0, prerelease=",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "3.103.0",
+              "latestPrerelease": null,
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "434ec68122aeb566e8ddb2123a6a89ff914ff578ac7d51d68aaee431ea761030",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "ca34451889ebdf5f32d9f8edfc47b91162fd293b414d256c15b01d2070608f73",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -182802,27 +183400,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "xunit.runner.visualstudio",
+          "auditedVersion": "4.0.0",
+          "selectedVersion": "4.0.0",
+          "latestStable": "4.0.0",
+          "latestPrerelease": "4.0.0-pre.5",
+          "listingState": "listed",
+          "family": "xunit",
+          "disposition": "retained",
+          "rollbackGroup": "xunit",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.0, prerelease=4.0.0-pre.5",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "4.0.0",
+              "latestPrerelease": "4.0.0-pre.5",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "c524e16b59c94ac1be1927c9fd64765916d0cee6228a35f4de6c30f069b50040",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "4f3ead037e97f3f09b7c855142028ffe24335eeac818f54dd0ef6813dccc6f98",
+            "consumerEvidenceSha256": "6bfe9840c2a4dd5a3e1f23ac2eb748707b4bced75cc6d6e589b2b80563ddf58d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "xunit.v3",
-      "auditedVersion": "4.0.0",
-      "selectedVersion": "4.0.0",
-      "latestStable": "4.0.0",
+      "auditedVersion": "4.0.1",
+      "selectedVersion": "4.0.1",
+      "latestStable": "4.0.1",
       "latestPrerelease": "4.0.0-pre.154",
       "listingState": "listed",
       "family": "xunit",
       "disposition": "retained",
       "rollbackGroup": "xunit",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.0, prerelease=4.0.0-pre.154",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.1, prerelease=4.0.0-pre.154",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "4.0.0",
+          "latestStable": "4.0.1",
           "latestPrerelease": "4.0.0-pre.154",
           "diagnostic": "Registration metadata resolved."
         }
@@ -183191,27 +183825,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "xunit.v3",
+          "auditedVersion": "4.0.0",
+          "selectedVersion": "4.0.0",
+          "latestStable": "4.0.0",
+          "latestPrerelease": "4.0.0-pre.154",
+          "listingState": "listed",
+          "family": "xunit",
+          "disposition": "retained",
+          "rollbackGroup": "xunit",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.0, prerelease=4.0.0-pre.154",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "4.0.0",
+              "latestPrerelease": "4.0.0-pre.154",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "c524e16b59c94ac1be1927c9fd64765916d0cee6228a35f4de6c30f069b50040",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "4f3ead037e97f3f09b7c855142028ffe24335eeac818f54dd0ef6813dccc6f98",
+            "consumerEvidenceSha256": "6bfe9840c2a4dd5a3e1f23ac2eb748707b4bced75cc6d6e589b2b80563ddf58d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "xunit.v3.assert",
-      "auditedVersion": "4.0.0",
-      "selectedVersion": "4.0.0",
-      "latestStable": "4.0.0",
+      "auditedVersion": "4.0.1",
+      "selectedVersion": "4.0.1",
+      "latestStable": "4.0.1",
       "latestPrerelease": "4.0.0-pre.154",
       "listingState": "listed",
       "family": "xunit",
       "disposition": "retained",
       "rollbackGroup": "xunit",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.0, prerelease=4.0.0-pre.154",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.1, prerelease=4.0.0-pre.154",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "4.0.0",
+          "latestStable": "4.0.1",
           "latestPrerelease": "4.0.0-pre.154",
           "diagnostic": "Registration metadata resolved."
         }
@@ -183580,27 +184250,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "xunit.v3.assert",
+          "auditedVersion": "4.0.0",
+          "selectedVersion": "4.0.0",
+          "latestStable": "4.0.0",
+          "latestPrerelease": "4.0.0-pre.154",
+          "listingState": "listed",
+          "family": "xunit",
+          "disposition": "retained",
+          "rollbackGroup": "xunit",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.0, prerelease=4.0.0-pre.154",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "4.0.0",
+              "latestPrerelease": "4.0.0-pre.154",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "c524e16b59c94ac1be1927c9fd64765916d0cee6228a35f4de6c30f069b50040",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "4f3ead037e97f3f09b7c855142028ffe24335eeac818f54dd0ef6813dccc6f98",
+            "consumerEvidenceSha256": "6bfe9840c2a4dd5a3e1f23ac2eb748707b4bced75cc6d6e589b2b80563ddf58d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "xunit.v3.extensibility.core",
-      "auditedVersion": "4.0.0",
-      "selectedVersion": "4.0.0",
-      "latestStable": "4.0.0",
+      "auditedVersion": "4.0.1",
+      "selectedVersion": "4.0.1",
+      "latestStable": "4.0.1",
       "latestPrerelease": "4.0.0-pre.154",
       "listingState": "listed",
       "family": "xunit",
       "disposition": "retained",
       "rollbackGroup": "xunit",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.0, prerelease=4.0.0-pre.154",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.1, prerelease=4.0.0-pre.154",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "4.0.0",
+          "latestStable": "4.0.1",
           "latestPrerelease": "4.0.0-pre.154",
           "diagnostic": "Registration metadata resolved."
         }
@@ -183969,6 +184675,42 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+          "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+          "id": "xunit.v3.extensibility.core",
+          "auditedVersion": "4.0.0",
+          "selectedVersion": "4.0.0",
+          "latestStable": "4.0.0",
+          "latestPrerelease": "4.0.0-pre.154",
+          "listingState": "listed",
+          "family": "xunit",
+          "disposition": "retained",
+          "rollbackGroup": "xunit",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=4.0.0, prerelease=4.0.0-pre.154",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "4.0.0",
+              "latestPrerelease": "4.0.0-pre.154",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:33:25.7875901+00:00",
+            "generatedFromRevision": "a32cb422749352cce8dec948aa3e78c8f00eb4cf",
+            "familySelectionSha256": "c524e16b59c94ac1be1927c9fd64765916d0cee6228a35f4de6c30f069b50040",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "4f3ead037e97f3f09b7c855142028ffe24335eeac818f54dd0ef6813dccc6f98",
+            "consumerEvidenceSha256": "6bfe9840c2a4dd5a3e1f23ac2eb748707b4bced75cc6d6e589b2b80563ddf58d"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
