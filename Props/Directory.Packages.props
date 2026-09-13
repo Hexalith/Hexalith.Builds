@@ -5,7 +5,7 @@
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.30.0</HexalithCommonsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.2</HexalithPolymorphicSerializationsVersion>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.103.0</HexalithEventStoreVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.104.0</HexalithEventStoreVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.4.0</HexalithFrontComposerVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.27.1</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.7.0</HexalithTenantsVersion>
@@ -133,7 +133,7 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="ByteAether.Ulid" Version="1.4.0" />
     <PackageVersion Include="Cocona" Version="2.2.0" />
-    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="13.5.1-beta.751" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="13.5.1-beta.752" />
     <PackageVersion Include="CompareNETObjects" Version="4.84.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="Dapr.Client" Version="1.18.7" />
@@ -316,8 +316,8 @@
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="bunit" Version="2.10.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
-    <PackageVersion Include="xunit.v3" Version="4.0.0" />
-    <PackageVersion Include="xunit.v3.assert" Version="4.0.0" />
-    <PackageVersion Include="xunit.v3.extensibility.core" Version="4.0.0" />
+    <PackageVersion Include="xunit.v3" Version="4.0.1" />
+    <PackageVersion Include="xunit.v3.assert" Version="4.0.1" />
+    <PackageVersion Include="xunit.v3.extensibility.core" Version="4.0.1" />
   </ItemGroup>
 </Project>
