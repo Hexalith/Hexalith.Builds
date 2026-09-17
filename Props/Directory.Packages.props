@@ -106,19 +106,19 @@
     <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="10.0.0" />
-    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.Docker" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.Keycloak" Version="13.5.3-preview.1.26425.3" />
-    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="13.5.3-preview.1.26425.3" />
-    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.Docker" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.Keycloak" Version="13.5.4-preview.1.26464.4" />
+    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="13.5.4-preview.1.26464.4" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="13.5.4" />
     <PackageVersion Include="Azure.Bicep.Core" Version="0.47.16" />
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.6.0" />
@@ -234,7 +234,7 @@
     <PackageVersion Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.22.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.22.0" />
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.14.2" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <!-- Keep Microsoft.OpenApi on 2.x: Microsoft.AspNetCore.OpenApi 10.x is compiled against the 2.x API surface; v3 breaks runtime OpenAPI document generation. -->
     <PackageVersion Include="Microsoft.OpenApi" Version="2.12.0" />
     <PackageVersion Include="Microsoft.Playwright" Version="1.62.0" />
@@ -311,8 +311,8 @@
     <PackageVersion Include="Testcontainers" Version="4.15.0" />
     <PackageVersion Include="Threenine.Data" Version="5.0.1" />
     <!-- FrontComposer snapshot testing uses the xUnit v3 adapter, not Verify.Xunit. -->
-    <PackageVersion Include="Verify" Version="32.0.1" />
-    <PackageVersion Include="Verify.XunitV3" Version="32.0.1" />
+    <PackageVersion Include="Verify" Version="33.0.2" />
+    <PackageVersion Include="Verify.XunitV3" Version="33.0.2" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="bunit" Version="2.11.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
