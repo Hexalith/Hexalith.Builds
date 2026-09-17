@@ -1,17 +1,18 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "dae84d5f96911517eb1e6f97e75eb88e759e6d8a",
+  "generatedFromRevision": "fad11d23abf53a614f9a654f693f269c68c46cc1",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "18ae3b28398981d6c636a751f5a414eda15ff8f0ab39014c580a7776997df653",
-  "catalogRawSha256": "fadaa994f7119e110af52c60ce2eb416677a1f24dbba04f06d27553a46b31cf8",
+  "catalogSha256": "2a55d0c21d4cdfff39b4ff518d9866a1f380c6ae3d68ddb4a8b6095393ca9bf3",
+  "catalogRawSha256": "dc68a725f39520b252c92ae2a83d48591602d404a78065b3f6e98c65508ed77d",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-09-16T18:22:36.7435587+00:00",
+    "auditedAtUtc": "2026-09-17T06:48:10.0850560+00:00",
     "refreshedFamilies": [
-      "hexalith-eventstore"
+      "aspire",
+      "package:microsoft.net.test.sdk",
+      "verify"
     ],
     "preservedFamilies": [
-      "aspire",
       "bunit-html",
       "dapr",
       "dotnet-10",
@@ -21,6 +22,7 @@
       "hexalith-commons",
       "hexalith-documents",
       "hexalith-domains",
+      "hexalith-eventstore",
       "hexalith-frontcomposer",
       "hexalith-identitystores",
       "hexalith-keyvaluestorages",
@@ -93,7 +95,6 @@
       "package:microsoft.bot.builder",
       "package:microsoft.graph",
       "package:microsoft.identity.client",
-      "package:microsoft.net.test.sdk",
       "package:microsoft.openapi",
       "package:microsoft.playwright",
       "package:microsoft.semantickernel",
@@ -149,7 +150,6 @@
       "package:threenine.data",
       "package:yamldotnet",
       "roslyn",
-      "verify",
       "xunit"
     ]
   },
@@ -166,7 +166,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "dae84d5f96911517eb1e6f97e75eb88e759e6d8a",
+    "repositoryRevision": "fad11d23abf53a614f9a654f693f269c68c46cc1",
     "sha256": "c1926c58e2385c8349db5b54b966696e413dd61cfb25e79f531c7ed20ca0c6f7",
     "entries": [
       {
@@ -315,11 +315,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
-        "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
-        "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+        "auditedAtUtc": "2026-09-17T06:48:10.0850560+00:00",
+        "generatedFromRevision": "fad11d23abf53a614f9a654f693f269c68c46cc1",
+        "familySelectionSha256": "89e3f7d82649697d62b2e57903b3d20a9e4750363c93778ed0aab5ae0955d97a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+        "packageMetadataSha256": "a73f93235dff2eca5657d3e6df17f1ba94b7a6bb866a87877b540eadd1c95a7a",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -812,6 +812,43 @@
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "packageIds": [
+            "Aspire.Azure.Messaging.ServiceBus",
+            "Aspire.Azure.Security.KeyVault",
+            "Aspire.Azure.Storage.Blobs",
+            "Aspire.Azure.Storage.Queues",
+            "Aspire.Hosting",
+            "Aspire.Hosting.Azure.AppContainers",
+            "Aspire.Hosting.Azure.CosmosDB",
+            "Aspire.Hosting.Docker",
+            "Aspire.Hosting.Keycloak",
+            "Aspire.Hosting.Kubernetes",
+            "Aspire.Hosting.Redis",
+            "Aspire.Hosting.Testing",
+            "Aspire.Microsoft.Azure.Cosmos"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -34158,11 +34195,11 @@
         "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
       ],
       "origin": {
-        "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
-        "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
-        "familySelectionSha256": "ff3ef4cc16d0bbb41b4604d7bb2a93e09dca35952979ef1271f429747215780e",
+        "auditedAtUtc": "2026-09-17T06:48:10.0850560+00:00",
+        "generatedFromRevision": "fad11d23abf53a614f9a654f693f269c68c46cc1",
+        "familySelectionSha256": "20cb377643ee70852a9b75ad469f6b7f93e92120fa443cb5e5f17a00b8a93c51",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "b284f8b76e5c4854d60fe36f871bfb13d06fe4b4999af098888b4ea9e546c195",
+        "packageMetadataSha256": "c01b6da2d9df768bc9f637bded70bc0cd18ca8630723f4eee129c41f39bd0315",
         "consumerEvidenceSha256": "11c3b01f3161c47fe42d15873e4becab9cc1a47b22f880ef974e7a3187152cb5"
       },
       "historicalContext": [
@@ -34602,6 +34639,35 @@
             "familySelectionSha256": "caa082e5590f7d8dc8d4996fafdc0c51119bc70bfe9b3be10778974e27287d97",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "aeb75d5eacda889ec4e1509edf3c6bff2f25a687abd09e58d11b113f2e573065",
+            "consumerEvidenceSha256": "11c3b01f3161c47fe42d15873e4becab9cc1a47b22f880ef974e7a3187152cb5"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+          "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+          "family": "package:microsoft.net.test.sdk",
+          "disposition": "retained",
+          "rollbackGroup": "package:microsoft.net.test.sdk",
+          "packageIds": [
+            "Microsoft.NET.Test.Sdk"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [
+            "test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj",
+            "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj",
+            "test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj"
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+            "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+            "familySelectionSha256": "ff3ef4cc16d0bbb41b4604d7bb2a93e09dca35952979ef1271f429747215780e",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b284f8b76e5c4854d60fe36f871bfb13d06fe4b4999af098888b4ea9e546c195",
             "consumerEvidenceSha256": "11c3b01f3161c47fe42d15873e4becab9cc1a47b22f880ef974e7a3187152cb5"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -55117,11 +55183,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
-        "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
-        "familySelectionSha256": "02b3b5835f10487595cadc4af1e01e978ddaff470c3f62962c4550f5f2ff8163",
+        "auditedAtUtc": "2026-09-17T06:48:10.0850560+00:00",
+        "generatedFromRevision": "fad11d23abf53a614f9a654f693f269c68c46cc1",
+        "familySelectionSha256": "d3ab23d188b71403f87b0de206176001ced55e6724e075d0fd0912187a212ad0",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "42c17340fe797b6c4f4cde94cabf4f84bf16438168dfe7a41ec1ffec567df3ab",
+        "packageMetadataSha256": "b3cd25e12516345e59cdb47e82002187e17f5a46e449eb1d86849e2c4af72be5",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -55570,6 +55636,32 @@
             "familySelectionSha256": "d1db86e6c8bd604f2f0a627382f7f666bc221d73cb0e05a5bb21725a651c9e33",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "e797b731fcd694b6f77fb8d5e86b0bf158c3dcbf487a7994a518a4e9cbea07b8",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+          "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+          "family": "verify",
+          "disposition": "retained",
+          "rollbackGroup": "verify",
+          "packageIds": [
+            "Verify",
+            "Verify.XunitV3"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+            "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+            "familySelectionSha256": "02b3b5835f10487595cadc4af1e01e978ddaff470c3f62962c4550f5f2ff8163",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "42c17340fe797b6c4f4cde94cabf4f84bf16438168dfe7a41ec1ffec567df3ab",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -57357,22 +57449,22 @@
     },
     {
       "id": "Aspire.Azure.Messaging.ServiceBus",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -57741,27 +57833,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Azure.Messaging.ServiceBus",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Azure.Security.KeyVault",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -58130,27 +58258,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Azure.Security.KeyVault",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Azure.Storage.Blobs",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -58519,27 +58683,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Azure.Storage.Blobs",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Azure.Storage.Queues",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -58908,27 +59108,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Azure.Storage.Queues",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Hosting",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -59297,27 +59533,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Hosting",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Hosting.Azure.AppContainers",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -59686,27 +59958,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Hosting.Azure.AppContainers",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Hosting.Azure.CosmosDB",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -60075,27 +60383,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Hosting.Azure.CosmosDB",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Hosting.Docker",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "13.1.3-preview.1.26166.8",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=13.1.3-preview.1.26166.8",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=13.1.3-preview.1.26166.8",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "13.1.3-preview.1.26166.8",
           "diagnostic": "Registration metadata resolved."
         }
@@ -60464,28 +60808,64 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Hosting.Docker",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "13.1.3-preview.1.26166.8",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=13.1.3-preview.1.26166.8",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "13.1.3-preview.1.26166.8",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Hosting.Keycloak",
-      "auditedVersion": "13.5.3-preview.1.26425.3",
-      "selectedVersion": "13.5.3-preview.1.26425.3",
+      "auditedVersion": "13.5.4-preview.1.26464.4",
+      "selectedVersion": "13.5.4-preview.1.26464.4",
       "latestStable": null,
-      "latestPrerelease": "13.5.3-preview.1.26425.3",
+      "latestPrerelease": "13.5.4-preview.1.26464.4",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Retain the intentional prerelease channel until its coupled family passes compatibility review.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=, prerelease=13.5.3-preview.1.26425.3",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=, prerelease=13.5.4-preview.1.26464.4",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
           "latestStable": null,
-          "latestPrerelease": "13.5.3-preview.1.26425.3",
+          "latestPrerelease": "13.5.4-preview.1.26464.4",
           "diagnostic": "Registration metadata resolved."
         }
       ],
@@ -60853,28 +61233,64 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Hosting.Keycloak",
+          "auditedVersion": "13.5.3-preview.1.26425.3",
+          "selectedVersion": "13.5.3-preview.1.26425.3",
+          "latestStable": null,
+          "latestPrerelease": "13.5.3-preview.1.26425.3",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Retain the intentional prerelease channel until its coupled family passes compatibility review.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=, prerelease=13.5.3-preview.1.26425.3",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": null,
+              "latestPrerelease": "13.5.3-preview.1.26425.3",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Hosting.Kubernetes",
-      "auditedVersion": "13.5.3-preview.1.26425.3",
-      "selectedVersion": "13.5.3-preview.1.26425.3",
+      "auditedVersion": "13.5.4-preview.1.26464.4",
+      "selectedVersion": "13.5.4-preview.1.26464.4",
       "latestStable": null,
-      "latestPrerelease": "13.5.3-preview.1.26425.3",
+      "latestPrerelease": "13.5.4-preview.1.26464.4",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Retain the intentional prerelease channel until its coupled family passes compatibility review.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=, prerelease=13.5.3-preview.1.26425.3",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=, prerelease=13.5.4-preview.1.26464.4",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
           "latestStable": null,
-          "latestPrerelease": "13.5.3-preview.1.26425.3",
+          "latestPrerelease": "13.5.4-preview.1.26464.4",
           "diagnostic": "Registration metadata resolved."
         }
       ],
@@ -61242,27 +61658,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Hosting.Kubernetes",
+          "auditedVersion": "13.5.3-preview.1.26425.3",
+          "selectedVersion": "13.5.3-preview.1.26425.3",
+          "latestStable": null,
+          "latestPrerelease": "13.5.3-preview.1.26425.3",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Retain the intentional prerelease channel until its coupled family passes compatibility review.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=, prerelease=13.5.3-preview.1.26425.3",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": null,
+              "latestPrerelease": "13.5.3-preview.1.26425.3",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Hosting.Redis",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -61631,27 +62083,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Hosting.Redis",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Hosting.Testing",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -62020,27 +62508,63 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Hosting.Testing",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
     {
       "id": "Aspire.Microsoft.Azure.Cosmos",
-      "auditedVersion": "13.5.3",
-      "selectedVersion": "13.5.3",
-      "latestStable": "13.5.3",
+      "auditedVersion": "13.5.4",
+      "selectedVersion": "13.5.4",
+      "latestStable": "13.5.4",
       "latestPrerelease": "9.0.0-rc.1.24511.1",
       "listingState": "listed",
       "family": "aspire",
       "disposition": "retained",
       "rollbackGroup": "aspire",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.4, prerelease=9.0.0-rc.1.24511.1",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "13.5.3",
+          "latestStable": "13.5.4",
           "latestPrerelease": "9.0.0-rc.1.24511.1",
           "diagnostic": "Registration metadata resolved."
         }
@@ -62409,6 +62933,42 @@
             }
           ],
           "supersededBecause": "tracked catalog declaration bytes changed or were not previously bound"
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+          "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+          "id": "Aspire.Microsoft.Azure.Cosmos",
+          "auditedVersion": "13.5.3",
+          "selectedVersion": "13.5.3",
+          "latestStable": "13.5.3",
+          "latestPrerelease": "9.0.0-rc.1.24511.1",
+          "listingState": "listed",
+          "family": "aspire",
+          "disposition": "retained",
+          "rollbackGroup": "aspire",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=13.5.3, prerelease=9.0.0-rc.1.24511.1",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "13.5.3",
+              "latestPrerelease": "9.0.0-rc.1.24511.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T12:56:42.4452258+00:00",
+            "generatedFromRevision": "ccc5e6a03418337c9b16e3322e95a7f086cd5568",
+            "familySelectionSha256": "939b6e46e2e4ef2824732c299798461af6cc78107c3edc20e7bae83049175d02",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "eecc7cdf0d1bc738fb36b3cfd60d180193999e23f61d56d98ec88bb0104d5088",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
         }
       ]
     },
@@ -155347,22 +155907,22 @@
     },
     {
       "id": "Microsoft.NET.Test.Sdk",
-      "auditedVersion": "18.10.0",
-      "selectedVersion": "18.10.0",
-      "latestStable": "18.10.0",
+      "auditedVersion": "18.10.1",
+      "selectedVersion": "18.10.1",
+      "latestStable": "18.10.1",
       "latestPrerelease": "17.14.0-preview-25107-01",
       "listingState": "listed",
       "family": "package:microsoft.net.test.sdk",
       "disposition": "retained",
       "rollbackGroup": "package:microsoft.net.test.sdk",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=18.10.0, prerelease=17.14.0-preview-25107-01",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=18.10.1, prerelease=17.14.0-preview-25107-01",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "18.10.0",
+          "latestStable": "18.10.1",
           "latestPrerelease": "17.14.0-preview-25107-01",
           "diagnostic": "Registration metadata resolved."
         }
@@ -155800,6 +156360,42 @@
             "familySelectionSha256": "caa082e5590f7d8dc8d4996fafdc0c51119bc70bfe9b3be10778974e27287d97",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "aeb75d5eacda889ec4e1509edf3c6bff2f25a687abd09e58d11b113f2e573065",
+            "consumerEvidenceSha256": "11c3b01f3161c47fe42d15873e4becab9cc1a47b22f880ef974e7a3187152cb5"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+          "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+          "id": "Microsoft.NET.Test.Sdk",
+          "auditedVersion": "18.10.0",
+          "selectedVersion": "18.10.0",
+          "latestStable": "18.10.0",
+          "latestPrerelease": "17.14.0-preview-25107-01",
+          "listingState": "listed",
+          "family": "package:microsoft.net.test.sdk",
+          "disposition": "retained",
+          "rollbackGroup": "package:microsoft.net.test.sdk",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=18.10.0, prerelease=17.14.0-preview-25107-01",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "18.10.0",
+              "latestPrerelease": "17.14.0-preview-25107-01",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+            "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+            "familySelectionSha256": "ff3ef4cc16d0bbb41b4604d7bb2a93e09dca35952979ef1271f429747215780e",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b284f8b76e5c4854d60fe36f871bfb13d06fe4b4999af098888b4ea9e546c195",
             "consumerEvidenceSha256": "11c3b01f3161c47fe42d15873e4becab9cc1a47b22f880ef974e7a3187152cb5"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -182585,22 +183181,22 @@
     },
     {
       "id": "Verify",
-      "auditedVersion": "32.0.1",
-      "selectedVersion": "32.0.1",
-      "latestStable": "32.0.1",
+      "auditedVersion": "33.0.2",
+      "selectedVersion": "33.0.2",
+      "latestStable": "33.0.2",
       "latestPrerelease": "33.0.0-beta.11",
       "listingState": "listed",
       "family": "verify",
       "disposition": "retained",
       "rollbackGroup": "verify",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=32.0.1, prerelease=33.0.0-beta.11",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=33.0.2, prerelease=33.0.0-beta.11",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "32.0.1",
+          "latestStable": "33.0.2",
           "latestPrerelease": "33.0.0-beta.11",
           "diagnostic": "Registration metadata resolved."
         }
@@ -183094,6 +183690,42 @@
             "familySelectionSha256": "d1db86e6c8bd604f2f0a627382f7f666bc221d73cb0e05a5bb21725a651c9e33",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "e797b731fcd694b6f77fb8d5e86b0bf158c3dcbf487a7994a518a4e9cbea07b8",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+          "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+          "id": "Verify",
+          "auditedVersion": "32.0.1",
+          "selectedVersion": "32.0.1",
+          "latestStable": "32.0.1",
+          "latestPrerelease": "33.0.0-beta.11",
+          "listingState": "listed",
+          "family": "verify",
+          "disposition": "retained",
+          "rollbackGroup": "verify",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=32.0.1, prerelease=33.0.0-beta.11",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "32.0.1",
+              "latestPrerelease": "33.0.0-beta.11",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+            "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+            "familySelectionSha256": "02b3b5835f10487595cadc4af1e01e978ddaff470c3f62962c4550f5f2ff8163",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "42c17340fe797b6c4f4cde94cabf4f84bf16438168dfe7a41ec1ffec567df3ab",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -183102,22 +183734,22 @@
     },
     {
       "id": "Verify.XunitV3",
-      "auditedVersion": "32.0.1",
-      "selectedVersion": "32.0.1",
-      "latestStable": "32.0.1",
+      "auditedVersion": "33.0.2",
+      "selectedVersion": "33.0.2",
+      "latestStable": "33.0.2",
       "latestPrerelease": "33.0.0-beta.11",
       "listingState": "listed",
       "family": "verify",
       "disposition": "retained",
       "rollbackGroup": "verify",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=32.0.1, prerelease=33.0.0-beta.11",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=33.0.2, prerelease=33.0.0-beta.11",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "32.0.1",
+          "latestStable": "33.0.2",
           "latestPrerelease": "33.0.0-beta.11",
           "diagnostic": "Registration metadata resolved."
         }
@@ -183611,6 +184243,42 @@
             "familySelectionSha256": "d1db86e6c8bd604f2f0a627382f7f666bc221d73cb0e05a5bb21725a651c9e33",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "e797b731fcd694b6f77fb8d5e86b0bf158c3dcbf487a7994a518a4e9cbea07b8",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+          "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+          "id": "Verify.XunitV3",
+          "auditedVersion": "32.0.1",
+          "selectedVersion": "32.0.1",
+          "latestStable": "32.0.1",
+          "latestPrerelease": "33.0.0-beta.11",
+          "listingState": "listed",
+          "family": "verify",
+          "disposition": "retained",
+          "rollbackGroup": "verify",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=32.0.1, prerelease=33.0.0-beta.11",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "32.0.1",
+              "latestPrerelease": "33.0.0-beta.11",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-09-12T10:45:39.8818145+00:00",
+            "generatedFromRevision": "603b30823908c7cabc5cc8a2608221ff18b45d17",
+            "familySelectionSha256": "02b3b5835f10487595cadc4af1e01e978ddaff470c3f62962c4550f5f2ff8163",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "42c17340fe797b6c4f4cde94cabf4f84bf16438168dfe7a41ec1ffec567df3ab",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
