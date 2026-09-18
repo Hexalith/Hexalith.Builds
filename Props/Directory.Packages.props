@@ -4,12 +4,15 @@
     <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.30.0</HexalithCommonsVersion>
+    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.0.0</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.2</HexalithPolymorphicSerializationsVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.100.1</HexalithEventStoreVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.2.0</HexalithFrontComposerVersion>
+    <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.0.0</HexalithFoldersVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.22.1</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.6.0</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.0.0</HexalithPartiesVersion>
+    <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.0.0</HexalithProjectsVersion>
     <HexalithChatbotVersion Condition="'$(HexalithChatbotVersion)' == ''">1.80.0</HexalithChatbotVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -32,6 +35,7 @@
     <PackageVersion Include="Hexalith.Commons.Aspire" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.Http" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.Metadatas" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.Serialization" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.ServiceDefaults" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.StringEncoders" Version="$(HexalithCommonsVersion)" />
@@ -50,11 +54,17 @@
     <PackageVersion Include="Hexalith.EventStore.SignalR" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.Testing" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.Conversations.Contracts" Version="$(HexalithConversationsVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Contracts" Version="$(HexalithFrontComposerVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Mcp" Version="$(HexalithFrontComposerVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Shell" Version="$(HexalithFrontComposerVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.SourceTools" Version="$(HexalithFrontComposerVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Testing" Version="$(HexalithFrontComposerVersion)" />
+    <PackageVersion Include="Hexalith.Folders" Version="$(HexalithFoldersVersion)" />
+    <PackageVersion Include="Hexalith.Folders.Aspire" Version="$(HexalithFoldersVersion)" />
+    <PackageVersion Include="Hexalith.Folders.Client" Version="$(HexalithFoldersVersion)" />
+    <PackageVersion Include="Hexalith.Folders.Contracts" Version="$(HexalithFoldersVersion)" />
+    <PackageVersion Include="Hexalith.Folders.Testing" Version="$(HexalithFoldersVersion)" />
     <PackageVersion Include="Hexalith.KeyValueStorages" Version="2.1.2" />
     <PackageVersion Include="Hexalith.KeyValueStorages.Abstractions" Version="2.1.2" />
     <PackageVersion Include="Hexalith.KeyValueStorages.Files" Version="2.1.2" />
@@ -76,6 +86,11 @@
     <PackageVersion Include="Hexalith.Parties.ServiceDefaults" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.Testing" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.UI" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Projects" Version="$(HexalithProjectsVersion)" />
+    <PackageVersion Include="Hexalith.Projects.Client" Version="$(HexalithProjectsVersion)" />
+    <PackageVersion Include="Hexalith.Projects.Contracts" Version="$(HexalithProjectsVersion)" />
+    <PackageVersion Include="Hexalith.Projects.ServiceDefaults" Version="$(HexalithProjectsVersion)" />
+    <PackageVersion Include="Hexalith.Projects.Testing" Version="$(HexalithProjectsVersion)" />
     <PackageVersion Include="Hexalith.Chatbot.Contracts" Version="$(HexalithChatbotVersion)" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations" Version="$(HexalithPolymorphicSerializationsVersion)" />
     <PackageVersion Include="Hexalith.PolymorphicSerializations.CodeGenerators" Version="$(HexalithPolymorphicSerializationsVersion)" />
@@ -166,6 +181,7 @@
     <PackageVersion Include="Humanizer" Version="3.0.10" />
     <PackageVersion Include="ISO3166" Version="1.0.4" />
     <PackageVersion Include="Kreuzberg" Version="4.10.2" />
+    <PackageVersion Include="LibGit2Sharp" Version="0.32.0" />
     <PackageVersion Include="MailKit" Version="4.17.0" />
     <PackageVersion Include="MediatR" Version="14.2.0" />
     <PackageVersion Include="MessagePack" Version="3.1.8" />
