@@ -21,7 +21,7 @@ EXPECTED_TUPLE = {
     "communityToolkitAspireDapr": "13.5.0-preview.1.260825-0345",
     "daprCli": "1.18.0",
     "daprRuntime": "1.18.2",
-    "daprDotnetPackages": "1.18.7",
+    "daprDotnetPackages": "1.18.8",
     "fluentUi": "5.0.0-rc.5-26219.1",
     "nSubstitute": "6.2.0",
     "fluxor": "6.11.0",

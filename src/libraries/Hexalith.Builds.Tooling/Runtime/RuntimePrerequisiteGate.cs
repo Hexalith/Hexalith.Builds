@@ -38,7 +38,7 @@ public static class RuntimePrerequisiteGate
             ToolFailureCategory.PrerequisiteUnavailable,
             "The manifest does not select the owner-approved G-6 Dapr exception tuple.",
             "platform",
-            "Use Dapr runtime 1.18.2 with Dapr .NET packages 1.18.7 before retrying.");
+            "Use Dapr runtime 1.18.2 with Dapr .NET packages 1.18.8 before retrying.");
         return new RuntimePrerequisiteCheck(false, diagnostic);
     }
 }

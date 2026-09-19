@@ -186,7 +186,7 @@
         "communityToolkitAspireDapr": { "const": "13.5.0-preview.1.260825-0345" },
         "daprCli": { "const": "1.18.0" },
         "daprRuntime": { "const": "1.18.2" },
-        "daprDotnetPackages": { "const": "1.18.7" },
+        "daprDotnetPackages": { "const": "1.18.8" },
         "fluentUi": { "const": "5.0.0-rc.5-26219.1" },
         "nSubstitute": { "const": "6.2.0" },
         "fluxor": { "const": "6.11.0" }
