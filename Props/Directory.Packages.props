@@ -327,8 +327,8 @@
     <PackageVersion Include="Testcontainers" Version="4.15.0" />
     <PackageVersion Include="Threenine.Data" Version="5.0.1" />
     <!-- FrontComposer snapshot testing uses the xUnit v3 adapter, not Verify.Xunit. -->
-    <PackageVersion Include="Verify" Version="33.1.0" />
-    <PackageVersion Include="Verify.XunitV3" Version="33.1.0" />
+    <PackageVersion Include="Verify" Version="33.0.2" />
+    <PackageVersion Include="Verify.XunitV3" Version="33.0.2" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="bunit" Version="2.11.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
