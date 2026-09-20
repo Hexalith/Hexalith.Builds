@@ -116,6 +116,14 @@ def main() -> int:
             "source_state": evidence / "source-state.json",
             "packet": evidence / "packet.json",
         }
+        evidence.mkdir(parents=True, exist_ok=True)
+        lf_marker = evidence / "line-ending-lf.txt"
+        crlf_marker = evidence / "line-ending-crlf.txt"
+        lf_marker.write_bytes(b"portable\nsource\n")
+        crlf_marker.write_bytes(b"portable\r\nsource\r\n")
+        assert VALIDATOR.sha256(lf_marker) == VALIDATOR.sha256(crlf_marker), (
+            "G-6 evidence hashes must be stable across Git line-ending materialization"
+        )
         write_text(paths["marker"], "G-6 source binding\n")
         revision = initialize_git(workspace)
         baseline = VALIDATOR.validate_baseline(workspace, baseline_path)
