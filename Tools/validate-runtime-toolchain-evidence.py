@@ -16,9 +16,9 @@ from typing import Any
 
 EXPECTED_TUPLE = {
     "dotnetSdk": "10.0.401",
-    "aspireSdk": "13.5.3",
-    "aspireCli": "13.5.3",
-    "communityToolkitAspireDapr": "13.5.0-preview.1.260825-0345",
+    "aspireSdk": "13.5.4",
+    "aspireCli": "13.5.4",
+    "communityToolkitAspireDapr": "13.5.1-beta.757",
     "daprCli": "1.18.0",
     "daprRuntime": "1.18.2",
     "daprDotnetPackages": "1.18.8",
@@ -261,10 +261,13 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
         path = resolve_artifact(workspace, relative, "global.json")
         document = read_json(path)
         require(document.get("sdk", {}).get("version") == EXPECTED_TUPLE["dotnetSdk"], f".NET SDK pin drift: {relative}")
-    for relative in audit["appHostProjects"]:
-        path = resolve_artifact(workspace, relative, "AppHost project")
+    for item in audit["appHostProjects"]:
+        exact_fields(item, {"path", "version"}, "AppHost project pin")
+        path = resolve_artifact(workspace, item["path"], "AppHost project")
+        version = item["version"]
+        require(isinstance(version, str) and version.strip(), "AppHost project version is required")
         project = path.read_text(encoding="utf-8")
-        require(f'Aspire.AppHost.Sdk/{EXPECTED_TUPLE["aspireSdk"]}' in project, f"Aspire AppHost SDK pin drift: {relative}")
+        require(f'Aspire.AppHost.Sdk/{version}' in project, f"Aspire AppHost SDK pin drift: {item['path']}")
     for item in audit["literalPins"]:
         exact_fields(item, {"path", "value"}, "Literal pin")
         path = resolve_artifact(workspace, item["path"], "literal pin")

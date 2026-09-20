@@ -79,8 +79,8 @@ def main() -> int:
 
         for relative in baseline_template["pinAudit"]["globalJson"]:
             write_json(workspace / relative, {"sdk": {"version": VALIDATOR.EXPECTED_TUPLE["dotnetSdk"]}})
-        for relative in baseline_template["pinAudit"]["appHostProjects"]:
-            write_text(workspace / relative, f'<Project Sdk="Aspire.AppHost.Sdk/{VALIDATOR.EXPECTED_TUPLE["aspireSdk"]}">\n</Project>\n')
+        for item in baseline_template["pinAudit"]["appHostProjects"]:
+            write_text(workspace / item["path"], f'<Project Sdk="Aspire.AppHost.Sdk/{item["version"]}">\n</Project>\n')
         literal_contents: dict[str, list[str]] = {}
         for item in baseline_template["pinAudit"]["literalPins"]:
             literal_contents.setdefault(item["path"], []).append(item["value"])
@@ -171,7 +171,12 @@ def main() -> int:
             outcome = "passed"
             if purpose == "observe exact tool versions":
                 command = "dotnet --version && aspire --version && dapr --version"
-                outcome = ".NET SDK 10.0.401; Aspire CLI 13.5.3; Dapr CLI 1.18.0; runtime 1.18.2"
+                outcome = (
+                    f".NET SDK {VALIDATOR.EXPECTED_TUPLE['dotnetSdk']}; "
+                    f"Aspire CLI {VALIDATOR.EXPECTED_TUPLE['aspireCli']}; "
+                    f"Dapr CLI {VALIDATOR.EXPECTED_TUPLE['daprCli']}; "
+                    f"runtime {VALIDATOR.EXPECTED_TUPLE['daprRuntime']}"
+                )
             elif purpose == "G-6 mutation controls":
                 outcome = "22 scenarios passed"
             elif purpose == "managed restart smoke credential preflight":
