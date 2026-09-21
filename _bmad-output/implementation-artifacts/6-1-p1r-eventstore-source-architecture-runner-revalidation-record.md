@@ -2046,3 +2046,56 @@ prevents this attempt from being the complete finite record. Architecture
 remains bound to EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and
 every downstream gate remain unchanged and open. No push, merge, publication,
 release, or live-checkout mutation occurred.
+
+## Tree-equivalent rollback attempt 11 — 2026-09-21
+
+Attempt 11 preserved the failed attempt-10 branch and created distinct branch
+`fix/p1r-3106-rollback-candidate` from corrected candidate
+`ad52f350a2f0bc47849179ae17b4594dafff5363`. The two rollback changes were
+reapplied with newly wrapped Conventional Commit messages:
+
+| Role | New revision | Exact tree equivalence |
+| --- | --- | --- |
+| Rebind catalog/runner/schema/fixtures/evidence/hashes to `3.70.1` | `38bac7906bd8aa3887bdec4dd7c31470a10dd5ed` | tree `b404b1624b239446bfbc4a99127f8a342a062e8a`, equal to `44bd5eb...^{tree}` |
+| Add the incremental EventStore-family audit | `1f46bc373d82fb266c8396759cc3a57c62e6ae7c` | tree `d53a53615774e127ebddc0688e9ad459e2de017c`, equal to `caf49c5...^{tree}` |
+
+Both new messages passed the repository-pinned commitlint command. The failed
+branch still resolves to `caf49c58bc18f5226733e7879b4f71e99213fffd`
+with the same two tree identities; it was not amended, reset, or deleted.
+
+Attempt 10's 140-entry manifest reverified, and attempt 11 adopted all 27
+immutable passing phase 1–4 rows. It separately rechecked the selected
+candidate packaged controls proving `3.88.0` and rollback `3.70.1` are each
+rejected with `HXM016`. Rollback coordinate/tree proof, static alignment,
+restore, serialized Release build, Module tests (117/117), Evidence tests
+(68/68), and the authoritative 50-identity/three-shared-version catalog check
+all passed.
+
+The next row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `rollback-bld-009-audit` | exit `1`; audit `generatedFromRevision` `44bd5ebcb1cac36f25b67ce5ba1a54a2772ca73b` is not an ancestor of new head `1f46bc373d82fb266c8396759cc3a57c62e6ae7c` | **FAIL** |
+
+This failure follows directly from the exact-tree constraint. Copying the
+attempt-10 audit bytes preserves `generatedFromRevision=44bd5eb...`; changing
+that field to the new tree-equivalent commit `38bac790...` would change the
+new head tree, so it could no longer equal `caf49c5...^{tree}`. The retained
+failure log SHA-256 is
+`378b23a299031df38bc9a5b9a35ab26438a42668de5dd05aa28767c534f013ae`.
+
+Per stop-first, no rollback G-4, packaged-command, `v3.70.1` EventStore
+source/package/API, finite-record completion, or owner-acceptance row ran.
+The post-failure state row passed for the rollback and live repositories.
+
+Attempt 11 retains 41 files. Its 39-entry manifest has SHA-256
+`8160f13b71756fbbc089f988599c20cf8225af6ce6e76ed582c323918f66c29a`;
+the verification transcript has SHA-256
+`841ae7b513ea7f9e47b339c7ace6c44e4e48822c6985eae2dcce2b3855164ad2`.
+Every covered file verifies `OK`. The ledger contains 12 rows: 11 `PASS`, one
+`FAIL`, and no `INCONCLUSIVE` result.
+
+All four owner decisions remain pending. Architecture remains bound to
+EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and every downstream
+gate remain unchanged and open. No push, merge, publication, release, or live-
+checkout mutation occurred.
