@@ -1724,3 +1724,20 @@ table above attests both exact hashes.
 P1R, P0, P2, P3, P4, Story 6.1, readiness, and the transitive Epic 7/8 gates
 retain their existing blockers. No acceptance is inferred from the named-role
 authorization in the spec because the finite record is incomplete.
+
+### Evidence tracking correction — 2026-09-21
+
+The three bundle-local `.gitignore` files were added after the table above was
+written so the umbrella's `[Ll]ogs/` rule cannot leave retained first-result
+logs untracked. The manifests were regenerated and re-verified after that
+addition. This append supersedes only the three manifest rows above:
+
+| Bundle | Total files | Manifest entries | Manifest SHA-256 | Verification SHA-256 |
+| --- | ---: | ---: | --- | --- |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt1/` | 13 | 11 | `8b24457fa83c6df7b3399388034a29f09a4463ac1a4987e420fc97b6e18b18b7` | `01f22f30664ac7946ef37329248b1a14d5256de12e74c948bbf9f3d7d883dbb8` |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt2/` | 13 | 11 | `55a519d8592a17827fe249b164141f88814d58c040783cc7d6f0a4fa016f3a69` | `01f22f30664ac7946ef37329248b1a14d5256de12e74c948bbf9f3d7d883dbb8` |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt3/` | 28 | 26 | `bb67de53f3d4a6bf13e7abb8a01f917b220d9ddf5184b22b9538f05c828603a2` | `7d84c753edd2002f34c1ead20289da65f9a77b804ee5a9732604a320e109048e` |
+
+All 16 retained `.log` files are now visible to `git status
+--untracked-files=all`; each manifest verification reports every covered entry
+`OK`. No command was rerun and no disposition changed.
