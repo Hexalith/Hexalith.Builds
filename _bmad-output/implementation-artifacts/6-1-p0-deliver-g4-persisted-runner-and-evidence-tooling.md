@@ -138,9 +138,9 @@ so that Projects Story 6.1 and later consumers can prove supported-path behavior
 
 This binding stage order supersedes the chronological ordering implied by the older task groups below. Preserve completed implementation and its evidence; do not reopen a checked item unless current-head reconciliation disproves it.
 
-- [ ] **Stage 1 — Revalidate the dependency baseline through 6.1-P1R** (AC: 1-6, 13-15)
-  - [ ] Obtain one owner-approved EventStore source/package, Builds catalog, runner manifest/schema, and Architecture Spine pin with clean restore, required API compatibility, live-runner compatibility, and rollback evidence.
-  - [ ] Treat `3.88.0` only as the P1R candidate; consume the exact owner-accepted P1R result atomically.
+- [x] **Stage 1 — Revalidate the dependency baseline through 6.1-P1R** (AC: 1-6, 13-15)
+  - [x] Accepted on 2026-09-21: EventStore source/package `3.106.0` at `76051c70cbf868c40edc00ca0344fa5bd8879b69`, Builds catalog/runner `ad52f350a2f0bc47849179ae17b4594dafff5363`, and executable EventStore `3.70.1` / Builds `7af20f8bafbfe561df6f7705913a0800603090b5` rollback; the Architecture Spine is bound to the same tuple.
+  - [x] Retain `3.88.0` as superseded candidate history and consume only the exact four-owner-accepted P1R finite record at `_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt17/finite-record.md`.
 - [ ] **Stage 2 — Reconcile release and package findings against the current Builds head** (AC: 1, 2, 11, 13, 14)
   - [ ] Recheck SD1, SD2, and SP1-SP13 against the observed candidate; close only findings backed by executable current-head evidence.
   - [ ] Retain unresolved exact-SHA CI, post-approval live-main recheck, pre-tag qualification, partial-publication recovery, remote verification, credential-scope, installed-command, and rollback controls as open where evidence remains absent.

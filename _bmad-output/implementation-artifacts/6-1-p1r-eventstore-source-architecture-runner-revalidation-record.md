@@ -2391,3 +2391,29 @@ unchanged.
 Technical qualification is **PASS**; acceptance is **0/4 and pending**. No
 owner decision is inferred, and no push, merge, publication, release,
 Architecture update, or planning propagation occurred.
+
+## Four-owner acceptance and bounded propagation — 2026-09-21
+
+At `2026-09-21T10:48:17Z`, Jérôme Piquot explicitly issued `accept` against
+the exact attempt-17 finite record in all four required roles. The accepted
+pre-decision record SHA-256 is
+`900e3442c0b67910af0dd13a38545725e7e5806dbcc640931a3e250a81c386c9`.
+After recording the decisions, the 79-entry attempt-17 manifest verifies at
+SHA-256
+`e806099bddfceac0cf4a145dbc4706da1159e442e391971a6c752c2d14d3f3fe`.
+
+| Role | Named approver | Decision | UTC date | Accepted coordinates and evidence |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `accept` | `2026-09-21T10:48:17Z` | selected source/package `3.106.0` / `76051c70...`; rollback `3.70.1` / `f13f9925...`; finite record and 57-row ledger |
+| Builds Owner | Jérôme Piquot | `accept` | `2026-09-21T10:48:17Z` | selected Builds `ad52f350...`; rollback Builds `7af20f8...`; retained G-4 inventories |
+| Solution Architect | Jérôme Piquot | `accept` | `2026-09-21T10:48:17Z` | complete selected/rollback tuple; Architecture binding and G-1 non-selection wording |
+| Test Architect | Jérôme Piquot | `accept` | `2026-09-21T10:48:17Z` | finite record, manifests, ledgers, controls, and cleanup proof |
+
+Acceptance is **4/4 and satisfied**. The Architecture Spine is rebound to the
+selected multi-coordinate tuple, P1R is `done`, P0 Stage 1 is complete, and
+DW-35/DW-68 are resolved. P0 supported composition, publication, consumer pin,
+persisted qualification, acceptance record, and owner acceptance remain open;
+P2, P3, P4, Story 6.1, readiness, and transitive Epic 7/8 gates remain blocked.
+P1R does not select Durable Task or Confirmation Artifact capability. No push,
+publication, release, source dependency update, or live-checkout mutation was
+authorized or performed.
