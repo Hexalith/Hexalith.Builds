@@ -1968,3 +1968,19 @@ hash list also verifies `OK`. The ledger contains 27 rows: 26 `PASS`, one
 All four owner decisions remain pending. Architecture remains bound to
 EventStore `3.70.1`; sprint status, deferred work, P1R, and every downstream
 gate remain unchanged and open.
+
+### Attempt 9 retention correction
+
+Before final handoff and disposal of the temporary root, the exact executed
+seven-API comparison script referenced by `es-002-api-blobs` was copied into
+the bundle as `proofs/api-compare.sh`. `cmp` and SHA-256 both prove it is
+byte-identical to the executed script; its SHA-256 is
+`be0e53798afb90b621d9fb155cd1e6e7b1414d829e4ad2c01fa76028753d9fb3`.
+The bundle was then resealed and fully reverified. This supersedes only the
+attempt-9 file-count and seal values above: 77 total files, 75 manifest
+entries, manifest SHA-256
+`96a19ee04ff27c9ab235eb3e460a92f328d8644e71585d0eca9cb98b0f44e321`,
+and verification-transcript SHA-256
+`359de629afc63c852387479d5b353d389150c013ecda6e21eb906c84ac969205`.
+No command was rerun and no disposition, owner state, or planning state
+changed.
