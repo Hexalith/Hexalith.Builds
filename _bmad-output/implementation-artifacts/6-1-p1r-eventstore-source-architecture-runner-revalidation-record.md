@@ -1901,3 +1901,22 @@ and its verification SHA-256 is
 `d7fa8ee5ed016ab22345e4f6409fce1bfb9060895b9deb09848417a08e9dd5f0`.
 Every covered file verifies `OK`. Owner decisions remain pending and no
 planning state changed.
+
+## Disk-exhausted attempt 8 — 2026-09-21
+
+Attempt 8 preserved attempts 1–7 and restarted unchanged to correct only the
+attempt-7 isolation-proof harness. Preservation, coordinate, candidate,
+catalog/audit, API, and source restore rows passed. The serialized source build
+then exited `1` after `/tmp` filled. Its log retains 93 build errors including
+`MSB3021`, `MSB3027`, and `MSB3491`, each reporting `No space left on device`.
+
+No test, package-source, remote-consumer, Builds runner/G-4, rollback,
+acceptance, or propagation row ran. No preserved attempt directory/cache was
+deleted and no rerun occurred. Disk state and clean checkout assertions passed
+and are retained.
+
+Attempt 8 retains 29 files. Its 27-entry manifest SHA-256 is
+`b941f549ecb37380ddb5cb99e7362800cb889a0926c69be1f7ee14878c445a82`;
+verification SHA-256 is
+`178beb4c67a8a0a4d1733324f205087769e4cde546ad5fe4878aa6fcdbf60dfd`.
+Every covered file verifies `OK`; owner decisions remain pending.
