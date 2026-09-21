@@ -2631,3 +2631,57 @@ dependents, use and prove the same version-keyed Playwright cache identity,
 derive dependency plans from exact gitlinks, and obtain four fresh decisions
 before propagation. No push, publication, release, dependency update, or
 live-checkout mutation is authorized.
+
+## Review-3 remediation technical record — attempts 28–29 — 2026-09-21
+
+Attempt 28 retained a stop-first harness-only failure after the selected
+EventStore source restore succeeded. The evidence wrapper parsed a
+tab-separated command result with an empty `IFS`, constructed the wrong
+artifact path, and emitted the first authoritative `FAIL` row. No later
+qualification row ran. Its cleanup trap removed the run root and every
+temporary worktree registration. The sealed non-qualifying artifact manifest
+SHA-256 is
+`5e7b1db75396e86f72955ccb0be786a1fb752f0c4962be24f472491c81140653`.
+
+Attempt 29 corrected that wrapper defect and reran the complete qualification
+matrix without reusing an earlier result. All 60 ordered phase rows and all 63
+authoritative rows are unique `PASS` rows. The retained commands include the
+full seven-API and reciprocal-control helper implementations. Every resolved
+asset leaf and configuration input is preserved and independently
+recomputable after worktree deletion. The dependency revisions are derived
+from `git ls-tree -r` at the exact selected and rollback EventStore revisions,
+and strict ledger-to-binding command provenance verifies that derivation. The
+Builds rows use the same actual version/browser-revision-keyed Playwright
+cache proved by preflight:
+`/home/administrator/.cache/hexalith-qualification/playwright/microsoft-playwright-1.62.0-c1234-f1538-w2336-ffmpeg1011`.
+
+The fresh source/package, official-remote, selected Builds, rollback Builds,
+rollback EventStore, reciprocal-control, final-worktree, and cleanup lanes all
+pass. The official remote proof retains exactly 14 singleton-exact direct
+declarations and a missing-direct Contracts negative control. The selected
+Contracts source and package lanes each pass 2,023 tests; the historical
+Server source and package lanes each pass 2,626 tests with 25 expected skips.
+All 34 exact-revision worktrees were captured clean and removed, all eight
+owning-repository registration lists were checked, and every live-checkout
+prestate remained unchanged.
+
+The complete eleven-section pre-decision record is retained at
+`Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt29/finite-record-pre-decision.md`
+with SHA-256
+`b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e`.
+The authoritative ledger SHA-256 is
+`31f710989523a2c51fe3ca5a02dc5315818a8b8ba12b3a024e941dd6b2a236ca`;
+the exact phase ledger SHA-256 is
+`eb5ed0930d7cc4ccd99b17a4efa626f264be933fa788eb833aa202534a0758fd`;
+and the 664-entry artifact-manifest SHA-256 is
+`e586157a205fb5ee0a86ef32e4e96165058113f443d99102df96a07c92cbb740`.
+Independent post-run verification recomputed all 664 manifest entries and the
+pre-decision seal successfully.
+
+Technical qualification is **PASS**. Four fresh owner decisions are
+**pending (0/4)** and must explicitly name the exact Attempt 29 pre-decision
+SHA-256 above. The invalidated Attempt 27 decisions cannot be reused or
+inferred. Therefore Architecture remains on accepted EventStore `3.70.1`;
+P1R, P0 Stage 1, DW-35, and DW-68 remain open; and all downstream gates retain
+their blockers. No acceptance inference, propagation, push, publication,
+release, dependency update, or live-checkout mutation occurred.
