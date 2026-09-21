@@ -2564,3 +2564,39 @@ Architecture remains on accepted EventStore `3.70.1`; P1R, P0 Stage 1,
 DW-35, and DW-68 remain open; all downstream gates retain their blockers. No
 push, publication, release, dependency update, live-checkout mutation,
 acceptance inference, or propagation occurred.
+
+## Attempt 27 four-owner acceptance and bounded propagation — 2026-09-21
+
+At `2026-09-21T14:46:38Z`, Jérôme Piquot explicitly accepted exact Attempt 27
+pre-decision SHA-256
+`cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd`
+as EventStore Owner, Builds Owner, Solution Architect, and Test Architect. The
+accepted `finite-record-pre-decision.md` bytes remain unchanged. The
+manifest-covered decision and bounded-propagation addendum is
+`Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt27/finite-record-decisions.md`, SHA-256
+`ffead84dd8f7b46ac00af2b0a7cdbc1b8a94ea0fbab6d9850c7bfe1d8a2d86a2`.
+
+| Role | Approver | Decision | UTC date | Exact accepted coordinates and record |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `accept` | `2026-09-21T14:46:38Z` | EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted record SHA-256 `cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd` |
+| Builds Owner | Jérôme Piquot | `accept` | `2026-09-21T14:46:38Z` | EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted record SHA-256 `cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd` |
+| Solution Architect | Jérôme Piquot | `accept` | `2026-09-21T14:46:38Z` | EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted record SHA-256 `cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd` |
+| Test Architect | Jérôme Piquot | `accept` | `2026-09-21T14:46:38Z` | EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted record SHA-256 `cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd` |
+
+Acceptance is **4/4 and satisfied** against one exact record. The accepted
+binding is EventStore `3.106.0` source/package revision
+`76051c70cbf868c40edc00ca0344fa5bd8879b69`, Builds introduction
+`dae84d5f96911517eb1e6f97e75eb88e759e6d8a`, and qualifying catalog/runner
+`ad52f350a2f0bc47849179ae17b4594dafff5363`; executable rollback is EventStore
+`3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` with Builds
+`7af20f8bafbfe561df6f7705913a0800603090b5`. The final attempt-27 artifact
+manifest SHA-256 is
+`a73d8cf75c05a5bdbbac60307eb2f5cb2941b8889503d8951a2e59b9f6a07abf`.
+
+Bounded propagation rebinds the Architecture Spine with G-1 explicitly
+unselected, marks P1R and only P0 Stage 1 done, and resolves DW-35/DW-68. P0
+stages 2–7, supported composition, publication, consumer pin, persisted
+qualification, acceptance record, owner acceptance, P2/P3/P4, Story 6.1,
+readiness, and transitive Epic 7/8 blockers remain open or blocked. No push,
+merge, publication, release, dependency update, or live-checkout mutation was
+authorized or performed.
