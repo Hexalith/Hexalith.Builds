@@ -1984,3 +1984,65 @@ and verification-transcript SHA-256
 `359de629afc63c852387479d5b353d389150c013ecda6e21eb906c84ac969205`.
 No command was rerun and no disposition, owner state, or planning state
 changed.
+
+## Corrected-candidate and G-4 attempt 10 — 2026-09-21
+
+Attempt 10 preserved attempts 1–9 and restarted from coordinate capture with
+corrected Builds candidate
+`ad52f350a2f0bc47849179ae17b4594dafff5363`. Candidate
+`5730f5a60c0e106131498126cbee323e24db5f4e` is superseded only by the second
+commit's fixture-binding correction: otherwise-valid retained module-run
+artifacts now embed the SHA-256 of the aligned positive manifest, and their
+referencing YAML hashes were refreshed. Contract, selected EventStore
+coordinate, production source, and package coordinate were unchanged.
+
+Preservation, coordinate capture, candidate commitlint/static/catalog/audit,
+and seven-API comparison passed. Both complete EventStore matrices passed,
+including 2,023/2,023 Contracts tests in source mode and package-source mode
+plus every Client, DomainService, and Server row. The corrected direct-command
+external-consumer CPM proof, official-only restore from an empty cache, and
+all-fourteen-package inventory also passed.
+
+Candidate restore, serialized Release build, Module tests (117/117), and
+Evidence tests (68/68) passed. The official packaged G-4 row ran without
+`-SkipSourceValidation`, executed required controls, and passed. Its retained
+inventory uses unique disposable version `0.0.0-p1r3106-attempt10.1`, records
+`releaseEligible=true` for the clean disposable candidate worktree, and
+contains both CLI packages, both symbol packages, and 53 qualification-
+evidence artifacts. The inventory SHA-256 is
+`1a4b4942f3e730bee67f84879635d170d8357a7f81e8cc106a7cdbd5d47c46f0`.
+
+The reciprocal rollback was then constructed from the corrected candidate as
+the required two local commits:
+
+| Role | Revision | Result before qualification |
+| --- | --- | --- |
+| Rebind catalog/runner/schema/fixtures/evidence/hashes to `3.70.1`; retain `3.88.0` and reject selected `3.106.0` | `44bd5ebcb1cac36f25b67ce5ba1a54a2772ca73b` | committed |
+| Incrementally refresh the EventStore audit family against the committed rollback catalog | `caf49c58bc18f5226733e7879b4f71e99213fffd` | audit generation and deterministic validation passed (299 packages, 145 families, one source) |
+
+The first rollback qualification row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `rollback-bld-000-commitlint` | exit `1`; both commit bodies violate `body-max-line-length` because each was authored as one line longer than 200 characters | **FAIL** |
+
+The retained failure log SHA-256 is
+`fa78f36b9ee860d97ebb99c9c564d8c7d2db976f0923a203f8eac9b663735642`.
+The commits were not amended or rewritten. Under the stop-first rule, no
+rollback static/catalog/audit qualification, restore/build/test/G-4, reciprocal
+`HXM016` execution, or EventStore `v3.70.1` compatibility row ran. The clean
+post-failure assertion passed for both Builds worktrees, both EventStore
+worktrees, all fourteen exact dependency worktrees, and both live repositories.
+
+Attempt 10 retains 142 files. Its 140-entry manifest has SHA-256
+`f8fdf2c215c8a759596472dd5a5f0b0e6156bb139769fd1b44fa44ba91e50cb5`;
+the verification transcript has SHA-256
+`5d964ef6dd60d89d95bd444d46ac726a9d14ad75c9107da3b0f2a2e067988e80`.
+Every covered file verifies `OK`. The ledger contains 30 rows: 29 `PASS`, one
+`FAIL`, and no `INCONCLUSIVE` result.
+
+All four owner decisions remain `pending`; a failed rollback commitlint row
+prevents this attempt from being the complete finite record. Architecture
+remains bound to EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and
+every downstream gate remain unchanged and open. No push, merge, publication,
+release, or live-checkout mutation occurred.
