@@ -1920,3 +1920,51 @@ Attempt 8 retains 29 files. Its 27-entry manifest SHA-256 is
 verification SHA-256 is
 `178beb4c67a8a0a4d1733324f205087769e4cde546ad5fe4878aa6fcdbf60dfd`.
 Every covered file verifies `OK`; owner decisions remain pending.
+
+## Clean external-consumer and candidate attempt 9 — 2026-09-21
+
+After the task-created attempt-8 worktrees and caches were safely removed,
+attempt 9 restarted from coordinate capture under a new unique temporary root.
+It preserved the eight sealed earlier bundles and used the unchanged contract,
+EventStore tag, exact dependency revisions, and Builds candidate. Qualification
+ran serially with no overlapping work.
+
+Preservation, coordinates, candidate commitlint/static/catalog/audit, and the
+seven-API comparison passed. The complete EventStore source and package-source
+lanes passed, including both 2,023-test Contracts runs and all six other test
+projects. The corrected direct-command CPM proof passed outside all repository
+and ancestor build configuration, showing
+`ManagePackageVersionsCentrally != true` and the exact external project path.
+Official-only restore from an empty qualification cache then passed. The
+retained assets and inventory verify all fourteen release-manifest package IDs
+at `3.106.0`.
+
+The Builds candidate restore, serialized build, and Module tests passed. The
+next required row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `bld-candidate-004-evidence-test` | exit `2`; 59 passed and 9 failed of 68 | **FAIL** |
+
+The nine failures consistently introduced `HXE152` evidence-binding
+diagnostics. Both positive-readiness assertions failed; multiple negative
+snapshots gained an unexpected `HXE152`; and the no-executed-tests assertions
+observed `HXE152` where `HXE153` was required. The retained first-result log
+has SHA-256
+`98864eca855cf1aa4142d696a563540f12b16e9feadf0cc4289f8e2132d97061`.
+No later catalog, audit, packaged-command, reciprocal rollback, acceptance, or
+propagation row ran.
+
+The post-failure state assertion passed for candidate Builds, both EventStore
+worktrees, and all fourteen exact dependency worktrees. Attempt 9 contains 76
+files. Its 74-entry manifest has SHA-256
+`048e3a6df48f509c3c8cb2e0719db683a03a60dfc3ab165511396e9306a2499a`;
+the verification transcript has SHA-256
+`2fa1bf3d6e860b6e71cbe77f84b3abb5eedb605ae31c3766953fe47e1f299dac`.
+All 74 covered entries verify `OK`; the separate eight-file external-consumer
+hash list also verifies `OK`. The ledger contains 27 rows: 26 `PASS`, one
+`FAIL`, and no `INCONCLUSIVE` result.
+
+All four owner decisions remain pending. Architecture remains bound to
+EventStore `3.70.1`; sprint status, deferred work, P1R, and every downstream
+gate remain unchanged and open.
