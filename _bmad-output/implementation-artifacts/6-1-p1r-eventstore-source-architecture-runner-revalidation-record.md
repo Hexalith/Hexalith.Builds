@@ -2508,3 +2508,55 @@ declarations and a missing-direct negative, retain complete verification, and
 render the full finite record before four fresh decisions. No push,
 publication, release, dependency update, or live-checkout mutation is
 authorized.
+
+## Review-2 remediation technical record — attempts 24–27 — 2026-09-21
+
+Attempts 24–26 retain three stop-first harness boundaries without rewriting
+prior evidence. Attempt 24 stopped before its first ledger row because the
+shared qualification cache root did not yet exist. Attempt 25 passed the
+root/cache preflight and stopped before its first worktree because a retained
+standalone command lacked the exported worktree-plan path. Attempt 26 passed
+preflight, all 18 exact-revision worktrees, formal coordinate supersession,
+the 14-declaration positive check, and the 13-declaration missing-Contracts
+negative check. Its official-only restore exited zero, then a postcondition
+stopped because NuGet records `PackageDownload` under framework
+`downloadDependencies`, not the `libraries` map. Every failed attempt cleaned
+its run root and registrations; none contributed a reused row.
+
+Attempt 27 corrected only that evidence-shape assertion. It formally
+supersedes attempt 21's known-false `coordinates-001-selected` PASS row with
+fully retained command implementation bytes and actual catalog-introducing
+revision `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`. The evaluated external
+consumer contains exactly the 14 release-manifest IDs and every declaration is
+singleton-exact `[3.106.0]`. A retained negative removes direct
+`Hexalith.EventStore.Contracts`; the exact-set checker fails as required while
+a separate official-only empty-cache restore still resolves Contracts
+transitively. The Admin CLI `PackageDownload` is verified through its evaluated
+download dependency and retained package SHA-256/SHA-512 metadata.
+
+The authoritative ledger contains 65 unique PASS rows. Its explicit phase
+contract contains 63 exact row IDs: 51 unchanged attempt-21 rows admitted only
+after all 58 original binding inputs were rehashed, plus 12 superseding or new
+proof rows. The record validates both canonical disk-backed roots, exact
+Playwright `1.62.0` browser identity, the Architecture prestate's semantic
+`3.70.1` binding, clean final status/HEAD/describe for all 18 repository and
+dependency worktrees, and absence from every owning repository's worktree
+registration list after cleanup.
+
+The complete eleven-section pre-decision record is retained at
+`Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt27/finite-record-pre-decision.md`
+with SHA-256
+`6947d31901d735dd224f7b0bb521863e5c67083f6182cbfbdd41b7a697582564`.
+The authoritative ledger SHA-256 is
+`e6ae33908f5b1a3df51486f09f90ad21824e7061d54b0677f0c1be9770275451`;
+the exact phase ledger SHA-256 is
+`5aee549e07bcc0299185cf76bb9c878bef55e4ed133deb2a12999ede002f45c7`;
+and the attempt-27 artifact-manifest SHA-256 is
+`f04a6db128b85f6a2742a32e9e6fcd08bab10e7c5d1bb7763274221cc00b8055`.
+
+Technical qualification is **PASS**. Four fresh owner decisions are
+**pending (0/4)** and must name the exact pre-decision SHA-256 above. Therefore
+Architecture remains on accepted EventStore `3.70.1`; P1R, P0 Stage 1,
+DW-35, and DW-68 remain open; all downstream gates retain their blockers. No
+push, publication, release, dependency update, live-checkout mutation,
+acceptance inference, or propagation occurred.
