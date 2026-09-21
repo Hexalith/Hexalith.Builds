@@ -2099,3 +2099,55 @@ All four owner decisions remain pending. Architecture remains bound to
 EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and every downstream
 gate remain unchanged and open. No push, merge, publication, release, or live-
 checkout mutation occurred.
+
+## Audit-provenance repair and stopped attempt 12 — 2026-09-21
+
+Attempt 12 appended, rather than amended, provenance-repair commit
+`7af20f8bafbfe561df6f7705913a0800603090b5` to
+`fix/p1r-3106-rollback-candidate`. The prior rollback commits remain
+`38bac7906bd8aa3887bdec4dd7c31470a10dd5ed` and
+`1f46bc373d82fb266c8396759cc3a57c62e6ae7c`; the failed attempt-10 branch
+still resolves to `caf49c58bc18f5226733e7879b4f71e99213fffd`.
+
+The repository-authoritative family-scoped audit generator changed only
+`Tools/package-version-audit.json`. Its top-level `generatedFromRevision` and
+current Hexalith EventStore family origin both name parent `1f46bc3...`, which
+is a proven ancestor of the new head. Pre- and post-commit audit validation
+passed for 299 packages, 145 families, and one source. The authoritative
+catalog passed 50 identities and three shared versions, and all three rollback
+commit messages passed repository-pinned commitlint.
+
+The rollback continuation itself stopped at its first row:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `adopt-001-prior-attempts` | exit `1`; after both prior bundle manifests verified, the proof compared the frozen block to stale expected SHA-256 `94a818e0...`; unchanged working/current-root-HEAD bytes hash to `d933172d...` | **FAIL** |
+
+The retained first-result log SHA-256 is
+`3770566d33b8554f05766f54ef6f55b0a697a1b0660e8df0710cd3ad2b59b88a`.
+This is a proof-harness failure and does not represent a frozen-block edit.
+
+The command wrapper's displayed output omitted that nested exit status, so one
+additional row was inadvertently launched before the stop was recognized:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `rollback-bld-001-coordinate` | exit `1`; proof expected rollback commit 1 to change 61 paths, while the immutable commit changes 63 | **FAIL** |
+
+That empty first-result log has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+No restore, build, test, catalog, audit, G-4, reciprocal-control, EventStore
+`v3.70.1`, finite-record, or acceptance row ran after the failures.
+
+Attempt 12 retains 43 files. Its 41-entry manifest has SHA-256
+`e8b857740a3d8e78c6c99fd2e84b7494245a6ae1f8889f3b62bc3d218ce2ed98`;
+the verification transcript has SHA-256
+`4a86a7ab4b1de8dfa074e203b37d46bb213e5d1263c97de6bd53d955467d26d2`.
+Every covered file verifies `OK`. The ledger contains 13 rows: 11 `PASS`, two
+`FAIL`, and no `INCONCLUSIVE` result. The post-failure clean-state assertion
+passed for the detached rollback worktree and both live repositories.
+
+All four owner decisions remain explicitly pending. Architecture remains
+bound to EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and every
+downstream gate remain unchanged and open. No push, merge, publication,
+release, or live-checkout mutation occurred.
