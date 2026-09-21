@@ -2600,3 +2600,34 @@ qualification, acceptance record, owner acceptance, P2/P3/P4, Story 6.1,
 readiness, and transitive Epic 7/8 blockers remain open or blocked. No push,
 merge, publication, release, dependency update, or live-checkout mutation was
 authorized or performed.
+
+## Attempt 27 post-acceptance review invalidation — review iteration 3 — 2026-09-21
+
+Review iteration 3 invalidates the Attempt 27 acceptance and bounded
+propagation recorded above. The four decisions and their exact pre-decision
+SHA-256 remain immutable historical evidence, but the record is non-qualifying:
+
+1. authoritative `coordinates-002-seven-api` and
+   `reciprocal-001-controls` rows bind only symbolic helper names and omit the
+   function implementation bytes that produced their results;
+2. reuse verification hashes configuration and resolved-asset checksum-list
+   containers without recomputing every named leaf, some of which disappeared
+   with deleted worktrees;
+3. authoritative Builds rows name
+   `/home/administrator/.cache/ms-playwright/dotnet-10`, while preflight proves
+   a different revision-keyed cache identity and marks it unused; and
+4. the dependency worktree plan copies revision values without retaining a
+   derivation and equality proof against the selected and rollback EventStore
+   gitlinks. Ledger-to-binding command provenance is also not checked strictly
+   enough for a replacement record.
+
+Hexalith.Projects restored the Architecture binding to accepted EventStore
+`3.70.1` and reopened P1R, P0 Stage 1, DW-35, and DW-68. Attempts 24–27,
+historical decision timestamp `2026-09-21T14:46:38Z`, and pre-decision SHA-256
+`cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd`
+remain preserved. A superseding run must retain self-contained helper
+implementations, recompute every binding leaf or rerun the affected row and its
+dependents, use and prove the same version-keyed Playwright cache identity,
+derive dependency plans from exact gitlinks, and obtain four fresh decisions
+before propagation. No push, publication, release, dependency update, or
+live-checkout mutation is authorized.
