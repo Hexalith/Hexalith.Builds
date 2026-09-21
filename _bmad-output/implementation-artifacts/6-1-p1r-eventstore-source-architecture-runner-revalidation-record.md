@@ -2285,3 +2285,109 @@ root and every attempt worktree registration.
 Architecture remains bound to EventStore `3.70.1`; sprint status, DW-35,
 DW-68, P1R, and every downstream gate remain unchanged and open. No push,
 merge, publication, release, or live-checkout mutation occurred.
+
+## Complete technical qualification and finite record — attempt 17 — 2026-09-21
+
+Attempt 17 verified attempts 10–16 and completed the earliest-invalid rollback
+rows without changing any candidate, contract, production source, frozen
+intent, or prior evidence. Fresh EventStore package prerequisites at
+`f13f9925fdca53efa2ab8c90d396ab106f91bb9c` restored and built with zero
+warnings/errors. Semantic preflight normalized trailing whitespace and proved
+the two retained scripts had the exact approved 13-token command, correct
+worktree, task-local environment, and no extras. DomainService passed 143/143;
+Server passed 2,626 with 25 skipped.
+
+### 1. Coordinates
+
+| Coordinate | Version/reference | Revision |
+| --- | --- | --- |
+| Selected EventStore source/package | `v3.106.0` / `3.106.0` | `76051c70cbf868c40edc00ca0344fa5bd8879b69` |
+| Selected Builds | `fix/p1r-3106-candidate` | `ad52f350a2f0bc47849179ae17b4594dafff5363` |
+| Rollback EventStore source/package | `v3.70.1` / `3.70.1` | `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` |
+| Rollback Builds | `fix/p1r-3106-rollback-candidate` | `7af20f8bafbfe561df6f7705913a0800603090b5` |
+| Superseded comparison | `v3.88.0` | `4843b492dff7c16a4bc74db67509263f969c78c6` |
+
+### 2. Source/package divergence
+
+Selected source and package bind to the same tag/revision, so the selected
+tuple has no divergence. Untagged EventStore HEAD `ffb6901...` is unselected;
+its post-tag production diff spans 18 `src/` paths, +206/-52 lines.
+
+### 3. Remote package consumption
+
+The official-only empty-cache consumer restored all 14 release-manifest IDs at
+exact version `3.106.0`. Manifest SHA-256 is
+`6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae`;
+resolved inventory SHA-256 is
+`aa40e4323acb0539731fcf08fbc00277751e0c6a5c9148e5e5475f821df8f7e2`.
+
+### 4. Seven APIs
+
+Six APIs are byte-identical across rollback, superseded, selected package, and
+selected source coordinates. `QueryCursorScope.cs` differs only by the
+compatible additive 21-line `AddProjectionWatermark(long?)`; zero lines are
+removed. Table SHA-256 is
+`13c74c84aac570fee95edfd6ead73bcea16c22a23b546d6344088b159e49f5c9`.
+
+### 5. EventStore behavior
+
+Selected source and package lanes both passed restore/build and Contracts
+2,023/2,023, Client 801/801, DomainService 156/156, and Server 3,319 passed/25
+skipped. Rollback source and package lanes both passed restore/build and
+Contracts 708/708, Client 673/673, DomainService 143/143, and Server 2,626
+passed/25 skipped. The explicitly approved rollback-test `-m:1` runner spelling
+left the contract unchanged.
+
+### 6. Builds qualification
+
+Selected and rollback Builds each passed static alignment, commitlint,
+restore/build, Module 117/117, Evidence 68/68, catalog, complete audit, and the
+official required-control G-4. Candidate inventory SHA-256 is
+`1a4b4942f3e730bee67f84879635d170d8357a7f81e8cc106a7cdbd5d47c46f0`;
+rollback inventory SHA-256 is
+`bcf78ce8b1c3a0db323064e60f3b998dccec123c73d9102c53a76d094d499be5`.
+
+### 7. Reciprocal rollback
+
+The selected runner accepts `3.106.0` and rejects `3.88.0` and `3.70.1` with
+`HXM016`. The rollback runner accepts `3.70.1` and rejects `3.88.0` and
+`3.106.0` with `HXM016`. Both preserve invalid-profile `HXM009` and deliberate
+artifact-hash mismatch `HXE147`.
+
+### 8. Content-addressed evidence
+
+The finite 57-row migrated ledger contains only unique `PASS` rows and has
+SHA-256
+`0c2000dfd94923f7b1e6eeb2e0078f90f114ce4201aaa1e6f7cf5b3f4d0184a1`.
+The retained completion bundle is
+`qualification-evidence/6-1-p1r-3106-20260921-attempt17`, manifest SHA-256
+`cae83ed1d9dc5fda0c27ca411f51620b0a71ac0ca51bbefde73870de77c72355`.
+It references, without copying, the verified attempt-10, 13, 14, and 15
+manifests and retained packages/evidence.
+
+### 9. Preflight and cleanup
+
+The disk-backed ext4 root passed space, immutable-cleanup, and nested-exit
+preflight. Final cleanup removed the exact attempt root and all registrations;
+both live repositories are clean. Cleanup verification SHA-256 is
+`08f371a2bada3af97839356a7859bb4a133c2fdbbe032406dfaae548e2f91186`.
+
+### 10. Downstream non-closure
+
+Technical qualification does not authorize propagation. Architecture remains
+`3.70.1`; P1R and P0 Stage 1 remain open; DW-35/DW-68, every P0 acceptance and
+publication gate, P2/P3/P4, Story 6.1, readiness, and Epic 7/8 blockers remain
+unchanged.
+
+### 11. Owner acceptance
+
+| Role | Named approver | Decision | UTC date | Evidence |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `pending` | `not-issued—pending` | exact tuple and finite record above |
+| Builds Owner | Jérôme Piquot | `pending` | `not-issued—pending` | exact tuple and retained G-4 evidence above |
+| Solution Architect | Jérôme Piquot | `pending` | `not-issued—pending` | exact tuple; Architecture unchanged |
+| Test Architect | Jérôme Piquot | `pending` | `not-issued—pending` | manifests, ledger, controls, and cleanup proof above |
+
+Technical qualification is **PASS**; acceptance is **0/4 and pending**. No
+owner decision is inferred, and no push, merge, publication, release,
+Architecture update, or planning propagation occurred.
