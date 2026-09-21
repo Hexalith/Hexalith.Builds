@@ -1833,3 +1833,46 @@ the verification transcript has SHA-256
 Every covered file verifies `OK`. All four owner decisions remain pending,
 Architecture remains bound to `3.70.1`, and P1R plus every downstream gate
 remain open.
+
+## Clean serialized attempt 6 — 2026-09-21
+
+Attempt 6 preserved attempt 5's first failure and used the contract's clean
+serialized contention-rerun allowance. The attempt-5 contract was unchanged;
+no production source changed. New detached source, package-source, exact
+dependency, and Builds candidate worktrees used unique caches and no
+overlapping qualification work.
+
+Preservation of attempts 1–5, coordinate capture, candidate
+commitlint/static/catalog/audit, and seven-API comparison passed. The complete
+source lane passed, including the clean rerun of all 2,023 Contracts tests and
+the Client, DomainService, and Server tests. That result supersedes only the
+retained attempt-5 contention result. The complete package-source
+restore/build/four-test lane also passed, including 2,023/2,023 Contracts
+tests.
+
+The next row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `remote-001-restore` | exit `1`; `NU1008` before package resolution | **FAIL** |
+
+The retained consumer project declared exact `3.106.0` versions for thirteen
+library `PackageReference` items and an exact `[3.106.0]` `PackageDownload`
+for the DotnetTool package. Because that project was retained below the
+umbrella repository tree, it inherited root central package management, which
+forbids inline `PackageReference` versions. The first restore therefore failed
+before consuming the remote packages. Per the explicit stop-first instruction,
+the consumer was not corrected or rerun.
+
+The post-failure assertion passed for both EventStore worktrees, all fourteen
+exact dependency worktrees, and candidate Builds revision
+`5730f5a60c0e106131498126cbee323e24db5f4e`. No Builds serialized/G-4,
+reciprocal rollback, owner-acceptance, or propagation row ran.
+
+Attempt 6 retains 57 files. Its 55-entry manifest has SHA-256
+`609416be33bc297f3d6c077d90a4851fdf35151ccff60a032ae45d8ee5411e6a`;
+the verification transcript has SHA-256
+`abb4ff4667349ac667ffa18a61bbc71a33c5542cdc6f014165d976fea61e6bc9`.
+Every covered file verifies `OK`. All four owner decisions remain pending,
+Architecture remains bound to `3.70.1`, and P1R plus downstream gates remain
+open.
