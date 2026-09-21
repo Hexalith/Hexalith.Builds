@@ -2,10 +2,11 @@
 work_package_id: 6.1-P1R
 artifact_kind: qualification-record
 created: 2026-08-01
-status: accepted
+status: pending-acceptance
 candidate_baseline: 3.106.0
 candidate_builds_revision: ad52f350a2f0bc47849179ae17b4594dafff5363
-accepted_predecision_sha256: 477949fc59d0cdd3a00d0c46de7aada46164074675c16c253b2015db369c0bab
+accepted_predecision_sha256: none
+invalidated_predecision_sha256: 477949fc59d0cdd3a00d0c46de7aada46164074675c16c253b2015db369c0bab
 rollback_baseline: 3.70.1
 approved_change_proposal: "Hexalith.Projects working tree based on 3fe3c7eea4de1056f69438d8ed94147872506384:_bmad-output/planning-artifacts/sprint-change-proposal-2026-08-01-p1r-baseline-revalidation.md"
 projects_post_change_revision: pending
@@ -2477,3 +2478,33 @@ readiness, and transitive Epic 7/8 gates remain blocked. P1R does not select
 Durable Task or Confirmation Artifact capability. No push, publication,
 release, source dependency update, or live-checkout mutation was authorized or
 performed.
+
+## Attempt-23 post-acceptance review invalidation — 2026-09-21
+
+Review iteration 2 invalidates the attempt-23 acceptance and bounded
+propagation recorded above. The decisions remain immutable historical
+evidence, but the accepted record is non-qualifying for four independent
+reasons:
+
+1. attempt 21 retains a known-false catalog-introducing revision in a PASS
+   coordinate row, and that row's binding does not retain the function body
+   that produced the value;
+2. the official-remote consumer does not prove evaluated direct-ID equality
+   against all 14 manifest IDs and uses non-singleton `PackageReference`
+   ranges;
+3. attempt 23 does not retain all internal-binding, cache-root, required-row,
+   final-worktree, and dependency-registration checks it claims; and
+4. the short pre-decision document omits mandatory finite-record sections,
+   while each owner row omits its exact coordinate tuple and evidence
+   reference.
+
+Hexalith.Projects restored Architecture to the accepted `3.70.1` baseline and
+reopened P1R, P0 Stage 1, DW-35, and DW-68. Attempts 21--23 and pre-decision
+SHA-256
+`477949fc59d0cdd3a00d0c46de7aada46164074675c16c253b2015db369c0bab`
+remain preserved as invalidated history. Remediation must formally supersede
+the false coordinate row, rerun the remote proof with singleton-exact direct
+declarations and a missing-direct negative, retain complete verification, and
+render the full finite record before four fresh decisions. No push,
+publication, release, dependency update, or live-checkout mutation is
+authorized.
