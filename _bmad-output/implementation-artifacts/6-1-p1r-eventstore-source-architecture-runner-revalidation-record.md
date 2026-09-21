@@ -1876,3 +1876,28 @@ the verification transcript has SHA-256
 Every covered file verifies `OK`. All four owner decisions remain pending,
 Architecture remains bound to `3.70.1`, and P1R plus downstream gates remain
 open.
+
+## External-consumer attempt 7 — 2026-09-21
+
+Attempt 7 preserved attempts 1–6 and corrected only the execution-harness
+location: the remote consumer and NuGet configuration were created under the
+qualification `/tmp` tree, outside repositories and ancestor build
+configuration. Contract, source, and candidate bytes were unchanged.
+
+Coordinate/static/API rows and both complete EventStore source and
+package-source lanes passed. Before remote restore, a new effective-property
+proof row was intended to attest that central package management was not
+inherited. Its generated shell command contained an unmatched quote and
+exited `2` before invoking MSBuild. The exact command and log are retained;
+under the explicit stop-first rule it was not repaired or rerun. Remote
+restore, Builds runner/G-4, rollback, acceptance, and propagation did not run.
+
+The external consumer and NuGet configuration bytes were copied into the
+bundle. Post-failure state passed for both EventStore lanes, all fourteen
+dependency worktrees, and the Builds candidate. Attempt 7 retains 52 files;
+its 50-entry manifest SHA-256 is
+`7c3a978c1b2e9e84e5d0ae2aeeddd2022490112a699986195d2b50d352b2d0d1`
+and its verification SHA-256 is
+`d7fa8ee5ed016ab22345e4f6409fce1bfb9060895b9deb09848417a08e9dd5f0`.
+Every covered file verifies `OK`. Owner decisions remain pending and no
+planning state changed.
