@@ -2417,3 +2417,22 @@ P2, P3, P4, Story 6.1, readiness, and transitive Epic 7/8 gates remain blocked.
 P1R does not select Durable Task or Confirmation Artifact capability. No push,
 publication, release, source dependency update, or live-checkout mutation was
 authorized or performed.
+
+## Post-acceptance review invalidation — 2026-09-21
+
+Independent review established that attempt 17 is not acceptance-grade. Its
+27 reconstructed attempt-10 binding hashes omit the contract-required
+toolchain, dependency revisions, relevant configuration, resolved assets, and
+prerequisite-build binding. Its finite ledger replaces each row's artifact
+association with a bundle-wide checksum list that has no logical IDs or byte
+sizes, and it omits the attempt-15 package build rows that produced the
+Contracts/Client `--no-build` test binaries. The exact pre-decision record
+bytes named by the four decisions were not retained as a file.
+
+The four `accept` decisions and commit `ba7592c...` remain immutable historical
+evidence, but the gate and bounded propagation are invalidated. Architecture
+remains `3.70.1`; P1R, P0 Stage 1, DW-35, and DW-68 remain open. A new run must
+start at every incompletely bound row, produce row-specific structured
+manifests with durable relative paths and prerequisite-build linkage, retain
+the exact pre-decision finite record, and obtain four fresh decisions before
+propagation.
