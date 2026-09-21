@@ -2546,13 +2546,17 @@ registration list after cleanup.
 The complete eleven-section pre-decision record is retained at
 `Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt27/finite-record-pre-decision.md`
 with SHA-256
-`6947d31901d735dd224f7b0bb521863e5c67083f6182cbfbdd41b7a697582564`.
+`cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd`.
+This corrected pre-decision seal expands the selected EventStore, introducing
+and qualifying Builds, rollback EventStore, and rollback Builds revisions to
+their full 40-character values in every pending owner row, with an explicit
+reference to `finite-record-pre-decision.md`. Technical evidence is unchanged.
 The authoritative ledger SHA-256 is
 `e6ae33908f5b1a3df51486f09f90ad21824e7061d54b0677f0c1be9770275451`;
 the exact phase ledger SHA-256 is
 `5aee549e07bcc0299185cf76bb9c878bef55e4ed133deb2a12999ede002f45c7`;
 and the attempt-27 artifact-manifest SHA-256 is
-`f04a6db128b85f6a2742a32e9e6fcd08bab10e7c5d1bb7763274221cc00b8055`.
+`21ef32c0d2e04059666fa6aa4daea3662cbcb1494dac8dfec95c5398bc4585b1`.
 
 Technical qualification is **PASS**. Four fresh owner decisions are
 **pending (0/4)** and must name the exact pre-decision SHA-256 above. Therefore
