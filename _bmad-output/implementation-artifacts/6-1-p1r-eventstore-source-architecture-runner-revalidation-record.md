@@ -1586,3 +1586,141 @@ qualified, no gate closed, no gitlink moved, no submodule initialized, nothing
 pushed or published, and no owner acceptance inferred. The Architecture Spine
 remains bound to EventStore `3.70.1`. §10's four-owner table stands with all four
 rows pending.
+
+## Stopped `3.106.0` supersession attempt — 2026-09-21
+
+This append-only section preserves every earlier candidate and correction. It
+records a stopped, non-qualifying execution of the contract adopted by
+`spec-6-1-p1r.md`; it does not accept a coordinate, change Architecture or
+planning state, initialize a nested submodule, move a gitlink, push, publish,
+or release anything.
+
+### Selected coordinates and Builds alignment
+
+| Field | Exact value | Disposition |
+| --- | --- | --- |
+| `eventstore_source_revision` | `76051c70cbf868c40edc00ca0344fa5bd8879b69` | Selected immutable tag commit |
+| `eventstore_source_describe` | `v3.106.0` | Exact and clean |
+| `eventstore_package_version` / tag | `3.106.0` / `v3.106.0` | Selected published coordinate |
+| `eventstore_package_source_revision` | `76051c70cbf868c40edc00ca0344fa5bd8879b69` | Same commit as source |
+| `source_package_equivalent` | `true` | Source/package diff is empty |
+| `eventstore_release_manifest_sha256` | `6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae` | Same exact 14-ID inventory retained in the attempt-3 bundle |
+| `builds_catalog_introducing_revision` | `dae84d5f96911517eb1e6f97e75eb88e759e6d8a` | Introduces catalog `3.106.0`; child `000abf867abc3a99cfa74d39b6e73af05c78a602` records its audit |
+| `builds_qualifying_revision` | `5730f5a60c0e106131498126cbee323e24db5f4e` | Immutable local candidate; alignment passed, qualification did not complete |
+| `architecture_pre_acceptance_revision` | `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb` | Projects revision before this run; Architecture remains at accepted `3.70.1` |
+| `rollback_eventstore_revision` | `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` | Contract-fixed rollback coordinate |
+| `rollback_builds_revision` | pending | Phase 5 was forbidden after the Phase-3 failure |
+
+The Builds candidate is one commit on local branch
+`fix/p1r-3106-candidate`, based on
+`2fba3497043fe5ffcfe4dc44c51a09eae9b950ab`. Its exact commit message,
+`fix(runner): align EventStore pin to 3.106.0`, passed repository-pinned
+commitlint before and after commit. It aligns 61 active runner, schema, test,
+fixture, serialized-evidence, package-control, and coupled-hash files. It
+preserves the `3.88.0` and `3.70.1` exact-pin negatives and the historical
+`3.102.0` bundle documentation.
+
+Static parity passed all 13 catalog rows at `3.106.0`, the authoritative
+catalog passed, and the complete package audit passed at the same candidate.
+
+### Source comparison and seven APIs
+
+Selected source and package source are the same commit. Current unselected
+EventStore HEAD `ffb6901a5b840af7be030ff246435b4bad00b79c` remains
+`v3.106.0-29-gffb6901a` and changes 18 `src/` paths after the selected tag:
+
+- `src/Hexalith.EventStore.Client/Gateway/EventStoreGatewayClient.cs`
+- `src/Hexalith.EventStore.Client/Gateway/IEventStoreGatewayClient.cs`
+- `src/Hexalith.EventStore.Contracts/Commands/CommandStatusQueryResponse.cs`
+- `src/Hexalith.EventStore.Gateway/Hexalith.EventStore.Gateway.csproj`
+- `src/Hexalith.EventStore.PayloadProtection/Base64UrlCodec.cs`
+- `src/Hexalith.EventStore.PayloadProtection/BoundedJsonDocument.cs`
+- `src/Hexalith.EventStore.PayloadProtection/CoreProtectionResult.cs`
+- `src/Hexalith.EventStore.PayloadProtection/CoreUnprotectionResult.cs`
+- `src/Hexalith.EventStore.PayloadProtection/EnvelopeCodec.cs`
+- `src/Hexalith.EventStore.PayloadProtection/PayloadCryptography.cs`
+- `src/Hexalith.EventStore.PayloadProtection/PayloadProtectionCore.cs`
+- `src/Hexalith.EventStore.PayloadProtection/PayloadProtectionDiagnostics.cs`
+- `src/Hexalith.EventStore.PayloadProtection/PayloadProtectionWireFormat.cs`
+- `src/Hexalith.EventStore.Server/Commands/ArchivedCommandExtensions.cs`
+- `src/Hexalith.EventStore/Authorization/ITrustedCommandExtensionPolicy.cs`
+- `src/Hexalith.EventStore/Controllers/CommandsController.cs`
+- `src/Hexalith.EventStore/Queries/DaprDomainQueryInvoker.cs`
+- `src/Hexalith.EventStore/Validation/ExtensionMetadataSanitizer.cs`
+
+Untagged HEAD remains unselected. The seven-API comparison passed: selected
+source and package blobs are identical; the first six APIs also match rollback
+and `v3.88.0`; `QueryCursorScope` retains only the previously accepted additive
+`AddProjectionWatermark(long?)` difference over rollback. Exact blob IDs are
+retained in `seven-api-blobs.tsv`.
+
+### Exact dependency materialization
+
+The disposable selected EventStore worktree materialized all seven declared
+dependencies as separate detached worktrees at the tag's exact gitlink SHAs:
+
+| Dependency | Exact revision |
+| --- | --- |
+| `Hexalith.AI.Tools` | `5f93d2ec8239494852c97032c819cb1689939e36` |
+| `Hexalith.Builds` | `aee01323579adeda952bf41b2f3e0e61785075c6` |
+| `Hexalith.Commons` | `19d7d4d6b21160557b7449f55a0ad0f55e6d7dc6` |
+| `Hexalith.FrontComposer` | `0122c53afb5ac2993ca2e4d6a6e828600c960687` |
+| `Hexalith.Memories` | `5829db422522b79c0d164df85adde53a996ba114` |
+| `Hexalith.PolymorphicSerializations` | `8aeed1d27c9a050bc4bec6d89051aa00de306a69` |
+| `Hexalith.Tenants` | `c150d5b1af4f911ff3b2a7ab7901d94838be09d7` |
+
+No `git submodule update --init` ran. The post-failure state row verified the
+EventStore worktree and every dependency worktree remained clean at those
+revisions.
+
+### Attempt ledger and first failure
+
+Two earlier bundles preserve harness-only stops. Attempt 1 stopped because its
+static row asserted an incorrect abbreviated `git describe`; attempt 2 stopped
+because its catalog regex lost the literal-dollar escape. Neither advanced
+past static alignment.
+
+Attempt 3 passed coordinate capture, commitlint, static parity, authoritative
+catalog, complete audit, seven-API comparison, the exact Debug source restore,
+and the exact serialized Debug source build. The first test row then stopped
+the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `es-source-003-contracts-test` | exit `5`; zero tests ran | **FAIL** |
+
+The exact mandated command ends in `-m:1`. With the repository's `global.json`
+opting into Microsoft.Testing.Platform under SDK `10.0.401`, `dotnet test`
+does not expose `-m`/`-m:1`; it completed with the platform's zero-tests exit
+instead of executing the assembly. This is the same command-shape blocker
+recorded by the 2026-09-05 candidate, now reproduced at the selected
+`v3.106.0` coordinate. It cannot be relabeled or offset by a fallback because
+the contract requires every named row itself to be `PASS`.
+
+Per the stop-first rule, the remaining source tests, package-source lane,
+14-package remote restore, Builds restore/build/test/package lane, reciprocal
+rollback commits and execution, finite completion record, and owner acceptance
+did not start.
+
+### Durable evidence and owner state
+
+| Bundle | Manifest entries | Manifest SHA-256 | Verification SHA-256 |
+| --- | ---: | --- | --- |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt1/` | 10 | `f34a5da060e6448befa626c251156ad7c31a73d39fe7af1706246e0d606f0474` | `90cce12c8e59a601a6f8b210d1558b71b6ee87f9dc7645f549d659989426555f` |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt2/` | 10 | `d7c040f908364356fa72e8ca471c6f73ce4f536a58db45f0fbfff8b68cc5c8c7` | `90cce12c8e59a601a6f8b210d1558b71b6ee87f9dc7645f549d659989426555f` |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt3/` | 25 | `ece7ece87821f651a6d7ee96abad114aea1132d0ef531284092c3e37f9765495` | `8161bdefd516ae29b238ea11320069d78d1afa16eb8d95f50d314418a843719e` |
+
+Each `sha256sum -c artifact-manifest.sha256` verification reports every entry
+`OK`. The manifests exclude themselves and their verification transcript; the
+table above attests both exact hashes.
+
+| Role | Named approver | Decision | UTC date | Required next action |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | pending | pending | Approve a corrected contract command only through explicit contract renegotiation; then require a fresh run from coordinate capture |
+| Builds Owner | Jérôme Piquot | pending | pending | Retain candidate `5730f5a60c0e106131498126cbee323e24db5f4e`; do not call it qualified |
+| Solution Architect | Jérôme Piquot | pending | pending | Keep Architecture at `3.70.1` until all phases pass |
+| Test Architect | Jérôme Piquot | pending | pending | Reject acceptance while the required test row is `FAIL` and later phases are absent |
+
+P1R, P0, P2, P3, P4, Story 6.1, readiness, and the transitive Epic 7/8 gates
+retain their existing blockers. No acceptance is inferred from the named-role
+authorization in the spec because the finite record is incomplete.
