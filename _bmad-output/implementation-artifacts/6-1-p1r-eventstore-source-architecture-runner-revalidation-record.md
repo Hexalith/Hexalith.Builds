@@ -2151,3 +2151,59 @@ All four owner decisions remain explicitly pending. Architecture remains
 bound to EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and every
 downstream gate remain unchanged and open. No push, merge, publication,
 release, or live-checkout mutation occurred.
+
+## Disk-backed rollback attempt 13 — 2026-09-21
+
+Attempt 13 preserved rollback head
+`7af20f8bafbfe561df6f7705913a0800603090b5` and corrected only the two
+attempt-12 harness proofs. It used disk-backed qualification root
+`/home/administrator/.local/state/hexalith-qualification/p1r-3106-attempt13-20260921`
+on `/dev/sdd` (`ext4`), registered cleanup before materialization, used the
+ordinary shared NuGet cache and version-keyed Playwright store, and proved the
+ledger wrapper propagated a synthetic nested exit `7` before the ledger began.
+
+Adoption dynamically captured root revision
+`6e6b03969d9d526bc1c913e25e67f14d1a9c0126`; working and root-HEAD frozen
+bytes were identical at SHA-256
+`d933172da048d272daf9154740f606567ac8858807815931e06a7306259e6a92`.
+Attempts 10–12 fully reverified and all 27 immutable passing phase 1–4 rows
+from attempt 10 were adopted.
+
+Rollback coordinate/static proof verified the three-commit chain, tree
+identities, audit provenance ancestry, clean state, all `3.70.1` bindings,
+`3.88.0` and selected `3.106.0` reciprocal `HXM016` controls, `HXM009`, and
+the deliberate evidence-hash mismatch. Commit 1's immutable name-status diff
+was retained as 63 rows without a magic-count assertion; its SHA-256 is
+`f593f4b77d94b3fa4a482e1263b1c196a4551f6175c39804cce9b4edce9ce193`.
+
+All three rollback messages passed commitlint. Builds restore, serialized
+Release build, Module tests (117/117), Evidence tests (68/68), authoritative
+catalog validation (50 identities, three shared versions), and full audit
+validation (299 packages, 145 families, one source) passed.
+
+The next required row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `rollback-bld-009-g4` | exit `1`; the harness had pre-created the requested retained-package directory, while the authoritative G-4 script requires each unique destination not to exist | **FAIL** |
+
+The retained first-result log SHA-256 is
+`884ab53627852da0a9b103163c3a6f49a2cab89b61801831b39678ae7143238f`.
+The directory was empty and no package was produced. The wrapper propagated
+the nonzero exit; no EventStore `v3.70.1`, finite-record, or owner-acceptance
+row ran.
+
+Attempt 13 retains 59 files. Its 57-entry manifest has SHA-256
+`813befc4102f47cf7a3f207a42f0773bf16035d39aa2992992832f1797963b64`;
+the verification transcript has SHA-256
+`3e7ea9319da68e77556fa04c7c5ef0c142276e3a3c7ee25689afa93c520f648f`.
+Every covered file verifies `OK`. The ledger contains 12 rows: 11 `PASS`, one
+`FAIL`, and no `INCONCLUSIVE` result. Post-failure state passed, and cleanup
+removed the qualification root and worktree registration. Cleanup diagnostics
+for an absent optional PolymorphicSerializations repository related only to
+never-created EventStore dependency worktrees and left no disposable state.
+
+All four owner decisions remain explicitly pending. Architecture remains
+bound to EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and every
+downstream gate remain unchanged and open. No push, merge, publication,
+release, or live-checkout mutation occurred.
