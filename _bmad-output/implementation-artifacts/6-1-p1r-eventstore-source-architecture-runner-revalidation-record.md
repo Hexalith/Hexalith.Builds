@@ -1794,3 +1794,42 @@ EventStore `3.70.1`; P1R and every downstream gate remain open with their
 prior blockers. A qualifying continuation requires new authority to change
 the source-mode graph/contract or a new immutable EventStore package release;
 this stopped run cannot be accepted as the finite record.
+
+## Renegotiated `3.106.0` attempt 5 — 2026-09-21
+
+The human next authorized a contract-only change adding `--no-build` to all
+ten `dotnet test` rows while retaining `--no-restore` and
+`--max-parallel-test-modules 1`. All three `dotnet build -m:1` rows,
+production source, the approved frozen intent, and attempts 1–4 remained
+unchanged. Attempt 5 used new detached worktrees and caches and restarted from
+coordinate capture.
+
+Preservation of all four earlier manifests, selected-coordinate capture,
+candidate commitlint/static/catalog/audit, the seven-API comparison, source
+restore, and the serialized source build passed. The first test row stopped
+the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `es-source-003-contracts-test` | exit `2`; 2,022 passed and 1 failed of 2,023 | **FAIL** |
+
+The exact renegotiated command used `--no-build --no-restore
+-p:UseHexalithProjectReferences=true --max-parallel-test-modules 1`. The
+failing test was
+`ContainerPublishingGovernanceTests.ReleaseSourcePreflightFailsClosedAndEmitsSelectedSuccessfulPushProof(bypassValidation: "true", expectedSourceWorkflow: "commitlint.yml")`.
+Its source-preflight process returned exit `126` instead of the required `0`.
+The retained log has SHA-256
+`4f692254c9b8f9923daed3fdd482508990612e82f47da17f03451b6a5c6ff4c8`.
+
+The post-failure state assertion passed for EventStore and all seven exact
+dependency worktrees. Per the explicit stop-first instruction, no later
+source, package-source, remote-restore, Builds runner/G-4, reciprocal rollback,
+or acceptance row ran.
+
+Attempt 5 retains 30 files. Its 28-entry manifest has SHA-256
+`091678120a13c0ecb8e19ad1c7e4ab28e00886978aa161c862db5cdd52c7831e`;
+the verification transcript has SHA-256
+`d41f9a94e7e6bc41947a8b53d78c8328ada443844aabaf2aa51d21ea440cb348`.
+Every covered file verifies `OK`. All four owner decisions remain pending,
+Architecture remains bound to `3.70.1`, and P1R plus every downstream gate
+remain open.
