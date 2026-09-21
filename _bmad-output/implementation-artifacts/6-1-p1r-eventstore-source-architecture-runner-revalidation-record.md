@@ -2,9 +2,10 @@
 work_package_id: 6.1-P1R
 artifact_kind: qualification-record
 created: 2026-08-01
-status: pending-acceptance
-candidate_baseline: 3.88.0
-candidate_builds_revision: 4351d7cba7545a96661ca2ee2ca2629df6d0a118
+status: accepted
+candidate_baseline: 3.106.0
+candidate_builds_revision: ad52f350a2f0bc47849179ae17b4594dafff5363
+accepted_predecision_sha256: 477949fc59d0cdd3a00d0c46de7aada46164074675c16c253b2015db369c0bab
 rollback_baseline: 3.70.1
 approved_change_proposal: "Hexalith.Projects working tree based on 3fe3c7eea4de1056f69438d8ed94147872506384:_bmad-output/planning-artifacts/sprint-change-proposal-2026-08-01-p1r-baseline-revalidation.md"
 projects_post_change_revision: pending
@@ -2436,3 +2437,43 @@ start at every incompletely bound row, produce row-specific structured
 manifests with durable relative paths and prerequisite-build linkage, retain
 the exact pre-decision finite record, and obtain four fresh decisions before
 propagation.
+
+## Remediated four-owner acceptance and bounded propagation — attempt 23 — 2026-09-21
+
+Attempt 21 reran the complete phase 1–5 matrix without migrating technical
+results. All 58 rows are unique `PASS` results with complete bindings,
+row-specific structured artifact manifests, actual prerequisite-build
+bindings for every `--no-build` row, reciprocal controls, final-state proof,
+and cleanup. Attempt 23 preserves that evidence in place, corrects the
+nonexistent catalog-introducing SHA recorded by attempt 22, and proves all six
+full record revisions as commit objects in their owning repositories.
+
+The accepted pre-decision record is retained at
+`Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt23/finite-record-pre-decision.md`
+with SHA-256
+`477949fc59d0cdd3a00d0c46de7aada46164074675c16c253b2015db369c0bab`.
+The catalog-introducing revision is
+`dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; it changes the catalog from
+`3.104.0` to `3.106.0` and is an ancestor of qualifying Builds revision
+`ad52f350a2f0bc47849179ae17b4594dafff5363` and rollback Builds revision
+`7af20f8bafbfe561df6f7705913a0800603090b5`.
+
+At `2026-09-21T13:03:11Z`, Jérôme Piquot explicitly issued `accept` against
+those exact pre-decision bytes in all four required roles.
+
+| Role | Named approver | Decision | UTC date | Accepted scope |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `accept` | `2026-09-21T13:03:11Z` | EventStore source/package `3.106.0` at `76051c70...`, 14-package restore, behavior/API evidence, and EventStore rollback `f13f9925...` |
+| Builds Owner | Jérôme Piquot | `accept` | `2026-09-21T13:03:11Z` | Catalog introduction `dae84d5f...`, qualifying Builds `ad52f350...`, complete runner/G-4 evidence, and rollback Builds `7af20f8...` |
+| Solution Architect | Jérôme Piquot | `accept` | `2026-09-21T13:03:11Z` | Exact multi-coordinate binding, executable rollback, Architecture update, and G-1 non-selection wording |
+| Test Architect | Jérôme Piquot | `accept` | `2026-09-21T13:03:11Z` | Fresh 58-row ledger, complete bindings, structured artifacts, negative controls, remote restore, reciprocal rollback, and cleanup |
+
+Acceptance is **4/4 and satisfied**. The Architecture Spine is rebound to the
+accepted EventStore `3.106.0` source/package and Builds `ad52f350...` runner
+tuple, P1R is `done`, P0 Stage 1 is complete, and DW-35/DW-68 are resolved.
+P0 supported composition, publication, consumer pin, persisted qualification,
+acceptance record, and owner acceptance remain open; P2, P3, P4, Story 6.1,
+readiness, and transitive Epic 7/8 gates remain blocked. P1R does not select
+Durable Task or Confirmation Artifact capability. No push, publication,
+release, source dependency update, or live-checkout mutation was authorized or
+performed.
