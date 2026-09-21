@@ -2207,3 +2207,81 @@ All four owner decisions remain explicitly pending. Architecture remains
 bound to EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and every
 downstream gate remain unchanged and open. No push, merge, publication,
 release, or live-checkout mutation occurred.
+
+## Corrected G-4 and stopped rollback attempt 14 — 2026-09-21
+
+Attempt 14 continued at unchanged rollback Builds revision
+`7af20f8bafbfe561df6f7705913a0800603090b5`. It verified attempts 10–13,
+adopted the 27 immutable passing phase-1–4 rows from attempt 10, and adopted
+the eight same-revision attempt-13 rollback rows through audit. The current
+contract SHA-256 was
+`ccb22f3c19bf98082eb37a17ea217f5193099d0145437a725bc0aff454128586`;
+working frozen bytes remained identical to root revision
+`6e6b03969d9d526bc1c913e25e67f14d1a9c0126` at SHA-256
+`d933172da048d272daf9154740f606567ac8858807815931e06a7306259e6a92`.
+
+The G-4 harness created only the retention parent and proved the unique
+`retained-objects/rollback` leaf was absent immediately before the
+authoritative command. The command created the leaf and passed without
+`-SkipSourceValidation` under unique version
+`0.0.0-p1r3106-attempt14-rollback.1`. Its inventory records the exact clean
+rollback source revision, two CLI packages, two symbol packages, 53
+qualification artifacts, passing source validation, executed required
+controls, and `releaseEligible=true`. All 58 retained files and inventory
+hashes verify. The positive `3.70.1` control passed, while `3.88.0` and
+selected `3.106.0` each failed with `HXM016`; invalid profile retained
+`HXM009`, and the deliberate evidence-hash mismatch retained `HXE147`.
+
+Fresh source and package EventStore worktrees at rollback revision
+`f13f9925fdca53efa2ab8c90d396ab106f91bb9c` were materialized with these
+exact dependency worktrees, without nested-submodule initialization:
+
+| Dependency | Revision |
+| --- | --- |
+| Hexalith.AI.Tools | `991e8ea1b39bfb8170aea9a6857c25c7c69176c1` |
+| Hexalith.Builds | `cfafcbf1e904138b435b63ba4fd79f86b8dda069` |
+| Hexalith.Commons | `05f0d9f4f6360bef9c33f14396b0c0c74cbd6864` |
+| Hexalith.FrontComposer | `0e6abe9ec33e11e8725ea764d4596169a4354269` |
+| Hexalith.Memories | `ce66d4cad9e36eaddba0708e12551863d2b57a9d` |
+| Hexalith.PolymorphicSerializations | `30312d8cc7b15adf477bf5fbab3e852393086ec0` |
+| Hexalith.Tenants | `211b4d4ae59d85cdbeb0cddf99bf3ad86b361f30` |
+
+The seven-API comparison passed. Six APIs have identical blobs at rollback,
+superseded `v3.88.0`, selected package, and selected source coordinates. The
+sole difference is the already-classified compatible additive
+`QueryCursorScope.AddProjectionWatermark(long?)` method: the selected revision
+adds 21 lines and removes zero.
+
+Rollback source restore passed using the normal shared package cache. The
+serialized Debug solution build passed with zero warnings and zero errors.
+The next row stopped the run before test discovery:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `rollback-es-source-003-contracts-test` | exit `1`; EventStore `v3.70.1` dispatches through historical VSTest/MSBuild, which rejects contract-required `--max-parallel-test-modules 1` as an unknown switch (`MSB1001`) | **FAIL** |
+
+The retained first-result log SHA-256 is
+`f7198ffb7f141986a5dc88396726e6f2753316945baeef6ffc9b4a276be7b61b`.
+Per stop-first, no Client, DomainService, Server, package-mode, finite-record,
+acceptance, or propagation row started. Post-failure capture retained 54
+resolved asset hashes and 67 Contracts dependency content-hash rows; every
+owned worktree and both live repositories were clean.
+
+Attempt 14 retains 131 files. Its 129-entry manifest has SHA-256
+`d4bcb684542a1594422bb5a7b99742da8bb007b843c3418761b6b7b91d72ff04`;
+the verification transcript has SHA-256
+`85624af19000821939216a1844a86191a7ebce6b2dfbf5a83b3f5c26a0e2f63d`.
+Every covered file verifies `OK`. The ledger contains 12 rows: 11 `PASS`, one
+`FAIL`, and no `INCONCLUSIVE` result. Final cleanup removed the qualification
+root and every attempt worktree registration.
+
+| Role | Named approver | Decision | UTC date | Evidence |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `pending` | `pending` | attempt 14 stopped before rollback completion |
+| Builds Owner | Jérôme Piquot | `pending` | `pending` | attempt 14 stopped before rollback completion |
+| Solution Architect | Jérôme Piquot | `pending` | `pending` | attempt 14 stopped before rollback completion |
+| Test Architect | Jérôme Piquot | `pending` | `pending` | attempt 14 stopped before rollback completion |
+
+Architecture remains bound to EventStore `3.70.1`; sprint status, DW-35,
+DW-68, P1R, and every downstream gate remain unchanged and open. No push,
+merge, publication, release, or live-checkout mutation occurred.
