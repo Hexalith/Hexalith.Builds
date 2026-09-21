@@ -1741,3 +1741,56 @@ addition. This append supersedes only the three manifest rows above:
 All 16 retained `.log` files are now visible to `git status
 --untracked-files=all`; each manifest verification reports every covered entry
 `OK`. No command was rerun and no disposition changed.
+
+## Renegotiated `3.106.0` attempt 4 — 2026-09-21
+
+The human explicitly renegotiated only the qualification contract's
+`dotnet test` serialization option from `-m:1` to
+`--max-parallel-test-modules 1`. Every `dotnet build -m:1` row and the
+approved intent, boundaries, decisions, and I/O matrix remained unchanged.
+Attempts 1–3 and their manifests were verified before attempt 4 restarted from
+coordinate capture.
+
+Attempt 4 used fresh detached worktrees and fresh caches. It reproduced the
+selected `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`
+coordinate, exact 14-package release manifest, Builds candidate
+`5730f5a60c0e106131498126cbee323e24db5f4e`, seven API result, and all seven
+dependency revisions recorded above. Coordinate capture, prior-manifest
+verification, candidate commitlint/static/catalog/audit, the seven-API
+comparison, source restore, source build, and the renegotiated Contracts test
+all passed.
+
+The next required row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `es-source-004-client-test` | exit `1`; compiler `CS1704` | **FAIL** |
+
+The compiler found two assemblies named `Hexalith.Commons.UniqueIds`: remote
+package `2.30.0` from the restored assets and version `1.0.0` from the exact
+dependency project. Diagnostic evaluation after the retained failure showed
+`HexalithCommonsFromSource=true` and the exact Commons project path during
+build, while
+`src/Hexalith.EventStore.Contracts/obj/project.assets.json` retained
+`Hexalith.Commons.UniqueIds/2.30.0` as a package and contained no project
+reference. This is a distinct source-mode restore/build graph inconsistency;
+the renegotiated test option itself was accepted by the runner and the
+Contracts test executed successfully.
+
+The post-failure state assertion passed: the EventStore worktree and all seven
+exact dependency worktrees remained clean at their recorded revisions. Per
+the stop-first rule, no package-source, remote-package, Builds serialized/G-4,
+reciprocal rollback, or acceptance phase ran.
+
+Attempt 4 retains 32 files. Its 30-entry
+`artifact-manifest.sha256` has SHA-256
+`a1b6750f82e0e6f767898d19160c0d1a3339c09d6257cfcba83e3a252721563a`;
+`manifest-verification.txt` has SHA-256
+`18028f3306becee10dcdec767d52d6f34b8de8a585192050e3ff310cf6465eac`.
+Every manifest entry verifies `OK`.
+
+All four owner decisions remain `pending`. Architecture remains bound to
+EventStore `3.70.1`; P1R and every downstream gate remain open with their
+prior blockers. A qualifying continuation requires new authority to change
+the source-mode graph/contract or a new immutable EventStore package release;
+this stopped run cannot be accepted as the finite record.
