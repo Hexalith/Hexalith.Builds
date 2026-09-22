@@ -2716,3 +2716,20 @@ qualification, acceptance record, owner acceptance, P2/P3/P4, Story 6.1,
 readiness, and transitive Epic 7/8 blockers remain open or blocked. No push,
 merge, publication, release, dependency update, or EventStore production
 change was authorized or performed.
+
+### Attempt 29 manifest reseal correction — 2026-09-22
+
+The first acceptance commit recorded artifact-manifest SHA-256
+`e38d8329880ff6d51375264f8026ad4a986513a824c283dd530f0fccde79e33a`
+before the final in-bundle README bytes were included. That intermediate hash
+is non-authoritative. The README contains no self-referential manifest hash;
+its SHA-256 is
+`42e2061d046faeb31f958c29bedd40ac3d73758ab0ffd2d8cee899eb3a9d2de9`.
+The final 665-entry manifest SHA-256 is
+`9e1ee20f2681b4b2d1a5fe3ee64a23bc95f32ce2ced877743f3648fe04e483e1`,
+and regenerated `manifest-verification.txt` reports all 665 entries `OK`.
+The decision addendum SHA-256
+`57d3c185c82ac483447136fcc66e6131d2974d97fd58ce95710e161185165a8b`
+and accepted pre-decision SHA-256
+`b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e`
+are unchanged. The four decisions and bounded propagation are unaffected.
