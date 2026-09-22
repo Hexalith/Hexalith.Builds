@@ -2733,3 +2733,49 @@ The decision addendum SHA-256
 and accepted pre-decision SHA-256
 `b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e`
 are unchanged. The four decisions and bounded propagation are unaffected.
+
+## Attempt 29 post-acceptance review invalidation — review iteration 4 — 2026-09-22
+
+Review iteration 4 invalidates the Attempt 29 qualification and bounded
+propagation recorded above. The sealed bundle, exact pre-decision SHA-256,
+decision addendum, final manifest, and four owner decisions remain immutable
+historical evidence, but the record is non-qualifying:
+
+1. the Architecture-prestate row proves only that supplied revision
+   `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb` is a commit object and does not
+   read that commit's Architecture Spine to establish the `3.70.1` binding;
+2. selected tag/version equality does not establish that every published
+   EventStore package was built from revision
+   `76051c70cbf868c40edc00ca0344fa5bd8879b69`, and the positive remote-assets
+   graph is not compared with all 14 release-manifest identities and versions;
+3. strict ledger-to-binding provenance covers the 60 ordered phase rows but
+   not the three additional authoritative meta rows;
+4. final-summary booleans for gitlink-derived dependencies, the Builds
+   Playwright identity, clean final worktrees, and related claims are written
+   as literal successes instead of being derived from retained passing proofs;
+5. unchanged live-prestate checks do not content-address dirty tracked and
+   untracked bytes across all eight owning repositories;
+6. commitlint uses an unbound mutable live `node_modules` toolchain; and
+7. the reciprocal-control result prints version mappings without parsing the
+   retained fixtures and inputs that establish them.
+
+Hexalith.Projects restored the Architecture binding to accepted EventStore
+`3.70.1` and reopened P1R, P0 Stage 1, DW-35, and DW-68. Attempts 28–29,
+historical decision timestamp `2026-09-22T05:47:37Z`, pre-decision SHA-256
+`b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e`,
+decision-addendum SHA-256
+`57d3c185c82ac483447136fcc66e6131d2974d97fd58ce95710e161185165a8b`,
+and final 665-entry manifest SHA-256
+`9e1ee20f2681b4b2d1a5fe3ee64a23bc95f32ce2ced877743f3648fe04e483e1`
+remain preserved.
+
+A superseding record must retain semantic Architecture and published-package
+source provenance; positive 14-package resolved-assets equality; strict
+binding checks for every authoritative row; proof-derived summary claims;
+content-addressed live prestates for all owning repositories; pinned commitlint
+tool bytes and dependencies; parsed reciprocal fixture mappings; and a
+machine-checkable post-acceptance boundary guard. It then requires four fresh
+decisions before propagation. The selected `3.106.0` coordinate, exact
+materialization method, rollback exception, local-only/no-push boundary, and
+all downstream blockers remain unchanged. No push, publication, release,
+dependency update, or EventStore production change is authorized.
