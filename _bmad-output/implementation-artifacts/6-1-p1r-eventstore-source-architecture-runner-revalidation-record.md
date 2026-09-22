@@ -2685,3 +2685,34 @@ inferred. Therefore Architecture remains on accepted EventStore `3.70.1`;
 P1R, P0 Stage 1, DW-35, and DW-68 remain open; and all downstream gates retain
 their blockers. No acceptance inference, propagation, push, publication,
 release, dependency update, or live-checkout mutation occurred.
+
+## Attempt 29 four-owner acceptance and bounded propagation — 2026-09-22
+
+At `2026-09-22T05:47:37Z`, Jérôme Piquot explicitly accepted exact Attempt
+29 pre-decision SHA-256
+`b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e`
+as EventStore Owner, Builds Owner, Solution Architect, and Test Architect. The
+accepted `finite-record-pre-decision.md` bytes remain unchanged. The
+manifest-covered decision and bounded-propagation addendum is
+`Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt29/finite-record-decisions.md`, SHA-256
+`57d3c185c82ac483447136fcc66e6131d2974d97fd58ce95710e161185165a8b`.
+
+| Role | Approver | Decision | UTC date | Decision scope, exact accepted coordinates, and record |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `accept` | `2026-09-22T05:47:37Z` | Scope: source/package identities, 14-package release evidence, affected behavior, source/package equivalence, seven APIs, and rollback EventStore. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted `finite-record-pre-decision.md` SHA-256 `b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e` |
+| Builds Owner | Jérôme Piquot | `accept` | `2026-09-22T05:47:37Z` | Scope: full catalog/audit alignment, runner/schema/fixture/evidence parity, exact qualifying revision, G-4 controls, and rollback Builds. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted `finite-record-pre-decision.md` SHA-256 `b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e` |
+| Solution Architect | Jérôme Piquot | `accept` | `2026-09-22T05:47:37Z` | Scope: exact multi-coordinate binding, executable rollback, Architecture Spine update, and G-1 non-selection wording. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted `finite-record-pre-decision.md` SHA-256 `b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e` |
+| Test Architect | Jérôme Piquot | `accept` | `2026-09-22T05:47:37Z` | Scope: clean execution, retained evidence, complete bindings, structured artifacts, negative controls, exact remote restore, reciprocal rollback, and cleanup. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted `finite-record-pre-decision.md` SHA-256 `b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e` |
+
+Acceptance is **4/4 and satisfied** against one exact record. The final
+Attempt 29 artifact-manifest SHA-256 after decision sealing is
+`e38d8329880ff6d51375264f8026ad4a986513a824c283dd530f0fccde79e33a`
+for 665 entries.
+
+Bounded propagation rebinds the Architecture Spine with G-1 explicitly
+unselected, marks P1R and only P0 Stage 1 done, and resolves DW-35/DW-68. P0
+stages 2–7, supported composition, publication, consumer pin, persisted
+qualification, acceptance record, owner acceptance, P2/P3/P4, Story 6.1,
+readiness, and transitive Epic 7/8 blockers remain open or blocked. No push,
+merge, publication, release, dependency update, or EventStore production
+change was authorized or performed.
