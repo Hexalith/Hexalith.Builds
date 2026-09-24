@@ -389,7 +389,7 @@ jobs:
           retention-days: 7
       - name: Set up arm64 emulation
         if: ${{ inputs.publish-containers }}
-        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
       - name: Prepare release container publisher
@@ -805,7 +805,7 @@ jobs:
           if-no-files-found: ignore
       - name: Set up arm64 emulation
         if: ${{ steps.publish-gate.outputs.publish-enabled == 'true' && inputs.publish-containers }}
-        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
       - name: Prepare release container publisher
