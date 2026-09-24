@@ -6,7 +6,6 @@
 namespace Hexalith.Builds.Tooling.Runtime;
 
 using System.Security.Cryptography;
-using System.Text;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
@@ -57,6 +56,9 @@ public static class ModuleCommandExecutionService
     /// <param name="format">The diagnostic output format.</param>
     /// <param name="writer">The destination writer.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="descriptorChildEntryAssemblyPath">The optional private descriptor child entry assembly.</param>
+    /// <param name="runId">The optional run identity to tear down.</param>
+    /// <param name="compositionOptions">The optional runner-owned composition settings.</param>
     /// <returns>The stable process exit code.</returns>
     public static async Task<int> ExecuteAsync(
         ModuleInvocationCommand command,
@@ -66,12 +68,18 @@ public static class ModuleCommandExecutionService
         string? evidencePath,
         ToolOutputFormat format,
         TextWriter writer,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? descriptorChildEntryAssemblyPath = null,
+        string? runId = null,
+        CompositionEngineOptions? compositionOptions = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         ArgumentNullException.ThrowIfNull(writer);
 
         DateTimeOffset startedUtc = DateTimeOffset.UtcNow;
+        CompositionEngine? engine = null;
+        CompositionRunSession? session = null;
+        bool sessionHandedOff = false;
 
         try
         {
@@ -122,8 +130,96 @@ public static class ModuleCommandExecutionService
                     cancellationToken).ConfigureAwait(false);
             }
 
+            bool isExecutable = manifest.Modules.Count > 0
+                && manifest.Modules.All(module => module.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                && (manifest.Ui?.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ?? true);
+
+            if (command == ModuleInvocationCommand.Down && isExecutable && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath))
+            {
+                engine = new CompositionEngine(compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath));
+                string manifestHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false)));
+                IReadOnlyList<CompositionRunState> matches = await engine.StateStore.FindByManifestHashAsync(manifestHash, cancellationToken).ConfigureAwait(false);
+                if ((runId is not null && !CompositionRunPlanFactory.IsRunId(runId))
+                    || (runId is null && matches.Count > 1))
+                {
+                    ToolDiagnostic ambiguous = new(
+                        "HXR024",
+                        ToolPhase.Usage,
+                        ToolFailureCategory.Usage,
+                        "A matching run identity is required for this manifest.",
+                        "runId",
+                        "Supply --run-id from the public run result.");
+                    return await WriteResultAsync(
+                        "failed",
+                        ToolOutcome.Passed().Fail(ambiguous.Phase, ambiguous.Category, ambiguous.RuleId, ToolExitCode.UsageOrManifest),
+                        [ambiguous],
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                CompositionRunState? target = runId is null
+                    ? matches.SingleOrDefault()
+                    : matches.FirstOrDefault(state => string.Equals(state.RunId, runId, StringComparison.Ordinal));
+                CompositionDownResult down = target is null
+                    ? new CompositionDownResult(
+                        new ToolCommandResult(
+                            "completed",
+                            ToolOutcome.Passed(),
+                            [new ToolDiagnostic("HXI001", ToolPhase.Cleanup, ToolFailureCategory.None, "Runner-owned invocation cleanup completed.", "down")]),
+                        new CompositionRunResources([], []))
+                    : await engine.DownAsync(target.RunId, cancellationToken).ConfigureAwait(false);
+                return await WriteResultAsync(
+                    down.Result.Status,
+                    down.Result.Outcome,
+                    down.Result.Diagnostics,
+                    format,
+                    writer,
+                    command,
+                    manifestPath,
+                    manifest,
+                    profile,
+                    filter,
+                    evidencePath,
+                    startedUtc,
+                    cancellationToken,
+                    target?.RunId ?? runId,
+                    runId).ConfigureAwait(false);
+            }
+
             if (command == ModuleInvocationCommand.Down)
             {
+                if (runId is not null)
+                {
+                    ToolDiagnostic unsupportedRunId = new(
+                        "HXR024",
+                        ToolPhase.Usage,
+                        ToolFailureCategory.Usage,
+                        "A run identity requires an executable manifest.",
+                        "runId");
+                    return await WriteResultAsync(
+                        "failed",
+                        ToolOutcome.Passed().Fail(ToolPhase.Usage, ToolFailureCategory.Usage, unsupportedRunId.RuleId, ToolExitCode.UsageOrManifest),
+                        [unsupportedRunId],
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
                 await ModuleInvocationStateStore.DownAsync(manifestPath, cancellationToken).ConfigureAwait(false);
                 ToolDiagnostic cleanupDiagnostic = new(
                     "HXI001",
@@ -170,24 +266,171 @@ public static class ModuleCommandExecutionService
                     cancellationToken).ConfigureAwait(false);
             }
 
-            ModuleRuntimePlan runtimePlan = ModuleRuntimePlan.Create(manifest, profile);
-            string? filterHash = string.IsNullOrWhiteSpace(filter)
-                ? null
-                : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(filter)));
-            _ = await ModuleInvocationStateStore.CreateAsync(
-                command,
-                manifestPath,
-                profile,
-                filterHash,
-                runtimePlan,
-                cancellationToken).ConfigureAwait(false);
+            if (isExecutable && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath))
+            {
+                ExecutableDescriptorLoadResult descriptorResult = await ExecutableDescriptorLoader.LoadAsync(
+                    manifest,
+                    manifestPath,
+                    descriptorChildEntryAssemblyPath,
+                    cancellationToken).ConfigureAwait(false);
+                if (!descriptorResult.IsValid)
+                {
+                    ToolDiagnostic descriptorDiagnostic = descriptorResult.Diagnostics[0];
+                    bool unavailable = descriptorDiagnostic.Category == ToolFailureCategory.PrerequisiteUnavailable;
+                    return await WriteResultAsync(
+                        unavailable ? "unavailable" : "failed",
+                        ToolOutcome.Passed().Fail(
+                            descriptorDiagnostic.Phase,
+                            descriptorDiagnostic.Category,
+                            descriptorDiagnostic.RuleId,
+                            unavailable ? ToolExitCode.PrerequisiteUnavailable : ToolExitCode.UsageOrManifest),
+                        descriptorResult.Diagnostics,
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                PersistedProfileDefinition? persistedProfile = command == ModuleInvocationCommand.Test
+                    ? PersistedProfileLoader.TryLoad(manifest, manifestPath, profile, filter)
+                    : null;
+                CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
+                if (persistedProfile is not null)
+                {
+                    options = options with { EnableSecondEventStoreInstance = true };
+                }
+
+                engine = new CompositionEngine(command == ModuleInvocationCommand.Run
+                    ? options with { PersistAfterParentExit = true }
+                    : options);
+                CompositionStartResult start = await engine.StartAsync(manifestPath, cancellationToken).ConfigureAwait(false);
+                session = start.Session;
+                if (!start.IsReady)
+                {
+                    CancellationToken resultToken = start.Result.Outcome.ExitCode == ToolExitCode.Cancelled
+                        ? CancellationToken.None
+                        : cancellationToken;
+                    return await WriteResultAsync(
+                        start.Result.Status,
+                        start.Result.Outcome,
+                        start.Result.Diagnostics,
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        resultToken,
+                        start.RunId).ConfigureAwait(false);
+                }
+
+                if (command == ModuleInvocationCommand.Run)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int exitCode = await WriteResultAsync(
+                        start.Result.Status,
+                        start.Result.Outcome,
+                        start.Result.Diagnostics,
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken,
+                        start.RunId).ConfigureAwait(false);
+                    if (exitCode != (int)ToolExitCode.Success)
+                    {
+                        _ = await engine.DownAsync(session!, CancellationToken.None).ConfigureAwait(false);
+                        session = null;
+                    }
+                    else
+                    {
+                        sessionHandedOff = true;
+                    }
+
+                    return exitCode;
+                }
+
+                ToolCommandResult? profileResult = persistedProfile is null
+                    ? null
+                    : await PersistedProfileExecutor.ExecuteAsync(session!, persistedProfile, cancellationToken).ConfigureAwait(false);
+                CompositionDownResult cleanup = await engine.DownAsync(session!, CancellationToken.None).ConfigureAwait(false);
+                session = null;
+                if (profileResult is not null)
+                {
+                    ToolOutcome finalOutcome = profileResult.Outcome.ExitCode == ToolExitCode.Success
+                        ? cleanup.Result.Outcome
+                        : profileResult.Outcome;
+                    ToolCommandResult finalResult = cleanup.Result.Outcome.ExitCode == ToolExitCode.Success
+                        ? profileResult
+                        : new ToolCommandResult(
+                            "failed",
+                            finalOutcome,
+                            [.. profileResult.Diagnostics, .. cleanup.Result.Diagnostics]);
+                    return await WriteResultAsync(
+                        finalResult.Status,
+                        finalResult.Outcome,
+                        finalResult.Diagnostics,
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken,
+                        start.RunId).ConfigureAwait(false);
+                }
+
+                ToolDiagnostic unsupported = new(
+                    "HXR029",
+                    ToolPhase.Prerequisite,
+                    ToolFailureCategory.PrerequisiteUnavailable,
+                    "The requested profile has no qualified public test executor.",
+                    "profile",
+                    "Use run and down for Stage 3 composition; qualify profile execution before claiming a test pass.");
+                IReadOnlyList<ToolDiagnostic> testDiagnostics = cleanup.Result.Outcome.ExitCode == ToolExitCode.Success
+                    ? [unsupported]
+                    : [unsupported, .. cleanup.Result.Diagnostics];
+                return await WriteResultAsync(
+                    "unavailable",
+                    ToolOutcome.Passed().Fail(unsupported.Phase, unsupported.Category, unsupported.RuleId, ToolExitCode.PrerequisiteUnavailable),
+                    testDiagnostics,
+                    format,
+                    writer,
+                    command,
+                    manifestPath,
+                    manifest,
+                    profile,
+                    filter,
+                    evidencePath,
+                    startedUtc,
+                    cancellationToken,
+                    start.RunId).ConfigureAwait(false);
+            }
+
             ToolDiagnostic prerequisiteDiagnostic = new(
                 "HXR003",
                 ToolPhase.Prerequisite,
                 ToolFailureCategory.PrerequisiteUnavailable,
-                "No accepted descriptor ABI is available to compose the requested runtime.",
+                "The approved descriptor ABI cannot yet be composed into a supported runtime.",
                 "runtime",
-                "Provide an owner-approved Builds descriptor ABI before retrying.");
+                "Qualify the runner-owned G-6 topology before retrying.");
             return await WriteResultAsync(
                 "unavailable",
                 ToolOutcome.Passed().Fail(
@@ -209,6 +452,12 @@ public static class ModuleCommandExecutionService
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            if (session is not null && engine is not null)
+            {
+                _ = await engine.DownAsync(session, CancellationToken.None).ConfigureAwait(false);
+                session = null;
+            }
+
             ToolDiagnostic cancellationDiagnostic = new(
                 "HXC130",
                 ToolPhase.Cleanup,
@@ -260,6 +509,20 @@ public static class ModuleCommandExecutionService
                 startedUtc,
                 cancellationToken).ConfigureAwait(false);
         }
+        finally
+        {
+            if (session is not null && !sessionHandedOff && engine is not null)
+            {
+                try
+                {
+                    _ = await engine.DownAsync(session, CancellationToken.None).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (exception is not OutOfMemoryException)
+                {
+                    // The engine retains run state when bounded cleanup cannot be verified, allowing an exact down retry.
+                }
+            }
+        }
     }
 
     private static async Task<int> WriteResultAsync(
@@ -275,9 +538,11 @@ public static class ModuleCommandExecutionService
         string? filter,
         string? evidencePath,
         DateTimeOffset startedUtc,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? runId = null,
+        string? requestedRunId = null)
     {
-        ToolCommandResult result = new(status, outcome, diagnostics);
+        ToolCommandResult result = new(status, outcome, diagnostics) { RunId = runId };
         if (!string.IsNullOrWhiteSpace(evidencePath))
         {
             ModuleRunEvidence evidence = ModuleRunEvidenceFactory.Create(
@@ -289,7 +554,8 @@ public static class ModuleCommandExecutionService
                 result,
                 startedUtc,
                 DateTimeOffset.UtcNow,
-                Guid.NewGuid().ToString("N"));
+                runId ?? Guid.NewGuid().ToString("N"),
+                requestedRunId);
             ModuleRunEvidenceWriteResult evidenceResult = await ModuleRunEvidenceWriter.WriteAsync(
                 evidencePath,
                 manifestPath,

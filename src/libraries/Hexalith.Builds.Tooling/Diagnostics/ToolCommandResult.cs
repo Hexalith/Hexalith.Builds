@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.Diagnostics;
 
+using System.Text.Json.Serialization;
+
 /// <summary>
 /// Represents an execution result safe to render to command output.
 /// </summary>
@@ -14,4 +16,11 @@ namespace Hexalith.Builds.Tooling.Diagnostics;
 public sealed record ToolCommandResult(
     string Status,
     ToolOutcome Outcome,
-    IReadOnlyList<ToolDiagnostic> Diagnostics);
+    IReadOnlyList<ToolDiagnostic> Diagnostics)
+{
+    /// <summary>
+    /// Gets the run identity returned by a public composition command, when allocated.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? RunId { get; init; }
+}

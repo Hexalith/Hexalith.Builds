@@ -1,0 +1,1 @@
+{"status":"failed","outcome":{"exitCode":"PersistedState","phase":"Test","category":"PersistedState","ruleId":"HXP003"},"diagnostics":[{"ruleId":"HXP003","phase":"Test","category":"PersistedState","message":"The persisted profile assertion did not pass.","field":"profile","hint":null,"source":null,"location":null,"row":null}],"runId":"f0609c2fd38dd63798d5fe2f3285cd45"}

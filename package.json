@@ -12,7 +12,8 @@
   },
   "release": {
     "branches": [
-      "main"
+      "main",
+      { "name": "prerelease", "prerelease": true }
     ],
     "plugins": [
       "@semantic-release/commit-analyzer",
@@ -20,7 +21,7 @@
       [
         "@semantic-release/exec",
         {
-          "prepareCmd": "pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version ${nextRelease.version} -PackageDirectory artifacts/g4-tool-packages/${nextRelease.version} -RetainPackageDirectory -RequireControls",
+          "verifyReleaseCmd": "pwsh -NoProfile -File ./Tools/verify-g4-tool-release.ps1 -Version ${nextRelease.version}",
           "publishCmd": "pwsh -NoProfile -File ./Tools/publish-g4-tool-packages.ps1 -Version ${nextRelease.version}"
         }
       ],

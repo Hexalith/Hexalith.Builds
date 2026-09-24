@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>Hexalith.Builds.Module.EventStoreHost</AssemblyName>
+    <RootNamespace>Hexalith.Builds.ModuleHosts.EventStoreHost</RootNamespace>
+    <Description>Builds-owned EventStore composition root over the Hexalith.EventStore.Gateway package for G-4 runs.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Hexalith.EventStore.Gateway" />
+  </ItemGroup>
+</Project>

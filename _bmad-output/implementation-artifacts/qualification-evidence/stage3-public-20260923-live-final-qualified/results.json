@@ -1,0 +1,632 @@
+[
+  {
+    "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+    "end": "2026-09-23T19:36:46.034539+00:00",
+    "environment": {
+      "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+      "HEXALITH_G4_LIVE": "1",
+      "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-01",
+      "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+    },
+    "executionError": null,
+    "exit": 0,
+    "fingerprintError": null,
+    "probes": {
+      "containers": {
+        "command": "docker ps -aq --filter label=hexalith.g4.run",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      },
+      "processes": {
+        "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22305459",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "inaccessible": 0,
+        "inspected": 9,
+        "preexisting": 465,
+        "status": "verified",
+        "vanished": 0
+      },
+      "redaction": {
+        "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-01 for JWT-shaped values",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "scanned": 6,
+        "status": "verified"
+      },
+      "workspaces": {
+        "command": "scan /tmp/hexalith-g4-it-*",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      }
+    },
+    "run": 1,
+    "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "start": "2026-09-23T19:33:06.530334+00:00",
+    "status": "passed",
+    "suiteSummary": [
+      11,
+      0,
+      0,
+      0
+    ],
+    "testLogSha256": "3408b501d5ead9a7225c0f3ad2369d3c83d34d881c60710806c533e24077c875",
+    "unchanged": true
+  },
+  {
+    "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+    "end": "2026-09-23T19:40:33.460863+00:00",
+    "environment": {
+      "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+      "HEXALITH_G4_LIVE": "1",
+      "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-02",
+      "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+    },
+    "executionError": null,
+    "exit": 0,
+    "fingerprintError": null,
+    "probes": {
+      "containers": {
+        "command": "docker ps -aq --filter label=hexalith.g4.run",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      },
+      "processes": {
+        "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22327444",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "inaccessible": 0,
+        "inspected": 11,
+        "preexisting": 465,
+        "status": "verified",
+        "vanished": 0
+      },
+      "redaction": {
+        "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-02 for JWT-shaped values",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "scanned": 6,
+        "status": "verified"
+      },
+      "workspaces": {
+        "command": "scan /tmp/hexalith-g4-it-*",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      }
+    },
+    "run": 2,
+    "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "start": "2026-09-23T19:36:46.369773+00:00",
+    "status": "passed",
+    "suiteSummary": [
+      11,
+      0,
+      0,
+      0
+    ],
+    "testLogSha256": "e3fae6004a30c9b6c9ffc8783bec2759b98bcc6c5cf44759649ea2e8f32e40a6",
+    "unchanged": true
+  },
+  {
+    "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+    "end": "2026-09-23T19:44:26.957347+00:00",
+    "environment": {
+      "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+      "HEXALITH_G4_LIVE": "1",
+      "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-03",
+      "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+    },
+    "executionError": null,
+    "exit": 0,
+    "fingerprintError": null,
+    "probes": {
+      "containers": {
+        "command": "docker ps -aq --filter label=hexalith.g4.run",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      },
+      "processes": {
+        "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22350190",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "inaccessible": 0,
+        "inspected": 5,
+        "preexisting": 470,
+        "status": "verified",
+        "vanished": 0
+      },
+      "redaction": {
+        "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-03 for JWT-shaped values",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "scanned": 6,
+        "status": "verified"
+      },
+      "workspaces": {
+        "command": "scan /tmp/hexalith-g4-it-*",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      }
+    },
+    "run": 3,
+    "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "start": "2026-09-23T19:40:33.813260+00:00",
+    "status": "passed",
+    "suiteSummary": [
+      11,
+      0,
+      0,
+      0
+    ],
+    "testLogSha256": "03a51987ce6fb71ba37205627a139c82a225e50824c1c3b1047ddc82c99cb207",
+    "unchanged": true
+  },
+  {
+    "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+    "end": "2026-09-23T19:48:02.864651+00:00",
+    "environment": {
+      "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+      "HEXALITH_G4_LIVE": "1",
+      "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-04",
+      "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+    },
+    "executionError": null,
+    "exit": 0,
+    "fingerprintError": null,
+    "probes": {
+      "containers": {
+        "command": "docker ps -aq --filter label=hexalith.g4.run",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      },
+      "processes": {
+        "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22373557",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "inaccessible": 0,
+        "inspected": 9,
+        "preexisting": 470,
+        "status": "verified",
+        "vanished": 0
+      },
+      "redaction": {
+        "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-04 for JWT-shaped values",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "scanned": 6,
+        "status": "verified"
+      },
+      "workspaces": {
+        "command": "scan /tmp/hexalith-g4-it-*",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      }
+    },
+    "run": 4,
+    "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "start": "2026-09-23T19:44:27.468876+00:00",
+    "status": "passed",
+    "suiteSummary": [
+      11,
+      0,
+      0,
+      0
+    ],
+    "testLogSha256": "b80eb45c7f8c0c857cc96fa1f989145b1204afa1e12e67cc21e9ec37a941ac29",
+    "unchanged": true
+  },
+  {
+    "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+    "end": "2026-09-23T19:51:46.615171+00:00",
+    "environment": {
+      "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+      "HEXALITH_G4_LIVE": "1",
+      "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-05",
+      "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+    },
+    "executionError": null,
+    "exit": 0,
+    "fingerprintError": null,
+    "probes": {
+      "containers": {
+        "command": "docker ps -aq --filter label=hexalith.g4.run",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      },
+      "processes": {
+        "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22395126",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "inaccessible": 0,
+        "inspected": 0,
+        "preexisting": 455,
+        "status": "verified",
+        "vanished": 0
+      },
+      "redaction": {
+        "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-05 for JWT-shaped values",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "scanned": 6,
+        "status": "verified"
+      },
+      "workspaces": {
+        "command": "scan /tmp/hexalith-g4-it-*",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      }
+    },
+    "run": 5,
+    "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "start": "2026-09-23T19:48:03.152899+00:00",
+    "status": "passed",
+    "suiteSummary": [
+      11,
+      0,
+      0,
+      0
+    ],
+    "testLogSha256": "16711648185fbbef02a1f4d3a953000b5d1ae6ca4a76ce86594d538ebe03cd71",
+    "unchanged": true
+  },
+  {
+    "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+    "end": "2026-09-23T19:55:14.665814+00:00",
+    "environment": {
+      "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+      "HEXALITH_G4_LIVE": "1",
+      "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-06",
+      "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+    },
+    "executionError": null,
+    "exit": 0,
+    "fingerprintError": null,
+    "probes": {
+      "containers": {
+        "command": "docker ps -aq --filter label=hexalith.g4.run",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      },
+      "processes": {
+        "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22417504",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "inaccessible": 0,
+        "inspected": 0,
+        "preexisting": 452,
+        "status": "verified",
+        "vanished": 0
+      },
+      "redaction": {
+        "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-06 for JWT-shaped values",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "scanned": 6,
+        "status": "verified"
+      },
+      "workspaces": {
+        "command": "scan /tmp/hexalith-g4-it-*",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      }
+    },
+    "run": 6,
+    "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "start": "2026-09-23T19:51:46.924967+00:00",
+    "status": "passed",
+    "suiteSummary": [
+      11,
+      0,
+      0,
+      0
+    ],
+    "testLogSha256": "ff950253aa0848e405300c75c24c703bbbe15922627a01de93647457c95d24a4",
+    "unchanged": true
+  },
+  {
+    "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+    "end": "2026-09-23T19:58:35.906736+00:00",
+    "environment": {
+      "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+      "HEXALITH_G4_LIVE": "1",
+      "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-07",
+      "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+    },
+    "executionError": null,
+    "exit": 0,
+    "fingerprintError": null,
+    "probes": {
+      "containers": {
+        "command": "docker ps -aq --filter label=hexalith.g4.run",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      },
+      "processes": {
+        "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22438311",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "inaccessible": 0,
+        "inspected": 0,
+        "preexisting": 446,
+        "status": "verified",
+        "vanished": 0
+      },
+      "redaction": {
+        "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-07 for JWT-shaped values",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "scanned": 6,
+        "status": "verified"
+      },
+      "workspaces": {
+        "command": "scan /tmp/hexalith-g4-it-*",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      }
+    },
+    "run": 7,
+    "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "start": "2026-09-23T19:55:14.987598+00:00",
+    "status": "passed",
+    "suiteSummary": [
+      11,
+      0,
+      0,
+      0
+    ],
+    "testLogSha256": "444d21fe81ba9d04a098197c5fe8dd1914fb7f69e6c9987bc149858fdf2d02d5",
+    "unchanged": true
+  },
+  {
+    "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+    "end": "2026-09-23T20:01:56.302284+00:00",
+    "environment": {
+      "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+      "HEXALITH_G4_LIVE": "1",
+      "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-08",
+      "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+    },
+    "executionError": null,
+    "exit": 0,
+    "fingerprintError": null,
+    "probes": {
+      "containers": {
+        "command": "docker ps -aq --filter label=hexalith.g4.run",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      },
+      "processes": {
+        "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22458432",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "inaccessible": 0,
+        "inspected": 0,
+        "preexisting": 445,
+        "status": "verified",
+        "vanished": 0
+      },
+      "redaction": {
+        "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-08 for JWT-shaped values",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "scanned": 6,
+        "status": "verified"
+      },
+      "workspaces": {
+        "command": "scan /tmp/hexalith-g4-it-*",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      }
+    },
+    "run": 8,
+    "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "start": "2026-09-23T19:58:36.186559+00:00",
+    "status": "passed",
+    "suiteSummary": [
+      11,
+      0,
+      0,
+      0
+    ],
+    "testLogSha256": "7c4802e351dd5732de8a0705f12bc5d7c17a7c4543b04d024b32da45cd7768e9",
+    "unchanged": true
+  },
+  {
+    "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+    "end": "2026-09-23T20:05:10.570555+00:00",
+    "environment": {
+      "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+      "HEXALITH_G4_LIVE": "1",
+      "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-09",
+      "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+    },
+    "executionError": null,
+    "exit": 0,
+    "fingerprintError": null,
+    "probes": {
+      "containers": {
+        "command": "docker ps -aq --filter label=hexalith.g4.run",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      },
+      "processes": {
+        "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22478471",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "inaccessible": 0,
+        "inspected": 0,
+        "preexisting": 440,
+        "status": "verified",
+        "vanished": 0
+      },
+      "redaction": {
+        "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-09 for JWT-shaped values",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "scanned": 6,
+        "status": "verified"
+      },
+      "workspaces": {
+        "command": "scan /tmp/hexalith-g4-it-*",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      }
+    },
+    "run": 9,
+    "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "start": "2026-09-23T20:01:56.566866+00:00",
+    "status": "passed",
+    "suiteSummary": [
+      11,
+      0,
+      0,
+      0
+    ],
+    "testLogSha256": "76488ad0dbdd2934a88067169000f529d441aea2cafa256177efa7c9997f0cda",
+    "unchanged": true
+  },
+  {
+    "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+    "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+    "end": "2026-09-23T20:08:35.388944+00:00",
+    "environment": {
+      "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+      "HEXALITH_G4_LIVE": "1",
+      "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-10",
+      "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+    },
+    "executionError": null,
+    "exit": 0,
+    "fingerprintError": null,
+    "probes": {
+      "containers": {
+        "command": "docker ps -aq --filter label=hexalith.g4.run",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      },
+      "processes": {
+        "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22497902",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "inaccessible": 0,
+        "inspected": 0,
+        "preexisting": 440,
+        "status": "verified",
+        "vanished": 0
+      },
+      "redaction": {
+        "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-10 for JWT-shaped values",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "scanned": 6,
+        "status": "verified"
+      },
+      "workspaces": {
+        "command": "scan /tmp/hexalith-g4-it-*",
+        "count": 0,
+        "errors": [],
+        "exit": 0,
+        "status": "verified"
+      }
+    },
+    "run": 10,
+    "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+    "start": "2026-09-23T20:05:10.869487+00:00",
+    "status": "passed",
+    "suiteSummary": [
+      11,
+      0,
+      0,
+      0
+    ],
+    "testLogSha256": "037dbe6b78d105c16ee66ddfe925a7a474f3f27c06d73de43acafc61548379b6",
+    "unchanged": true
+  }
+]

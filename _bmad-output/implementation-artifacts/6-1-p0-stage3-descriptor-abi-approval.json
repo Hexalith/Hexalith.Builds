@@ -1,0 +1,13 @@
+{
+  "schema": "hexalith.builds.descriptor-abi-decision.v1",
+  "workPackage": "6.1-P0 Stage 3",
+  "decision": "approve",
+  "approver": "Jérôme Piquot",
+  "capacity": ["Builds Owner", "Platform Owner"],
+  "approvedAtUtc": "2026-09-22T21:21:41Z",
+  "approvalSource": "User reply 'approve' to the named-owner approval request in the active bmad-build session",
+  "proposalPath": "_bmad-output/implementation-artifacts/6-1-p0-stage3-descriptor-abi-proposal.md",
+  "proposalSha256": "6c80b8a9d08b153eeb91acbcf3f70f62dc999bff6005dfc2e6be886ac9f93e5f",
+  "buildsHeadAtApproval": "2fba3497043fe5ffcfe4dc44c51a09eae9b950ab",
+  "scope": "Approve the proposed executable descriptor ABI for implementation; this is not G-6, Stage 3, P0, live-lane, or publication acceptance."
+}

@@ -1,0 +1,10 @@
+{
+  "binaryFilesVerified": 8,
+  "errors": [],
+  "g6BoundFilesVerified": 36,
+  "reportSha256": "5df9a363516eec2c1a8bc26403543508a63c522435b87f454d0fe40ac1e9dd51",
+  "runLogFilesVerified": 8,
+  "schema": "hexalith.g4-stage4-evidence-verification.v1",
+  "sourceFilesVerified": 174,
+  "status": "passed"
+}

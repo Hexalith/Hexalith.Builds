@@ -22,36 +22,60 @@ internal static class ModuleCommandApplication
     /// <param name="standardOutput">The standard output writer.</param>
     /// <param name="standardError">The standard error writer.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="descriptorChildEntryAssemblyPath">The optional private descriptor child entry assembly.</param>
+    /// <param name="compositionOptions">The optional runner-owned composition settings.</param>
     /// <returns>The stable process exit code.</returns>
     public static async Task<int> InvokeAsync(
         string[] arguments,
         TextWriter standardOutput,
         TextWriter standardError,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? descriptorChildEntryAssemblyPath = null,
+        CompositionEngineOptions? compositionOptions = null)
     {
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(standardOutput);
         ArgumentNullException.ThrowIfNull(standardError);
 
-        RootCommand rootCommand = CreateRootCommand(standardOutput);
+        Task<int>? runningCommand = null;
+        RootCommand rootCommand = CreateRootCommand(
+            standardOutput,
+            descriptorChildEntryAssemblyPath,
+            compositionOptions,
+            task => runningCommand = task);
         ParseResult parseResult = rootCommand.Parse(arguments);
-        return parseResult.Errors.Count > 0 || HasBlankManifestValue(arguments)
-            ? await ToolCommandHost.WriteParseFailureAsync(
+        if (parseResult.Errors.Count > 0 || HasBlankManifestValue(arguments))
+        {
+            return await ToolCommandHost.WriteParseFailureAsync(
                 standardOutput,
-                ToolCommandHost.RequestedOutputFormat(arguments)).ConfigureAwait(false)
-            : await parseResult.InvokeAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+                ToolCommandHost.RequestedOutputFormat(arguments)).ConfigureAwait(false);
+        }
+
+        int result = await parseResult.InvokeAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        return result == (int)ToolExitCode.Cancelled && runningCommand is not null
+            ? await runningCommand.ConfigureAwait(false)
+            : result;
     }
 
-    private static RootCommand CreateRootCommand(TextWriter standardOutput)
+    private static RootCommand CreateRootCommand(
+        TextWriter standardOutput,
+        string? descriptorChildEntryAssemblyPath,
+        CompositionEngineOptions? compositionOptions,
+        Action<Task<int>> operationStarted)
     {
         RootCommand rootCommand = new("Runs supported Hexalith module qualifications.");
-        rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Run, standardOutput));
-        rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Down, standardOutput));
-        rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Test, standardOutput));
+        rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Run, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
+        rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Down, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
+        rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Test, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         return rootCommand;
     }
 
-    private static Command CreateCommand(ModuleInvocationCommand command, TextWriter standardOutput)
+    private static Command CreateCommand(
+        ModuleInvocationCommand command,
+        TextWriter standardOutput,
+        string? descriptorChildEntryAssemblyPath,
+        CompositionEngineOptions? compositionOptions,
+        Action<Task<int>> operationStarted)
     {
         Command commandDefinition = new(CommandName(command), CommandDescription(command));
         Option<string> manifestOption = new("--manifest")
@@ -64,6 +88,7 @@ internal static class ModuleCommandApplication
         };
         Option<string> filterOption = new("--filter");
         Option<string> evidenceOption = new("--evidence");
+        Option<string> runIdOption = new("--run-id");
         Option<string> outputOption = new("--output")
         {
             DefaultValueFactory = _ => "human",
@@ -74,16 +99,29 @@ internal static class ModuleCommandApplication
         commandDefinition.Options.Add(profileOption);
         commandDefinition.Options.Add(filterOption);
         commandDefinition.Options.Add(evidenceOption);
+        if (command == ModuleInvocationCommand.Down)
+        {
+            commandDefinition.Options.Add(runIdOption);
+        }
+
         commandDefinition.Options.Add(outputOption);
-        commandDefinition.SetAction((parseResult, cancellationToken) => ModuleCommandExecutionService.ExecuteAsync(
-            command,
-            parseResult.GetValue(manifestOption)!,
-            parseResult.GetValue(profileOption),
-            parseResult.GetValue(filterOption),
-            parseResult.GetValue(evidenceOption),
-            ParseOutputFormat(parseResult.GetValue(outputOption)),
-            standardOutput,
-            cancellationToken));
+        commandDefinition.SetAction((parseResult, cancellationToken) =>
+        {
+            Task<int> execution = ModuleCommandExecutionService.ExecuteAsync(
+                command,
+                parseResult.GetValue(manifestOption)!,
+                parseResult.GetValue(profileOption),
+                parseResult.GetValue(filterOption),
+                parseResult.GetValue(evidenceOption),
+                ParseOutputFormat(parseResult.GetValue(outputOption)),
+                standardOutput,
+                cancellationToken,
+                descriptorChildEntryAssemblyPath,
+                command == ModuleInvocationCommand.Down ? parseResult.GetValue(runIdOption) : null,
+                compositionOptions);
+            operationStarted(execution);
+            return execution;
+        });
         return commandDefinition;
     }
 

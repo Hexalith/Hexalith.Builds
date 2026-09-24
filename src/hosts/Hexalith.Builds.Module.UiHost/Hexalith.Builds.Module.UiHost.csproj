@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>Hexalith.Builds.Module.UiHost</AssemblyName>
+    <RootNamespace>Hexalith.Builds.ModuleHosts.UiHost</RootNamespace>
+    <Description>Builds-owned generic FrontComposer host that registers run-plan-named module UI markers.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Hexalith.FrontComposer.Shell" />
+  </ItemGroup>
+</Project>

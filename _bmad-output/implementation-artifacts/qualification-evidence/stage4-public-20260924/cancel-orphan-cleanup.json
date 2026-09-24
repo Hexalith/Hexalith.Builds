@@ -1,0 +1,90 @@
+[
+  {
+    "runId": "06dada95eec1f493712258dca2064809",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  },
+  {
+    "runId": "0e592ac36619b69b612e90d78d96eb57",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  },
+  {
+    "runId": "1bbb0837090f490e3285bbda08ba9c76",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  },
+  {
+    "runId": "4f9c80d138b54850d641cbbc625e12d0",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  },
+  {
+    "runId": "592a52ffae5bf2ff541e046205742018",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  },
+  {
+    "runId": "78179da3eec1d9afa4fb5ab285b4c631",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  },
+  {
+    "runId": "7edb2488aa73d13c0faea9d7043566fa",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  },
+  {
+    "runId": "8887b020ef40ed94955708a095a0acc0",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  },
+  {
+    "runId": "a41af041ed1fcf63d1855d97e0a9266e",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  },
+  {
+    "runId": "aab73856c15dc60ec9521f6c49f988d9",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  },
+  {
+    "runId": "db2a5434b158468ac1456452ae288f1c",
+    "exitCode": 0,
+    "status": "completed",
+    "ruleId": null,
+    "stateRemoved": true,
+    "stderr": ""
+  }
+]

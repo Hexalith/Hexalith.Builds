@@ -1,0 +1,154 @@
+{
+  "binarySha256": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+  "checks": {
+    "cleaned": true,
+    "exactDown": true,
+    "idempotentDown": true,
+    "readyStateAndContainer": true,
+    "unsupportedTestNonPassing": true
+  },
+  "probeScriptSha256": "196f59b2c58800da9d545462a3727f233ab33776edc548af1ff1f3b081cddf7f",
+  "responses": [
+    {
+      "command": [
+        "run",
+        "--manifest",
+        "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+        "--output",
+        "json"
+      ],
+      "exit": 0,
+      "response": {
+        "diagnostics": [
+          {
+            "category": "None",
+            "field": "readiness",
+            "hint": null,
+            "location": null,
+            "message": "Every run resource reported healthy.",
+            "phase": "Topology",
+            "row": null,
+            "ruleId": "HXI010",
+            "source": null
+          }
+        ],
+        "outcome": {
+          "category": "None",
+          "exitCode": "Success",
+          "phase": "None",
+          "ruleId": null
+        },
+        "runId": "546332235699b2cbf7d94f2585c1f93e",
+        "status": "ready"
+      }
+    },
+    {
+      "command": [
+        "down",
+        "--manifest",
+        "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+        "--output",
+        "json",
+        "--run-id",
+        "546332235699b2cbf7d94f2585c1f93e"
+      ],
+      "exit": 0,
+      "response": {
+        "diagnostics": [
+          {
+            "category": "None",
+            "field": "down",
+            "hint": null,
+            "location": null,
+            "message": "Runner-owned invocation cleanup completed.",
+            "phase": "Cleanup",
+            "row": null,
+            "ruleId": "HXI001",
+            "source": null
+          }
+        ],
+        "outcome": {
+          "category": "None",
+          "exitCode": "Success",
+          "phase": "None",
+          "ruleId": null
+        },
+        "runId": "546332235699b2cbf7d94f2585c1f93e",
+        "status": "completed"
+      }
+    },
+    {
+      "command": [
+        "down",
+        "--manifest",
+        "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+        "--output",
+        "json",
+        "--run-id",
+        "546332235699b2cbf7d94f2585c1f93e"
+      ],
+      "exit": 0,
+      "response": {
+        "diagnostics": [
+          {
+            "category": "None",
+            "field": "down",
+            "hint": null,
+            "location": null,
+            "message": "Runner-owned invocation cleanup completed.",
+            "phase": "Cleanup",
+            "row": null,
+            "ruleId": "HXI001",
+            "source": null
+          }
+        ],
+        "outcome": {
+          "category": "None",
+          "exitCode": "Success",
+          "phase": "None",
+          "ruleId": null
+        },
+        "runId": "546332235699b2cbf7d94f2585c1f93e",
+        "status": "completed"
+      }
+    },
+    {
+      "command": [
+        "test",
+        "--manifest",
+        "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+        "--output",
+        "json",
+        "--profile",
+        "live"
+      ],
+      "exit": 2,
+      "response": {
+        "diagnostics": [
+          {
+            "category": "PrerequisiteUnavailable",
+            "field": "profile",
+            "hint": "Use run and down for Stage 3 composition; qualify profile execution before claiming a test pass.",
+            "location": null,
+            "message": "The requested profile has no qualified public test executor.",
+            "phase": "Prerequisite",
+            "row": null,
+            "ruleId": "HXR029",
+            "source": null
+          }
+        ],
+        "outcome": {
+          "category": "PrerequisiteUnavailable",
+          "exitCode": "PrerequisiteUnavailable",
+          "phase": "Prerequisite",
+          "ruleId": "HXR029"
+        },
+        "runId": "88b09cde7212dc89194e3e6163e6bcfe",
+        "status": "unavailable"
+      }
+    }
+  ],
+  "sourceSha256": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+  "status": "passed",
+  "unchanged": true
+}

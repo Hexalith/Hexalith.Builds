@@ -10,9 +10,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, prerelease]
   push:
-    branches: [main]
+    branches: [main, prerelease]
 
 concurrency:
   # Unlike the release workflow, superseded CI runs carry no publication risk.
@@ -119,6 +119,14 @@ jobs:
       - name: Test G-4 tool package publisher contracts
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-publish-g4-tool-packages.ps1
+
+      - name: Test G-4 release lifecycle contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-g4-release-contract.ps1
+
+      - name: Test G-4 release source guard
+        shell: bash
+        run: bash ./Tools/test-g4-release-source.sh
 
       - name: Test G-4 tool package qualification gate
         shell: pwsh

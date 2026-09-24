@@ -67,6 +67,84 @@ function Invoke-DotNet {
     }
 }
 
+function Get-PackagePayloadEntries {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
+    $entries = [Collections.Generic.SortedDictionary[string,string]]::new([StringComparer]::Ordinal)
+    $archive = [IO.Compression.ZipFile]::OpenRead($Path)
+    try {
+        foreach ($entry in $archive.Entries) {
+            if ($entry.FullName -ceq '.signature.p7s') { continue }
+            if ($entries.ContainsKey($entry.FullName)) {
+                throw "Package '$Path' has duplicate archive entry '$($entry.FullName)'."
+            }
+            $stream = $entry.Open()
+            try {
+                $entries.Add($entry.FullName, [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($stream)))
+            }
+            finally { $stream.Dispose() }
+        }
+    }
+    finally { $archive.Dispose() }
+    return $entries
+}
+
+function Assert-RemotePackageHash {
+    param(
+        [Parameter(Mandatory = $true)][string] $PackageId,
+        [Parameter(Mandatory = $true)][string] $PackageVersion,
+        [Parameter(Mandatory = $true)][string] $LocalPath,
+        [Parameter(Mandatory = $true)][string] $ExpectedHash,
+        [Parameter(Mandatory = $true)][string] $ServiceIndex,
+        [Parameter(Mandatory = $true)][hashtable] $RequestHeaders
+    )
+
+    $index = Invoke-RestMethod -Uri $ServiceIndex -Headers $RequestHeaders -ErrorAction Stop
+    $bases = @($index.resources | Where-Object { @($_.'@type') -contains 'PackageBaseAddress/3.0.0' })
+    if ($bases.Count -ne 1 -or [string]::IsNullOrWhiteSpace([string]$bases[0].'@id')) {
+        throw "Package source '$ServiceIndex' has no unique NuGet V3 PackageBaseAddress for remote verification."
+    }
+
+    $lowerId = $PackageId.ToLowerInvariant()
+    $lowerVersion = $PackageVersion.ToLowerInvariant()
+    $baseAddress = [string]$bases[0].'@id'
+    $uri = "$($baseAddress.TrimEnd('/'))/$lowerId/$lowerVersion/$lowerId.$lowerVersion.nupkg"
+    $downloadPath = Join-Path ([IO.Path]::GetTempPath()) "hexalith-g4-remote-$([Guid]::NewGuid().ToString('N')).nupkg"
+    try {
+        for ($attempt = 1; $attempt -le 12; $attempt++) {
+            try {
+                Invoke-WebRequest -Uri $uri -Headers $RequestHeaders -OutFile $downloadPath -ErrorAction Stop | Out-Null
+                $actualHash = (Get-FileHash -LiteralPath $downloadPath -Algorithm SHA256).Hash
+                if ($actualHash -cne $ExpectedHash) {
+                    # NuGet.org repository-signs packages after upload. Compare all
+                    # uncompressed payload entries when the outer ZIP hash changes.
+                    $localEntries = Get-PackagePayloadEntries -Path $LocalPath
+                    $remoteEntries = Get-PackagePayloadEntries -Path $downloadPath
+                    if ($localEntries.Count -ne $remoteEntries.Count) {
+                        throw "Remote package '$PackageId' version '$PackageVersion' differs from the qualified package payload."
+                    }
+                    foreach ($name in $localEntries.Keys) {
+                        if (-not $remoteEntries.ContainsKey($name) -or $remoteEntries[$name] -cne $localEntries[$name]) {
+                            throw "Remote package '$PackageId' version '$PackageVersion' differs from the qualified package payload."
+                        }
+                    }
+                }
+                Write-Host "Verified remote '$PackageId' '$PackageVersion' SHA-256 $actualHash (qualified local SHA-256 $ExpectedHash)."
+                return
+            }
+            catch {
+                if ($_.Exception.Message.Contains('differs from the qualified package payload', [StringComparison]::Ordinal) -or $attempt -eq 12) {
+                    throw
+                }
+                Start-Sleep -Seconds 5
+            }
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $downloadPath -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Get-Sha256Text {
     param([Parameter(Mandatory = $true)][AllowEmptyString()][string] $Value)
 
@@ -401,12 +479,25 @@ if ([string]::IsNullOrWhiteSpace($apiKey)) {
     throw "A package API key is required to publish the $channel."
 }
 
+$requestHeaders = @{}
+if ($Version.Contains('-', [System.StringComparison]::Ordinal)) {
+    $actor = if ([string]::IsNullOrWhiteSpace($env:GITHUB_ACTOR)) { 'github' } else { $env:GITHUB_ACTOR }
+    $basic = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("${actor}:$apiKey"))
+    $requestHeaders.Authorization = "Basic $basic"
+}
+
 Write-Host "Publishing the verified G-4 tool package inventory to $channel."
 # dotnet discovers and publishes the adjacent .snupkg automatically. Submitting
 # the symbol package again produces a duplicate-symbol 409 from NuGet.org.
 foreach ($artifactName in @($primaryArtifactNames | Sort-Object)) {
     $artifactPath = Join-Path $packageDirectoryPath $artifactName
-    Invoke-DotNet -Arguments @('nuget', 'push', $artifactPath, '--api-key', $apiKey, '--source', $source)
+    Invoke-DotNet -Arguments @('nuget', 'push', $artifactPath, '--skip-duplicate', '--api-key', $apiKey, '--source', $source)
+    $package = @($inventoryPackages | Where-Object { $_.nupkg.file -ceq $artifactName })
+    if ($package.Count -ne 1) {
+        throw "Qualified inventory has no unique package row for '$artifactName'."
+    }
+    Assert-RemotePackageHash -PackageId ([string]$package[0].id) -PackageVersion $Version `
+        -LocalPath $artifactPath -ExpectedHash ([string]$package[0].nupkg.sha256) -ServiceIndex $source -RequestHeaders $requestHeaders
 }
 
 if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_STEP_SUMMARY)) {

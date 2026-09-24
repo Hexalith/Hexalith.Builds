@@ -91,7 +91,7 @@ public sealed class ModuleRunEvidenceWriterTests
         new ModuleRunInvocation("hexalith-module test --profile full", "manifest.json", "HASH", "full", null, null, null),
         new ModuleRunTopology(
             [new ModuleRunModule("orders", "orders", "orders", "orders", "assemblies/orders.dll")],
-            new PlatformPins("3.102.0", "1.18.0", "1.18.8", "4.0.1")),
+            new PlatformPins("3.106.0", "1.18.0", "1.18.8", "4.5.0")),
         [new ModuleRunPhaseOutcome(ToolPhase.Test, ToolFailureCategory.None, null)],
         new ModuleRunTestCounts(true, 1, 1, 0, 0),
         new Dictionary<string, string>(StringComparer.Ordinal),

@@ -55,6 +55,7 @@ $hadDotNetCliHome = Test-Path -LiteralPath Env:DOTNET_CLI_HOME
 $previousDotNetCliHome = $env:DOTNET_CLI_HOME
 $consumerEnvironmentConfigured = $false
 $qualificationLog = [System.Collections.Generic.List[string]]::new()
+$sourceRoot = $null
 
 function Format-SafeArguments {
     param(
@@ -106,6 +107,8 @@ function Invoke-DotNet {
     }
 }
 
+$toolCommandTimeoutMilliseconds = 300000
+
 function Invoke-ToolCommand {
     param(
         [Parameter(Mandatory = $true)]
@@ -115,24 +118,75 @@ function Invoke-ToolCommand {
         [string[]] $Arguments,
 
         [Parameter(Mandatory = $true)]
-        [string] $WorkingDirectory
+        [string] $WorkingDirectory,
+
+        [string] $SourceAssembly = ''
     )
 
-    Push-Location -LiteralPath $WorkingDirectory
-    try {
-        $qualificationLog.Add("$ dotnet tool run $Command -- $(Format-SafeArguments -Arguments $Arguments)")
-        $output = @(& dotnet tool run $Command -- @Arguments 2>&1)
-        foreach ($line in $output) {
-            $qualificationLog.Add([string]$line)
-        }
-
+    $prefix = if ([string]::IsNullOrEmpty($SourceAssembly)) { @('tool', 'run', $Command, '--') } else { @($SourceAssembly) }
+    $mode = if ([string]::IsNullOrEmpty($SourceAssembly)) { 'packaged' } else { 'source' }
+    $commandLine = if ($mode -eq 'packaged') { "dotnet tool run $Command --" } else { "dotnet $Command (Debug source)" }
+    $qualificationLog.Add("$ $commandLine $(Format-SafeArguments -Arguments $Arguments)")
+    if ((Get-Command dotnet -ErrorAction Stop).CommandType -eq 'Function') {
+        # The gate's in-process dotnet stub exercises preflight failure paths.
+        # Installed-tool qualification always uses the separately captured process.
+        $mockOutput = @(& dotnet @prefix @Arguments 2>&1) -join "`n"
         return [pscustomobject]@{
             ExitCode = $LASTEXITCODE
-            Output = $output -join [Environment]::NewLine
+            Output = $mockOutput
+            ErrorOutput = ''
+            OutputBytes = [Text.Encoding]::UTF8.GetBytes($mockOutput)
+            ErrorBytes = [byte[]]@()
+        }
+    }
+    $startInfo = [Diagnostics.ProcessStartInfo]::new('dotnet')
+    $startInfo.WorkingDirectory = $WorkingDirectory
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    foreach ($argument in @($prefix) + @($Arguments)) {
+        $startInfo.ArgumentList.Add($argument)
+    }
+    $process = [Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    $stdout = [IO.MemoryStream]::new()
+    $stderr = [IO.MemoryStream]::new()
+    try {
+        if (-not $process.Start()) { throw "Could not start $mode $Command." }
+        $stdoutTask = $process.StandardOutput.BaseStream.CopyToAsync($stdout)
+        $stderrTask = $process.StandardError.BaseStream.CopyToAsync($stderr)
+        if (-not $process.WaitForExit($toolCommandTimeoutMilliseconds)) {
+            try { $process.Kill($true) } catch { }
+            throw "$mode $Command did not exit within $($toolCommandTimeoutMilliseconds / 1000) seconds; its process tree was killed."
+        }
+        $null = $stdoutTask.GetAwaiter().GetResult()
+        $null = $stderrTask.GetAwaiter().GetResult()
+        $utf8 = [Text.UTF8Encoding]::new($false, $true)
+        $stdoutBytes = $stdout.ToArray()
+        $stderrBytes = $stderr.ToArray()
+        $output = $utf8.GetString($stdoutBytes)
+        $errorOutput = $utf8.GetString($stderrBytes)
+        if ($output.Contains('packaged-redaction-control', [StringComparison]::Ordinal) -or
+            $errorOutput.Contains('packaged-redaction-control', [StringComparison]::Ordinal) -or
+            $output.Contains('Bearer', [StringComparison]::Ordinal) -or
+            $errorOutput.Contains('Bearer', [StringComparison]::Ordinal)) {
+            throw "$mode $Command exposed credential material on a command stream."
+        }
+        foreach ($line in @($output, $errorOutput)) {
+            if (-not [string]::IsNullOrEmpty($line)) { $qualificationLog.Add($line.TrimEnd("`r", "`n")) }
+        }
+        return [pscustomobject]@{
+            ExitCode = $process.ExitCode
+            Output = $output
+            ErrorOutput = $errorOutput
+            OutputBytes = $stdoutBytes
+            ErrorBytes = $stderrBytes
         }
     }
     finally {
-        Pop-Location
+        $stdout.Dispose()
+        $stderr.Dispose()
+        $process.Dispose()
     }
 }
 
@@ -327,7 +381,9 @@ function Assert-ToolHelp {
         [string] $ExpectedText
     )
 
+    if ($Result -is [array]) { throw "$Description returned $($Result.Count) process objects: $(@($Result | ForEach-Object { $_.GetType().Name }) -join ', ')." }
     Assert-PositiveResult -Result $Result -Description $Description
+    if (-not [string]::IsNullOrEmpty($Result.ErrorOutput)) { throw "$Description wrote help to stderr." }
     if ($Result.Output.Contains('Run a local tool. Note that this command cannot be used to run a global tool.', [StringComparison]::Ordinal)) {
         throw "$Description returned dotnet tool wrapper help instead of tool-specific help."
     }
@@ -345,7 +401,23 @@ function ConvertFrom-ToolResult {
         [string] $Description
     )
 
+    if (-not [string]::IsNullOrEmpty($Result.ErrorOutput)) {
+        throw "$Description emitted JSON diagnostics on stderr."
+    }
+    $bytes = [byte[]]$Result.OutputBytes
+    if ($bytes.Length -lt 3 -or ($bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) -or
+        $bytes[$bytes.Length - 1] -ne 10 -or $bytes[$bytes.Length - 2] -eq 10 -or
+        $Result.Output.Contains("`r", [StringComparison]::Ordinal)) {
+        throw "$Description did not emit canonical UTF-8 without BOM and with exactly one LF ending."
+    }
     try {
+        $document = [Text.Json.JsonDocument]::Parse($Result.Output)
+        try {
+            if ($document.RootElement.ValueKind -ne [Text.Json.JsonValueKind]::Object) {
+                throw "$Description did not emit one JSON object."
+            }
+        }
+        finally { $document.Dispose() }
         $decoded = $Result.Output | ConvertFrom-Json
     }
     catch {
@@ -429,6 +501,45 @@ function Assert-JsonToolResult {
     return $decoded
 }
 
+function Assert-CommandParity {
+    param(
+        [Parameter(Mandatory = $true)][object] $Source,
+        [Parameter(Mandatory = $true)][object] $Package,
+        [Parameter(Mandatory = $true)][string] $Description
+    )
+
+    if ($Source.ExitCode -ne $Package.ExitCode) {
+        throw "$Description differs between Debug source and Release package process exit codes."
+    }
+    $sourceJson = ConvertFrom-ToolResult -Result $Source -Description "$Description source"
+    $packageJson = ConvertFrom-ToolResult -Result $Package -Description "$Description package"
+    if ($sourceJson.status -cne $packageJson.status -or
+        ($sourceJson.outcome | ConvertTo-Json -Compress -Depth 8) -cne ($packageJson.outcome | ConvertTo-Json -Compress -Depth 8) -or
+        ($sourceJson.diagnostics | ConvertTo-Json -Compress -Depth 8) -cne ($packageJson.diagnostics | ConvertTo-Json -Compress -Depth 8)) {
+        throw "$Description differs between Debug source and Release package status, outcome, or diagnostics."
+    }
+}
+
+function New-CleanSourceSnapshot {
+    param([Parameter(Mandatory = $true)][string] $Destination)
+
+    $paths = @(& git -C $repositoryRoot ls-files --cached --others --exclude-standard)
+    if ($LASTEXITCODE -ne 0 -or $paths.Count -eq 0) {
+        throw 'Clean Debug source snapshot could not enumerate repository files.'
+    }
+    foreach ($relativePath in $paths) {
+        $source = Join-Path $repositoryRoot $relativePath
+        if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { continue }
+        $target = Join-Path $Destination $relativePath
+        $null = New-Item -ItemType Directory -Path (Split-Path -Path $target -Parent) -Force
+        Copy-Item -LiteralPath $source -Destination $target
+    }
+    if (@(Get-ChildItem -LiteralPath $Destination -Directory -Recurse |
+            Where-Object { $_.Name -in @('bin', 'obj') }).Count -gt 0) {
+        throw 'Debug source snapshot unexpectedly contains prior build output.'
+    }
+}
+
 function Assert-ModuleEvidence {
     param(
         [Parameter(Mandatory = $true)]
@@ -489,7 +600,7 @@ function Assert-ModuleEvidence {
         $evidence.outcome.ruleId -is [string] -and $evidence.outcome.ruleId -ceq $RuleId
     }
     if ($evidence.schema -isnot [string] -or $evidence.schema -cne 'hexalith.module-run-evidence.v1' -or
-        $evidence.topology.platform.eventStoreVersion -isnot [string] -or $evidence.topology.platform.eventStoreVersion -cne '3.102.0' -or
+        $evidence.topology.platform.eventStoreVersion -isnot [string] -or $evidence.topology.platform.eventStoreVersion -cne '3.106.0' -or
         $evidence.finalStatus -isnot [string] -or $evidence.finalStatus -cne $FinalStatus -or
         -not $hasNumericExitCode -or [long]$evidence.outcome.exitCode -ne $ExitCode -or
         $evidence.outcome.phase -isnot [string] -or $evidence.outcome.phase -cne $Phase -or
@@ -753,8 +864,11 @@ try {
         Invoke-DotNet -Arguments @('restore', $solutionPath)
         Invoke-DotNet -Arguments @('build', $solutionPath, '--configuration', 'Release', '--no-restore', '-p:GeneratePackageOnBuild=false')
 
+        # test/fixtures holds executable fixture projects (built by the solution), not test projects.
+        $fixtureProjectRoot = [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'test/fixtures')) + [IO.Path]::DirectorySeparatorChar
         $testProjects = @(
             Get-ChildItem -LiteralPath (Join-Path $repositoryRoot 'test') -File -Filter '*.csproj' -Recurse |
+                Where-Object { -not $_.FullName.StartsWith($fixtureProjectRoot, [StringComparison]::Ordinal) } |
                 Sort-Object -Property FullName
         )
         if ($testProjects.Count -eq 0) {
@@ -904,6 +1018,21 @@ try {
         $evidenceNegatives = Get-NegativeFixtures -Directory (Join-Path $consumerFixturesRoot 'evidence/negative') -Extensions @('.yaml', '.yml') -Description 'Readiness evidence negative control'
         Assert-UniqueQualificationEvidenceNames -Directory $qualificationEvidenceRoot `
             -ModuleNegatives $moduleNegatives -EvidenceNegatives $evidenceNegatives
+        $sourceRoot = Join-Path ([IO.Path]::GetTempPath()) "hexalith-builds-g4-source-$([Guid]::NewGuid().ToString('N'))"
+        $null = New-Item -ItemType Directory -Path $sourceRoot
+        New-CleanSourceSnapshot -Destination $sourceRoot
+        foreach ($project in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli')) {
+            $projectPath = Join-Path $sourceRoot "src/libraries/$project/$project.csproj"
+            Invoke-DotNet -Arguments @('build', $projectPath, '--configuration', 'Debug',
+                '-p:GeneratePackageOnBuild=false', '-p:MinVerVersionOverride=0.0.0-source')
+        }
+        $sourceModuleAssembly = Join-Path $sourceRoot 'src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll'
+        $sourceEvidenceAssembly = Join-Path $sourceRoot 'src/libraries/Hexalith.Builds.Evidence.Cli/bin/Debug/net10.0/Hexalith.Builds.Evidence.Cli.dll'
+        foreach ($assembly in @($sourceModuleAssembly, $sourceEvidenceAssembly)) {
+            if (-not (Test-Path -LiteralPath $assembly -PathType Leaf)) {
+                throw "Clean Debug source build did not produce '$assembly'."
+            }
+        }
         $moduleManifestPath = 'test/fixtures/module/positive/hexalith.module-manifest.v1.json'
         $readinessEvidencePath = 'test/fixtures/evidence/positive/readiness.yaml'
         $sourceRevisionOutput = @(& git -C $repositoryRoot rev-parse HEAD 2>&1)
@@ -932,7 +1061,7 @@ try {
 
         Copy-Item -LiteralPath $sourceEvidencePath -Destination (Join-Path $qualificationEvidenceRoot 'source-release-passed.json')
 
-        $downResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments @(
+        $downArguments = @(
             'down',
             '--manifest',
             $moduleManifestPath,
@@ -942,7 +1071,11 @@ try {
             'evidence/module-run.json',
             '--output',
             'json'
-        ) -WorkingDirectory $consumerRoot
+        )
+        $sourceDownResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments $downArguments `
+            -WorkingDirectory $consumerRoot -SourceAssembly $sourceModuleAssembly
+        $downResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments $downArguments -WorkingDirectory $consumerRoot
+        Assert-CommandParity -Source $sourceDownResult -Package $downResult -Description 'Module down'
         $null = Assert-JsonToolResult -Result $downResult -Description 'Positive module manifest and canonical evidence' `
             -Status 'completed' -ExitCode 0 -OutcomeExitCode 'Success' -Phase 'None' -Category 'None' -OutcomeRuleId $null -RuleIds @('HXI001')
         $qualificationEvidenceEntries.Add((Save-QualificationEvidence -EvidenceDirectory $qualificationEvidenceRoot -Name 'packaged-down-output' -Content $downResult.Output))
@@ -976,7 +1109,7 @@ try {
             -Description 'Packaged passing module evidence'
         Copy-Item -LiteralPath $moduleEvidencePath -Destination (Join-Path $qualificationEvidenceRoot 'packaged-down-evidence.json')
 
-        $testResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments @(
+        $testArguments = @(
             'test',
             '--manifest',
             $moduleManifestPath,
@@ -986,7 +1119,11 @@ try {
             'evidence/test-unavailable.json',
             '--output',
             'json'
-        ) -WorkingDirectory $consumerRoot
+        )
+        $sourceTestResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments $testArguments `
+            -WorkingDirectory $consumerRoot -SourceAssembly $sourceModuleAssembly
+        $testResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments $testArguments -WorkingDirectory $consumerRoot
+        Assert-CommandParity -Source $sourceTestResult -Package $testResult -Description 'Module test'
         Assert-ExactNonPassingResult -Result $testResult -ExitCode 2 -RuleId 'HXR003' `
             -Description 'Positive packaged module test command path'
         $qualificationEvidenceEntries.Add((Save-QualificationEvidence -EvidenceDirectory $qualificationEvidenceRoot -Name 'packaged-test-output' -Content $testResult.Output))
@@ -1000,7 +1137,7 @@ try {
             -Description 'Positive packaged module test evidence'
         Copy-Item -LiteralPath $testEvidencePath -Destination (Join-Path $qualificationEvidenceRoot 'packaged-test-evidence.json')
 
-        $unavailableResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments @(
+        $runArguments = @(
             'run',
             '--manifest',
             $moduleManifestPath,
@@ -1008,7 +1145,11 @@ try {
             'evidence/unavailable.json',
             '--output',
             'json'
-        ) -WorkingDirectory $consumerRoot
+        )
+        $sourceRunResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments $runArguments `
+            -WorkingDirectory $consumerRoot -SourceAssembly $sourceModuleAssembly
+        $unavailableResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments $runArguments -WorkingDirectory $consumerRoot
+        Assert-CommandParity -Source $sourceRunResult -Package $unavailableResult -Description 'Module run'
         Assert-ExactNonPassingResult -Result $unavailableResult -ExitCode 2 -RuleId 'HXR003' -Description 'Unavailable platform prerequisite control'
         $qualificationEvidenceEntries.Add((Save-QualificationEvidence -EvidenceDirectory $qualificationEvidenceRoot -Name 'packaged-unavailable-output' -Content $unavailableResult.Output))
 
@@ -1021,19 +1162,31 @@ try {
             -Description 'Packaged unavailable module evidence'
         Copy-Item -LiteralPath $unavailableEvidencePath -Destination (Join-Path $qualificationEvidenceRoot 'packaged-unavailable-evidence.json')
 
-        $positiveEvidenceResult = Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments @('validate', $readinessEvidencePath, '--output', 'json') -WorkingDirectory $consumerRoot
+        $readinessArguments = @('validate', $readinessEvidencePath, '--output', 'json')
+        $sourceEvidenceResult = Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments $readinessArguments `
+            -WorkingDirectory $consumerRoot -SourceAssembly $sourceEvidenceAssembly
+        $positiveEvidenceResult = Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments $readinessArguments -WorkingDirectory $consumerRoot
+        Assert-CommandParity -Source $sourceEvidenceResult -Package $positiveEvidenceResult -Description 'Readiness validate'
         $null = Assert-JsonToolResult -Result $positiveEvidenceResult -Description 'Positive readiness evidence' `
             -Status 'passed' -ExitCode 0 -OutcomeExitCode 'Success' -Phase 'None' -Category 'None' -OutcomeRuleId $null -RuleIds @()
         $qualificationEvidenceEntries.Add((Save-QualificationEvidence -EvidenceDirectory $qualificationEvidenceRoot -Name 'packaged-readiness-output' -Content $positiveEvidenceResult.Output))
 
         foreach ($fixture in $moduleNegatives) {
-            $negativeResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments @('down', '--manifest', $fixture.FullName, '--output', 'json') -WorkingDirectory $consumerRoot
+            $negativeArguments = @('down', '--manifest', $fixture.FullName, '--output', 'json')
+            $sourceNegativeResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments $negativeArguments `
+                -WorkingDirectory $consumerRoot -SourceAssembly $sourceModuleAssembly
+            $negativeResult = Invoke-ToolCommand -Command 'hexalith-module' -Arguments $negativeArguments -WorkingDirectory $consumerRoot
+            Assert-CommandParity -Source $sourceNegativeResult -Package $negativeResult -Description "Module negative $($fixture.BaseName)"
             Assert-NegativeResult -Fixture $fixture -Result $negativeResult
             $qualificationEvidenceEntries.Add((Save-QualificationEvidence -EvidenceDirectory $qualificationEvidenceRoot -Name "module-negative-$($fixture.BaseName)-output" -Content $negativeResult.Output))
         }
 
         foreach ($fixture in $evidenceNegatives) {
-            $negativeResult = Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments @('validate', $fixture.FullName, '--output', 'json') -WorkingDirectory $consumerRoot
+            $negativeArguments = @('validate', $fixture.FullName, '--output', 'json')
+            $sourceNegativeResult = Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments $negativeArguments `
+                -WorkingDirectory $consumerRoot -SourceAssembly $sourceEvidenceAssembly
+            $negativeResult = Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments $negativeArguments -WorkingDirectory $consumerRoot
+            Assert-CommandParity -Source $sourceNegativeResult -Package $negativeResult -Description "Readiness negative $($fixture.BaseName)"
             Assert-NegativeResult -Fixture $fixture -Result $negativeResult
             $qualificationEvidenceEntries.Add((Save-QualificationEvidence -EvidenceDirectory $qualificationEvidenceRoot -Name "evidence-negative-$($fixture.BaseName)-output" -Content $negativeResult.Output))
         }
@@ -1109,6 +1262,10 @@ finally {
 
     if ($null -ne $consumerRoot -and (Test-Path -LiteralPath $consumerRoot)) {
         Remove-Item -LiteralPath $consumerRoot -Recurse -Force
+    }
+
+    if ($null -ne $sourceRoot -and (Test-Path -LiteralPath $sourceRoot)) {
+        Remove-Item -LiteralPath $sourceRoot -Recurse -Force
     }
 
     if ($ownsPackageDirectory -and -not $RetainPackageDirectory -and (Test-Path -LiteralPath $packageDirectoryPath)) {

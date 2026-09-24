@@ -1,0 +1,108 @@
+{
+  "binarySha256": "18c51ba78e0cc038b12ac4ea9b99692b198a5e67367ac59d7f02ab7b5653ff2b",
+  "boundaryNote": "No build, source edit, or live suite occurred between the first campaign run 10 and continuation run 1; their baseline manifests match.",
+  "failures": 0,
+  "liveTestsPassed": 100,
+  "precedingFailure": {
+    "campaign": "stage3-review-remediation-20260923-final",
+    "reason": "process environment inspection permission denied; suite marked failed/unverified",
+    "run": 2
+  },
+  "runs": [
+    {
+      "campaign": "stage3-review-remediation-20260923-final",
+      "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+      "end": "2026-09-23T12:54:36.609510+00:00",
+      "resultFile": "stage3-review-remediation-20260923-final/run-03/result.json",
+      "run": 3,
+      "start": "2026-09-23T12:52:08.341330+00:00",
+      "testLogSha256": "3555e55b17832061a6a6d21491a49732a44dc47d431f2a592a47df71e53f5d90"
+    },
+    {
+      "campaign": "stage3-review-remediation-20260923-final",
+      "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+      "end": "2026-09-23T12:57:24.405364+00:00",
+      "resultFile": "stage3-review-remediation-20260923-final/run-04/result.json",
+      "run": 4,
+      "start": "2026-09-23T12:54:36.931425+00:00",
+      "testLogSha256": "7410af3695c6f5a6814f8fb3a7c3e6ae08f8153a8e24cb4f6867d018f920aac5"
+    },
+    {
+      "campaign": "stage3-review-remediation-20260923-final",
+      "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+      "end": "2026-09-23T12:59:55.099429+00:00",
+      "resultFile": "stage3-review-remediation-20260923-final/run-05/result.json",
+      "run": 5,
+      "start": "2026-09-23T12:57:24.710410+00:00",
+      "testLogSha256": "773163980eee657607fc7e4aa1cc631d2ee84a41c30b23e676539fceae59864a"
+    },
+    {
+      "campaign": "stage3-review-remediation-20260923-final",
+      "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+      "end": "2026-09-23T13:02:32.264695+00:00",
+      "resultFile": "stage3-review-remediation-20260923-final/run-06/result.json",
+      "run": 6,
+      "start": "2026-09-23T12:59:55.506207+00:00",
+      "testLogSha256": "8240661ebf8fc54472e2c3788149409488739193ad500b3b47ba2bc51b775bb0"
+    },
+    {
+      "campaign": "stage3-review-remediation-20260923-final",
+      "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+      "end": "2026-09-23T13:05:01.870093+00:00",
+      "resultFile": "stage3-review-remediation-20260923-final/run-07/result.json",
+      "run": 7,
+      "start": "2026-09-23T13:02:32.629246+00:00",
+      "testLogSha256": "7ec09cc15c3d445e2f4a7dc8f295ae570fb693e75e0784716934e804b658b2ba"
+    },
+    {
+      "campaign": "stage3-review-remediation-20260923-final",
+      "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+      "end": "2026-09-23T13:07:36.091559+00:00",
+      "resultFile": "stage3-review-remediation-20260923-final/run-08/result.json",
+      "run": 8,
+      "start": "2026-09-23T13:05:02.196838+00:00",
+      "testLogSha256": "fd36a10669d499ecb990659d8d15cc5e583ed7fcd8bd37b0d593d83a2a0bad20"
+    },
+    {
+      "campaign": "stage3-review-remediation-20260923-final",
+      "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+      "end": "2026-09-23T13:09:54.806093+00:00",
+      "resultFile": "stage3-review-remediation-20260923-final/run-09/result.json",
+      "run": 9,
+      "start": "2026-09-23T13:07:36.406403+00:00",
+      "testLogSha256": "ce711dfc092b59357ab1e4569c370b95b1ab61fcb7449385246984d8694d26f8"
+    },
+    {
+      "campaign": "stage3-review-remediation-20260923-final",
+      "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+      "end": "2026-09-23T13:12:31.411919+00:00",
+      "resultFile": "stage3-review-remediation-20260923-final/run-10/result.json",
+      "run": 10,
+      "start": "2026-09-23T13:09:55.183430+00:00",
+      "testLogSha256": "96d85a0466e03835a90e28ba68df12d8990894d637893b6b1ea69b9fdbf05454"
+    },
+    {
+      "campaign": "stage3-review-remediation-20260923-continuation",
+      "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+      "end": "2026-09-23T13:15:29.661124+00:00",
+      "resultFile": "stage3-review-remediation-20260923-continuation/run-01/result.json",
+      "run": 1,
+      "start": "2026-09-23T13:12:47.907859+00:00",
+      "testLogSha256": "cc23a918366496499c6c07aa8b3b3b26ed0581bdd05a928b17b673ecf39b7dd6"
+    },
+    {
+      "campaign": "stage3-review-remediation-20260923-continuation",
+      "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+      "end": "2026-09-23T13:18:22.720664+00:00",
+      "resultFile": "stage3-review-remediation-20260923-continuation/run-02/result.json",
+      "run": 2,
+      "start": "2026-09-23T13:15:30.049999+00:00",
+      "testLogSha256": "3ff32af829cd2c12ba0aa66f17f815812f81fb0ab61e64677d5ed1e4d6b48203"
+    }
+  ],
+  "schema": "hexalith.builds.stage3-live-streak.v1",
+  "skips": 0,
+  "sourceSha256": "b30ea7ba4898d5a27588b8ca9f9f0829e2cc4dc9c8eb20a01af29785f4fec99c",
+  "status": "verified",
+  "suiteCount": 10
+}

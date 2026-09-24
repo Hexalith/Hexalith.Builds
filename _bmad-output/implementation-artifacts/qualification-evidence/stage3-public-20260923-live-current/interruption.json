@@ -1,0 +1,12 @@
+{
+  "harnessExit": 143,
+  "observedSuiteSummary": {
+    "errors": 0,
+    "failed": 0,
+    "skipped": 0,
+    "total": 11
+  },
+  "reason": "Harness stopped to add a bounded public-session cleanup guard before final-source qualification. The orphaned suite finished, but its before/after fingerprints and cleanup probes were not recorded, so it is excluded from passing qualification.",
+  "status": "unverified-interrupted",
+  "testLogSha256": "13e2f801c9b4981e23a313c5f8e41c62a62040453cf21c3a009f282d72be100f"
+}

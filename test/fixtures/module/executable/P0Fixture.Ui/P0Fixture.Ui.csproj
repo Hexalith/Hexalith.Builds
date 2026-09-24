@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Hexalith.Builds.P0Fixture.Ui</RootNamespace>
+    <Description>FrontComposer UI markers for the P0 executable fixture bounded contexts.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Hexalith.FrontComposer.Contracts" />
+  </ItemGroup>
+</Project>

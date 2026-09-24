@@ -1,5 +1,13 @@
 name: Create Release
-description: 'Run the repository-configured semantic-release lifecycle (version, changelog, optional package lifecycle, GitHub release)'
+description: 'Run the repository-configured semantic-release lifecycle (version, package publication, GitHub release)'
+
+inputs:
+  github-token:
+    description: 'GitHub publication token, scoped to the semantic-release step.'
+    required: true
+  nuget-api-key:
+    description: 'NuGet.org publication key, scoped to the semantic-release step for stable releases.'
+    required: false
 
 runs:
   using: "composite"
@@ -23,6 +31,6 @@ runs:
     - name: Semantic Release
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
-        NUGET_API_KEY: ${{ env.NUGET_API_KEY }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        NUGET_API_KEY: ${{ inputs.nuget-api-key }}
       run: npx semantic-release

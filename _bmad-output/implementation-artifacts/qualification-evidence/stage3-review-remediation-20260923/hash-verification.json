@@ -1,0 +1,10 @@
+{
+  "inventorySha256": "7b55af899e4a14c48c74fb91e94b6cd920699acf9c1640400ed07977910f4d9d",
+  "liveTestLogs": 10,
+  "packageArchives": 4,
+  "packageEvidenceFiles": 54,
+  "packageGateLogSha256": "73d5a2ba087de2a86c160b0684224421f3f7dc4c39f6f0d326c76b5cea8f7a5f",
+  "releaseEligible": false,
+  "status": "verified",
+  "verifiedInventoryEntries": 58
+}

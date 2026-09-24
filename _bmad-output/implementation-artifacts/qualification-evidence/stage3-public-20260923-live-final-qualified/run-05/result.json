@@ -1,0 +1,63 @@
+{
+  "binarySha256After": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+  "binarySha256Before": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+  "command": "timeout --signal=TERM --kill-after=30s 900s dotnet test/Hexalith.Builds.Tooling.IntegrationTests/bin/Debug/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll -noColor",
+  "end": "2026-09-23T19:51:46.615171+00:00",
+  "environment": {
+    "HEXALITH_DAPR_HOME": "/tmp/hexalith-g6.c8hQ7T",
+    "HEXALITH_G4_LIVE": "1",
+    "HEXALITH_G4_LOG_DIR": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-05",
+    "NUGET_PACKAGES": "/tmp/hexalith-g4-stage3-r17/nuget"
+  },
+  "executionError": null,
+  "exit": 0,
+  "fingerprintError": null,
+  "probes": {
+    "containers": {
+      "command": "docker ps -aq --filter label=hexalith.g4.run",
+      "count": 0,
+      "errors": [],
+      "exit": 0,
+      "status": "verified"
+    },
+    "processes": {
+      "command": "inspect same-UID /proc/*/environ for HEXALITH_G4_RUN_ID where startticks >= 22395126",
+      "count": 0,
+      "errors": [],
+      "exit": 0,
+      "inaccessible": 0,
+      "inspected": 0,
+      "preexisting": 455,
+      "status": "verified",
+      "vanished": 0
+    },
+    "redaction": {
+      "command": "scan readable logs under /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/_bmad-output/implementation-artifacts/qualification-evidence/stage3-public-20260923-live-final-qualified/run-05 for JWT-shaped values",
+      "count": 0,
+      "errors": [],
+      "exit": 0,
+      "scanned": 6,
+      "status": "verified"
+    },
+    "workspaces": {
+      "command": "scan /tmp/hexalith-g4-it-*",
+      "count": 0,
+      "errors": [],
+      "exit": 0,
+      "status": "verified"
+    }
+  },
+  "run": 5,
+  "sourceSha256After": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+  "sourceSha256Before": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+  "start": "2026-09-23T19:48:03.152899+00:00",
+  "status": "passed",
+  "suiteSummary": [
+    11,
+    0,
+    0,
+    0
+  ],
+  "testLogSha256": "16711648185fbbef02a1f4d3a953000b5d1ae6ca4a76ce86594d538ebe03cd71",
+  "unchanged": true
+}

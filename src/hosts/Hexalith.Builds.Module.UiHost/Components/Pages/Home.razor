@@ -1,0 +1,12 @@
+@page "/"
+@inject IFrontComposerRegistry Registry
+
+<main>
+    <h1>Registered bounded contexts</h1>
+    <ul id="bounded-contexts">
+        @foreach (DomainManifest manifest in Registry.GetManifests().OrderBy(m => m.BoundedContext, StringComparer.Ordinal))
+        {
+            <li data-bounded-context="@manifest.BoundedContext">@manifest.Name</li>
+        }
+    </ul>
+</main>

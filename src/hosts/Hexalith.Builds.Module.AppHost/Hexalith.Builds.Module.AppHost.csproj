@@ -1,0 +1,19 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.5.4">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Hexalith.Builds.Module.AppHost</AssemblyName>
+    <RootNamespace>Hexalith.Builds.ModuleHosts.AppHost</RootNamespace>
+    <Description>Builds-owned Aspire AppHost that composes one G-4 run from a runner-written run plan.</Description>
+    <!-- CommunityToolkit.Aspire.Hosting.Dapr and the EventStore Aspire extensions are prerelease-only integrations. -->
+    <NoWarn>$(NoWarn);NU5104;ASPIRE010;CA1303</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.Dapr" />
+    <PackageReference Include="Hexalith.EventStore.Aspire" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj" />
+    <ProjectReference Include="../Hexalith.Builds.Module.UiHost/Hexalith.Builds.Module.UiHost.csproj" />
+    <ProjectReference Include="../../libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj" IsAspireProjectResource="false" />
+  </ItemGroup>
+</Project>

@@ -5,10 +5,34 @@
 
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Manifest;
 
-return await ToolCommandHost.RunWithConsoleCancellationAsync(cancellationToken =>
+if (args.Length > 0 && string.Equals(args[0], "--descriptor-child", StringComparison.Ordinal))
+{
+    return await ToolCommandHost.RunWithConsoleCancellationAsync(cancellationToken =>
+        DescriptorChildWorker.RunAsync(args[1..], Console.Out, cancellationToken)).ConfigureAwait(false);
+}
+
+using StringWriter bufferedOutput = new();
+int exitCode = await ToolCommandHost.RunWithConsoleCancellationAsync(cancellationToken =>
     ModuleCommandApplication.InvokeAsync(
         args,
-        Console.Out,
+        bufferedOutput,
         Console.Error,
-        cancellationToken)).ConfigureAwait(false);
+        cancellationToken,
+        typeof(ModuleCommandApplication).Assembly.Location)).ConfigureAwait(false);
+if (bufferedOutput.GetStringBuilder().Length > 0)
+{
+    await Console.Out.WriteAsync(bufferedOutput.ToString()).ConfigureAwait(false);
+}
+else if (exitCode == (int)ToolExitCode.Cancelled)
+{
+    ToolDiagnostic diagnostic = new("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The invocation was cancelled.", "cancellation");
+    ToolCommandResult result = new(
+        "cancelled",
+        ToolOutcome.Passed().Fail(ToolPhase.Cleanup, ToolFailureCategory.Cancelled, diagnostic.RuleId, ToolExitCode.Cancelled),
+        [diagnostic]);
+    await ToolDiagnosticFormatter.WriteAsync(Console.Out, result, ToolCommandHost.RequestedOutputFormat(args), CancellationToken.None).ConfigureAwait(false);
+}
+
+return exitCode;

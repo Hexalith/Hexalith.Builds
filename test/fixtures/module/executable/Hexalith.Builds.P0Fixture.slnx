@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.csproj" />
+  <Project Path="P0Fixture.Inventory/P0Fixture.Inventory.csproj" />
+  <Project Path="P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.csproj" />
+  <Project Path="P0Fixture.Orders/P0Fixture.Orders.csproj" />
+  <Project Path="P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.csproj" />
+  <Project Path="P0Fixture.Ui/P0Fixture.Ui.csproj" />
+</Solution>

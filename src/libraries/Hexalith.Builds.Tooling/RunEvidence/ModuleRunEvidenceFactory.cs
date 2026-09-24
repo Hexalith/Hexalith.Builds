@@ -37,6 +37,7 @@ public static partial class ModuleRunEvidenceFactory
     /// <param name="startedUtc">The invocation start timestamp.</param>
     /// <param name="completedUtc">The invocation completion timestamp.</param>
     /// <param name="runId">The invocation-scoped run identity.</param>
+    /// <param name="requestedRunId">The validated run identity supplied to <c>down</c>, when present.</param>
     /// <returns>The complete module-run evidence document.</returns>
     public static ModuleRunEvidence Create(
         ModuleInvocationCommand command,
@@ -47,7 +48,8 @@ public static partial class ModuleRunEvidenceFactory
         ToolCommandResult result,
         DateTimeOffset startedUtc,
         DateTimeOffset completedUtc,
-        string runId)
+        string runId,
+        string? requestedRunId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         ArgumentNullException.ThrowIfNull(result);
@@ -82,7 +84,7 @@ public static partial class ModuleRunEvidenceFactory
             new ModuleRunTimestamps(startedUtc, completedUtc),
             CreateEnvironment(repositoryRoot),
             new ModuleRunInvocation(
-                CreateCommand(command, normalizedManifestPath, profileIdentity, filterHash),
+                CreateCommand(command, normalizedManifestPath, profileIdentity, filterHash, requestedRunId),
                 normalizedManifestPath,
                 manifestHash,
                 profileIdentity,
@@ -104,7 +106,8 @@ public static partial class ModuleRunEvidenceFactory
         ModuleInvocationCommand command,
         string? manifestPath,
         string? profile,
-        string? filterHash)
+        string? filterHash,
+        string? requestedRunId)
     {
         List<string> segments = ["hexalith-module", CommandName(command)];
 
@@ -124,6 +127,12 @@ public static partial class ModuleRunEvidenceFactory
         {
             segments.Add("--filter-sha256");
             segments.Add(filterHash);
+        }
+
+        if (command == ModuleInvocationCommand.Down && CompositionRunPlanFactory.IsRunId(requestedRunId))
+        {
+            segments.Add("--run-id");
+            segments.Add(requestedRunId!);
         }
 
         return string.Join(' ', segments);

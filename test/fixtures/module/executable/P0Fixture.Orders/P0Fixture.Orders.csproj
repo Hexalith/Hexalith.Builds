@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Hexalith.Builds.P0Fixture.Orders</RootNamespace>
+    <Description>P0 executable fixture domain service for the p0-orders domain.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Hexalith.EventStore.DomainService" />
+  </ItemGroup>
+</Project>

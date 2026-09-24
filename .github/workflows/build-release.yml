@@ -14,36 +14,32 @@ jobs:
     name: Verify current main source
     permissions:
       contents: read
+      actions: read
     steps:
-    - name: Require exact current main
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Require exact current branch and successful push CI
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
         REPOSITORY: ${{ github.repository }}
         DISPATCH_REF: ${{ github.ref }}
         DISPATCH_SHA: ${{ github.sha }}
-      run: |
-        set -euo pipefail
-        if [ "$DISPATCH_REF" != "refs/heads/main" ]; then
-          echo "Builds Release must be dispatched from refs/heads/main." >&2
-          exit 1
-        fi
-        live_main_sha="$(gh api "repos/${REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
-        if [[ ! "$DISPATCH_SHA" =~ ^[0-9a-f]{40}$ ]] || [ "$DISPATCH_SHA" != "$live_main_sha" ]; then
-          echo "Builds Release source is not the exact current main tip." >&2
-          exit 1
-        fi
+      run: bash ./Tools/verify-g4-release-source.sh
 
   release:
     needs: verify-source
     runs-on: ubuntu-latest
     name: Release
-    environment: production
+    environment: ${{ github.ref_name == 'prerelease' && 'prerelease' || 'production' }}
     permissions:
       contents: write        # push tag and create GitHub release
       issues: write          # semantic-release comments on released issues
       pull-requests: write   # semantic-release comments on released PRs
       packages: write        # publish future tool packages to GitHub Packages
+      actions: read          # verify exact-SHA push CI after protected approval
     steps:
     - uses: actions/checkout@v7.0.1
       with:
@@ -136,6 +132,14 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-publish-g4-tool-packages.ps1
 
+    - name: Test G-4 release lifecycle contracts
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-g4-release-contract.ps1
+
+    - name: Test G-4 release source guard
+      shell: bash
+      run: bash ./Tools/test-g4-release-source.sh
+
     - name: Test G-4 tool package qualification gate
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contract-gate.ps1
@@ -152,8 +156,17 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-governed-provenance.ps1
 
+    - name: Recheck approved release source and push CI
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPOSITORY: ${{ github.repository }}
+        DISPATCH_REF: ${{ github.ref }}
+        DISPATCH_SHA: ${{ github.sha }}
+      run: bash ./Tools/verify-g4-release-source.sh
+
     - name: Create Release
       uses: ./Github/create-release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        nuget-api-key: ${{ secrets.NUGET_API_KEY }}

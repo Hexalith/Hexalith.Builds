@@ -1,0 +1,10 @@
+{
+  "binarySha256": "7f59b4c661de1a6b1184feb10bff993d636eedc5ebcae2c43be7e297fe8bccfa",
+  "problems": [],
+  "qualifiedLiveTests": 110,
+  "qualifiedSuites": 10,
+  "sourceSha256": "3d91190e283bb5637f9c00d59c33b029bad280c126968669b49d2ec78c145108",
+  "status": "passed",
+  "verifiedPackageFiles": 58,
+  "verifiedZeroProbes": 40
+}

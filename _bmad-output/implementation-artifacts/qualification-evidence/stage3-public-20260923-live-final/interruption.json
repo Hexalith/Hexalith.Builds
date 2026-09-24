@@ -1,0 +1,12 @@
+{
+  "harnessExit": 143,
+  "observedSuiteSummary": {
+    "errors": 0,
+    "failed": 0,
+    "skipped": 0,
+    "total": 11
+  },
+  "reason": "Harness stopped to correct stale fixture text and public down evidence command identity before final-source qualification. The orphaned suite finished, but its before/after fingerprints and cleanup probes were not recorded, so it is excluded from passing qualification.",
+  "status": "unverified-interrupted",
+  "testLogSha256": "fde472f1f51f122cbcf0a258c1ba9c3e1988da5b5db34c8f946455041af92817"
+}

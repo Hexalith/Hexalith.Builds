@@ -1,0 +1,22 @@
+{
+  "schema": "hexalith.g4-persisted-profile.v1",
+  "id": "p0-two-module-full",
+  "modules": [
+    {
+      "moduleId": "p0-orders",
+      "commandType": "PlaceOrder",
+      "eventType": "Hexalith.Builds.P0Fixture.Orders.OrderPlaced",
+      "projectionType": "p0-orders-summary",
+      "initialQuantity": 3,
+      "retryQuantity": 5
+    },
+    {
+      "moduleId": "p0-inventory",
+      "commandType": "ReserveStock",
+      "eventType": "Hexalith.Builds.P0Fixture.Inventory.StockReserved",
+      "projectionType": "p0-inventory-summary",
+      "initialQuantity": 3,
+      "retryQuantity": 5
+    }
+  ]
+}

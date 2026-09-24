@@ -1,0 +1,26 @@
+{
+  "schema": "hexalith.p0-persisted-fixture.v1",
+  "id": "p0-executable-live",
+  "kind": "executable-test-contract",
+  "executionStatus": "stage-3-public-composition",
+  "runtimeAuthority": "hexalith-builds-composition-engine",
+  "runIdentity": {
+    "owner": "runner",
+    "scope": "unique-per-invocation",
+    "tenantNamespace": "runner-generated",
+    "domainNamespace": "manifest-declared",
+    "resourceNamespace": "runner-generated"
+  },
+  "requiredLiveAssertions": [
+    "lifecycle",
+    "persisted-event",
+    "expected-sequence",
+    "dapr-invocation",
+    "identity",
+    "frontcomposer",
+    "run-isolation",
+    "cancellation",
+    "cleanup"
+  ],
+  "staticAssetLimitation": "The public runner composes and tears down this runtime. Public test returns HXR029 until a qualified profile executor and native reports are available. This fixture alone is not persisted qualification evidence."
+}

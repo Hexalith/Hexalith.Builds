@@ -1,0 +1,14 @@
+{
+  "binaryFingerprintAfterGateChanged": true,
+  "changedBinaryPathsAfterGate": 12,
+  "inventorySha256": "17c62aa222224098dadd040b7fc239d3f16c559cc233f08c485a8a98c516c3d1",
+  "liveStreakSuites": 10,
+  "packageArchives": 4,
+  "packageEvidenceFiles": 54,
+  "packageGateLogSha256": "d1edfaa69a76e1b1c268275d70b0f9cfa1d6eb9d390dff3b75d9f55da932a791",
+  "publicRunTest": "HXR003 exit 2 in packaged outputs and evidence",
+  "releaseEligible": false,
+  "sourceFingerprintAfterGateUnchanged": true,
+  "status": "verified",
+  "verifiedInventoryEntries": 58
+}

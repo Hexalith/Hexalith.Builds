@@ -54,7 +54,16 @@ source revision, proves every fixture byte against that revision, and parses
 every retained qualification artifact for its exact typed outcome, invocation,
 tool/source identity, and expected negative rule IDs. The script submits each
 primary `.nupkg` once; `dotnet nuget push` discovers and publishes the adjacent
-`.snupkg` automatically.
+`.snupkg` automatically. Duplicate-safe retry downloads each primary package,
+records its remote SHA-256, and compares it with the qualified artifact. If the
+feed added a repository signature, every unsigned payload entry must match.
+
+`verify-g4-tool-release.ps1` checks the target feed credential and qualifies
+the actual semantic-release version before a release tag is created. The
+release workflow requires successful push CI for the exact current branch SHA
+before and after protected approval. `main` uses the `production` environment;
+`prerelease` uses the protected `prerelease` environment. Configure required
+reviewers and branch restrictions for both environments in GitHub settings.
 
 ```powershell
 .\Tools\publish-g4-tool-packages.ps1 -Version 4.20.0

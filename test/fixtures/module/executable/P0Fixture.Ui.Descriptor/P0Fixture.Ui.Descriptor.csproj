@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Hexalith</RootNamespace>
+    <Description>hexalith.ui-descriptor.v1 entrypoint for the P0 executable fixture UI.</Description>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,1 @@
+{"status":"cancelled","outcome":{"exitCode":"Cancelled","phase":"Cleanup","category":"Cancelled","ruleId":"HXC130"},"diagnostics":[{"ruleId":"HXC130","phase":"Cleanup","category":"Cancelled","message":"The invocation was cancelled.","field":"cancellation","hint":null,"source":null,"location":null,"row":null}]}

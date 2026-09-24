@@ -1,0 +1,55 @@
+{
+  "resources": [
+    {
+      "commands": [
+        "rebuild",
+        "restart",
+        "stop"
+      ],
+      "displayName": "eventstore-2",
+      "resourceType": "Project",
+      "state": "Running"
+    },
+    {
+      "commands": [],
+      "displayName": "eventstore-2-dapr",
+      "resourceType": "DaprSidecar",
+      "state": null
+    },
+    {
+      "commands": [
+        "restart",
+        "stop"
+      ],
+      "displayName": "eventstore-2-dapr-cli",
+      "resourceType": "Executable",
+      "state": "Running"
+    },
+    {
+      "commands": [],
+      "displayName": "eventstore-dapr",
+      "resourceType": "DaprSidecar",
+      "state": null
+    },
+    {
+      "commands": [
+        "restart",
+        "stop"
+      ],
+      "displayName": "eventstore-dapr-cli",
+      "resourceType": "Executable",
+      "state": "Running"
+    },
+    {
+      "commands": [
+        "rebuild",
+        "restart",
+        "stop"
+      ],
+      "displayName": "eventstore",
+      "resourceType": "Project",
+      "state": "Running"
+    }
+  ],
+  "schema": "hexalith.g4-stage4-resource-inspection.v1"
+}

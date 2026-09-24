@@ -1,10 +1,19 @@
 <Solution>
+  <Project Path="src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj" />
+  <Project Path="src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj" />
+  <Project Path="src/hosts/Hexalith.Builds.Module.UiHost/Hexalith.Builds.Module.UiHost.csproj" />
   <Project Path="src/libraries/Hexalith.Builds.Evidence.Cli/Hexalith.Builds.Evidence.Cli.csproj" />
   <Project Path="src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj" />
   <Project Path="src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj" />
   <Project Path="test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj" />
   <Project Path="test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj" />
   <Project Path="test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj" />
+  <Project Path="test/fixtures/module/executable/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.csproj" />
+  <Project Path="test/fixtures/module/executable/P0Fixture.Inventory/P0Fixture.Inventory.csproj" />
+  <Project Path="test/fixtures/module/executable/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.csproj" />
+  <Project Path="test/fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj" />
+  <Project Path="test/fixtures/module/executable/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.csproj" />
+  <Project Path="test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj" />
   <Folder Name="/.github/" />
   <Folder Name="/.github/workflows/">
     <File Path=".github/workflows/build-release.yml" />

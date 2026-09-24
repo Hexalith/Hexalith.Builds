@@ -14,4 +14,13 @@
     <ProjectReference Include="../../src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj" />
     <ProjectReference Include="../../src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj" />
   </ItemGroup>
+  <!-- Build-order only: public command and engine readiness tests load the built executable fixture descriptors. -->
+  <ItemGroup>
+    <ProjectReference Include="../fixtures/module/executable/P0Fixture.Inventory/P0Fixture.Inventory.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="../fixtures/module/executable/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="../fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="../fixtures/module/executable/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="../fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="../fixtures/module/executable/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
 </Project>

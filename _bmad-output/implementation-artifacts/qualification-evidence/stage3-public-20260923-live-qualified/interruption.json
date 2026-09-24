@@ -1,0 +1,12 @@
+{
+  "status": "unverified-interrupted",
+  "exit": 130,
+  "reason": "The live suite grew to 11 tests after adding the public-command test, but the harness still required 10. Run 01 passed 11/11 with verified zero-count probes and was correctly recorded as failed by the stale expectation. Run 02 was interrupted before its result and probes could be recorded. This campaign is excluded from qualification.",
+  "recordedRuns": 1,
+  "unfinishedRun": 2,
+  "postInterruptContainerCount": 0,
+  "postInterruptLiveTestProcessCount": 0,
+  "postInterruptWorkspaceCount": 1,
+  "orphanedRunId": "fc78c56e626c9565b81640d96a107cd4",
+  "cleanup": "The orphaned test workspace was removed after confirming its recorded AppHost PID and all module/Dapr processes were absent and Docker had no run-labelled containers. The interrupted suite remains unverified."
+}

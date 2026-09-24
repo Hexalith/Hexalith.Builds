@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests;
 
+using System.Security.Cryptography;
 using System.Text.Json;
 
 using Hexalith.Builds.ModuleTool.Cli;
@@ -43,10 +44,10 @@ public sealed class ModuleCommandApplicationTests
             }
           ],
           "platform": {
-            "eventStoreVersion": "3.102.0",
+            "eventStoreVersion": "3.106.0",
             "daprRuntimeVersion": "1.18.2",
             "daprSdkVersion": "1.18.8",
-            "frontComposerVersion": "4.0.1"
+            "frontComposerVersion": "4.5.0"
           },
           "ui": { "descriptorAssembly": "assemblies/ui.dll" },
           "profiles": {
@@ -405,6 +406,14 @@ public sealed class ModuleCommandApplicationTests
 
         try
         {
+            string manifestPath = Path.Combine(directory, "manifest.json");
+            string uniqueId = $"fixture-{Guid.NewGuid():N}";
+            await File.WriteAllTextAsync(
+                manifestPath,
+                _manifestJson.Replace("command-fixture", uniqueId, StringComparison.Ordinal),
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string manifestHash = Convert.ToHexString(SHA256.HashData(
+                await File.ReadAllBytesAsync(manifestPath, TestContext.Current.CancellationToken).ConfigureAwait(true)));
             StringWriter standardOutput = new();
             await using (standardOutput.ConfigureAwait(true))
             {
@@ -412,7 +421,7 @@ public sealed class ModuleCommandApplicationTests
                 await using (standardError.ConfigureAwait(true))
                 {
                     int exitCode = await ModuleCommandApplication.InvokeAsync(
-                        ["run", "--manifest", Path.Combine(directory, "manifest.json"), "--output", "json"],
+                        ["run", "--manifest", manifestPath, "--output", "json"],
                         standardOutput,
                         standardError,
                         TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -420,7 +429,47 @@ public sealed class ModuleCommandApplicationTests
                     exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable);
                     standardOutput.ToString().ShouldContain("HXR003");
                     standardOutput.ToString().ShouldNotContain("passed");
+                    string stateDirectory = Path.Combine(Path.GetTempPath(), "hexalith-builds", "runs");
+                    if (Directory.Exists(stateDirectory))
+                    {
+                        foreach (string statePath in Directory.EnumerateFiles(stateDirectory, "*.json"))
+                        {
+                            string state = await File.ReadAllTextAsync(statePath, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                            state.Contains(manifestHash, StringComparison.OrdinalIgnoreCase).ShouldBeFalse();
+                        }
+                    }
                 }
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    /// <summary>
+    /// Rejects an invalid executable descriptor through the public command before runtime state exists.
+    /// </summary>
+    /// <returns>A task that completes after the fail-closed command result is checked.</returns>
+    [Fact]
+    public async Task RunWithInvalidExecutableDescriptorFailsBeforeRuntimeAsync()
+    {
+        string directory = CreateFixtureDirectory();
+        try
+        {
+            StringWriter standardOutput = new();
+            await using (standardOutput.ConfigureAwait(true))
+            {
+                int exitCode = await ModuleCommandApplication.InvokeAsync(
+                    ["run", "--manifest", Path.Combine(directory, "manifest.json"), "--output", "json"],
+                    standardOutput,
+                    TextWriter.Null,
+                    TestContext.Current.CancellationToken,
+                    typeof(ModuleCommandApplication).Assembly.Location).ConfigureAwait(true);
+
+                exitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
+                standardOutput.ToString().ShouldContain("HXD002");
+                standardOutput.ToString().ShouldNotContain("HXR003");
             }
         }
         finally

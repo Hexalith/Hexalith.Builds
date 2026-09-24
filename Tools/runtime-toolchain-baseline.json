@@ -71,7 +71,6 @@
       { "path": ".github/workflows/ci.yml", "value": "version: '1.18.0'" },
       { "path": ".github/workflows/ci.yml", "value": "runtime-version: '1.18.2'" },
       { "path": ".github/workflows/ci.yml", "value": "run: dotnet tool install --global Aspire.Cli --version 13.5.4" },
-      { "path": ".github/workflows/release.yml", "value": "dapr-version: '1.18.0'" },
       { "path": "references/Hexalith.Builds/.github/workflows/domain-ci.yml", "value": "default: '1.18.0'" },
       { "path": "references/Hexalith.Builds/.github/workflows/domain-ci.yml", "value": "default: '1.18.2'" },
       { "path": "references/Hexalith.Builds/.github/workflows/domain-release.yml", "value": "default: '1.18.0'" },

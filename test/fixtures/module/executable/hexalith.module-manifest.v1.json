@@ -1,0 +1,52 @@
+{
+  "schema": "hexalith.module-manifest.v1",
+  "id": "p0-executable-two-module",
+  "modules": [
+    {
+      "id": "p0-orders",
+      "descriptorAssembly": "artifacts/g4-fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll",
+      "dependencies": [],
+      "domain": "p0-orders",
+      "applicationId": "p0-orders-app",
+      "resourceId": "p0-orders"
+    },
+    {
+      "id": "p0-inventory",
+      "descriptorAssembly": "artifacts/g4-fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll",
+      "dependencies": [
+        "p0-orders"
+      ],
+      "domain": "p0-inventory",
+      "applicationId": "p0-inventory-app",
+      "resourceId": "p0-inventory"
+    }
+  ],
+  "platform": {
+    "eventStoreVersion": "3.106.0",
+    "daprRuntimeVersion": "1.18.2",
+    "daprSdkVersion": "1.18.8",
+    "frontComposerVersion": "4.5.0"
+  },
+  "ui": {
+    "descriptorAssembly": "artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll"
+  },
+  "profiles": {
+    "full": {
+      "fixture": "test/fixtures/module/executable/profiles/p0-two-module-full.fixture.json",
+      "classes": [
+        "host-contract",
+        "persisted-boundary",
+        "restart",
+        "two-instance"
+      ]
+    },
+    "live": {
+      "fixture": "test/fixtures/module/executable/profiles/p0-executable-live.fixture.json",
+      "classes": [
+        "host-contract",
+        "persisted-boundary",
+        "two-instance"
+      ]
+    }
+  }
+}

@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.Diagnostics;
 
+using System.Runtime.InteropServices;
+
 /// <summary>
 /// Provides shared public-command hosting behavior for cancellation and parser failures.
 /// </summary>
@@ -20,6 +22,7 @@ public static class ToolCommandHost
         ArgumentNullException.ThrowIfNull(operation);
 
         ConsoleCancelEventHandler? handler = null;
+        PosixSignalRegistration? signalRegistration = null;
         return await RunWithCancellationRegistrationAsync(
             operation,
             cancel =>
@@ -30,9 +33,18 @@ public static class ToolCommandHost
                     cancel();
                 };
                 Console.CancelKeyPress += handler;
+                if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+                {
+                    signalRegistration = PosixSignalRegistration.Create(PosixSignal.SIGINT, context =>
+                    {
+                        context.Cancel = true;
+                        cancel();
+                    });
+                }
             },
             () =>
             {
+                signalRegistration?.Dispose();
                 if (handler is not null)
                 {
                     Console.CancelKeyPress -= handler;

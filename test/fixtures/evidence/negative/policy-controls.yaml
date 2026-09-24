@@ -81,7 +81,7 @@ rows:
     status: passed
     outcome: unavailable
     artifact_schema: hexalith.module-run-evidence.v1
-    artifact_sha256: 0b20c3fcd07fd5608308927a841a02c7a423a0e0353d082de05b4926e2feab12
+    artifact_sha256: aa9be522fbe95a67f22c03c7b7d6dac028090ca91ab921d4414f7148f374bc74
   - key: release-failed
     category: release
     ids: [NFR-11.failed]
@@ -96,7 +96,7 @@ rows:
     status: failed
     outcome: failed
     artifact_schema: hexalith.module-run-evidence.v1
-    artifact_sha256: 0b20c3fcd07fd5608308927a841a02c7a423a0e0353d082de05b4926e2feab12
+    artifact_sha256: aa9be522fbe95a67f22c03c7b7d6dac028090ca91ab921d4414f7148f374bc74
   - key: release-skipped
     category: release
     ids: [NFR-11.skipped]

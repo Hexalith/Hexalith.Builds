@@ -54,6 +54,7 @@ public sealed class PersistedFixtureAssetTests
     [InlineData("missing-required-value.json")]
     [InlineData("tampered-platform-pin.json")]
     [InlineData("superseded-platform-pin.json")]
+    [InlineData("superseded-frontcomposer-pin.json")]
     public void LoadManifestNegativeControlReturnsStableRule(string fileName)
     {
         ManifestLoadResult result = ModuleManifestLoader.Load(FixturePath(Path.Combine("negative", fileName)));

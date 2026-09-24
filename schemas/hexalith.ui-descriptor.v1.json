@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.dev/schemas/hexalith.ui-descriptor.v1.json",
+  "title": "Hexalith executable FrontComposer UI descriptor v1 result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "uiProject", "moduleUiMarkers"],
+  "properties": {
+    "schema": { "const": "hexalith.ui-descriptor.v1" },
+    "uiProject": { "$ref": "#/$defs/projectPath" },
+    "moduleUiMarkers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["moduleId", "uiAssembly", "uiMarkerType"],
+        "properties": {
+          "moduleId": { "type": "string", "maxLength": 63, "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$" },
+          "uiAssembly": { "$ref": "#/$defs/assemblyPath" },
+          "uiMarkerType": { "$ref": "#/$defs/markerType" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\/$).+$"
+    },
+    "projectPath": { "allOf": [{ "$ref": "#/$defs/repositoryPath" }, { "pattern": "\\.csproj$" }] },
+    "assemblyPath": { "allOf": [{ "$ref": "#/$defs/repositoryPath" }, { "pattern": "\\.dll$" }] },
+    "markerType": {
+      "type": "string",
+      "maxLength": 512,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:[.+][A-Za-z_][A-Za-z0-9_]*)+$"
+    }
+  }
+}

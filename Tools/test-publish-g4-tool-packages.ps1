@@ -13,6 +13,9 @@ $packageIds = @('Hexalith.Builds.Evidence.Cli', 'Hexalith.Builds.Module.Cli')
 $originalGitHubToken = $env:GITHUB_TOKEN
 $originalNuGetApiKey = $env:NUGET_API_KEY
 $global:HexalithG4PublisherTestInvocations = [System.Collections.Generic.List[string]]::new()
+$global:HexalithG4PublisherRemoteDirectory = $null
+$global:HexalithG4PublisherRemoteDownloads = 0
+$global:HexalithG4PublisherRemoteMode = 'exact'
 
 function global:dotnet {
     param(
@@ -22,6 +25,50 @@ function global:dotnet {
 
     $global:HexalithG4PublisherTestInvocations.Add(($ForwardedArguments | ConvertTo-Json -Compress))
     $global:LASTEXITCODE = 0
+}
+
+function global:Invoke-RestMethod {
+    param([string] $Uri, [hashtable] $Headers, [string] $ErrorAction)
+    $null = $Headers, $ErrorAction
+    if ($Uri -notin @('https://api.nuget.org/v3/index.json', 'https://nuget.pkg.github.com/Hexalith/index.json')) {
+        throw "Unexpected remote service index '$Uri'."
+    }
+    return [pscustomobject]@{ resources = @([pscustomobject]@{
+                '@type' = 'PackageBaseAddress/3.0.0'
+                '@id' = 'https://test.invalid/flatcontainer/'
+            }) }
+}
+
+function global:Invoke-WebRequest {
+    param([string] $Uri, [hashtable] $Headers, [string] $OutFile, [string] $ErrorAction)
+    $null = $Headers, $ErrorAction
+    $global:HexalithG4PublisherRemoteDownloads++
+    $artifactName = [IO.Path]::GetFileName($Uri)
+    $matches = @(Get-ChildItem -LiteralPath $global:HexalithG4PublisherRemoteDirectory -File -Filter '*.nupkg' |
+            Where-Object { $_.Name.Equals($artifactName, [StringComparison]::OrdinalIgnoreCase) })
+    if ($matches.Count -ne 1) {
+        throw "Unexpected remote artifact '$artifactName'."
+    }
+    Copy-Item -LiteralPath $matches[0].FullName -Destination $OutFile -Force
+    if ($global:HexalithG4PublisherRemoteMode -in @('signed', 'tampered')) {
+        $archive = [IO.Compression.ZipFile]::Open($OutFile, [IO.Compression.ZipArchiveMode]::Update)
+        try {
+            if ($global:HexalithG4PublisherRemoteMode -eq 'signed') {
+                $entry = $archive.CreateEntry('.signature.p7s')
+                $stream = $entry.Open()
+                try { $stream.WriteByte(42) } finally { $stream.Dispose() }
+            }
+            else {
+                $entry = @($archive.Entries | Where-Object { $_.FullName.EndsWith('.nuspec', [StringComparison]::Ordinal) })[0]
+                $name = $entry.FullName
+                $entry.Delete()
+                $replacement = $archive.CreateEntry($name)
+                $stream = $replacement.Open()
+                try { $stream.WriteByte(42) } finally { $stream.Dispose() }
+            }
+        }
+        finally { $archive.Dispose() }
+    }
 }
 
 function Assert-Equal {
@@ -160,7 +207,7 @@ function New-ModuleEvidenceContent {
         }
         topology = [ordered] @{
             platform = [ordered] @{
-                eventStoreVersion = '3.102.0'
+                eventStoreVersion = '3.106.0'
             }
         }
     }
@@ -425,15 +472,22 @@ function Invoke-PublisherCase {
         [string] $PublishedVersion,
 
         [Parameter(Mandatory = $true)]
-        [string] $ExpectedSource
+        [string] $ExpectedSource,
+
+        [ValidateSet('exact', 'signed', 'tampered')]
+        [string] $RemoteMode = 'exact'
     )
 
     $packageDirectory = New-PackageInventory -PublishedVersion $PublishedVersion
     $expectedPrimaryNames = @($packageIds | ForEach-Object { "$($_).$PublishedVersion.nupkg" } | Sort-Object)
     $global:HexalithG4PublisherTestInvocations.Clear()
+    $global:HexalithG4PublisherRemoteDirectory = $packageDirectory
+    $global:HexalithG4PublisherRemoteDownloads = 0
+    $global:HexalithG4PublisherRemoteMode = $RemoteMode
     & $publisherPath -Version $PublishedVersion -PackageDirectory $packageDirectory
 
     Assert-Equal -Actual $global:HexalithG4PublisherTestInvocations.Count -Expected 2 -Because 'The publisher must invoke dotnet once per primary package.'
+    Assert-Equal -Actual $global:HexalithG4PublisherRemoteDownloads -Expected 2 -Because 'Every published package must be downloaded and hash-verified from the remote feed.'
 
     $publishedNames = [System.Collections.Generic.List[string]]::new()
     foreach ($serializedInvocation in $global:HexalithG4PublisherTestInvocations) {
@@ -447,6 +501,9 @@ function Invoke-PublisherCase {
         }
         if ($arguments -contains '--no-symbols') {
             throw 'The publisher must leave automatic adjacent symbol-package publication enabled.'
+        }
+        if ($arguments -notcontains '--skip-duplicate') {
+            throw 'The publisher must make a repeated or partial publication duplicate-safe.'
         }
 
         $publishedNames.Add([System.IO.Path]::GetFileName($artifactPath))
@@ -504,6 +561,14 @@ try {
     $env:NUGET_API_KEY = 'stable-test-token'
     $env:GITHUB_TOKEN = $null
     Invoke-PublisherCase -PublishedVersion '9.8.7' -ExpectedSource 'https://api.nuget.org/v3/index.json'
+    Invoke-PublisherCase -PublishedVersion '9.8.30' -ExpectedSource 'https://api.nuget.org/v3/index.json' -RemoteMode signed
+    try {
+        Invoke-PublisherCase -PublishedVersion '9.8.31' -ExpectedSource 'https://api.nuget.org/v3/index.json' -RemoteMode tampered
+        throw 'Publisher accepted a remote package with a changed payload.'
+    }
+    catch {
+        if (-not $_.Exception.Message.Contains('differs from the qualified package payload', [StringComparison]::Ordinal)) { throw }
+    }
 
     $env:NUGET_API_KEY = $null
     $env:GITHUB_TOKEN = 'prerelease-test-token'
@@ -660,7 +725,11 @@ finally {
     $env:GITHUB_TOKEN = $originalGitHubToken
     $env:NUGET_API_KEY = $originalNuGetApiKey
     Remove-Item Function:\dotnet -Force -ErrorAction SilentlyContinue
+    Remove-Item Function:\Invoke-RestMethod -Force -ErrorAction SilentlyContinue
+    Remove-Item Function:\Invoke-WebRequest -Force -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4PublisherTestInvocations -Scope Global -ErrorAction SilentlyContinue
+    Remove-Variable -Name HexalithG4PublisherRemoteDirectory -Scope Global -ErrorAction SilentlyContinue
+    Remove-Variable -Name HexalithG4PublisherRemoteDownloads -Scope Global -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
 

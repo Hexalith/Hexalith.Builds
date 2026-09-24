@@ -1,0 +1,1 @@
+{"status":"passed","outcome":{"exitCode":"Success","phase":"None","category":"None","ruleId":null},"diagnostics":[{"ruleId":"HXI004","phase":"Test","category":"None","message":"The two-module persisted profile passed.","field":"profile","hint":null,"source":null,"location":null,"row":null}],"runId":"19670461b7275d72ffd07d9c1591f7bc"}

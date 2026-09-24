@@ -1,0 +1,225 @@
+{
+  "allMatch": true,
+  "boundFileCount": 36,
+  "files": [
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "7e8fcfda8e8b139f06a4eaf868ece294a1bdea11b23d8708bc02d1aa4b975866",
+      "packetSha256": "7e8fcfda8e8b139f06a4eaf868ece294a1bdea11b23d8708bc02d1aa4b975866",
+      "path": ".github/workflows/domain-ci.md"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "f9f42ab443a033d10917656a5e61c473f9f963287d5f584aeb0616bcbcac9622",
+      "packetSha256": "f9f42ab443a033d10917656a5e61c473f9f963287d5f584aeb0616bcbcac9622",
+      "path": ".github/workflows/domain-ci.yml"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "66f8f7732fea5ab1e579613c513cc73134cafe541fc9ceb3e90958a3c6788400",
+      "packetSha256": "66f8f7732fea5ab1e579613c513cc73134cafe541fc9ceb3e90958a3c6788400",
+      "path": ".github/workflows/domain-release.md"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "ef165465294b7f8ac9e82c60c51d1bb96b94bc9262a7aaffe3dcbd4fed981168",
+      "packetSha256": "ef165465294b7f8ac9e82c60c51d1bb96b94bc9262a7aaffe3dcbd4fed981168",
+      "path": ".github/workflows/domain-release.yml"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "51dd834d209731f51f635f63613affad62eb9872f35c5acac78006afc6583c4e",
+      "packetSha256": "51dd834d209731f51f635f63613affad62eb9872f35c5acac78006afc6583c4e",
+      "path": "README.md"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "525615c65ada8cabf5a6911a374bb22b62f6a3c1bfa6c91f7245312da9720265",
+      "packetSha256": "525615c65ada8cabf5a6911a374bb22b62f6a3c1bfa6c91f7245312da9720265",
+      "path": "Tools/runtime-toolchain-baseline.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "e76c9a9bf0405a6ff176c71f31acf8ee76a6cf639f986a3bf0110352953bb9a9",
+      "packetSha256": "e76c9a9bf0405a6ff176c71f31acf8ee76a6cf639f986a3bf0110352953bb9a9",
+      "path": "Tools/test-runtime-toolchain-evidence-validator.py"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "c57e53cf623181aa3b20376f52df60c01a208ed54ad166c9e72c9373eaf062f9",
+      "packetSha256": "c57e53cf623181aa3b20376f52df60c01a208ed54ad166c9e72c9373eaf062f9",
+      "path": "Tools/validate-runtime-toolchain-evidence.py"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "1370e2cc91ba9678cebb5e68a4161d7e2e2e5238406a3cfe76592d789e2ddb81",
+      "packetSha256": "1370e2cc91ba9678cebb5e68a4161d7e2e2e5238406a3cfe76592d789e2ddb81",
+      "path": "schemas/hexalith.module-manifest.v1.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "690c0f64a573dda3007d4095ec4a31daac8068102d399d89d5d042ac5cb282f8",
+      "packetSha256": "690c0f64a573dda3007d4095ec4a31daac8068102d399d89d5d042ac5cb282f8",
+      "path": "schemas/hexalith.runtime-toolchain-evidence.v1.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "e40bbc9cf97e484e208f4c2a558592fa5c190111f83b2d752ad53f422876f8a3",
+      "packetSha256": "e40bbc9cf97e484e208f4c2a558592fa5c190111f83b2d752ad53f422876f8a3",
+      "path": "src/libraries/Hexalith.Builds.Tooling/Manifest/SupportedPlatformPins.cs"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "2f858fdaffc4db51be7da9cc44dd2483afe53e1dc7af5dc5f7a31c98372a8d58",
+      "packetSha256": "2f858fdaffc4db51be7da9cc44dd2483afe53e1dc7af5dc5f7a31c98372a8d58",
+      "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/RuntimePrerequisiteGate.cs"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "62ea771a94e8b4560c50d8de30c2deecb8fcf63d67e9f04a73c6bc494c5aabec",
+      "packetSha256": "62ea771a94e8b4560c50d8de30c2deecb8fcf63d67e9f04a73c6bc494c5aabec",
+      "path": "test/Hexalith.Builds.Module.Tests/ManifestValidationTests.cs"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "da9181e29f3a80ac3ef0fd2f0f5c2b597439ad5fcdebd254da91f3e78512e8b0",
+      "packetSha256": "da9181e29f3a80ac3ef0fd2f0f5c2b597439ad5fcdebd254da91f3e78512e8b0",
+      "path": "test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "21338dfd596879894bdfd26ef6fd44c51a3773f108165c840a217e7f2487989a",
+      "packetSha256": "21338dfd596879894bdfd26ef6fd44c51a3773f108165c840a217e7f2487989a",
+      "path": "test/Hexalith.Builds.Module.Tests/ModuleRunEvidenceSerializationTests.cs"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "931ba071326526496374a42fd5aad892bf459accaf0b60d93fd70b532a1ea17c",
+      "packetSha256": "931ba071326526496374a42fd5aad892bf459accaf0b60d93fd70b532a1ea17c",
+      "path": "test/Hexalith.Builds.Module.Tests/RuntimePrerequisiteGateTests.cs"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "faea0ce7b6e4f7b2c7f7b745e1b014061be6c5680c4f50a2dc0761b5a647b7c5",
+      "packetSha256": "faea0ce7b6e4f7b2c7f7b745e1b014061be6c5680c4f50a2dc0761b5a647b7c5",
+      "path": "test/fixtures/module/README.md"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "8e4aad391ed9c90fc7c1529a36d86059a7495b993d5bab08816e266055dae0a6",
+      "packetSha256": "8e4aad391ed9c90fc7c1529a36d86059a7495b993d5bab08816e266055dae0a6",
+      "path": "test/fixtures/module/negative/absolute-path.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "2f9958c683aa380a6ebfac3f16270ce4b271f727b851b17838982b1dcacbd88d",
+      "packetSha256": "2f9958c683aa380a6ebfac3f16270ce4b271f727b851b17838982b1dcacbd88d",
+      "path": "test/fixtures/module/negative/duplicate-id.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "30dac5e9ec76efd75f0d3fac2b8db3a36b025dcdcb1040f1b8c05ced35f172aa",
+      "packetSha256": "30dac5e9ec76efd75f0d3fac2b8db3a36b025dcdcb1040f1b8c05ced35f172aa",
+      "path": "test/fixtures/module/negative/duplicate-json-key.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "3c2e54aae5d4ea58792e2bc05ff3d278ba322dc34953521360712c499cc5c94c",
+      "packetSha256": "3c2e54aae5d4ea58792e2bc05ff3d278ba322dc34953521360712c499cc5c94c",
+      "path": "test/fixtures/module/negative/invalid-profile.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "e7c909901d27f0a4baab81b0b7cf73d4895c8993ff3829496cef4b73f93d7c56",
+      "packetSha256": "e7c909901d27f0a4baab81b0b7cf73d4895c8993ff3829496cef4b73f93d7c56",
+      "path": "test/fixtures/module/negative/malformed-dependency.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "640e5b935af55f08eb01c97264f4770bd6c80c4595b26917a5d17a91b65e0960",
+      "packetSha256": "640e5b935af55f08eb01c97264f4770bd6c80c4595b26917a5d17a91b65e0960",
+      "path": "test/fixtures/module/negative/missing-descriptor.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "0bd69bff2197005a088d91c6975e6b5e062e2e42d0d0416327b3bda102cdc9ee",
+      "packetSha256": "0bd69bff2197005a088d91c6975e6b5e062e2e42d0d0416327b3bda102cdc9ee",
+      "path": "test/fixtures/module/negative/missing-required-value.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "26f3bc078cd74efef3a74ba23dbce38526a243337f24724e94b94b218465ea60",
+      "packetSha256": "26f3bc078cd74efef3a74ba23dbce38526a243337f24724e94b94b218465ea60",
+      "path": "test/fixtures/module/negative/path-escape.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "18b1413ecfe21d05ea5bd99359d9a6dfa660cd9b58569801a0724491d66bbcd4",
+      "packetSha256": "18b1413ecfe21d05ea5bd99359d9a6dfa660cd9b58569801a0724491d66bbcd4",
+      "path": "test/fixtures/module/negative/placeholder.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "91d960de52e979b30aa39fe3beafd94e69913864e5b121fd5955d5db8770a71f",
+      "packetSha256": "91d960de52e979b30aa39fe3beafd94e69913864e5b121fd5955d5db8770a71f",
+      "path": "test/fixtures/module/negative/secret-bearing.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "aff65c10146c9830efc9b2d191217e50cfd60d8296ca2c78c707fdd5514804d9",
+      "packetSha256": "aff65c10146c9830efc9b2d191217e50cfd60d8296ca2c78c707fdd5514804d9",
+      "path": "test/fixtures/module/negative/superseded-platform-pin.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "f33c827d4c2c0337286bfeb72108727ba3201c7a1ade42f14e1c119e29ea155f",
+      "packetSha256": "f33c827d4c2c0337286bfeb72108727ba3201c7a1ade42f14e1c119e29ea155f",
+      "path": "test/fixtures/module/negative/tampered-platform-pin.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "ded09d6c901227fd964bc2b1fd3ab296c47aaec280b821dec9afa07b0679782f",
+      "packetSha256": "ded09d6c901227fd964bc2b1fd3ab296c47aaec280b821dec9afa07b0679782f",
+      "path": "test/fixtures/module/negative/unknown-field.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "e4d1360fa4602a9a889249ae048073466c2978ea2541b87bb59111fe97e6bc50",
+      "packetSha256": "e4d1360fa4602a9a889249ae048073466c2978ea2541b87bb59111fe97e6bc50",
+      "path": "test/fixtures/module/negative/unknown-schema.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "f4dfffec29f94177b365dfb14c766576fe5d5f5d8495c2bb8f7cdd879994ba99",
+      "packetSha256": "f4dfffec29f94177b365dfb14c766576fe5d5f5d8495c2bb8f7cdd879994ba99",
+      "path": "test/fixtures/module/negative/unsupported-profile-class.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "ca112f368ba55f91c05ffccb302c4133698331fe463aef0f875b93870bc57a96",
+      "packetSha256": "ca112f368ba55f91c05ffccb302c4133698331fe463aef0f875b93870bc57a96",
+      "path": "test/fixtures/module/positive/hexalith.module-manifest.v1.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "8d3fbbbd7cfd817391775b1e68541e69a8a9bab51b387206e9d5d3ac81580b98",
+      "packetSha256": "8d3fbbbd7cfd817391775b1e68541e69a8a9bab51b387206e9d5d3ac81580b98",
+      "path": ".github/workflows/ci.yml"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "25b36d45123efa1d03786506dadad7546069f8563cddd4b509849b5c3631e9f5",
+      "packetSha256": "25b36d45123efa1d03786506dadad7546069f8563cddd4b509849b5c3631e9f5",
+      "path": "global.json"
+    },
+    {
+      "matches": true,
+      "normalizedCurrentSha256": "25b7424e8947f19f809ac2f56a06f691453c0ab84cdb12d13745bfba191eb42d",
+      "packetSha256": "25b7424e8947f19f809ac2f56a06f691453c0ab84cdb12d13745bfba191eb42d",
+      "path": "Props/Directory.Packages.props"
+    }
+  ],
+  "normalization": "CRLF-to-LF, matching packet source-state hashing",
+  "packet": "Hexalith.Projects/_bmad-output/implementation-artifacts/qualification-evidence/g-6-runtime-toolchain/source-state.json",
+  "schema": "hexalith.g4-stage4-g6-bound-audit.v1"
+}
