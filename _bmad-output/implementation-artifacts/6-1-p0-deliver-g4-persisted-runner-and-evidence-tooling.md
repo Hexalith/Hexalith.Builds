@@ -27,8 +27,8 @@ delivery_state:
   g6_qualification: refreshed-and-owner-accepted-2026-09-22; g4Approved-false
   stage3_slice_status: public-source-composition-qualified-10-of-10-and-110-of-110; owner-and-named-test-architect-stage3-assessments-accepted; stage3-complete; p0-open
   package_controls: implemented-and-locally-qualified; protected-release-and-remote-proof-pending
-  supported_composition: validated-public-run-down-and-full-persisted-profile-qualified-locally; unsupported-profiles-HXR029-nonpassing; packaged-executable-composition-unqualified
-  persisted_qualification: stage4-public-source-full-profile-qualified; packaged-live-and-native-report-evidence-stage5-open
+  supported_composition: validated-public-run-down-and-full-persisted-profile-qualified-locally; unsupported-profiles-HXR029-nonpassing; packaged-executable-composition-qualified-locally-stage5.6
+  persisted_qualification: stage4-public-source-full-profile-qualified; stage5-packaged-vstest-and-mtp-native-report-evidence-qualified-locally-dirty-tree; stage5-review-remediated-and-requalified-0.0.0-stage5.7-2026-09-25
   published_consumer_pin: absent
   owner_acceptance: stage3-evidence-accepted-2026-09-23; full-p0-acceptance-absent
   test_architect_acceptance: stage3-evidence-accepted-2026-09-23; full-p0-acceptance-absent
@@ -164,9 +164,9 @@ This binding stage order supersedes the chronological ordering implied by the ol
   - [x] Prove runner-owned EventStore, Dapr, identity, FrontComposer, endpoints, health, telemetry, Aspire lifecycle, run-state isolation, cancellation, and cleanup without consumer-owned topology.
 - [x] **Stage 4 — Qualify the real two-module persisted fixture** (AC: 5, 6, 11-14)
   - [x] Execute persisted write/read, stop/restart/rehydration, retry/idempotency, two-instance access, authenticated access, cross-Tenant denial, stale-state, wrong-sequence, and unavailable-prerequisite controls.
-- [ ] **Stage 5 — Capture native reports and deterministic evidence through packaged tools** (AC: 6-13)
-  - [ ] Bind native report results, evidence hashes, exact commands, fixture/manifest identities, and negative-control outcomes into deterministic metadata-only artifacts.
-  - [ ] Implement fail-closed validation of `hexalith.g4-p0-acceptance.v1` through the packaged `hexalith-evidence` command.
+- [x] **Stage 5 — Capture native reports and deterministic evidence through packaged tools** (AC: 6-13; local packaged scope at a dirty tree — clean-revision, published-package, and acceptance evidence remain Stages 6-7)
+  - [x] Bind native report results, evidence hashes, exact commands, fixture/manifest identities, and negative-control outcomes into deterministic metadata-only artifacts.
+  - [x] Implement fail-closed validation of `hexalith.g4-p0-acceptance.v1` through the packaged `hexalith-evidence` command.
 - [ ] **Stage 6 — Publish, remotely restore, and prove rollback** (AC: 2, 13, 14)
   - [ ] Publish the exact prerelease, verify both packages and hashes remotely, restore them into a clean consumer using an exact checked-in tool manifest, and exercise duplicate-safe rollback/retry behavior.
 - [ ] **Stage 7 — Obtain owner acceptance and hand off to P4** (AC: 15)
@@ -203,7 +203,7 @@ This binding stage order supersedes the chronological ordering implied by the ol
 
 - [ ] Emit deterministic module-run evidence (AC: 6-8, 11, 12)
   - [x] Define `hexalith.module-run-evidence.v1`, canonical serialization, metadata allowlist, hash rules, volatile fields, and artifact retention.
-  - [ ] Capture VSTest and MTP/xUnit v3 native results without hiding their exit status or report semantics.
+  - [x] Capture VSTest and MTP/xUnit v3 native results without hiding their exit status or report semantics.
   - [ ] Test successful, partial, unavailable, cancelled, runner-failed, test-failed, state-failed, and evidence-failed output.
   - [ ] Seed tokens/secrets in tests and prove redaction across logs, state, reports, JSON, and diagnostics.
 
@@ -216,7 +216,7 @@ This binding stage order supersedes the chronological ordering implied by the ol
 
 - [ ] Add blocking test projects and clean-checkout qualification (AC: 2-13)
   - [x] Add xUnit v3/Shouldly unit and contract projects under `test/` for manifest, command, lifecycle, evidence, validator, redaction, and fixture behavior.
-  - [ ] Add a live persisted integration project that exercises the packed runner with at least two modules and actual EventStore/Dapr state.
+  - [x] Add a live persisted integration project that exercises the packed runner with at least two modules and actual EventStore/Dapr state.
   - [x] Preserve the existing `Tools/test-domain-workflow-test-platforms.ps1` VSTest/MTP contract; extend or reuse it rather than assuming one platform.
   - [x] Run package-consumer qualification from a clean temporary checkout/feed with no stale `bin`/`obj` authority.
   - [ ] Generate a temporary `.config/dotnet-tools.json` pinned to the computed local package version for prepublication tests; after publication, commit an exact-version sample under `test/fixtures/package-consumer/.config/dotnet-tools.json` and prove remote restore.
@@ -349,6 +349,89 @@ Code review — **Chunk D (Surface & controls)**, 2026-07-21. Scope: package/pro
 - [x] [Review][Patch] SP11 · MEDIUM · Prove clean Debug/source versus Release/package parity through the same executable commands, including the packaged `test` path; current source validation runs incrementally in the working checkout in Release and only the packaged commands execute controls. [`Tools/test-g4-tool-package-contracts.ps1`:254-399]
 - [x] [Review][Patch] SP12 · LOW · Preserve the Builds-specific package tags after importing `Hexalith.Package.props`; evaluated tool packages currently expose generic DDD/Blazor tags instead of Build/Tooling/Evidence. [`src/libraries/Directory.Build.props`:2-8]
 - [x] [Review][Patch] SP13 · LOW · Add the repository CRLF normalization needed by the prescribed whitespace gate; current added C# files make `git diff --check` report every CRLF line as trailing whitespace. [`.gitattributes`:1]
+
+### Review Findings — Stage 5 (packaged native reports and acceptance validator)
+
+Code review, 2026-09-25. Scope: the uncommitted Stage 5 working-tree changes against `754d2b4b6615c5004606ba837dd9c925c57e8d14`. The review excludes `qualification-evidence/` and this story. The diff has 97 file sections. The 19 negative acceptance records were reviewed as deltas from the positive record, and CR-at-EOL churn was ignored. Four review layers ran: blind, edge-case, verification-gap, and acceptance audit, with 58 raw findings. Severities were set by triage. Result: 6 decision-needed, 15 patch, 3 defer, 16 rejected. On 2026-09-25 Jerome accepted the recommendations: D1 a, D2 a, D3 a, D4 a, D5 b′, D6 c. The new finding SR-N1 is fixed now, and SR-W1 was folded into SR-P6. All 17 patches were applied and requalified at `0.0.0-stage5.7` on 2026-09-25; see the Dev Agent Record.
+
+**Decision-needed**
+
+- [x] [Review][Decision] SR-D1 · MEDIUM · **Packaged hosts are compiled inside the installed tool package at run time.** **Resolved 2026-09-25 by Jerome → patch (a):** each packaged host project is built in a private per-resource copy in the run workspace, parent build files are not imported, and packaged mode fails closed.
+  - `RunTopology.AddEventStoreProject`/`AddUiProject` pass the packaged `g4-host/projects/*/Host.csproj` to path-based `AddProject`. That path gets no `SuppressBuild`, and the package ships no build output for it. `Host.csproj` copies the prebuilt host `AfterTargets="Build"`, so each run's `dotnet run` writes `obj/` and `bin/` into the NuGet tool store.
+  - Concurrent runs, and the two EventStore instances of one run, build the same directory. A read-only store fails outright.
+  - If `projects/*/Host.csproj` is missing, both helpers silently fall back to the build machine's `Projects.*` source paths.
+  - Options: (a) copy `projects/` into the private run workspace, prebuild it once before AppHost start, and fail closed in packaged mode when the files are missing; (b) point the resources at the prebuilt host executables instead; (c) accept it as a documented Stage 5 residual and fix it before Stage 7.
+  - (a) or (b) changes runtime behavior and requires a new live campaign.
+  - Files: `src/hosts/Hexalith.Builds.Module.AppHost/RunTopology.cs:185-199` and `src/libraries/Hexalith.Builds.Module.Cli/pack/projects/*/Host.csproj`.
+- [x] [Review][Decision] SR-D2 · MEDIUM · **Retained native TRX reports are not metadata-only.** **Resolved 2026-09-25 by Jerome → patch (a):** the report is redacted before it is retained, the secret scan runs again, and the retained bytes are hashed. This absorbs SR-P9.
+  - `ContainsRetainedSecret` rejects only handoff values and credential shapes.
+  - The retained `live/*.trx` files contain `runUser="administrator"`, absolute `/home/administrator/...` `codeBase`/`storage` paths, `computerName="DESKTOP-VIOG240"`, and `<StdOut>`.
+  - The Stage 5 residual mentions only `computerName`.
+  - Options: (a) redact `runUser`, `computerName`, and absolute paths, drop StdOut/StdErr before retention, and hash the retained bytes; (b) do not retain the TRX and bind only its hash and counts; (c) accept and correct the residual text.
+  - This also decides whether the existing Stage 5 TRX evidence can be committed as-is.
+  - Files: `src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestExecutor.cs:142-147` and `Runtime/ModuleCommandExecutionService.cs:560-583`.
+- [x] [Review][Decision] SR-D3 · MEDIUM · **HXE207 cleanup and rollback controls are self-declared.** **Resolved 2026-09-25 by Jerome → patch (a):** the cleanup artifact must be clean `down` evidence for a cited persisted run ID. Rollback remains attestation-only until Stage 7, and the README states this.
+  - `CompletedControl` checks the record's own `status == "passed"`, a command substring (any string containing `rollback`), and an artifact hash. It never parses the artifact.
+  - The positive corpus passes with `{"sample":…}` stubs.
+  - Options: (a) now, require the cleanup artifact to be `down` module-run evidence (`completed`/0/`HXI001`) whose `runId` is one of the cited runs, and leave the rollback artifact format to Stage 7; (b) also define a rollback-drill artifact contract now; (c) defer both to Stage 7.
+  - File: `src/libraries/Hexalith.Builds.Tooling/Evidence/G4P0AcceptanceValidator.cs:323-328`.
+- [x] [Review][Decision] SR-D4 · MEDIUM · **Control runs accept any exit-2 or exit-130 invocation.** **Resolved 2026-09-25 by Jerome → patch (a):** the unavailable control must be a native-test profile `test` run with a prerequisite rule other than `HXR029`. The cancelled control must be a `test` run with `HXC130` on a native-test profile.
+  - `ValidateControlRun` checks only the exit code and final status.
+  - `HXR029` (unsupported profile) is categorized `Prerequisite`/`PrerequisiteUnavailable`, so `--profile live` satisfies `prerequisite-unavailable`. Any exit-130 run satisfies `cancelled`.
+  - Options: (a) require the control evidence to invoke a persisted native-test profile, with outcome rule not `HXR029` for unavailable and `HXC130` for cancelled; (b) pin the exact rules `HXR011` and `HXC130`; (c) leave it as is.
+  - File: `G4P0AcceptanceValidator.cs:188-190`.
+- [x] [Review][Decision] SR-D5 · MEDIUM · **The `hexalith.g4-p0-acceptance.v1` schema is not published.** **Resolved 2026-09-25 by Jerome → (b′):** a field and rule table goes in `Tools/README.md` now. The JSON Schema file is deferred to Stage 7.
+  - The frontmatter `schemas.p0_acceptance` names it next to three schemas that exist in `schemas/`, but its field set lives only in `ExactFields(...)` calls.
+  - Options: (a) add `schemas/hexalith.g4-p0-acceptance.v1.json` and a README field table now; (b) defer to Stage 7.
+  - This adds a public contract surface.
+- [x] [Review][Decision] SR-D6 · MEDIUM · **The acceptance record has no slot for negative-control outcomes.** **Resolved 2026-09-25 by Jerome → (c):** decide when the Stage 7 record is authored. The campaign already hash-binds the 20 corpus results.
+  - The Stage 5 task requires binding them into deterministic artifacts.
+  - The gate asserts the 40 corpus invocations but keeps them out of the inventory. The Stage 5 campaign retains them only in `packaged-qualification.json`.
+  - Options: (a) add a hash-bound `negativeControls` artifact to the record and validate it; (b) rely on the Stage 6 gate inventory and document that; (c) defer to Stage 7.
+
+**Patch**
+
+- [x] [Review][Patch] SR-N1 · MEDIUM · Found during triage and present since `754d2b4`: a cancelled invocation writes its evidence with a null manifest, so `invocation.profile` and the fixture are lost. Stage 5 `live/cancelled.json` records no `--profile full`. **Resolved 2026-09-25 by Jerome → fix now:** a live-campaign rerun is already required. [`Runtime/ModuleCommandExecutionService.cs`:486]
+- [x] [Review][Patch] SR-P1 · MEDIUM · The persisted run keys are not bound to their platform. Require `reportPath == RetainedReportPath(evidencePath, platform)`, and require the evidence's hash-bound profile fixture to declare `nativeTests.platform == platform`. Make the corpus MTP TRX distinct and add a "VSTest evidence cited as MTP" negative. Today the byte-identical VSTest TRX passes for both keys. [`G4P0AcceptanceValidator.cs`:209-234]
+- [x] [Review][Patch] SR-P2 · MEDIUM · `persistedAssertions` and `expectedSequences` are only checked for non-emptiness. Require the exact six-check set per topology module and `module:1,2` sequences. Use `TryGetProperty` so HXE205 is reported instead of HXE200. Update the bound corpus evidence and add a partial-assertions negative. The positive corpus currently passes with 2 of 12 assertions. [`G4P0AcceptanceValidator.cs`:213-222]
+- [x] [Review][Patch] SR-P3 · MEDIUM · Package bytes are never opened. Read each `.nupkg`/`.snupkg` as a zip and require the nuspec `id`/`version` to match. Replace the text placeholders with minimal valid packages, and add lockstep-version and file-name/version negatives. [`G4P0AcceptanceValidator.cs`:268-296]
+- [x] [Review][Patch] SR-P4 · LOW · Approval dates are unbounded. Require `acceptedAtUtc` to be no earlier than the latest cited evidence `timestamps.completedUtc` and no later than the current time. [`G4P0AcceptanceValidator.cs`:299-321]
+- [x] [Review][Patch] SR-P5 · MEDIUM · The negative corpus never reaches several checks: the `BoundToRevision` revision, tool-version, and pin binding; TRX-count equality; `ValidateControlRun`; `ValidateNoReport`; the `reportPlatform` mismatch; a missing cleanup; a duplicate run key; and a zero or all-skipped report. Add one isolating negative per check. [`test/fixtures/evidence/acceptance/negative/`]
+- [x] [Review][Patch] SR-P6 · MEDIUM · The hash-bound corpus `.trx`, `.nupkg`, and `.snupkg` files have no eol attribute. With `core.autocrlf=true` the positive record fails with HXE204/HXE206, while the relaxed `Assert-TrackedFixtureBytesMatchHead` still passes. Add `test/fixtures/evidence/acceptance/bound/** -text`, plus a `.gitattributes` CRLF case in `Tools/test-g4-tool-package-artifact-validator.ps1`. [`.gitattributes`; `Tools/G4PackageQualification.functions.ps1`:323-339]
+- [x] [Review][Patch] SR-P7 · MEDIUM · Nothing unit-tests how the profile, native, and cleanup results combine. Extract that combination and the evidence inputs into an internal pure function. Test it for native failure, HXT008, and a cleanup failure after a native pass. [`Runtime/ModuleCommandExecutionService.cs`:370-405,627-633]
+- [x] [Review][Patch] SR-P8 · MEDIUM · Packaged host content is not fail-closed. Add a pack-time MSBuild `<Error>` when the AppHost, EventStoreHost, or UiHost Release outputs are missing. The gate should assert that the Module.Cli nupkg contains `g4-host/Hexalith.Builds.Module.AppHost.dll`, `g4-host/bin/{EventStoreHost,UiHost}/`, and `g4-host/projects/{EventStore,Ui}/Host.csproj`. Add a positive `WriteArtifactAsync` test. [`src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj`:22-28; `Tools/test-g4-tool-package-contracts.ps1`]
+- [x] [Review][Patch] SR-P9 · LOW · (absorbed by SR-D2) The retained report hash comes from a second read of the file. Hash the `reportBytes` that are actually written. [`Runtime/ModuleCommandExecutionService.cs`:573]
+- [x] [Review][Patch] SR-P10 · LOW · `mtp` passes `--report-xunit-trx`, so it supports xUnit v3 only. Document that restriction in `Tools/README.md` and in the `PersistedProfileNativeTests` XML docs. [`Runtime/NativeTestExecutor.cs`:94]
+- [x] [Review][Patch] SR-P11 · LOW · The handoff unit test does not assert `HEXALITH_G4_EVENTSTORE_PEER_URL` or `HEXALITH_G4_DOMAINS`. [`test/Hexalith.Builds.Module.Tests/NativeTestExecutorTests.cs`]
+- [x] [Review][Patch] SR-P12 · LOW · The live-lane outer timeout (15 min) equals the inner native-test timeout, so a hang kills the tool before cleanup. Raise it to 30 min. [`test/Hexalith.Builds.Tooling.IntegrationTests/Live/PackagedPersistedProfileTests.cs`:54]
+- [x] [Review][Patch] SR-P13 · LOW · The VSTest fixture `global.json` duplicates the root SDK pin. Add a test that asserts they are equal. [`test/fixtures/module/executable/P0Fixture.NativeTests.VsTest/global.json`]
+- [x] [Review][Patch] SR-P14 · LOW · The `nativeTests` loader negatives have no positive control. Also, `InvalidReportKeepsLoaderRule` omits HXT002. [`test/Hexalith.Builds.Module.Tests/PersistedProfileNativeTestsTests.cs`:43-48; `NativeTestExecutorTests.cs`]
+- [x] [Review][Patch] SR-P15 · LOW · `volatileFields` does not list the per-run native report hash that `artifactHashes` now carries. The TRX GUID, times, and timings change on every run. [`RunEvidence/ModuleRunEvidenceFactory.cs`]
+
+**Defer**
+
+- [x] [Review][Patch] SR-W1 · MEDIUM · The fixture-proof self-test `Tools/test-g4-tool-package-artifact-validator.ps1` never runs in CI. **Resolved 2026-09-25 by Jerome → patch folded into SR-P6:** call it from `Tools/test-g4-tool-package-contract-gate.ps1`, which CI already runs. The G-6-bound `.github/workflows/ci.yml` is not edited.
+- [x] [Review][Defer] SR-W2 · MEDIUM · The packaged native-report lane (`PackagedPersistedProfileTests`) is opt-in through `LiveGate`, not a blocking gate control (AC11). [`test/Hexalith.Builds.Tooling.IntegrationTests/Live/PackagedPersistedProfileTests.cs`] — deferred: this needs live-capable CI infrastructure (Stages 6–7).
+- [x] [Review][Defer] SR-W3 · MEDIUM · A failing native invocation binds no test counts or report (AC7), because only passing reports are retained. [`Runtime/NativeTestExecutor.cs`:127-138] — deferred: this is a recorded Stage 5 residual. Resolve it with SR-D2 or before the Stage 7 acceptance record.
+
+**Rejected**
+
+- R1 false — hard-coded `PersistedAssertions` labels: `PersistedProfileExecutor` fails closed on every one of the six checks per module and on sequences 1,2 before returning `completed`. The labels statically describe that single executor.
+- R2 low — Two findings contradict each other and neither harms a consumer. One says persisted assertions are dropped when native tests fail. The other says they are retained when report retention fails. Either way the evidence says `failed`.
+- R3 false — "one person holds all three roles": the story frontmatter names Jérôme Piquot for all three, so a distinct-name rule would block legitimate acceptance.
+- R4 low — the synthetic positive revision doesn't exist. The corpus is labelled synthetic, and a repository-existence check would add a Git dependency.
+- R5 false — `nativeTests` was added to v1 without a version bump. v1 is unpublished, strict readers fail closed, and the owner decision placed it in v1.
+- R6 low — an invalid `nativeTests` gives generic `HXR029`. Every invalid profile field already behaves this way, and a fix would add diagnostic plumbing.
+- R7 low — `.json` routing sends JSON readiness matrices to the acceptance validator. No readiness JSON exists, and the help text documents YAML matrices.
+- R8 low — the bound evidence read has no size cap. The files are hash-bound repository files, and a cap would be an extra guard.
+- R9 low — VSTest `native.trx` would be overwritten on a multi-TFM project. The fixtures are single-TFM.
+- R10 low — `ModuleRunEvidenceWriter.WriteAsync` is no longer `async`. All callers await it immediately.
+- R11 false — "`completed` status lacks test/doc updates": 198/198 Module tests pass, and no test or README text asserts persisted `passed`.
+- R12 false — "fixture native-test projects run in repository tests": they are not in `Hexalith.Builds.slnx`, and the gate excludes fixture projects.
+- R13 low — the record cannot carry the literal command. The canonical evidence command form was accepted in Stages 2–4.
+- R14 spec-edit — the Stage 5 checkbox cites AC 6 while filter pass-through and browser/CLI/MCP executors are residuals. Fixing it means editing the story, so it is flagged for the owner.
+- R15 low — one evidence file cited by several runs is resolved by SR-P1's platform-bound paths. The control runs already need different exit codes.
+- R16 low — the fixture test hard-codes `p0-orders` instead of reading `HEXALITH_G4_DOMAINS`. It is fixture-only.
 
 ## Dev Notes
 
@@ -1841,6 +1924,269 @@ are not counted as passes. Installed-package live composition, native reports,
 and deterministic packaged acceptance evidence remain Stage 5 work. No package
 was published, and no P0 owner acceptance is claimed.
 
+### 2026-09-24 Stage 5 packaged native-report and acceptance-validator qualification
+
+**Disposition: Stage 5 is complete in the local packaged scope; P0 remains in
+progress for Stages 6–7.** Its local evidence was produced through the installed
+`0.0.0-stage5.6` tools only, and no package was published. No consumer pin
+changed, nothing was staged or committed, and no owner or Test Architect
+acceptance is claimed. The working tree is dirty at base revision
+`754d2b4b6615c5004606ba837dd9c925c57e8d14`. Every run therefore records
+`repositoryDirtyMarker: dirty`, and none of this evidence can satisfy the
+acceptance record, which requires a clean revision.
+
+**Resumption checks.** The interrupted second live run (exit 58, xUnit
+`OperationCanceledException`, 18:41:28–18:42:04Z,
+`native/packaged-persisted-bound.{log,trx}`) is retained as a cancelled attempt,
+not a product failure. It left stale run state `739bd2a186dfc3272060515161b8eee7`
+(`Ready`, AppHost pid 2949494 absent after the 20:49 reboot) and its workspace,
+but no labelled container. Packaged `hexalith-module down --run-id
+739bd2a186dfc3272060515161b8eee7` (stage5.5) returned `0`/`HXI001` and removed
+both (`stale-run-cleanup-output.json`). `/tmp` had been cleared by the reboot,
+which removed the previous isolated Dapr home and package consumer. A new
+isolated home is at
+`~/.local/state/hexalith-qualification/g4-dapr-home-1.18.2`: Dapr CLI 1.18.0
+from the official release archive (SHA-256
+`2a94739e0aa101289d88418225319562bc6800db273b3d9cf819a0efd1ea1bfe`), then
+`DAPR_RUNTIME_PATH=<home> dapr init --slim --runtime-version 1.18.2`. The global
+Dapr install and containers were untouched, and binary hashes are in
+`stage5-verification.json`.
+
+**Owner decision (2026-09-24, Jerome).** Native reports bind through a
+runner-owned test executor. Because `schemas/hexalith.module-manifest.v1.json`
+and several Module test files are hash-bound by the accepted G-6 source state,
+the declaration lives in the runner-owned `hexalith.g4-persisted-profile.v1`
+fixture, not the manifest. `nativeTests` holds a repository-relative `project`
+and a `platform` of `vstest` or `mtp`. The G-6 audit matched all 36 bound files
+after EOL normalization (`g6-bound-audit.json`).
+
+**Implementation.**
+
+- `Runtime/NativeTestExecutor.cs` runs after the persisted assertions pass and
+  before teardown. It calls `dotnet test` from the test project directory, so
+  the consumer's `global.json` still selects the platform: VSTest uses
+  `--logger trx;LogFileName=native.trx`, and MTP uses `--report-xunit-trx`.
+- It passes the handoff contract in `Runtime/NativeTestHandoff.cs`: run ID,
+  EventStore/peer/UI URLs, tenant, resource namespace, domains, and a run-scoped
+  token. The signing key is never handed off.
+- Failure rules:
+  - a nonzero native exit or timeout is `HXT007`;
+  - the loader keeps `HXT001`–`HXT006`;
+  - an unstartable process is `HXR030`;
+  - a report containing a handoff secret, or a credential in any individual XML
+    value, is `HXT008` (exit 6) and is not retained.
+- A passing report is written beside `--evidence` as
+  `<evidence>.<platform>.trx`. Its counts become `testCounts` and its
+  upper-case SHA-256 is added to `artifactHashes`.
+- The executable fixture gains `full` (VSTest) and a new `full-mtp` profile. It
+  also gains product-side tests in `P0Fixture.NativeTests` (MTP) and
+  `P0Fixture.NativeTests.VsTest`. The VSTest variant opts out of the xUnit v3
+  MTP application mode and has a directory-local `global.json` without the
+  repository MTP runner selection.
+- **Contract correction:** a successful persisted profile previously emitted
+  `status`/`finalStatus` `passed`. The evidence schema, artifact validator, and
+  readiness `HXE149` accept only `completed` as success, so every Stage 4 and
+  earlier Stage 5 persisted artifact failed canonical artifact validation. The
+  profile and native step now emit `completed`. Earlier
+  `native/packaged-profile-*.json` and `packaged-host*` artifacts are superseded.
+- `G4P0AcceptanceValidator.cs` is finished, and `validate` dispatches `.json`
+  records to it. It fails closed with these rules:
+  - `HXE200`: unreadable input, duplicate keys, or secrets;
+  - `HXE201`: schema or field set;
+  - `HXE202`: not `accepted`, revision, or `SupportedPlatformPins`;
+  - `HXE203`: manifest hash;
+  - `HXE204`: exactly two lockstep packages, feed by version kind, `.nupkg` and
+    `.snupkg` hashes;
+  - `HXE205`: exact `dotnet tool run <evidence command>`, status, exit code,
+    manifest, clean revision and tool version, and exactly `persisted-vstest`,
+    `persisted-mtp`, `prerequisite-unavailable`, and `cancelled`;
+  - `HXE206`: native report hash equals the evidence `artifactHashes` entry and
+    counts;
+  - `HXE207`: completed cleanup and rollback;
+  - `HXE208`: three dated named-role approvals of the exact revision.
+- The synthetic corpus `test/fixtures/evidence/acceptance/` holds one positive
+  record (`HXI210`), 19 negatives covering every rule, and bound artifacts. A
+  README labels it as never being acceptance evidence, and a narrow
+  `.gitignore` exception makes its placeholder `.nupkg`/`.snupkg` files
+  trackable.
+- The package gate runs the corpus through the source and installed commands as
+  blocking controls without inventory entries, so the publisher's
+  evidence-name contract is unchanged. The gate's help contract and its
+  self-test now expect the updated `validate` description.
+
+| Command/check | Result and retained evidence |
+| --- | --- |
+| `dotnet build Hexalith.Builds.slnx --configuration Release -m:1` (isolated `NUGET_PACKAGES`, `CI=true`) | Exit `0`, 0 warnings/errors after red→green analyzer fixes. |
+| Module tests, built assembly direct run | 198/198 passed: 172 existing plus 26 new in `NativeTestExecutorTests`, `PersistedProfileNativeTestsTests`. |
+| Evidence tests, built assembly direct run | 90/90 passed: 68 existing plus 22 new in `G4P0AcceptanceValidatorTests`. |
+| `pwsh -NoProfile -File Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-stage5.6 -RequireControls -PackageDirectory <E>/packages6 -RetainPackageDirectory` | First attempt exit `1` on the stale help contract (`package-gate6-failed-help-contract.log`). I discarded that attempt's package directory instead of retaining it. Rerun exit `0` (`package-gate6.log` `0210deae…`): Evidence 90/90, Module 198/198, Integration 1 passed and 12 explicit live opt-out skips, and 40 acceptance invocations (20 cases × source and package). Inventory `packages6/g4-tool-package-inventory.json` `2d8bb2b2…`. |
+| Packages | `Hexalith.Builds.Module.Cli.0.0.0-stage5.6.nupkg` `e0d4f12d…653c`, `.snupkg` `b66fd3b8…b72d`; `Hexalith.Builds.Evidence.Cli.0.0.0-stage5.6.nupkg` `7ed8c0b9…1444`, `.snupkg` `ded94da8…1570`. Restored exactly into a clean consumer (`restore6.log`, `consumer-dotnet-tools.stage5.6.json`). |
+| `run-packaged-qualification.py <consumer> <E>/packages6` with `G4_CAMPAIGN=live` | Exit `0`, `live/packaged-qualification.json` `1eea0eb9…`, `status: passed`, no failures, source bundle `7ed3cf1e…4066` unchanged. |
+| `dotnet tool run hexalith-module -- test --manifest test/fixtures/module/executable/hexalith.module-manifest.v1.json --profile full --evidence <E>/live/persisted-vstest.json --output json` | `0`/`completed`, run `91a74fcf…`. 12 persisted assertions, 2 sequences, `testCounts` 2/2. VSTest report `live/persisted-vstest.vstest.trx` `0af33e78…06c3`, bound in `artifactHashes`. |
+| Same with `--profile full-mtp` | `0`/`completed`, run `3a1c95fa…`. 12 assertions, 2 sequences, 2/2. MTP report `live/persisted-mtp.mtp.trx` `f31be5d0…9948`, bound. |
+| Same with `--profile live` | `2`/`unavailable`/`HXR029`. |
+| `full` with `HEXALITH_DAPR_HOME` absent | `2`/`unavailable`/`HXR011` before mutation. |
+| `full` with SIGINT to the process group at 40 s, while running | `130`/`cancelled`/`HXC130`. |
+| `down --run-id 91a74fcf…` after that run completed | `0`/`completed`/`HXI001` (idempotent). |
+| Retained resources after every run | No labelled container, run-state file, workspace, or Aspire AppHost remained. |
+| Installed `hexalith-evidence validate` on the 20 corpus records | 20/20 matched exit and ordered rule IDs. |
+| Installed `validate live/candidate-acceptance.json` (real Stage 5 runs, `status: candidate`, unpublished feed, no approvals, rollback not run) | `6`/`HXE202`: the real local evidence fails closed. |
+| Opt-in native xUnit live lane: `HEXALITH_G4_LIVE=1 … Hexalith.Builds.Tooling.IntegrationTests -class …PackagedPersistedProfileTests -trx <E>/native-lane/packaged-persisted-lane.trx` | 2/2 passed (`full`/VSTest, `full-mtp`/MTP), 118 s. Lane TRX `527d8d7b…`, outcome `Completed`; per-run reports and evidence are in `native-lane/`. |
+| `git diff --check` | Exit `2`, only for the three added `.gitignore` lines. They follow that file's tracked CRLF convention (`diff-check.log`). |
+| `stage5-verification.json` | SHA-256 of 87 Stage 5 artifacts plus the isolated Dapr binaries; file hash `043c8504…ce75`. |
+
+**Residuals:**
+
+- Retained TRX files carry test identities, timings, the adapter banner, and
+  the host computer name (`computerName`), but no credential, tenant data, or
+  payload.
+- `--filter` still makes persisted profiles unsupported (`HXR029`); filter
+  pass-through to native platforms is not qualified.
+- Browser, CLI, and MCP profile classes have no executor.
+- Only a passing native report is retained. A failing report is represented by
+  its rule ID alone.
+- Before Stage 7, the acceptance record needs a clean exact revision, published
+  packages, a rollback drill, and named approvals.
+- Earlier `packages`–`packages5`, `packaged-host*`, `native/*`, and build logs
+  in this directory are retained as superseded attempts.
+
+### 2026-09-25 Stage 5 code review, remediation, and `0.0.0-stage5.7` requalification
+
+**Disposition: the Stage 5 review is remediated and requalified in the local
+packaged scope. P0 remains in progress for Stages 6–7.** The tree is still dirty
+at base `754d2b4b6615c5004606ba837dd9c925c57e8d14`. Nothing was staged,
+committed, pushed, branched, or published. No consumer pin changed, no
+dependency was updated, and no owner or Test Architect acceptance is claimed.
+P0, the dependent P2, and Story 6.1 remain open, and Stage 6 has not started.
+
+**Preflight.**
+- `main` tracks `origin/main` with nothing ahead or behind.
+- Only Stage 5 files were dirty.
+- An independent re-hash of the Projects
+  `g-6-runtime-toolchain/source-state.json` Builds entries matched 36/36 after
+  EOL normalization (30/36 byte-identical). No bound file is dirty, before or
+  after remediation (`stage5.7/g6-bound-audit.json` `21722b3c…`).
+
+**Review.**
+- `bmad-code-review` ran four layers: blind, edge-case, verification-gap, and
+  acceptance audit.
+- The scope was the Stage 5 diff only: 97 file sections, CR-at-EOL churn
+  ignored, `qualification-evidence/` and this story excluded.
+- 58 raw findings were triaged into 6 decisions, 15 patches, 3 deferrals, and
+  16 rejections, plus SR-N1 found during triage. The full dispositions are in
+  "Review Findings — Stage 5".
+- Jerome accepted the recommendations: D1 a, D2 a, D3 a, D4 a, D5 b′, D6 c.
+
+**Remediation (all patches applied).**
+- **D1 (packaged hosts).** `Runtime/PackagedHostProject.cs` and
+  `RunTopology.cs`: each packaged host resource builds a private shim copy in
+  `<workspace>/hosts/<resource>/`. The copy uses `PackagedHost.props` for the
+  absolute host directory. The shim no longer imports `Directory.Build.*` or
+  `Directory.Packages.props`. A partial package layout throws, and a
+  source-only layout still uses `Projects.*`.
+- **D2 (report redaction).** `Runtime/NativeTestReportRedactor.cs`: after the
+  raw secret check, the runner removes `runUser`, `computerName`,
+  `runDeploymentRoot`, the run name, `Output`, `RunInfos`, `ResultFiles`, and
+  `CollectorDataEntries`, and reduces `codeBase`/`storage` to file names. It
+  then re-scans the report and hashes and retains the redacted bytes. The
+  retained-report hash is computed from the written bytes (SR-P9).
+- **SR-N1.** A cancelled invocation now records its manifest, so
+  `invocation.profile` and the fixture are preserved.
+- **SR-P7.** `ModuleCommandExecutionService.CombineTestResults` is a pure,
+  unit-tested combination of the profile, native, and cleanup results.
+- **SR-P15.** `artifactHashes` is listed in `volatileFields` whenever a native
+  report is bound.
+- **Shared assertion labels.** `Runtime/PersistedProfileEvidence.cs` holds the
+  labels that both the runner and the validator use.
+- **Validator** (`Evidence/G4P0AcceptanceValidator.cs`):
+  - platform-bound persisted runs: declared `nativeTests.platform` plus the
+    `<evidence>.<platform>.trx` path (SR-P1);
+  - the exact 12 assertions and sequences (SR-P2);
+  - nuspec `id`/`version` for each `.nupkg`/`.snupkg` (SR-P3);
+  - approvals dated no earlier than the last run's completion and not in the
+    future (SR-P4);
+  - control runs must be native-test-profile `test` runs, with a prerequisite
+    rule other than `HXR029` or with `HXC130` (D4);
+  - cleanup must be clean `down` evidence for a cited persisted run; rollback
+    stays attested until Stage 7 (D3);
+  - run IDs must be distinct, and bound evidence reads are capped at 4 MiB.
+- **Corpus.** It was regenerated deterministically: 1 positive and 36
+  negatives, 17 of them new (SR-P5). The generator is kept outside the
+  repository at
+  `<scratchpad>/gen_acceptance_corpus.py`. The previous corpus is backed up in
+  the scratchpad. `.gitattributes` pins `bound/**` with `-text`, and the
+  `.gitignore` exception now covers `bound/**` (SR-P6).
+- **Gate.**
+  - `test-g4-tool-package-contracts.ps1` asserts the seven packaged host
+    entries (SR-P8).
+  - `Hexalith.Builds.Module.Cli.csproj` fails pack when the host Release
+    outputs are missing.
+  - `test-g4-tool-package-artifact-validator.ps1` adds `eol=crlf` and `-text`
+    cases.
+  - `test-g4-tool-package-contract-gate.ps1`, which CI already runs, now runs
+    that self-test (SR-W1). The G-6-bound `ci.yml` was not edited.
+- **Docs and tests.**
+  - `Tools/README.md` gains the acceptance field/rule table (D5 b′), the
+    xUnit-v3-only `mtp` note (SR-P10), redaction, and packaged-host builds.
+  - New tests: `TestResultCombinationTests`, `NativeTestReportRedactorTests`,
+    `PackagedHostProjectTests`, a loader positive control (SR-P14), an HXT002
+    case, peer and domain handoff assertions (SR-P11), an SDK-pin equality test
+    (SR-P13), and a positive `WriteArtifactAsync` test.
+  - The live-lane outer timeout is now 30 min (SR-P12).
+  - Red→green analyzer fixes: IDE0046, SA1118, RCS1146, SA1507, IDE0370,
+    SA1202, RCS1238, S3358, RCS1181, CA1849/S6966/VSTHRD103, and SA1515.
+
+| Command/check (`<E>` = `qualification-evidence/stage5-local-20260924`, isolated `NUGET_PACKAGES=~/.local/state/hexalith-qualification/nuget-stage5.7`, `CI=true`) | Result |
+| --- | --- |
+| `dotnet build Hexalith.Builds.slnx --configuration Release -m:1` | Exit `0`, 0 warnings, 0 errors (`stage5.7/build.log`, ignored). |
+| Evidence tests, built assembly direct run | 107/107 (90 + 17 new corpus negatives). |
+| Module tests, built assembly direct run | 214/214 (198 + 16 new). |
+| Installed-CLI walk of the 37 corpus records | Every record fails on its intended field. |
+| `pwsh -NoProfile -File Tools/test-g4-tool-package-contract-gate.ps1` | Exit `0`. The artifact-validator self-test passed 30 scenarios. |
+| `pwsh -NoProfile -File Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-stage5.7 -RequireControls -PackageDirectory <E>/packages7 -RetainPackageDirectory` | Exit `0`. Evidence 107/107, Module 214/214, Integration 1 passed and 12 live opt-out skips. The 37 acceptance cases ran through source and package as blocking controls. The packaged host entries were asserted. Inventory `455a2d89…`, log `76dfa114…`. |
+| Packages | `Module.Cli.0.0.0-stage5.7.nupkg` `654dc5f2…`, `.snupkg` `68103da3…`; `Evidence.Cli.0.0.0-stage5.7.nupkg` `e2e76e79…`, `.snupkg` `5259f187…`. Restored into a fresh consumer at `~/.local/state/hexalith-qualification/consumer-stage5.7` (`stage5.7/consumer-dotnet-tools.stage5.7.json`). |
+| `G4_CAMPAIGN=live-stage5.7 … python3 run-packaged-qualification-stage5.7.py <consumer> packages7` | Exit `0`, `status: passed`, no failures (`live-stage5.7/packaged-qualification.json` `ada14b57…`, source bundle `679dc471…` unchanged). **Persisted runs:** `full`/VSTest run `0608dcbc…` and `full-mtp`/MTP run `955d41e7…` each passed 2/2 with 12 assertions and 2 sequences. Their redacted reports are `015833c6…` and `b8615b97…`, and `artifactHashes` is volatile. **Controls:** `live` returned `2`/`HXR029`, the prerequisite control `2`/`HXR011`, and the cancelled run `130`/`HXC130` with profile `full` recorded (SR-N1); the idempotent `down` returned `0`. **Validation:** 37/37 corpus cases matched through the installed tool, and the candidate record failed closed with `6`/`HXE202`. **Residue:** no build output in the tool store, and no retained containers, run state, workspaces, or runner AppHosts. |
+| Packaged native xUnit live lane (`native-lane-stage5.7/command.txt`) | 2/2 passed in 128.4 s. Lane TRX `88786bb2…`; retained per-run reports `86acd4fb…` (VSTest) and `0a9e3ed1…` (MTP) are redacted. |
+| Real-evidence validator probe | Copies of the `live-stage5.7` runs were relabeled `clean` in the ignored `artifacts/stage5.7-probe/`, and the candidate record was set to `accepted`. The installed validator returned `HXI210`. Along the way, P4 correctly rejected an approval dated before the cancelled run's completion. The probe also showed that a record `command` must be `dotnet tool run ` plus the canonical evidence command; `Tools/README.md` now documents this. The probe was deleted afterwards. |
+| Verification manifest | `stage5.7/stage5.7-verification.json` `79c1c4bb…`: SHA-256 of 177 stage5.7 artifacts. The isolated Dapr binaries were re-hashed and are unchanged. |
+| `git diff --check HEAD` | Exit `2`, only for the three `.gitignore` exception lines, which follow the file's tracked CRLF convention. |
+| Commit messages | All 7 proposed messages pass `@commitlint/cli@21.2.2` with `@commitlint/config-conventional@21.2.2` and the repository `commitlint.config.mjs`, installed in an isolated scratch directory. A negative control is rejected. The repository's installed `node_modules` has CLI `21.2.1` while `package-lock.json` pins `21.2.2`. The 7 messages also pass `21.2.1`. `node_modules` was not updated. |
+
+**Blockers and notes:**
+- The first campaign scan found an unrelated developer AppHost
+  (`Hexalith.Tenants.AppHost`) running. It was left untouched. The stage5.7
+  campaign counts only `Hexalith.Builds.Module.AppHost` instances and records
+  the others (`otherAppHostPaths`).
+- The xUnit harness's own lane report (`native-lane-stage5.7/packaged-persisted-lane.trx`)
+  contains `runUser` and the host name. The runner does not produce this file.
+- `live/` and `native-lane/` (stage5.6) hold raw, unredacted reports.
+
+**Evidence decision (2026-09-25, Jerome: option E3).**
+- **Why the move was necessary.** The runner (`git status --porcelain --untracked-files=all`) and the gate (`Get-SourceTreeState`) mark any untracked, non-ignored file as dirty. Leaving superseded evidence uncommitted in the tree would therefore make every Stage 6 run dirty.
+- **Committed:** `stage5.7/`, `live-stage5.7/`, `native-lane-stage5.7/`, `packages7/` (inventory and qualification JSON), `run-packaged-qualification-stage5.7.py`, and `stage5-verification.json`, which is the hash index of the 87 stage5.6 artifacts and contains no host data. `*.log`, `*.nupkg`, and `*.snupkg` remain ignored.
+- **Moved, not deleted,** to `~/.local/state/hexalith-qualification/stage5-superseded-20260924/` with the same relative paths:
+  - `live/`, `native-lane/`, `native/`, and `packages`–`packages6`;
+  - `packaged-host*`, `stale-run-cleanup-*`, and the stage5.6 root logs;
+  - `g6-bound-audit.json` and `run-packaged-qualification.py` (stage5.6);
+  - the xUnit harness report `native-lane-stage5.7/packaged-persisted-lane.trx`, which contains the host name and `runUser`. Its hash `88786bb2…` stays in `stage5.7/stage5.7-verification.json`.
+- **Move verification.** 257 files (107,350,958 bytes) were hashed before and after the move, with 0 mismatches. The manifest `stage5.7/superseded-archive-manifest.json` (`99859121…`) is committed, and a copy is kept in the archive.
+
+**Commits (2026-09-25, Jerome: option B on local `main`, no push).**
+- **Commit 0** used an index-only change: LF blobs of the `HEAD` content went in through `git hash-object -w` and `git update-index --cacheinfo`. The diff is 452/452 lines and empty once CR at end of line is ignored. The working-tree bytes are unchanged, so no build check was needed.
+- **Commits 1–4:** each tree was first built in a temporary index and a detached worktree with `<scratchpad>/verify-commit.sh`. The real commit tree was then confirmed identical to the verified tree.
+- **Messages:** all pass `@commitlint/cli@21.2.2`, installed in isolation with the repository config, and the repository's own `21.2.1`. No commit-msg hook is installed locally, and none was bypassed.
+
+| Commit | Subject | Pre-commit verification (Release build; Module; Evidence) |
+| --- | --- | --- |
+| `05ed57d` | `style: normalize line endings of three evidence sources` | Content-identical: 3 files, EOL only |
+| `c7fb9fc` | `fix(runner): report completed for passing persisted profiles` | 1 file; 0 warnings/errors; 172/172; 68/68 |
+| `f34552b` | `feat(runner): bind native test reports into persisted profile evidence` | 23 files; 0 warnings/errors; 211/211; 68/68 |
+| `3c8a520` | `feat(runner): ship the composition hosts inside the module tool` | 10 files; 0 warnings/errors; 214/214; 68/68 |
+| `aa2ef5c` | `feat(evidence): validate G-4 P0 acceptance records and gate them` | 123 files; 0 warnings/errors; 214/214; 107/107. Previously planned as two commits (validator, then gate) and merged, so no commit has the new `validate` help text without the gate expecting it. The corpus `-text` blobs are committed as raw bytes. |
+| next | `docs(g4): record Stage 5 packaged qualification and review` | This story, `deferred-work.md`, and the committed evidence set |
+
+**Stage 6 note (not started).** Evidence written inside the repository marks every later run dirty. Stage 6 must write its run evidence to an ignored or external location and commit it afterwards.
+
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
@@ -1856,6 +2202,9 @@ was published, and no P0 owner acceptance is claimed.
 - Chunk A code-review remediation is complete: 18 patches applied, 2 findings dismissed as noise, and no Chunk A item deferred. The story remains in progress because unreviewed delivery surfaces and external qualification/acceptance dependencies remain.
 - 2026-09-23: Connected validated executable public `run/down/test` to the Builds-owned composition engine. Local public `run/down` and nonpassing unsupported `test` are proven by a fresh hash-bound ten-suite/110-test live campaign and separate public CLI probe. Stage 3 is complete in that local supported scope; packaged executable composition, full profiles, native reports, publication, rollback, and full P0 acceptance remain open.
 - 2026-09-24: Qualified the two-module persisted `full` profile with the public source `test` command and exact event/projection/sequence, restart, retry, peer, authentication, Tenant, and fail-closed controls. The final source/binary-bound public campaign and independent verification passed with zero retained resources; packaged live and native-report acceptance remains in Stage 5, so P0 stays open.
+- 2026-09-25: Stage 5 code review completed: 6 decisions, 15 patches, 3 deferrals, 16 rejections, plus SR-N1. All decisions were resolved by Jerome, and 17 patches were applied. The installed `0.0.0-stage5.7` gate, live campaign, and native lane requalified the remediated tree, and the hardened validator accepts real runner output. The evidence is dirty-tree and unpublished, so P0, P2, and Story 6.1 stay open, with no commit or owner acceptance.
+- 2026-09-25: With Jerome's go-ahead, Stage 5 is committed on local `main` in six Conventional Commits, from `05ed57d` through the `docs(g4)` commit. Each code commit tree was built and tested before committing. Superseded evidence was moved out of the tree with a hash manifest. Nothing was pushed or published, and Stage 6 has not started.
+- 2026-09-24: Stage 5 local packaged scope complete. The runner-owned native test executor binds VSTest and MTP TRX counts and hashes into evidence. The successful-status contract is corrected to `completed`. The `hexalith.g4-p0-acceptance.v1` validator and its 20-case corpus run blocking through the installed tool. The installed `0.0.0-stage5.6` campaign, native xUnit live lane, and package gate passed with zero retained resources. The evidence is dirty-tree and unpublished, so P0, P2, and Story 6.1 remain open, and no owner acceptance is claimed.
 
 ### File List
 
@@ -1922,6 +2271,18 @@ was published, and no P0 owner acceptance is claimed.
 - `src/libraries/Hexalith.Builds.Tooling/Runtime/PersistedProfile*.cs`, `CompositionResourceController.cs`, `CompositionRunPlanFactory.cs`, and `src/hosts/Hexalith.Builds.Module.AppHost/` (Stage 4 public profile, persisted state checks, peer and restart resource control)
 - `src/libraries/Hexalith.Builds.Module.Cli/{ModuleCommandApplication,Program}.cs`, `src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandHost.cs`, and `Runtime/ModuleCommandExecutionService.cs` (Stage 4 public execution and cancellation cleanup)
 - `test/Hexalith.Builds.Module.Tests/{PersistedProfileStateTests,CompositionRunPlanFactoryTests}.cs` and `_bmad-output/implementation-artifacts/qualification-evidence/stage4-public-20260924/` (focused controls, retained failed and final campaigns, package gate, G-6 audit, independent hash verification)
+- `src/libraries/Hexalith.Builds.Tooling/Runtime/{NativeTestExecutor,NativeTestExecutionResult,NativeTestHandoff,PersistedProfileNativeTests}.cs` (new) and `Runtime/{PersistedProfileDefinition,PersistedProfileLoader,PersistedProfileExecutor,ModuleCommandExecutionService}.cs`, `RunEvidence/{ModuleRunEvidenceFactory,ModuleRunEvidenceWriter}.cs` (modified) (Stage 5 native test executor, handoff, TRX binding, `completed` status correction)
+- `src/libraries/Hexalith.Builds.Tooling/Evidence/G4P0AcceptanceValidator.cs` (new), `Evidence/ReadinessEvidenceCommandExecutionService.cs`, and `src/libraries/Hexalith.Builds.Evidence.Cli/EvidenceCommandApplication.cs` (Stage 5 acceptance validator and JSON dispatch)
+- `src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj`, `src/libraries/Hexalith.Builds.Module.Cli/pack/`, `src/hosts/Hexalith.Builds.Module.AppHost/RunTopology.cs`, and `Tools/build-g4-tool-packages.ps1` (Stage 5 packaged hosts without a source AppHost override)
+- `test/fixtures/module/executable/{P0Fixture.NativeTests,P0Fixture.NativeTests.VsTest}/`, `profiles/p0-two-module-full-mtp.fixture.json` (new), `profiles/p0-two-module-full.fixture.json`, and `hexalith.module-manifest.v1.json` (Stage 5 native test fixture and `full-mtp` profile)
+- `test/fixtures/evidence/acceptance/` (new) and `.gitignore` (Stage 5 synthetic acceptance validator corpus)
+- `test/Hexalith.Builds.Module.Tests/{NativeTestExecutorTests,PersistedProfileNativeTestsTests}.cs`, `test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs`, and `test/Hexalith.Builds.Tooling.IntegrationTests/Live/PackagedPersistedProfileTests.cs` (new; Stage 5 unit, contract, and opt-in packaged live coverage)
+- `Tools/{test-g4-tool-package-contracts,test-g4-tool-package-contract-gate}.ps1`, `Tools/G4PackageQualification.functions.ps1`, and `Tools/README.md` (Stage 5 blocking acceptance controls, help contract, Git-attribute-aware fixture proof, documentation)
+- `_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/` (Stage 5 package gate, packages, campaign, native lane, candidate record, G-6 audit, and verification manifest; the superseded stage5.6 attempts were moved to `~/.local/state/hexalith-qualification/stage5-superseded-20260924/`, and their hashes stay in `stage5-verification.json` and `stage5.7/superseded-archive-manifest.json`)
+- `src/libraries/Hexalith.Builds.Tooling/Runtime/{PackagedHostProject,NativeTestReportRedactor,PersistedProfileEvidence}.cs` (new), `src/libraries/Hexalith.Builds.Module.Cli/pack/projects/{EventStore,Ui}/Host.csproj` (Stage 5 review: private packaged host builds, report redaction, shared assertion labels)
+- `test/Hexalith.Builds.Module.Tests/{TestResultCombinationTests,NativeTestReportRedactorTests,PackagedHostProjectTests}.cs` (new), `.gitattributes`, `Tools/test-g4-tool-package-artifact-validator.ps1` (Stage 5 review remediation)
+- `_bmad-output/implementation-artifacts/deferred-work.md` (Stage 5 review deferrals)
+- `_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/{stage5.7,packages7,live-stage5.7,native-lane-stage5.7}/` and `run-packaged-qualification-stage5.7.py` (review-remediated `0.0.0-stage5.7` qualification)
 
 ### Change Log
 
@@ -1937,3 +2298,13 @@ was published, and no P0 owner acceptance is claimed.
 - 2026-09-23: Jérôme Piquot personally accepted both remediated Stage 3 evidence assessments, for the Builds/Platform owner and named Test Architect roles. Public HXR003, Stage 3 public-composition work, later P0 stages, and full P0 acceptance remain open; Stage 3 and P0 checkboxes remain unchecked.
 - 2026-09-23: Opened validated executable public `run/down/test` onto the qualified composition engine after the accepted Stage 3 assessments. Fresh final-source 10/10 live suites and 110/110 tests, a same-hash public CLI probe, `stage3.14` local package contract gate, 58/58 package inventory check, and G6-EVIDENCE-VALID support the local Stage 3 completion. Unsupported public profile execution remains exit 2/HXR029; packaged executable live composition and Stages 4–7 remain open, so P0 stays in progress.
 - 2026-09-24: Implemented and publicly qualified the local two-module persisted `full` profile. The final hash-bound public campaign passed `full` and retained nonpassing unsupported, prerequisite, and active-cancellation controls with zero resources left; focused state tests, the `stage4.4` package contract gate, independent evidence verification, and G6-EVIDENCE-VALID passed. Stage 4 is complete in that scope; packaged live composition, native reports, publication, rollback, and named-owner P0 acceptance remain in Stages 5–7.
+- 2026-09-24: Stage 5 (local packaged scope). Added the runner-owned VSTest/MTP native test executor, handoff contract, and TRX binding into `testCounts`/`artifactHashes`. Corrected successful profile status to `completed`. Completed the fail-closed `hexalith.g4-p0-acceptance.v1` validator with a 20-case packaged corpus in the package gate. Cleaned the stale interrupted run and rebuilt the isolated Dapr 1.18.0/1.18.2 home. Qualified installed `0.0.0-stage5.6` with the gate, a hash-bound campaign, and the native xUnit live lane. No publication, consumer pin, staging, commit, or acceptance.
+- 2026-09-25: Stage 5 review remediation.
+  - Packaged hosts now build in private per-run copies.
+  - Native reports are redacted before they are retained.
+  - Cancelled evidence keeps its profile.
+  - The acceptance validator binds platforms, assertion sets, nuspec identity, controls, cleanup, and approval dates, with a 37-case corpus.
+  - The gate asserts packaged hosts and runs the fixture-proof self-test.
+  - `0.0.0-stage5.7` was requalified through the gate, the live campaign, and the native lane.
+  - No publication, pin, or acceptance.
+  - Committed on local `main` (not pushed) after moving superseded evidence out of the tree.

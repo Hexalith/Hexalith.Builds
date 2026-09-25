@@ -1,0 +1,94 @@
+{
+  "schema": "hexalith.g4-p0-acceptance.v1",
+  "status": "candidate",
+  "sourceRevision": "754d2b4b6615c5004606ba837dd9c925c57e8d14",
+  "platformPins": {
+    "eventStoreVersion": "3.106.0",
+    "daprRuntimeVersion": "1.18.2",
+    "daprSdkVersion": "1.18.8",
+    "frontComposerVersion": "4.5.0"
+  },
+  "fixture": {
+    "manifestPath": "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+    "manifestSha256": "e12a91747103e6e86e05ff7384a61f4064bee4d89a7d19213ea65b34672f05ce"
+  },
+  "packages": [
+    {
+      "id": "Hexalith.Builds.Evidence.Cli",
+      "version": "0.0.0-stage5.7",
+      "feed": "unpublished-local",
+      "nupkgPath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/packages7/Hexalith.Builds.Evidence.Cli.0.0.0-stage5.7.nupkg",
+      "nupkgSha256": "e2e76e79e37c438c960050333299ce066c68e380b1097e3e66ef50e30a9af1eb",
+      "snupkgPath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/packages7/Hexalith.Builds.Evidence.Cli.0.0.0-stage5.7.snupkg",
+      "snupkgSha256": "5259f1879f16a915bb64d2e187f03b6f71714d52032074cee231980023347eae"
+    },
+    {
+      "id": "Hexalith.Builds.Module.Cli",
+      "version": "0.0.0-stage5.7",
+      "feed": "unpublished-local",
+      "nupkgPath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/packages7/Hexalith.Builds.Module.Cli.0.0.0-stage5.7.nupkg",
+      "nupkgSha256": "654dc5f2cf8b06224d4504663eed989246f3c5aa81e036605aeb56058927314d",
+      "snupkgPath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/packages7/Hexalith.Builds.Module.Cli.0.0.0-stage5.7.snupkg",
+      "snupkgSha256": "68103da35f0a3e5bf68d08d60335f762e7246c65a204ca865228698a8d6c736d"
+    }
+  ],
+  "runs": [
+    {
+      "key": "persisted-vstest",
+      "command": "dotnet tool run hexalith-module test --manifest test/fixtures/module/executable/hexalith.module-manifest.v1.json --profile full --evidence _bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/persisted-vstest.json --output json",
+      "exitCode": 0,
+      "finalStatus": "completed",
+      "evidencePath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/persisted-vstest.json",
+      "evidenceSha256": "4d5b9baa9d3840589ca4fe14bbec85ed3423a6e37dd483ae0b8bb87e7fb19510",
+      "reportPath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/persisted-vstest.vstest.trx",
+      "reportSha256": "015833c65bbb8c6cbfe05a773b7fedd2a7a925c87099f51a35782cdf68c59e5a",
+      "reportPlatform": "vstest"
+    },
+    {
+      "key": "persisted-mtp",
+      "command": "dotnet tool run hexalith-module test --manifest test/fixtures/module/executable/hexalith.module-manifest.v1.json --profile full-mtp --evidence _bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/persisted-mtp.json --output json",
+      "exitCode": 0,
+      "finalStatus": "completed",
+      "evidencePath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/persisted-mtp.json",
+      "evidenceSha256": "aa950556d4d205f67bc9aff8fc4b890a5297cb1726b2adde6a6da6d8a137f466",
+      "reportPath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/persisted-mtp.mtp.trx",
+      "reportSha256": "b8615b97d19b55afde46b0e1255fb00ae885d6b15dfbc4b2e6bd8c613f7125e8",
+      "reportPlatform": "mtp"
+    },
+    {
+      "key": "prerequisite-unavailable",
+      "command": "dotnet tool run hexalith-module test --manifest test/fixtures/module/executable/hexalith.module-manifest.v1.json --profile full --evidence _bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/prerequisite-unavailable.json --output json",
+      "exitCode": 2,
+      "finalStatus": "unavailable",
+      "evidencePath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/prerequisite-unavailable.json",
+      "evidenceSha256": "6bf38302b731d02efef07f3b31e9fe0dd0def3d29dd5b4000de54c438747972e",
+      "reportPath": null,
+      "reportSha256": null,
+      "reportPlatform": null
+    },
+    {
+      "key": "cancelled",
+      "command": "dotnet tool run hexalith-module test --manifest test/fixtures/module/executable/hexalith.module-manifest.v1.json --profile full --evidence _bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/cancelled.json --output json",
+      "exitCode": 130,
+      "finalStatus": "cancelled",
+      "evidencePath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/cancelled.json",
+      "evidenceSha256": "13176d09f1cf91b64961b5beba711be60e915399112eb3d0009579584757a4b8",
+      "reportPath": null,
+      "reportSha256": null,
+      "reportPlatform": null
+    }
+  ],
+  "cleanup": {
+    "status": "passed",
+    "command": "dotnet tool run hexalith-module down --manifest test/fixtures/module/executable/hexalith.module-manifest.v1.json --run-id 0608dcbcaf6b877be039c6c5f752e5da",
+    "artifactPath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.7/down-idempotent.json",
+    "artifactSha256": "c48efef657fec92e604628ee601d4c2d2d43d40bfcf256a756e93091986d3989"
+  },
+  "rollback": {
+    "status": "not-run",
+    "command": "Stage 6 rollback drill not run",
+    "artifactPath": null,
+    "artifactSha256": null
+  },
+  "approvals": []
+}

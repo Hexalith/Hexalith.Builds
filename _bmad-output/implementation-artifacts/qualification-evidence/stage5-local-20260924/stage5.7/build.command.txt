@@ -1,0 +1,2 @@
+NUGET_PACKAGES=/home/administrator/.local/state/hexalith-qualification/nuget-stage5.7 CI=true
+dotnet build Hexalith.Builds.slnx --configuration Release -m:1

@@ -1,0 +1,1 @@
+{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXM014"},"diagnostics":[{"ruleId":"HXM014","phase":"Manifest","category":"Manifest","message":"The manifest contains an unsupported profile class.","field":"profiles[0].classes","hint":"Use a supported AD-25 profile class.","source":null,"location":null,"row":null}]}
