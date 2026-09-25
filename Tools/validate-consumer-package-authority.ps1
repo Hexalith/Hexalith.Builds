@@ -328,6 +328,24 @@ foreach ($packageVersion in @($catalogEvaluation.Items.PackageVersion)) {
 
 foreach ($projectPath in $projectFiles) {
     $relativeProjectPath = [IO.Path]::GetRelativePath($resolvedRepositoryRoot, $projectPath)
+    $normalizedProjectPath = $relativeProjectPath.Replace('\', '/')
+    if ($normalizedProjectPath -in @(
+            'src/libraries/Hexalith.Builds.Module.Cli/pack/projects/EventStore/Host.csproj',
+            'src/libraries/Hexalith.Builds.Module.Cli/pack/projects/Ui/Host.csproj'
+        )) {
+        # These packaged host shims build outside the repository with no NuGet
+        # dependencies. They deliberately disable imports from the consumer tree.
+        $shimXml = Read-XmlFile -Path $projectPath
+        $packageItems = @($shimXml.SelectNodes("//*[local-name()='PackageReference' or local-name()='GlobalPackageReference' or local-name()='PackageVersion']"))
+        $disableImport = @($shimXml.SelectNodes("//*[local-name()='ImportDirectoryPackagesProps']") |
+                Where-Object { [string] $_.InnerText -match '^\s*false\s*$' })
+        if ($packageItems.Count -ne 0 -or $disableImport.Count -ne 1) {
+            $failures.Add("$relativeProjectPath must remain a package-free packaged host shim with ImportDirectoryPackagesProps=false.")
+        }
+
+        continue
+    }
+
     try {
         $evaluation = Invoke-ProjectEvaluation -ProjectPath $projectPath -Arguments @(
             '-getProperty:ManagePackageVersionsCentrally'

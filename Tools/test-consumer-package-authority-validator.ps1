@@ -233,6 +233,25 @@ try {
 '@
     Test-Scenario -Name 'Missing catalog row' -RepositoryRoot $missingRowRoot -ExpectedExitCode 1 `
         -ExpectedOutput "PackageReference 'Missing.Package' has no authoritative catalog row"
+
+    $shimRoot = New-ConsumerFixture -Name 'package-free-host-shim'
+    $shimPath = Join-Path $shimRoot 'src/libraries/Hexalith.Builds.Module.Cli/pack/projects/EventStore/Host.csproj'
+    Write-Utf8File -Path $shimPath -Content @'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps></PropertyGroup>
+</Project>
+'@
+    Test-Scenario -Name 'Package-free host shim' -RepositoryRoot $shimRoot -ExpectedExitCode 0 `
+        -ExpectedOutput 'consumer package authority validation passed'
+
+    Write-Utf8File -Path $shimPath -Content @'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps></PropertyGroup>
+  <ItemGroup><PackageReference Include="Fixture.Package" /></ItemGroup>
+</Project>
+'@
+    Test-Scenario -Name 'Host shim with package dependency' -RepositoryRoot $shimRoot -ExpectedExitCode 1 `
+        -ExpectedOutput 'must remain a package-free packaged host shim'
 }
 finally {
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
