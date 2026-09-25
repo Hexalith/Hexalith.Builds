@@ -100,7 +100,7 @@ public sealed class CompositionRunPlanFactoryTests
                 new ModuleDescriptor("module-b", "b.dll", [], "domain-b", "app-b", "resource-b"),
                 new ModuleDescriptor("module-a", "a.dll", [], "domain-a", "app-a", "resource-a"),
             ],
-            new PlatformPins("3.106.0", "1.18.2", "1.18.8", "4.5.0"),
+            new PlatformPins("3.108.1", "1.18.2", "1.18.8", "4.5.0"),
             new UiDescriptor("ui.dll"),
             new Dictionary<string, ModuleProfile>());
         ExecutableDescriptorLoadResult descriptors = new(
