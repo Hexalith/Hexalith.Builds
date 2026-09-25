@@ -175,7 +175,7 @@ internal static class PersistedProfileExecutor
             }
 
             return new ToolCommandResult(
-                "passed",
+                "completed",
                 ToolOutcome.Passed(),
                 [new ToolDiagnostic("HXI004", ToolPhase.Test, ToolFailureCategory.None, "The two-module persisted profile passed.", "profile")]);
         }
