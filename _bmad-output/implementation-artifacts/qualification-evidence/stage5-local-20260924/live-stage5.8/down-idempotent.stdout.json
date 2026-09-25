@@ -1,0 +1,1 @@
+{"status":"completed","outcome":{"exitCode":"Success","phase":"None","category":"None","ruleId":null},"diagnostics":[{"ruleId":"HXI001","phase":"Cleanup","category":"None","message":"Runner-owned invocation cleanup completed.","field":"down","hint":null,"source":null,"location":null,"row":null}],"runId":"09b0604c0c5e7d2204a73b490d645090"}

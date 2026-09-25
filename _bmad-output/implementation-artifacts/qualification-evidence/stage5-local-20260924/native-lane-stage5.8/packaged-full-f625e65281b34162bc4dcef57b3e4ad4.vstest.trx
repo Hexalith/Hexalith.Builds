@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="7a347ee8-f228-452d-acc8-23cc8e40eed1" name="native" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-25T12:28:46.7548710+02:00" queuing="2026-09-25T12:28:46.7548711+02:00" start="2026-09-25T12:28:45.4705003+02:00" finish="2026-09-25T12:28:46.7590833+02:00" />
+  <TestSettings name="default" id="f6108f9e-265f-4da4-a7b2-1a1b4f6dd97d">
+    <Deployment />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="ad89d0d0-bc65-4e0c-b04c-166f697e5d04" testId="04cacbbb-e3ee-3de7-cd95-6683b7af5dca" testName="Hexalith.Builds.P0Fixture.NativeTests.RunHandoffTests.AuthenticatedCommandCompletesAsync" duration="00:00:00.2819999" startTime="2026-09-25T12:28:46.3908321+02:00" endTime="2026-09-25T12:28:46.6736638+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ad89d0d0-bc65-4e0c-b04c-166f697e5d04" />
+    <UnitTestResult executionId="e72e2b05-80ad-4806-9825-9e4676c15c74" testId="d1f833ad-1320-295e-89e8-85ff7b6bfc01" testName="Hexalith.Builds.P0Fixture.NativeTests.RunHandoffTests.AnonymousCommandIsRejectedAsync" duration="00:00:00.1300000" startTime="2026-09-25T12:28:46.2406595+02:00" endTime="2026-09-25T12:28:46.3798763+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e72e2b05-80ad-4806-9825-9e4676c15c74" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Hexalith.Builds.P0Fixture.NativeTests.RunHandoffTests.AnonymousCommandIsRejectedAsync" storage="p0fixture.nativetests.vstest.dll" id="d1f833ad-1320-295e-89e8-85ff7b6bfc01">
+      <Execution id="e72e2b05-80ad-4806-9825-9e4676c15c74" />
+      <TestMethod codeBase="P0Fixture.NativeTests.VsTest.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Hexalith.Builds.P0Fixture.NativeTests.RunHandoffTests" name="AnonymousCommandIsRejectedAsync" />
+    </UnitTest>
+    <UnitTest name="Hexalith.Builds.P0Fixture.NativeTests.RunHandoffTests.AuthenticatedCommandCompletesAsync" storage="p0fixture.nativetests.vstest.dll" id="04cacbbb-e3ee-3de7-cd95-6683b7af5dca">
+      <Execution id="ad89d0d0-bc65-4e0c-b04c-166f697e5d04" />
+      <TestMethod codeBase="P0Fixture.NativeTests.VsTest.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="Hexalith.Builds.P0Fixture.NativeTests.RunHandoffTests" name="AuthenticatedCommandCompletesAsync" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="04cacbbb-e3ee-3de7-cd95-6683b7af5dca" executionId="ad89d0d0-bc65-4e0c-b04c-166f697e5d04" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d1f833ad-1320-295e-89e8-85ff7b6bfc01" executionId="e72e2b05-80ad-4806-9825-9e4676c15c74" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="2" executed="2" passed="2" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+  </ResultSummary>
+</TestRun>

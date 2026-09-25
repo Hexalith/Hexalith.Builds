@@ -23,9 +23,25 @@
     <None Include="../../hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/%(RecursiveDir)" />
     <None Include="../../hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/bin/EventStoreHost/%(RecursiveDir)" />
     <None Include="../../hosts/Hexalith.Builds.Module.UiHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/bin/UiHost/%(RecursiveDir)" />
-    <None Include="pack/projects/EventStore/*" Pack="true" PackagePath="tools/net10.0/any/g4-host/projects/EventStore/" />
-    <None Include="pack/projects/Ui/*" Pack="true" PackagePath="tools/net10.0/any/g4-host/projects/Ui/" />
+    <None Include="pack/projects/EventStore/Placeholder.cs" Pack="true" PackagePath="tools/net10.0/any/g4-host/projects/EventStore/" />
+    <None Include="pack/projects/Ui/Placeholder.cs" Pack="true" PackagePath="tools/net10.0/any/g4-host/projects/Ui/" />
   </ItemGroup>
+  <!--
+    The host shims import no central package catalog, so they are stored as Host.csproj.template to keep repository-wide
+    project validators from treating them as consumer projects. NuGet cannot rename a file across extensions, so pack
+    renamed intermediate copies.
+  -->
+  <PropertyGroup>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackPackagedHostProjects</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+  <Target Name="PackPackagedHostProjects">
+    <Copy SourceFiles="pack/projects/EventStore/Host.csproj.template" DestinationFiles="$(IntermediateOutputPath)g4-host-projects/EventStore/Host.csproj" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="pack/projects/Ui/Host.csproj.template" DestinationFiles="$(IntermediateOutputPath)g4-host-projects/Ui/Host.csproj" SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(IntermediateOutputPath)g4-host-projects/EventStore/Host.csproj" PackagePath="tools/net10.0/any/g4-host/projects/EventStore/" />
+      <TfmSpecificPackageFile Include="$(IntermediateOutputPath)g4-host-projects/Ui/Host.csproj" PackagePath="tools/net10.0/any/g4-host/projects/Ui/" />
+    </ItemGroup>
+  </Target>
   <!-- The host globs above silently match nothing without a prior Release build of the hosts. -->
   <Target Name="RequirePackagedHosts" BeforeTargets="GenerateNuspec">
     <Error Condition="!Exists('../../hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/Hexalith.Builds.Module.AppHost.dll')" Text="Build the Hexalith.Builds.Module.AppHost Release output before packing the module tool." />
