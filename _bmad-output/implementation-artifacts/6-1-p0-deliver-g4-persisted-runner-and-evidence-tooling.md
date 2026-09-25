@@ -28,7 +28,7 @@ delivery_state:
   stage3_slice_status: public-source-composition-qualified-10-of-10-and-110-of-110; owner-and-named-test-architect-stage3-assessments-accepted; stage3-complete; p0-open
   package_controls: implemented-and-locally-qualified; protected-release-and-remote-proof-pending
   supported_composition: validated-public-run-down-and-full-persisted-profile-qualified-locally; unsupported-profiles-HXR029-nonpassing; packaged-executable-composition-qualified-locally-stage5.6
-  persisted_qualification: stage4-public-source-full-profile-qualified; stage5-packaged-vstest-and-mtp-native-report-evidence-qualified-locally-dirty-tree; stage5-review-remediated-and-requalified-0.0.0-stage5.7-2026-09-25
+  persisted_qualification: stage4-public-source-full-profile-qualified; stage5-packaged-vstest-and-mtp-native-report-evidence-qualified-locally-dirty-tree; stage5-review-remediated-and-requalified-0.0.0-stage5.7-2026-09-25; stage5-requalified-clean-tree-0.0.0-stage5.8-eventstore-3.108.1-2026-09-25
   published_consumer_pin: absent
   owner_acceptance: stage3-evidence-accepted-2026-09-23; full-p0-acceptance-absent
   test_architect_acceptance: stage3-evidence-accepted-2026-09-23; full-p0-acceptance-absent
@@ -2187,6 +2187,159 @@ P0, the dependent P2, and Story 6.1 remain open, and Stage 6 has not started.
 
 **Stage 6 note (not started).** Evidence written inside the repository marks every later run dirty. Stage 6 must write its run evidence to an ignored or external location and commit it afterwards.
 
+### 2026-09-25 Stage 6 readiness restoration at EventStore `3.108.1` and `0.0.0-stage5.8` requalification
+
+**Disposition: `main` is repaired and Stage 5 is requalified at EventStore
+`3.108.1` in the local packaged scope. Stage 6 is not ready and has not started.**
+Readiness still needs three things: a green `origin/main` CI after Jerome pushes,
+a P1R tuple accepted at `3.108.1`, and a G-6 refresh that the owner accepts.
+Nothing was pushed or published. No consumer pin changed, no dependency was
+updated, and no owner acceptance is claimed. P0, the dependent P2, and Story 6.1
+remain open.
+
+**Preflight (verified at `origin/main` = `e9543dc`).**
+
+| Fact | Result |
+| --- | --- |
+| `e9543dc` merges Stage 5 (`05ed57d..248b01d`) with remote work up to `23f4798` | Confirmed. The runner pin changed in `349d660`, a 65-file commit that does not touch `Props`. The catalog `HexalithEventStoreVersion` moved to `3.108.1` through Dependabot `203cc49`, alongside `ceebf8b` (`CommunityToolkit.Aspire.Hosting.Dapr` beta.757→beta.767), `85664e3` (`StackExchange.Redis` 3.3.1), and `40fb0bb` (`JsonSchema.Net` 9.4.0). |
+| CI `36115506731` | Confirmed: 7 audit errors. Every later step was skipped. |
+| Evidence tests at `e9543dc` | Confirmed: 31/107 failed (HXE202 and dependent binding rules). The corpus declared `3.106.0`. |
+| G-6 (Projects `g-6-runtime-toolchain/source-state.json`, 36 Builds bindings) | Confirmed 14/36 after EOL normalization. 19 files drift from the pin change, 2 from Dependabot action-SHA bumps in `domain-ci.yml`/`domain-release.yml`, and 1 from `Props`. |
+| Accepted P1R tuple | EventStore `3.106.0` / `76051c70…`. The tuple is hard-coded in Projects `tools/planning/validate_production_authority.py:30-33` and `sprint-status.yaml`. |
+| Release `36111365114` | Confirmed failure at the publish guard. **Contrary to the brief, semantic-release created tag `v4.27.5` (→ `23f4798`) before the guard failed.** No GitHub Release exists, and nuget.org has no `4.27.5` of either tool (latest `4.27.4`). |
+| Projects `references/Hexalith.Builds` pointer | **Contrary to the brief, it is not uncommitted.** Projects `aa3f00b` already records `e9543dc` and is pushed. |
+
+**Decision (2026-09-25, Jerome): option (a).** Adopt EventStore `3.108.1`.
+Keep `349d660` and the catalog bumps. Regenerate the audit and corpus,
+requalify Stage 5, then revalidate P1R and refresh G-6 in Projects.
+
+**Root causes found during the local CI run.**
+- **Release publish guard.** `754d2b4` changed `.gitattributes` to
+  `*.cs text eol=crlf` without renormalizing 54 blobs stored with CRLF. Every
+  fresh checkout reports them modified. `Get-SourceTreeState` therefore returns
+  dirty, the gate writes `releaseEligible: false`, and
+  `publish-g4-tool-packages.ps1` throws "incomplete or bypassed". The fix
+  changes only the index: the blobs are stored as LF, and the diff with CR at
+  end of line ignored is empty.
+- **Consumer package authority (CI step not reached on GitHub).** The Stage 5
+  packaged-host shims `pack/projects/{EventStore,Ui}/Host.csproj` deliberately
+  import no catalog (SR-D1). Tracked as `*.csproj`, they failed
+  `validate-consumer-package-authority.ps1` with 606 errors.
+  - They are now `Host.csproj.template`.
+  - NuGet will not rename a file across extensions (a first attempt packed
+    `Host.csproj/Host.csproj.template`, and the gate caught it). So
+    `PackPackagedHostProjects`, a `TargetsForTfmSpecificContentInPackage`
+    hook, copies them to `obj/…/Host.csproj` and packs those copies.
+  - The package entries are unchanged, and each packed `Host.csproj` has the
+    same bytes as its template.
+- **`dotnet test -m:1`.** Under Microsoft.Testing.Platform, the argument is
+  forwarded to the test application, which then reports "Zero tests ran"
+  (exit 5). The local CI replay therefore runs the test steps exactly as
+  `ci.yml` does. Only restore and build use `-m:1`.
+
+**Repairs.**
+- **Corpus.** `~/.local/state/hexalith-qualification/tools/gen_acceptance_corpus.py`
+  first reproduced the committed corpus byte for byte at `3.106.0`. After its
+  PINS were changed to `3.108.1`, it rewrote 52 files: 37 `eventStoreVersion`
+  values and the hashes that depend on them. The pre-edit generator is backed
+  up in the session scratchpad.
+- **Audit.** From `349c3cb`, the repository generator ran:
+  `pwsh -NoProfile -Command "& ./Tools/audit-central-package-versions.ps1 -PriorAuditPath ./Tools/package-version-audit.json -ChangedFamily 'package:microsoft.net.test.sdk','package:shouldly','package:system.commandline','xunit'"`.
+  - It refreshed 4 families, preserved 142, and wrote 300 packages.
+  - No audited or selected version changed.
+  - `validate-package-version-audit.ps1` passed.
+  - (`pwsh -File` passes a comma list as one string, so the generator's
+    first invocation was rejected.)
+
+**Proposed commits.** They were built in a scratch clone
+(`~/.local/state/hexalith-qualification/builds-stage5.8`, `--shared`), each with
+fixed Jerome author and committer metadata. Each tree was verified with
+`verify-commit.sh`: Release build, then the built Module and Evidence test
+assemblies. Every message passes `@commitlint/cli` 21.2.2 and 21.2.3 (the
+current `package-lock.json` pin), installed in isolation with the repository
+config, and a negative control is rejected. The repository's stale
+`node_modules` (21.2.1) was not touched.
+
+| Commit | Subject | Verification |
+| --- | --- | --- |
+| `3c5122c` | `test(evidence): regenerate acceptance corpus for EventStore 3.108.1` | 52 files; 0/0; Module 214/214; Evidence 107/107 |
+| `9458e35` | `style: renormalize C# blobs to their eol attribute` | 54 files, CR-only; 0/0; 214/214; 107/107 |
+| `349c3cb` | `fix(runner): keep packaged host shims out of project validation` | 5 files; 0/0; 214/214; 107/107 |
+| `90228a7` | `build(audit): refresh consumer evidence for G-4 runner projects` | 1 file; 0/0; 214/214; 107/107 |
+| next | `docs(g4): record Stage 5 requalification at EventStore 3.108.1` | This record and the retained `stage5.8` evidence |
+
+The working-tree content of every path in the chain matches the chain's blobs
+(110/110 by `git hash-object --path`). Superseded candidates from the reorder
+and the shim-fix iteration remain unreferenced objects in the scratch clone only.
+
+**Local CI replay of `.github/workflows/ci.yml` at `90228a7`.**
+- **Setup.** A fresh detached worktree, with an isolated `NUGET_PACKAGES`,
+  `CI=true`, and the sandbox disabled. Toolchain: Node `24.21.0` (a
+  checksum-verified tarball in the scratchpad, matching the CI pin), .NET
+  `10.0.401`, PowerShell 7.6.2, Python 3.14.4.
+- **Result.** All 33 steps of the `build-and-test` and `python-tests` jobs
+  exited `0`. The worktree had 0 dirty lines before and after.
+  - Audit gate: `Validate package version audit` 0.
+  - Consumer authority: 17 projects.
+  - Tests: Module, Evidence, and Integration all passed.
+  - Package qualification: `0.0.0-ci.9004`.
+- **Earlier replays.** At candidate `1057a3a` (before the shim fix), step 07
+  failed with 606 errors. At `40acdb6` (the first shim attempt), step 27
+  failed on the missing packaged `Host.csproj`.
+- **Not reproduced locally.** CodeQL has no local CLI. On GitHub it succeeded
+  at `e9543dc`. Dependency review runs on pull requests only.
+
+**Stage 5.8 requalification (installed tools, clean tree at `90228a7`).**
+- **Where evidence was written.** The runner resolves `--evidence` inside the
+  repository root. Runs therefore used the scratch clone, with the evidence
+  paths listed in that clone's `.git/info/exclude`. Every run recorded
+  `repositoryDirtyMarker: clean`. Only the retained set was copied into this
+  repository.
+
+| Command/check (`NUGET_PACKAGES=~/.local/state/hexalith-qualification/nuget-stage5.8`, `CI=true`) | Result |
+| --- | --- |
+| `dotnet build Hexalith.Builds.slnx --configuration Release -m:1` | `0`; 0 warnings, 0 errors. The EventStoreHost assets resolve `Hexalith.EventStore.*` `3.108.1`, and the AppHost resolves `Hexalith.EventStore.Aspire` `3.108.1` and `CommunityToolkit.Aspire.Hosting.Dapr` `13.5.1-beta.767`. |
+| Built Module and Evidence test assemblies | 214/214; 107/107 |
+| `pwsh -NoProfile -File Tools/test-g4-tool-package-contract-gate.ps1` | `0`; artifact-validator self-test 32 scenarios |
+| `pwsh -NoProfile -File Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-stage5.8 -RequireControls -PackageDirectory <E>/packages8 -RetainPackageDirectory` | `0`. Integration 13. Inventory `8c8921ec…`: source validation executed and passed, controls passed, `sourceTree.clean: true` at `90228a7`, **`releaseEligible: true`**, no ineligibility reasons. Packages: `Module.Cli` `50396ac5…` / `.snupkg` `a1507193…`; `Evidence.Cli` `38b592cd…` / `.snupkg` `33c43bf1…`. |
+| Fresh consumer `~/.local/state/hexalith-qualification/consumer-stage5.8`, `dotnet tool restore` | `0`; `hexalith-module --version` = `0.0.0-stage5.8+90228a7…`; the store holds `g4-host/projects/{EventStore,Ui}/Host.csproj` |
+| `G4_CAMPAIGN=live-stage5.8 … HEXALITH_DAPR_HOME=~/.local/state/hexalith-qualification/g4-dapr-home-1.18.2 python3 run-packaged-qualification-stage5.8.py <consumer> packages8` | `0`, `status: passed`, no failures, `repositoryDirty: false`, source unchanged (bundle `bb66cd8f…`), report `626e3f7b…`. **Persisted runs:** `full`/VSTest `09b0604c…` and `full-mtp`/MTP `a7a673fe…`, each 2/2 with 12 assertions and 2 sequences; redacted reports `706e5034…` and `0a8fb0ab…`; evidence platform `eventStoreVersion` `3.108.1`. **Controls:** `live` `2`/`HXR029`; missing Dapr home `2`/`HXR011`; cancelled `130`/`HXC130` with profile `full`; idempotent `down` `0`. **Validation:** 37/37 corpus cases matched through the installed tool, and the candidate record failed closed with `6`/`HXE202`. **Residue:** none: no tool-store build output, containers, run state, workspaces, or runner AppHosts. No developer AppHost was running this time. |
+| Packaged native xUnit live lane (`native-lane-stage5.8/command.txt`) | 2/2 passed in 128.2 s. The retained per-run reports `39a19cf4…` (VSTest) and `8ab0d9b9…` (MTP) are redacted, and their evidence is `clean`/`completed` at `3.108.1`. The harness lane TRX (`79efbdbd…`, containing `runUser` and the host name) was written outside the repository. |
+| Verification manifest `stage5.8/stage5.8-verification.json` | `1b0e21d4…`: SHA-256 of 174 artifacts plus the external lane TRX. The isolated Dapr binaries are unchanged since 5.7. |
+
+**Campaign script.** `run-packaged-qualification-stage5.8.py` is a copy of the
+5.7 script with three changes: `VERSION`, the candidate `eventStoreVersion`
+`3.108.1`, and a `repositoryDirty` value measured by
+`git status --porcelain --untracked-files=all` instead of hard-coded. As in
+5.7, `packaged-qualification.json` records the absolute
+`toolStoreProjectsDirectory`.
+
+**Retained evidence.** The committed set is 120 files: `stage5.8/`,
+`live-stage5.8/`, `native-lane-stage5.8/`, `packages8/` (inventory and
+qualification JSON), and the campaign script. The 55 ignored files (`*.log`,
+`*.nupkg`, `*.snupkg`) stay in the scratch clone and are hash-bound by the
+verification manifest.
+
+**Remaining before "Stage 6 ready" (not done here):**
+- **Push.** Jerome fast-forwards `main` to the verified chain and pushes. Then
+  `origin/main` CI must be green.
+- **P1R at `3.108.1`.** This means:
+  - revalidation of EventStore `3.108.1` / `v3.108.1` /
+    `b15ad59abca82d5980ef92a510c2379e05f4d46f` with the pushed Builds
+    revision;
+  - updates to the Projects guard constants, the qualification contract, and
+    the sprint index;
+  - four named role decisions.
+  - The accepted tuple (frontmatter `accepted_p1r_baseline`) stays at
+    `3.106.0` until then.
+- **G-6 re-execution and owner acceptance.** 22 Builds bindings drifted.
+  The previous refresh required a temporary Dapr control-plane swap, which
+  needs an owner decision.
+- **Outside this repair.**
+  - Tag `v4.27.5` exists without a release. The next semantic-release version
+    will be `4.27.6` or later.
+  - The Projects pointer must follow the pushed Builds `main`.
+
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
@@ -2204,6 +2357,7 @@ P0, the dependent P2, and Story 6.1 remain open, and Stage 6 has not started.
 - 2026-09-24: Qualified the two-module persisted `full` profile with the public source `test` command and exact event/projection/sequence, restart, retry, peer, authentication, Tenant, and fail-closed controls. The final source/binary-bound public campaign and independent verification passed with zero retained resources; packaged live and native-report acceptance remains in Stage 5, so P0 stays open.
 - 2026-09-25: Stage 5 code review completed: 6 decisions, 15 patches, 3 deferrals, 16 rejections, plus SR-N1. All decisions were resolved by Jerome, and 17 patches were applied. The installed `0.0.0-stage5.7` gate, live campaign, and native lane requalified the remediated tree, and the hardened validator accepts real runner output. The evidence is dirty-tree and unpublished, so P0, P2, and Story 6.1 stay open, with no commit or owner acceptance.
 - 2026-09-25: With Jerome's go-ahead, Stage 5 is committed on local `main` in six Conventional Commits, from `05ed57d` through the `docs(g4)` commit. Each code commit tree was built and tested before committing. Superseded evidence was moved out of the tree with a hash manifest. Nothing was pushed or published, and Stage 6 has not started.
+- 2026-09-25: Restored `main` for Stage 6 readiness at EventStore `3.108.1` (Jerome: option a). Proposed a four-commit repair: regenerated corpus, renormalized C# blobs (the root cause of the release publish-guard refusal), packaged-host shims kept out of project validation, and a refreshed audit. The local replay of all 33 CI steps passed. Requalified `0.0.0-stage5.8` on a clean tree through the gate (`releaseEligible: true`), the live campaign, and the native lane. Not pushed. P1R at `3.108.1` and the G-6 refresh remain open, so Stage 6 is not ready.
 - 2026-09-24: Stage 5 local packaged scope complete. The runner-owned native test executor binds VSTest and MTP TRX counts and hashes into evidence. The successful-status contract is corrected to `completed`. The `hexalith.g4-p0-acceptance.v1` validator and its 20-case corpus run blocking through the installed tool. The installed `0.0.0-stage5.6` campaign, native xUnit live lane, and package gate passed with zero retained resources. The evidence is dirty-tree and unpublished, so P0, P2, and Story 6.1 remain open, and no owner acceptance is claimed.
 
 ### File List
@@ -2308,3 +2462,4 @@ P0, the dependent P2, and Story 6.1 remain open, and Stage 6 has not started.
   - `0.0.0-stage5.7` was requalified through the gate, the live campaign, and the native lane.
   - No publication, pin, or acceptance.
   - Committed on local `main` (not pushed) after moving superseded evidence out of the tree.
+- 2026-09-25: Stage 6 readiness repair (not pushed). EventStore `3.108.1` corpus, CR-only renormalization of 54 C# blobs, `Host.csproj.template` shims packed through a pack-time copy, consumer-evidence audit refresh, and a clean-tree `0.0.0-stage5.8` requalification (gate, live campaign, native lane). P1R and G-6 remain open.

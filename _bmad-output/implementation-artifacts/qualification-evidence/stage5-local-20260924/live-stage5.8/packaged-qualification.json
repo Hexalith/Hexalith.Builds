@@ -1,0 +1,1824 @@
+{
+  "candidateAcceptance": {
+    "candidateSha256": "9abbc10b1ced9c9274617e8d521e9011c35a764312bc10b2b221a70f098a086c",
+    "command": [
+      "dotnet",
+      "tool",
+      "run",
+      "hexalith-evidence",
+      "--",
+      "validate",
+      "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/candidate-acceptance.json",
+      "--output",
+      "json"
+    ],
+    "diagnosticRuleIds": [
+      "HXE202"
+    ],
+    "elapsedSeconds": 0.29,
+    "exitCode": 6,
+    "expectedFailClosed": true,
+    "name": "validate-candidate-acceptance",
+    "ruleId": "HXE202",
+    "runId": null,
+    "status": "failed",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdoutSha256": "be33d27e520bc3aa31a42aa15ea7555e4200bc5caab2779442b11ff625f845d2"
+  },
+  "failures": [],
+  "packagesSha256": {
+    "Hexalith.Builds.Evidence.Cli.0.0.0-stage5.8.nupkg": "38b592cd79bc3f501b384b154f2a4a3b2ecc49c44cf09df752e5399d0f7c4fa4",
+    "Hexalith.Builds.Evidence.Cli.0.0.0-stage5.8.snupkg": "33c43bf1cbe3314563de170fc62726b5a9c168ce238c69dbc1534439d46dbcea",
+    "Hexalith.Builds.Module.Cli.0.0.0-stage5.8.nupkg": "50396ac53ccbbe47a26e2d2001221a275ae3612bdcb68466910ba50c113cf9a2",
+    "Hexalith.Builds.Module.Cli.0.0.0-stage5.8.snupkg": "a1507193d419acd8bb79a098f7a8939c7962314f93825061954ec95c1d933e67"
+  },
+  "repositoryDirty": false,
+  "repositoryDirtyLines": [],
+  "runs": [
+    {
+      "allRunContainers": [],
+      "allRunStateFiles": [],
+      "allRunWorkspaces": [],
+      "checks": {
+        "evidence": true,
+        "exitCode": true,
+        "nativeReport": true,
+        "noResources": true,
+        "reportRedacted": true,
+        "ruleId": true,
+        "status": true,
+        "volatileReportHash": true
+      },
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-module",
+        "--",
+        "test",
+        "--manifest",
+        "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+        "--profile",
+        "full",
+        "--evidence",
+        "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/persisted-vstest.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXI004",
+        "HXI005"
+      ],
+      "elapsedSeconds": 62.99,
+      "evidenceArtifactHashes": {
+        "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/persisted-vstest.vstest.trx": "706E5034D492FF498447CCD070FE937B4E88EB0554DEE684E464ABE9C76F949D"
+      },
+      "evidenceDirtyMarker": "clean",
+      "evidenceExitCode": 0,
+      "evidenceExpectedSequenceCount": 2,
+      "evidenceFinalStatus": "completed",
+      "evidencePath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/persisted-vstest.json",
+      "evidencePersistedAssertionCount": 12,
+      "evidenceProfile": "full",
+      "evidenceSha256": "b520c56d064df3b0ea1e4f380c1b1ad8b8d7cf6aa580298ac8efbb8fe27b2423",
+      "evidenceTestCounts": {
+        "failed": 0,
+        "passed": 2,
+        "reported": true,
+        "skipped": 0,
+        "total": 2
+      },
+      "evidenceToolVersion": "0.0.0-stage5.8+90228a7bab43dfba1606097fb1bd97968621679a",
+      "evidenceVolatileFields": [
+        "artifactHashes",
+        "runId",
+        "timestamps.completedUtc",
+        "timestamps.startedUtc"
+      ],
+      "exitCode": 0,
+      "name": "persisted-vstest",
+      "otherAppHostPaths": [],
+      "reportPath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/persisted-vstest.vstest.trx",
+      "reportRedacted": true,
+      "reportSha256": "706e5034d492ff498447ccd070fe937b4e88eb0554dee684e464abe9c76f949d",
+      "retainedContainers": [],
+      "retainedRunState": false,
+      "ruleId": null,
+      "runId": "09b0604c0c5e7d2204a73b490d645090",
+      "runningAppHosts": [],
+      "status": "completed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "19724f5176813ad4a78652ff5885af8ca284d8f62c3e76808e1d3731811b0622"
+    },
+    {
+      "allRunContainers": [],
+      "allRunStateFiles": [],
+      "allRunWorkspaces": [],
+      "checks": {
+        "evidence": true,
+        "exitCode": true,
+        "nativeReport": true,
+        "noResources": true,
+        "reportRedacted": true,
+        "ruleId": true,
+        "status": true,
+        "volatileReportHash": true
+      },
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-module",
+        "--",
+        "test",
+        "--manifest",
+        "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+        "--profile",
+        "full-mtp",
+        "--evidence",
+        "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/persisted-mtp.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXI004",
+        "HXI005"
+      ],
+      "elapsedSeconds": 62.95,
+      "evidenceArtifactHashes": {
+        "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/persisted-mtp.mtp.trx": "0A8FB0AB10231C3D366D2295C272AC46C7959CAFDCED40B4714987640D8ABC40"
+      },
+      "evidenceDirtyMarker": "clean",
+      "evidenceExitCode": 0,
+      "evidenceExpectedSequenceCount": 2,
+      "evidenceFinalStatus": "completed",
+      "evidencePath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/persisted-mtp.json",
+      "evidencePersistedAssertionCount": 12,
+      "evidenceProfile": "full-mtp",
+      "evidenceSha256": "491673bff16fa361d34b18889356f78b24d6f5116e2aa9f93e410fe5c86897fa",
+      "evidenceTestCounts": {
+        "failed": 0,
+        "passed": 2,
+        "reported": true,
+        "skipped": 0,
+        "total": 2
+      },
+      "evidenceToolVersion": "0.0.0-stage5.8+90228a7bab43dfba1606097fb1bd97968621679a",
+      "evidenceVolatileFields": [
+        "artifactHashes",
+        "runId",
+        "timestamps.completedUtc",
+        "timestamps.startedUtc"
+      ],
+      "exitCode": 0,
+      "name": "persisted-mtp",
+      "otherAppHostPaths": [],
+      "reportPath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/persisted-mtp.mtp.trx",
+      "reportRedacted": true,
+      "reportSha256": "0a8fb0ab10231c3d366d2295c272ac46c7959cafdced40b4714987640d8abc40",
+      "retainedContainers": [],
+      "retainedRunState": false,
+      "ruleId": null,
+      "runId": "a7a673fe483a1c2f2532a5b987d5907e",
+      "runningAppHosts": [],
+      "status": "completed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "e2afdbaed1dc5fc6edf366f5d5f87471a8f6e566d3b73ad11daca07b36a79a58"
+    },
+    {
+      "allRunContainers": [],
+      "allRunStateFiles": [],
+      "allRunWorkspaces": [],
+      "checks": {
+        "evidence": true,
+        "exitCode": true,
+        "noResources": true,
+        "ruleId": true,
+        "status": true
+      },
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-module",
+        "--",
+        "test",
+        "--manifest",
+        "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+        "--profile",
+        "live",
+        "--evidence",
+        "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/unsupported-live.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXR029"
+      ],
+      "elapsedSeconds": 35.67,
+      "evidenceArtifactHashes": {},
+      "evidenceDirtyMarker": "clean",
+      "evidenceExitCode": 2,
+      "evidenceExpectedSequenceCount": 0,
+      "evidenceFinalStatus": "unavailable",
+      "evidencePath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/unsupported-live.json",
+      "evidencePersistedAssertionCount": 0,
+      "evidenceProfile": "live",
+      "evidenceSha256": "1def53177f38d18b1c71bdaa74a6fd30198a05f6ff2f593f8903b4d4c82b8687",
+      "evidenceTestCounts": {
+        "failed": 0,
+        "passed": 0,
+        "reported": false,
+        "skipped": 0,
+        "total": 0
+      },
+      "evidenceToolVersion": "0.0.0-stage5.8+90228a7bab43dfba1606097fb1bd97968621679a",
+      "evidenceVolatileFields": [
+        "runId",
+        "timestamps.completedUtc",
+        "timestamps.startedUtc"
+      ],
+      "exitCode": 2,
+      "name": "unsupported-live",
+      "otherAppHostPaths": [],
+      "retainedContainers": [],
+      "retainedRunState": false,
+      "ruleId": "HXR029",
+      "runId": "6a5d656deb6d03e1c5d2eb0fc082468e",
+      "runningAppHosts": [],
+      "status": "unavailable",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "0e904640bcea4efdc73736694a36f2832c31fb72233aa81d98bc8424f7b0f258"
+    },
+    {
+      "allRunContainers": [],
+      "allRunStateFiles": [],
+      "allRunWorkspaces": [],
+      "checks": {
+        "evidence": true,
+        "exitCode": true,
+        "noResources": true,
+        "ruleId": true,
+        "status": true
+      },
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-module",
+        "--",
+        "test",
+        "--manifest",
+        "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+        "--profile",
+        "full",
+        "--evidence",
+        "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/prerequisite-unavailable.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXR011"
+      ],
+      "elapsedSeconds": 0.66,
+      "evidenceArtifactHashes": {},
+      "evidenceDirtyMarker": "clean",
+      "evidenceExitCode": 2,
+      "evidenceExpectedSequenceCount": 0,
+      "evidenceFinalStatus": "unavailable",
+      "evidencePath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/prerequisite-unavailable.json",
+      "evidencePersistedAssertionCount": 0,
+      "evidenceProfile": "full",
+      "evidenceSha256": "d691cf24f551353e24a3de487aa19f9fc47c76b74ef2da824844e5eee78c1f6c",
+      "evidenceTestCounts": {
+        "failed": 0,
+        "passed": 0,
+        "reported": false,
+        "skipped": 0,
+        "total": 0
+      },
+      "evidenceToolVersion": "0.0.0-stage5.8+90228a7bab43dfba1606097fb1bd97968621679a",
+      "evidenceVolatileFields": [
+        "runId",
+        "timestamps.completedUtc",
+        "timestamps.startedUtc"
+      ],
+      "exitCode": 2,
+      "name": "prerequisite-unavailable",
+      "otherAppHostPaths": [],
+      "retainedContainers": [],
+      "retainedRunState": false,
+      "ruleId": "HXR011",
+      "runId": null,
+      "runningAppHosts": [],
+      "status": "unavailable",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "5b79675cef41c2d5c590da7f56bebf3c0296254d8e28a796f8ab5d8482eec293"
+    },
+    {
+      "allRunContainers": [],
+      "allRunStateFiles": [],
+      "allRunWorkspaces": [],
+      "checks": {
+        "evidence": true,
+        "exitCode": true,
+        "noResources": true,
+        "profileRecorded": true,
+        "ruleId": true,
+        "signalSentWhileRunning": true,
+        "status": true
+      },
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-module",
+        "--",
+        "test",
+        "--manifest",
+        "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+        "--profile",
+        "full",
+        "--evidence",
+        "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/cancelled.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXC130"
+      ],
+      "elapsedSeconds": 42.59,
+      "evidenceArtifactHashes": {},
+      "evidenceDirtyMarker": "clean",
+      "evidenceExitCode": 130,
+      "evidenceExpectedSequenceCount": 0,
+      "evidenceFinalStatus": "cancelled",
+      "evidencePath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/cancelled.json",
+      "evidencePersistedAssertionCount": 0,
+      "evidenceProfile": "full",
+      "evidenceSha256": "240e5cedb96ac61f0b786dcd920cde81b2dd8f86ed5e6efd7b55f3ed2f24559c",
+      "evidenceTestCounts": {
+        "failed": 0,
+        "passed": 0,
+        "reported": false,
+        "skipped": 0,
+        "total": 0
+      },
+      "evidenceToolVersion": "0.0.0-stage5.8+90228a7bab43dfba1606097fb1bd97968621679a",
+      "evidenceVolatileFields": [
+        "runId",
+        "timestamps.completedUtc",
+        "timestamps.startedUtc"
+      ],
+      "exitCode": 130,
+      "name": "cancelled",
+      "otherAppHostPaths": [],
+      "retainedContainers": [],
+      "retainedRunState": false,
+      "ruleId": "HXC130",
+      "runId": null,
+      "runningAppHosts": [],
+      "signalSentWhileRunning": true,
+      "status": "cancelled",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "7755747228381f1140f4b487de5d8e93b45a5c0de4001c02e22c081ee9394c67"
+    },
+    {
+      "allRunContainers": [],
+      "allRunStateFiles": [],
+      "allRunWorkspaces": [],
+      "checks": {
+        "evidence": true,
+        "exitCode": true,
+        "noResources": true,
+        "ruleId": true,
+        "status": true
+      },
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-module",
+        "--",
+        "down",
+        "--manifest",
+        "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+        "--run-id",
+        "09b0604c0c5e7d2204a73b490d645090",
+        "--evidence",
+        "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/down-idempotent.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXI001"
+      ],
+      "elapsedSeconds": 0.42,
+      "evidenceArtifactHashes": {},
+      "evidenceDirtyMarker": "clean",
+      "evidenceExitCode": 0,
+      "evidenceExpectedSequenceCount": 0,
+      "evidenceFinalStatus": "completed",
+      "evidencePath": "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/live-stage5.8/down-idempotent.json",
+      "evidencePersistedAssertionCount": 0,
+      "evidenceProfile": null,
+      "evidenceSha256": "173e91c46b18c8b329dad7900809ea6a910a6cdda9726c5b0ce1b9595228636e",
+      "evidenceTestCounts": {
+        "failed": 0,
+        "passed": 0,
+        "reported": false,
+        "skipped": 0,
+        "total": 0
+      },
+      "evidenceToolVersion": "0.0.0-stage5.8+90228a7bab43dfba1606097fb1bd97968621679a",
+      "evidenceVolatileFields": [
+        "runId",
+        "timestamps.completedUtc",
+        "timestamps.startedUtc"
+      ],
+      "exitCode": 0,
+      "name": "down-idempotent",
+      "otherAppHostPaths": [],
+      "retainedContainers": [],
+      "retainedRunState": false,
+      "ruleId": null,
+      "runId": "09b0604c0c5e7d2204a73b490d645090",
+      "runningAppHosts": [],
+      "status": "completed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "23ec3acd4ae0ecd7ac2d4204d28e72fc0009721401e8221982479ceff921f54e"
+    }
+  ],
+  "schema": "hexalith.g4-stage5-packaged-qualification.v1",
+  "sourceBundleSha256": "bb66cd8f22304d6c8303e5883c77af3fc05f0d716765b471aaa9d247bc0bead1",
+  "sourceFilesSha256": {
+    "_bmad-output/implementation-artifacts/qualification-evidence/stage5-local-20260924/run-packaged-qualification-stage5.8.py": "06e0c54e458aaf991f30a326178202eaf1d1120bb5d3982021e40d25f1765e9f",
+    "src/hosts/Hexalith.Builds.Module.AppHost/AppHostRunner.cs": "935c7b2082acf2d9f4e7f3f620fb4efaa96712b429d2c6e8ca6771abf8b6438a",
+    "src/hosts/Hexalith.Builds.Module.AppHost/DaprDirectEndpointSubscriber.cs": "daf104af034febf8c4641f63f9ea1550f902b765ca5cf7cf53a9c4f25ed6498c",
+    "src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj": "e56868a2aa294b7a98fa629d069e4d2178eb5b9b6b76eaae72665cb1ba4fed47",
+    "src/hosts/Hexalith.Builds.Module.AppHost/Program.cs": "891e7c2c37d31f79eefeeb1fed8b2df8fdac0a7dc41d0407cd963ad4260e90d8",
+    "src/hosts/Hexalith.Builds.Module.AppHost/RedisPingHealthCheck.cs": "6f80b01f5474368db68a01bcb6de08a68de917a34927abe320a88d93cd894570",
+    "src/hosts/Hexalith.Builds.Module.AppHost/RunEndpoints.cs": "ec5a1fd33781ba21ca3f6401efbf343e1f93a5320b0b7b7471c2f85939eb44dd",
+    "src/hosts/Hexalith.Builds.Module.AppHost/RunPlanSource.cs": "3e62a9b0d2dace6da9ae4838e187f612b10d1a8555cdaf75f52f247c0d34e238",
+    "src/hosts/Hexalith.Builds.Module.AppHost/RunReadiness.cs": "aa3c83dae8afd883f1b02027aa185565d77437aa613ec73177e26f1ec3274b5e",
+    "src/hosts/Hexalith.Builds.Module.AppHost/RunResourceControl.cs": "bf1559735b4df61328e1a034a2864ccf73e786afa3849c8cfe0ec90710baf497",
+    "src/hosts/Hexalith.Builds.Module.AppHost/RunTopology.cs": "022337371653d51e2732fc4ca33ead62b284ab0c73053950347a57446f999878",
+    "src/hosts/Hexalith.Builds.Module.AppHost/StopSignal.cs": "120ee3b28194cf6b7440e7e07d4c504d713e2559ec6df1668eefe6e1cd391ae2",
+    "src/hosts/Hexalith.Builds.Module.AppHost/WriterProtocolCutover.cs": "19111844b3157c8805bb3442d886fc3bdde870d5ccbfbaff1e4f5024f52cf26f",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj": "5115c0151c5de1f077b2ac58b334fe75cad8e747398ad12dd101288ca0135ae0",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs": "6439b3c3a6b37baa6c2b9d53019a7cb03c1e27b11bd53c2f9d36e14972e92d56",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/appsettings.json": "19c310f519fe5777df466ba19e3703c34ef0965a9cc9017e16ac1307402e5a3e",
+    "src/hosts/Hexalith.Builds.Module.UiHost/Hexalith.Builds.Module.UiHost.csproj": "0087831feb666baf4cd8b44eeda65f9c9eaf88794c5f1bfc71c928f900b2a902",
+    "src/hosts/Hexalith.Builds.Module.UiHost/Program.cs": "57875af48dcff3c61bd3814ad3be9d0872189f7a8d129f5ae50f979243f076f3",
+    "src/hosts/Hexalith.Builds.Module.UiHost/UiMarkerRegistrar.cs": "e91057f7bb8e927efc9663d834d000231b5a5ecf9f2132ca191f630a9cd9f295",
+    "src/libraries/Hexalith.Builds.Evidence.Cli/AssemblyInfo.cs": "e0b68522e44f2f68891588e1aa1a70681fb4ffc185073a60c3d4413b8117eab2",
+    "src/libraries/Hexalith.Builds.Evidence.Cli/EvidenceCommandApplication.cs": "9e01f3cf3a645a75f2716b21138615849a3e883ca9cd5e9161f37f75dde95bed",
+    "src/libraries/Hexalith.Builds.Evidence.Cli/Hexalith.Builds.Evidence.Cli.csproj": "ac2b177d4e6653074b88c75fe8617c9c7200c8bd07154864551cd9c7c186f7fc",
+    "src/libraries/Hexalith.Builds.Evidence.Cli/Program.cs": "948b7388265850536b8a649f76c44ccf181ab634e4b6b35adceafe403e119f6d",
+    "src/libraries/Hexalith.Builds.Module.Cli/AssemblyInfo.cs": "692e3825dd6835d73494f560be5346deb771690ca775c98e3e807426833e6e33",
+    "src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj": "0a6c965f9ea2c5e442e43d398fbabfbf40639c0c8cdd4cdfedf79af51875bf27",
+    "src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs": "6e996a86d3a1e824a27c45bbaded2c424d3263d7d32f9408a2bc0485844fc6b0",
+    "src/libraries/Hexalith.Builds.Module.Cli/Program.cs": "27d0538116fe413a2a4b2dc754bd6ba580ed5ae9c791f5c4aa7a4f644c64e587",
+    "src/libraries/Hexalith.Builds.Module.Cli/pack/projects/EventStore/Placeholder.cs": "070c86886f8d246ad4932af47d8f20fe9d4180861d856019b0bfe1e025c94954",
+    "src/libraries/Hexalith.Builds.Module.Cli/pack/projects/Ui/Placeholder.cs": "070c86886f8d246ad4932af47d8f20fe9d4180861d856019b0bfe1e025c94954",
+    "src/libraries/Hexalith.Builds.Tooling/AssemblyInfo.cs": "7b24744fb5d602be95c305f16cd4927d9d1e3aa815babede3f9369ce5c3b5237",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandHost.cs": "3b96914c0cf0d1c5c8a1413e58b236cf3920b1d4ee000b06f93fda2e069b62e5",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandResult.cs": "0a721c0531daced256adbcd031167d2b0fceee5439fa5a5abdb0c1d7590cd574",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnostic.cs": "555485763eb70a3b2fdfcaa41ea8445391475712e29525bb9a211b97dc0804b5",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs": "017d2f32abe94bf304f0c5e328c62508e59139346f2e8d7af19d255fac24543c",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolExitCode.cs": "54408f26b221d3b23825d8c369b9db75f90e7c060ef33be3b95497d33b6a77a5",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolFailureCategory.cs": "1805544c0ab7a4dc25ba1726127e5e822fd61884d443355685a4f830d8a3faae",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolOutcome.cs": "96aa920a1cf6e444f1b3f1853ceea09f5c7bf750daf23ce9f6fa3f45d73f084b",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolOutputFormat.cs": "33873ceb1ad880c79d5ed153a4fd0ccb150af4150ff0aa9e60aad3856f5663fb",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolPhase.cs": "801a9141e103726bb97ddb87591e288a8456075bc507401ba40643b9c5d81057",
+    "src/libraries/Hexalith.Builds.Tooling/Evidence/G4P0AcceptanceValidator.cs": "2f272d960fcae6cbe4a78a82658ef86da560724ae254aaa1fa5bb97eadf9995e",
+    "src/libraries/Hexalith.Builds.Tooling/Evidence/ReadinessEvidenceCommandExecutionService.cs": "dda8e4baf56c634bdc735c735b659380ccf9f67db7791941af67db6a32d0925c",
+    "src/libraries/Hexalith.Builds.Tooling/Evidence/ReadinessEvidenceDocument.cs": "90dbcaf258484e1a76d67335ef15c229b49961974d99126a359408d31a77ce06",
+    "src/libraries/Hexalith.Builds.Tooling/Evidence/ReadinessEvidenceValidator.cs": "0da8bd9ed45551e0a85e995c07e0228574a5a13d281a6a55fecfeea5aee0c12b",
+    "src/libraries/Hexalith.Builds.Tooling/Filesystem/RepositoryPathResolver.cs": "ae26236d4f4647bb788456b0291217f6038c55b0fcec0f3468f9926acb070883",
+    "src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj": "9b611eb0274b38e3c8e653febf0d45c795ff7eb073e5fe4411d8f5765980077d",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/DescriptorAssemblyLoadContext.cs": "514e208aad83e261981726db1e043338314057b994cbfd7eb142a4688a7baa40",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/DescriptorChildWorker.cs": "a0b5674967b64700f7dcec16fd98202e79d387ae085be9016c0c50e8cf821933",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/DescriptorDocumentValidator.cs": "f307b664b9180bb6f094c556d196e2adbc42348e13b2440b61497d8f2f792d27",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ExecutableDescriptorLoadResult.cs": "bed5d640809b4e6117a2eae1db5eab03ce958939229e5a4fb1200f0954b96e92",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ExecutableDescriptorLoader.cs": "05cf8dd77a2cb0c48af9fd952522894c304344853880b6833c65b20ea8b50a56",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ExecutableModuleDescriptor.cs": "a659e13538b8642a0f774501a0fb72442b3e2204cf6bb7963ceaf39ed7faff7c",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ExecutableUiDescriptor.cs": "aac0aaad2afc171ed5b9360de8eb6d6274b6886f088258ff0e22ab16762dab21",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ExecutableUiMarker.cs": "5bb30059013a5c33e90ad60aa57af10735f022923d5089bf7df16856e64461c0",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/JsonDuplicatePropertyValidator.cs": "41fb237848c697e239ee59e85b111abf4d189d336ebacc95649541ac8c29b476",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ManifestLoadResult.cs": "8a469aaae455d4fe408edc09a558f201d6cf54e5a810581ebf64c31d02ce606a",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ManifestPathValidator.cs": "e37001565a6b9b29d808e2f2316abf3d38a635fa81af6b5aad6ddd407ba76191",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ManifestSecretDetector.cs": "76cc2ab1825db4bd1dd24ac7a6f4d85fe648298b72c6e03831316202d5f8e83a",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleDescriptor.cs": "d288b6dacf668123619caefc6e88d7593161797c2a8502c2d794ef676fa8782a",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleManifest.cs": "1b56dfc8b949d22576eb850f1da5d66dd827de8676a603c3050535845b70fe91",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleManifestLoader.cs": "be32dbaa70f8d289e80334449d3a0d6568efb12d4d6c2bdcac5fbcb36bc9d8c8",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleProfile.cs": "2b32a7f943d5644e372050031f3a728733f5c62419df827423c8bc959e6af57e",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleProfileClasses.cs": "b4aee273b69811bbd40df7af20389b32114e47b3676ab9f530e76653f98ad838",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformPins.cs": "becfcbfaa5c129bcedcf75d67a3926ffa5c5d30d07ee148c40ff201c25f51d5a",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/SupportedPlatformPins.cs": "ba84ceb59467a409a03bbbad7d27f34c0af89b9bbbd6e98ff4c91c691de1dc65",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/UiDescriptor.cs": "5ad5f601595e23602041b3b0927da09d4bac7d2dc2cc91b9ec9f1c185b39152f",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEnvironment.cs": "9a780e0a009a294a1034f9e692662e914999053cc353979a9abf7044d8480acf",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidence.cs": "353a0749a674029abd2aaacabb081012e35ccef69cb9f2b1bf3f9fe6973062ac",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceArtifactSummary.cs": "307572bd14b46e4682d3eb76218685cb102ac694c030b43e6d0a98449a9de426",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceArtifactValidator.cs": "7dc8330c79b65ecac6a5f650fecb23aba341a6c45c79d72c64cbc82e3e766620",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceFactory.cs": "915efeded8bdadaa9f3bf2723537e8fe980d9b0c89b3f35e562ea5f173341767",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceWriteResult.cs": "a9af6a9573494200454a0cdc591a1c43e1041b1fee785258d41e0cffc32817d0",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceWriter.cs": "94e57a44e963877f7500881c8c11b3b205e9c8476563d841357e461af77814d3",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunInvocation.cs": "aa5c7908d8c0aed132ffeea95c1ea80ff84e70b78284f9c7959836348cd6a7b1",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunModule.cs": "502fbeffd3752708bc3bf64f0efeec4cff541d16327e9f47629a2f485c04886b",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunPhaseOutcome.cs": "d05b38c0f33ff5e7f8c507afd9ff30ba63119b39462377c05cc4438237ca2ef2",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunTestCounts.cs": "863b5310d954e27a169257aa1cbe3deb9d1cbc9d21bb3cd830dbc653bd1426a6",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunTimestamps.cs": "380a35560315591749a181417d08643f2cf5f02fd4a0e20b489926f9f8198401",
+    "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunTopology.cs": "6e9a650b43bbd90a7daab859a0271d0141de995165bd52d1f380598f9f074716",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionCommandOptions.cs": "0a2cf5d3b35216b9ed7b730806414d6549df9910cf6f5a4359f3bb310f16813f",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionControlRequest.cs": "6c0ff27ae8363f1459f3c3447a6770375abe43a8ba16edb4830931d01aadd6c8",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionControlResponse.cs": "bb00ef2bb26674ba85e5ae2fcb461b330c949db1a3cc5e892a224cb379e551f6",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionDaprComponentRenderer.cs": "7ffdd4b2f36d0c1537242042f7e8129a3b7335663cfe92b235e844280474a9e3",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionDaprSidecarPorts.cs": "de34dbd648d68a60ff3e6aade34f70f6368d2cbd948dfed8150e52df7ba9697b",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionDiagnosticMirror.cs": "e401b0af353ea880da2e0484c5e71424dc0ca68da1dd81411fd88c04f232d7a1",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionDocumentStore.cs": "ae97c2f39c8c89286451419a99178bbe991e253654f5c77081d795fee19d2774",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionDownResult.cs": "819b0aee3a8f37386d7e7827f5822fbcc9db7ea0a1106cdccc1d8a65e1f0c44c",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs": "55d0f05b022380fe583ed3901d4c3e926088257cafde14199c8ea0ea5afd423c",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngineOptions.cs": "daf617d9994fdf401652a39f2dfc69d1a4b601e15cacde79417b0c54fe06988c",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEnvironment.cs": "6c3a0f97fd2827b39ef1d513f5f6595936673210a69cd4f392bd5ed543d117d9",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionPortAllocator.cs": "c7d7cdcc36664238b0b37eeed58dd645d9b131a69c0a1742e0eca1d81f653798",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionPrerequisiteProbe.cs": "8941c4779e857d998c32b6e51c0c96063cf28be8959fa990dba39c5c7ca72a78",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionPrerequisiteResult.cs": "5fa97df0b187b37d11dc8e1848da5f9a1480c511cb36d3bfffb8b0ba38547d33",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionProcess.cs": "985078d8aaa92228f379502a83adad59a695e1553018d54501e15c178133544d",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionProcessResult.cs": "6976c67cf00bab96cdb33b99da55f9fc254c10e820d966ec7e936c271d96e94f",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionReadiness.cs": "b492b685fbfd300b9c5a46c8f1feb5b08e0728a81f7012156b47b8b1800e8351",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionResourceController.cs": "5f2b1f172e6d36b8b2a7f8427c6328640cfae81ce4e58bc5cc62926935588288",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionResourceReadiness.cs": "8ad0820c761ae8f3a91860b1134116e0ba4078502d8fa27422fbdac8651ff676",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunModule.cs": "3a59f854bd0529ce5a9353306e0862620c84cc05b2ee4578f76624af0eeee381",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunPlan.cs": "d6d1de437b3c11a16b6f6f23ba92ca9e5609a3284cbc066f1cab577611f9bd1c",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunPlanFactory.cs": "67290f502cb9d515e37c6a4d15524ac1e80edd2c1e58be8ddd46ec5ae788a1fb",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunPorts.cs": "cd4fe0394f5b32fa61ced25668a1ef031b56a959ede1ce54769f8cf3d3a2447e",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunResourceScanner.cs": "6496d734a1f897689768aa03bf8f57a7f50245b6adc7de4f61bfeaf94bcbde5d",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunResources.cs": "b81e4a2e45b206144256e43571abaf9c0716f6346d90cc5e4d112feff0e75613",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunSession.cs": "99f2a4223e369971e92b8741d4e74781bbe77e0d365394bf98f55a4022504579",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunState.cs": "535922e7ca16aa741b07d9b1d60b22fe4fccc06cb1e7ad80454d976f385ea21f",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunStateStore.cs": "e3fa8ad3a69ab56877fdb493457c78bee66517a85a420d98de64fe243d5a93ea",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunStatus.cs": "0922a30ac62051211b940cf1df255a6e2c1fb53fa9715a69be5ceb0b9b204658",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunUiMarker.cs": "0b57b9784923829fdab5bc29544d251c8b784c7e263e3f1759749a52a37ac12e",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionSigningKey.cs": "6ed1e5e8d4f2112594b4c7294d2d2a4f1bc70de4fce07e39ddb686026fe9a366",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionStartResult.cs": "bc12c0cd63566ad8e1fea8f71f5a88d941c231033aab4045d38a7cb67bcc8e93",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionStartupFailure.cs": "320abbc70e456f02d38cc5da250b28ed3b5ba0c9c29c7a2f32e0015ec2a6d88a",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionTokenFactory.cs": "64b5b63e78e8ecb15d19297af4d4c7a81a6c4f7ffe0c365e5108330376333e0a",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionTokenRequest.cs": "a3202143a48e6cfd91c8f4cd93a3209adfd1ce1adb60a5aca8bd82a19fe7c5c8",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionToolchainPins.cs": "8fe42c87b29833228567d651070e7aaf834e5b883cb1766f50c930ea7a382abd",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionWorkspace.cs": "02e506f00269f9e2fde4689647c1e095306aad18ea7c0cc096aa86d73c33ef1d",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs": "496ff950e764c78a6ee051714150bf39b4d58c03e60331c1c0455c41a2e2d73d",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleInvocationCommand.cs": "481f9ea37ba0227577795fef36663a71833a6b1b0ec5a4d7dfd477b446b9ab02",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleInvocationState.cs": "4c0163b9fbbf19afb0171f228e0c2e1bad176c9f9a5c15663219d10f04d7169f",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleInvocationStateStore.cs": "1cf88d430773d7c010c381800d6600a1d0dc7801da8b936a21c73b7d3245faa3",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleRuntimeModule.cs": "3d6c3de17cfb21dc801352636a15c1ea83a621b07ed86ba3a656436d8dda9525",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleRuntimePlan.cs": "31d2b846abac9f47e6a20aa26d96609296380dfb166161a6d87a9b7d9f4dcc6e",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestExecutionResult.cs": "4d513a2ade9291a9baff3fd77baf08364ae68012984ade1d277fdd1189223304",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestExecutor.cs": "f79030d26d09bcc3ae01804a63f38a4e770304e5bc6a70d7c2e57e70a669be47",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestHandoff.cs": "fc611e5ea0d8935cdbdd286db407e2ead58093910afeab1d9071b25d0f1ebaf4",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestReportRedactor.cs": "93483d3bc27bf8fbf9e33a50812e8911b626c5893799e1ab5a7888ee5e45db63",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/PackagedHostProject.cs": "3edab547223d2cd494dcc83964b0c18d6b995e14a97ca0a720837df4d30adb60",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/PersistedProfileClient.cs": "37940152814c1bc58109a9db20446018da0762dcf0f11f177bb4f0a5380a0de8",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/PersistedProfileDefinition.cs": "05c82ee808886cad8c966fdda552398bff29f92b19d5af7cbdbfe6b73039677e",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/PersistedProfileEvidence.cs": "c8b5c675a1ef442ed2ddb07359feeb44bb42fe5ade608a0dbf254ad50479a2ba",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/PersistedProfileExecutor.cs": "d74be7cf35bb1c91100de0a371f1567e2a5102ff8bc1cd165409d0f17cb1048a",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/PersistedProfileLoader.cs": "484761beed07d258365a320f337bcca5c004fc6bae0e15266706287944b50df0",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/PersistedProfileModule.cs": "bde45bd93965b22fc8770e416c95a6ee7b150006613af066f2aae32b8e18a8c7",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/PersistedProfileNativeTests.cs": "1965e0027c612f936098634a0aa64405106147cab01ff559d976668d4c9bf9aa",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/PersistedProfileStore.cs": "9d720f7077cabd96159a0ce7a14af606df99335282f158fa52de5eeb7abda3ee",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/RuntimePrerequisiteCheck.cs": "5d6584ed87df26b91c3e1515da9855d64aaf698b2ed1188d2af9e77d22fd1fc0",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/RuntimePrerequisiteGate.cs": "45a88dfd601318e79e3bee92e0cbe6d4f0c85182012ea57e890821d713a3dae3",
+    "src/libraries/Hexalith.Builds.Tooling/TestReports/NativeTestReport.cs": "13272172a5f02755f4d66755b15d29c922542a8016cb74027dd999d21dc28745",
+    "src/libraries/Hexalith.Builds.Tooling/TestReports/NativeTestReportLoadResult.cs": "83035405a7defb29fee6bc902daf77aa54694f7bf1a66f9e21bfedc3f32e6380",
+    "src/libraries/Hexalith.Builds.Tooling/TestReports/NativeTestReportLoader.cs": "35d9a1b938e0b7770e8615ba137fe65771853dcee1a5d46badcf5f4a833d22b6",
+    "test/fixtures/evidence/acceptance/README.md": "50bb3aa1ee893e71ab54f3130eb4b1f5d31cfccd0f2c3eaa5e04884d521e2ff1",
+    "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Evidence.Cli.0.0.0-contract.nupkg": "b8d1bf1e04ee69b5633197a42b98f8376e72de00ad25d9ec54848b9e18ca42d3",
+    "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Evidence.Cli.0.0.0-contract.snupkg": "6e65380558cb2658ab313ce937f52a95d0fe63f23ece0f3923f92614deac0222",
+    "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Module.Cli.0.0.0-contract.nupkg": "b31481ec8c36345a07411ba3966d6bb03da0da4310fadb7e485e376a3690483d",
+    "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Module.Cli.0.0.0-contract.snupkg": "32cdb654751f72da2be88e7c056e2ebbe9e52b15fb5e80c5f74d04d2888db57b",
+    "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Module.Cli.0.0.0-other.nupkg": "91b27f5edc68c994cdc927d39636e561b4d925eb42c7c1dcb142aed2c9491cc0",
+    "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Module.Cli.0.0.0-other.snupkg": "4a617727c57d6b8f668ef9fb159d8865f8e9cbf5e95b8da97f63cf9372a47673",
+    "test/fixtures/evidence/acceptance/bound/cleanup-down-foreign-run.json": "93f83e3d80165ae2e99b311a8f2f2f0b0a3c803faae7ecd045d368664e1b6d1b",
+    "test/fixtures/evidence/acceptance/bound/cleanup-down.json": "8c389aa8f98e1a49c3277338511d9cc3c92a5178d34b2f61f31960aba6a114cf",
+    "test/fixtures/evidence/acceptance/bound/cleanup-stub.json": "ec8128e215c7e0df3af6b8beb8adbae9b4f8cf572e7b65dafa8dda96229fa127",
+    "test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json": "c9a9df3136d640d4345e4f56437a90e5ad8a15bcac1a97ff95858b0aec514209",
+    "test/fixtures/evidence/acceptance/bound/mislabeled/Hexalith.Builds.Evidence.Cli.0.0.0-contract.nupkg": "d509a7661b63767a8fc55e7e2e81fc56f825bc00489c8ef55df1840f431efa58",
+    "test/fixtures/evidence/acceptance/bound/mislabeled/Hexalith.Builds.Evidence.Cli.0.0.0-contract.snupkg": "c612787e00228bc5af9410c27820989ecccfb8cdcad115c0d3703ffc1c0d2b7b",
+    "test/fixtures/evidence/acceptance/bound/profile-full-mtp.fixture.json": "ab8e1c460f653faf797dbee711a9985cc2e8300e2581574ee07b41eef45fec92",
+    "test/fixtures/evidence/acceptance/bound/profile-full.fixture.json": "1e2deefa8e24c961adefa0f8565421eed802fe4d6f7a278dd2ae687eb429f894",
+    "test/fixtures/evidence/acceptance/bound/rollback-drill.json": "8d3cee4dd5150bddcb3145d5ccf8120594e3cfd5d9db58be94db6be5a598dc12",
+    "test/fixtures/evidence/acceptance/bound/run-cancelled-no-profile.json": "0c8e4c275ed0f4c3e934b5859787511944c3717edf2ae949964be1dee30a4258",
+    "test/fixtures/evidence/acceptance/bound/run-cancelled.json": "3d901be62e78fe20d12ad488156962eff6d7c993151445093977735da083c2e2",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.json": "353b3366fa5a5afe1087a2c4872005136b74a7f6fa5a76f6795d1f7ed4049ff9",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.mtp.trx": "7a81e16b31d9d46b875dd225f4783f671e956ea0f7e694ef1e539917111760ae",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-all-skipped.json": "a860fb7647a32a2d4f926fc72e5e2326893d1103501bedd9e791224430ac3d47",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-all-skipped.vstest.trx": "3157c7ccb2eb5c1ad592b716e8caab575f725b6733faa3b65822d0d89270567f",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-count-mismatch.json": "10de4994391a2b2a8d4cba8770508b228ecaa84ad14238585721a8776a3894d9",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-count-mismatch.vstest.trx": "381dece65259e57a82e00ec8b8eee14b1b661d24beaf747a782057d9afe758da",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-dirty.json": "a1df3b365896817a645d57237434a1c72a25e4cec4acf0d4b461c965c36aaeed",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-dirty.vstest.trx": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-failed-report.json": "8793b8d940ef23ba1658a4e6ee309709da63040be8947a212ced11ee52c10d6d",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-failed-report.vstest.trx": "dceaea2f1b7324d55d1d798714ba76881a65db74f1cd2b75b34cdd89ed83f85c",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-other-revision.json": "f98ae8f9debb7709540679a8e40ee98b5bd9032882ce8753bc3d70dc0fa835e2",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-other-revision.vstest.trx": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-partial-assertions.json": "aaff0d7404a8a4974ce91455630d030173e2035909f254d1889e00ea5707734f",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-partial-assertions.vstest.trx": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-unbound.json": "a6fc13a8002e06995a3c0f8f46ee8b0ee5b16a97ca27e4eb3bc8c2ae56e595be",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-unbound.vstest.trx": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest.json": "a25ef82dd6bf0ca0b3e9e61f043cbd504bf8d85392d2665a9339d585fa1ee856",
+    "test/fixtures/evidence/acceptance/bound/run-persisted-vstest.vstest.trx": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+    "test/fixtures/evidence/acceptance/bound/run-prerequisite-unavailable.json": "41e98cc1938e659621f39d30fde650089f1b858e664beffd3f0921a0a43f840a",
+    "test/fixtures/evidence/acceptance/bound/run-unsupported-profile.json": "a6ffb282d877c68ab6b6d3cb6ddb545cd2f09827493ac77bbec9d7418fbd03ef",
+    "test/fixtures/evidence/acceptance/negative/all-skipped-report.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/all-skipped-report.json": "5e190cffa2dd5505314c67f724fb7a8aa356bbd8667c1114a53e404b4a4bf65f",
+    "test/fixtures/evidence/acceptance/negative/approval-before-runs.expected.json": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+    "test/fixtures/evidence/acceptance/negative/approval-before-runs.json": "695cf16af8cff3487aa2b5d8c2a6976255d9287b8ab37c0006834921f5acd00d",
+    "test/fixtures/evidence/acceptance/negative/approval-in-future.expected.json": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+    "test/fixtures/evidence/acceptance/negative/approval-in-future.json": "2ca807ac8ff28d8b17f3e1d813ae2cf9dc7815d05f4ec3e363967f7ce7a942b5",
+    "test/fixtures/evidence/acceptance/negative/approval-revision-mismatch.expected.json": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+    "test/fixtures/evidence/acceptance/negative/approval-revision-mismatch.json": "990ac828f947998a8a49b5d33c5fc42567d65cba76ad8696f74d7924a3127440",
+    "test/fixtures/evidence/acceptance/negative/cancelled-without-profile.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/cancelled-without-profile.json": "087d0ac3aad60f4bad119c30114ff289ef8c63b5947f7825455cf6739b80cd0f",
+    "test/fixtures/evidence/acceptance/negative/cleanup-foreign-run.expected.json": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+    "test/fixtures/evidence/acceptance/negative/cleanup-foreign-run.json": "9b450fbd0e71919e4f5f62ba945684444158992bb403e47b286c0fcced94921d",
+    "test/fixtures/evidence/acceptance/negative/cleanup-not-down-evidence.expected.json": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+    "test/fixtures/evidence/acceptance/negative/cleanup-not-down-evidence.json": "2ce5c2a8f7af90a57347846a4262e347255aa823870bd32685088b29db670623",
+    "test/fixtures/evidence/acceptance/negative/command-mismatch.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/command-mismatch.json": "fa5b933041903f0236493a2e8b47c2f3e235d7d1c82412cb14ee2a4a0cfac953",
+    "test/fixtures/evidence/acceptance/negative/control-run-with-report.expected.json": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+    "test/fixtures/evidence/acceptance/negative/control-run-with-report.json": "48d7047d70b1ee73744b92bb5bf0efc91a4d0efd32c5b73f5ce18e388b97d3aa",
+    "test/fixtures/evidence/acceptance/negative/dirty-evidence.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/dirty-evidence.json": "6d037e4c3221d4f623f924ffda844c69de8371ed48b676328dce94c8b9b0210a",
+    "test/fixtures/evidence/acceptance/negative/duplicate-key.expected.json": "dee71bcf029d1ab3769f69513e43b583722f4d4d2ea79b8994e6428229a60c31",
+    "test/fixtures/evidence/acceptance/negative/duplicate-key.json": "2c4e4d95ba590f5fe39dfb247ba0c90b5912e5e285e8aa80286295cd1e091d6b",
+    "test/fixtures/evidence/acceptance/negative/duplicate-run-key.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/duplicate-run-key.json": "6883e2b12d79278759931f9b517d65018703e78d616e9b05f452f39387a99079",
+    "test/fixtures/evidence/acceptance/negative/evidence-other-revision.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/evidence-other-revision.json": "f0bbad2f8a13b9d727c5adee2fab2c26150d87d4c3cfc2869ea39e687eecb6b4",
+    "test/fixtures/evidence/acceptance/negative/failed-native-report.expected.json": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+    "test/fixtures/evidence/acceptance/negative/failed-native-report.json": "07eff024e4607682d23307494415bda059064ccbd719e4a5e686ce7b0fd5e825",
+    "test/fixtures/evidence/acceptance/negative/manifest-hash-mismatch.expected.json": "645f56650b77f068162332b3102e3eacbe6cf7c047088cee4384700fd31416da",
+    "test/fixtures/evidence/acceptance/negative/manifest-hash-mismatch.json": "5474165134fe9a533d02ec80b88081c52f1a4a50fa8a0cf5d6dd4fa472b2e1ad",
+    "test/fixtures/evidence/acceptance/negative/missing-approval.expected.json": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+    "test/fixtures/evidence/acceptance/negative/missing-approval.json": "c7d81690e7ae2fe124a227ef370ca89b5bf548b4311bcbafb316d3fdc03913a0",
+    "test/fixtures/evidence/acceptance/negative/missing-mtp-run.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/missing-mtp-run.json": "db7bfd21fcf40237fe079fd5be168a61fbb6073bb624db6dcf9b8c54d0c71fb9",
+    "test/fixtures/evidence/acceptance/negative/missing-package.expected.json": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+    "test/fixtures/evidence/acceptance/negative/missing-package.json": "6c9f960be65621c3af27ef433abf4434d72c60648b9e8604064fde5a229f1dc5",
+    "test/fixtures/evidence/acceptance/negative/missing-rollback.expected.json": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+    "test/fixtures/evidence/acceptance/negative/missing-rollback.json": "c96a16c017432a7288dd50a5e7988bcfd2f159e97060013c32b8d1dec074ddcd",
+    "test/fixtures/evidence/acceptance/negative/mtp-run-cites-vstest-evidence.expected.json": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+    "test/fixtures/evidence/acceptance/negative/mtp-run-cites-vstest-evidence.json": "0c850c19024fa9c78780c3a2d3601d293aa1f4a9a6f6757c7a479b28289d32dc",
+    "test/fixtures/evidence/acceptance/negative/package-identity-mismatch.expected.json": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+    "test/fixtures/evidence/acceptance/negative/package-identity-mismatch.json": "db9410a0ef079b077170d388cf29dfa83bc7d62943a26d1975f14eb41849a7d3",
+    "test/fixtures/evidence/acceptance/negative/package-version-not-lockstep.expected.json": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+    "test/fixtures/evidence/acceptance/negative/package-version-not-lockstep.json": "f2e12f1dcd6860ab51cd1f7afb932adbffeec46800db5638a58f01aac99c57a4",
+    "test/fixtures/evidence/acceptance/negative/partial-persisted-assertions.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/partial-persisted-assertions.json": "607cef4de03cb48dde8279e6f7fc356af2544858fc2301d537bcec84bd21b0f7",
+    "test/fixtures/evidence/acceptance/negative/pin-mismatch.expected.json": "655d7cfe91aa850717694e6de4650d48b3101415a854f06b1db2604c52e69aa4",
+    "test/fixtures/evidence/acceptance/negative/pin-mismatch.json": "4414568d67a2a115d6b1d2926cfa2a63014d3ef5c3e0b106ba2a0cbec7451242",
+    "test/fixtures/evidence/acceptance/negative/prerequisite-is-passing-run.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/prerequisite-is-passing-run.json": "c957026f9b7f3045dea1975a8b636e362faf2f2bcc103e5e4e6d5c98c12d7722",
+    "test/fixtures/evidence/acceptance/negative/report-count-mismatch.expected.json": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+    "test/fixtures/evidence/acceptance/negative/report-count-mismatch.json": "6b1d46b42c5ced8a5334201fc6a9ac5f7b76b8fc9ce51c6a5712743d8555356e",
+    "test/fixtures/evidence/acceptance/negative/report-not-bound.expected.json": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+    "test/fixtures/evidence/acceptance/negative/report-not-bound.json": "e818d557e5f77d602ed69ceb0a5f4cbd20179f24126258da1ece0c56a0cff2bb",
+    "test/fixtures/evidence/acceptance/negative/report-platform-mismatch.expected.json": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+    "test/fixtures/evidence/acceptance/negative/report-platform-mismatch.json": "58a6f25fa290d7697a8587f131552ecb14760843bd79ea1125c803d90027519e",
+    "test/fixtures/evidence/acceptance/negative/secret-bearing.expected.json": "dee71bcf029d1ab3769f69513e43b583722f4d4d2ea79b8994e6428229a60c31",
+    "test/fixtures/evidence/acceptance/negative/secret-bearing.json": "db6684a76ff81e7d47c590b14416c2a30af9c2d7673eb79527a624e5667b0376",
+    "test/fixtures/evidence/acceptance/negative/status-candidate.expected.json": "655d7cfe91aa850717694e6de4650d48b3101415a854f06b1db2604c52e69aa4",
+    "test/fixtures/evidence/acceptance/negative/status-candidate.json": "be0fbf23cead242d8ec542bc1d0059d358fe7c963b1c2cd473d16bdc314b7641",
+    "test/fixtures/evidence/acceptance/negative/tampered-evidence-hash.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/tampered-evidence-hash.json": "f008f44445330187d14ac2c53d4ab334aceacd9ec44e69a02642dfdaeec262c3",
+    "test/fixtures/evidence/acceptance/negative/unavailable-claimed-passing.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/unavailable-claimed-passing.json": "f042da207404f51550cce6b1e088097f816ef77f0be9132f56abc176f5d43fd8",
+    "test/fixtures/evidence/acceptance/negative/unknown-field.expected.json": "65f2271f134d587654e20af7ad4c2c119c2f77e946921023250c6028d96eb59a",
+    "test/fixtures/evidence/acceptance/negative/unknown-field.json": "38e6fcceaa1d55d723920b807622c7ebb92a2c59e570690d4d30113d20aebc2a",
+    "test/fixtures/evidence/acceptance/negative/unsupported-profile-as-unavailable.expected.json": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+    "test/fixtures/evidence/acceptance/negative/unsupported-profile-as-unavailable.json": "33d6a4175de3fa9c9a41d079a8e7d6a2b779737e554ac644a5d381a04abf90cf",
+    "test/fixtures/evidence/acceptance/negative/unsupported-schema.expected.json": "65f2271f134d587654e20af7ad4c2c119c2f77e946921023250c6028d96eb59a",
+    "test/fixtures/evidence/acceptance/negative/unsupported-schema.json": "58a580680cb2741d223b1bb161170bd31ac7230b01ad9c824086714f788afa2d",
+    "test/fixtures/evidence/acceptance/negative/wrong-feed.expected.json": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+    "test/fixtures/evidence/acceptance/negative/wrong-feed.json": "9d33a812a9ebd18ab8ff936f9feb000bee052beb83c443e02078d9785bc8cfcd",
+    "test/fixtures/evidence/acceptance/positive/p0-acceptance.expected.json": "171d66db3d4c2a7a7c6ca66473dadb15c76121f1349d3568879df1f71ab27711",
+    "test/fixtures/evidence/acceptance/positive/p0-acceptance.json": "96d5f0dd27b1824a1b5078d30235d80ff64c564c2b97dfb2ed21b67ec202a888",
+    "test/fixtures/module/executable/Directory.Build.props": "84159ecaf790b27c69b59071d59671e81d37ac85a2abd0050ec252dbf9ddb9b7",
+    "test/fixtures/module/executable/Hexalith.Builds.P0Fixture.slnx": "157a2c37bffc5dc9b4c7be49d9d6f55ff8c02392f05841dd53c340cb60706635",
+    "test/fixtures/module/executable/P0Fixture.Inventory.Descriptor/ModuleDescriptorV1.cs": "2e0fe2791e077589fea0272564cb80d941f29f8857e9679bc796c136cd42f232",
+    "test/fixtures/module/executable/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.csproj": "1363589311a0629f6132b51927075752163e45411ec95a116efd9b0602da46a6",
+    "test/fixtures/module/executable/P0Fixture.Inventory/P0Fixture.Inventory.csproj": "570515ae1750eaf0a25118016aadb3df1a49aae50ec5868cfd20823ced6afdc1",
+    "test/fixtures/module/executable/P0Fixture.Inventory/Program.cs": "e475e7d058e0af8828f2f98c91f1a5a5c3f1ac41eb8de9112f909a2860a7fb70",
+    "test/fixtures/module/executable/P0Fixture.Inventory/ReserveStock.cs": "1d57c9105b20ead40ffa02fd438929beb92f0839aa99ba34175952eb2afda752",
+    "test/fixtures/module/executable/P0Fixture.Inventory/StockAggregate.cs": "9c4c3db06ec9aa5ec50df9953584d897ed0d3e64b5b2137ec4de018db6b6e916",
+    "test/fixtures/module/executable/P0Fixture.Inventory/StockReserved.cs": "01f2b22a63c0550bd633429e2ab1271bfdaaaa55ebe4688faf9f5fa26cb169c1",
+    "test/fixtures/module/executable/P0Fixture.Inventory/StockState.cs": "79a10f18e66980676b387153695f9ead55641cdc994ff69987a4645a174a79f1",
+    "test/fixtures/module/executable/P0Fixture.Inventory/StockSummaryProjection.cs": "82be6e04e6eb114d8760e55c7c7c8af11e385738884e519dc0486abf65a15d0f",
+    "test/fixtures/module/executable/P0Fixture.NativeTests.VsTest/P0Fixture.NativeTests.VsTest.csproj": "eeaab398ba0d1e954fa102f540bcd1e1de9948c96bad95d0a74fe97c5a02fab1",
+    "test/fixtures/module/executable/P0Fixture.NativeTests.VsTest/global.json": "fc4602f9d88c9440f70f72732343a88c5e4190223fb9b77f9b8ac8eb1c4c8c2d",
+    "test/fixtures/module/executable/P0Fixture.NativeTests/P0Fixture.NativeTests.csproj": "eb539e5496bd4f5758b33eb71a33e1247fd02a06ce69f68e16bcec5144578cfe",
+    "test/fixtures/module/executable/P0Fixture.NativeTests/RunHandoff.cs": "407167b5a607eaa549c31901d4ff0d68be679da1ea253a2cfd172dda62bbb3a9",
+    "test/fixtures/module/executable/P0Fixture.NativeTests/RunHandoffTests.cs": "ac8b0f575b12f42dff862c734a9bdeded23fd5a1ad041fd369082d269079df01",
+    "test/fixtures/module/executable/P0Fixture.Orders.Descriptor/ModuleDescriptorV1.cs": "ff48f0b6ba8b481c60f30b26572ec838e18a6331b701c054eb40c936e1c2215e",
+    "test/fixtures/module/executable/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.csproj": "1363589311a0629f6132b51927075752163e45411ec95a116efd9b0602da46a6",
+    "test/fixtures/module/executable/P0Fixture.Orders/OrderAggregate.cs": "a734f87f5c760c3b5fcdfe3bea8daaad69b01241426ed2d3a9cad2dfcd07ebba",
+    "test/fixtures/module/executable/P0Fixture.Orders/OrderPlaced.cs": "25c2ac2399270d54a79f963ccfb1960a751be6b8426000399c2a4bc6e96903f7",
+    "test/fixtures/module/executable/P0Fixture.Orders/OrderState.cs": "616fe1765602d54b25e51f303f148c13f8332f8607f78e42b94ad744c114583b",
+    "test/fixtures/module/executable/P0Fixture.Orders/OrderSummaryProjection.cs": "14e0b4e9d3d8d39dff1f87c62772fd0edd6105b5ef372a48cac8a12f789f79f4",
+    "test/fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj": "11b69c39e82224d4195a645ed98dc4d41d68800bc9e28051cf5d6dfd3374fccd",
+    "test/fixtures/module/executable/P0Fixture.Orders/PlaceOrder.cs": "e20f6943e7428b8943e0f42163e9abc7fa1d84116a8dfb88a9efdc6dd021a247",
+    "test/fixtures/module/executable/P0Fixture.Orders/Program.cs": "e475e7d058e0af8828f2f98c91f1a5a5c3f1ac41eb8de9112f909a2860a7fb70",
+    "test/fixtures/module/executable/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.csproj": "4f7d182a4a47042c2a78215798feae99e2fe2d3b11873ff3ecf59f182476bcbc",
+    "test/fixtures/module/executable/P0Fixture.Ui.Descriptor/UiDescriptorV1.cs": "5879dcbc5ae708acf8e81439899dff8a914ccc17555bf37d3d746335c11f1b73",
+    "test/fixtures/module/executable/P0Fixture.Ui/InventoryUiMarker.cs": "d2f17a9faa5aadec9ed63d1e85929ada381d6478d7ca39ddf8c64f4f225fed64",
+    "test/fixtures/module/executable/P0Fixture.Ui/OrdersUiMarker.cs": "79aa69fcb1a68e5a31d6f1df5c63b25f2c89a485d1e68ad6d29b6f8b154bb372",
+    "test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj": "2e8d89c3a25a14d23dcd8dc37f53178d8fee144010d44da01d1639a11e249aa7",
+    "test/fixtures/module/executable/P0Fixture.Ui/PlaceOrderUiCommand.cs": "980e5084096731d83449c75234dec8bf1982dce25cd7e21394ad1a31b3d3468f",
+    "test/fixtures/module/executable/P0Fixture.Ui/ReserveStockUiCommand.cs": "65eac95828e59e36338277308b996887d2839e4d358c664929dd866ea7518dad",
+    "test/fixtures/module/executable/hexalith.module-manifest.v1.json": "ad86271c269be95773b718b213e990d857e53867fa444bc26163b371520da3d7",
+    "test/fixtures/module/executable/profiles/p0-executable-live.fixture.json": "cb0e4815649c7f65b3e9202a3de86b51d647f26fb20c29c91ce4c6af5b816a39",
+    "test/fixtures/module/executable/profiles/p0-two-module-full-mtp.fixture.json": "1d92af2bada25d89195d084f3df54ea2f3f4c63ec00deb3187dccf1dc9e4b835",
+    "test/fixtures/module/executable/profiles/p0-two-module-full.fixture.json": "472ab1becbf89c1502333bbc27838d81afbb267141bd72639eceecb6c794be14"
+  },
+  "sourceRevision": "90228a7bab43dfba1606097fb1bd97968621679a",
+  "sourceUnchanged": true,
+  "status": "passed",
+  "toolStoreBuildOutputs": [],
+  "toolStoreProjectsDirectory": "/home/administrator/.local/state/hexalith-qualification/nuget-stage5.8/hexalith.builds.module.cli/0.0.0-stage5.8/tools/net10.0/any/g4-host/projects",
+  "validations": [
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/positive/p0-acceptance.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXI210"
+      ],
+      "elapsedSeconds": 0.36,
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "expectedRuleIds": [
+        "HXI210"
+      ],
+      "matched": true,
+      "name": "validate-positive-p0-acceptance",
+      "ruleId": null,
+      "runId": null,
+      "status": "passed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "af74d4d7ea8737cfd42f79111201dbf54e9b3be6d2452824a3f9dd6fae7b192a"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/all-skipped-report.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.35,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-all-skipped-report",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "c03bce86078301689994b885403647bb61a97b2f943bb844c7b6ff11c7666277"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/approval-before-runs.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE208"
+      ],
+      "elapsedSeconds": 0.38,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE208"
+      ],
+      "matched": true,
+      "name": "validate-negative-approval-before-runs",
+      "ruleId": "HXE208",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "2fa3e5522d7b51423bfc235d34d87c65ce93e3d400ce0451ff7a2c4f5564e59a"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/approval-in-future.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE208"
+      ],
+      "elapsedSeconds": 0.36,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE208"
+      ],
+      "matched": true,
+      "name": "validate-negative-approval-in-future",
+      "ruleId": "HXE208",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "2fa3e5522d7b51423bfc235d34d87c65ce93e3d400ce0451ff7a2c4f5564e59a"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/approval-revision-mismatch.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE208"
+      ],
+      "elapsedSeconds": 0.31,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE208"
+      ],
+      "matched": true,
+      "name": "validate-negative-approval-revision-mismatch",
+      "ruleId": "HXE208",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "2fa3e5522d7b51423bfc235d34d87c65ce93e3d400ce0451ff7a2c4f5564e59a"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/cancelled-without-profile.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.33,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-cancelled-without-profile",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "96167530a04bd672d8cfbc7a33b0e580a90af6f1831d76a51e454bea8389e574"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/cleanup-foreign-run.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE207"
+      ],
+      "elapsedSeconds": 0.38,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE207"
+      ],
+      "matched": true,
+      "name": "validate-negative-cleanup-foreign-run",
+      "ruleId": "HXE207",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "20426955f2b24fb446979b239f204bd8cfa27d1c0193d0e501a8be33b07be379"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/cleanup-not-down-evidence.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE207"
+      ],
+      "elapsedSeconds": 0.37,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE207"
+      ],
+      "matched": true,
+      "name": "validate-negative-cleanup-not-down-evidence",
+      "ruleId": "HXE207",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "20426955f2b24fb446979b239f204bd8cfa27d1c0193d0e501a8be33b07be379"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/command-mismatch.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.37,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-command-mismatch",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "c03bce86078301689994b885403647bb61a97b2f943bb844c7b6ff11c7666277"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/control-run-with-report.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE206"
+      ],
+      "elapsedSeconds": 0.33,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE206"
+      ],
+      "matched": true,
+      "name": "validate-negative-control-run-with-report",
+      "ruleId": "HXE206",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "ab9f446055dc330b1e6498b864c9ad2e995deffd44840cfc4cc66224c4f08bd3"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/dirty-evidence.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.31,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-dirty-evidence",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "c03bce86078301689994b885403647bb61a97b2f943bb844c7b6ff11c7666277"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/duplicate-key.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE200"
+      ],
+      "elapsedSeconds": 0.26,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE200"
+      ],
+      "matched": true,
+      "name": "validate-negative-duplicate-key",
+      "ruleId": "HXE200",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "a0a20ed35f82c2d0dc70aba51ffe4da29b7c8d2677902b419609ac5f9b3f4565"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/duplicate-run-key.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.34,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-duplicate-run-key",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "5659e04b4bca8f99c9d47c7c715af96e305b91d4ea561bfca9034c915c91cc24"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/evidence-other-revision.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.32,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-evidence-other-revision",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "c03bce86078301689994b885403647bb61a97b2f943bb844c7b6ff11c7666277"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/failed-native-report.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE206"
+      ],
+      "elapsedSeconds": 0.34,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE206"
+      ],
+      "matched": true,
+      "name": "validate-negative-failed-native-report",
+      "ruleId": "HXE206",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "c57bd78da02c8f1cfb95f161655fbc4f6b3cd53fb825247154574103dde25c41"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/manifest-hash-mismatch.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE203"
+      ],
+      "elapsedSeconds": 0.33,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE203"
+      ],
+      "matched": true,
+      "name": "validate-negative-manifest-hash-mismatch",
+      "ruleId": "HXE203",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "1f80bba8eb7efff7470f837e19f3d6e061c620d7505c704ecc9e61c9287e0f34"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/missing-approval.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE208"
+      ],
+      "elapsedSeconds": 0.39,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE208"
+      ],
+      "matched": true,
+      "name": "validate-negative-missing-approval",
+      "ruleId": "HXE208",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "2fa3e5522d7b51423bfc235d34d87c65ce93e3d400ce0451ff7a2c4f5564e59a"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/missing-mtp-run.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.34,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-missing-mtp-run",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "5659e04b4bca8f99c9d47c7c715af96e305b91d4ea561bfca9034c915c91cc24"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/missing-package.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE204"
+      ],
+      "elapsedSeconds": 0.3,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE204"
+      ],
+      "matched": true,
+      "name": "validate-negative-missing-package",
+      "ruleId": "HXE204",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "aff21078b20c6c8b8d3d112947ebd2ebe9fe9ec3387e9e68b2bcb889801fa88f"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/missing-rollback.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE207"
+      ],
+      "elapsedSeconds": 0.37,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE207"
+      ],
+      "matched": true,
+      "name": "validate-negative-missing-rollback",
+      "ruleId": "HXE207",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "dce315e80810a1b59e54de5dc3d06199cb8c0683f9464e9fd7dea39a65fb74c0"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/mtp-run-cites-vstest-evidence.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE206"
+      ],
+      "elapsedSeconds": 0.37,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE206"
+      ],
+      "matched": true,
+      "name": "validate-negative-mtp-run-cites-vstest-evidence",
+      "ruleId": "HXE206",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "8c678ffb0fe99d8d25e715f9fa068b7657773f82184f5cf6f221ae7b0cd4f6ff"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/package-identity-mismatch.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE204"
+      ],
+      "elapsedSeconds": 0.35,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE204"
+      ],
+      "matched": true,
+      "name": "validate-negative-package-identity-mismatch",
+      "ruleId": "HXE204",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "aff21078b20c6c8b8d3d112947ebd2ebe9fe9ec3387e9e68b2bcb889801fa88f"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/package-version-not-lockstep.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE204"
+      ],
+      "elapsedSeconds": 0.37,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE204"
+      ],
+      "matched": true,
+      "name": "validate-negative-package-version-not-lockstep",
+      "ruleId": "HXE204",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "aff21078b20c6c8b8d3d112947ebd2ebe9fe9ec3387e9e68b2bcb889801fa88f"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/partial-persisted-assertions.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.39,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-partial-persisted-assertions",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "c03bce86078301689994b885403647bb61a97b2f943bb844c7b6ff11c7666277"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/pin-mismatch.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE202"
+      ],
+      "elapsedSeconds": 0.3,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE202"
+      ],
+      "matched": true,
+      "name": "validate-negative-pin-mismatch",
+      "ruleId": "HXE202",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "b835b023aece7c0c691f8f88d9e34144c2f35549776983d992dfa02db2b883ab"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/prerequisite-is-passing-run.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.32,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-prerequisite-is-passing-run",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "be9fe954ec6ecb5ff2fa1c70d7c0e0e30b5867402533ba2d1b95e90f7c330f3e"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/report-count-mismatch.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE206"
+      ],
+      "elapsedSeconds": 0.32,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE206"
+      ],
+      "matched": true,
+      "name": "validate-negative-report-count-mismatch",
+      "ruleId": "HXE206",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "c57bd78da02c8f1cfb95f161655fbc4f6b3cd53fb825247154574103dde25c41"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/report-not-bound.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE206"
+      ],
+      "elapsedSeconds": 0.38,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE206"
+      ],
+      "matched": true,
+      "name": "validate-negative-report-not-bound",
+      "ruleId": "HXE206",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "c57bd78da02c8f1cfb95f161655fbc4f6b3cd53fb825247154574103dde25c41"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/report-platform-mismatch.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE206"
+      ],
+      "elapsedSeconds": 0.36,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE206"
+      ],
+      "matched": true,
+      "name": "validate-negative-report-platform-mismatch",
+      "ruleId": "HXE206",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "c57bd78da02c8f1cfb95f161655fbc4f6b3cd53fb825247154574103dde25c41"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/secret-bearing.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE200"
+      ],
+      "elapsedSeconds": 0.28,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE200"
+      ],
+      "matched": true,
+      "name": "validate-negative-secret-bearing",
+      "ruleId": "HXE200",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "a0a20ed35f82c2d0dc70aba51ffe4da29b7c8d2677902b419609ac5f9b3f4565"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/status-candidate.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE202"
+      ],
+      "elapsedSeconds": 0.29,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE202"
+      ],
+      "matched": true,
+      "name": "validate-negative-status-candidate",
+      "ruleId": "HXE202",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "be33d27e520bc3aa31a42aa15ea7555e4200bc5caab2779442b11ff625f845d2"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/tampered-evidence-hash.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.3,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-tampered-evidence-hash",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "c03bce86078301689994b885403647bb61a97b2f943bb844c7b6ff11c7666277"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/unavailable-claimed-passing.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.35,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-unavailable-claimed-passing",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "be9fe954ec6ecb5ff2fa1c70d7c0e0e30b5867402533ba2d1b95e90f7c330f3e"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/unknown-field.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE201"
+      ],
+      "elapsedSeconds": 0.31,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE201"
+      ],
+      "matched": true,
+      "name": "validate-negative-unknown-field",
+      "ruleId": "HXE201",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "a4f0980988bfd389117539723f2bff1a20963ae068396cecff8f91175cb86948"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/unsupported-profile-as-unavailable.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE205"
+      ],
+      "elapsedSeconds": 0.36,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE205"
+      ],
+      "matched": true,
+      "name": "validate-negative-unsupported-profile-as-unavailable",
+      "ruleId": "HXE205",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "be9fe954ec6ecb5ff2fa1c70d7c0e0e30b5867402533ba2d1b95e90f7c330f3e"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/unsupported-schema.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE201"
+      ],
+      "elapsedSeconds": 0.3,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE201"
+      ],
+      "matched": true,
+      "name": "validate-negative-unsupported-schema",
+      "ruleId": "HXE201",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "a4f0980988bfd389117539723f2bff1a20963ae068396cecff8f91175cb86948"
+    },
+    {
+      "command": [
+        "dotnet",
+        "tool",
+        "run",
+        "hexalith-evidence",
+        "--",
+        "validate",
+        "test/fixtures/evidence/acceptance/negative/wrong-feed.json",
+        "--output",
+        "json"
+      ],
+      "diagnosticRuleIds": [
+        "HXE204"
+      ],
+      "elapsedSeconds": 0.31,
+      "exitCode": 6,
+      "expectedExitCode": 6,
+      "expectedRuleIds": [
+        "HXE204"
+      ],
+      "matched": true,
+      "name": "validate-negative-wrong-feed",
+      "ruleId": "HXE204",
+      "runId": null,
+      "status": "failed",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdoutSha256": "aff21078b20c6c8b8d3d112947ebd2ebe9fe9ec3387e9e68b2bcb889801fa88f"
+    }
+  ],
+  "version": "0.0.0-stage5.8"
+}

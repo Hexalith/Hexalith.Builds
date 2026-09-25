@@ -1,0 +1,1 @@
+{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXM012"},"diagnostics":[{"ruleId":"HXM012","phase":"Manifest","category":"Manifest","message":"The manifest JSON contains a duplicate property.","field":"json","hint":"Remove duplicate JSON object properties.","source":null,"location":null,"row":null}]}

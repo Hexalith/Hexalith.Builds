@@ -1,0 +1,28 @@
+<Project>
+  <!-- Parent build files must not leak into this shim; the runner builds a private copy in the run workspace. -->
+  <PropertyGroup>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
+  </PropertyGroup>
+  <Import Project="PackagedHost.props" Condition="Exists('$(MSBuildThisFileDirectory)PackagedHost.props')" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Hexalith.Builds.Module.UiHost</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <PackagedHostDirectory Condition="'$(PackagedHostDirectory)' == ''">$(MSBuildThisFileDirectory)../../bin/UiHost/</PackagedHostDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Placeholder.cs" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Target Name="UsePackagedHost" AfterTargets="Build">
+    <ItemGroup>
+      <PackagedHostFile Include="$(PackagedHostDirectory)**/*" />
+    </ItemGroup>
+    <Error Condition="'@(PackagedHostFile)' == ''" Text="The packaged UI host is missing." />
+    <Copy SourceFiles="@(PackagedHostFile)" DestinationFiles="@(PackagedHostFile->'$(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

@@ -1,0 +1,1 @@
+G4_CAMPAIGN=live-stage5.8 NUGET_PACKAGES=/home/administrator/.local/state/hexalith-qualification/nuget-stage5.8 HEXALITH_DAPR_HOME=/home/administrator/.local/state/hexalith-qualification/g4-dapr-home-1.18.2 CI=true python3 run-packaged-qualification-stage5.8.py /home/administrator/.local/state/hexalith-qualification/consumer-stage5.8 packages8
