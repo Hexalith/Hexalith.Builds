@@ -37,6 +37,57 @@ or reused runs expose no complete inventory.
 .\Tools\test-g4-tool-package-contracts.ps1 -Version 0.0.0-ci.1 -RequireControls
 ```
 
+The same gate runs the synthetic `hexalith.g4-p0-acceptance.v1` corpus in
+`test/fixtures/evidence/acceptance/` through the source and installed
+`hexalith-evidence validate` commands. The positive record must print `HXI210`;
+each negative record must fail with exit `6` and the `HXE200`–`HXE208` rule in
+its `.expected.json`. These blocking controls are not written to the package
+inventory, whose qualification-evidence name contract is unchanged. The corpus
+is never acceptance evidence.
+
+A `hexalith.g4-p0-acceptance.v1` record is a JSON object with exactly these
+fields. The validator stops at the first failing rule:
+
+| Field | Requirement | Rule |
+| --- | --- | --- |
+| (record) | Readable, at most 4 MiB, no duplicate keys, no credential or placeholder value | `HXE200` |
+| `schema` | `hexalith.g4-p0-acceptance.v1`, and no other top-level field | `HXE201` |
+| `status`, `sourceRevision`, `platformPins` | `accepted`, a 40-character lowercase revision, and the supported EventStore, Dapr runtime, Dapr SDK, and FrontComposer pins | `HXE202` |
+| `fixture` | `manifestPath` and `manifestSha256` of the current manifest bytes | `HXE203` |
+| `packages` | Exactly the two tool packages at one version, with the feed chosen by version kind. Each `.nupkg`/`.snupkg` file name, SHA-256, and nuspec `id`/`version` must match | `HXE204` |
+| `runs` | Exactly `persisted-vstest`, `persisted-mtp`, `prerequisite-unavailable`, and `cancelled`, each with distinct run IDs. Each cites clean module-run evidence at `sourceRevision` whose status, exit code, manifest, tool version, and pins match, and whose command is `dotnet tool run ` plus the evidence's canonical `invocation.command`, without `--evidence` or `--output`. Persisted runs must use a profile that declares their platform and list every persisted assertion and sequence. The controls must be native-test-profile `test` runs failing with a prerequisite rule other than `HXR029`, or with `HXC130` | `HXE205` |
+| `runs[].report*` | A persisted run cites `<evidence>.<platform>.trx`, bound in the evidence `artifactHashes`, with passing counts equal to `testCounts`. A control run has no report | `HXE206` |
+| `cleanup`, `rollback` | `cleanup` cites clean `hexalith-module down` evidence for a cited persisted run. Until the Stage 7 drill contract exists, `rollback` is an attested, hash-bound artifact whose command names the rollback | `HXE207` |
+| `approvals` | Builds Owner, Platform Owner, and Test Architect approvals of `sourceRevision`, dated no earlier than the last run's completion and not in the future | `HXE208` |
+
+A persisted profile fixture may declare `nativeTests` with a repository-relative
+`project` and a `platform` of `vstest` or `mtp`. `mtp` means xUnit v3 on
+Microsoft Testing Platform, because the runner requests `--report-xunit-trx`;
+other MTP frameworks are not supported. After the runner-owned
+persisted assertions pass, `hexalith-module test` runs `dotnet test` from the
+project directory (VSTest `--logger trx`, or Microsoft Testing Platform
+`--report-xunit-trx`), so the consumer's `global.json` still selects the
+platform. The test process receives only `HEXALITH_G4_RUN_ID`,
+`HEXALITH_G4_EVENTSTORE_URL`, `HEXALITH_G4_EVENTSTORE_PEER_URL`,
+`HEXALITH_G4_UI_URL`, `HEXALITH_G4_TENANT`, `HEXALITH_G4_RESOURCE_NAMESPACE`,
+`HEXALITH_G4_DOMAINS`, and a run-scoped `HEXALITH_G4_ACCESS_TOKEN`, plus the
+runner's environment allowlist. The signing key is never handed off. A nonzero native exit (`HXT007`), an invalid,
+zero-match, all-skipped, failed, or aborted report (`HXT001`–`HXT006`), or a
+report containing handoff or credential material (`HXT008`) never passes. A
+passing report is retained beside `--evidence` as `<evidence>.<platform>.trx`;
+the evidence records its counts in `testCounts` and its SHA-256 in
+`artifactHashes`. The retained report is redacted first: `runUser`,
+`computerName`, `runDeploymentRoot`, the run name, captured output, run
+information, and result files are removed, and `codeBase`/`storage` are reduced
+to file names. The redacted report is scanned for secrets again and hashed. The
+report still contains run GUIDs and timings, so `artifactHashes` is listed in
+`volatileFields`.
+
+The installed tool never builds inside its package folder. For each run, it
+copies the packaged EventStore and UI host projects into the private run
+workspace and points them at the packaged host binaries. A package with only
+part of that host layout fails closed.
+
 `publish-g4-tool-packages.ps1` verifies the Release inventory before
 publication. A prerelease version (one containing `-`) targets
 repository-configured GitHub Packages using `GITHUB_TOKEN`; a stable version

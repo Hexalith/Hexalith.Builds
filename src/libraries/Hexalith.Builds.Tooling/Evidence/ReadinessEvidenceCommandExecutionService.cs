@@ -32,7 +32,9 @@ internal static class ReadinessEvidenceCommandExecutionService
         ToolCommandResult result;
         try
         {
-            result = await ReadinessEvidenceValidator.ValidateAsync(evidencePath, cancellationToken).ConfigureAwait(false);
+            result = string.Equals(Path.GetExtension(evidencePath), ".json", StringComparison.OrdinalIgnoreCase)
+                ? await G4P0AcceptanceValidator.ValidateAsync(evidencePath, cancellationToken).ConfigureAwait(false)
+                : await ReadinessEvidenceValidator.ValidateAsync(evidencePath, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

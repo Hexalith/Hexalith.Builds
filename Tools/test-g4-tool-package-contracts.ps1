@@ -746,6 +746,30 @@ function Complete-QualificationInventory {
         # the .snupkg and forbidden on the .nupkg) independently of its file name.
         $null = Assert-CanonicalNuGetArtifact -ArchivePath $nupkg -ExpectedRole 'Package' -ExpectedId $packageId -ExpectedVersion $PackageVersion
         $null = Assert-CanonicalNuGetArtifact -ArchivePath $snupkg -ExpectedRole 'Symbols' -ExpectedId $packageId -ExpectedVersion $PackageVersion
+        if ($packageId -ceq 'Hexalith.Builds.Module.Cli') {
+            # The installed tool composes runs only from its packaged hosts; a pack without a prior
+            # Release host build would otherwise ship a tool that cannot start a run.
+            $archive = [System.IO.Compression.ZipFile]::OpenRead($nupkg)
+            try {
+                $entries = @($archive.Entries | ForEach-Object FullName)
+            }
+            finally {
+                $archive.Dispose()
+            }
+
+            foreach ($requiredEntry in @(
+                    'tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.dll',
+                    'tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll',
+                    'tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.dll',
+                    'tools/net10.0/any/g4-host/projects/EventStore/Host.csproj',
+                    'tools/net10.0/any/g4-host/projects/EventStore/Placeholder.cs',
+                    'tools/net10.0/any/g4-host/projects/Ui/Host.csproj',
+                    'tools/net10.0/any/g4-host/projects/Ui/Placeholder.cs')) {
+                if ($entries -cnotcontains $requiredEntry) {
+                    throw "Module tool package '$nupkg' lacks packaged host entry '$requiredEntry'."
+                }
+            }
+        }
 
         [ordered]@{
             id = $packageId
@@ -950,7 +974,7 @@ try {
         -Result (Invoke-ToolCommand -Command 'hexalith-module' -Arguments @('test', '--help') -WorkingDirectory $consumerRoot)
     Assert-ToolHelp -Description 'hexalith-evidence help' -ExpectedText 'Validates deterministic Hexalith readiness evidence.' `
         -Result (Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments @('--help') -WorkingDirectory $consumerRoot)
-    Assert-ToolHelp -Description 'hexalith-evidence validate help' -ExpectedText 'Validates a hexalith.readiness-evidence.v1 YAML matrix.' `
+    Assert-ToolHelp -Description 'hexalith-evidence validate help' -ExpectedText 'Validates a hexalith.readiness-evidence.v1 YAML matrix or hexalith.g4-p0-acceptance.v1 JSON record.' `
         -Result (Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments @('validate', '--help') -WorkingDirectory $consumerRoot)
 
     if ($RequireControls) {
@@ -1189,6 +1213,27 @@ try {
             Assert-CommandParity -Source $sourceNegativeResult -Package $negativeResult -Description "Readiness negative $($fixture.BaseName)"
             Assert-NegativeResult -Fixture $fixture -Result $negativeResult
             $qualificationEvidenceEntries.Add((Save-QualificationEvidence -EvidenceDirectory $qualificationEvidenceRoot -Name "evidence-negative-$($fixture.BaseName)-output" -Content $negativeResult.Output))
+        }
+
+        # The P0 acceptance validator runs its synthetic contract corpus through the same
+        # installed command. These controls block the gate; their outputs stay out of the
+        # package inventory because the publisher's evidence-name contract predates them.
+        $acceptancePositive = Get-RequiredFixture -Directory (Join-Path $consumerFixturesRoot 'evidence/acceptance/positive') -Extensions @('.json') -Description 'Positive P0 acceptance record'
+        $acceptanceNegatives = Get-NegativeFixtures -Directory (Join-Path $consumerFixturesRoot 'evidence/acceptance/negative') -Extensions @('.json') -Description 'P0 acceptance negative control'
+        $acceptanceArguments = @('validate', $acceptancePositive.FullName, '--output', 'json')
+        $sourceAcceptanceResult = Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments $acceptanceArguments `
+            -WorkingDirectory $consumerRoot -SourceAssembly $sourceEvidenceAssembly
+        $acceptanceResult = Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments $acceptanceArguments -WorkingDirectory $consumerRoot
+        Assert-CommandParity -Source $sourceAcceptanceResult -Package $acceptanceResult -Description 'P0 acceptance validate'
+        $null = Assert-JsonToolResult -Result $acceptanceResult -Description 'Positive P0 acceptance record' `
+            -Status 'passed' -ExitCode 0 -OutcomeExitCode 'Success' -Phase 'None' -Category 'None' -OutcomeRuleId $null -RuleIds @('HXI210')
+        foreach ($fixture in $acceptanceNegatives) {
+            $negativeArguments = @('validate', $fixture.FullName, '--output', 'json')
+            $sourceNegativeResult = Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments $negativeArguments `
+                -WorkingDirectory $consumerRoot -SourceAssembly $sourceEvidenceAssembly
+            $negativeResult = Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments $negativeArguments -WorkingDirectory $consumerRoot
+            Assert-CommandParity -Source $sourceNegativeResult -Package $negativeResult -Description "P0 acceptance negative $($fixture.BaseName)"
+            Assert-NegativeResult -Fixture $fixture -Result $negativeResult
         }
 
         # Coverage is only satisfied once every retained control-output artifact's

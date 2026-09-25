@@ -1,0 +1,7 @@
+{
+  "sample": "contract profile fixture",
+  "nativeTests": {
+    "project": "contract/Native.VsTest.csproj",
+    "platform": "vstest"
+  }
+}

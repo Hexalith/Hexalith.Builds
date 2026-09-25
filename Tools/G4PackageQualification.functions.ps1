@@ -323,27 +323,19 @@ function Assert-TrackedFixtureBytesMatchHead {
         $relativePath = ([IO.Path]::GetRelativePath($FixtureDirectory, $file.FullName)).Replace('\', '/')
         $trackedPath = "$RepositoryRelativeRoot/$relativePath"
 
-        # `git cat-file blob` streams the exact tracked bytes with no text-mode
-        # normalization, unlike capturing `git show` output through PowerShell's
-        # line-oriented pipeline; redirect straight to a file so nothing is decoded
-        # and re-encoded along the way.
-        $catFileOutput = New-TemporaryFile
-        try {
-            & git -C $RepositoryRoot cat-file blob "${SourceRevision}:${trackedPath}" 2>$null 1> $catFileOutput.FullName
-            if ($LASTEXITCODE -ne 0) {
-                $mismatches.Add("'$trackedPath' is not readable at $SourceRevision (not tracked, renamed, or removed).")
-                continue
-            }
-
-            $trackedBytes = [System.IO.File]::ReadAllBytes($catFileOutput.FullName)
-        }
-        finally {
-            Remove-Item -LiteralPath $catFileOutput.FullName -Force -ErrorAction SilentlyContinue
+        # Compare Git's clean-filtered blob identity. A clean checkout may have
+        # CRLF worktree bytes for a tracked LF blob because of .gitattributes;
+        # raw byte comparison would reject that reproducible checkout.
+        $trackedBlob = @(& git -C $RepositoryRoot rev-parse --verify "${SourceRevision}:${trackedPath}" 2>$null)
+        if ($LASTEXITCODE -ne 0 -or $trackedBlob.Count -ne 1) {
+            $mismatches.Add("'$trackedPath' is not readable at $SourceRevision (not tracked, renamed, or removed).")
+            continue
         }
 
-        $workingBytes = [System.IO.File]::ReadAllBytes($file.FullName)
-        if (-not [System.Linq.Enumerable]::SequenceEqual([byte[]] $trackedBytes, [byte[]] $workingBytes)) {
-            $mismatches.Add("'$trackedPath' working-tree bytes differ from the bytes tracked at $SourceRevision.")
+        $workingBlob = @(& git -C $RepositoryRoot hash-object --path=$trackedPath -- $file.FullName 2>$null)
+        if ($LASTEXITCODE -ne 0 -or $workingBlob.Count -ne 1 -or
+            -not [StringComparer]::OrdinalIgnoreCase.Equals(([string] $trackedBlob[0]).Trim(), ([string] $workingBlob[0]).Trim())) {
+            $mismatches.Add("'$trackedPath' working-tree bytes differ from the bytes tracked at $SourceRevision after Git attributes are applied.")
         }
     }
 

@@ -37,7 +37,7 @@ function global:dotnet {
         'Runs supported Hexalith module qualifications.'
     }
     elseif ($joinedArguments -like '*tool run hexalith-evidence*validate --help*') {
-        'Validates a hexalith.readiness-evidence.v1 YAML matrix.'
+        'Validates a hexalith.readiness-evidence.v1 YAML matrix or hexalith.g4-p0-acceptance.v1 JSON record.'
     }
     elseif ($joinedArguments -like '*tool run hexalith-evidence*--help*') {
         'Validates deterministic Hexalith readiness evidence.'
@@ -138,6 +138,13 @@ finally {
     Remove-Item Function:\dotnet -Force -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4GateDotNetMode -Scope Global -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# The shared fixture-proof and publication functions have their own regression suite;
+# running it here keeps it blocking wherever this gate self-test runs.
+& pwsh -NoProfile -File (Join-Path $PSScriptRoot 'test-g4-tool-package-artifact-validator.ps1')
+if ($LASTEXITCODE -ne 0) {
+    throw "G-4 tool package artifact validator tests failed with exit code $LASTEXITCODE."
 }
 
 [Console]::Out.WriteLine('G-4 tool package qualification gate checks passed: reused, pre-package, post-package, and duplicate-output failures expose no inventory.')

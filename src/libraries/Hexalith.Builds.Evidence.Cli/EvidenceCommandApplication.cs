@@ -51,7 +51,7 @@ internal static class EvidenceCommandApplication
 
     private static Command CreateValidateCommand(TextWriter standardOutput)
     {
-        Command command = new("validate", "Validates a hexalith.readiness-evidence.v1 YAML matrix.");
+        Command command = new("validate", "Validates a hexalith.readiness-evidence.v1 YAML matrix or hexalith.g4-p0-acceptance.v1 JSON record.");
         Argument<string> evidencePathArgument = new("evidence-path")
         {
             Arity = ArgumentArity.ExactlyOne,

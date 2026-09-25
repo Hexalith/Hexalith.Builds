@@ -205,6 +205,9 @@ PublishScripts/
 *.nupkg
 # NuGet Symbol Packages
 *.snupkg
+# Placeholder package bytes hash-bound by the G-4 P0 acceptance validator contract corpus
+!test/fixtures/evidence/acceptance/bound/**/*.nupkg
+!test/fixtures/evidence/acceptance/bound/**/*.snupkg
 # The packages folder can be ignored because of Package Restore
 **/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.

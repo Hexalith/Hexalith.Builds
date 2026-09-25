@@ -1,0 +1,113 @@
+{
+  "schema": "hexalith.g4-p0-acceptance.v1",
+  "status": "accepted",
+  "sourceRevision": "0123456789abcdef0123456789abcdef01234567",
+  "platformPins": {
+    "eventStoreVersion": "3.106.0",
+    "daprRuntimeVersion": "1.18.2",
+    "daprSdkVersion": "1.18.8",
+    "frontComposerVersion": "4.5.0"
+  },
+  "fixture": {
+    "manifestPath": "test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json",
+    "manifestSha256": "C9A9DF3136D640D4345E4F56437A90E5AD8A15BCAC1A97FF95858B0AEC514209"
+  },
+  "packages": [
+    {
+      "id": "Hexalith.Builds.Evidence.Cli",
+      "version": "0.0.0-contract",
+      "feed": "github-packages",
+      "nupkgPath": "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Evidence.Cli.0.0.0-contract.nupkg",
+      "nupkgSha256": "B8D1BF1E04EE69B5633197A42B98F8376E72DE00AD25D9EC54848B9E18CA42D3",
+      "snupkgPath": "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Evidence.Cli.0.0.0-contract.snupkg",
+      "snupkgSha256": "6E65380558CB2658AB313CE937F52A95D0FE63F23ECE0F3923F92614DEAC0222"
+    },
+    {
+      "id": "Hexalith.Builds.Module.Cli",
+      "version": "0.0.0-contract",
+      "feed": "github-packages",
+      "nupkgPath": "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Module.Cli.0.0.0-contract.nupkg",
+      "nupkgSha256": "B31481EC8C36345A07411BA3966D6BB03DA0DA4310FADB7E485E376A3690483D",
+      "snupkgPath": "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Module.Cli.0.0.0-contract.snupkg",
+      "snupkgSha256": "32CDB654751F72DA2BE88E7C056E2EBBE9E52B15FB5E80C5F74D04D2888DB57B"
+    }
+  ],
+  "runs": [
+    {
+      "key": "persisted-vstest",
+      "command": "dotnet tool run hexalith-module test --manifest test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json --profile full",
+      "exitCode": 0,
+      "finalStatus": "completed",
+      "evidencePath": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-other-revision.json",
+      "evidenceSha256": "2D2A5FBB2AFEF735F614F2967C0D4CF79F6E262B3C0ECC7F83D8C0DA69E3CB70",
+      "reportPath": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-other-revision.vstest.trx",
+      "reportSha256": "0BB21EF12F7DC8A79849BC4A1F7298EECF13C23CD7242266D87BC36173C13553",
+      "reportPlatform": "vstest"
+    },
+    {
+      "key": "persisted-mtp",
+      "command": "dotnet tool run hexalith-module test --manifest test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json --profile full-mtp",
+      "exitCode": 0,
+      "finalStatus": "completed",
+      "evidencePath": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.json",
+      "evidenceSha256": "7B0DFBD063D311D029BBD8ACB9B1331EA65939E11DAD281CFFF9C49A464E6D70",
+      "reportPath": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.mtp.trx",
+      "reportSha256": "7A81E16B31D9D46B875DD225F4783F671E956EA0F7E694EF1E539917111760AE",
+      "reportPlatform": "mtp"
+    },
+    {
+      "key": "prerequisite-unavailable",
+      "command": "dotnet tool run hexalith-module test --manifest test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json --profile full",
+      "exitCode": 2,
+      "finalStatus": "unavailable",
+      "evidencePath": "test/fixtures/evidence/acceptance/bound/run-prerequisite-unavailable.json",
+      "evidenceSha256": "FCB4C8E78A387F471DB20521768225488496F83753FB8ED521D279CE6756C5DE",
+      "reportPath": null,
+      "reportSha256": null,
+      "reportPlatform": null
+    },
+    {
+      "key": "cancelled",
+      "command": "dotnet tool run hexalith-module test --manifest test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json --profile full",
+      "exitCode": 130,
+      "finalStatus": "cancelled",
+      "evidencePath": "test/fixtures/evidence/acceptance/bound/run-cancelled.json",
+      "evidenceSha256": "0FA2DF4DD16B6C81ABC77892BC52C80043121711A8964633C68AE39BE4E92D10",
+      "reportPath": null,
+      "reportSha256": null,
+      "reportPlatform": null
+    }
+  ],
+  "cleanup": {
+    "status": "passed",
+    "command": "dotnet tool run hexalith-module down --manifest test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json --run-id 0123456789abcdef0123456789abcd01",
+    "artifactPath": "test/fixtures/evidence/acceptance/bound/cleanup-down.json",
+    "artifactSha256": "52253CA380E89F17A9824617608AD65C670FF0E6B5723A61C0F2F7CABB358B53"
+  },
+  "rollback": {
+    "status": "passed",
+    "command": "contract rollback drill: remove consumer tool adoption and rerun down",
+    "artifactPath": "test/fixtures/evidence/acceptance/bound/rollback-drill.json",
+    "artifactSha256": "8D3CEE4DD5150BDDCB3145D5CCF8120594E3CFD5D9DB58BE94DB6BE5A598DC12"
+  },
+  "approvals": [
+    {
+      "role": "Builds Owner",
+      "name": "Contract Sample Approver",
+      "acceptedAtUtc": "2026-01-02T00:00:00Z",
+      "sourceRevision": "0123456789abcdef0123456789abcdef01234567"
+    },
+    {
+      "role": "Platform Owner",
+      "name": "Contract Sample Approver",
+      "acceptedAtUtc": "2026-01-02T00:00:00Z",
+      "sourceRevision": "0123456789abcdef0123456789abcdef01234567"
+    },
+    {
+      "role": "Test Architect",
+      "name": "Contract Sample Approver",
+      "acceptedAtUtc": "2026-01-02T00:00:00Z",
+      "sourceRevision": "0123456789abcdef0123456789abcdef01234567"
+    }
+  ]
+}

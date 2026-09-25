@@ -314,6 +314,40 @@ try {
         Assert-TrackedFixtureBytesMatchHead -RepositoryRoot $cleanRepoRoot -SourceRevision $headRevision `
             -FixtureDirectory $untrackedFixtureDirectory -RepositoryRelativeRoot 'test/fixtures/module'
     }
+
+    # Git attributes: an eol=crlf checkout of an LF blob is reproducible, while -text
+    # (hash-bound) fixtures must match byte for byte.
+    $eolFixtureRoot = Join-Path $cleanRepoRoot 'test/fixtures/eol'
+    New-Item -ItemType Directory -Path (Join-Path $eolFixtureRoot 'bound') -Force | Out-Null
+    [IO.File]::WriteAllText((Join-Path $cleanRepoRoot '.gitattributes'), "*.cs text eol=crlf`ntest/fixtures/eol/bound/** -text`n")
+    [IO.File]::WriteAllText((Join-Path $eolFixtureRoot 'Sample.cs'), "class Sample`n{`n}`n")
+    [IO.File]::WriteAllText((Join-Path $eolFixtureRoot 'bound/report.trx'), "<TestRun>`n</TestRun>`n")
+    & git -C $cleanRepoRoot add -A
+    & git -C $cleanRepoRoot commit --quiet -m 'add eol fixtures'
+    $eolRevision = (& git -C $cleanRepoRoot rev-parse HEAD).Trim()
+
+    $crlfCopyDirectory = Join-Path $temporaryRoot 'crlf-copy'
+    New-Item -ItemType Directory -Path $crlfCopyDirectory -Force | Out-Null
+    [IO.File]::WriteAllText((Join-Path $crlfCopyDirectory 'Sample.cs'), "class Sample`r`n{`r`n}`r`n")
+    Test-Succeeds -Name 'CRLF checkout of an eol=crlf LF blob matches HEAD' -ScriptBlock {
+        $count = Assert-TrackedFixtureBytesMatchHead -RepositoryRoot $cleanRepoRoot -SourceRevision $eolRevision `
+            -FixtureDirectory $crlfCopyDirectory -RepositoryRelativeRoot 'test/fixtures/eol'
+        if ($count -ne 1) { throw "expected 1 matched file, got $count" }
+    }
+
+    [IO.File]::WriteAllText((Join-Path $crlfCopyDirectory 'Sample.cs'), "class Changed`r`n{`r`n}`r`n")
+    Test-Throws -Name 'Content edit of an eol=crlf fixture is rejected' -ExpectedMessageFragment 'bytes differ from the bytes tracked at' -ScriptBlock {
+        Assert-TrackedFixtureBytesMatchHead -RepositoryRoot $cleanRepoRoot -SourceRevision $eolRevision `
+            -FixtureDirectory $crlfCopyDirectory -RepositoryRelativeRoot 'test/fixtures/eol'
+    }
+
+    $boundCopyDirectory = Join-Path $temporaryRoot 'bound-copy'
+    New-Item -ItemType Directory -Path $boundCopyDirectory -Force | Out-Null
+    [IO.File]::WriteAllText((Join-Path $boundCopyDirectory 'report.trx'), "<TestRun>`r`n</TestRun>`r`n")
+    Test-Throws -Name 'CRLF copy of a -text hash-bound fixture is rejected' -ExpectedMessageFragment 'bytes differ from the bytes tracked at' -ScriptBlock {
+        Assert-TrackedFixtureBytesMatchHead -RepositoryRoot $cleanRepoRoot -SourceRevision $eolRevision `
+            -FixtureDirectory $boundCopyDirectory -RepositoryRelativeRoot 'test/fixtures/eol/bound'
+    }
 }
 finally {
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
