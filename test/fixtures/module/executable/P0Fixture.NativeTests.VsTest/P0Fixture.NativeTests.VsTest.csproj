@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The same product-side native tests executed through VSTest. The adjacent global.json omits the
+    repository Microsoft.Testing.Platform runner selection so dotnet test uses VSTest here.
+  -->
+  <PropertyGroup>
+    <RootNamespace>Hexalith.Builds.P0Fixture.NativeTests</RootNamespace>
+    <Description>P0 fixture native tests run through VSTest.</Description>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
+    <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../P0Fixture.NativeTests/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+</Project>

@@ -25,7 +25,7 @@ public static class ModuleRunEvidenceWriter
     /// <param name="evidence">The evidence document to write.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The metadata-only write outcome.</returns>
-    public static async Task<ModuleRunEvidenceWriteResult> WriteAsync(
+    public static Task<ModuleRunEvidenceWriteResult> WriteAsync(
         string evidencePath,
         string manifestPath,
         ModuleRunEvidence evidence,
@@ -35,7 +35,69 @@ public static class ModuleRunEvidenceWriter
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         ArgumentNullException.ThrowIfNull(evidence);
 
-        string? targetPath = ResolveEvidencePath(evidencePath, manifestPath);
+        return WriteBytesAsync(evidencePath, manifestPath, ".json", () => SerializeCanonical(evidence), cancellationToken);
+    }
+
+    /// <summary>
+    /// Atomically writes a metadata-checked native test report beside its evidence artifact.
+    /// </summary>
+    /// <param name="artifactPath">The requested repository-relative TRX artifact path.</param>
+    /// <param name="manifestPath">The manifest path used to resolve the repository root.</param>
+    /// <param name="content">The native report bytes.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The metadata-only write outcome.</returns>
+    public static Task<ModuleRunEvidenceWriteResult> WriteArtifactAsync(
+        string artifactPath,
+        string manifestPath,
+        byte[] content,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(artifactPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
+        ArgumentNullException.ThrowIfNull(content);
+
+        return WriteBytesAsync(artifactPath, manifestPath, ".trx", () => content, cancellationToken);
+    }
+
+    /// <summary>
+    /// Serializes evidence to canonical UTF-8 JSON with a single final newline.
+    /// </summary>
+    /// <param name="evidence">The evidence document to serialize.</param>
+    /// <returns>The canonical UTF-8 artifact bytes.</returns>
+    public static byte[] SerializeCanonical(ModuleRunEvidence evidence)
+    {
+        ArgumentNullException.ThrowIfNull(evidence);
+
+        using MemoryStream stream = new();
+        using (Utf8JsonWriter writer = new(stream, new JsonWriterOptions { Indented = false }))
+        {
+            WriteEvidence(writer, evidence);
+        }
+
+        byte[] payload = stream.ToArray();
+        byte[] canonicalPayload = new byte[payload.Length + 1];
+        Buffer.BlockCopy(payload, 0, canonicalPayload, 0, payload.Length);
+        canonicalPayload[^1] = (byte)'\n';
+        return canonicalPayload;
+    }
+
+    /// <summary>
+    /// Atomically writes contained artifact bytes through a temporary file.
+    /// </summary>
+    /// <param name="evidencePath">The requested repository-relative artifact path.</param>
+    /// <param name="manifestPath">The manifest path used to resolve the repository root.</param>
+    /// <param name="extension">The required artifact extension.</param>
+    /// <param name="serialize">Produces the artifact bytes.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The metadata-only write outcome.</returns>
+    private static async Task<ModuleRunEvidenceWriteResult> WriteBytesAsync(
+        string evidencePath,
+        string manifestPath,
+        string extension,
+        Func<byte[]> serialize,
+        CancellationToken cancellationToken)
+    {
+        string? targetPath = ResolveEvidencePath(evidencePath, manifestPath, extension);
         if (targetPath is null)
         {
             return ModuleRunEvidenceWriteResult.Failed();
@@ -45,14 +107,14 @@ public static class ModuleRunEvidenceWriter
         try
         {
             _ = Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
-            targetPath = ResolveEvidencePath(evidencePath, manifestPath);
+            targetPath = ResolveEvidencePath(evidencePath, manifestPath, extension);
             if (targetPath is null)
             {
                 return ModuleRunEvidenceWriteResult.Failed();
             }
 
             temporaryPath = $"{targetPath}.{Guid.NewGuid():N}.tmp";
-            byte[] content = SerializeCanonical(evidence);
+            byte[] content = serialize();
             await File.WriteAllBytesAsync(temporaryPath, content, cancellationToken).ConfigureAwait(false);
             File.Move(temporaryPath, targetPath, true);
             return ModuleRunEvidenceWriteResult.Passed();
@@ -79,28 +141,6 @@ public static class ModuleRunEvidenceWriter
         }
     }
 
-    /// <summary>
-    /// Serializes evidence to canonical UTF-8 JSON with a single final newline.
-    /// </summary>
-    /// <param name="evidence">The evidence document to serialize.</param>
-    /// <returns>The canonical UTF-8 artifact bytes.</returns>
-    public static byte[] SerializeCanonical(ModuleRunEvidence evidence)
-    {
-        ArgumentNullException.ThrowIfNull(evidence);
-
-        using MemoryStream stream = new();
-        using (Utf8JsonWriter writer = new(stream, new JsonWriterOptions { Indented = false }))
-        {
-            WriteEvidence(writer, evidence);
-        }
-
-        byte[] payload = stream.ToArray();
-        byte[] canonicalPayload = new byte[payload.Length + 1];
-        Buffer.BlockCopy(payload, 0, canonicalPayload, 0, payload.Length);
-        canonicalPayload[^1] = (byte)'\n';
-        return canonicalPayload;
-    }
-
     private static void DeleteTemporaryFile(string temporaryPath)
     {
         try
@@ -120,13 +160,13 @@ public static class ModuleRunEvidenceWriter
         }
     }
 
-    private static string? ResolveEvidencePath(string evidencePath, string manifestPath)
+    private static string? ResolveEvidencePath(string evidencePath, string manifestPath, string extension)
     {
         if (Path.IsPathRooted(evidencePath) ||
             evidencePath.Contains('\\', StringComparison.Ordinal) ||
             ManifestPathValidator.ContainsPlaceholder(evidencePath) ||
             ManifestSecretDetector.ContainsSecret(evidencePath) ||
-            !evidencePath.EndsWith(".json", StringComparison.Ordinal))
+            !evidencePath.EndsWith(extension, StringComparison.Ordinal))
         {
             return null;
         }

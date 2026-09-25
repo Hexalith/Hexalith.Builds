@@ -80,6 +80,7 @@ public static class ModuleCommandExecutionService
         CompositionEngine? engine = null;
         CompositionRunSession? session = null;
         bool sessionHandedOff = false;
+        ModuleManifest? loadedManifest = null;
 
         try
         {
@@ -108,6 +109,7 @@ public static class ModuleCommandExecutionService
             }
 
             ModuleManifest manifest = manifestResult.Manifest!;
+            loadedManifest = manifest;
             if (!ValidateProfile(command, profile, manifest, out ToolDiagnostic? profileDiagnostic))
             {
                 return await WriteResultAsync(
@@ -367,19 +369,15 @@ public static class ModuleCommandExecutionService
                 ToolCommandResult? profileResult = persistedProfile is null
                     ? null
                     : await PersistedProfileExecutor.ExecuteAsync(session!, persistedProfile, cancellationToken).ConfigureAwait(false);
+                NativeTestExecutionResult? nativeResult = profileResult?.Outcome.ExitCode == ToolExitCode.Success
+                    && persistedProfile!.NativeTests is PersistedProfileNativeTests nativeTests
+                        ? await NativeTestExecutor.ExecuteAsync(session!, nativeTests, manifestPath, cancellationToken).ConfigureAwait(false)
+                        : null;
                 CompositionDownResult cleanup = await engine.DownAsync(session!, CancellationToken.None).ConfigureAwait(false);
                 session = null;
                 if (profileResult is not null)
                 {
-                    ToolOutcome finalOutcome = profileResult.Outcome.ExitCode == ToolExitCode.Success
-                        ? cleanup.Result.Outcome
-                        : profileResult.Outcome;
-                    ToolCommandResult finalResult = cleanup.Result.Outcome.ExitCode == ToolExitCode.Success
-                        ? profileResult
-                        : new ToolCommandResult(
-                            "failed",
-                            finalOutcome,
-                            [.. profileResult.Diagnostics, .. cleanup.Result.Diagnostics]);
+                    ToolCommandResult finalResult = CombineTestResults(profileResult, nativeResult, cleanup.Result);
                     return await WriteResultAsync(
                         finalResult.Status,
                         finalResult.Outcome,
@@ -394,7 +392,10 @@ public static class ModuleCommandExecutionService
                         evidencePath,
                         startedUtc,
                         cancellationToken,
-                        start.RunId).ConfigureAwait(false);
+                        start.RunId,
+                        completedPersistedProfile: finalResult.Outcome.ExitCode == ToolExitCode.Success ? persistedProfile : null,
+                        nativeTests: nativeResult,
+                        nativePlatform: persistedProfile!.NativeTests?.Platform).ConfigureAwait(false);
                 }
 
                 ToolDiagnostic unsupported = new(
@@ -476,7 +477,7 @@ public static class ModuleCommandExecutionService
                 writer,
                 command,
                 manifestPath,
-                null,
+                loadedManifest,
                 profile,
                 filter,
                 evidencePath,
@@ -525,6 +526,33 @@ public static class ModuleCommandExecutionService
         }
     }
 
+    /// <summary>
+    /// Combines a persisted profile result, its optional native test step, and the run teardown into one command result.
+    /// </summary>
+    /// <param name="profileResult">The persisted profile result.</param>
+    /// <param name="nativeResult">The native test step result, when the profile passed and declares native tests.</param>
+    /// <param name="cleanupResult">The teardown result.</param>
+    /// <returns>The first causal failure with every diagnostic, or the passing step result.</returns>
+    internal static ToolCommandResult CombineTestResults(
+        ToolCommandResult profileResult,
+        NativeTestExecutionResult? nativeResult,
+        ToolCommandResult cleanupResult)
+    {
+        ArgumentNullException.ThrowIfNull(profileResult);
+        ArgumentNullException.ThrowIfNull(cleanupResult);
+
+        ToolCommandResult stepResult = nativeResult is null
+            ? profileResult
+            : new ToolCommandResult(
+                nativeResult.Result.Status,
+                nativeResult.Result.Outcome,
+                [.. profileResult.Diagnostics, .. nativeResult.Result.Diagnostics]);
+        ToolOutcome causalOutcome = stepResult.Outcome.ExitCode == ToolExitCode.Success ? cleanupResult.Outcome : stepResult.Outcome;
+        return cleanupResult.Outcome.ExitCode == ToolExitCode.Success
+            ? stepResult
+            : new ToolCommandResult("failed", causalOutcome, [.. stepResult.Diagnostics, .. cleanupResult.Diagnostics]);
+    }
+
     private static async Task<int> WriteResultAsync(
         string status,
         ToolOutcome outcome,
@@ -540,11 +568,37 @@ public static class ModuleCommandExecutionService
         DateTimeOffset startedUtc,
         CancellationToken cancellationToken,
         string? runId = null,
-        string? requestedRunId = null)
+        string? requestedRunId = null,
+        PersistedProfileDefinition? completedPersistedProfile = null,
+        NativeTestExecutionResult? nativeTests = null,
+        string? nativePlatform = null)
     {
         ToolCommandResult result = new(status, outcome, diagnostics) { RunId = runId };
         if (!string.IsNullOrWhiteSpace(evidencePath))
         {
+            ModuleRunTestCounts? testCounts = null;
+            Dictionary<string, string>? artifactHashes = null;
+            if (nativeTests is { Report: { } report, ReportBytes: { } reportBytes }
+                && nativePlatform is not null
+                && evidencePath.EndsWith(".json", StringComparison.Ordinal))
+            {
+                string reportPath = NativeTestExecutor.RetainedReportPath(evidencePath, nativePlatform);
+                ModuleRunEvidenceWriteResult reportResult = await ModuleRunEvidenceWriter.WriteArtifactAsync(
+                    reportPath,
+                    manifestPath,
+                    reportBytes,
+                    cancellationToken).ConfigureAwait(false);
+                if (reportResult.Succeeded)
+                {
+                    testCounts = new ModuleRunTestCounts(true, report.Total, report.Passed, report.Failed, report.Skipped);
+                    artifactHashes = new Dictionary<string, string>(StringComparer.Ordinal) { [reportPath] = Convert.ToHexString(SHA256.HashData(reportBytes)) };
+                }
+                else
+                {
+                    result = MergeEvidenceFailure(result, reportResult.Diagnostic!);
+                }
+            }
+
             ModuleRunEvidence evidence = ModuleRunEvidenceFactory.Create(
                 command,
                 manifestPath,
@@ -555,7 +609,11 @@ public static class ModuleCommandExecutionService
                 startedUtc,
                 DateTimeOffset.UtcNow,
                 runId ?? Guid.NewGuid().ToString("N"),
-                requestedRunId);
+                requestedRunId,
+                completedPersistedProfile is null ? null : PersistedProfileEvidence.Assertions(completedPersistedProfile.Modules.Select(module => module.ModuleId)),
+                completedPersistedProfile is null ? null : PersistedProfileEvidence.Sequences(completedPersistedProfile.Modules.Select(module => module.ModuleId)),
+                testCounts,
+                artifactHashes);
             ModuleRunEvidenceWriteResult evidenceResult = await ModuleRunEvidenceWriter.WriteAsync(
                 evidencePath,
                 manifestPath,

@@ -11,7 +11,12 @@ namespace Hexalith.Builds.Tooling.Runtime;
 /// <param name="Schema">The profile schema.</param>
 /// <param name="Id">The profile identity.</param>
 /// <param name="Modules">The two module expectations.</param>
-public sealed record PersistedProfileDefinition(string Schema, string Id, IReadOnlyList<PersistedProfileModule> Modules)
+/// <param name="NativeTests">The optional product native tests run against the composed runtime.</param>
+public sealed record PersistedProfileDefinition(
+    string Schema,
+    string Id,
+    IReadOnlyList<PersistedProfileModule> Modules,
+    PersistedProfileNativeTests? NativeTests = null)
 {
     /// <summary>The supported profile schema.</summary>
     public const string SupportedSchema = "hexalith.g4-persisted-profile.v1";

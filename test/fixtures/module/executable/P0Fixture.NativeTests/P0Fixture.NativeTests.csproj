@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Product-side native tests executed by hexalith-module test through Microsoft.Testing.Platform.
+    The repository global.json selects that platform for dotnet test in this directory.
+  -->
+  <PropertyGroup>
+    <RootNamespace>Hexalith.Builds.P0Fixture.NativeTests</RootNamespace>
+    <Description>P0 fixture native tests that consume the runner endpoint and identity handoff.</Description>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+</Project>

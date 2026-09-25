@@ -38,6 +38,10 @@ public static partial class ModuleRunEvidenceFactory
     /// <param name="completedUtc">The invocation completion timestamp.</param>
     /// <param name="runId">The invocation-scoped run identity.</param>
     /// <param name="requestedRunId">The validated run identity supplied to <c>down</c>, when present.</param>
+    /// <param name="persistedAssertions">Metadata-only assertions completed by a persisted profile.</param>
+    /// <param name="expectedSequences">Metadata-only sequence expectations completed by a persisted profile.</param>
+    /// <param name="testCounts">The counts of a passing native test report, when one was executed.</param>
+    /// <param name="artifactHashes">Upper-case SHA-256 hashes of retained artifacts keyed by repository-relative path.</param>
     /// <returns>The complete module-run evidence document.</returns>
     public static ModuleRunEvidence Create(
         ModuleInvocationCommand command,
@@ -49,7 +53,11 @@ public static partial class ModuleRunEvidenceFactory
         DateTimeOffset startedUtc,
         DateTimeOffset completedUtc,
         string runId,
-        string? requestedRunId = null)
+        string? requestedRunId = null,
+        IReadOnlyList<string>? persistedAssertions = null,
+        IReadOnlyList<string>? expectedSequences = null,
+        ModuleRunTestCounts? testCounts = null,
+        IReadOnlyDictionary<string, string>? artifactHashes = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         ArgumentNullException.ThrowIfNull(result);
@@ -77,6 +85,14 @@ public static partial class ModuleRunEvidenceFactory
         string? fixturePath = ToRepositoryRelativePath(resolvedFixturePath, repositoryRoot);
         string? fixtureHash = resolvedFixturePath is null ? null : HashFile(resolvedFixturePath);
         string? filterHash = string.IsNullOrWhiteSpace(filter) ? null : HashString(filter);
+        SortedDictionary<string, string> retainedArtifactHashes = new(
+            artifactHashes?.ToDictionary(StringComparer.Ordinal) ?? new Dictionary<string, string>(StringComparer.Ordinal),
+            StringComparer.Ordinal);
+
+        // Retained native reports carry run GUIDs and timings, so their hashes differ on every run.
+        string[] volatileFields = retainedArtifactHashes.Count == 0
+            ? ["runId", "timestamps.completedUtc", "timestamps.startedUtc"]
+            : ["artifactHashes", "runId", "timestamps.completedUtc", "timestamps.startedUtc"];
 
         return new ModuleRunEvidence(
             _schema,
@@ -93,13 +109,13 @@ public static partial class ModuleRunEvidenceFactory
                 filterHash),
             CreateTopology(manifest),
             [new ModuleRunPhaseOutcome(result.Outcome.Phase, result.Outcome.Category, result.Outcome.RuleId)],
-            new ModuleRunTestCounts(false, 0, 0, 0, 0),
-            new SortedDictionary<string, string>(StringComparer.Ordinal),
+            testCounts ?? new ModuleRunTestCounts(false, 0, 0, 0, 0),
+            retainedArtifactHashes,
             result.Status,
             result.Outcome,
-            ["runId", "timestamps.completedUtc", "timestamps.startedUtc"],
-            [],
-            []);
+            volatileFields,
+            persistedAssertions ?? [],
+            expectedSequences ?? []);
     }
 
     private static string CreateCommand(

@@ -60,7 +60,8 @@ public static class PersistedProfileLoader
                     || module.InitialQuantity <= 0 || module.RetryQuantity <= 0)
                 && definition.Modules.Select(module => module.ModuleId).Distinct(StringComparer.Ordinal).Count() == 2
                 && definition.Modules.Select(module => module.ModuleId).Order(StringComparer.Ordinal)
-                    .SequenceEqual(manifest.Modules.Select(module => module.Id).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+                    .SequenceEqual(manifest.Modules.Select(module => module.Id).Order(StringComparer.Ordinal), StringComparer.Ordinal)
+                && (definition.NativeTests is null || IsValidNativeTests(definition.NativeTests, root));
 
             return valid ? definition : null;
         }
@@ -68,5 +69,13 @@ public static class PersistedProfileLoader
         {
             return null;
         }
+    }
+
+    private static bool IsValidNativeTests(PersistedProfileNativeTests tests, string root)
+    {
+        List<Diagnostics.ToolDiagnostic> diagnostics = [];
+        return tests.Platform is PersistedProfileNativeTests.VsTest or PersistedProfileNativeTests.MicrosoftTestingPlatform
+            && tests.Project?.EndsWith(".csproj", StringComparison.Ordinal) == true
+            && ManifestPathValidator.ValidateExistingFile(tests.Project, root, "profile.nativeTests.project", diagnostics) is not null;
     }
 }

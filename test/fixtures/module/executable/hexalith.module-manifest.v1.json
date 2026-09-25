@@ -40,6 +40,15 @@
         "two-instance"
       ]
     },
+    "full-mtp": {
+      "fixture": "test/fixtures/module/executable/profiles/p0-two-module-full-mtp.fixture.json",
+      "classes": [
+        "host-contract",
+        "persisted-boundary",
+        "restart",
+        "two-instance"
+      ]
+    },
     "live": {
       "fixture": "test/fixtures/module/executable/profiles/p0-executable-live.fixture.json",
       "classes": [

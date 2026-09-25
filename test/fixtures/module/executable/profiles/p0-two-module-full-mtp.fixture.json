@@ -1,6 +1,6 @@
 {
   "schema": "hexalith.g4-persisted-profile.v1",
-  "id": "p0-two-module-full",
+  "id": "p0-two-module-full-mtp",
   "modules": [
     {
       "moduleId": "p0-orders",
@@ -20,7 +20,7 @@
     }
   ],
   "nativeTests": {
-    "project": "test/fixtures/module/executable/P0Fixture.NativeTests.VsTest/P0Fixture.NativeTests.VsTest.csproj",
-    "platform": "vstest"
+    "project": "test/fixtures/module/executable/P0Fixture.NativeTests/P0Fixture.NativeTests.csproj",
+    "platform": "mtp"
   }
 }
