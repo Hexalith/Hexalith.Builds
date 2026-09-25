@@ -305,11 +305,10 @@ function Get-SourceTreeState {
 }
 
 function Assert-TrackedFixtureBytesMatchHead {
-    # Proves every fixture byte the packaged consumer exercised is identical to what
-    # HEAD tracks, not merely that the path is tracked (Assert-FixturesTracked only
-    # rules out untracked/ignored files, which misses a tracked-but-locally-edited
-    # fixture). Publication fails closed on any drift between tracked bytes and the
-    # bytes actually used to qualify the candidate.
+    # Proves each fixture matches its tracked Git blob after the path's declared
+    # clean filter. This accounts for .gitattributes checkout line endings while
+    # still rejecting any change that Git would commit. Publication fails closed
+    # on drift between qualified fixtures and the source revision.
     param(
         [Parameter(Mandatory = $true)][string] $RepositoryRoot,
         [Parameter(Mandatory = $true)][string] $SourceRevision,
@@ -323,26 +322,16 @@ function Assert-TrackedFixtureBytesMatchHead {
         $relativePath = ([IO.Path]::GetRelativePath($FixtureDirectory, $file.FullName)).Replace('\', '/')
         $trackedPath = "$RepositoryRelativeRoot/$relativePath"
 
-        # `git cat-file blob` streams the exact tracked bytes with no text-mode
-        # normalization, unlike capturing `git show` output through PowerShell's
-        # line-oriented pipeline; redirect straight to a file so nothing is decoded
-        # and re-encoded along the way.
-        $catFileOutput = New-TemporaryFile
-        try {
-            & git -C $RepositoryRoot cat-file blob "${SourceRevision}:${trackedPath}" 2>$null 1> $catFileOutput.FullName
-            if ($LASTEXITCODE -ne 0) {
-                $mismatches.Add("'$trackedPath' is not readable at $SourceRevision (not tracked, renamed, or removed).")
-                continue
-            }
-
-            $trackedBytes = [System.IO.File]::ReadAllBytes($catFileOutput.FullName)
-        }
-        finally {
-            Remove-Item -LiteralPath $catFileOutput.FullName -Force -ErrorAction SilentlyContinue
+        $trackedObjectIds = @(& git --no-replace-objects -C $RepositoryRoot rev-parse --verify "${SourceRevision}:${trackedPath}" 2>$null)
+        if ($LASTEXITCODE -ne 0 -or $trackedObjectIds.Count -ne 1 -or
+            [string] $trackedObjectIds[0] -notmatch '^[0-9a-f]{40,64}$') {
+            $mismatches.Add("'$trackedPath' is not readable at $SourceRevision (not tracked, renamed, or removed).")
+            continue
         }
 
-        $workingBytes = [System.IO.File]::ReadAllBytes($file.FullName)
-        if (-not [System.Linq.Enumerable]::SequenceEqual([byte[]] $trackedBytes, [byte[]] $workingBytes)) {
+        $workingObjectIds = @(& git -C $RepositoryRoot hash-object "--path=$trackedPath" -- $file.FullName 2>$null)
+        if ($LASTEXITCODE -ne 0 -or $workingObjectIds.Count -ne 1 -or
+            [string] $workingObjectIds[0] -cne [string] $trackedObjectIds[0]) {
             $mismatches.Add("'$trackedPath' working-tree bytes differ from the bytes tracked at $SourceRevision.")
         }
     }
