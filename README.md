@@ -332,10 +332,21 @@ module-owned `.releaserc.json`. The legacy
 
 Package publishing behavior:
 
-- Stable versions are published to NuGet.org with `NUGET_API_KEY`.
+- Stable versions are published to NuGet.org through Trusted Publishing. The
+  protected Release job exchanges its GitHub OIDC token for a short-lived key
+  immediately before publication; no stored NuGet API key is required.
 - Pre-release versions are published to GitHub Packages with `GITHUB_TOKEN`.
 - Debug and non-release local builds receive a generated `VersionSuffix` from
   `Hexalith.Package.props`.
+
+The NuGet.org `Hexalith` owner must have a Trusted Publishing policy for GitHub
+repository owner `Hexalith`, repository `Hexalith.Builds`, workflow file
+`build-release.yml`, and environment `production`. Grant publication of new
+versions for `Hexalith.Builds.Evidence.Cli` and `Hexalith.Builds.Module.Cli`;
+grant new-package publication only if those package IDs have not yet been
+created. Set the repository variable `NUGET_USER` to the individual NuGet.org
+username that created the policy, rather than the `Hexalith` organization name.
+NuGet.org checks this policy before issuing the temporary key.
 
 For domain modules, manually dispatch the module release caller only after its
 exact current `main` SHA has successful push CI, then approve the protected

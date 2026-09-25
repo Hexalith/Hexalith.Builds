@@ -6,7 +6,7 @@ inputs:
     description: 'GitHub publication token, scoped to the semantic-release step.'
     required: true
   nuget-api-key:
-    description: 'NuGet.org publication key, scoped to the semantic-release step for stable releases.'
+    description: 'Short-lived NuGet.org Trusted Publishing key, scoped to the semantic-release step for stable releases.'
     required: false
 
 runs:

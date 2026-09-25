@@ -40,6 +40,7 @@ jobs:
       pull-requests: write   # semantic-release comments on released PRs
       packages: write        # publish future tool packages to GitHub Packages
       actions: read          # verify exact-SHA push CI after protected approval
+      id-token: write         # exchange GitHub OIDC identity for a temporary NuGet.org key
     steps:
     - uses: actions/checkout@v7.0.1
       with:
@@ -169,8 +170,15 @@ jobs:
         DISPATCH_SHA: ${{ github.sha }}
       run: bash ./Tools/verify-g4-release-source.sh
 
+    - name: Authenticate to NuGet.org with Trusted Publishing
+      if: github.ref_name != 'prerelease'
+      id: nuget_login
+      uses: NuGet/login@v1.2.0
+      with:
+        user: ${{ vars.NUGET_USER }}
+
     - name: Create Release
       uses: ./Github/create-release
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+        nuget-api-key: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}

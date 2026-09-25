@@ -25,14 +25,14 @@ None.
 2. Install npm dependencies with `npm ci`.
 3. Verify npm package provenance and signatures with `npm audit signatures`.
 4. Run `npx semantic-release` with the caller's `GITHUB_TOKEN` and optional
-   `NUGET_API_KEY` available to repository-configured plugins.
+   short-lived NuGet.org Trusted Publishing key available to repository-configured plugins.
 
 ## Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `GITHUB_TOKEN` | Yes | Token used by semantic-release to create tags and the GitHub release. |
-| `NUGET_API_KEY` | Only for configured NuGet.org publication | Passed through unchanged for a repository semantic-release lifecycle that publishes stable NuGet packages. |
+| `NUGET_API_KEY` | Only for configured NuGet.org publication | Temporary key from `NuGet/login` passed through unchanged for stable NuGet publication. |
 
 ## Requirements
 
@@ -55,17 +55,24 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
+      - name: NuGet login
+        id: nuget_login
+        uses: NuGet/login@v1.2.0
+        with:
+          user: ${{ vars.NUGET_USER }}
+
       - name: Create release
         uses: Hexalith/Hexalith.Builds/Github/create-release@0123456789abcdef0123456789abcdef01234567
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          nuget-api-key: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
 ```
 
 Replace the example SHA with the reviewed immutable Builds commit. Do not use a

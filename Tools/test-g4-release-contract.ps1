@@ -7,6 +7,15 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$releaseWorkflow = Get-Content -LiteralPath (Join-Path $repositoryRoot '.github/workflows/build-release.yml') -Raw
+if (-not $releaseWorkflow.Contains('id-token: write', [StringComparison]::Ordinal) -or
+    -not $releaseWorkflow.Contains('uses: NuGet/login@v1.2.0', [StringComparison]::Ordinal) -or
+    -not $releaseWorkflow.Contains('user: ${{ vars.NUGET_USER }}', [StringComparison]::Ordinal) -or
+    -not $releaseWorkflow.Contains('nuget-api-key: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}', [StringComparison]::Ordinal) -or
+    $releaseWorkflow.Contains('nuget-api-key: ${{ secrets.NUGET_API_KEY }}', [StringComparison]::Ordinal)) {
+    throw 'Stable release must use NuGet.org Trusted Publishing through GitHub OIDC, not a stored API key.'
+}
+
 $release = (Get-Content -LiteralPath (Join-Path $repositoryRoot 'package.json') -Raw | ConvertFrom-Json).release
 $branches = @($release.branches)
 if ($branches.Count -ne 2 -or $branches[0] -cne 'main' -or

@@ -91,7 +91,8 @@ part of that host layout fails closed.
 `publish-g4-tool-packages.ps1` verifies the Release inventory before
 publication. A prerelease version (one containing `-`) targets
 repository-configured GitHub Packages using `GITHUB_TOKEN`; a stable version
-targets NuGet.org using `NUGET_API_KEY`. The script fails closed if the token,
+targets NuGet.org using the temporary `NUGET_API_KEY` returned by NuGet.org
+Trusted Publishing. The script fails closed if the token,
 package inventory, version, NuGet package, symbol package, or SHA-256 record
 is missing. Publication additionally requires an official package build,
 executed and passed source validation and controls, repository-tracked fixtures
