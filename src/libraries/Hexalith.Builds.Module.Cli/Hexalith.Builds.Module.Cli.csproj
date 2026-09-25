@@ -16,4 +16,20 @@
   <ItemGroup>
     <ProjectReference Include="../Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="pack/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/%(RecursiveDir)" />
+    <None Include="../../hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/bin/EventStoreHost/%(RecursiveDir)" />
+    <None Include="../../hosts/Hexalith.Builds.Module.UiHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/bin/UiHost/%(RecursiveDir)" />
+    <None Include="pack/projects/EventStore/*" Pack="true" PackagePath="tools/net10.0/any/g4-host/projects/EventStore/" />
+    <None Include="pack/projects/Ui/*" Pack="true" PackagePath="tools/net10.0/any/g4-host/projects/Ui/" />
+  </ItemGroup>
+  <!-- The host globs above silently match nothing without a prior Release build of the hosts. -->
+  <Target Name="RequirePackagedHosts" BeforeTargets="GenerateNuspec">
+    <Error Condition="!Exists('../../hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/Hexalith.Builds.Module.AppHost.dll')" Text="Build the Hexalith.Builds.Module.AppHost Release output before packing the module tool." />
+    <Error Condition="!Exists('../../hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net10.0/Hexalith.Builds.Module.EventStoreHost.dll')" Text="Build the Hexalith.Builds.Module.EventStoreHost Release output before packing the module tool." />
+    <Error Condition="!Exists('../../hosts/Hexalith.Builds.Module.UiHost/bin/Release/net10.0/Hexalith.Builds.Module.UiHost.dll')" Text="Build the Hexalith.Builds.Module.UiHost Release output before packing the module tool." />
+  </Target>
 </Project>

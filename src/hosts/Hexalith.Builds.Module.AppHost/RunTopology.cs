@@ -97,7 +97,7 @@ internal static class RunTopology
             .WithHttpHealthCheck("/healthz", endpointName: "healthz");
 
         IResourceBuilder<ProjectResource> eventStore = ConfigureEventStore(
-            builder.AddProject<Projects.Hexalith_Builds_Module_EventStoreHost>(EventStoreName),
+            AddEventStoreProject(builder, plan, EventStoreName),
             plan,
             plan.Ports.EventStoreHttp,
             key,
@@ -126,7 +126,7 @@ internal static class RunTopology
         if (plan.Ports.SecondEventStoreHttp is int secondHttp && plan.Ports.SecondEventStoreDapr is { } secondPorts)
         {
             IResourceBuilder<ProjectResource> second = ConfigureEventStore(
-                builder.AddProject<Projects.Hexalith_Builds_Module_EventStoreHost>(SecondEventStoreName),
+                AddEventStoreProject(builder, plan, SecondEventStoreName),
                 plan,
                 secondHttp,
                 key,
@@ -168,7 +168,7 @@ internal static class RunTopology
 
         if (plan.UiMarkers.Count > 0)
         {
-            IResourceBuilder<ProjectResource> ui = Tag(builder.AddProject<Projects.Hexalith_Builds_Module_UiHost>(UiName), plan, plan.Ports.UiHttp)
+            IResourceBuilder<ProjectResource> ui = Tag(AddUiProject(builder, plan), plan, plan.Ports.UiHttp)
                 .WithHttpHealthCheck("/health");
             for (int index = 0; index < plan.UiMarkers.Count; index++)
             {
@@ -181,6 +181,32 @@ internal static class RunTopology
 
         _ = builder.Services.AddSingleton<IDistributedApplicationEventingSubscriber>(new DaprDirectEndpointSubscriber());
     }
+
+    /// <summary>
+    /// Adds an EventStore host. From a package, each resource builds its own private shim copy, so the installed
+    /// tool stays read-only and parallel resources never share an obj/bin directory.
+    /// </summary>
+    /// <param name="builder">The distributed application builder.</param>
+    /// <param name="plan">The run plan.</param>
+    /// <param name="name">The resource name.</param>
+    /// <returns>The project resource.</returns>
+    private static IResourceBuilder<ProjectResource> AddEventStoreProject(IDistributedApplicationBuilder builder, CompositionRunPlan plan, string name) =>
+        PackagedHostProject.TryMaterialize(AppContext.BaseDirectory, "EventStore", "EventStoreHost", HostDirectory(plan, name), out string? packagedProject)
+            ? builder.AddProject(name, packagedProject!)
+            : builder.AddProject<Projects.Hexalith_Builds_Module_EventStoreHost>(name);
+
+    /// <summary>
+    /// Adds the FrontComposer UI host, from a private shim copy when the AppHost runs from a package.
+    /// </summary>
+    /// <param name="builder">The distributed application builder.</param>
+    /// <param name="plan">The run plan.</param>
+    /// <returns>The project resource.</returns>
+    private static IResourceBuilder<ProjectResource> AddUiProject(IDistributedApplicationBuilder builder, CompositionRunPlan plan) =>
+        PackagedHostProject.TryMaterialize(AppContext.BaseDirectory, "Ui", "UiHost", HostDirectory(plan, UiName), out string? packagedProject)
+            ? builder.AddProject(UiName, packagedProject!)
+            : builder.AddProject<Projects.Hexalith_Builds_Module_UiHost>(UiName);
+
+    private static string HostDirectory(CompositionRunPlan plan, string resourceName) => Path.Combine(plan.Workspace, "hosts", resourceName);
 
     private static IResourceBuilder<ProjectResource> ConfigureEventStore(
         IResourceBuilder<ProjectResource> project,

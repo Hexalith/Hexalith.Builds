@@ -87,6 +87,7 @@ if (-not (Test-Path -LiteralPath $solutionPath -PathType Leaf)) {
 }
 
 Invoke-DotNet -Arguments @('restore', $solutionPath)
+Invoke-DotNet -Arguments @('build', $solutionPath, '--configuration', 'Release', '--no-restore')
 
 foreach ($tool in $tools) {
     Write-Host "Packing $($tool.Id) at $Version in Release configuration."
