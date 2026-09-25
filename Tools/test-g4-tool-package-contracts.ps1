@@ -600,7 +600,7 @@ function Assert-ModuleEvidence {
         $evidence.outcome.ruleId -is [string] -and $evidence.outcome.ruleId -ceq $RuleId
     }
     if ($evidence.schema -isnot [string] -or $evidence.schema -cne 'hexalith.module-run-evidence.v1' -or
-        $evidence.topology.platform.eventStoreVersion -isnot [string] -or $evidence.topology.platform.eventStoreVersion -cne '3.106.0' -or
+        $evidence.topology.platform.eventStoreVersion -isnot [string] -or $evidence.topology.platform.eventStoreVersion -cne '3.108.1' -or
         $evidence.finalStatus -isnot [string] -or $evidence.finalStatus -cne $FinalStatus -or
         -not $hasNumericExitCode -or [long]$evidence.outcome.exitCode -ne $ExitCode -or
         $evidence.outcome.phase -isnot [string] -or $evidence.outcome.phase -cne $Phase -or

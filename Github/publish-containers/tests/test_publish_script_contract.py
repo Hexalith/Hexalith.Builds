@@ -479,15 +479,24 @@ class PublishScriptContractTests(unittest.TestCase):
 
     def test_builds_release_is_manual_protected_and_does_not_push_git(self):
         workflow = BUILD_RELEASE.read_text(encoding="utf-8")
+        source_guard = (SCRIPT_DIRECTORY.parents[1] / "Tools" / "verify-g4-release-source.sh").read_text(
+            encoding="utf-8"
+        )
         package = json.loads((SCRIPT_DIRECTORY.parents[1] / "package.json").read_text(encoding="utf-8"))
 
         self.assertIn("on:\n  workflow_dispatch:", workflow)
         self.assertNotIn("\n  push:", workflow)
-        self.assertIn("environment: production", workflow)
+        self.assertIn(
+            "environment: ${{ github.ref_name == 'prerelease' && 'prerelease' || 'production' }}",
+            workflow,
+        )
         self.assertIn("DISPATCH_REF", workflow)
-        self.assertIn("refs/heads/main", workflow)
+        self.assertIn("refs/heads/main|refs/heads/prerelease", source_guard)
         self.assertIn("persist-credentials: false", workflow)
-        self.assertEqual(["main"], package["release"]["branches"])
+        self.assertEqual(
+            ["main", {"name": "prerelease", "prerelease": True}],
+            package["release"]["branches"],
+        )
         self.assertNotIn("@semantic-release/changelog", package["release"]["plugins"])
         self.assertNotIn("@semantic-release/git", package["release"]["plugins"])
         self.assertNotIn("@semantic-release/changelog", package["devDependencies"])

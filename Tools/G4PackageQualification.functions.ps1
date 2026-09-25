@@ -197,7 +197,7 @@ function Assert-ModuleRunEvidenceContent {
         [Parameter(Mandatory = $true)][string] $ExpectedRepositoryRevision,
         [Parameter(Mandatory = $true)][string] $ExpectedRepositoryDirtyMarker,
         [Parameter(Mandatory = $true)][string] $ExpectedManifestHash,
-        [string] $ExpectedEventStoreVersion = '3.106.0'
+        [string] $ExpectedEventStoreVersion = '3.108.1'
     )
 
     $bytes = [IO.File]::ReadAllBytes($FilePath)
@@ -305,11 +305,10 @@ function Get-SourceTreeState {
 }
 
 function Assert-TrackedFixtureBytesMatchHead {
-    # Proves every fixture byte the packaged consumer exercised is identical to what
-    # HEAD tracks, not merely that the path is tracked (Assert-FixturesTracked only
-    # rules out untracked/ignored files, which misses a tracked-but-locally-edited
-    # fixture). Publication fails closed on any drift between tracked bytes and the
-    # bytes actually used to qualify the candidate.
+    # Proves each fixture matches its tracked Git blob after the path's declared
+    # clean filter. This accounts for .gitattributes checkout line endings while
+    # still rejecting any change that Git would commit. Publication fails closed
+    # on drift between qualified fixtures and the source revision.
     param(
         [Parameter(Mandatory = $true)][string] $RepositoryRoot,
         [Parameter(Mandatory = $true)][string] $SourceRevision,
@@ -323,19 +322,17 @@ function Assert-TrackedFixtureBytesMatchHead {
         $relativePath = ([IO.Path]::GetRelativePath($FixtureDirectory, $file.FullName)).Replace('\', '/')
         $trackedPath = "$RepositoryRelativeRoot/$relativePath"
 
-        # Compare Git's clean-filtered blob identity. A clean checkout may have
-        # CRLF worktree bytes for a tracked LF blob because of .gitattributes;
-        # raw byte comparison would reject that reproducible checkout.
-        $trackedBlob = @(& git -C $RepositoryRoot rev-parse --verify "${SourceRevision}:${trackedPath}" 2>$null)
-        if ($LASTEXITCODE -ne 0 -or $trackedBlob.Count -ne 1) {
+        $trackedObjectIds = @(& git --no-replace-objects -C $RepositoryRoot rev-parse --verify "${SourceRevision}:${trackedPath}" 2>$null)
+        if ($LASTEXITCODE -ne 0 -or $trackedObjectIds.Count -ne 1 -or
+            [string] $trackedObjectIds[0] -notmatch '^[0-9a-f]{40,64}$') {
             $mismatches.Add("'$trackedPath' is not readable at $SourceRevision (not tracked, renamed, or removed).")
             continue
         }
 
-        $workingBlob = @(& git -C $RepositoryRoot hash-object --path=$trackedPath -- $file.FullName 2>$null)
-        if ($LASTEXITCODE -ne 0 -or $workingBlob.Count -ne 1 -or
-            -not [StringComparer]::OrdinalIgnoreCase.Equals(([string] $trackedBlob[0]).Trim(), ([string] $workingBlob[0]).Trim())) {
-            $mismatches.Add("'$trackedPath' working-tree bytes differ from the bytes tracked at $SourceRevision after Git attributes are applied.")
+        $workingObjectIds = @(& git -C $RepositoryRoot hash-object "--path=$trackedPath" -- $file.FullName 2>$null)
+        if ($LASTEXITCODE -ne 0 -or $workingObjectIds.Count -ne 1 -or
+            [string] $workingObjectIds[0] -cne [string] $trackedObjectIds[0]) {
+            $mismatches.Add("'$trackedPath' working-tree bytes differ from the bytes tracked at $SourceRevision.")
         }
     }
 

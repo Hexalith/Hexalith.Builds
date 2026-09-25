@@ -216,7 +216,7 @@ public sealed class ExecutableDescriptorLoaderTests
                 },
                 platform = new
                 {
-                    eventStoreVersion = "3.106.0",
+                    eventStoreVersion = "3.108.1",
                     daprRuntimeVersion = "1.18.2",
                     daprSdkVersion = "1.18.8",
                     frontComposerVersion = "4.5.0",
@@ -428,7 +428,7 @@ public sealed class ExecutableDescriptorLoaderTests
         "hexalith.module-manifest.v1",
         "descriptor-test",
         [new ModuleDescriptor("module-a", descriptorAssembly, [], "module-a", "module-a", "module-a")],
-        new PlatformPins("3.106.0", "1.18.2", "1.18.8", "4.5.0"),
+        new PlatformPins("3.108.1", "1.18.2", "1.18.8", "4.5.0"),
         null,
         new Dictionary<string, ModuleProfile>(StringComparer.Ordinal));
 

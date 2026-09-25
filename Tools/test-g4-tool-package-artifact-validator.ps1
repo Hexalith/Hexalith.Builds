@@ -307,6 +307,28 @@ try {
             -FixtureDirectory $copiedFixtureDirectory -RepositoryRelativeRoot 'test/fixtures/module'
     }
 
+    [IO.File]::WriteAllText((Join-Path $cleanRepoRoot '.gitattributes'), "*.cs text eol=crlf`n")
+    $attributedFixture = Join-Path $fixtureSubdirectory 'sample.cs'
+    [IO.File]::WriteAllText($attributedFixture, "first`r`nsecond`r`n")
+    & git -C $cleanRepoRoot add -A
+    & git -C $cleanRepoRoot commit --quiet -m 'add attributed fixture'
+    $headRevision = (& git -C $cleanRepoRoot rev-parse HEAD).Trim()
+    $attributedCopyDirectory = Join-Path $temporaryRoot 'attributed-fixtures'
+    New-Item -ItemType Directory -Path $attributedCopyDirectory -Force | Out-Null
+    Copy-Item -LiteralPath $attributedFixture -Destination $attributedCopyDirectory
+
+    Test-Succeeds -Name 'CRLF checkout matches its normalized tracked blob' -ScriptBlock {
+        $count = Assert-TrackedFixtureBytesMatchHead -RepositoryRoot $cleanRepoRoot -SourceRevision $headRevision `
+            -FixtureDirectory $attributedCopyDirectory -RepositoryRelativeRoot 'test/fixtures/module'
+        if ($count -ne 1) { throw "expected 1 matched file, got $count" }
+    }
+
+    [IO.File]::WriteAllText((Join-Path $attributedCopyDirectory 'sample.cs'), "first`r`nchanged`r`n")
+    Test-Throws -Name 'Edited CRLF fixture is rejected' -ExpectedMessageFragment 'bytes differ from the bytes tracked at' -ScriptBlock {
+        Assert-TrackedFixtureBytesMatchHead -RepositoryRoot $cleanRepoRoot -SourceRevision $headRevision `
+            -FixtureDirectory $attributedCopyDirectory -RepositoryRelativeRoot 'test/fixtures/module'
+    }
+
     $untrackedFixtureDirectory = Join-Path $temporaryRoot 'untracked-fixtures'
     New-Item -ItemType Directory -Path $untrackedFixtureDirectory -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $untrackedFixtureDirectory 'never-tracked.json') -Encoding utf8 -Value '{}'
