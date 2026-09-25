@@ -10,6 +10,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+. (Join-Path $PSScriptRoot 'G4PackageQualification.functions.ps1')
+
 if ($Version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$') {
     throw "Version '$Version' is not a supported NuGet semantic version."
 }
@@ -26,3 +28,6 @@ $packageDirectory = "artifacts/g4-tool-packages/$Version"
 if (-not $?) {
     throw "Pre-tag G-4 package qualification failed for '$Version'."
 }
+
+$inventoryPath = Join-Path (Join-Path $PSScriptRoot '..') "$packageDirectory/g4-tool-package-inventory.json"
+$null = Assert-ReleaseEligibleInventory -InventoryPath $inventoryPath -Version $Version

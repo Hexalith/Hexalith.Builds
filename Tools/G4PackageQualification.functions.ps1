@@ -9,6 +9,39 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Assert-ReleaseEligibleInventory {
+    # Keep an ineligible candidate from being tagged by semantic-release before
+    # the publisher performs its independent inventory validation.
+    param(
+        [Parameter(Mandatory = $true)][string] $InventoryPath,
+        [Parameter(Mandatory = $true)][string] $Version
+    )
+
+    $inventory = Get-Content -LiteralPath $InventoryPath -Raw | ConvertFrom-Json
+    $qualification = $inventory.qualification
+    if ($inventory.schema -cne 'hexalith.g4-tool-package-inventory.v1' -or
+        $inventory.version -cne $Version -or $inventory.configuration -cne 'Release' -or
+        $null -eq $qualification -or
+        [string] $qualification.packageBuild.mode -cne 'official' -or
+        [string] $qualification.packageBuild.result -cne 'passed' -or
+        [string] $qualification.sourceValidation.mode -cne 'executed' -or
+        [string] $qualification.sourceValidation.result -cne 'passed' -or
+        [string] $qualification.controls.mode -cne 'executed' -or
+        [string] $qualification.controls.result -cne 'passed' -or
+        $qualification.releaseEligible -isnot [bool] -or $qualification.releaseEligible -ne $true) {
+        $reasons = if ($null -ne $qualification -and $null -ne $qualification.ineligibilityReasons -and
+            @($qualification.ineligibilityReasons).Count -gt 0) {
+            [string]::Join('; ', @($qualification.ineligibilityReasons))
+        }
+        else {
+            'qualification inventory is incomplete or bypassed'
+        }
+        throw "Pre-tag G-4 package qualification is not release eligible for '$Version': $reasons"
+    }
+
+    return $inventory
+}
+
 function Save-QualificationEvidence {
     # Persists a control's raw output and returns its recorded hash/size. Coverage is
     # only "satisfied" once Assert-QualificationEvidenceContent has independently

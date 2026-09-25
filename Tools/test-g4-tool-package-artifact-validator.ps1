@@ -370,6 +370,32 @@ try {
         Assert-TrackedFixtureBytesMatchHead -RepositoryRoot $cleanRepoRoot -SourceRevision $eolRevision `
             -FixtureDirectory $boundCopyDirectory -RepositoryRelativeRoot 'test/fixtures/eol/bound'
     }
+
+    $inventoryPath = Join-Path $temporaryRoot 'release-inventory.json'
+    $inventory = [ordered] @{
+        schema = 'hexalith.g4-tool-package-inventory.v1'
+        version = '9.8.7'
+        configuration = 'Release'
+        qualification = [ordered] @{
+            packageBuild = @{ mode = 'official'; result = 'passed' }
+            sourceValidation = @{ mode = 'executed'; result = 'passed' }
+            controls = @{ mode = 'executed'; result = 'passed' }
+            releaseEligible = $true
+            ineligibilityReasons = @()
+        }
+    }
+    $inventory | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $inventoryPath -Encoding utf8
+    Test-Succeeds -Name 'Eligible inventory passes the pre-tag gate' -ScriptBlock {
+        $null = Assert-ReleaseEligibleInventory -InventoryPath $inventoryPath -Version '9.8.7'
+    }
+
+    $inventory.qualification.releaseEligible = $false
+    $inventory.qualification.ineligibilityReasons = @('fixture provenance was not repository-tracked')
+    $inventory | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $inventoryPath -Encoding utf8
+    Test-Throws -Name 'Ineligible inventory is rejected before tagging with its reason' `
+        -ExpectedMessageFragment 'fixture provenance was not repository-tracked' -ScriptBlock {
+        $null = Assert-ReleaseEligibleInventory -InventoryPath $inventoryPath -Version '9.8.7'
+    }
 }
 finally {
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
