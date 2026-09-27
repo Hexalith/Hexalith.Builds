@@ -489,9 +489,9 @@ public sealed class ManifestValidationTests
                 modules,
                 platform = new
                 {
-                    eventStoreVersion = "3.108.1",
+                    eventStoreVersion = "3.109.0",
                     daprRuntimeVersion = "1.18.2",
-                    daprSdkVersion = "1.18.8",
+                    daprSdkVersion = "1.18.10",
                     frontComposerVersion = "4.5.0",
                 },
                 profiles = new
@@ -564,9 +564,9 @@ public sealed class ManifestValidationTests
             }
           ],
           "platform": {
-            "eventStoreVersion": "3.108.1",
+            "eventStoreVersion": "3.109.0",
             "daprRuntimeVersion": "1.18.2",
-            "daprSdkVersion": "1.18.8",
+            "daprSdkVersion": "1.18.10",
             "frontComposerVersion": "4.5.0"
           },
           "ui": {

@@ -11,13 +11,13 @@ namespace Hexalith.Builds.Tooling.Manifest;
 public static class SupportedPlatformPins
 {
     /// <summary>Gets the candidate EventStore package pin.</summary>
-    public const string EventStoreVersion = "3.108.1";
+    public const string EventStoreVersion = "3.109.0";
 
     /// <summary>Gets the approved Dapr runtime exception pin.</summary>
     public const string DaprRuntimeVersion = "1.18.2";
 
     /// <summary>Gets the authorized Dapr SDK package pin.</summary>
-    public const string DaprSdkVersion = "1.18.8";
+    public const string DaprSdkVersion = "1.18.10";
 
     /// <summary>Gets the authorized FrontComposer package pin.</summary>
     public const string FrontComposerVersion = "4.5.0";

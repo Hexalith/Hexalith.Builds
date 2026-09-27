@@ -207,7 +207,7 @@ function New-ModuleEvidenceContent {
         }
         topology = [ordered] @{
             platform = [ordered] @{
-                eventStoreVersion = '3.108.1'
+                eventStoreVersion = '3.109.0'
             }
         }
     }

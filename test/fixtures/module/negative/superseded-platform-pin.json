@@ -14,7 +14,7 @@
   "platform": {
     "eventStoreVersion": "3.88.0",
     "daprRuntimeVersion": "1.18.2",
-    "daprSdkVersion": "1.18.8",
+    "daprSdkVersion": "1.18.10",
     "frontComposerVersion": "4.5.0"
   },
   "profiles": {
