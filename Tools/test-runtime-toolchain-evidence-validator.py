@@ -3,12 +3,17 @@
 
 Every approved baseline runs the same packet mutation suite against a fixture
 workspace generated from that baseline's own tuple, approval, and pin audit, so
-no baseline depends on values hard-coded for another revision.
+no baseline depends on values hard-coded for another revision. The fixture
+approval and Dapr disposition are built from literal baseline fields rather than
+validator helpers, the bound historical baselines are pinned by SHA-256, and
+separate authority controls prove that approver, owner-role, approval-date,
+listed-Dapr and CLI/runtime pin contradictions are rejected.
 """
 
 from __future__ import annotations
 
 import copy
+import datetime as dt
 import importlib.util
 import json
 import subprocess
@@ -26,7 +31,16 @@ BASELINES = (
     # Pending 2026-09-29 EventStore 3.109.0 candidate tuple.
     SCRIPT.with_name("runtime-toolchain-baseline-2026-09-29.json"),
 )
+# Bound baselines must keep the exact bytes their packets hash (normalized-LF SHA-256,
+# identical to the raw hash of the LF checkout): the accepted 2026-09-06 packet and the
+# superseded 2026-09-27 packet. Any later edit to these files is drift, not an update.
+HISTORICAL_BASELINE_SHA256 = {
+    "runtime-toolchain-baseline.json": "525615c65ada8cabf5a6911a374bb22b62f6a3c1bfa6c91f7245312da9720265",
+    "runtime-toolchain-baseline-2026-09-27.json": "b9aa6791effe78cbb9bf405cd8384b81a6d750f996fabf8f79b7cd1c3bedad01",
+}
+PACKET_SCENARIOS_PER_BASELINE = 22
 REJECTED_PACKET_MUTATIONS: list[str] = []
+AUTHORITY_CONTROLS: list[str] = []
 SPEC = importlib.util.spec_from_file_location("g6_validator", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 VALIDATOR = importlib.util.module_from_spec(SPEC)
@@ -61,25 +75,57 @@ def write_capture_validation(path: Path, observations: Path, qualification: Path
     })
 
 
-def expect_rejected(workspace: Path, baseline_path: Path, baseline: dict, packet_path: Path, packet: dict, label: str) -> None:
+def expect_rejected(
+    workspace: Path, baseline_path: Path, baseline: dict, packet_path: Path, packet: dict, label: str,
+    message: str | None = None, record: list[str] | None = None,
+) -> None:
     write_json(packet_path, packet)
     try:
         VALIDATOR.validate_packet(workspace, packet_path, baseline_path, baseline)
-    except VALIDATOR.ValidationError:
-        REJECTED_PACKET_MUTATIONS.append(label)
+    except VALIDATOR.ValidationError as error:
+        assert message is None or message in str(error), f"{label}: expected '{message}', got '{error}'"
+        (REJECTED_PACKET_MUTATIONS if record is None else record).append(label)
         return
     raise AssertionError(f"mutation was accepted: {label}")
 
 
-def expect_baseline_rejected(workspace: Path, baseline_path: Path, baseline: dict, label: str) -> None:
+def expect_baseline_rejected(
+    workspace: Path, baseline_path: Path, baseline: dict, label: str, message: str | None = None,
+) -> None:
     write_json(baseline_path, baseline)
     try:
         VALIDATOR.validate_baseline(workspace, baseline_path)
-    except VALIDATOR.ValidationError:
+    except VALIDATOR.ValidationError as error:
+        assert message is None or message in str(error), f"{label}: expected '{message}', got '{error}'"
         return
     finally:
         baseline_path.unlink()
     raise AssertionError(f"baseline mutation was accepted: {label}")
+
+
+def fixture_approval(baseline: dict) -> dict:
+    """Packet approval restated from literal baseline fields, independent of validator helpers."""
+    dapr = baseline["dispositions"]["dapr"]
+    return {
+        "approvedBy": baseline["approvedBy"],
+        "approvedOn": baseline["approvedOn"],
+        "ownerRoles": list(baseline["ownerRoles"]),
+        "supportTableListed": dapr["supportTableListed"],
+        "decision": dapr["decision"],
+    }
+
+
+def fixture_dapr_disposition(baseline: dict) -> str:
+    """Dapr disposition label restated from literal baseline fields, independent of validator helpers."""
+    dapr = baseline["dispositions"]["dapr"]
+    listing = {True: "support-table-listed", False: "not-support-table-listed"}[dapr["supportTableListed"]]
+    return f"{dapr['decision']}-{listing}"
+
+
+def assert_historical_baseline_bytes() -> None:
+    for name, expected in HISTORICAL_BASELINE_SHA256.items():
+        actual = VALIDATOR.sha256(SCRIPT.with_name(name))
+        assert actual == expected, f"bound historical baseline drifted: {name} hashes {actual}, packets bind {expected}"
 
 
 def fixture_catalog(tuple_values: dict[str, str]) -> str:
@@ -102,11 +148,15 @@ def initialize_git(workspace: Path) -> str:
     ).stdout.strip()
 
 
-def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tuple[int, int]:
-    """Run the packet mutation suite and baseline drift controls for one baseline."""
+def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tuple[int, int, int]:
+    """Run the packet mutation suite, baseline drift controls and authority controls for one baseline."""
     baseline_template = VALIDATOR.read_json(real_baseline)
     tuple_values = baseline_template["tuple"]
+    literal_dispositions = baseline_template["dispositions"]
+    # Capture on the approval day, so the fixture satisfies approval-before-capture exactly at its edge.
+    captured_utc = f"{baseline_template['approvedOn']}T12:00:00Z"
     REJECTED_PACKET_MUTATIONS.clear()
+    AUTHORITY_CONTROLS.clear()
     with tempfile.TemporaryDirectory(prefix="g6-validator-") as temporary:
         workspace = Path(temporary)
         builds = workspace / "references/Hexalith.Builds"
@@ -231,17 +281,16 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
             write_capture_validation(paths["capture"], paths["observations"], paths["qualification"], paths["support"])
             write_json(paths["versions"], {
                 "schema": "hexalith.runtime-toolchain-observed-versions.v1",
-                "observedUtc": "2026-09-27T00:00:00Z", **tuple_values,
+                "observedUtc": captured_utc, **tuple_values,
             })
             write_json(paths["commands"], {
                 "schema": "hexalith.runtime-toolchain-command-record.v1", "commands": command_results,
             })
             write_json(paths["dispositions"], {
                 "schema": "hexalith.runtime-toolchain-dispositions.v1",
-                "daprSupportDisposition": VALIDATOR.baseline_dapr_disposition(baseline_template),
-                "communityToolkitAspireDapr": "approved-prerelease-exception",
-                "fluentUi": "approved-release-candidate-exception", "nSubstitute": "stable", "fluxor": "stable",
-                "Dapr": "catalog-only-not-activated", "Dapr.Workflow": "catalog-only-unselected",
+                "daprSupportDisposition": fixture_dapr_disposition(baseline_template),
+                **{field: literal_dispositions[field] for field in (
+                    "communityToolkitAspireDapr", "fluentUi", "nSubstitute", "fluxor", "Dapr", "Dapr.Workflow")},
                 "attempts": [
                     {"attempt": 1, "accepted": False, "result": "failed", "reason": "fixture rejected", "disposition": "diagnostic"},
                     {"attempt": 2, "accepted": True, "result": "passed", "reason": "fixture accepted", "disposition": "selected"},
@@ -265,7 +314,7 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
         packet = {
             "schema": "hexalith.runtime-toolchain-evidence.v1",
             "baseline": {"path": baseline_path.relative_to(workspace).as_posix(), "sha256": VALIDATOR.sha256(baseline_path)},
-            "capturedUtc": "2026-09-27T00:00:00Z",
+            "capturedUtc": captured_utc,
             "repositories": [{key: source_repository[key] for key in ("name", "path", "revision", "diffSha256")}],
             "artifacts": [
                 artifact_binding(workspace, "source-state", paths["source_state"]),
@@ -286,7 +335,7 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
             },
             "topology": {"eventStoreProcesses": 2, "eventStoreSidecars": 2, "independentProcessIdentities": True, "sharedStateStore": "state.postgresql"},
             "lifecycle": {"singleExecution": True, "duplicateWork": 0, "ownerStopped": True, "survivorReplayExact": True, "ownerRestarted": True, "restartedReplayExact": True, "authorityUnchanged": True, "persistedStateExact": True},
-            "approval": copy.deepcopy(VALIDATOR.baseline_approval(baseline_template)),
+            "approval": fixture_approval(baseline_template),
             "sentinelScan": {"passed": True, "matches": 0, "rawDiagnosticsRetained": False},
             "rollback": {"requiresDomainDataMutation": False, "action": "restore prior pins"},
             "containment": copy.deepcopy(VALIDATOR.EXPECTED_CONTAINMENT), "status": "accepted",
@@ -407,6 +456,46 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
         packet_scenarios = 1 + len(REJECTED_PACKET_MUTATIONS)
         assert len(REJECTED_PACKET_MUTATIONS) == len(set(REJECTED_PACKET_MUTATIONS)), REJECTED_PACKET_MUTATIONS
 
+        # Authority controls: packet-side contradictions of the baseline approval.
+        restore_evidence()
+        changed_dispositions = json.loads(paths["dispositions"].read_text(encoding="utf-8"))
+        listed = baseline_template["dispositions"]["dapr"]["supportTableListed"]
+        changed_dispositions["daprSupportDisposition"] = fixture_dapr_disposition(
+            {"dispositions": {"dapr": {**baseline_template["dispositions"]["dapr"], "supportTableListed": not listed}}})
+        write_json(paths["dispositions"], changed_dispositions)
+        changed = copy.deepcopy(packet); refresh_artifact(changed, "dispositions", paths["dispositions"])
+        expect_rejected(workspace, baseline_path, baseline, paths["packet"], changed,
+                        "packet Dapr disposition drift", "Dapr disposition drift", AUTHORITY_CONTROLS)
+        restore_evidence()
+
+        approved_on = dt.date.fromisoformat(baseline_template["approvedOn"])
+        changed = copy.deepcopy(packet); changed["approval"]["approvedOn"] = (approved_on - dt.timedelta(days=1)).isoformat()
+        expect_rejected(workspace, baseline_path, baseline, paths["packet"], changed,
+                        "packet approval date drift", "Approval record mismatch", AUTHORITY_CONTROLS)
+        changed = copy.deepcopy(packet); changed["approval"]["ownerRoles"] = changed["approval"]["ownerRoles"][:-1]
+        expect_rejected(workspace, baseline_path, baseline, paths["packet"], changed,
+                        "packet approval role drift", "Approval record mismatch", AUTHORITY_CONTROLS)
+        changed = copy.deepcopy(packet)
+        changed["capturedUtc"] = f"{(approved_on - dt.timedelta(days=1)).isoformat()}T23:59:59Z"
+        expect_rejected(workspace, baseline_path, baseline, paths["packet"], changed,
+                        "capture before approval date", "later than the packet capture date", AUTHORITY_CONTROLS)
+
+        # A baseline approved after the capture: its approval, hash and binding all agree with the
+        # packet, so only the approval-before-capture rule can reject it.
+        original_baseline_bytes = baseline_path.read_bytes()
+        future_baseline = copy.deepcopy(baseline_template); future_baseline["approvedOn"] = "2099-12-31"
+        write_json(baseline_path, future_baseline)
+        try:
+            future = VALIDATOR.validate_baseline(workspace, baseline_path)
+            changed = copy.deepcopy(packet)
+            changed["baseline"]["sha256"] = VALIDATOR.sha256(baseline_path)
+            changed["approval"] = fixture_approval(future_baseline)
+            refresh_artifact(changed, "baseline-governance", baseline_path)
+            expect_rejected(workspace, baseline_path, future, paths["packet"], changed,
+                            "approval after capture", "later than the packet capture date", AUTHORITY_CONTROLS)
+        finally:
+            baseline_path.write_bytes(original_baseline_bytes)
+
         # Baseline-owned expectations: the same fixture must reject another
         # baseline's tuple, malformed approval facts, and catalog drift.
         mutated_baseline_path = baseline_path.with_name("mutated-runtime-toolchain-baseline.json")
@@ -423,6 +512,42 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
         for label, mutation in baseline_controls:
             expect_baseline_rejected(workspace, mutated_baseline_path, mutation, label)
 
+        # Authority controls: baseline fields that contradict the allowlists or the audited pins.
+        authority_baselines = []
+        other_approver = copy.deepcopy(baseline_template); other_approver["approvedBy"] = "Inferred Approver"
+        authority_baselines.append(("unlisted approver", other_approver, "not an authorized G-6 approver"))
+        extra_role = copy.deepcopy(baseline_template); extra_role["ownerRoles"].append("Security")
+        authority_baselines.append(("unlisted owner role", extra_role, "not an authorized G-6 owner role: Security"))
+        missing_role = copy.deepcopy(baseline_template); missing_role["ownerRoles"].remove("Platform")
+        authority_baselines.append(("missing owner role", missing_role, "must include every G-6 owner role"))
+        listed_runtime = copy.deepcopy(baseline_template)
+        listed_runtime["dispositions"]["dapr"].update(
+            supportTableListed=True, listedRuntime="0.0.1", listedDotnetSdk=tuple_values["daprDotnetPackages"])
+        authority_baselines.append(("listed Dapr runtime differs", listed_runtime, "listed Dapr runtime differs"))
+        listed_sdk = copy.deepcopy(baseline_template)
+        listed_sdk["dispositions"]["dapr"].update(
+            supportTableListed=True, listedRuntime=tuple_values["daprRuntime"], listedDotnetSdk="0.0.1")
+        authority_baselines.append(("listed Dapr .NET SDK differs", listed_sdk, "listed Dapr .NET SDK differs"))
+        for field, unaudited in (("daprCli", "1.99.0"), ("daprRuntime", "1.99.0"), ("aspireCli", "13.99.0")):
+            unaudited_tuple = copy.deepcopy(baseline_template); unaudited_tuple["tuple"][field] = unaudited
+            authority_baselines.append((f"unaudited {field}", unaudited_tuple,
+                                        f"Tuple {field} {unaudited} is not among the audited literal pins"))
+        for label, mutation, message in authority_baselines:
+            expect_baseline_rejected(workspace, mutated_baseline_path, mutation, label, message)
+            AUTHORITY_CONTROLS.append(label)
+        # Positive control: a listed pair equal to the tuple's own runtime and SDK is accepted.
+        listed_pair = copy.deepcopy(baseline_template)
+        listed_pair["dispositions"]["dapr"].update(
+            supportTableListed=True, listedRuntime=tuple_values["daprRuntime"],
+            listedDotnetSdk=tuple_values["daprDotnetPackages"])
+        write_json(mutated_baseline_path, listed_pair)
+        try:
+            VALIDATOR.validate_baseline(workspace, mutated_baseline_path)
+        finally:
+            mutated_baseline_path.unlink()
+        AUTHORITY_CONTROLS.append("listed Dapr pair equal to the tuple")
+        assert len(AUTHORITY_CONTROLS) == len(set(AUTHORITY_CONTROLS)), AUTHORITY_CONTROLS
+
         drifted_tuple = copy.deepcopy(tuple_values); drifted_tuple["communityToolkitAspireDapr"] = "0.0.0-drift"
         write_text(catalog_path, fixture_catalog(drifted_tuple))
         try:
@@ -434,22 +559,30 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
         finally:
             write_text(catalog_path, fixture_catalog(tuple_values))
         VALIDATOR.validate_baseline(workspace, baseline_path)
-        return packet_scenarios, len(baseline_controls) + 1
+        write_json(paths["packet"], packet)
+        VALIDATOR.validate_packet(workspace, paths["packet"], baseline_path, baseline)
+        return packet_scenarios, len(baseline_controls) + 1, len(AUTHORITY_CONTROLS)
 
 
 def main() -> int:
+    assert_historical_baseline_bytes()
     tuples = [VALIDATOR.read_json(path)["tuple"] for path in BASELINES]
     results = []
     for path, own_tuple in zip(BASELINES, tuples, strict=True):
         others = [other for other in tuples if other != own_tuple]
-        packet_scenarios, baseline_scenarios = run_baseline(path, others)
-        results.append((path.name, packet_scenarios, baseline_scenarios))
-        print(f"{path.name}: {packet_scenarios} packet scenarios and {baseline_scenarios} baseline controls passed")
-    packet_counts = {packet for _, packet, _ in results}
-    assert packet_counts == {22}, packet_counts
+        packet_scenarios, baseline_scenarios, authority_controls = run_baseline(path, others)
+        results.append((path.name, packet_scenarios, baseline_scenarios, authority_controls))
+        print(
+            f"{path.name}: {packet_scenarios} packet scenarios, {baseline_scenarios} baseline controls "
+            f"and {authority_controls} authority controls passed"
+        )
+    packet_counts = {packet for _, packet, _, _ in results}
+    assert packet_counts == {PACKET_SCENARIOS_PER_BASELINE}, packet_counts
     print(
-        f"G6-EVIDENCE-MUTATIONS-PASSED: 22 scenarios for each of {len(results)} baselines; "
-        f"{sum(baseline for _, _, baseline in results)} baseline-drift controls"
+        f"G6-EVIDENCE-MUTATIONS-PASSED: {PACKET_SCENARIOS_PER_BASELINE} scenarios for each of {len(results)} baselines; "
+        f"{sum(baseline for _, _, baseline, _ in results)} baseline-drift controls; "
+        f"{sum(authority for _, _, _, authority in results)} authority controls; "
+        f"{len(HISTORICAL_BASELINE_SHA256)} historical baseline SHA-256 pins"
     )
     return 0
 

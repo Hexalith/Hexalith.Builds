@@ -267,7 +267,12 @@ coverage alone is not persisted-runtime proof.
 
 G-6 evidence is validated against one dated baseline passed with `--baseline`;
 each `Tools/runtime-toolchain-baseline*.json` file owns its exact tuple and
-approval, and packets bind their baseline by SHA-256. The pending 2026-09-29
+approval date, and packets bind their baseline by SHA-256. Approval authority
+stays in the validator: the approver and the Builds, Platform and
+FrontComposer/Web owner roles must match its allowlist, the approval date may
+not follow the packet capture, a support-table-listed Dapr pair must equal the
+tuple's runtime and .NET packages, and the tuple's Dapr CLI, Dapr runtime and
+Aspire CLI versions must appear among the audited literal pins. The pending 2026-09-29
 candidate baseline records the explicit Dapr runtime `1.18.2` / .NET package
 `1.18.10` exception with Toolkit `13.5.1-beta.770`; it is not a
 support-table-listed pair. Live persisted composition remains explicitly

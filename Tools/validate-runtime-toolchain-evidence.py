@@ -14,9 +14,15 @@ from pathlib import Path
 from typing import Any
 
 
-# Exact tuple values, approval identity, and Dapr support-table facts are owned by
-# the --baseline file. The validator fixes only the tuple shape, so every approved
-# baseline is checked against its own values instead of one hard-coded revision.
+# Exact tuple values, the approval date, and Dapr support-table facts are owned by
+# the --baseline file, so every approved baseline is checked against its own values
+# instead of one hard-coded revision. Approval authority is not baseline-owned: the
+# approver and the G-6 owner roles must come from the allowlists below, the approval
+# date may not follow the packet capture, a support-table-listed Dapr pair must be
+# the tuple's own pair, and the tuple's CLI/runtime values must be audited pins.
+G6_APPROVERS = ("Jérôme Piquot",)
+G6_OWNER_ROLES = ("Builds", "Platform", "FrontComposer/Web")
+LITERAL_PIN_TUPLE_FIELDS = ("daprCli", "daprRuntime", "aspireCli")
 TUPLE_FIELDS = (
     "dotnetSdk",
     "aspireSdk",
@@ -178,6 +184,22 @@ def require_text(value: Any, label: str) -> str:
     return value
 
 
+def version_token(version: str) -> re.Pattern[str]:
+    """Match one exact version token, never a prefix or suffix of a longer version."""
+    return re.compile(r"(?<![0-9A-Za-z.-])" + re.escape(version) + r"(?![0-9A-Za-z-]|\.[0-9A-Za-z])")
+
+
+def baseline_approval_date(baseline: dict[str, Any]) -> dt.date:
+    """Return the baseline approval date after checking its exact YYYY-MM-DD form."""
+    approved_on = baseline["approvedOn"]
+    require(isinstance(approved_on, str) and APPROVAL_DATE.fullmatch(approved_on) is not None,
+            "Baseline approval date must be YYYY-MM-DD")
+    try:
+        return dt.date.fromisoformat(approved_on)
+    except ValueError as error:
+        raise ValidationError("Baseline approval date is not a valid date") from error
+
+
 def baseline_tuple(baseline: dict[str, Any]) -> dict[str, str]:
     """Return the exact approved tuple owned by the validated baseline."""
     return baseline["tuple"]
@@ -285,18 +307,16 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
     )
     require(baseline["schema"] == "hexalith.runtime-toolchain-baseline.v1", "Baseline schema drift")
     require_text(baseline["approvedBy"], "Baseline approver")
-    approved_on = baseline["approvedOn"]
-    require(isinstance(approved_on, str) and APPROVAL_DATE.fullmatch(approved_on) is not None,
-            "Baseline approval date must be YYYY-MM-DD")
-    try:
-        dt.date.fromisoformat(approved_on)
-    except ValueError as error:
-        raise ValidationError("Baseline approval date is not a valid date") from error
+    require(baseline["approvedBy"] in G6_APPROVERS, "Baseline approver is not an authorized G-6 approver")
+    baseline_approval_date(baseline)
     owner_roles = baseline["ownerRoles"]
     require(isinstance(owner_roles, list) and owner_roles, "Baseline owner roles are required")
     for role in owner_roles:
         require_text(role, "Baseline owner role")
+        require(role in G6_OWNER_ROLES, f"Baseline owner role is not an authorized G-6 owner role: {role}")
     require(len(owner_roles) == len(set(owner_roles)), "Baseline owner roles must be unique")
+    require(set(owner_roles) == set(G6_OWNER_ROLES),
+            f"Baseline owner roles must include every G-6 owner role: {list(G6_OWNER_ROLES)}")
     expected_tuple = exact_fields(baseline["tuple"], set(TUPLE_FIELDS), "Baseline tuple")
     for field in TUPLE_FIELDS:
         require_version(expected_tuple[field], f"Baseline tuple {field}")
@@ -309,6 +329,12 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
     require_text(dapr["decision"], "Dapr support-table decision")
     require(dapr["supportTableListed"] or dapr["decision"] == "approved-explicit-exception",
             "An unlisted Dapr tuple requires an approved explicit exception")
+    if dapr["supportTableListed"]:
+        # A listed pair is only a listing of this tuple when both listed values are the tuple's own.
+        require(dapr["listedRuntime"] == expected_tuple["daprRuntime"],
+                "Support-table-listed Dapr runtime differs from the tuple runtime")
+        require(dapr["listedDotnetSdk"] == expected_tuple["daprDotnetPackages"],
+                "Support-table-listed Dapr .NET SDK differs from the tuple Dapr .NET packages")
     require(dispositions.get("communityToolkitAspireDapr") == "approved-prerelease-exception", "Toolkit prerelease exception missing")
     require(dispositions.get("fluentUi") == "approved-release-candidate-exception", "Fluent UI RC exception missing")
     require(dispositions.get("nSubstitute") == "stable" and dispositions.get("fluxor") == "stable", "Stable package disposition drift")
@@ -329,7 +355,9 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
         require(isinstance(version, str) and version.strip(), "AppHost project version is required")
         project = path.read_text(encoding="utf-8")
         require(f'Aspire.AppHost.Sdk/{version}' in project, f"Aspire AppHost SDK pin drift: {item['path']}")
-    for item in audit["literalPins"]:
+    literal_pins = audit["literalPins"]
+    require(isinstance(literal_pins, list), "Literal pins must be an array")
+    for item in literal_pins:
         exact_fields(item, {"path", "value"}, "Literal pin")
         path = resolve_artifact(workspace, item["path"], "literal pin")
         require(isinstance(item["value"], str) and item["value"].strip(), "Literal pin value is required")
@@ -337,6 +365,10 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
         target = item["value"].strip()
         matched = target in active_text if "\n" in target else target in {line.strip() for line in active_text.splitlines()}
         require(matched, f"Expected active literal pin missing: {item['path']}::{item['value']}")
+    for field in LITERAL_PIN_TUPLE_FIELDS:
+        token = version_token(expected_tuple[field])
+        require(any(token.search(item["value"]) for item in literal_pins),
+                f"Tuple {field} {expected_tuple[field]} is not among the audited literal pins")
 
     packages = resolve_artifact(workspace, "references/Hexalith.Builds/Props/Directory.Packages.props", "central package catalog").read_text(encoding="utf-8")
     package_expectations = {package: expected_tuple[field] for package, field in CATALOG_TUPLE_FIELDS.items()}
@@ -362,6 +394,7 @@ def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, ba
     expected_status = "pending" if candidate else "accepted"
     require(packet["status"] == expected_status, f"Packet status must be {expected_status}")
     require_utc_timestamp(packet["capturedUtc"], "Capture timestamp")
+    captured_on = dt.datetime.fromisoformat(packet["capturedUtc"][:-1] + "+00:00").date()
 
     baseline_ref = exact_fields(packet["baseline"], {"path", "sha256"}, "Baseline reference")
     referenced_baseline = resolve_artifact(workspace, baseline_ref["path"], "baseline")
@@ -370,6 +403,9 @@ def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, ba
     expected_tuple = baseline_tuple(baseline)
     require(packet["observedVersions"] == expected_tuple, "Observed tuple mismatch")
     require(packet["approval"] == baseline_approval(baseline), "Approval record mismatch")
+    # The approval authorizes a run; a baseline dated after the capture cannot have authorized it.
+    require(baseline_approval_date(baseline) <= captured_on,
+            "Baseline approval date is later than the packet capture date")
 
     repositories = packet["repositories"]
     require(isinstance(repositories, list) and repositories, "Repository bindings are required")
