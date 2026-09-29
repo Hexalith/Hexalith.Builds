@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Hermetic mutation tests for the G-6 evidence validator."""
+"""Hermetic mutation tests for the G-6 evidence validator.
+
+Every approved baseline runs the same packet mutation suite against a fixture
+workspace generated from that baseline's own tuple, approval, and pin audit, so
+no baseline depends on values hard-coded for another revision.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +18,15 @@ from pathlib import Path
 
 
 SCRIPT = Path(__file__).with_name("validate-runtime-toolchain-evidence.py")
-REAL_BASELINE = SCRIPT.with_name("runtime-toolchain-baseline-2026-09-27.json")
+BASELINES = (
+    # Accepted 2026-09-06 G-6 tuple; bound by the historical accepted packet.
+    SCRIPT.with_name("runtime-toolchain-baseline.json"),
+    # Superseded 2026-09-27 EventStore 3.108.1 candidate tuple.
+    SCRIPT.with_name("runtime-toolchain-baseline-2026-09-27.json"),
+    # Pending 2026-09-29 EventStore 3.109.0 candidate tuple.
+    SCRIPT.with_name("runtime-toolchain-baseline-2026-09-29.json"),
+)
+REJECTED_PACKET_MUTATIONS: list[str] = []
 SPEC = importlib.util.spec_from_file_location("g6_validator", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 VALIDATOR = importlib.util.module_from_spec(SPEC)
@@ -53,8 +66,27 @@ def expect_rejected(workspace: Path, baseline_path: Path, baseline: dict, packet
     try:
         VALIDATOR.validate_packet(workspace, packet_path, baseline_path, baseline)
     except VALIDATOR.ValidationError:
+        REJECTED_PACKET_MUTATIONS.append(label)
         return
     raise AssertionError(f"mutation was accepted: {label}")
+
+
+def expect_baseline_rejected(workspace: Path, baseline_path: Path, baseline: dict, label: str) -> None:
+    write_json(baseline_path, baseline)
+    try:
+        VALIDATOR.validate_baseline(workspace, baseline_path)
+    except VALIDATOR.ValidationError:
+        return
+    finally:
+        baseline_path.unlink()
+    raise AssertionError(f"baseline mutation was accepted: {label}")
+
+
+def fixture_catalog(tuple_values: dict[str, str]) -> str:
+    return "<Project><ItemGroup>" + "".join(
+        f'<PackageVersion Include="{package}" Version="{tuple_values[field]}" />'
+        for package, field in VALIDATOR.CATALOG_TUPLE_FIELDS.items()
+    ) + "</ItemGroup></Project>\n"
 
 
 def initialize_git(workspace: Path) -> str:
@@ -70,16 +102,19 @@ def initialize_git(workspace: Path) -> str:
     ).stdout.strip()
 
 
-def main() -> int:
-    baseline_template = VALIDATOR.read_json(REAL_BASELINE)
+def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tuple[int, int]:
+    """Run the packet mutation suite and baseline drift controls for one baseline."""
+    baseline_template = VALIDATOR.read_json(real_baseline)
+    tuple_values = baseline_template["tuple"]
+    REJECTED_PACKET_MUTATIONS.clear()
     with tempfile.TemporaryDirectory(prefix="g6-validator-") as temporary:
         workspace = Path(temporary)
         builds = workspace / "references/Hexalith.Builds"
-        baseline_path = builds / "Tools/runtime-toolchain-baseline-2026-09-27.json"
+        baseline_path = builds / "Tools" / real_baseline.name
         write_json(baseline_path, baseline_template)
 
         for relative in baseline_template["pinAudit"]["globalJson"]:
-            write_json(workspace / relative, {"sdk": {"version": VALIDATOR.EXPECTED_TUPLE["dotnetSdk"]}})
+            write_json(workspace / relative, {"sdk": {"version": tuple_values["dotnetSdk"]}})
         for item in baseline_template["pinAudit"]["appHostProjects"]:
             write_text(workspace / item["path"], f'<Project Sdk="Aspire.AppHost.Sdk/{item["version"]}">\n</Project>\n')
         literal_contents: dict[str, list[str]] = {}
@@ -87,18 +122,8 @@ def main() -> int:
             literal_contents.setdefault(item["path"], []).append(item["value"])
         for relative, values in literal_contents.items():
             write_text(workspace / relative, "\n".join(values) + "\n")
-        catalog = "<Project><ItemGroup>" + "".join(
-            f'<PackageVersion Include="{package}" Version="{version}" />'
-            for package, version in {
-                "CommunityToolkit.Aspire.Hosting.Dapr": VALIDATOR.EXPECTED_TUPLE["communityToolkitAspireDapr"],
-                "Dapr.Client": VALIDATOR.EXPECTED_TUPLE["daprDotnetPackages"],
-                "Dapr.Workflow": VALIDATOR.EXPECTED_TUPLE["daprDotnetPackages"],
-                "Microsoft.FluentUI.AspNetCore.Components": VALIDATOR.EXPECTED_TUPLE["fluentUi"],
-                "NSubstitute": VALIDATOR.EXPECTED_TUPLE["nSubstitute"],
-                "Fluxor": VALIDATOR.EXPECTED_TUPLE["fluxor"],
-            }.items()
-        ) + "</ItemGroup></Project>\n"
-        write_text(builds / "Props/Directory.Packages.props", catalog)
+        catalog_path = builds / "Props/Directory.Packages.props"
+        write_text(catalog_path, fixture_catalog(tuple_values))
         write_text(builds / "schemas/hexalith.runtime-toolchain-evidence.v1.json", "{}\n")
         write_text(builds / "Tools/validate-runtime-toolchain-evidence.py", "# fixture validator\n")
         write_text(builds / "Tools/test-runtime-toolchain-evidence-validator.py", "# fixture mutations\n")
@@ -134,7 +159,7 @@ def main() -> int:
         observations = {
             "topology": {"eventStoreProcessCount": 2, "eventStoreSidecarCount": 2, "independentProcessIdentities": True},
             "profile": {"stateStoreType": "state.postgresql"},
-            "runtime": {"dapr": "1.18.2"},
+            "runtime": {"dapr": tuple_values["daprRuntime"]},
             "observations": {
                 "writers_failover": {
                     "canonicalExecutionIdentities": 1, "sampleExecutions": 1,
@@ -181,10 +206,10 @@ def main() -> int:
             if purpose == "observe exact tool versions":
                 command = "dotnet --version && aspire --version && dapr --version"
                 outcome = (
-                    f".NET SDK {VALIDATOR.EXPECTED_TUPLE['dotnetSdk']}; "
-                    f"Aspire CLI {VALIDATOR.EXPECTED_TUPLE['aspireCli']}; "
-                    f"Dapr CLI {VALIDATOR.EXPECTED_TUPLE['daprCli']}; "
-                    f"runtime {VALIDATOR.EXPECTED_TUPLE['daprRuntime']}"
+                    f".NET SDK {tuple_values['dotnetSdk']}; "
+                    f"Aspire CLI {tuple_values['aspireCli']}; "
+                    f"Dapr CLI {tuple_values['daprCli']}; "
+                    f"runtime {tuple_values['daprRuntime']}"
                 )
             elif purpose == "G-6 mutation controls":
                 outcome = "22 scenarios passed"
@@ -206,14 +231,14 @@ def main() -> int:
             write_capture_validation(paths["capture"], paths["observations"], paths["qualification"], paths["support"])
             write_json(paths["versions"], {
                 "schema": "hexalith.runtime-toolchain-observed-versions.v1",
-                "observedUtc": "2026-09-27T00:00:00Z", **VALIDATOR.EXPECTED_TUPLE,
+                "observedUtc": "2026-09-27T00:00:00Z", **tuple_values,
             })
             write_json(paths["commands"], {
                 "schema": "hexalith.runtime-toolchain-command-record.v1", "commands": command_results,
             })
             write_json(paths["dispositions"], {
                 "schema": "hexalith.runtime-toolchain-dispositions.v1",
-                "daprSupportDisposition": "approved-explicit-exception-not-support-table-listed",
+                "daprSupportDisposition": VALIDATOR.baseline_dapr_disposition(baseline_template),
                 "communityToolkitAspireDapr": "approved-prerelease-exception",
                 "fluentUi": "approved-release-candidate-exception", "nSubstitute": "stable", "fluxor": "stable",
                 "Dapr": "catalog-only-not-activated", "Dapr.Workflow": "catalog-only-unselected",
@@ -254,14 +279,14 @@ def main() -> int:
                 artifact_binding(workspace, "eventstore-capture-validation", paths["capture"]),
                 artifact_binding(workspace, "failed-attempt-diagnostic", paths["failed"]),
             ],
-            "observedVersions": copy.deepcopy(VALIDATOR.EXPECTED_TUPLE),
+            "observedVersions": copy.deepcopy(tuple_values),
             "testCounts": {
                 "qualification": {"selectors": 1, "total": 1, "passed": 1, "failed": 0, "skipped": 0},
                 "support": {"selectors": 21, "total": 33, "passed": 33, "failed": 0, "skipped": 0},
             },
             "topology": {"eventStoreProcesses": 2, "eventStoreSidecars": 2, "independentProcessIdentities": True, "sharedStateStore": "state.postgresql"},
             "lifecycle": {"singleExecution": True, "duplicateWork": 0, "ownerStopped": True, "survivorReplayExact": True, "ownerRestarted": True, "restartedReplayExact": True, "authorityUnchanged": True, "persistedStateExact": True},
-            "approval": {"approvedBy": "Jérôme Piquot", "approvedOn": "2026-09-27", "ownerRoles": ["Builds", "Platform", "FrontComposer/Web"], "supportTableListed": False, "decision": "approved-explicit-exception"},
+            "approval": copy.deepcopy(VALIDATOR.baseline_approval(baseline_template)),
             "sentinelScan": {"passed": True, "matches": 0, "rawDiagnosticsRetained": False},
             "rollback": {"requiresDomainDataMutation": False, "action": "restore prior pins"},
             "containment": copy.deepcopy(VALIDATOR.EXPECTED_CONTAINMENT), "status": "accepted",
@@ -293,7 +318,7 @@ def main() -> int:
         packet_mutations = []
         stale_hash = copy.deepcopy(packet); stale_hash["artifacts"][0]["sha256"] = "b" * 64
         packet_mutations.append(("stale artifact hash", stale_hash))
-        tuple_mismatch = copy.deepcopy(packet); tuple_mismatch["observedVersions"]["daprRuntime"] = "1.18.1"
+        tuple_mismatch = copy.deepcopy(packet); tuple_mismatch["observedVersions"]["daprRuntime"] = "0.0.0-mutation"
         packet_mutations.append(("tuple mismatch", tuple_mismatch))
         single_sidecar = copy.deepcopy(packet); single_sidecar["topology"]["eventStoreSidecars"] = 1
         packet_mutations.append(("single sidecar", single_sidecar))
@@ -378,8 +403,54 @@ def main() -> int:
             changed = copy.deepcopy(packet)
             refresh_artifact(changed, "eventstore-observations", paths["observations"]); refresh_artifact(changed, "eventstore-capture-validation", paths["capture"])
             expect_rejected(workspace, baseline_path, baseline, paths["packet"], changed, label)
+        # One accepted fixture packet plus every rejected packet mutation.
+        packet_scenarios = 1 + len(REJECTED_PACKET_MUTATIONS)
+        assert len(REJECTED_PACKET_MUTATIONS) == len(set(REJECTED_PACKET_MUTATIONS)), REJECTED_PACKET_MUTATIONS
 
-    print("G6-EVIDENCE-MUTATIONS-PASSED: 22 scenarios")
+        # Baseline-owned expectations: the same fixture must reject another
+        # baseline's tuple, malformed approval facts, and catalog drift.
+        mutated_baseline_path = baseline_path.with_name("mutated-runtime-toolchain-baseline.json")
+        baseline_controls = []
+        for index, other_tuple in enumerate(other_tuples, start=1):
+            foreign = copy.deepcopy(baseline_template); foreign["tuple"] = copy.deepcopy(other_tuple)
+            baseline_controls.append((f"foreign baseline tuple {index}", foreign))
+        malformed_date = copy.deepcopy(baseline_template); malformed_date["approvedOn"] = "2026-02-30"
+        baseline_controls.append(("malformed approval date", malformed_date))
+        unapproved_dapr = copy.deepcopy(baseline_template); unapproved_dapr["dispositions"]["dapr"]["decision"] = "inferred"
+        baseline_controls.append(("unlisted Dapr without explicit exception", unapproved_dapr))
+        missing_field = copy.deepcopy(baseline_template); del missing_field["tuple"]["fluxor"]
+        baseline_controls.append(("tuple field drift", missing_field))
+        for label, mutation in baseline_controls:
+            expect_baseline_rejected(workspace, mutated_baseline_path, mutation, label)
+
+        drifted_tuple = copy.deepcopy(tuple_values); drifted_tuple["communityToolkitAspireDapr"] = "0.0.0-drift"
+        write_text(catalog_path, fixture_catalog(drifted_tuple))
+        try:
+            VALIDATOR.validate_baseline(workspace, baseline_path)
+        except VALIDATOR.ValidationError as error:
+            assert "Central package pin drift: CommunityToolkit.Aspire.Hosting.Dapr" in str(error), str(error)
+        else:
+            raise AssertionError("baseline mutation was accepted: central catalog drift")
+        finally:
+            write_text(catalog_path, fixture_catalog(tuple_values))
+        VALIDATOR.validate_baseline(workspace, baseline_path)
+        return packet_scenarios, len(baseline_controls) + 1
+
+
+def main() -> int:
+    tuples = [VALIDATOR.read_json(path)["tuple"] for path in BASELINES]
+    results = []
+    for path, own_tuple in zip(BASELINES, tuples, strict=True):
+        others = [other for other in tuples if other != own_tuple]
+        packet_scenarios, baseline_scenarios = run_baseline(path, others)
+        results.append((path.name, packet_scenarios, baseline_scenarios))
+        print(f"{path.name}: {packet_scenarios} packet scenarios and {baseline_scenarios} baseline controls passed")
+    packet_counts = {packet for _, packet, _ in results}
+    assert packet_counts == {22}, packet_counts
+    print(
+        f"G6-EVIDENCE-MUTATIONS-PASSED: 22 scenarios for each of {len(results)} baselines; "
+        f"{sum(baseline for _, _, baseline in results)} baseline-drift controls"
+    )
     return 0
 
 

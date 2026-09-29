@@ -265,8 +265,11 @@ tests, all-skipped tests, and failed test counts are explicit non-passing
 product/test outcomes once a live test invocation supplies a report. Parser
 coverage alone is not persisted-runtime proof.
 
-G-6 accepts only the explicit Dapr runtime `1.18.2` / .NET package `1.18.10`
-exception recorded in `Tools/runtime-toolchain-baseline.json`; it is not a
+G-6 evidence is validated against one dated baseline passed with `--baseline`;
+each `Tools/runtime-toolchain-baseline*.json` file owns its exact tuple and
+approval, and packets bind their baseline by SHA-256. The pending 2026-09-29
+candidate baseline records the explicit Dapr runtime `1.18.2` / .NET package
+`1.18.10` exception with Toolkit `13.5.1-beta.770`; it is not a
 support-table-listed pair. Live persisted composition remains explicitly
 unavailable at the separate descriptor-ABI prerequisite (`HXR003`), preserving
 the G-4 boundary. `down` remains idempotent and only removes runner-owned

@@ -14,18 +14,32 @@ from pathlib import Path
 from typing import Any
 
 
-EXPECTED_TUPLE = {
-    "dotnetSdk": "10.0.401",
-    "aspireSdk": "13.5.4",
-    "aspireCli": "13.5.4",
-    "communityToolkitAspireDapr": "13.5.1-beta.767",
-    "daprCli": "1.18.0",
-    "daprRuntime": "1.18.2",
-    "daprDotnetPackages": "1.18.10",
-    "fluentUi": "5.0.0-rc.5-26219.1",
-    "nSubstitute": "6.2.0",
-    "fluxor": "6.11.0",
+# Exact tuple values, approval identity, and Dapr support-table facts are owned by
+# the --baseline file. The validator fixes only the tuple shape, so every approved
+# baseline is checked against its own values instead of one hard-coded revision.
+TUPLE_FIELDS = (
+    "dotnetSdk",
+    "aspireSdk",
+    "aspireCli",
+    "communityToolkitAspireDapr",
+    "daprCli",
+    "daprRuntime",
+    "daprDotnetPackages",
+    "fluentUi",
+    "nSubstitute",
+    "fluxor",
+)
+CATALOG_TUPLE_FIELDS = {
+    "CommunityToolkit.Aspire.Hosting.Dapr": "communityToolkitAspireDapr",
+    "Dapr.Client": "daprDotnetPackages",
+    "Dapr.Workflow": "daprDotnetPackages",
+    "Microsoft.FluentUI.AspNetCore.Components": "fluentUi",
+    "NSubstitute": "nSubstitute",
+    "Fluxor": "fluxor",
 }
+DAPR_DISPOSITION_FIELDS = {"supportTableListed", "listedRuntime", "listedDotnetSdk", "decision"}
+VERSION_TEXT = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?")
+APPROVAL_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 EXPECTED_CONTAINMENT = {
     "g4Approved": False,
     "g5Approved": False,
@@ -153,6 +167,40 @@ def require_rollback(value: Any, label: str) -> None:
             f"{label} action must be executable non-empty text")
 
 
+def require_version(value: Any, label: str) -> str:
+    require(isinstance(value, str) and VERSION_TEXT.fullmatch(value) is not None,
+            f"{label} must be an exact version")
+    return value
+
+
+def require_text(value: Any, label: str) -> str:
+    require(isinstance(value, str) and value.strip() == value and value != "", f"{label} must be non-empty text")
+    return value
+
+
+def baseline_tuple(baseline: dict[str, Any]) -> dict[str, str]:
+    """Return the exact approved tuple owned by the validated baseline."""
+    return baseline["tuple"]
+
+
+def baseline_approval(baseline: dict[str, Any]) -> dict[str, Any]:
+    """Return the packet approval record implied by the validated baseline."""
+    dapr = baseline["dispositions"]["dapr"]
+    return {
+        "approvedBy": baseline["approvedBy"],
+        "approvedOn": baseline["approvedOn"],
+        "ownerRoles": baseline["ownerRoles"],
+        "supportTableListed": dapr["supportTableListed"],
+        "decision": dapr["decision"],
+    }
+
+
+def baseline_dapr_disposition(baseline: dict[str, Any]) -> str:
+    dapr = baseline["dispositions"]["dapr"]
+    listing = "support-table-listed" if dapr["supportTableListed"] else "not-support-table-listed"
+    return f"{dapr['decision']}-{listing}"
+
+
 def comment_free_text(path: Path) -> str:
     text = re.sub(r"<!--.*?-->", "", path.read_text(encoding="utf-8"), flags=re.DOTALL)
     if path.suffix.lower() not in {".yml", ".yaml", ".ps1", ".sh", ".bash"}:
@@ -236,17 +284,31 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
         "Baseline",
     )
     require(baseline["schema"] == "hexalith.runtime-toolchain-baseline.v1", "Baseline schema drift")
-    require(baseline["approvedBy"] == "Jérôme Piquot", "Baseline approver drift")
-    require(baseline["approvedOn"] == "2026-09-27", "Baseline approval date drift")
-    require(baseline["ownerRoles"] == ["Builds", "Platform", "FrontComposer/Web"], "Baseline owner roles drift")
-    require(baseline["tuple"] == EXPECTED_TUPLE, "Baseline tuple drift")
+    require_text(baseline["approvedBy"], "Baseline approver")
+    approved_on = baseline["approvedOn"]
+    require(isinstance(approved_on, str) and APPROVAL_DATE.fullmatch(approved_on) is not None,
+            "Baseline approval date must be YYYY-MM-DD")
+    try:
+        dt.date.fromisoformat(approved_on)
+    except ValueError as error:
+        raise ValidationError("Baseline approval date is not a valid date") from error
+    owner_roles = baseline["ownerRoles"]
+    require(isinstance(owner_roles, list) and owner_roles, "Baseline owner roles are required")
+    for role in owner_roles:
+        require_text(role, "Baseline owner role")
+    require(len(owner_roles) == len(set(owner_roles)), "Baseline owner roles must be unique")
+    expected_tuple = exact_fields(baseline["tuple"], set(TUPLE_FIELDS), "Baseline tuple")
+    for field in TUPLE_FIELDS:
+        require_version(expected_tuple[field], f"Baseline tuple {field}")
     dispositions = baseline["dispositions"]
-    require(dispositions.get("dapr") == {
-        "supportTableListed": False,
-        "listedRuntime": "1.18.0",
-        "listedDotnetSdk": "1.18.1",
-        "decision": "approved-explicit-exception",
-    }, "Dapr support-table exception drift")
+    require(isinstance(dispositions, dict), "Baseline dispositions must be an object")
+    dapr = exact_fields(dispositions.get("dapr"), DAPR_DISPOSITION_FIELDS, "Dapr support-table disposition")
+    require(isinstance(dapr["supportTableListed"], bool), "Dapr support-table listing must be boolean")
+    require_version(dapr["listedRuntime"], "Dapr support-table listed runtime")
+    require_version(dapr["listedDotnetSdk"], "Dapr support-table listed .NET SDK")
+    require_text(dapr["decision"], "Dapr support-table decision")
+    require(dapr["supportTableListed"] or dapr["decision"] == "approved-explicit-exception",
+            "An unlisted Dapr tuple requires an approved explicit exception")
     require(dispositions.get("communityToolkitAspireDapr") == "approved-prerelease-exception", "Toolkit prerelease exception missing")
     require(dispositions.get("fluentUi") == "approved-release-candidate-exception", "Fluent UI RC exception missing")
     require(dispositions.get("nSubstitute") == "stable" and dispositions.get("fluxor") == "stable", "Stable package disposition drift")
@@ -259,7 +321,7 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
     for relative in audit["globalJson"]:
         path = resolve_artifact(workspace, relative, "global.json")
         document = read_json(path)
-        require(document.get("sdk", {}).get("version") == EXPECTED_TUPLE["dotnetSdk"], f".NET SDK pin drift: {relative}")
+        require(document.get("sdk", {}).get("version") == expected_tuple["dotnetSdk"], f".NET SDK pin drift: {relative}")
     for item in audit["appHostProjects"]:
         exact_fields(item, {"path", "version"}, "AppHost project pin")
         path = resolve_artifact(workspace, item["path"], "AppHost project")
@@ -277,14 +339,7 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
         require(matched, f"Expected active literal pin missing: {item['path']}::{item['value']}")
 
     packages = resolve_artifact(workspace, "references/Hexalith.Builds/Props/Directory.Packages.props", "central package catalog").read_text(encoding="utf-8")
-    package_expectations = {
-        "CommunityToolkit.Aspire.Hosting.Dapr": EXPECTED_TUPLE["communityToolkitAspireDapr"],
-        "Dapr.Client": EXPECTED_TUPLE["daprDotnetPackages"],
-        "Dapr.Workflow": EXPECTED_TUPLE["daprDotnetPackages"],
-        "Microsoft.FluentUI.AspNetCore.Components": EXPECTED_TUPLE["fluentUi"],
-        "NSubstitute": EXPECTED_TUPLE["nSubstitute"],
-        "Fluxor": EXPECTED_TUPLE["fluxor"],
-    }
+    package_expectations = {package: expected_tuple[field] for package, field in CATALOG_TUPLE_FIELDS.items()}
     for package, version in package_expectations.items():
         require(f'Include="{package}" Version="{version}"' in packages, f"Central package pin drift: {package}")
     require(re.search(r'<PackageVersion\s+Include="Dapr"(?:\s|/|>)', packages) is None, "Catalog-only Dapr must remain absent")
@@ -312,14 +367,9 @@ def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, ba
     referenced_baseline = resolve_artifact(workspace, baseline_ref["path"], "baseline")
     require(referenced_baseline == baseline_path.resolve(), "Packet references a different baseline")
     require(baseline_ref["sha256"] == sha256(baseline_path), "Baseline hash mismatch")
-    require(packet["observedVersions"] == EXPECTED_TUPLE, "Observed tuple mismatch")
-    require(packet["approval"] == {
-        "approvedBy": baseline["approvedBy"],
-        "approvedOn": baseline["approvedOn"],
-        "ownerRoles": baseline["ownerRoles"],
-        "supportTableListed": False,
-        "decision": "approved-explicit-exception",
-    }, "Approval record mismatch")
+    expected_tuple = baseline_tuple(baseline)
+    require(packet["observedVersions"] == expected_tuple, "Observed tuple mismatch")
+    require(packet["approval"] == baseline_approval(baseline), "Approval record mismatch")
 
     repositories = packet["repositories"]
     require(isinstance(repositories, list) and repositories, "Repository bindings are required")
@@ -356,10 +406,10 @@ def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, ba
             f"Artifact kinds drift: expected {sorted(EXPECTED_ARTIFACT_KINDS)}")
 
     versions = read_json(artifact_paths["observed-versions"])
-    exact_fields(versions, {"schema", "observedUtc", *EXPECTED_TUPLE}, "Observed versions")
+    exact_fields(versions, {"schema", "observedUtc", *TUPLE_FIELDS}, "Observed versions")
     require(versions["schema"] == "hexalith.runtime-toolchain-observed-versions.v1", "Observed-versions schema drift")
     require_utc_timestamp(versions["observedUtc"], "Observed-versions timestamp")
-    artifact_tuple = {field: versions[field] for field in EXPECTED_TUPLE}
+    artifact_tuple = {field: versions[field] for field in TUPLE_FIELDS}
     require(artifact_tuple == packet["observedVersions"], "Observed-versions artifact does not match packet tuple")
 
     source_state = read_json(artifact_paths["source-state"])
@@ -405,8 +455,8 @@ def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, ba
     for invocation in ("dotnet --version", "aspire --version", "dapr --version"):
         require(invocation in version_command["command"], f"Tool-version command does not invoke {invocation}")
     for version in (
-        EXPECTED_TUPLE["dotnetSdk"], EXPECTED_TUPLE["aspireCli"],
-        EXPECTED_TUPLE["daprCli"], EXPECTED_TUPLE["daprRuntime"],
+        expected_tuple["dotnetSdk"], expected_tuple["aspireCli"],
+        expected_tuple["daprCli"], expected_tuple["daprRuntime"],
     ):
         require(version in version_command["outcome"], f"Tool-version observation does not ground {version}")
     require("22 scenarios passed" in commands_by_purpose["G-6 mutation controls"]["outcome"],
@@ -500,7 +550,7 @@ def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, ba
         "Dapr", "Dapr.Workflow", "attempts", "containment", "rollback",
     }, "Dispositions")
     require(dispositions["schema"] == "hexalith.runtime-toolchain-dispositions.v1", "Dispositions schema drift")
-    require(dispositions["daprSupportDisposition"] == "approved-explicit-exception-not-support-table-listed",
+    require(dispositions["daprSupportDisposition"] == baseline_dapr_disposition(baseline),
             "Dapr disposition drift")
     for field in ("communityToolkitAspireDapr", "fluentUi", "nSubstitute", "fluxor", "Dapr", "Dapr.Workflow"):
         require(dispositions[field] == baseline["dispositions"][field], f"Disposition drift: {field}")
@@ -555,7 +605,7 @@ def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, ba
     require(topology.get("eventStoreProcessCount") == 2 and topology.get("eventStoreSidecarCount") == 2, "Observed two-sidecar topology mismatch")
     require(topology.get("independentProcessIdentities") is True, "Observed identities are not independent")
     require(observations.get("profile", {}).get("stateStoreType") == "state.postgresql", "Observed state store is not PostgreSQL")
-    require(observations.get("runtime", {}).get("dapr") == EXPECTED_TUPLE["daprRuntime"], "Observed Dapr runtime mismatch")
+    require(observations.get("runtime", {}).get("dapr") == expected_tuple["daprRuntime"], "Observed Dapr runtime mismatch")
     require(writers.get("canonicalExecutionIdentities") == 1 and writers.get("sampleExecutions") == 1, "Observed execution identity/count mismatch")
     require(writers.get("ownerStoppedAtTerminalBoundary") is True, "Owner stop was not observed")
     require(writers.get("failoverReplayExact") is True and writers.get("restartedNodeReplayExact") is True, "Survivor/restart replay mismatch")
