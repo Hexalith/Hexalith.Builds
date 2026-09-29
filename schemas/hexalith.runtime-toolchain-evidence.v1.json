@@ -92,7 +92,7 @@
       "required": ["approvedBy", "approvedOn", "ownerRoles", "supportTableListed", "decision"],
       "properties": {
         "approvedBy": { "const": "Jérôme Piquot" },
-        "approvedOn": { "const": "2026-09-06" },
+        "approvedOn": { "const": "2026-09-27" },
         "ownerRoles": { "const": ["Builds", "Platform", "FrontComposer/Web"] },
         "supportTableListed": { "const": false },
         "decision": { "const": "approved-explicit-exception" }
@@ -118,7 +118,7 @@
       }
     },
     "containment": { "$ref": "#/$defs/containment" },
-    "status": { "const": "accepted" }
+    "status": { "enum": ["pending", "accepted"] }
   },
   "$defs": {
     "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },

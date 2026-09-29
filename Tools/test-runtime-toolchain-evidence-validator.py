@@ -7,12 +7,13 @@ import copy
 import importlib.util
 import json
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
 
 SCRIPT = Path(__file__).with_name("validate-runtime-toolchain-evidence.py")
-REAL_BASELINE = SCRIPT.with_name("runtime-toolchain-baseline.json")
+REAL_BASELINE = SCRIPT.with_name("runtime-toolchain-baseline-2026-09-27.json")
 SPEC = importlib.util.spec_from_file_location("g6_validator", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 VALIDATOR = importlib.util.module_from_spec(SPEC)
@@ -74,7 +75,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="g6-validator-") as temporary:
         workspace = Path(temporary)
         builds = workspace / "references/Hexalith.Builds"
-        baseline_path = builds / "Tools/runtime-toolchain-baseline.json"
+        baseline_path = builds / "Tools/runtime-toolchain-baseline-2026-09-27.json"
         write_json(baseline_path, baseline_template)
 
         for relative in baseline_template["pinAudit"]["globalJson"]:
@@ -205,7 +206,7 @@ def main() -> int:
             write_capture_validation(paths["capture"], paths["observations"], paths["qualification"], paths["support"])
             write_json(paths["versions"], {
                 "schema": "hexalith.runtime-toolchain-observed-versions.v1",
-                "observedUtc": "2026-09-06T12:00:00Z", **VALIDATOR.EXPECTED_TUPLE,
+                "observedUtc": "2026-09-27T00:00:00Z", **VALIDATOR.EXPECTED_TUPLE,
             })
             write_json(paths["commands"], {
                 "schema": "hexalith.runtime-toolchain-command-record.v1", "commands": command_results,
@@ -239,7 +240,7 @@ def main() -> int:
         packet = {
             "schema": "hexalith.runtime-toolchain-evidence.v1",
             "baseline": {"path": baseline_path.relative_to(workspace).as_posix(), "sha256": VALIDATOR.sha256(baseline_path)},
-            "capturedUtc": "2026-09-06T12:00:00Z",
+            "capturedUtc": "2026-09-27T00:00:00Z",
             "repositories": [{key: source_repository[key] for key in ("name", "path", "revision", "diffSha256")}],
             "artifacts": [
                 artifact_binding(workspace, "source-state", paths["source_state"]),
@@ -260,13 +261,34 @@ def main() -> int:
             },
             "topology": {"eventStoreProcesses": 2, "eventStoreSidecars": 2, "independentProcessIdentities": True, "sharedStateStore": "state.postgresql"},
             "lifecycle": {"singleExecution": True, "duplicateWork": 0, "ownerStopped": True, "survivorReplayExact": True, "ownerRestarted": True, "restartedReplayExact": True, "authorityUnchanged": True, "persistedStateExact": True},
-            "approval": {"approvedBy": "Jérôme Piquot", "approvedOn": "2026-09-06", "ownerRoles": ["Builds", "Platform", "FrontComposer/Web"], "supportTableListed": False, "decision": "approved-explicit-exception"},
+            "approval": {"approvedBy": "Jérôme Piquot", "approvedOn": "2026-09-27", "ownerRoles": ["Builds", "Platform", "FrontComposer/Web"], "supportTableListed": False, "decision": "approved-explicit-exception"},
             "sentinelScan": {"passed": True, "matches": 0, "rawDiagnosticsRetained": False},
             "rollback": {"requiresDomainDataMutation": False, "action": "restore prior pins"},
             "containment": copy.deepcopy(VALIDATOR.EXPECTED_CONTAINMENT), "status": "accepted",
         }
         write_json(paths["packet"], packet)
         VALIDATOR.validate_packet(workspace, paths["packet"], baseline_path, baseline)
+
+        def run_mode(candidate: bool) -> subprocess.CompletedProcess[str]:
+            command = [
+                sys.executable, str(SCRIPT), "--workspace", str(workspace),
+                "--baseline", str(baseline_path), "--packet", str(paths["packet"]),
+            ]
+            if candidate:
+                command.append("--candidate")
+            return subprocess.run(command, text=True, capture_output=True, check=False)
+
+        accepted_result = run_mode(False)
+        assert accepted_result.returncode == 0 and accepted_result.stdout.strip() == "G6-EVIDENCE-VALID"
+        pending = copy.deepcopy(packet)
+        pending["status"] = "pending"
+        write_json(paths["packet"], pending)
+        VALIDATOR.validate_packet(workspace, paths["packet"], baseline_path, baseline, candidate=True)
+        pending_result = run_mode(True)
+        assert pending_result.returncode == 0 and pending_result.stdout.strip() == "G6-EVIDENCE-CANDIDATE-VALID"
+        assert run_mode(False).returncode == 1
+        write_json(paths["packet"], packet)
+        assert run_mode(True).returncode == 1
 
         packet_mutations = []
         stale_hash = copy.deepcopy(packet); stale_hash["artifacts"][0]["sha256"] = "b" * 64

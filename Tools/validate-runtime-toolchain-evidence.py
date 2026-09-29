@@ -18,7 +18,7 @@ EXPECTED_TUPLE = {
     "dotnetSdk": "10.0.401",
     "aspireSdk": "13.5.4",
     "aspireCli": "13.5.4",
-    "communityToolkitAspireDapr": "13.5.1-beta.757",
+    "communityToolkitAspireDapr": "13.5.1-beta.767",
     "daprCli": "1.18.0",
     "daprRuntime": "1.18.2",
     "daprDotnetPackages": "1.18.10",
@@ -237,7 +237,7 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
     )
     require(baseline["schema"] == "hexalith.runtime-toolchain-baseline.v1", "Baseline schema drift")
     require(baseline["approvedBy"] == "Jérôme Piquot", "Baseline approver drift")
-    require(baseline["approvedOn"] == "2026-09-06", "Baseline approval date drift")
+    require(baseline["approvedOn"] == "2026-09-27", "Baseline approval date drift")
     require(baseline["ownerRoles"] == ["Builds", "Platform", "FrontComposer/Web"], "Baseline owner roles drift")
     require(baseline["tuple"] == EXPECTED_TUPLE, "Baseline tuple drift")
     dispositions = baseline["dispositions"]
@@ -300,11 +300,12 @@ def validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
         raise ValidationError(f"Malformed baseline structure: {error}") from error
 
 
-def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, baseline: dict[str, Any]) -> None:
+def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, baseline: dict[str, Any], candidate: bool) -> None:
     packet = read_json(packet_path)
     exact_fields(packet, PACKET_FIELDS, "Packet")
     require(packet["schema"] == "hexalith.runtime-toolchain-evidence.v1", "Packet schema drift")
-    require(packet["status"] == "accepted", "Packet is not accepted")
+    expected_status = "pending" if candidate else "accepted"
+    require(packet["status"] == expected_status, f"Packet status must be {expected_status}")
     require_utc_timestamp(packet["capturedUtc"], "Capture timestamp")
 
     baseline_ref = exact_fields(packet["baseline"], {"path", "sha256"}, "Baseline reference")
@@ -585,9 +586,11 @@ def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, ba
             "Packet persisted-state acceptance contradicts retained observations")
 
 
-def validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, baseline: dict[str, Any]) -> None:
+def validate_packet(
+    workspace: Path, packet_path: Path, baseline_path: Path, baseline: dict[str, Any], candidate: bool = False,
+) -> None:
     try:
-        _validate_packet(workspace, packet_path, baseline_path, baseline)
+        _validate_packet(workspace, packet_path, baseline_path, baseline, candidate)
     except ValidationError:
         raise
     except STRUCTURAL_ERRORS as error:
@@ -599,16 +602,17 @@ def main() -> int:
     parser.add_argument("--workspace", required=True, type=Path)
     parser.add_argument("--baseline", required=True, type=Path)
     parser.add_argument("--packet", required=True, type=Path)
+    parser.add_argument("--candidate", action="store_true", help="Validate a pending packet without granting acceptance")
     arguments = parser.parse_args()
     try:
         workspace = arguments.workspace.resolve()
         baseline_path = arguments.baseline.resolve()
         baseline = validate_baseline(workspace, baseline_path)
-        validate_packet(workspace, arguments.packet.resolve(), baseline_path, baseline)
+        validate_packet(workspace, arguments.packet.resolve(), baseline_path, baseline, candidate=arguments.candidate)
     except ValidationError as error:
         print(f"G6-EVIDENCE-INVALID: {error}", file=sys.stderr)
         return 1
-    print("G6-EVIDENCE-VALID")
+    print("G6-EVIDENCE-CANDIDATE-VALID" if arguments.candidate else "G6-EVIDENCE-VALID")
     return 0
 
 
