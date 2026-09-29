@@ -4,7 +4,13 @@ param(
     [string] $RepositoryRoot,
 
     [Parameter(Mandatory = $true, Position = 1)]
-    [string] $CatalogPath
+    [string] $CatalogPath,
+
+    # Exact repository-relative paths of tracked standalone probe projects that
+    # deliberately restore published package versions outside the consumer build
+    # graph. Entries may also be semicolon-separated because `pwsh -File` cannot
+    # bind arrays. Every entry must name a tracked consumer MSBuild file.
+    [string[]] $ExcludedPath = @()
 )
 
 Set-StrictMode -Version Latest
@@ -182,6 +188,36 @@ foreach ($packageVersion in @($catalogXml.SelectNodes("//*[local-name()='Package
 }
 
 $consumerXmlFiles = @(Get-ConsumerXmlFiles -Root $resolvedRepositoryRoot)
+# Ordinal keys keep an exclusion bound to the exact tracked spelling.
+$consumerXmlFilesByRelativePath = [System.Collections.Generic.Dictionary[string, string]]::new(
+    [StringComparer]::Ordinal)
+foreach ($consumerXmlFile in $consumerXmlFiles) {
+    $relativeConsumerPath = [IO.Path]::GetRelativePath(
+        $resolvedRepositoryRoot,
+        [IO.Path]::GetFullPath($consumerXmlFile)).Replace('\', '/')
+    $consumerXmlFilesByRelativePath[$relativeConsumerPath] = $consumerXmlFile
+}
+
+$excludedFiles = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+foreach ($excludedEntry in @($ExcludedPath | ForEach-Object { ([string] $_).Split(';') })) {
+    $normalizedEntry = $excludedEntry.Trim().Replace('\', '/')
+    if ([string]::IsNullOrWhiteSpace($normalizedEntry) -or
+        [IO.Path]::IsPathRooted($normalizedEntry) -or
+        $normalizedEntry.IndexOfAny([char[]] '*?[]') -ge 0 -or
+        @($normalizedEntry.Split('/') | Where-Object { $_ -in @('', '.', '..') }).Count -gt 0) {
+        $failures.Add("Excluded path '$excludedEntry' must be an exact repository-relative file path.")
+        continue
+    }
+
+    if (-not $consumerXmlFilesByRelativePath.ContainsKey($normalizedEntry)) {
+        $failures.Add("Excluded path '$excludedEntry' is not a tracked consumer MSBuild file.")
+        continue
+    }
+
+    [void] $excludedFiles.Add($consumerXmlFilesByRelativePath[$normalizedEntry])
+}
+
+$consumerXmlFiles = @($consumerXmlFiles | Where-Object { -not $excludedFiles.Contains($_) })
 $projectFiles = @($consumerXmlFiles | Where-Object { [IO.Path]::GetExtension($_) -ieq '.csproj' })
 if ($projectFiles.Count -eq 0) {
     $failures.Add("Repository '$resolvedRepositoryRoot' contains no tracked .NET project files.")
@@ -428,6 +464,13 @@ if ($failures.Count -gt 0) {
     Stop-Validation -Failures $failures
 }
 
+$excludedSummary = if ($excludedFiles.Count -gt 0) {
+    " Excluded standalone probe files: $($excludedFiles.Count)."
+}
+else {
+    ''
+}
+
 [Console]::Out.WriteLine(
-    "Consumer package authority validation passed for $($projectFiles.Count) projects in '$resolvedRepositoryRoot'."
+    "Consumer package authority validation passed for $($projectFiles.Count) projects in '$resolvedRepositoryRoot'.$excludedSummary"
 )
