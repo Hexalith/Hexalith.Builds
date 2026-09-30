@@ -28,6 +28,13 @@ public sealed class SupportedPlatformPinsCatalogTests
 
         CatalogDefault(catalog, "HexalithEventStoreVersion").ShouldBe(SupportedPlatformPins.EventStoreVersion);
         CatalogDefault(catalog, "HexalithFrontComposerVersion").ShouldBe(SupportedPlatformPins.FrontComposerVersion);
+
+        string helper = File.ReadAllText(Path.Combine(
+            CompositionTestFiles.RepositoryRoot(),
+            "Tools",
+            "G4PackageQualification.functions.ps1"));
+        helper.ShouldContain(
+            $"[string] $ExpectedEventStoreVersion = '{SupportedPlatformPins.EventStoreVersion}'");
     }
 
     private static string CatalogDefault(XDocument catalog, string property) =>
