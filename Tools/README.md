@@ -270,10 +270,22 @@ consumer `PackageVersion` items, dependency-version property overrides,
 `VersionOverride`, and CPM opt-outs while allowing legal asset metadata and
 SDK-implicit references.
 
+`-ExcludedPath` removes tracked standalone probe projects, such as release
+evidence that deliberately restores published package versions outside the
+consumer build graph, from both the source scan and project evaluation. Each
+entry must be an exact, case-sensitive repository-relative path of a tracked
+MSBuild file; wildcards, rooted paths, `.`/`..` segments, and stale entries fail
+validation. Separate entries with semicolons because `pwsh -File` cannot bind
+arrays.
+
 ```powershell
 .\Tools\validate-consumer-package-authority.ps1 `
   -RepositoryRoot ..\MyModule `
   -CatalogPath .\Props\Directory.Packages.props
+.\Tools\validate-consumer-package-authority.ps1 `
+  -RepositoryRoot ..\MyModule `
+  -CatalogPath .\Props\Directory.Packages.props `
+  -ExcludedPath 'evidence/probe/Probe.csproj;evidence/consumer/Consumer.csproj'
 .\Tools\test-consumer-package-authority-validator.ps1
 ```
 

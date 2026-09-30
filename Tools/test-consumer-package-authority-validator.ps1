@@ -86,13 +86,17 @@ function Test-Scenario {
         [int] $ExpectedExitCode,
 
         [Parameter(Mandatory = $true)]
-        [string] $ExpectedOutput
+        [string] $ExpectedOutput,
+
+        [string[]] $ExcludedPath = @()
     )
 
     $script:scenarioCount++
+    # Pass exclusions the way `pwsh -File` callers must: one semicolon-separated argument.
+    $exclusionArguments = @(if ($ExcludedPath.Count -gt 0) { '-ExcludedPath'; [string]::Join(';', $ExcludedPath) })
     $output = @(
         & $pwshExecutable -NoLogo -NoProfile -File $validatorPath `
-            -RepositoryRoot $RepositoryRoot -CatalogPath $catalogPath 2>&1
+            -RepositoryRoot $RepositoryRoot -CatalogPath $catalogPath @exclusionArguments 2>&1
     )
     $exitCode = $LASTEXITCODE
     $outputText = [string]::Join("`n", @($output | ForEach-Object { [string] $_ }))
@@ -252,6 +256,43 @@ try {
 '@
     Test-Scenario -Name 'Host shim with package dependency' -RepositoryRoot $shimRoot -ExpectedExitCode 1 `
         -ExpectedOutput 'must remain a package-free packaged host shim'
+
+    $probeRoot = New-ConsumerFixture -Name 'standalone-probe'
+    Write-Utf8File -Path (Join-Path $probeRoot 'evidence/probe/Probe.csproj') -Content @'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally></PropertyGroup>
+  <ItemGroup><PackageReference Include="Published.Package" Version="1.0.0" /></ItemGroup>
+</Project>
+'@
+    Write-Utf8File -Path (Join-Path $probeRoot 'evidence/other/Probe.csproj') -Content @'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally></PropertyGroup>
+  <ItemGroup><PackageReference Include="Published.Package" Version="0.9.0" /></ItemGroup>
+</Project>
+'@
+    Test-Scenario -Name 'Unexcluded standalone probe' -RepositoryRoot $probeRoot -ExpectedExitCode 1 `
+        -ExpectedOutput "PackageReference Version metadata '1.0.0'"
+
+    Test-Scenario -Name 'Partially excluded standalone probes' -RepositoryRoot $probeRoot -ExpectedExitCode 1 `
+        -ExpectedOutput "PackageReference Version metadata '0.9.0'" -ExcludedPath @('evidence/probe/Probe.csproj')
+
+    Test-Scenario -Name 'Excluded standalone probes' -RepositoryRoot $probeRoot -ExpectedExitCode 0 `
+        -ExpectedOutput 'Excluded standalone probe files: 2.' `
+        -ExcludedPath @('evidence/probe/Probe.csproj', 'evidence/other/Probe.csproj')
+
+    Test-Scenario -Name 'Stale probe exclusion' -RepositoryRoot $probeRoot -ExpectedExitCode 1 `
+        -ExpectedOutput "Excluded path 'evidence/missing/Probe.csproj' is not a tracked consumer MSBuild file" `
+        -ExcludedPath @('evidence/probe/Probe.csproj', 'evidence/other/Probe.csproj', 'evidence/missing/Probe.csproj')
+
+    Test-Scenario -Name 'Case-mismatched probe exclusion' -RepositoryRoot $probeRoot -ExpectedExitCode 1 `
+        -ExpectedOutput 'is not a tracked consumer MSBuild file' `
+        -ExcludedPath @('evidence/probe/probe.csproj', 'evidence/other/Probe.csproj')
+
+    foreach ($inexactExclusion in @('evidence/*/Probe.csproj', 'evidence/../evidence/probe/Probe.csproj', '/evidence/probe/Probe.csproj')) {
+        Test-Scenario -Name "Inexact probe exclusion '$inexactExclusion'" -RepositoryRoot $probeRoot `
+            -ExpectedExitCode 1 -ExpectedOutput 'must be an exact repository-relative file path' `
+            -ExcludedPath @($inexactExclusion)
+    }
 }
 finally {
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
