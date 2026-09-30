@@ -19,10 +19,30 @@ from typing import Any
 # instead of one hard-coded revision. Approval authority is not baseline-owned: the
 # approver and the G-6 owner roles must come from the allowlists below, the approval
 # date may not follow the packet capture, a support-table-listed Dapr pair must be
-# the tuple's own pair, and the tuple's CLI/runtime values must be audited pins.
+# the tuple's own pair, the tuple's CLI/runtime values must be audited pins of the same
+# role, and the tuple's Aspire SDK must be one of the audited AppHost SDK pins.
 G6_APPROVERS = ("Jérôme Piquot",)
 G6_OWNER_ROLES = ("Builds", "Platform", "FrontComposer/Web")
 LITERAL_PIN_TUPLE_FIELDS = ("daprCli", "daprRuntime", "aspireCli")
+# A literal pin grounds a tuple CLI/runtime value only when its own text names that role;
+# the whole pin must match one pattern and the captured version must equal the tuple value
+# exactly. A pin that names no role (a bare `version:` or `default:` input) stays audited for
+# presence but grounds nothing, so a value declared only under another role, such as a
+# swapped Dapr CLI/runtime pair, cannot satisfy the tuple.
+LITERAL_PIN_ROLES = (
+    ("daprCli", re.compile(r"(?:dapr-version|DAPR_CLI_VERSION):\s*'(?P<version>[^'\s]+)'")),
+    ("daprRuntime", re.compile(r"(?:dapr-runtime-version|runtime-version|DAPR_RUNTIME_VERSION):\s*'(?P<version>[^'\s]+)'")),
+    ("daprRuntime", re.compile(r"dapr init --runtime-version (?P<version>\S+)")),
+    ("daprRuntime", re.compile(r'\[string\]\$DaprRuntimeVersion = "(?P<version>[^"\s]+)",')),
+    ("aspireCli", re.compile(r"(?:run: |ASPIRE_CLI_INSTALL: )?dotnet tool install --global Aspire\.Cli --version (?P<version>\S+)")),
+)
+# The mutation-controls command must record the self-test's own final output line, not a
+# paraphrase, and that line must report the full packet mutation suite for every baseline.
+MUTATION_SCENARIOS_PER_BASELINE = 24
+MUTATION_CONTROLS_RESULT = re.compile(
+    r"G6-EVIDENCE-MUTATIONS-PASSED: (?P<scenarios>[1-9][0-9]*) scenarios for each of (?P<baselines>[1-9][0-9]*) baselines; "
+    r"[1-9][0-9]* baseline-drift controls; [1-9][0-9]* authority controls; [0-9]+ historical baseline SHA-256 pins"
+)
 TUPLE_FIELDS = (
     "dotnetSdk",
     "aspireSdk",
@@ -184,9 +204,13 @@ def require_text(value: Any, label: str) -> str:
     return value
 
 
-def version_token(version: str) -> re.Pattern[str]:
-    """Match one exact version token, never a prefix or suffix of a longer version."""
-    return re.compile(r"(?<![0-9A-Za-z.-])" + re.escape(version) + r"(?![0-9A-Za-z-]|\.[0-9A-Za-z])")
+def literal_pin_role(value: str) -> tuple[str, str] | None:
+    """Return the (tuple field, exact version) a literal pin declares, or None when it names no role."""
+    for field, pattern in LITERAL_PIN_ROLES:
+        match = pattern.fullmatch(value.strip())
+        if match is not None:
+            return field, match["version"]
+    return None
 
 
 def baseline_approval_date(baseline: dict[str, Any]) -> dt.date:
@@ -355,6 +379,8 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
         require(isinstance(version, str) and version.strip(), "AppHost project version is required")
         project = path.read_text(encoding="utf-8")
         require(f'Aspire.AppHost.Sdk/{version}' in project, f"Aspire AppHost SDK pin drift: {item['path']}")
+    require(expected_tuple["aspireSdk"] in {item["version"] for item in audit["appHostProjects"]},
+            f"Tuple aspireSdk {expected_tuple['aspireSdk']} is not among the audited AppHost SDK pins")
     literal_pins = audit["literalPins"]
     require(isinstance(literal_pins, list), "Literal pins must be an array")
     for item in literal_pins:
@@ -365,10 +391,21 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
         target = item["value"].strip()
         matched = target in active_text if "\n" in target else target in {line.strip() for line in active_text.splitlines()}
         require(matched, f"Expected active literal pin missing: {item['path']}::{item['value']}")
+    # Every audited pin that names a CLI/runtime role must declare exactly the tuple's value for
+    # that role, and each role must be declared by at least one audited pin.
+    grounded_fields = set()
+    for item in literal_pins:
+        role = literal_pin_role(item["value"])
+        if role is None:
+            continue
+        field, version = role
+        require(version == expected_tuple[field],
+                f"Audited {field} literal pin {item['path']}::{item['value'].strip()} differs from tuple "
+                f"{field} {expected_tuple[field]}")
+        grounded_fields.add(field)
     for field in LITERAL_PIN_TUPLE_FIELDS:
-        token = version_token(expected_tuple[field])
-        require(any(token.search(item["value"]) for item in literal_pins),
-                f"Tuple {field} {expected_tuple[field]} is not among the audited literal pins")
+        require(field in grounded_fields,
+                f"Tuple {field} {expected_tuple[field]} has no audited literal pin of the same role")
 
     packages = resolve_artifact(workspace, "references/Hexalith.Builds/Props/Directory.Packages.props", "central package catalog").read_text(encoding="utf-8")
     package_expectations = {package: expected_tuple[field] for package, field in CATALOG_TUPLE_FIELDS.items()}
@@ -495,8 +532,9 @@ def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, ba
         expected_tuple["daprCli"], expected_tuple["daprRuntime"],
     ):
         require(version in version_command["outcome"], f"Tool-version observation does not ground {version}")
-    require("22 scenarios passed" in commands_by_purpose["G-6 mutation controls"]["outcome"],
-            "Mutation command result count drift")
+    mutation_result = MUTATION_CONTROLS_RESULT.search(commands_by_purpose["G-6 mutation controls"]["outcome"])
+    require(mutation_result is not None, "Mutation-controls outcome does not record the self-test result line")
+    require(int(mutation_result["scenarios"]) == MUTATION_SCENARIOS_PER_BASELINE, "Mutation command result count drift")
     require("TEST_USER_PASSWORD was absent" in commands_by_purpose["managed restart smoke credential preflight"]["outcome"],
             "Credential-preflight expected failure is not explicit")
     require("pre-existing drift" in commands_by_purpose["broad package-exception inventory outside G-6 affected set"]["outcome"],
