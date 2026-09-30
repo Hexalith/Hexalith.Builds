@@ -271,14 +271,17 @@ approval date, and packets bind their baseline by SHA-256. Approval authority
 stays in the validator: the approver and the Builds, Platform and
 FrontComposer/Web owner roles must match its allowlist, the approval date may
 not follow the packet capture, a support-table-listed Dapr pair must equal the
-tuple's runtime and .NET packages, the tuple's Aspire SDK must be one of the
-audited AppHost SDK pins, and the tuple's Dapr CLI, Dapr runtime and Aspire CLI
-versions must each equal exactly every audited literal pin whose own text names
-that role (at least one per role; a bare `version:` or `default:` pin grounds
-nothing). The mutation-controls command record must carry the self-test's own
-`G6-EVIDENCE-MUTATIONS-PASSED` result line. The pending 2026-09-29
-candidate baseline records the explicit Dapr runtime `1.18.2` / .NET package
-`1.18.10` exception with Toolkit `13.5.1-beta.770`; it is not a
+tuple's runtime and .NET packages and carry an approval decision, and the
+tuple's Aspire SDK must be one of the audited AppHost SDK pins. Every audited
+literal pin must set the Dapr CLI, Dapr runtime or Aspire CLI role, either in its
+own text or, for a `default:` or `version:` pin, through its YAML context (the
+enclosing `dapr-version`/`dapr-runtime-version` workflow input, or the `with:`
+block of a Dapr CLI setup step), and must equal that role's tuple value exactly;
+each role needs at least one pin, and a pin that sets no role is rejected. The
+mutation-controls command record must be exactly the self-test's
+`G6-EVIDENCE-MUTATIONS-PASSED` result line, every count included. The pending
+2026-09-29 candidate baseline records the explicit Dapr runtime `1.18.2` / .NET
+package `1.18.10` exception with Toolkit `13.5.1-beta.770`; it is not a
 support-table-listed pair. Live persisted composition remains explicitly
 unavailable at the separate descriptor-ABI prerequisite (`HXR003`), preserving
 the G-4 boundary. `down` remains idempotent and only removes runner-owned

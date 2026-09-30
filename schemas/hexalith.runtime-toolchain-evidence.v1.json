@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hexalith.dev/schemas/hexalith.runtime-toolchain-evidence.v1.json",
   "title": "Hexalith G-6 runtime and toolchain evidence v1",
-  "description": "Structural contract only. Exact tuple values, approval identity, and Dapr support-table facts come from the bound baseline file; validate-runtime-toolchain-evidence.py compares them with --baseline.",
+  "description": "Structural contract only. Exact tuple values, approval identity, and Dapr support-table facts come from the bound baseline file; validate-runtime-toolchain-evidence.py compares them with --baseline. The approver, owner roles and approval decisions restate the validator allowlists: an unlisted Dapr tuple needs approved-explicit-exception, and a support-table-listed tuple needs approved or approved-explicit-exception.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -102,7 +102,7 @@
           "items": { "enum": ["Builds", "Platform", "FrontComposer/Web"] }
         },
         "supportTableListed": { "type": "boolean" },
-        "decision": { "type": "string", "minLength": 1 }
+        "decision": { "enum": ["approved", "approved-explicit-exception"] }
       }
     },
     "sentinelScan": {

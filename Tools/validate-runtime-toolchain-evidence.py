@@ -19,29 +19,65 @@ from typing import Any
 # instead of one hard-coded revision. Approval authority is not baseline-owned: the
 # approver and the G-6 owner roles must come from the allowlists below, the approval
 # date may not follow the packet capture, a support-table-listed Dapr pair must be
-# the tuple's own pair, the tuple's CLI/runtime values must be audited pins of the same
-# role, and the tuple's Aspire SDK must be one of the audited AppHost SDK pins.
+# the tuple's own pair with an approval decision, every audited literal pin must set
+# a tuple CLI/runtime role and equal that role's tuple value, and the tuple's Aspire
+# SDK must be one of the audited AppHost SDK pins.
 G6_APPROVERS = ("Jérôme Piquot",)
 G6_OWNER_ROLES = ("Builds", "Platform", "FrontComposer/Web")
+# An unlisted Dapr tuple needs the explicit exception; a support-table-listed tuple still
+# needs a recorded approval, never a rejection or other free text.
+DAPR_EXPLICIT_EXCEPTION = "approved-explicit-exception"
+DAPR_APPROVAL_DECISIONS = ("approved", DAPR_EXPLICIT_EXCEPTION)
 LITERAL_PIN_TUPLE_FIELDS = ("daprCli", "daprRuntime", "aspireCli")
-# A literal pin grounds a tuple CLI/runtime value only when its own text names that role;
-# the whole pin must match one pattern and the captured version must equal the tuple value
-# exactly. A pin that names no role (a bare `version:` or `default:` input) stays audited for
-# presence but grounds nothing, so a value declared only under another role, such as a
-# swapped Dapr CLI/runtime pair, cannot satisfy the tuple.
-LITERAL_PIN_ROLES = (
-    ("daprCli", re.compile(r"(?:dapr-version|DAPR_CLI_VERSION):\s*'(?P<version>[^'\s]+)'")),
-    ("daprRuntime", re.compile(r"(?:dapr-runtime-version|runtime-version|DAPR_RUNTIME_VERSION):\s*'(?P<version>[^'\s]+)'")),
-    ("daprRuntime", re.compile(r"dapr init --runtime-version (?P<version>\S+)")),
-    ("daprRuntime", re.compile(r'\[string\]\$DaprRuntimeVersion = "(?P<version>[^"\s]+)",')),
-    ("aspireCli", re.compile(r"(?:run: |ASPIRE_CLI_INSTALL: )?dotnet tool install --global Aspire\.Cli --version (?P<version>\S+)")),
+# Every audited literal pin sets exactly one tuple CLI/runtime role, identified by one form:
+# the whole pin must match the form's pattern, and the captured version must equal the tuple
+# value of the form's role exactly. Most forms name their role in their own text. The YAML
+# keys `default:` and `version:` name none, so they are classified by the enclosing context of
+# every active line they occupy: a `default:` belongs to the workflow input whose key encloses
+# it under `inputs:`, and a `version:` to the `with:` block of a step that uses a Dapr CLI
+# setup action. A pin, or any occurrence of it, whose form or context sets no role is
+# rejected, so a swapped pair of `default:` inputs or an unrelated pin cannot pass as audited.
+YAML_DEFAULT_PIN = re.compile(r"default:\s*'(?P<version>[^'\s]+)'")
+YAML_VERSION_PIN = re.compile(r"version:\s*'(?P<version>[^'\s]+)'")
+DAPR_CLI_SETUP_ACTION = re.compile(
+    r"dapr/setup-dapr@[0-9a-f]{40}"
+    r"|\./references/Hexalith\.Builds/Github/dapr-init"
+    r"|Hexalith/Hexalith\.Builds/Github/dapr-init@[0-9a-f]{40}"
 )
-# The mutation-controls command must record the self-test's own final output line, not a
-# paraphrase, and that line must report the full packet mutation suite for every baseline.
-MUTATION_SCENARIOS_PER_BASELINE = 24
+LITERAL_PIN_FORMS = (
+    # (form, tuple field, whole-pin pattern, enclosing context: None, ("input", name) or ("action", pattern))
+    ("dapr-version input", "daprCli", re.compile(r"dapr-version:\s*'(?P<version>[^'\s]+)'"), None),
+    ("DAPR_CLI_VERSION variable", "daprCli", re.compile(r"DAPR_CLI_VERSION:\s*'(?P<version>[^'\s]+)'"), None),
+    ("dapr-runtime-version input", "daprRuntime", re.compile(r"dapr-runtime-version:\s*'(?P<version>[^'\s]+)'"), None),
+    ("runtime-version input", "daprRuntime", re.compile(r"runtime-version:\s*'(?P<version>[^'\s]+)'"), None),
+    ("DAPR_RUNTIME_VERSION variable", "daprRuntime", re.compile(r"DAPR_RUNTIME_VERSION:\s*'(?P<version>[^'\s]+)'"), None),
+    ("dapr init --runtime-version command", "daprRuntime", re.compile(r"dapr init --runtime-version (?P<version>\S+)"), None),
+    ("$DaprRuntimeVersion parameter", "daprRuntime", re.compile(r'\[string\]\$DaprRuntimeVersion = "(?P<version>[^"\s]+)",'), None),
+    ("Aspire CLI install step", "aspireCli",
+     re.compile(r"run: dotnet tool install --global Aspire\.Cli --version (?P<version>\S+)"), None),
+    ("ASPIRE_CLI_INSTALL variable", "aspireCli",
+     re.compile(r"ASPIRE_CLI_INSTALL: dotnet tool install --global Aspire\.Cli --version (?P<version>\S+)"), None),
+    ("default: of the dapr-version workflow input", "daprCli", YAML_DEFAULT_PIN, ("input", "dapr-version")),
+    ("default: of the dapr-runtime-version workflow input", "daprRuntime", YAML_DEFAULT_PIN, ("input", "dapr-runtime-version")),
+    ("version: of a Dapr CLI setup action", "daprCli", YAML_VERSION_PIN, ("action", DAPR_CLI_SETUP_ACTION)),
+)
+# The mutation-controls command must record exactly the self-test's final output line with every
+# count this revision's self-test reports, not a paraphrase, a line with other text around it, or
+# a line with any other count. The self-test asserts that it prints exactly this line.
+MUTATION_SCENARIOS_PER_BASELINE = 30
+MUTATION_CONTROLS_BASELINES = 3
+MUTATION_CONTROLS_BASELINE_DRIFT = 48
+MUTATION_CONTROLS_AUTHORITY = 141
+MUTATION_CONTROLS_HISTORICAL_PINS = 2
 MUTATION_CONTROLS_RESULT = re.compile(
-    r"G6-EVIDENCE-MUTATIONS-PASSED: (?P<scenarios>[1-9][0-9]*) scenarios for each of (?P<baselines>[1-9][0-9]*) baselines; "
-    r"[1-9][0-9]* baseline-drift controls; [1-9][0-9]* authority controls; [0-9]+ historical baseline SHA-256 pins"
+    r"G6-EVIDENCE-MUTATIONS-PASSED: (?P<scenarios>[0-9]+) scenarios for each of (?P<baselines>[0-9]+) baselines; "
+    r"(?P<drift>[0-9]+) baseline-drift controls; (?P<authority>[0-9]+) authority controls; "
+    r"(?P<pins>[0-9]+) historical baseline SHA-256 pins"
+)
+MUTATION_CONTROLS_RESULT_LINE = (
+    f"G6-EVIDENCE-MUTATIONS-PASSED: {MUTATION_SCENARIOS_PER_BASELINE} scenarios for each of "
+    f"{MUTATION_CONTROLS_BASELINES} baselines; {MUTATION_CONTROLS_BASELINE_DRIFT} baseline-drift controls; "
+    f"{MUTATION_CONTROLS_AUTHORITY} authority controls; {MUTATION_CONTROLS_HISTORICAL_PINS} historical baseline SHA-256 pins"
 )
 TUPLE_FIELDS = (
     "dotnetSdk",
@@ -204,13 +240,96 @@ def require_text(value: Any, label: str) -> str:
     return value
 
 
-def literal_pin_role(value: str) -> tuple[str, str] | None:
-    """Return the (tuple field, exact version) a literal pin declares, or None when it names no role."""
-    for field, pattern in LITERAL_PIN_ROLES:
-        match = pattern.fullmatch(value.strip())
-        if match is not None:
-            return field, match["version"]
+def _indent(line: str) -> int:
+    return len(line) - len(line.lstrip(" "))
+
+
+def _parent_line(lines: list[str], index: int) -> int | None:
+    """Return the index of the nearest earlier non-blank line indented less than lines[index]."""
+    indent = _indent(lines[index])
+    for candidate in range(index - 1, -1, -1):
+        if lines[candidate].strip() and _indent(lines[candidate]) < indent:
+            return candidate
     return None
+
+
+def _yaml_key(line: str) -> str | None:
+    """Return the key of a YAML line that opens a nested mapping (`name:` with no value)."""
+    match = re.fullmatch(r"(?:- )?(?P<key>[A-Za-z0-9_.-]+):", line.strip())
+    return match["key"] if match is not None else None
+
+
+def _enclosing_input(lines: list[str], index: int) -> str | None:
+    """Return the workflow input name whose key encloses lines[index] directly under `inputs:`."""
+    input_line = _parent_line(lines, index)
+    if input_line is None or _yaml_key(lines[input_line]) is None:
+        return None
+    inputs_line = _parent_line(lines, input_line)
+    if inputs_line is None or _yaml_key(lines[inputs_line]) != "inputs":
+        return None
+    return _yaml_key(lines[input_line])
+
+
+def _enclosing_action(lines: list[str], index: int) -> str | None:
+    """Return the `uses:` action of the step whose `with:` block directly encloses lines[index]."""
+    with_line = _parent_line(lines, index)
+    if with_line is None or _yaml_key(lines[with_line]) != "with":
+        return None
+    indent = _indent(lines[with_line])
+    step_keys = []
+    # The step's own keys sit at the `with:` indentation; its first key may share the `- ` line.
+    for direction in (range(with_line - 1, -1, -1), range(with_line + 1, len(lines))):
+        for candidate in direction:
+            line = lines[candidate]
+            if not line.strip():
+                continue
+            if _indent(line) < indent:
+                if direction.step < 0 and line.strip().startswith("- ") and _indent(line) + 2 == indent:
+                    step_keys.append(line.strip()[2:])
+                break
+            if _indent(line) == indent:
+                step_keys.append(line.strip())
+    actions = [re.sub(r"^uses:\s*", "", item).strip() for item in step_keys if item.startswith("uses:")]
+    return actions[0] if len(actions) == 1 else None
+
+
+def literal_pin_roles(value: str, active_text: str) -> list[tuple[str, str, str]]:
+    """Return (form, tuple field, version) for one audited literal pin, one entry per classified use.
+
+    A pin whose own text names its role yields one entry. A `default:` or `version:` pin yields one
+    entry for each active line it occupies, classified by that line's enclosing YAML context.
+    Raises ValidationError when the pin, or any active occurrence of it, sets no tuple role.
+    """
+    target = value.strip()
+    text_forms = [(form, field, pattern.fullmatch(target)) for form, field, pattern, context in LITERAL_PIN_FORMS
+                  if context is None]
+    text_matches = [(form, field, match["version"]) for form, field, match in text_forms if match is not None]
+    if text_matches:
+        require(len(text_matches) == 1, f"Literal pin matches more than one form: {target}")
+        return text_matches
+    context_forms = [(form, field, pattern.fullmatch(target), context) for form, field, pattern, context in LITERAL_PIN_FORMS
+                     if context is not None]
+    context_forms = [(form, field, match["version"], context) for form, field, match, context in context_forms
+                     if match is not None]
+    require(bool(context_forms), f"Literal pin sets no Dapr CLI, Dapr runtime or Aspire CLI role: {target}")
+    lines = active_text.splitlines()
+    roles = []
+    for index, line in enumerate(lines):
+        if line.strip() != target:
+            continue
+        classified = []
+        for form, field, version, (kind, expected) in context_forms:
+            if kind == "input" and _enclosing_input(lines, index) == expected:
+                classified.append((form, field, version))
+            elif kind == "action":
+                action = _enclosing_action(lines, index)
+                if action is not None and expected.fullmatch(action) is not None:
+                    classified.append((form, field, version))
+        require(len(classified) == 1,
+                f"Literal pin sets no Dapr CLI, Dapr runtime or Aspire CLI role at line {index + 1}: {target}")
+        roles.extend(classified)
+    require(bool(roles), f"Expected active literal pin missing: {target}")
+    return roles
 
 
 def baseline_approval_date(baseline: dict[str, Any]) -> dt.date:
@@ -351,9 +470,11 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
     require_version(dapr["listedRuntime"], "Dapr support-table listed runtime")
     require_version(dapr["listedDotnetSdk"], "Dapr support-table listed .NET SDK")
     require_text(dapr["decision"], "Dapr support-table decision")
-    require(dapr["supportTableListed"] or dapr["decision"] == "approved-explicit-exception",
+    require(dapr["supportTableListed"] or dapr["decision"] == DAPR_EXPLICIT_EXCEPTION,
             "An unlisted Dapr tuple requires an approved explicit exception")
     if dapr["supportTableListed"]:
+        require(dapr["decision"] in DAPR_APPROVAL_DECISIONS,
+                f"A support-table-listed Dapr tuple requires an approval decision: {list(DAPR_APPROVAL_DECISIONS)}")
         # A listed pair is only a listing of this tuple when both listed values are the tuple's own.
         require(dapr["listedRuntime"] == expected_tuple["daprRuntime"],
                 "Support-table-listed Dapr runtime differs from the tuple runtime")
@@ -383,26 +504,28 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
             f"Tuple aspireSdk {expected_tuple['aspireSdk']} is not among the audited AppHost SDK pins")
     literal_pins = audit["literalPins"]
     require(isinstance(literal_pins, list), "Literal pins must be an array")
+    active_texts: dict[str, str] = {}
     for item in literal_pins:
         exact_fields(item, {"path", "value"}, "Literal pin")
         path = resolve_artifact(workspace, item["path"], "literal pin")
         require(isinstance(item["value"], str) and item["value"].strip(), "Literal pin value is required")
-        active_text = comment_free_text(path)
+        active_text = active_texts.setdefault(item["path"], comment_free_text(path))
         target = item["value"].strip()
         matched = target in active_text if "\n" in target else target in {line.strip() for line in active_text.splitlines()}
         require(matched, f"Expected active literal pin missing: {item['path']}::{item['value']}")
-    # Every audited pin that names a CLI/runtime role must declare exactly the tuple's value for
-    # that role, and each role must be declared by at least one audited pin.
+    # Every audited pin sets a CLI/runtime role in each place it occurs and must declare exactly the
+    # tuple's value for that role, and each role must be declared by at least one audited pin.
     grounded_fields = set()
     for item in literal_pins:
-        role = literal_pin_role(item["value"])
-        if role is None:
-            continue
-        field, version = role
-        require(version == expected_tuple[field],
-                f"Audited {field} literal pin {item['path']}::{item['value'].strip()} differs from tuple "
-                f"{field} {expected_tuple[field]}")
-        grounded_fields.add(field)
+        try:
+            roles = literal_pin_roles(item["value"], active_texts[item["path"]])
+        except ValidationError as error:
+            raise ValidationError(f"{error} ({item['path']})") from error
+        for form, field, version in roles:
+            require(version == expected_tuple[field],
+                    f"Audited {field} literal pin {item['path']}::{item['value'].strip()} ({form}) differs from tuple "
+                    f"{field} {expected_tuple[field]}")
+            grounded_fields.add(field)
     for field in LITERAL_PIN_TUPLE_FIELDS:
         require(field in grounded_fields,
                 f"Tuple {field} {expected_tuple[field]} has no audited literal pin of the same role")
@@ -532,9 +655,11 @@ def _validate_packet(workspace: Path, packet_path: Path, baseline_path: Path, ba
         expected_tuple["daprCli"], expected_tuple["daprRuntime"],
     ):
         require(version in version_command["outcome"], f"Tool-version observation does not ground {version}")
-    mutation_result = MUTATION_CONTROLS_RESULT.search(commands_by_purpose["G-6 mutation controls"]["outcome"])
-    require(mutation_result is not None, "Mutation-controls outcome does not record the self-test result line")
-    require(int(mutation_result["scenarios"]) == MUTATION_SCENARIOS_PER_BASELINE, "Mutation command result count drift")
+    mutation_outcome = commands_by_purpose["G-6 mutation controls"]["outcome"]
+    require(MUTATION_CONTROLS_RESULT.fullmatch(mutation_outcome) is not None,
+            "Mutation-controls outcome does not record exactly the self-test result line")
+    require(mutation_outcome == MUTATION_CONTROLS_RESULT_LINE,
+            f"Mutation command result count drift: expected '{MUTATION_CONTROLS_RESULT_LINE}'")
     require("TEST_USER_PASSWORD was absent" in commands_by_purpose["managed restart smoke credential preflight"]["outcome"],
             "Credential-preflight expected failure is not explicit")
     require("pre-existing drift" in commands_by_purpose["broad package-exception inventory outside G-6 affected set"]["outcome"],

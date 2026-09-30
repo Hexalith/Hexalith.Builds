@@ -10,8 +10,11 @@ separate authority controls prove that approver, owner-role, approval-date,
 listed-Dapr, Aspire SDK and CLI/runtime pin contradictions are rejected: a tuple
 CLI/runtime value must equal the pins of its own role exactly, so swapped Dapr
 CLI/runtime values and versions that are only a prefix or suffix of a pin fail.
-The fixture records this script's own final output line as the mutation-controls
-outcome, and main() proves the validator's pattern matches the line it prints.
+The fixture writes the role-less `default:` and `version:` pins inside their real
+YAML context (workflow input, Dapr CLI setup step), and one control per pin form,
+listed below with this script's own prefixes, changes a single pin of that form.
+The fixture records the exact result line the validator requires as the
+mutation-controls outcome, and main() proves this script prints that same line.
 """
 
 from __future__ import annotations
@@ -45,15 +48,35 @@ HISTORICAL_BASELINE_SHA256 = {
 }
 REJECTED_PACKET_MUTATIONS: list[str] = []
 AUTHORITY_CONTROLS: list[str] = []
-# Literal pins whose own text names no role; they cannot ground a tuple CLI/runtime value.
-ROLE_LESS_PIN_KEYS = ("version:", "default:")
+# The Dapr CLI setup action the fixture writes around every `version:` pin.
+FIXTURE_DAPR_SETUP_ACTION = "dapr/setup-dapr@" + "0" * 40
+# Every literal-pin form the audited baselines use, restated with this script's own prefixes and
+# fixture contexts rather than the validator's patterns: (form, tuple field, pin prefix, context).
+# A `default:` pin sits under the workflow input its version sets; a `version:` pin sits in the
+# `with:` block of a Dapr CLI setup step. Each form gets one control that changes one pin of it.
+PIN_FORMS = (
+    ("dapr-version input", "daprCli", "dapr-version:", None),
+    ("DAPR_CLI_VERSION variable", "daprCli", "DAPR_CLI_VERSION:", None),
+    ("dapr-runtime-version input", "daprRuntime", "dapr-runtime-version:", None),
+    ("runtime-version input", "daprRuntime", "runtime-version:", None),
+    ("DAPR_RUNTIME_VERSION variable", "daprRuntime", "DAPR_RUNTIME_VERSION:", None),
+    ("dapr init --runtime-version command", "daprRuntime", "dapr init --runtime-version ", None),
+    ("$DaprRuntimeVersion parameter", "daprRuntime", "[string]$DaprRuntimeVersion = ", None),
+    ("Aspire CLI install step", "aspireCli", "run: dotnet tool install --global Aspire.Cli --version ", None),
+    ("ASPIRE_CLI_INSTALL variable", "aspireCli", "ASPIRE_CLI_INSTALL: ", None),
+    ("default: of the dapr-version workflow input", "daprCli", "default:", ("input", "dapr-version")),
+    ("default: of the dapr-runtime-version workflow input", "daprRuntime", "default:", ("input", "dapr-runtime-version")),
+    ("version: of a Dapr CLI setup action", "daprCli", "version:", ("action", FIXTURE_DAPR_SETUP_ACTION)),
+)
+DEFAULT_INPUT_BY_FIELD = {"daprCli": "dapr-version", "daprRuntime": "dapr-runtime-version"}
 SPEC = importlib.util.spec_from_file_location("g6_validator", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 VALIDATOR = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(VALIDATOR)
-# The validator requires the recorded mutation-controls outcome to report this many packet
-# scenarios; main() asserts that every baseline ran exactly this many.
+# The validator requires the recorded mutation-controls outcome to be exactly this line; main()
+# asserts that every baseline ran this many packet scenarios and that it prints this line.
 PACKET_SCENARIOS_PER_BASELINE = VALIDATOR.MUTATION_SCENARIOS_PER_BASELINE
+RESULT_LINE = VALIDATOR.MUTATION_CONTROLS_RESULT_LINE
 
 
 def mutation_summary_line(scenarios: int, baselines: int, drift: int, authority: int, pins: int) -> str:
@@ -151,24 +174,67 @@ def assert_historical_baseline_bytes() -> None:
         assert actual == expected, f"bound historical baseline drifted: {name} hashes {actual}, packets bind {expected}"
 
 
-def write_literal_pins(workspace: Path, literal_pins: list[dict[str, str]]) -> None:
-    """Write each audited literal pin as an active line of its fixture file."""
-    contents: dict[str, list[str]] = {}
+def pin_form(value: str, context: tuple[str, str] | None) -> tuple[str, str]:
+    """Return the (form, tuple field) of one audited pin from this script's own PIN_FORMS table."""
+    forms = [(form, field) for form, field, prefix, form_context in PIN_FORMS
+             if value.strip().startswith(prefix) and form_context == context]
+    assert len(forms) == 1, f"literal pin has no single fixture form: {value!r} {context!r}"
+    return forms[0]
+
+
+def fixture_pin_contexts(literal_pins: list[dict[str, str]], tuple_values: dict[str, str]) -> list[tuple[str, str] | None]:
+    """The YAML context each original pin is written in: its workflow input, its setup step, or none."""
+    contexts: list[tuple[str, str] | None] = []
     for item in literal_pins:
-        contents.setdefault(item["path"], []).append(item["value"])
-    for relative, values in contents.items():
-        write_text(workspace / relative, "\n".join(values) + "\n")
+        value = item["value"].strip()
+        if value.startswith("default:"):
+            fields = [field for field, name in DEFAULT_INPUT_BY_FIELD.items() if f"'{tuple_values[field]}'" in value]
+            assert len(fields) == 1, f"default: pin sets no single fixture input: {value}"
+            contexts.append(("input", DEFAULT_INPUT_BY_FIELD[fields[0]]))
+        elif value.startswith("version:"):
+            contexts.append(("action", FIXTURE_DAPR_SETUP_ACTION))
+        else:
+            contexts.append(None)
+    return contexts
+
+
+def write_literal_pins(
+    workspace: Path, literal_pins: list[dict[str, str]], contexts: list[tuple[str, str] | None],
+) -> None:
+    """Write each audited literal pin as an active line of its fixture file, inside its YAML context."""
+    files: dict[str, dict] = {}
+    for item, context in zip(literal_pins, contexts, strict=True):
+        entry = files.setdefault(item["path"], {"lines": [], "inputs": {}, "steps": []})
+        value = item["value"].strip()
+        if context is None:
+            entry["lines"].append(value)
+        elif context[0] == "input":
+            entry["inputs"].setdefault(context[1], []).append(value)
+        else:
+            entry["steps"].append((context[1], value))
+    for relative, entry in files.items():
+        lines = list(entry["lines"])
+        if entry["inputs"]:
+            lines += ["on:", "  workflow_call:", "    inputs:"]
+            for name, values in entry["inputs"].items():
+                lines += [f"      {name}:", "        type: string", *(f"        {value}" for value in values)]
+        if entry["steps"]:
+            lines.append("steps:")
+            for action, value in entry["steps"]:
+                lines += ["  - name: Install Dapr CLI", f"    uses: {action}", "    with:", f"      {value}"]
+        write_text(workspace / relative, "\n".join(lines) + "\n")
 
 
 def expect_pinned_baseline_rejected(
-    workspace: Path, baseline_path: Path, baseline: dict, original_pins: list[dict[str, str]], label: str, message: str,
+    workspace: Path, baseline_path: Path, baseline: dict, original_pins: list[dict[str, str]],
+    contexts: list[tuple[str, str] | None], label: str, message: str,
 ) -> None:
-    """Reject a baseline whose changed literal pins are really present in the fixture files."""
-    write_literal_pins(workspace, baseline["pinAudit"]["literalPins"])
+    """Reject a baseline whose changed literal pins are really present, in context, in the fixture files."""
+    write_literal_pins(workspace, baseline["pinAudit"]["literalPins"], contexts)
     try:
         expect_baseline_rejected(workspace, baseline_path, baseline, label, message)
     finally:
-        write_literal_pins(workspace, original_pins)
+        write_literal_pins(workspace, original_pins, contexts)
 
 
 def fixture_catalog(tuple_values: dict[str, str]) -> str:
@@ -211,7 +277,8 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
         for item in baseline_template["pinAudit"]["appHostProjects"]:
             write_text(workspace / item["path"], f'<Project Sdk="Aspire.AppHost.Sdk/{item["version"]}">\n</Project>\n')
         original_pins = copy.deepcopy(baseline_template["pinAudit"]["literalPins"])
-        write_literal_pins(workspace, original_pins)
+        contexts = fixture_pin_contexts(original_pins, tuple_values)
+        write_literal_pins(workspace, original_pins, contexts)
         catalog_path = builds / "Props/Directory.Packages.props"
         write_text(catalog_path, fixture_catalog(tuple_values))
         write_text(builds / "schemas/hexalith.runtime-toolchain-evidence.v1.json", "{}\n")
@@ -302,9 +369,8 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
                     f"runtime {tuple_values['daprRuntime']}"
                 )
             elif purpose == "G-6 mutation controls":
-                # The real final output line format, as main() prints it.
-                outcome = mutation_summary_line(
-                    PACKET_SCENARIOS_PER_BASELINE, len(BASELINES), 1, 1, len(HISTORICAL_BASELINE_SHA256))
+                # The exact final output line main() prints, every count included.
+                outcome = RESULT_LINE
             elif purpose == "managed restart smoke credential preflight":
                 outcome = "TEST_USER_PASSWORD was absent; blocked before startup"
             elif purpose == "broad package-exception inventory outside G-6 affected set":
@@ -468,15 +534,28 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
         changed = copy.deepcopy(packet); refresh_artifact(changed, "command-record", paths["commands"])
         expect_rejected(workspace, baseline_path, baseline, paths["packet"], changed, "failed required command")
 
-        # The mutation-controls outcome must carry the self-test's real result line, so a paraphrase
-        # (which the count-only check once required) and a line reporting a short suite both fail.
-        for label, outcome, message in (
+        # The mutation-controls outcome must be exactly the self-test's result line: a paraphrase
+        # (which the count-only check once required), the line with other text around it, and a line
+        # with any single count changed all fail.
+        counts = VALIDATOR.MUTATION_CONTROLS_RESULT.fullmatch(RESULT_LINE)
+        assert counts is not None, RESULT_LINE
+        exact_counts = {name: int(counts[name]) for name in ("scenarios", "baselines", "drift", "authority", "pins")}
+        outcome_controls = [
             ("paraphrased mutation-controls outcome", f"{PACKET_SCENARIOS_PER_BASELINE} scenarios passed",
-             "does not record the self-test result line"),
-            ("mutation-controls scenario count drift",
-             mutation_summary_line(PACKET_SCENARIOS_PER_BASELINE - 1, len(BASELINES), 1, 1, len(HISTORICAL_BASELINE_SHA256)),
-             "Mutation command result count drift"),
-        ):
+             "does not record exactly the self-test result line"),
+            ("mutation-controls line with trailing text", RESULT_LINE + " (recorded verbatim)",
+             "does not record exactly the self-test result line"),
+            ("mutation-controls line with leading text", "self-test: " + RESULT_LINE,
+             "does not record exactly the self-test result line"),
+        ]
+        for name, delta in (("scenarios", -1), ("baselines", -1), ("drift", 1), ("authority", -1), ("pins", 1)):
+            changed_counts = dict(exact_counts, **{name: exact_counts[name] + delta})
+            outcome_controls.append((
+                f"mutation-controls {name} count drift",
+                mutation_summary_line(changed_counts["scenarios"], changed_counts["baselines"], changed_counts["drift"],
+                                      changed_counts["authority"], changed_counts["pins"]),
+                "Mutation command result count drift"))
+        for label, outcome, message in outcome_controls:
             restore_evidence()
             changed_commands = copy.deepcopy(command_results)
             next(item for item in changed_commands if item["purpose"] == "G-6 mutation controls")["outcome"] = outcome
@@ -584,6 +663,24 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
         authority_baselines.append(("unlisted owner role", extra_role, "not an authorized G-6 owner role: Security"))
         missing_role = copy.deepcopy(baseline_template); missing_role["ownerRoles"].remove("Platform")
         authority_baselines.append(("missing owner role", missing_role, "must include every G-6 owner role"))
+        duplicate_role = copy.deepcopy(baseline_template); duplicate_role["ownerRoles"].append(duplicate_role["ownerRoles"][0])
+        authority_baselines.append(("duplicate owner role", duplicate_role, "Baseline owner roles must be unique"))
+        compact_date = copy.deepcopy(baseline_template); compact_date["approvedOn"] = baseline_template["approvedOn"].replace("-", "")
+        authority_baselines.append(("non-hyphenated approval date", compact_date, "Baseline approval date must be YYYY-MM-DD"))
+        # A listed pair must still be exact versions and carry an approval, even when it equals the tuple.
+        listed_equal = {"supportTableListed": True, "listedRuntime": tuple_values["daprRuntime"],
+                        "listedDotnetSdk": tuple_values["daprDotnetPackages"]}
+        for label, changes, message in (
+            ("non-version listed Dapr runtime", {"listedRuntime": "1.18"},
+             "Dapr support-table listed runtime must be an exact version"),
+            ("non-version listed Dapr .NET SDK", {"listedDotnetSdk": "latest"},
+             "Dapr support-table listed .NET SDK must be an exact version"),
+            ("listed Dapr pair with a rejection decision", {"decision": "rejected"},
+             "A support-table-listed Dapr tuple requires an approval decision"),
+        ):
+            listed_control = copy.deepcopy(baseline_template)
+            listed_control["dispositions"]["dapr"].update(listed_equal, **changes)
+            authority_baselines.append((label, listed_control, message))
         listed_runtime = copy.deepcopy(baseline_template)
         listed_runtime["dispositions"]["dapr"].update(
             supportTableListed=True, listedRuntime="0.0.1", listedDotnetSdk=tuple_values["daprDotnetPackages"])
@@ -603,20 +700,79 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
         assert swapped["tuple"]["daprCli"] != tuple_values["daprCli"], "swapped Dapr control needs distinct CLI/runtime values"
         authority_baselines.append(("swapped Dapr CLI and runtime", swapped,
                                     f"differs from tuple daprCli {tuple_values['daprRuntime']}"))
-        # The tuple CLI version appears only in pins whose text names no role.
-        role_less = copy.deepcopy(baseline_template)
-        role_less["pinAudit"]["literalPins"] = [
-            item for item in original_pins
-            if tuple_values["daprCli"] not in item["value"] or item["value"].strip().startswith(ROLE_LESS_PIN_KEYS)]
-        assert any(tuple_values["daprCli"] in item["value"] for item in role_less["pinAudit"]["literalPins"]), (
-            "role-less pin control must keep the Dapr CLI version in a role-less pin")
-        authority_baselines.append(("Dapr CLI only in role-less pins", role_less,
-                                    f"Tuple daprCli {tuple_values['daprCli']} has no audited literal pin of the same role"))
+        # A role whose every audited pin is dropped from the audit is no longer grounded, even though
+        # the remaining pins of the other roles still validate.
+        for field in VALIDATOR.LITERAL_PIN_TUPLE_FIELDS:
+            ungrounded = copy.deepcopy(baseline_template)
+            ungrounded["pinAudit"]["literalPins"] = [
+                item for item, context in zip(original_pins, contexts, strict=True)
+                if pin_form(item["value"], context)[1] != field]
+            assert len(ungrounded["pinAudit"]["literalPins"]) < len(original_pins), field
+            authority_baselines.append((f"no audited {field} pin", ungrounded,
+                                        f"Tuple {field} {tuple_values[field]} has no audited literal pin of the same role"))
         unaudited_sdk = copy.deepcopy(baseline_template); unaudited_sdk["tuple"]["aspireSdk"] = "13.99.0"
         authority_baselines.append(("unaudited aspireSdk", unaudited_sdk,
                                     "Tuple aspireSdk 13.99.0 is not among the audited AppHost SDK pins"))
         for label, mutation, message in authority_baselines:
             expect_baseline_rejected(workspace, mutated_baseline_path, mutation, label, message)
+            AUTHORITY_CONTROLS.append(label)
+        # One control per pin form: change the version of a single audited pin of that form, in the
+        # baseline and in its fixture file (so the pin stays present), and require the rejection to
+        # name that exact pin. A form the validator stops classifying, or classifies under another
+        # role, fails the expected message.
+        for form, field, _, _ in PIN_FORMS:
+            indexes = [index for index, (item, context) in enumerate(zip(original_pins, contexts, strict=True))
+                       if pin_form(item["value"], context) == (form, field)]
+            assert indexes, f"no audited pin of form {form}"
+            changed_version = "9.9.9"
+            assert changed_version != tuple_values[field], form
+            single = copy.deepcopy(baseline_template)
+            pin = single["pinAudit"]["literalPins"][indexes[0]]
+            pin["value"] = replace_pin_version(pin["value"], tuple_values[field], changed_version)
+            assert pin["value"] != original_pins[indexes[0]]["value"], form
+            expect_pinned_baseline_rejected(
+                workspace, mutated_baseline_path, single, original_pins, contexts, f"single {form} pin changed",
+                f"{pin['path']}::{pin['value'].strip()} ({form}) differs from tuple {field} {tuple_values[field]}")
+            AUTHORITY_CONTROLS.append(f"single {form} pin changed")
+        # The two `default:` inputs of one workflow swap their values: every audited line is still
+        # present, so only classification by the enclosing input can reject it.
+        default_indexes = {}
+        for index, context in enumerate(contexts):
+            if context is not None and context[0] == "input":
+                default_indexes.setdefault(original_pins[index]["path"], []).append(index)
+        swap_path, swap_indexes = next((path, indexes) for path, indexes in default_indexes.items() if len(indexes) == 2)
+        swapped_contexts = list(contexts)
+        swapped_contexts[swap_indexes[0]], swapped_contexts[swap_indexes[1]] = contexts[swap_indexes[1]], contexts[swap_indexes[0]]
+        swapped_form, swapped_field = pin_form(original_pins[swap_indexes[0]]["value"], swapped_contexts[swap_indexes[0]])
+        write_literal_pins(workspace, original_pins, swapped_contexts)
+        try:
+            expect_baseline_rejected(
+                workspace, mutated_baseline_path, baseline_template, "swapped default: inputs",
+                f"{swap_path}::{original_pins[swap_indexes[0]]['value'].strip()} ({swapped_form}) differs from tuple "
+                f"{swapped_field} {tuple_values[swapped_field]}")
+        finally:
+            write_literal_pins(workspace, original_pins, contexts)
+        AUTHORITY_CONTROLS.append("swapped default: inputs")
+        # An audited pin that sets no role: a `default:` under an unrelated workflow input, a
+        # `version:` of an unrelated setup action, and a pin text of no known form. Each is present
+        # in its fixture file.
+        unrelated_path = "references/Hexalith.Builds/.github/workflows/unrelated-inputs.yml"
+        for label, value, fixture_text in (
+            ("default: of an unrelated workflow input", f"default: '{tuple_values['daprCli']}'",
+             f"on:\n  workflow_call:\n    inputs:\n      packages-lock-file:\n        default: '{tuple_values['daprCli']}'\n"),
+            ("version: of an unrelated setup action", f"version: '{tuple_values['daprCli']}'",
+             "steps:\n  - name: Install Node.js\n    uses: actions/setup-node@" + "0" * 40
+             + f"\n    with:\n      version: '{tuple_values['daprCli']}'\n"),
+            ("pin of no known form", f"DAPR_VERSION: '{tuple_values['daprCli']}'", f"DAPR_VERSION: '{tuple_values['daprCli']}'\n"),
+        ):
+            unrelated = copy.deepcopy(baseline_template)
+            unrelated["pinAudit"]["literalPins"].append({"path": unrelated_path, "value": value})
+            write_text(workspace / unrelated_path, fixture_text)
+            try:
+                expect_baseline_rejected(workspace, mutated_baseline_path, unrelated, label,
+                                         "sets no Dapr CLI, Dapr runtime or Aspire CLI role")
+            finally:
+                (workspace / unrelated_path).unlink()
             AUTHORITY_CONTROLS.append(label)
         # The tuple value is only a prefix or a suffix of the version its role's pins declare; the
         # changed pins are written to the fixture files so only the exact-version rule can reject them.
@@ -628,20 +784,20 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
                 for item in shifted["pinAudit"]["literalPins"]:
                     item["value"] = replace_pin_version(item["value"], version, replacement)
                 assert shifted["pinAudit"]["literalPins"] != original_pins, label
-                expect_pinned_baseline_rejected(workspace, mutated_baseline_path, shifted, original_pins, label,
+                expect_pinned_baseline_rejected(workspace, mutated_baseline_path, shifted, original_pins, contexts, label,
                                                 f"differs from tuple {field} {version}")
                 AUTHORITY_CONTROLS.append(label)
-        # Positive control: a listed pair equal to the tuple's own runtime and SDK is accepted.
-        listed_pair = copy.deepcopy(baseline_template)
-        listed_pair["dispositions"]["dapr"].update(
-            supportTableListed=True, listedRuntime=tuple_values["daprRuntime"],
-            listedDotnetSdk=tuple_values["daprDotnetPackages"])
-        write_json(mutated_baseline_path, listed_pair)
-        try:
-            VALIDATOR.validate_baseline(workspace, mutated_baseline_path)
-        finally:
-            mutated_baseline_path.unlink()
-        AUTHORITY_CONTROLS.append("listed Dapr pair equal to the tuple")
+        # Positive controls: a listed pair equal to the tuple's own runtime and SDK is accepted with
+        # either approval decision.
+        for decision in ("approved", "approved-explicit-exception"):
+            listed_pair = copy.deepcopy(baseline_template)
+            listed_pair["dispositions"]["dapr"].update(listed_equal, decision=decision)
+            write_json(mutated_baseline_path, listed_pair)
+            try:
+                VALIDATOR.validate_baseline(workspace, mutated_baseline_path)
+            finally:
+                mutated_baseline_path.unlink()
+            AUTHORITY_CONTROLS.append(f"listed Dapr pair equal to the tuple, decision {decision}")
         assert len(AUTHORITY_CONTROLS) == len(set(AUTHORITY_CONTROLS)), AUTHORITY_CONTROLS
 
         drifted_tuple = copy.deepcopy(tuple_values); drifted_tuple["communityToolkitAspireDapr"] = "0.0.0-drift"
@@ -681,9 +837,10 @@ def main() -> int:
         sum(authority for _, _, _, authority in results),
         len(HISTORICAL_BASELINE_SHA256),
     )
-    # The validator reads this exact line from the recorded mutation-controls outcome.
-    grounded = VALIDATOR.MUTATION_CONTROLS_RESULT.fullmatch(summary)
-    assert grounded is not None and int(grounded["scenarios"]) == VALIDATOR.MUTATION_SCENARIOS_PER_BASELINE, summary
+    # The validator requires the recorded mutation-controls outcome to be exactly this line, with
+    # every count; a changed suite must update the validator's expected counts in the same change.
+    assert VALIDATOR.MUTATION_CONTROLS_RESULT.fullmatch(summary) is not None, summary
+    assert summary == RESULT_LINE, f"self-test printed '{summary}' but the validator requires '{RESULT_LINE}'"
     print(summary)
     return 0
 
