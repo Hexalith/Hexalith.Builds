@@ -16,6 +16,8 @@ $global:HexalithG4PublisherTestInvocations = [System.Collections.Generic.List[st
 $global:HexalithG4PublisherRemoteDirectory = $null
 $global:HexalithG4PublisherRemoteDownloads = 0
 $global:HexalithG4PublisherRemoteMode = 'exact'
+$global:HexalithG4PublisherDelayedUris = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+$global:HexalithG4PublisherSleepSeconds = 0
 
 function global:dotnet {
     param(
@@ -43,6 +45,12 @@ function global:Invoke-WebRequest {
     param([string] $Uri, [hashtable] $Headers, [string] $OutFile, [string] $ErrorAction)
     $null = $Headers, $ErrorAction
     $global:HexalithG4PublisherRemoteDownloads++
+    if ($global:HexalithG4PublisherRemoteMode -eq 'unavailable') {
+        throw 'BlobNotFoundThe specified blob does not exist.'
+    }
+    if ($global:HexalithG4PublisherRemoteMode -eq 'delayed' -and $global:HexalithG4PublisherDelayedUris.Add($Uri)) {
+        throw 'BlobNotFoundThe specified blob does not exist.'
+    }
     $artifactName = [IO.Path]::GetFileName($Uri)
     $matches = @(Get-ChildItem -LiteralPath $global:HexalithG4PublisherRemoteDirectory -File -Filter '*.nupkg' |
             Where-Object { $_.Name.Equals($artifactName, [StringComparison]::OrdinalIgnoreCase) })
@@ -69,6 +77,11 @@ function global:Invoke-WebRequest {
         }
         finally { $archive.Dispose() }
     }
+}
+
+function global:Start-Sleep {
+    param([int] $Seconds)
+    $global:HexalithG4PublisherSleepSeconds += $Seconds
 }
 
 function Assert-Equal {
@@ -474,7 +487,7 @@ function Invoke-PublisherCase {
         [Parameter(Mandatory = $true)]
         [string] $ExpectedSource,
 
-        [ValidateSet('exact', 'signed', 'tampered')]
+        [ValidateSet('exact', 'signed', 'tampered', 'delayed')]
         [string] $RemoteMode = 'exact'
     )
 
@@ -484,10 +497,16 @@ function Invoke-PublisherCase {
     $global:HexalithG4PublisherRemoteDirectory = $packageDirectory
     $global:HexalithG4PublisherRemoteDownloads = 0
     $global:HexalithG4PublisherRemoteMode = $RemoteMode
+    $global:HexalithG4PublisherDelayedUris.Clear()
+    $global:HexalithG4PublisherSleepSeconds = 0
     & $publisherPath -Version $PublishedVersion -PackageDirectory $packageDirectory
 
+    $expectedDownloads = if ($RemoteMode -eq 'delayed') { 4 } else { 2 }
     Assert-Equal -Actual $global:HexalithG4PublisherTestInvocations.Count -Expected 2 -Because 'The publisher must invoke dotnet once per primary package.'
-    Assert-Equal -Actual $global:HexalithG4PublisherRemoteDownloads -Expected 2 -Because 'Every published package must be downloaded and hash-verified from the remote feed.'
+    Assert-Equal -Actual $global:HexalithG4PublisherRemoteDownloads -Expected $expectedDownloads -Because 'Every published package must be downloaded and hash-verified from the remote feed.'
+    if ($RemoteMode -eq 'delayed') {
+        Assert-Equal -Actual $global:HexalithG4PublisherSleepSeconds -Expected 40 -Because 'A transient missing blob must wait once per package before verification succeeds.'
+    }
 
     $publishedNames = [System.Collections.Generic.List[string]]::new()
     foreach ($serializedInvocation in $global:HexalithG4PublisherTestInvocations) {
@@ -562,6 +581,19 @@ try {
     $env:GITHUB_TOKEN = $null
     Invoke-PublisherCase -PublishedVersion '9.8.7' -ExpectedSource 'https://api.nuget.org/v3/index.json'
     Invoke-PublisherCase -PublishedVersion '9.8.30' -ExpectedSource 'https://api.nuget.org/v3/index.json' -RemoteMode signed
+    Invoke-PublisherCase -PublishedVersion '9.8.32' -ExpectedSource 'https://api.nuget.org/v3/index.json' -RemoteMode delayed
+    $packageDirectory = New-PackageInventory -PublishedVersion '9.8.33'
+    $global:HexalithG4PublisherRemoteDirectory = $packageDirectory
+    $global:HexalithG4PublisherRemoteMode = 'unavailable'
+    $global:HexalithG4PublisherSleepSeconds = 0
+    try {
+        & $publisherPath -Version '9.8.33' -PackageDirectory $packageDirectory
+        throw 'Publisher accepted a package blob that never became available.'
+    }
+    catch {
+        if (-not $_.Exception.Message.Contains('not available for hash verification after 45 attempts', [StringComparison]::Ordinal)) { throw }
+    }
+    Assert-Equal -Actual $global:HexalithG4PublisherSleepSeconds -Expected (44 * 20) -Because 'A persistently missing blob must consume every retry delay before failing.'
     try {
         Invoke-PublisherCase -PublishedVersion '9.8.31' -ExpectedSource 'https://api.nuget.org/v3/index.json' -RemoteMode tampered
         throw 'Publisher accepted a remote package with a changed payload.'
@@ -727,9 +759,13 @@ finally {
     Remove-Item Function:\dotnet -Force -ErrorAction SilentlyContinue
     Remove-Item Function:\Invoke-RestMethod -Force -ErrorAction SilentlyContinue
     Remove-Item Function:\Invoke-WebRequest -Force -ErrorAction SilentlyContinue
+    Remove-Item Function:\Start-Sleep -Force -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4PublisherTestInvocations -Scope Global -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4PublisherRemoteDirectory -Scope Global -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4PublisherRemoteDownloads -Scope Global -ErrorAction SilentlyContinue
+    Remove-Variable -Name HexalithG4PublisherRemoteMode -Scope Global -ErrorAction SilentlyContinue
+    Remove-Variable -Name HexalithG4PublisherDelayedUris -Scope Global -ErrorAction SilentlyContinue
+    Remove-Variable -Name HexalithG4PublisherSleepSeconds -Scope Global -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
 

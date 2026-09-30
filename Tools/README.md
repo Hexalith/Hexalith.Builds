@@ -107,8 +107,10 @@ every retained qualification artifact for its exact typed outcome, invocation,
 tool/source identity, and expected negative rule IDs. The script submits each
 primary `.nupkg` once; `dotnet nuget push` discovers and publishes the adjacent
 `.snupkg` automatically. Duplicate-safe retry downloads each primary package,
-records its remote SHA-256, and compares it with the qualified artifact. If the
-feed added a repository signature, every unsigned payload entry must match.
+records its remote SHA-256, and compares it with the qualified artifact. NuGet.org
+repository signing can hide the flat-container blob for several minutes, so a
+missing blob is retried for 15 minutes. A payload mismatch fails immediately. If
+the feed added a repository signature, every unsigned payload entry must match.
 
 `verify-g4-tool-release.ps1` checks the target feed credential and qualifies
 the actual semantic-release version before a release tag is created. The

@@ -110,9 +110,18 @@ function Assert-RemotePackageHash {
     $baseAddress = [string]$bases[0].'@id'
     $uri = "$($baseAddress.TrimEnd('/'))/$lowerId/$lowerVersion/$lowerId.$lowerVersion.nupkg"
     $downloadPath = Join-Path ([IO.Path]::GetTempPath()) "hexalith-g4-remote-$([Guid]::NewGuid().ToString('N')).nupkg"
+    # NuGet.org repository-signs the uploaded blob before the flat container
+    # serves it. The 4.29.0 Evidence.Cli push was visible only after about eight
+    # minutes, so a one-minute poll reported BlobNotFound and aborted the rest
+    # of the inventory. Forty-five attempts at 20 seconds cover a 15-minute window.
+    $maximumAttempts = 45
+    $retryDelaySeconds = 20
     try {
-        for ($attempt = 1; $attempt -le 12; $attempt++) {
+        for ($attempt = 1; $attempt -le $maximumAttempts; $attempt++) {
             try {
+                if (Test-Path -LiteralPath $downloadPath) {
+                    Remove-Item -LiteralPath $downloadPath -Force
+                }
                 Invoke-WebRequest -Uri $uri -Headers $RequestHeaders -OutFile $downloadPath -ErrorAction Stop | Out-Null
                 $actualHash = (Get-FileHash -LiteralPath $downloadPath -Algorithm SHA256).Hash
                 if ($actualHash -cne $ExpectedHash) {
@@ -133,10 +142,15 @@ function Assert-RemotePackageHash {
                 return
             }
             catch {
-                if ($_.Exception.Message.Contains('differs from the qualified package payload', [StringComparison]::Ordinal) -or $attempt -eq 12) {
+                $payloadMismatch = $_.Exception.Message.Contains('differs from the qualified package payload', [StringComparison]::Ordinal)
+                if ($payloadMismatch -or $attempt -eq $maximumAttempts) {
+                    if (-not $payloadMismatch) {
+                        throw "Remote package '$PackageId' version '$PackageVersion' was not available for hash verification after $maximumAttempts attempts. $($_.Exception.Message)"
+                    }
                     throw
                 }
-                Start-Sleep -Seconds 5
+                Write-Host "Remote '$PackageId' '$PackageVersion' is not available yet (attempt $attempt of $maximumAttempts); waiting ${retryDelaySeconds}s for repository signing to publish the package blob."
+                Start-Sleep -Seconds $retryDelaySeconds
             }
         }
     }
