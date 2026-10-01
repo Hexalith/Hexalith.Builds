@@ -1,0 +1,38 @@
+{
+  "schema": "hexalith.g6-current-mutation-fixtures.v1",
+  "purpose": "Immutable hermetic test fixtures only; never runtime qualification or acceptance evidence.",
+  "sourceEventStoreRevision": "08b9cfbce38fd34b9d791c63c848a8e685d72f36",
+  "historicalCapture": "Projects retained 2026-09-29 OQ8 EventStore capture; copied bytes remain unchanged.",
+  "files": [
+    {
+      "path": "observations.json",
+      "sha256": "7b9787fbc4f134bf3912ab6113950dbe18cae2dda526b67fd08cf3d061cbcac4",
+      "sourcePath": "_bmad-output/implementation-artifacts/qualification-evidence/g-6-runtime-toolchain-20260929/eventstore/observations.json"
+    },
+    {
+      "path": "test-results.json",
+      "sha256": "c5896d1fd2644e17463f7f709976975c7bd096dc99080ad2f57d0fda3aad8b56",
+      "sourcePath": "_bmad-output/implementation-artifacts/qualification-evidence/g-6-runtime-toolchain-20260929/eventstore/test-results.json"
+    },
+    {
+      "path": "deterministic-support.json",
+      "sha256": "2e4e950b9efc4301dd023d1d9b338086aa1756b8b7223c6413586094865b2e78",
+      "sourcePath": "_bmad-output/implementation-artifacts/qualification-evidence/g-6-runtime-toolchain-20260929/eventstore/deterministic-support.json"
+    },
+    {
+      "path": "tools/validate-oq8-platform-evidence.py",
+      "sha256": "87c7e5289fad892d3008ad70923c3be63b7c2fb0ac5492392e65b686812ad9c7",
+      "sourcePath": "references/Hexalith.EventStore/tools/validate-oq8-platform-evidence.py"
+    },
+    {
+      "path": "deploy/dapr/statestore-postgresql.yaml",
+      "sha256": "e8024498786765a32b0ea299778248ade35c855f77ede16ee4775162a971d0eb",
+      "sourcePath": "references/Hexalith.EventStore/deploy/dapr/statestore-postgresql.yaml"
+    },
+    {
+      "path": "deploy/dapr/resiliency.yaml",
+      "sha256": "115bdb0d3d330c69920692a80654066937e6b2dd3bd18806c0b276e1de011645",
+      "sourcePath": "references/Hexalith.EventStore/deploy/dapr/resiliency.yaml"
+    }
+  ]
+}

@@ -9,6 +9,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Aspire.Hosting.Dapr" />
+    <!-- Align published EventStore transitive hosting dependencies with the approved catalog; Keycloak runtime remains unqualified. -->
+    <PackageReference Include="Aspire.Hosting.Keycloak" />
+    <PackageReference Include="Aspire.Hosting.Redis" />
     <PackageReference Include="Hexalith.EventStore.Aspire" />
   </ItemGroup>
   <ItemGroup>

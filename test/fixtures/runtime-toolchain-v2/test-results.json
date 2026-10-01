@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "runner": "xUnit.net v3",
+  "command": "dotnet tests/Hexalith.EventStore.Server.LiveSidecar.Tests/bin/Release/net10.0/Hexalith.EventStore.Server.LiveSidecar.Tests.dll -method Hexalith.EventStore.Server.LiveSidecar.Tests.Actors.IdempotencyAdmissionOq8PostgresqlTests.ProductionMatrix_IndependentProcessesPreserveAuthorityReplayExpiryAndLeakageInvariants -noColor -result-ctrf raw-runner-temp",
+  "summary": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "test": {
+    "name": "Hexalith.EventStore.Server.LiveSidecar.Tests.Actors.IdempotencyAdmissionOq8PostgresqlTests.ProductionMatrix_IndependentProcessesPreserveAuthorityReplayExpiryAndLeakageInvariants",
+    "status": "passed",
+    "durationMilliseconds": 14627,
+    "traits": {
+      "Category": [
+        "LiveSidecar"
+      ],
+      "Profile": [
+        "oq8-postgresql-v1"
+      ]
+    }
+  }
+}

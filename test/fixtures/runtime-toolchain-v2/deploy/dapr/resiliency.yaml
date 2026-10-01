@@ -1,0 +1,72 @@
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: resiliency
+spec:
+  policies:
+    retries:
+      defaultRetry:
+        policy: exponential
+        maxInterval: 15s
+        maxRetries: 10
+      # Pub/sub outbound: publisher -> sidecar -> broker
+      # Conservative: Story 4.4 recovery drain handles prolonged outages
+      # Effective retry count = component built-in retries x resiliency retries:
+      #   Redis Streams: 0 built-in -> effective = 5 (resiliency only)
+      #   RabbitMQ: ~3 built-in (publisher confirms) -> effective ~15 (3 x 5)
+      #   Kafka: ~infinite built-in (default retries=2147483647) -> resiliency rarely fires
+      #   Azure Service Bus: 3 built-in (SDK default) -> effective ~15 (3 x 5)
+      pubsubRetryOutbound:
+        policy: exponential
+        maxInterval: 10s
+        maxRetries: 5
+      # Pub/sub inbound: broker -> sidecar -> subscriber app
+      # Effective inbound retry count = subscriber-side retries x resiliency retries
+      pubsubRetryInbound:
+        policy: exponential
+        maxInterval: 60s
+        maxRetries: 20
+    timeouts:
+      daprSidecar: 5s
+      # Pub/sub outbound: prevent hung sidecar->broker calls from blocking actor turns
+      pubsubTimeout: 10s
+      # Pub/sub inbound: allow more time for subscriber processing
+      subscriberTimeout: 30s
+    circuitBreakers:
+      defaultBreaker:
+        maxRequests: 1
+        interval: 60s
+        timeout: 60s
+        trip: consecutiveFailures > 5
+      # Pub/sub circuit breaker for prolonged broker outages
+      # When open, AggregateActor receives immediate failure (fast-fail) and transitions to PublishFailed
+      # maxRequests: 1 means only 1 probe in half-open state -- conservative to prevent flooding recovering broker
+      pubsubBreaker:
+        maxRequests: 1
+        interval: 60s
+        timeout: 60s
+        trip: consecutiveFailures > 10
+  targets:
+    apps:
+      eventstore:
+        retry: defaultRetry
+        timeout: daprSidecar
+        circuitBreaker: defaultBreaker
+    # IMPORTANT: These policies AUGMENT built-in pub/sub component retries.
+    # Effective retry count = component built-in retries x resiliency retries.
+    # See pubsubRetryOutbound comments above for per-backend effective retry counts.
+    components:
+      pubsub:
+        outbound:
+          retry: pubsubRetryOutbound
+          timeout: pubsubTimeout
+          circuitBreaker: pubsubBreaker
+        inbound:
+          retry: pubsubRetryInbound
+          timeout: subscriberTimeout
+      # State store resiliency: retry and circuit breaker for event persistence,
+      # snapshot read/write, and command status operations (D1, D2).
+      statestore:
+        retry: defaultRetry
+        timeout: daprSidecar
+        circuitBreaker: defaultBreaker

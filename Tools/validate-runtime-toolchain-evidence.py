@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
+import importlib.util
 import json
 import re
 import subprocess
@@ -67,7 +68,7 @@ LITERAL_PIN_FORMS = (
 MUTATION_SCENARIOS_PER_BASELINE = 30
 MUTATION_CONTROLS_BASELINES = 3
 MUTATION_CONTROLS_BASELINE_DRIFT = 48
-MUTATION_CONTROLS_AUTHORITY = 141
+MUTATION_CONTROLS_AUTHORITY = 165
 MUTATION_CONTROLS_HISTORICAL_PINS = 2
 MUTATION_CONTROLS_RESULT = re.compile(
     r"G6-EVIDENCE-MUTATIONS-PASSED: (?P<scenarios>[0-9]+) scenarios for each of (?P<baselines>[0-9]+) baselines; "
@@ -441,8 +442,8 @@ def validate_repository_revision(workspace: Path, binding: dict[str, Any], label
             f"{label} revision is not the current commit or an ancestor")
 
 
-def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
-    baseline = read_json(baseline_path)
+def _validate_baseline(workspace: Path, baseline_path: Path, document: dict[str, Any] | None = None) -> dict[str, Any]:
+    baseline = read_json(baseline_path) if document is None else document
     exact_fields(
         baseline,
         {"schema", "approvedBy", "approvedOn", "ownerRoles", "tuple", "dispositions", "rollback", "containment", "pinAudit"},
@@ -481,7 +482,15 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
         require(dapr["listedDotnetSdk"] == expected_tuple["daprDotnetPackages"],
                 "Support-table-listed Dapr .NET SDK differs from the tuple Dapr .NET packages")
     require(dispositions.get("communityToolkitAspireDapr") == "approved-prerelease-exception", "Toolkit prerelease exception missing")
-    require(dispositions.get("fluentUi") == "approved-release-candidate-exception", "Fluent UI RC exception missing")
+    fluent_version = expected_tuple["fluentUi"]
+    if "-" not in fluent_version:
+        fluent_disposition = "stable"
+    else:
+        require(re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+-rc(?:[.-][0-9A-Za-z][0-9A-Za-z.-]*)?", fluent_version, re.IGNORECASE)
+                is not None, "Fluent UI prerelease is not an approved release-candidate class")
+        fluent_disposition = "approved-release-candidate-exception"
+    require(dispositions.get("fluentUi") == fluent_disposition,
+            f"Fluent UI disposition drift: {fluent_version} requires {fluent_disposition}")
     require(dispositions.get("nSubstitute") == "stable" and dispositions.get("fluxor") == "stable", "Stable package disposition drift")
     require(dispositions.get("Dapr") == "catalog-only-not-activated", "Catalog-only Dapr classification drift")
     require(dispositions.get("Dapr.Workflow") == "catalog-only-unselected", "Dapr.Workflow classification drift")
@@ -540,6 +549,9 @@ def _validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
 
 def validate_baseline(workspace: Path, baseline_path: Path) -> dict[str, Any]:
     try:
+        baseline = read_json(baseline_path)
+        if baseline.get("schema") == "hexalith.runtime-toolchain-baseline.v2":
+            return current_contract().validate_baseline(__import__("types").SimpleNamespace(**globals()), workspace, baseline_path, baseline)
         return _validate_baseline(workspace, baseline_path)
     except ValidationError:
         raise
@@ -839,11 +851,23 @@ def validate_packet(
     workspace: Path, packet_path: Path, baseline_path: Path, baseline: dict[str, Any], candidate: bool = False,
 ) -> None:
     try:
+        if baseline.get("schema") == "hexalith.runtime-toolchain-baseline.v2":
+            current_contract().validate_packet(__import__("types").SimpleNamespace(**globals()), workspace, packet_path, baseline_path, baseline, candidate)
+            return
         _validate_packet(workspace, packet_path, baseline_path, baseline, candidate)
     except ValidationError:
         raise
     except STRUCTURAL_ERRORS as error:
         raise ValidationError(f"Malformed packet structure: {error}") from error
+
+
+def current_contract():
+    """Load the separately versioned current contract without changing historical rules."""
+    spec = importlib.util.spec_from_file_location("runtime_toolchain_v2", Path(__file__).with_name("runtime_toolchain_v2.py"))
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def main() -> int:

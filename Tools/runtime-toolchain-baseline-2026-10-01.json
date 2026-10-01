@@ -1,0 +1,242 @@
+{
+  "schema": "hexalith.runtime-toolchain-baseline.v2",
+  "approvedBy": "Jérôme Piquot",
+  "approvedOn": "2026-10-01",
+  "ownerRoles": [
+    "Builds",
+    "Platform",
+    "FrontComposer/Web"
+  ],
+  "tuple": {
+    "dotnetSdk": "10.0.401",
+    "aspireSdk": "13.6.0",
+    "aspireCli": "13.6.0",
+    "communityToolkitAspireDapr": "13.6.0-beta.910",
+    "daprCli": "1.18.0",
+    "daprRuntime": "1.18.2",
+    "daprDotnetPackages": "1.18.10",
+    "fluentUi": "5.0.0",
+    "nSubstitute": "6.2.0",
+    "fluxor": "6.11.0"
+  },
+  "dispositions": {
+    "dapr": {
+      "supportTableListed": false,
+      "listedRuntime": "1.18.0",
+      "listedDotnetSdk": "1.18.1",
+      "decision": "approved-explicit-exception"
+    },
+    "communityToolkitAspireDapr": "approved-prerelease-exception",
+    "fluentUi": "stable",
+    "nSubstitute": "stable",
+    "fluxor": "stable",
+    "Dapr": "catalog-only-not-activated",
+    "Dapr.Workflow": "catalog-only-unselected"
+  },
+  "rollback": {
+    "requiresDomainDataMutation": false,
+    "action": "restore the prior repository pins and rerun restore/build/qualification; retained PostgreSQL data is not rewritten"
+  },
+  "containment": {
+    "g4Approved": false,
+    "g5Approved": false,
+    "deploymentApproved": false,
+    "releaseApproved": false
+  },
+  "pinAudit": {
+    "globalJson": [
+      "global.json",
+      "references/Hexalith.Builds/global.json",
+      "references/Hexalith.Conversations/global.json",
+      "references/Hexalith.EventStore/global.json",
+      "references/Hexalith.Folders/global.json",
+      "references/Hexalith.FrontComposer/global.json",
+      "references/Hexalith.Memories/global.json",
+      "references/Hexalith.Parties/global.json",
+      "references/Hexalith.Tenants/global.json",
+      "references/Hexalith.Commons/global.json",
+      "references/Hexalith.Platform/global.json",
+      "references/Hexalith.McpCli/global.json"
+    ],
+    "appHostProjects": [
+      {
+        "path": "src/Hexalith.Projects.AppHost/Hexalith.Projects.AppHost.csproj",
+        "version": "13.6.0"
+      },
+      {
+        "path": "references/Hexalith.Conversations/src/Hexalith.Conversations.AppHost/Hexalith.Conversations.AppHost.csproj",
+        "version": "13.6.0"
+      },
+      {
+        "path": "references/Hexalith.EventStore/src/Hexalith.EventStore.AppHost/Hexalith.EventStore.AppHost.csproj",
+        "version": "13.6.0"
+      },
+      {
+        "path": "references/Hexalith.Folders/src/Hexalith.Folders.AppHost/Hexalith.Folders.AppHost.csproj",
+        "version": "13.6.0"
+      },
+      {
+        "path": "references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.AppHost/Hexalith.FrontComposer.AppHost.csproj",
+        "version": "13.6.0"
+      },
+      {
+        "path": "references/Hexalith.Memories/src/Hexalith.Memories.AppHost/Hexalith.Memories.AppHost.csproj",
+        "version": "13.6.0"
+      },
+      {
+        "path": "references/Hexalith.Parties/src/Hexalith.Parties.AppHost/Hexalith.Parties.AppHost.csproj",
+        "version": "13.6.0"
+      },
+      {
+        "path": "references/Hexalith.Tenants/src/Hexalith.Tenants.AppHost/Hexalith.Tenants.AppHost.csproj",
+        "version": "13.6.0"
+      },
+      {
+        "path": "references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj",
+        "version": "13.6.0"
+      }
+    ],
+    "literalPins": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "value": "dapr-version: '1.18.0'"
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "value": "dapr-runtime-version: '1.18.2'"
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "value": "version: '1.18.0'"
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "value": "runtime-version: '1.18.2'"
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "value": "run: dotnet tool install --global Aspire.Cli --version 13.6.0"
+      },
+      {
+        "path": "references/Hexalith.Builds/.github/workflows/domain-ci.yml",
+        "value": "default: '1.18.0'"
+      },
+      {
+        "path": "references/Hexalith.Builds/.github/workflows/domain-ci.yml",
+        "value": "default: '1.18.2'"
+      },
+      {
+        "path": "references/Hexalith.Builds/.github/workflows/domain-release.yml",
+        "value": "default: '1.18.0'"
+      },
+      {
+        "path": "references/Hexalith.Builds/.github/workflows/domain-release.yml",
+        "value": "default: '1.18.2'"
+      },
+      {
+        "path": "references/Hexalith.EventStore/.github/workflows/integration.yml",
+        "value": "DAPR_CLI_VERSION: '1.18.0'"
+      },
+      {
+        "path": "references/Hexalith.EventStore/.github/workflows/integration.yml",
+        "value": "DAPR_RUNTIME_VERSION: '1.18.2'"
+      },
+      {
+        "path": "references/Hexalith.FrontComposer/.github/workflows/quality.yml",
+        "value": "ASPIRE_CLI_INSTALL: dotnet tool install --global Aspire.Cli --version 13.6.0"
+      },
+      {
+        "path": "references/Hexalith.FrontComposer/.github/workflows/quality.yml",
+        "value": "version: '1.18.0'"
+      },
+      {
+        "path": "references/Hexalith.FrontComposer/.github/workflows/quality.yml",
+        "value": "dapr init --runtime-version 1.18.2"
+      },
+      {
+        "path": "references/Hexalith.Memories/.github/workflows/ci.yml",
+        "value": "DAPR_CLI_VERSION: '1.18.0'"
+      },
+      {
+        "path": "references/Hexalith.Memories/.github/workflows/ci.yml",
+        "value": "DAPR_RUNTIME_VERSION: '1.18.2'"
+      },
+      {
+        "path": "references/Hexalith.Memories/.github/workflows/nightly.yml",
+        "value": "DAPR_CLI_VERSION: '1.18.0'"
+      },
+      {
+        "path": "references/Hexalith.Memories/.github/workflows/nightly.yml",
+        "value": "DAPR_RUNTIME_VERSION: '1.18.2'"
+      },
+      {
+        "path": "references/Hexalith.Memories/tools/verify-production-deployment.ps1",
+        "value": "[string]$DaprRuntimeVersion = \"1.18.2\","
+      },
+      {
+        "path": "references/Hexalith.Parties/.github/workflows/ci.yml",
+        "value": "dapr-version: '1.18.0'"
+      },
+      {
+        "path": "references/Hexalith.Parties/.github/workflows/ci.yml",
+        "value": "dapr-runtime-version: '1.18.2'"
+      }
+    ]
+  },
+  "qualification": {
+    "approvedAtUtc": "2026-10-01T08:29:35Z",
+    "approvalScope": "spec, proposed tuple, and qualification run",
+    "specPath": "_bmad-output/implementation-artifacts/spec-g-6-current-runtime-toolchain-qualification.md",
+    "eventStorePackageVersion": "3.110.0",
+    "configuration": "Debug",
+    "dependencyMode": "source",
+    "acceptanceRequires": "named-decision-on-reviewed-packet-hash-and-committed-closure",
+    "frozenIntentSha256": "0cd9897d8e454a2ff8bcf0dc265764d483fdf68ab173887bbfb8324286b95b66"
+  },
+  "consumerInventory": {
+    "roots": [
+      ".",
+      "references/Hexalith.AI.Tools",
+      "references/Hexalith.EventStore",
+      "references/Hexalith.Tenants",
+      "references/Hexalith.FrontComposer",
+      "references/Hexalith.Conversations",
+      "references/Hexalith.Folders",
+      "references/Hexalith.Parties",
+      "references/Hexalith.Commons",
+      "references/Hexalith.Builds",
+      "references/Hexalith.Memories",
+      "references/Hexalith.Platform",
+      "references/Hexalith.McpCli"
+    ],
+    "fileBasedAppHosts": [
+      "references/Hexalith.Platform/apphost.cs"
+    ],
+    "unqualifiedExclusions": [
+      {
+        "path": "references/Hexalith.Platform/DaprSelfHostedMtls.cs",
+        "package": "Dapr.Works/mTLS-preview",
+        "version": "1.18.3",
+        "reason": "unselected Works/mTLS development preview; not executed or qualified"
+      },
+      {
+        "path": "references/Hexalith.Builds/Props/Directory.Packages.props",
+        "package": "Aspire.Hosting.Keycloak",
+        "version": "13.6.0-preview.1.26479.8",
+        "reason": "catalog preview integration; restoration and compilation are recorded but runtime is unqualified"
+      },
+      {
+        "path": "references/Hexalith.Builds/Props/Directory.Packages.props",
+        "package": "Aspire.Hosting.Kubernetes",
+        "version": "13.6.0-preview.1.26479.8",
+        "reason": "catalog preview integration; restoration and compilation are recorded but runtime is unqualified"
+      },
+      {
+        "path": "references/Hexalith.Folders/Directory.Packages.props",
+        "package": "CommunityToolkit.Aspire.Hosting.Dapr",
+        "version": "13.0.0",
+        "reason": "existing conditional stable public Folders.Aspire dependency; excluded from current Toolkit runtime qualification"
+      }
+    ]
+  }
+}

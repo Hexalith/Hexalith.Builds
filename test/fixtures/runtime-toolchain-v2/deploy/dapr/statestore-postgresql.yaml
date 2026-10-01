@@ -1,0 +1,36 @@
+# DAPR State Store Component -- Production PostgreSQL (D1, NFR13)
+# =================================================================
+# PostgreSQL-backed state store for actor state, snapshots, and command status tracking.
+# Composite key pattern: {tenant}||{domain}||{aggregateId} (D1)
+#
+# Component Scoping (AC #2, AC #4, AC #13):
+#   eventstore accesses actor state, snapshots, and command status.
+#   eventstore-admin reads admin indexes and performs direct health/state probes.
+#   Domain services have zero state store access -- no read, no write.
+#
+# Adding New Domain Services:
+#   DO NOT add new domain services to scopes. Domain services have zero state store
+#   access (D4). If a domain service needs configuration data, use a separate scoped
+#   component (not the actor state store).
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+    - name: connectionString
+      # PostgreSQL pgx/libpq connection string. Format: host=<host> port=5432 user=<user> password=<pass> dbname=<db> sslmode=require
+      # The deployment pipeline resolves this placeholder from its environment/secret provider.
+      # NEVER hardcode secrets in this file (NFR14).
+      value: "{env:POSTGRES_CONNECTION_STRING}"
+    - name: actorStateStore
+      value: "true"
+# Component-level scoping: eventstore and eventstore-admin can access this state store.
+# Actors run in-process under the eventstore app-id. Admin.Server performs read-only
+# admin queries and health probes. Domain services have zero state store access --
+# no read, no write. This enforces the zero-trust posture (D4).
+scopes:
+  - eventstore
+  - eventstore-admin

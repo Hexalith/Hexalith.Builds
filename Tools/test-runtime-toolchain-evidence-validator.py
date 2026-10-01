@@ -798,6 +798,32 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
             finally:
                 mutated_baseline_path.unlink()
             AUTHORITY_CONTROLS.append(f"listed Dapr pair equal to the tuple, decision {decision}")
+        # Release class and owner disposition must agree: stable Fluent UI is not an RC exception.
+        fluent_controls = (
+            ("stable Fluent UI", "5.0.0", "stable", True),
+            ("stable Fluent UI classified as RC", "5.0.0", "approved-release-candidate-exception", False),
+            ("stable Fluent UI missing disposition", "5.0.0", None, False),
+            ("stable Fluent UI unknown disposition", "5.0.0", "unapproved", False),
+            ("RC Fluent UI", "5.0.0-rc.5-26219.1", "approved-release-candidate-exception", True),
+            ("RC Fluent UI classified as stable", "5.0.0-rc.5-26219.1", "stable", False),
+            ("RC Fluent UI missing disposition", "5.0.0-rc.5-26219.1", None, False),
+            ("beta Fluent UI classified as RC", "5.0.0-beta.1", "approved-release-candidate-exception", False),
+        )
+        for label, version, disposition, accepted in fluent_controls:
+            fluent_baseline = copy.deepcopy(baseline_template)
+            fluent_baseline["tuple"]["fluentUi"] = version
+            fluent_baseline["dispositions"]["fluentUi"] = disposition
+            write_text(catalog_path, fixture_catalog(fluent_baseline["tuple"]))
+            try:
+                if accepted:
+                    write_json(mutated_baseline_path, fluent_baseline)
+                    VALIDATOR.validate_baseline(workspace, mutated_baseline_path)
+                else:
+                    expect_baseline_rejected(workspace, mutated_baseline_path, fluent_baseline, label, "Fluent UI")
+            finally:
+                mutated_baseline_path.unlink(missing_ok=True)
+                write_text(catalog_path, fixture_catalog(tuple_values))
+            AUTHORITY_CONTROLS.append(label)
         assert len(AUTHORITY_CONTROLS) == len(set(AUTHORITY_CONTROLS)), AUTHORITY_CONTROLS
 
         drifted_tuple = copy.deepcopy(tuple_values); drifted_tuple["communityToolkitAspireDapr"] = "0.0.0-drift"
@@ -841,6 +867,11 @@ def main() -> int:
     # every count; a changed suite must update the validator's expected counts in the same change.
     assert VALIDATOR.MUTATION_CONTROLS_RESULT.fullmatch(summary) is not None, summary
     assert summary == RESULT_LINE, f"self-test printed '{summary}' but the validator requires '{RESULT_LINE}'"
+    current_spec = importlib.util.spec_from_file_location("g6_current_mutations", SCRIPT.with_name("test_runtime_toolchain_v2.py"))
+    assert current_spec is not None and current_spec.loader is not None
+    current = importlib.util.module_from_spec(current_spec)
+    current_spec.loader.exec_module(current)
+    assert current.run_controls() == 103
     print(summary)
     return 0
 
