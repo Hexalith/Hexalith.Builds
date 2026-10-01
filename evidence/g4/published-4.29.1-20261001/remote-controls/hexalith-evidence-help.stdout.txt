@@ -1,0 +1,13 @@
+Description:
+  Validates deterministic Hexalith readiness evidence.
+
+Usage:
+  Hexalith.Builds.Evidence.Cli [command] [options]
+
+Options:
+  -?, -h, --help  Show help and usage information
+  --version       Show version information
+
+Commands:
+  validate <evidence-path>  Validates a hexalith.readiness-evidence.v1 YAML matrix or hexalith.g4-p0-acceptance.v1 JSON record.
+

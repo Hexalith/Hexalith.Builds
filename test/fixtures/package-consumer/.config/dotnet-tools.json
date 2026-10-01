@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "hexalith.builds.module.cli": {
+      "version": "4.29.1",
+      "commands": [
+        "hexalith-module"
+      ],
+      "rollForward": false
+    },
+    "hexalith.builds.evidence.cli": {
+      "version": "4.29.1",
+      "commands": [
+        "hexalith-evidence"
+      ],
+      "rollForward": false
+    }
+  }
+}

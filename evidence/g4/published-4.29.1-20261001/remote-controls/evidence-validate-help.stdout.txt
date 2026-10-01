@@ -1,0 +1,13 @@
+Description:
+  Validates a hexalith.readiness-evidence.v1 YAML matrix or hexalith.g4-p0-acceptance.v1 JSON record.
+
+Usage:
+  Hexalith.Builds.Evidence.Cli validate <evidence-path> [options]
+
+Arguments:
+  <evidence-path>
+
+Options:
+  --output <human|json>  [default: human]
+  -?, -h, --help         Show help and usage information
+

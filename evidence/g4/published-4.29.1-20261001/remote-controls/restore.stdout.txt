@@ -1,0 +1,4 @@
+Tool 'hexalith.builds.module.cli' (version '4.29.1') was restored. Available commands: hexalith-module
+Tool 'hexalith.builds.evidence.cli' (version '4.29.1') was restored. Available commands: hexalith-evidence
+
+Restore was successful.

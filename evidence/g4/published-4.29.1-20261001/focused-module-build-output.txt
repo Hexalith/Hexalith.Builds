@@ -1,0 +1,15 @@
+  P0Fixture.Inventory -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.dll
+  P0Fixture.Inventory.Descriptor -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll
+  P0Fixture.Orders -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders/P0Fixture.Orders.dll
+  P0Fixture.Orders.Descriptor -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll
+  P0Fixture.Ui -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll
+  P0Fixture.Ui.Descriptor -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll
+  Hexalith.Builds.Module.Tests -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:08.54

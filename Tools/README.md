@@ -126,6 +126,40 @@ reviewers and branch restrictions for both environments in GitHub settings.
 The version shown above is illustrative. Semantic-release supplies the actual
 version; never create a consumer tool manifest with an unpublished version.
 
+The [published candidate consumer](../test/fixtures/package-consumer/README.md)
+now pins both tools to `4.29.1`, source
+`21ce044ab465ccb2adab58b3d66e394ffbecf3c2`, and clears package sources to
+NuGet.org for isolated restore. [The 2026-10-01 observations](../evidence/g4/published-4.29.1-20261001/README.md)
+retain all 97 installed-command checks, including every synthetic corpus
+negative, repeated metadata-only `down`, unavailable `run`/`test`, and absent
+owner acceptance. They retain the interrupted source/package gate and failed
+control-harness attempts separately. The release inventory's unsigned archive
+hashes differ from the repository-signed restored hashes. Payload-entry hashes
+are recorded, but independent equivalence needs the original qualified release
+archives; a signature's presence alone does not prove equality.
+
+The selected EventStore `3.110.0` / Builds `4.29.1` tuple now has independently
+recorded P1R acceptance at `2026-10-01T06:17:01Z`; fresh G-6 acceptance remains
+pending. Keep live qualification and full P0 acceptance blocked until all
+independent prerequisites are bound. The metadata-only
+fixture's `HXR003` does not describe the executable fixture: the latter supports
+the implemented native `full`/`full-mtp` lanes, with historical Stage 5 evidence.
+Current clean source/package qualification, real persisted sequences, causal
+native failure evidence, cancellation, live repeated cleanup, exercised rollback,
+and dated three-role approval remain mandatory. The rollback validator still
+checks an attestation; it does not prove a drill happened. After those actual
+artifacts and decisions exist, validate the exact final record through the
+installed `hexalith-evidence` before P4 handoff. P0 does not self-accept Story 6.1.
+
+Current source G-6 validation distinguishes stable Fluent UI from an approved
+RC exception: `5.0.0` requires `stable`, while an RC requires
+`approved-release-candidate-exception`. Other prerelease classes are rejected.
+The mutation suite now requires 165 authority controls, including 24 release-class
+and disposition controls across the three baseline fixtures. Historical baseline
+and packet bytes remain unchanged; a fresh packet must bind the new validator,
+test bytes, and exact result line. This source correction does not change the
+published `4.29.1` tools or supply current baseline approval.
+
 The preserved P1R `3.102.0` candidate bundles live in the umbrella workspace at
 `_bmad-output/implementation-artifacts/qualification-evidence/`. Its README
 and the P1R revalidation record bind the preserved `.8`, `.9`, `.13`, and
@@ -408,6 +442,7 @@ Run the script from the `references/Hexalith.Builds` submodule:
   symlink support.
 - Git submodule commands fail: Confirm Git is installed and that the repository
   root is the current directory.
+
 
 The current 2026-10-01 G-6 contract is separately versioned as `hexalith.runtime-toolchain-baseline.v2` and `hexalith.runtime-toolchain-evidence.v2`. `Tools/runtime-toolchain-baseline-2026-10-01.json` records the approved tuple/run and explicit unqualified exclusions. `Tools/runtime_toolchain_v2.py` audits all root-declared consumers, including Platform file-based directives, and binds actual checkout HEADs separately from root gitlinks, with ancestor/committed-source closure for later metadata-only Projects commits, source bytes, resolved packages, exact tool logs, command/test outcomes, private sidecar discovery configuration/registry identities, actor/scheduler namespaces and shared-resource/owned cleanup. The 52 current mutation controls and accepted metadata-commit positive control also check the complete OQ8 semantics and support identities against freshly rehashed receipts. Every isolated sidecar launch and restart selects SQLite v1 with one fixture-private registry; the registry identity hashes its path, while the configuration digest binds exact bytes. The validator requires all three nodes and a distinct restarted process to share both bindings, and proves fixture runtime/discovery scratch removal. Dapr 1.18.2 mDNS ignores `NAMESPACE` for discovery, so the namespace alone is not an isolation boundary. SQLite name resolution is Alpha and qualifies only this disposable test infrastructure; no production resolver is qualified. The historical v1 contracts and baseline hashes remain preserved.
 

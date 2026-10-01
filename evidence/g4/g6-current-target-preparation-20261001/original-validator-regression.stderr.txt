@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/var/tmp/hexalith-g6-original-regression-isate4ux/Tools/test-runtime-toolchain-evidence-validator.py", line 875, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/var/tmp/hexalith-g6-original-regression-isate4ux/Tools/test-runtime-toolchain-evidence-validator.py", line 851, in main
+    packet_scenarios, baseline_scenarios, authority_controls = run_baseline(path, others)
+                                                               ~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/var/tmp/hexalith-g6-original-regression-isate4ux/Tools/test-runtime-toolchain-evidence-validator.py", line 820, in run_baseline
+    VALIDATOR.validate_baseline(workspace, mutated_baseline_path)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/tmp/hexalith-g6-original-regression-isate4ux/Tools/validate-runtime-toolchain-evidence.py", line 543, in validate_baseline
+    return _validate_baseline(workspace, baseline_path)
+  File "/var/tmp/hexalith-g6-original-regression-isate4ux/Tools/validate-runtime-toolchain-evidence.py", line 484, in _validate_baseline
+    require(dispositions.get("fluentUi") == "approved-release-candidate-exception", "Fluent UI RC exception missing")
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/tmp/hexalith-g6-original-regression-isate4ux/Tools/validate-runtime-toolchain-evidence.py", line 177, in require
+    raise ValidationError(message)
+g6_validator.ValidationError: Fluent UI RC exception missing

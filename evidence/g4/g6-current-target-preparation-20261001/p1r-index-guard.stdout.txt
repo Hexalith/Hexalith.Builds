@@ -1,0 +1,1 @@
+PASS: production-authority index is [6, 7, 8]

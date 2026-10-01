@@ -1,0 +1,15 @@
+Description:
+  Tears down runner-owned module resources.
+
+Usage:
+  Hexalith.Builds.Module.Cli down [options]
+
+Options:
+  --manifest <manifest> (REQUIRED)
+  --profile <profile>
+  --filter <filter>
+  --evidence <evidence>
+  --run-id <run-id>
+  --output <human|json>             [default: human]
+  -?, -h, --help                    Show help and usage information
+

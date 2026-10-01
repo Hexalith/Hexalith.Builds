@@ -4,3 +4,5 @@ test/fixtures/**/*.json text eol=lf
 test/fixtures/**/*.yaml text eol=lf
 # Acceptance-validator artifacts are SHA-256 bound by the corpus records; their bytes must never be converted.
 test/fixtures/evidence/acceptance/bound/** -text
+# Candidate qualification outputs are byte-bound observations; preserve their exact bytes.
+evidence/g4/** -text

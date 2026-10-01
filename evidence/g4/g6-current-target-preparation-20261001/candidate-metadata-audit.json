@@ -1,0 +1,19 @@
+{
+  "acceptanceEvidence": false,
+  "artifactKind": "independent-candidate-metadata-audit",
+  "candidateArtifactCount": 215,
+  "commandCount": 97,
+  "retainedCommandStreams": 194,
+  "negativeControlVectorsComparedToSourceExpectations": {
+    "module-negative-": 16,
+    "evidence-negative-": 29,
+    "acceptance-negative-": 36
+  },
+  "releaseFixtureBindings": 233,
+  "allHashesAndSizesVerified": true,
+  "noLiveQualificationOrOwnerAcceptanceInferred": true,
+  "auditHarnessCorrections": [
+    "initial audit incorrectly sorted and deduplicated diagnostic vectors; final audit compares exact ordered vectors including repeated rules",
+    "initial audit assumed one expected-sidecar filename form; final audit handles both corpus forms without changing expectations"
+  ]
+}

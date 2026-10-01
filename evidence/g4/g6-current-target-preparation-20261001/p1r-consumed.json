@@ -1,0 +1,61 @@
+{
+  "acceptanceEvidence": false,
+  "artifactKind": "p0-prerequisite-consumption",
+  "capturedUtc": "2026-10-01T06:31:50.180274Z",
+  "p1rRecord": "Hexalith.Projects/_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+  "p1rRecordSha256": "37e2532154319cc030b9559f3cfee4bfb0853a4e50d47dcc0196f89e448a4eb7",
+  "selected": {
+    "eventstore_version": "3.110.0",
+    "eventstore_tag": "v3.110.0",
+    "eventstore_revision": "27279fe6431925a6ea046c3f89af61487185c7de",
+    "builds_revision": "21ce044ab465ccb2adab58b3d66e394ffbecf3c2"
+  },
+  "decisionTimestampUtc": "2026-10-01T06:17:01Z",
+  "decisions": {
+    "EventStore Owner": {
+      "decision": "accept",
+      "approver": "Jérôme Piquot",
+      "record": "_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+      "selected": "#/selected"
+    },
+    "Builds Owner": {
+      "decision": "accept",
+      "approver": "Jérôme Piquot",
+      "record": "_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+      "selected": "#/selected"
+    },
+    "Solution Architect": {
+      "decision": "accept",
+      "approver": "Jérôme Piquot",
+      "record": "_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+      "selected": "#/selected"
+    },
+    "Test Architect": {
+      "decision": "accept",
+      "approver": "Jérôme Piquot",
+      "record": "_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+      "selected": "#/selected"
+    }
+  },
+  "authority": "independently recorded concurrent P1R acceptance; this P0 pass consumes it without changing it",
+  "historicalP1rRecordPreserved": true,
+  "guards": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 tools/planning/validate_production_authority.py --story-id 6.1",
+      "workingRepository": "Hexalith.Projects",
+      "exitCode": 0,
+      "stdout": "p1r-story-guard.stdout.txt",
+      "stderr": "p1r-story-guard.stderr.txt"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 tools/planning/validate_production_authority.py --validate-index",
+      "workingRepository": "Hexalith.Projects",
+      "exitCode": 0,
+      "stdout": "p1r-index-guard.stdout.txt",
+      "stderr": "p1r-index-guard.stderr.txt"
+    }
+  ],
+  "g6Accepted": false,
+  "liveQualificationExecuted": false,
+  "finalP0AcceptanceGranted": false
+}

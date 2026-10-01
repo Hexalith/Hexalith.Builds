@@ -29,21 +29,21 @@ delivery_state:
   package_controls: implemented-and-locally-qualified; protected-release-and-remote-proof-pending
   supported_composition: validated-public-run-down-and-full-persisted-profile-qualified-locally; unsupported-profiles-HXR029-nonpassing; packaged-executable-composition-qualified-locally-stage5.6
   persisted_qualification: stage4-public-source-full-profile-qualified; stage5-packaged-vstest-and-mtp-native-report-evidence-qualified-locally-dirty-tree; stage5-review-remediated-and-requalified-0.0.0-stage5.7-2026-09-25; stage5-requalified-clean-tree-0.0.0-stage5.8-eventstore-3.108.1-2026-09-25
-  published_consumer_pin: absent
+  published_consumer_pin: candidate-4.29.1-remote-contract-controls-passed; exact-p1r-accepted; fresh-g6-and-full-p0-acceptance-pending
   owner_acceptance: stage3-evidence-accepted-2026-09-23; full-p0-acceptance-absent
   test_architect_acceptance: stage3-evidence-accepted-2026-09-23; full-p0-acceptance-absent
 accepted_p1r_baseline:
   acceptance_record: Hexalith.Projects/_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json
-  accepted_at_utc: 2026-09-22T17:11:38Z
-  eventstore_version: 3.106.0
-  eventstore_tag: v3.106.0
-  eventstore_revision: 76051c70cbf868c40edc00ca0344fa5bd8879b69
-  builds_revision: ad52f350a2f0bc47849179ae17b4594dafff5363
+  accepted_at_utc: 2026-10-01T06:17:01Z
+  eventstore_version: 3.110.0
+  eventstore_tag: v3.110.0
+  eventstore_revision: 27279fe6431925a6ea046c3f89af61487185c7de
+  builds_revision: 21ce044ab465ccb2adab58b3d66e394ffbecf3c2
   rollback_eventstore_version: 3.70.1
   rollback_eventstore_revision: f13f9925fdca53efa2ab8c90d396ab106f91bb9c
   rollback_builds_revision: 7af20f8bafbfe561df6f7705913a0800603090b5
-  current_head_at_resumption: 2fba3497043fe5ffcfe4dc44c51a09eae9b950ab
-  current_head_relation: accepted-revision-descends-from-current-head; alignment-applied-in-working-tree
+  current_head_at_resumption: 21ce044ab465ccb2adab58b3d66e394ffbecf3c2
+  current_head_relation: accepted-revision-equals-observed-head; fresh-g6-and-live-qualification-pending
 packages:
   module_cli:
     id: Hexalith.Builds.Module.Cli
@@ -2400,6 +2400,67 @@ On 2026-09-29 Jérôme Piquot, as sole owner, retargeted the pending P1R candida
 The candidate Builds revision is the committed Projects gitlink that contains this record; its exact SHA, Builds CI at that SHA, and the fresh G-6 packet are indexed from Projects `_bmad-output/implementation-artifacts/6-1-p1r-3109-exact-baseline-candidate.md`. Exact-SHA CI is recorded only after the owner pushes. No published tool consumer pin or current persisted-run proof exists for this revision, so P0 Stage 6 stays blocked.
 
 **Pending decisions:** Builds Owner must accept or reject this exact Builds revision with the tagged EventStore package coordinate; EventStore Owner, Solution Architect, and Test Architect must issue their own exact-tuple P1R decisions; G-6 owners must review the fresh packet and its open source/build/inventory limits. The accepted P1R frontmatter above remains at `3.106.0`. P0 Stage 6 and Story 6.1 remain blocked; this record grants neither new P1R acceptance nor Stage 6 readiness.
+
+### 2026-10-01 published `4.29.1` candidate preparation
+
+The authorized continuation selects EventStore `3.110.0` and published Builds
+tools `4.29.1` from `21ce044ab465ccb2adab58b3d66e394ffbecf3c2`. This is
+a candidate delivery target, not G-6 or P0 acceptance. At the control-capture
+checkpoint P1R remained at `3.106.0`; the later independently recorded four-role
+decision at `2026-10-01T06:17:01Z` accepts the selected `3.110.0` tuple, and the
+active P1R frontmatter above consumes that record. The current G-6 validator rejects
+the 2026-09-29 packet for Toolkit catalog drift. Stages 6–7 stay open, and no
+live qualification ran.
+
+The checked-in `test/fixtures/package-consumer/.config/dotnet-tools.json` now
+pins the exact published pair. A new consumer outside the checkout restored
+from NuGet.org into an empty package cache and executed 97 installed-command
+checks: restore, versions, six help contracts, two metadata-only `down` calls,
+unavailable synthetic `run`/`test`, positive readiness and synthetic acceptance,
+16 manifest negatives, 29 readiness negatives, 36 acceptance negatives, and
+absent owner acceptance. Every expected result matched. Synthetic approvals
+and persisted claims remain validator fixtures only. Repeated metadata-only
+cleanup does not prove live cleanup or an exercised rollback.
+
+`evidence/g4/published-4.29.1-20261001/` retains the release inventory, signed
+remote archive hashes and unsigned inventory hashes, nuspec/source bindings,
+payload-entry hashes, canonical command outputs, and three failed control-harness
+attempts. Original qualified release archives are not attached to the release
+and no Actions artifacts were available; independent unsigned-payload equality
+remains unproven. The source/package gate at unique local version
+`0.0.0-p0.20261001.1`, with `-RequireControls`, was bounded after its initial
+restore/build startup and exited `143` without an inventory. Its failure is
+retained separately from the passing published controls and focused fallback.
+
+Focused Debug evidence and module project builds passed with zero warnings or
+errors. Direct xUnit assembly execution passed all 107 evidence tests and,
+with a fresh invocation-owned `TMPDIR`, all 214 module tests. The initial module
+attempt's 21 failures are retained: unrelated `/tmp/.git` redirected temporary
+fixture roots. No source/test change was needed. All 233 copied control fixture
+files match the published release inventory byte hashes and sizes. The final
+candidate artifact manifest binds the retained files; Git text conversion is
+disabled for these evidence bytes.
+
+The observations do not create `evidence/g4/6.1-p0-acceptance.json`. Its absence
+was exercised through the installed validator and failed with `6/HXE200`.
+Current clean source/package parity, both real persisted native lanes, every
+required profile class, causal native failure/report evidence, cancellation,
+live idempotent cleanup, exercised rollback, and three dated owner decisions
+remain mandatory before independent packaged validation and P4 handoff.
+Story 6.1 retains its remaining independent gates.
+
+The prerequisite revalidation also corrected the source G-6 validator's Fluent
+UI classification: stable `5.0.0` now requires `stable`, while historical RC
+tuples retain the explicit RC exception. The mutation suite passes 165 authority
+controls; its new cases fail against the original validator. The correction and
+current gate failures are recorded separately in
+`evidence/g4/g6-current-target-preparation-20261001/`. It grants no P1R/G-6
+acceptance and changes no historical baseline or packet bytes.
+
+The concurrent P1R transition is consumed separately in
+`evidence/g4/g6-current-target-preparation-20261001/p1r-consumed.json`.
+It preserves the earlier candidate observations and grants no G-6 or final P0
+acceptance. Both prerequisite gates must match before current live qualification.
 
 ### Completion Notes List
 

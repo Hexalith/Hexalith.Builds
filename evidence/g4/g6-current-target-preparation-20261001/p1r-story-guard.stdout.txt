@@ -1,0 +1,1 @@
+PASS: Story 6.1 is within production authority

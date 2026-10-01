@@ -1,0 +1,8 @@
+G6-GATE-VALIDATOR: the candidate validator exited 1: G6-EVIDENCE-INVALID: Central package pin drift: CommunityToolkit.Aspire.Hosting.Dapr
+G6-PACKET-GITLINK-DRIFT: Hexalith.Builds is bound at 'ac58d02cd69f4c74cc71fc05430983d51b58fd84' but the root gitlink is '21ce044ab465ccb2adab58b3d66e394ffbecf3c2'; recapture the G-6 packet at the committed gitlinks
+G6-PACKET-GITLINK-DRIFT: Hexalith.Conversations is bound at 'a0a6fa288a87ba7971113de420334fc7478d7123' but the root gitlink is '8519c24bfb0a04da8710c03174ce3576898e3e03'; recapture the G-6 packet at the committed gitlinks
+G6-PACKET-GITLINK-DRIFT: Hexalith.EventStore is bound at '5b9494835fcba6152789653add8f84bee5666035' but the root gitlink is '6dededdecd62dd6dc6d1f15810108d860ec70c8f'; recapture the G-6 packet at the committed gitlinks
+G6-PACKET-GITLINK-DRIFT: Hexalith.FrontComposer is bound at 'ccb75d5454b874fff9e5ccddb4598b8bc3860631' but the root gitlink is '48f7dfef920e8217e5c6221f364f0a1e0f61f387'; recapture the G-6 packet at the committed gitlinks
+G6-PACKET-GITLINK-DRIFT: Hexalith.Tenants is bound at '55f3dc63b6ce10bb0afdf929d026fa07cffd9105' but the root gitlink is '54ceb3e1d50d3fc7bf1846e08cd2835828adfcdf'; recapture the G-6 packet at the committed gitlinks
+G6-BUILDS-EXECUTION-SHA: CI executes Hexalith.Builds '212583e08c7b6db22c7ccee881ad11699e1f7522' but the root Hexalith.Builds gitlink is '21ce044ab465ccb2adab58b3d66e394ffbecf3c2'
+G6-GATE-FAILED: 7 G-6 check(s) failed

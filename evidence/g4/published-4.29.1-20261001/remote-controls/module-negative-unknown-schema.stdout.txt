@@ -1,0 +1,1 @@
+{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXM001"},"diagnostics":[{"ruleId":"HXM001","phase":"Manifest","category":"Manifest","message":"The manifest schema is unsupported.","field":"schema","hint":"Use hexalith.module-manifest.v1.","source":null,"location":null,"row":null}]}

@@ -224,9 +224,15 @@ dotnet tool run hexalith-module test --manifest module/hexalith-projects.module.
 dotnet tool run hexalith-evidence validate _bmad-output/planning-artifacts/implementation-readiness-traceability-matrix.yaml
 ```
 
-An exact-version consumer manifest is intentionally not checked in before the
-first package is published; consumers must not invent a `4.20.0` pin. The
-semantic-release version and package hashes are the release record.
+The checked-in [candidate consumer](test/fixtures/package-consumer/README.md)
+pins both published tools to `4.29.1` from source
+`21ce044ab465ccb2adab58b3d66e394ffbecf3c2`. Its isolated remote restore,
+version checks, and synthetic positive/negative controls are recorded in
+[the candidate evidence](evidence/g4/published-4.29.1-20261001/README.md).
+The selected EventStore `3.110.0` tuple has independently recorded P1R acceptance;
+fresh G-6 acceptance remains pending. Publication and contract controls do not
+accept P0.
+Use only versions actually published by semantic-release.
 
 Pre-release consumers configure the Hexalith GitHub Packages NuGet source and
 authenticated package-read access outside the checked-in tool manifest; stable
@@ -282,10 +288,14 @@ mutation-controls command record must be exactly the self-test's
 `G6-EVIDENCE-MUTATIONS-PASSED` result line, every count included. The pending
 2026-09-29 candidate baseline records the explicit Dapr runtime `1.18.2` / .NET
 package `1.18.10` exception with Toolkit `13.5.1-beta.770`; it is not a
-support-table-listed pair. Live persisted composition remains explicitly
-unavailable at the separate descriptor-ABI prerequisite (`HXR003`), preserving
-the G-4 boundary. `down` remains idempotent and only removes runner-owned
-invocation metadata.
+support-table-listed pair. The current catalog's Toolkit `13.6.0-beta.910`
+and Fluent UI `5.0.0` need fresh G-6 acceptance before current live
+qualification. The executable fixture and installed runner implement public
+composition and the native `full`/`full-mtp` persisted profiles; retained Stage
+5 evidence qualifies their historical local scope. `HXR003` applies to the
+metadata-only descriptor fixture, and unsupported executable profiles return
+`HXR029`. Neither result implies current published persisted qualification.
+`down` remains idempotent and removes only invocation-owned resources.
 
 ### Evidence Validator Contract
 

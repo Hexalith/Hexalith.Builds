@@ -1,0 +1,14 @@
+Description:
+  Starts a supported module runtime.
+
+Usage:
+  Hexalith.Builds.Module.Cli run [options]
+
+Options:
+  --manifest <manifest> (REQUIRED)
+  --profile <profile>
+  --filter <filter>
+  --evidence <evidence>
+  --output <human|json>             [default: human]
+  -?, -h, --help                    Show help and usage information
+

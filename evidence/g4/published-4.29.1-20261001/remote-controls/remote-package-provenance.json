@@ -1,0 +1,1567 @@
+{
+  "acceptanceEvidence": false,
+  "artifactKind": "published-package-provenance-observations",
+  "packages": [
+    {
+      "feed": "https://api.nuget.org/v3/index.json",
+      "id": "Hexalith.Builds.Evidence.Cli",
+      "payloadEntries": [
+        {
+          "path": "Hexalith.Builds.Evidence.Cli.nuspec",
+          "sha256": "4e7209117e4ecd9a7a6ad0919446a5a57f76045c3682cbc86442d48c767ff0e0",
+          "sizeBytes": 880
+        },
+        {
+          "path": "README.md",
+          "sha256": "d7f1c74193045f41c18aa77381b4974620a1ea24a4283aaaeb6eac90beab9117",
+          "sizeBytes": 18364
+        },
+        {
+          "path": "[Content_Types].xml",
+          "sha256": "fda8a256c988d507db8c9709eda58541a738ccfd05858ea7ebe8b2c89243c495",
+          "sizeBytes": 769
+        },
+        {
+          "path": "_rels/.rels",
+          "sha256": "4afd814b7220cd333a28088c518956ae1d302245c2792073c6c064998e7a0b38",
+          "sizeBytes": 491
+        },
+        {
+          "path": "icon.png",
+          "sha256": "4cd931759caa30083f6885fdd5b4835757d0c3a53b4b9f2520b1e6b6957206eb",
+          "sizeBytes": 11417
+        },
+        {
+          "path": "package/services/metadata/core-properties/nuget.psmdcp",
+          "sha256": "75350f0514c7725ac5409bc72f450a52da82a6875057a8aa3cf8dba4416885d1",
+          "sizeBytes": 708
+        },
+        {
+          "path": "tools/net10.0/any/DotnetToolSettings.xml",
+          "sha256": "52e422c2c2b40fe5c192a00004d4bc3c6cb860d09c0bc65cdc30dc375b81455e",
+          "sizeBytes": 216
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Evidence.Cli.deps.json",
+          "sha256": "daa0892be9e089cfe6c5138a754d88ebac824e3482555ee9ff70fc8605bd5c9a",
+          "sizeBytes": 6671
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Evidence.Cli.dll",
+          "sha256": "c26fa6e6c003722442c083f9602bdefbc517229a3a9412bc62c2e5c1205f4a71",
+          "sizeBytes": 11264
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Evidence.Cli.pdb",
+          "sha256": "713568a06646e966093af8091a25008fbc7f037998f8cbffeb66797753edb344",
+          "sizeBytes": 13140
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Evidence.Cli.runtimeconfig.json",
+          "sha256": "9950d4583cfc9a106857c0d5b8a75b53e8774852b57b80bc3823a74d44a4d87f",
+          "sizeBytes": 330
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Evidence.Cli.xml",
+          "sha256": "d0be2d474950a5b86cbd9a306a1475381dd1e2135be68e2f73bd7d7c9e64a36e",
+          "sizeBytes": 1028
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Tooling.dll",
+          "sha256": "000ba9878a642c51df005b936a5aa79331cf40731a454ac8eafa6e715607b7ad",
+          "sizeBytes": 442368
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Tooling.pdb",
+          "sha256": "b96259b53d1a70e20a304ba5e693381a45be2d8b6355f7f205de12b9c1a87056",
+          "sizeBytes": 123252
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Tooling.xml",
+          "sha256": "8ef67024b4b85d18a9e621a703283cbcfc5671eb54f69d3e9373fc1c6d64e784",
+          "sizeBytes": 293675
+        },
+        {
+          "path": "tools/net10.0/any/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+          "sha256": "842fc19802a761e49c65b0e90b2c68bc6868b989145da5ac6ca30b766e2658f2",
+          "sizeBytes": 66320
+        },
+        {
+          "path": "tools/net10.0/any/Microsoft.Extensions.Logging.Abstractions.dll",
+          "sha256": "03e916b9c5f91717b67c790325d4e5dd2debe81d8e403928806ba1d430ea7147",
+          "sizeBytes": 67384
+        },
+        {
+          "path": "tools/net10.0/any/RESPite.dll",
+          "sha256": "c12704def103a2391c70cb4faf96a839c22d50d32aa0d65528e89926a968daa3",
+          "sizeBytes": 116736
+        },
+        {
+          "path": "tools/net10.0/any/StackExchange.Redis.dll",
+          "sha256": "b23e03f4f8b4264060074e1c0cb2ff2461d02611ae705ab28273d32db6c59078",
+          "sizeBytes": 2315264
+        },
+        {
+          "path": "tools/net10.0/any/System.CommandLine.dll",
+          "sha256": "2b5ee7c20fdbd08af6c5dd7271c4e6b53fedab72864ee85abee94a647aba704e",
+          "sizeBytes": 151352
+        },
+        {
+          "path": "tools/net10.0/any/System.IO.Hashing.dll",
+          "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+          "sizeBytes": 56104
+        },
+        {
+          "path": "tools/net10.0/any/YamlDotNet.dll",
+          "sha256": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a",
+          "sizeBytes": 300032
+        },
+        {
+          "path": "tools/net10.0/any/cs/System.CommandLine.resources.dll",
+          "sha256": "9db74abed424f28057b2b946df78f892f14dd8683c74906c4e79a7b454303415",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/de/System.CommandLine.resources.dll",
+          "sha256": "017380f95f4c1057b701311342e5921ed5bdf5013d8553cb5ac4a8889d132081",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/es/System.CommandLine.resources.dll",
+          "sha256": "0277fb8bfbf2ec45923a20e34935356b6988f83cff9e3d5ffc985f9ab3c53b0d",
+          "sizeBytes": 18784
+        },
+        {
+          "path": "tools/net10.0/any/fr/System.CommandLine.resources.dll",
+          "sha256": "511dbc4ce34e929433b206b32912db5562f8cb53b46b483468ae770bbd75f00e",
+          "sizeBytes": 18784
+        },
+        {
+          "path": "tools/net10.0/any/it/System.CommandLine.resources.dll",
+          "sha256": "58c2f07c08d99a4823e441a0f9402a3a07e4f8902543ec97ea6bbc8961af5330",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/ja/System.CommandLine.resources.dll",
+          "sha256": "6f30fcd99bb1597f7b81f4bc26ed9582dc33d013aab211feaf96ab491a35a0b3",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/ko/System.CommandLine.resources.dll",
+          "sha256": "ab5c8b013a53f7a02fef7068434ffc46345f1f07963dd0ef6e26e3ff4b46b763",
+          "sizeBytes": 18784
+        },
+        {
+          "path": "tools/net10.0/any/pl/System.CommandLine.resources.dll",
+          "sha256": "fa37fc6307053ace1003e6dcc72a33cc972dac719a0e1a40965936e1e8413bde",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/pt-BR/System.CommandLine.resources.dll",
+          "sha256": "f648dfab8b24d44177a4455ff9bcd4fefa06210ee5c06e4c6e447fd6f4963d51",
+          "sizeBytes": 18784
+        },
+        {
+          "path": "tools/net10.0/any/ru/System.CommandLine.resources.dll",
+          "sha256": "e3984a1494df49ecccf720346fa3096f5ec546aff797e2e6d9b86df9686ed260",
+          "sizeBytes": 19296
+        },
+        {
+          "path": "tools/net10.0/any/tr/System.CommandLine.resources.dll",
+          "sha256": "38361ec14998f14dbefb3f75e8793830a56e6e18d3a5737b238a6247cfcd72a2",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/zh-Hans/System.CommandLine.resources.dll",
+          "sha256": "425e40dd37692cc9c4fe2d75af4c39d884f7c982bb6ac80e2e34e341331437b6",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/zh-Hant/System.CommandLine.resources.dll",
+          "sha256": "b3a5d4992b4729d3f9bc1bde92f5bda23cbab6515af11f3cc317ae48a3cfed9c",
+          "sizeBytes": 18744
+        }
+      ],
+      "releaseUnsignedArchiveSha256": "bf86e754f0899d5c4d21d7a0131103e1565cee6d520397e21db7dd68a67048c4",
+      "repositoryRevision": "21ce044ab465ccb2adab58b3d66e394ffbecf3c2",
+      "repositorySignaturePresent": true,
+      "restoredArchiveSha256": "739ae9b3da7233510a1588c2629940b835c29b3d9c940a843f139d7b55d1eddb",
+      "unsignedPayloadEquivalence": "not-proven-original-release-archive-unavailable",
+      "version": "4.29.1"
+    },
+    {
+      "feed": "https://api.nuget.org/v3/index.json",
+      "id": "Hexalith.Builds.Module.Cli",
+      "payloadEntries": [
+        {
+          "path": "Hexalith.Builds.Module.Cli.nuspec",
+          "sha256": "9e72bdfa5e15abd5c5a8f75b3d316d6e2d1f1dd7d624bf442c9c5ccfe6488da0",
+          "sizeBytes": 899
+        },
+        {
+          "path": "README.md",
+          "sha256": "d7f1c74193045f41c18aa77381b4974620a1ea24a4283aaaeb6eac90beab9117",
+          "sizeBytes": 18364
+        },
+        {
+          "path": "[Content_Types].xml",
+          "sha256": "29107f65942e0e2d3125b36bc0466a363796c71a520399f019dd1242c8f40040",
+          "sizeBytes": 1286
+        },
+        {
+          "path": "_rels/.rels",
+          "sha256": "81bd491b30706bf85d645805cbe0fcf0e14cc7d4b47ea5c4e27db147ed610421",
+          "sizeBytes": 489
+        },
+        {
+          "path": "icon.png",
+          "sha256": "4cd931759caa30083f6885fdd5b4835757d0c3a53b4b9f2520b1e6b6957206eb",
+          "sizeBytes": 11417
+        },
+        {
+          "path": "package/services/metadata/core-properties/nuget.psmdcp",
+          "sha256": "fc3edf1b2aaa5315e1f93c97a2f9465495e145ba440ffcfe1c24cf14cb244c2c",
+          "sizeBytes": 727
+        },
+        {
+          "path": "tools/net10.0/any/DotnetToolSettings.xml",
+          "sha256": "54d3823e6b43ceb0528859096415c0cfe54e7d2ace67a34afb591527a28b3c02",
+          "sizeBytes": 212
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Module.Cli.deps.json",
+          "sha256": "f56d687ba9dd99d9ecd44d8038bf453f3e8806e3a613ece1b2c7efb42cc9cfae",
+          "sizeBytes": 6665
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Module.Cli.dll",
+          "sha256": "962cdc35c2140befbdaaf7e18f950338e5ca34d1746e6acd96b3a3f21fb46982",
+          "sizeBytes": 19968
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Module.Cli.pdb",
+          "sha256": "2b5e5c10cf99b815070f3f694a34f49aa029c265a098643feb8dd5ab565d233b",
+          "sizeBytes": 14040
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Module.Cli.runtimeconfig.json",
+          "sha256": "9950d4583cfc9a106857c0d5b8a75b53e8774852b57b80bc3823a74d44a4d87f",
+          "sizeBytes": 330
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Module.Cli.xml",
+          "sha256": "1643482025fc9b41baa6eeb42d84ac27ab61ba929c298022a45dd048102047db",
+          "sizeBytes": 1315
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Tooling.dll",
+          "sha256": "000ba9878a642c51df005b936a5aa79331cf40731a454ac8eafa6e715607b7ad",
+          "sizeBytes": 442368
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Tooling.pdb",
+          "sha256": "b96259b53d1a70e20a304ba5e693381a45be2d8b6355f7f205de12b9c1a87056",
+          "sizeBytes": 123252
+        },
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Tooling.xml",
+          "sha256": "8ef67024b4b85d18a9e621a703283cbcfc5671eb54f69d3e9373fc1c6d64e784",
+          "sizeBytes": 293675
+        },
+        {
+          "path": "tools/net10.0/any/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+          "sha256": "842fc19802a761e49c65b0e90b2c68bc6868b989145da5ac6ca30b766e2658f2",
+          "sizeBytes": 66320
+        },
+        {
+          "path": "tools/net10.0/any/Microsoft.Extensions.Logging.Abstractions.dll",
+          "sha256": "03e916b9c5f91717b67c790325d4e5dd2debe81d8e403928806ba1d430ea7147",
+          "sizeBytes": 67384
+        },
+        {
+          "path": "tools/net10.0/any/RESPite.dll",
+          "sha256": "c12704def103a2391c70cb4faf96a839c22d50d32aa0d65528e89926a968daa3",
+          "sizeBytes": 116736
+        },
+        {
+          "path": "tools/net10.0/any/StackExchange.Redis.dll",
+          "sha256": "b23e03f4f8b4264060074e1c0cb2ff2461d02611ae705ab28273d32db6c59078",
+          "sizeBytes": 2315264
+        },
+        {
+          "path": "tools/net10.0/any/System.CommandLine.dll",
+          "sha256": "2b5ee7c20fdbd08af6c5dd7271c4e6b53fedab72864ee85abee94a647aba704e",
+          "sizeBytes": 151352
+        },
+        {
+          "path": "tools/net10.0/any/System.IO.Hashing.dll",
+          "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+          "sizeBytes": 56104
+        },
+        {
+          "path": "tools/net10.0/any/YamlDotNet.dll",
+          "sha256": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a",
+          "sizeBytes": 300032
+        },
+        {
+          "path": "tools/net10.0/any/cs/System.CommandLine.resources.dll",
+          "sha256": "9db74abed424f28057b2b946df78f892f14dd8683c74906c4e79a7b454303415",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/de/System.CommandLine.resources.dll",
+          "sha256": "017380f95f4c1057b701311342e5921ed5bdf5013d8553cb5ac4a8889d132081",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/es/System.CommandLine.resources.dll",
+          "sha256": "0277fb8bfbf2ec45923a20e34935356b6988f83cff9e3d5ffc985f9ab3c53b0d",
+          "sizeBytes": 18784
+        },
+        {
+          "path": "tools/net10.0/any/fr/System.CommandLine.resources.dll",
+          "sha256": "511dbc4ce34e929433b206b32912db5562f8cb53b46b483468ae770bbd75f00e",
+          "sizeBytes": 18784
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Aspire.Hosting.AppHost.dll",
+          "sha256": "9d241fac4ea6f912abe94bdaa1043633ce62c3989be4aadbee61cba7bd16c09f",
+          "sizeBytes": 27488
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Aspire.Hosting.Keycloak.dll",
+          "sha256": "c87a48991d1f03560bb488ed1915f556738d3a0ad3942f9d894bf16a59973194",
+          "sizeBytes": 38752
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Aspire.Hosting.Redis.dll",
+          "sha256": "20e37051dd15dcaf7bbce2e8ab50b3cdbc1f3ae98b05a871afba5f7447ed5402",
+          "sizeBytes": 61752
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Aspire.Hosting.dll",
+          "sha256": "9c5f526f0d2474bf1d547e09ccb2015522f4e92c48e3feb69538f0b7844f1d92",
+          "sizeBytes": 3362656
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/CommunityToolkit.Aspire.Hosting.Dapr.dll",
+          "sha256": "7fdbe6f301e4d38485011137290f709d10b863fe9787776b90e1bf1ee2febf88",
+          "sizeBytes": 137544
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Fractions.dll",
+          "sha256": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf",
+          "sizeBytes": 22016
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Google.Protobuf.dll",
+          "sha256": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73",
+          "sizeBytes": 501760
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Grpc.AspNetCore.Server.ClientFactory.dll",
+          "sha256": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3",
+          "sizeBytes": 21504
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Grpc.AspNetCore.Server.dll",
+          "sha256": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2",
+          "sizeBytes": 157184
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Grpc.Core.Api.dll",
+          "sha256": "16b1ff898b9a2c1ffac0e22035c8280728967e7041bfe8a382bcb1f99a9a530b",
+          "sizeBytes": 70296
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Grpc.Net.Client.dll",
+          "sha256": "71454959f95469ea1a4abfbbb2ccb71487f6bfe50714277e73d2f7665c89244e",
+          "sizeBytes": 360088
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Grpc.Net.ClientFactory.dll",
+          "sha256": "52a981845704edf969120f10e6a0a65fce858adf45412b5c10571a1b07222380",
+          "sizeBytes": 54936
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Grpc.Net.Common.dll",
+          "sha256": "2fe0acf1042d43af95cc33f610a5c7d4d70ae65e3d5f4ce8707a3e2bf95df823",
+          "sizeBytes": 22168
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/HealthChecks.Redis.dll",
+          "sha256": "3ce9e611ecd44219f4bed786d665712759583b87a1bb9228355e9161ce7ffa52",
+          "sizeBytes": 22528
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/HealthChecks.Uris.dll",
+          "sha256": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708",
+          "sizeBytes": 29184
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hex1b.dll",
+          "sha256": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc",
+          "sizeBytes": 7401984
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost",
+          "sha256": "efa2baad3396299ca1f1ea061b4fde93dbc0a22084a1df4ee40d1cd4fa0335de",
+          "sizeBytes": 78256
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.deps.json",
+          "sha256": "071a86c8aeae3533633da52c8e010c4cddf347bcab4c36def47ced5277c19734",
+          "sizeBytes": 45053
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.dll",
+          "sha256": "2c38dfb15ba8c2ce4257959dad0d4184f66bfedd25bd7aafc77fb8012b30301c",
+          "sizeBytes": 72192
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.pdb",
+          "sha256": "fc0f97fa0a7721975082fc3e19432618f3d1147321f43649cea12cfcaa7e269a",
+          "sizeBytes": 36340
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.runtimeconfig.json",
+          "sha256": "f8bd1713a3691d58eb332a71675f129385b91e852b66e7b6761cae1f34d4efd2",
+          "sizeBytes": 440
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.xml",
+          "sha256": "97181241ca93ded1ea7585ccbee90bbb3d71946dd8e530c5ba1a9ae6d0731871",
+          "sizeBytes": 16568
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.dll",
+          "sha256": "5f3185de113c9cc06bfbca96ec421b7f629411b194ae93d8a39ea8b66a9765c0",
+          "sizeBytes": 442368
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.pdb",
+          "sha256": "f35e709493980150846bbfebe1df48ecf3065afe963ec8f81eebd9bc1ae65712",
+          "sizeBytes": 123248
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.xml",
+          "sha256": "8ef67024b4b85d18a9e621a703283cbcfc5671eb54f69d3e9373fc1c6d64e784",
+          "sizeBytes": 293675
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.EventStore.Aspire.dll",
+          "sha256": "5351fbaa459baf113167f9b6d656648a92f57b5af9ff3773d2b8725bf09f463e",
+          "sizeBytes": 60928
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Humanizer.dll",
+          "sha256": "2769ed8265b691a5482c72506ed274dc52446fa1641997a8c12c66f5b9263d39",
+          "sizeBytes": 643760
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Json.More.dll",
+          "sha256": "80b6cd50331fa2ded4fbacdbf80dcedd2b142dee679df227c30299d2a3c3840f",
+          "sizeBytes": 54272
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/JsonPatch.Net.dll",
+          "sha256": "bb76a3ece6404c6d3be47025edfb722af89b56651229db6cca569489586a68d3",
+          "sizeBytes": 37376
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/JsonPointer.Net.dll",
+          "sha256": "ab3e8236f02d8b5110d0bca4f640b1e8550728facfe740d65e0f4bd158c59f8f",
+          "sizeBytes": 25088
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/KubernetesClient.dll",
+          "sha256": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce",
+          "sizeBytes": 10680320
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/MessagePack.Annotations.dll",
+          "sha256": "7f4a63e7ea57f83c532662d856f5e9abbae5e19c6126b32c79ca2ed771318346",
+          "sizeBytes": 18432
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/MessagePack.dll",
+          "sha256": "d3bf05e7f9616cf8ce90d30c05eabbdd223a7923ee63c2c9c1f821067906d2fc",
+          "sizeBytes": 382464
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Microsoft.Extensions.AI.Abstractions.dll",
+          "sha256": "bcc8f693103eb00505179f154b1b3a996b85d067e112facd724fd9d695f17a5e",
+          "sizeBytes": 672056
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Microsoft.NET.StringTools.dll",
+          "sha256": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0",
+          "sizeBytes": 33552
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Microsoft.VisualStudio.Threading.dll",
+          "sha256": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426",
+          "sizeBytes": 441888
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Microsoft.VisualStudio.Validation.dll",
+          "sha256": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c",
+          "sizeBytes": 37392
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Microsoft.Win32.SystemEvents.dll",
+          "sha256": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850",
+          "sizeBytes": 26224
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ModelContextProtocol.Core.dll",
+          "sha256": "b1752096ea9d2f38ba88e467f04aea43fb300d9a54d881c165f62b69028ee3ab",
+          "sizeBytes": 1296896
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ModelContextProtocol.dll",
+          "sha256": "8cd6f626c8d6a0a5ff3e154789d3fcde2b1d66a595c0ef0198e092c2c30fe93a",
+          "sizeBytes": 91136
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Nerdbank.MessagePack.dll",
+          "sha256": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa",
+          "sizeBytes": 641024
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Nerdbank.Streams.dll",
+          "sha256": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872",
+          "sizeBytes": 222048
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Newtonsoft.Json.dll",
+          "sha256": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+          "sizeBytes": 723368
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+          "sha256": "dec906a34dbafcfd2c23b73fd05e58defc7f8c1627890fad4e4461c23b8de989",
+          "sizeBytes": 24576
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/OpenTelemetry.Api.dll",
+          "sha256": "b92d1b32ba9f7ddf4f06a7efab22c6424beba8760976f0eb5811ed3713d81f4c",
+          "sizeBytes": 82432
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+          "sha256": "be37059eb65a9f4af95081c2d4795afd198a657dbf2e35363cca6444fd75b2ab",
+          "sizeBytes": 191488
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/OpenTelemetry.Extensions.Hosting.dll",
+          "sha256": "5f5157a8042853b21077855d5888ef0178bfda07a1fac815b8e6145b283f72a7",
+          "sizeBytes": 15872
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/OpenTelemetry.dll",
+          "sha256": "6623430269ed62f1a8e097e3909b9c8d778ae72b9b69f096140c71d06e0eb043",
+          "sizeBytes": 274944
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Polly.Core.dll",
+          "sha256": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a",
+          "sizeBytes": 223136
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/PolyType.dll",
+          "sha256": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968",
+          "sizeBytes": 323072
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/QRCoder.dll",
+          "sha256": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a",
+          "sizeBytes": 195584
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/RESPite.dll",
+          "sha256": "c12704def103a2391c70cb4faf96a839c22d50d32aa0d65528e89926a968daa3",
+          "sizeBytes": 116736
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Semver.dll",
+          "sha256": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f",
+          "sizeBytes": 72704
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/StackExchange.Redis.dll",
+          "sha256": "b23e03f4f8b4264060074e1c0cb2ff2461d02611ae705ab28273d32db6c59078",
+          "sizeBytes": 2315264
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/StreamJsonRpc.dll",
+          "sha256": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5",
+          "sizeBytes": 647048
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/System.Drawing.Common.dll",
+          "sha256": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f",
+          "sizeBytes": 175216
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/System.IO.Hashing.dll",
+          "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+          "sizeBytes": 56104
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/YamlDotNet.dll",
+          "sha256": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a",
+          "sizeBytes": 300032
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/ByteAether.Ulid.dll",
+          "sha256": "6fcf380ea234091dd7c28b7f18898bee1446829d7665044cc87f7d948e66e950",
+          "sizeBytes": 27136
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Actors.AspNetCore.dll",
+          "sha256": "c7deffe0f4b6c754fff3935a42ad378d729e85b277da853fbc8924790482d8b0",
+          "sizeBytes": 26112
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Actors.dll",
+          "sha256": "98d77fb28b39fe6832e06cb2bd66d58024b9587411b04965da385909f32a9dfa",
+          "sizeBytes": 214016
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.AspNetCore.dll",
+          "sha256": "4db46444a22bbfd473e0f132139d943cec95e3637cdbf61077d88e618a48213d",
+          "sizeBytes": 57344
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Client.dll",
+          "sha256": "cc7b8e629416c52be2569d7610c5c830b19ba690d4f54300ffdee901dec99115",
+          "sizeBytes": 181248
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Common.dll",
+          "sha256": "9c10b91825371c10e469e91627080414bde4e8fa5acd894a2dbe398af03e1893",
+          "sizeBytes": 77824
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Protos.dll",
+          "sha256": "659938b9475b4951bd49086a66d8ad24f89ac6c1c33d6888adfefb8420edf03c",
+          "sizeBytes": 635904
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/FluentValidation.DependencyInjectionExtensions.dll",
+          "sha256": "f2ce9dc02baed79fc6396da495e91b69e65c1b25b59ac379cde84c7d60a3bd09",
+          "sizeBytes": 15360
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/FluentValidation.dll",
+          "sha256": "7881b51287f9bdfd6ec8b069df0ebd29d55fc9d307195e8d029ad53ba39b21b2",
+          "sizeBytes": 531456
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Google.Api.CommonProtos.dll",
+          "sha256": "329cf0f2b66c5cbf675321f0d6b33c17d1092e5761f32d3d2c1307a110c0dbbd",
+          "sizeBytes": 450048
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Google.Protobuf.dll",
+          "sha256": "e9b892ac667931162ffefa411ef8dc3eae777d634d8bfe8beddc28b1de95a612",
+          "sizeBytes": 501400
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Core.Api.dll",
+          "sha256": "5674c1203706b5a261e8bbd3499147d94fc80b5f077bf45f9934ca28a9c8574b",
+          "sizeBytes": 70296
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Net.Client.dll",
+          "sha256": "f884d8444feb888656cbb7de87ee8f53a50811329bb32c6e7a7a81cb1de008ef",
+          "sizeBytes": 359064
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Net.Common.dll",
+          "sha256": "fdff383bbd8e5015f3c4aaaa7508b769228f33c92ba14fec4e59d35c5d78e6ae",
+          "sizeBytes": 22168
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Reflection.dll",
+          "sha256": "87795d17c1385e7c05469c447ad8eecc883c3c71b4804319c5918a5a490c8d57",
+          "sizeBytes": 77976
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost",
+          "sha256": "5e01b2464a2c054df8dadff693ebd68ad3f642001dfa48a2056e3bf3ade4e7ac",
+          "sizeBytes": 78256
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.deps.json",
+          "sha256": "b7d6f549c8a095590a9490eab69f6fd2bb18a1cd9dfc996781802777a8a1a610",
+          "sizeBytes": 50333
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll",
+          "sha256": "4ce31546389d66ce14a137490e5ddc76614a470784994ecc98c8b9d17d797d14",
+          "sizeBytes": 29184
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.pdb",
+          "sha256": "08a4ecc7cdd3383c18706239524b2573609259271a2e5d199543c8dedcba9579",
+          "sizeBytes": 36232
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.runtimeconfig.json",
+          "sha256": "f71b4c67b5233a19be9131b5fe4b45fe7829997cf2b42e762d6baa037da93863",
+          "sizeBytes": 472
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.staticwebassets.endpoints.json",
+          "sha256": "eb6525c892afda953a2560f151f9c5e5bc6e79ef6741d886488ac450262c91e3",
+          "sizeBytes": 51
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.xml",
+          "sha256": "492425b8a76e3e26b652c5a3faf2e957aa0337cfa836edcb36793abac8618e90",
+          "sizeBytes": 3126
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Commons.UniqueIds.dll",
+          "sha256": "14f40a3801490d32cca54e56a1d1b020510e8fa2c7a02f3e566b47940a31d317",
+          "sizeBytes": 9728
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Admin.Abstractions.dll",
+          "sha256": "a6e4ad91a93357529d3ba2b6ce1dd5acc9d106093069dcd39b53ecfa4f17ef1f",
+          "sizeBytes": 233984
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Client.dll",
+          "sha256": "2e4e148f44db53f0243d867f06a324bdc5e8143ea80725a04d40de7a9e09163a",
+          "sizeBytes": 427008
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Contracts.dll",
+          "sha256": "f08388cf7eca84bb74426419758b4bbf1c4b152151721f97a0949e6bb2dc871b",
+          "sizeBytes": 297472
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.DomainService.dll",
+          "sha256": "598d55807f7f0bdf1092cfb8d5f5a3db1086f71325b4c200a6f54d8cea4a913b",
+          "sizeBytes": 181248
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Gateway.dll",
+          "sha256": "ae681266d25809812e7d1290027a85d55cf4b75484c41ad7e9cd076540b698f9",
+          "sizeBytes": 754176
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Server.dll",
+          "sha256": "ce5b825ad3251b3271e72675f6f58daba035b10f5a01563d2b802809acb447ca",
+          "sizeBytes": 1734144
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.ServiceDefaults.dll",
+          "sha256": "fcb84dbbcf1e4e17b437972a3c520236b78d22ff1d2e2fb6109bd553b1a4a9fa",
+          "sizeBytes": 47104
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/MediatR.Contracts.dll",
+          "sha256": "c2601304aa9d15c51a543e1c3300368c64ac38633e7277bb835a04f68ddf6a61",
+          "sizeBytes": 6656
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/MediatR.dll",
+          "sha256": "856b8a06d82033415ffef0edcac5f38256f1ef0336dbc372609f75b82a333d97",
+          "sizeBytes": 94208
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/MessagePack.Annotations.dll",
+          "sha256": "7f4a63e7ea57f83c532662d856f5e9abbae5e19c6126b32c79ca2ed771318346",
+          "sizeBytes": 18432
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/MessagePack.dll",
+          "sha256": "d3bf05e7f9616cf8ce90d30c05eabbdd223a7923ee63c2c9c1f821067906d2fc",
+          "sizeBytes": 382464
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.Authentication.JwtBearer.dll",
+          "sha256": "a27586987ad45cb33eb9ece6f3e96c49455cdf6129ffb34da9f16c739a35693a",
+          "sizeBytes": 52008
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.OpenApi.dll",
+          "sha256": "bc4e4ddf1607b64202437b1f11aff533eac124c155de617b8ab7600e0306ca3c",
+          "sizeBytes": 193320
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll",
+          "sha256": "0641357168eb3d00e4619a85ecf1161482e5d010981228487c84185692e274f7",
+          "sizeBytes": 82256
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Bcl.Cryptography.dll",
+          "sha256": "91c6bab93638c268569a38bc87770a5e3ef9932676f5b7a6d47aef4208062925",
+          "sizeBytes": 19248
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.AmbientMetadata.Application.dll",
+          "sha256": "a7e80a5ed7efaaa21da13993a01be345a3221ce92422c2cb33655399a357dc6f",
+          "sizeBytes": 34616
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Compliance.Abstractions.dll",
+          "sha256": "b99d010d6b9e5bb863399959d6140bc59ed29ef921957bea3f666ada7995aa50",
+          "sizeBytes": 43832
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.DependencyInjection.AutoActivation.dll",
+          "sha256": "a73a6c6404212d70a80f8cccde2bc527976f9fcb693360f6cf32e9b2d38c9a8b",
+          "sizeBytes": 33632
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Diagnostics.ExceptionSummarization.dll",
+          "sha256": "476e2c7298b102b6cfce2d6ae2acad52ce7248d4511f36d42ce35a77fde1df55",
+          "sizeBytes": 30008
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Http.Diagnostics.dll",
+          "sha256": "347d266abd3c7376b56ab7b10b36510abe2fe3a36e0cda5e7ad0fd668f5f8102",
+          "sizeBytes": 118072
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Http.Resilience.dll",
+          "sha256": "eb573ea6c8f24d2178d733c1f7f6fdf2856056c6aa5322f667d685afdd20afbb",
+          "sizeBytes": 135992
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Resilience.dll",
+          "sha256": "ef993eca52f7d1dfa47d34678c4d4d69ad35e4052797f679a2f6fec2eea820ef",
+          "sizeBytes": 33120
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.ServiceDiscovery.Abstractions.dll",
+          "sha256": "71b9dd7eecee472e9e392ab2268c1d165198f7f6eb3dd98ded81bf7e8e61b181",
+          "sizeBytes": 28984
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.ServiceDiscovery.dll",
+          "sha256": "834c87457b69c0e598f4ee01b51b40db5e70295ed3a3abf29aa316195c7a67e4",
+          "sizeBytes": 77112
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Telemetry.Abstractions.dll",
+          "sha256": "052ae9f51b926b0a61b06081eebca430c603ca41af463fa925aba4434d0b4628",
+          "sizeBytes": 58720
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Telemetry.dll",
+          "sha256": "7cea61a2885a8fef83e85dc3615a9e8add8748cec129e45e7cf4240cce61528b",
+          "sizeBytes": 150880
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Abstractions.dll",
+          "sha256": "46f14d67dfc1894eb24d80282895526db25a854af227eee2fa06a0383fd09e4c",
+          "sizeBytes": 19264
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.JsonWebTokens.dll",
+          "sha256": "b48515aeaa4a8fadc5fcacb45978c808a4d5bbffaf74f8894cc57c0769a9fb9e",
+          "sizeBytes": 174384
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Logging.dll",
+          "sha256": "90b6fa70f28a3b7711fe95aa30a0c5551f1e6aa28565187aa7b3681194215c84",
+          "sizeBytes": 38192
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+          "sha256": "cf37440c96bd178f2676867b77fa651df001b56b2f42be99b08e5226b3ab4918",
+          "sizeBytes": 137008
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Protocols.dll",
+          "sha256": "dd8823215cada7e1c7fe5d2a3b06395fb906baa5f79ec00411ad6a1f80585f60",
+          "sizeBytes": 54064
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Tokens.dll",
+          "sha256": "84409b8c3a52313fe4f4f621fce39544f42074109e870ac2631e627c8b70210f",
+          "sizeBytes": 416024
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.NET.StringTools.dll",
+          "sha256": "e51c8678fd602a21c249b369e833966019935132476f9434da896bef808ba3b1",
+          "sizeBytes": 30880
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.OpenApi.dll",
+          "sha256": "b3d74ea12d9215319aa9138fb1450ed8cf96b07719c1b3d68db3aaa16917891e",
+          "sizeBytes": 566584
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+          "sha256": "dec906a34dbafcfd2c23b73fd05e58defc7f8c1627890fad4e4461c23b8de989",
+          "sizeBytes": 24576
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Api.dll",
+          "sha256": "b92d1b32ba9f7ddf4f06a7efab22c6424beba8760976f0eb5811ed3713d81f4c",
+          "sizeBytes": 82432
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+          "sha256": "be37059eb65a9f4af95081c2d4795afd198a657dbf2e35363cca6444fd75b2ab",
+          "sizeBytes": 191488
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Extensions.Hosting.dll",
+          "sha256": "5f5157a8042853b21077855d5888ef0178bfda07a1fac815b8e6145b283f72a7",
+          "sizeBytes": 15872
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.AspNetCore.dll",
+          "sha256": "61447a9a879187724a73129c61277ef9ff01f360ab5ca6ec3d022413ebc4726d",
+          "sizeBytes": 64512
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.Http.dll",
+          "sha256": "b75143059235ae9cd079bb6c83f4641b39679d599de23dcdc6914fcd447f7d7c",
+          "sizeBytes": 66560
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.Runtime.dll",
+          "sha256": "ecc5ab3b910a9f8d05bf20f64293f8eb85b68cbc44345684876621cac706a1dc",
+          "sizeBytes": 26624
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.dll",
+          "sha256": "6623430269ed62f1a8e097e3909b9c8d778ae72b9b69f096140c71d06e0eb043",
+          "sizeBytes": 274944
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.Core.dll",
+          "sha256": "37762ea6fcf05154685b0a616461705c837c2f07d98e4037dc3a0e4b4c186ea5",
+          "sizeBytes": 242736
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.Extensions.dll",
+          "sha256": "8adac7a20cd056b9a8623efb6e6f9b99a82e18d3c7b7f6c788f7fc4b20ce5f18",
+          "sizeBytes": 57120
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.RateLimiting.dll",
+          "sha256": "afe3042cd4062438857d42880623845f32575375f460fd1ac07f705ea0211804",
+          "sizeBytes": 28208
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/RESPite.dll",
+          "sha256": "c12704def103a2391c70cb4faf96a839c22d50d32aa0d65528e89926a968daa3",
+          "sizeBytes": 116736
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/StackExchange.Redis.dll",
+          "sha256": "b23e03f4f8b4264060074e1c0cb2ff2461d02611ae705ab28273d32db6c59078",
+          "sizeBytes": 2315264
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/Swashbuckle.AspNetCore.SwaggerUI.dll",
+          "sha256": "2b986a27c1ce3bf2508eb100e4971380833bd52319f6b7b769016efe8e138e73",
+          "sizeBytes": 727552
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/System.IO.Hashing.dll",
+          "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+          "sizeBytes": 56104
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/System.IdentityModel.Tokens.Jwt.dll",
+          "sha256": "593c82287b671e9cceefaf10c51df96793f6db30f9cfa60daabaaf80474670bf",
+          "sizeBytes": 91952
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/EventStoreHost/appsettings.json",
+          "sha256": "19c310f519fe5777df466ba19e3703c34ef0965a9cc9017e16ac1307402e5a3e",
+          "sizeBytes": 318
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Fluxor.Blazor.Web.dll",
+          "sha256": "e05df290ff01c96ff09de7e92eac3f82fa5e4f5cf89096319e5f12b6e34beb65",
+          "sizeBytes": 28160
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Fluxor.dll",
+          "sha256": "f9b73d7c618dee8cd124a56e9d73d02267702d1591e993fb465b7276b834cd39",
+          "sizeBytes": 88576
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost",
+          "sha256": "2f4f8f87d05c29d53f7b01c9a63d5fee210c9fd22306498cebcdea89ffc584d9",
+          "sizeBytes": 78256
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.deps.json",
+          "sha256": "c5d44acaaaf9eba91527d9013689f79b0e98b8e891b672303c2fff954b704efd",
+          "sizeBytes": 16493
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.dll",
+          "sha256": "efdf4e38522636ffec6557d071593bd9b3093a57cb3bbfb49715304c75546d91",
+          "sizeBytes": 16896
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.pdb",
+          "sha256": "b8bce47b01c58e10011eb5f65952474626f57df054db8ebb39c05be20bee0c41",
+          "sizeBytes": 29180
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.runtimeconfig.json",
+          "sha256": "f71b4c67b5233a19be9131b5fe4b45fe7829997cf2b42e762d6baa037da93863",
+          "sizeBytes": 472
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.staticwebassets.endpoints.json",
+          "sha256": "b60d7df4ac815943611c52895e4c50709d8ec7ec4d4f337f3a9d4ae7a791b73c",
+          "sizeBytes": 99792
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.staticwebassets.runtime.json",
+          "sha256": "9eae72f401a38664a46903763da31f93775a65563b5b43dfe19c2179d9d61d94",
+          "sizeBytes": 10642
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.xml",
+          "sha256": "544aa10972d4c36a61cb5af9ae86dc0c2840e70ff0816e46484f387c1da59cc5",
+          "sizeBytes": 2621
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Contracts.UI.dll",
+          "sha256": "faff2d4ab78ec34e606a60978b37e54e3478d413764f0744cffd2b046b23a3d4",
+          "sizeBytes": 24064
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Contracts.dll",
+          "sha256": "4767cc184d4ca5c573e03e74e271556d629f5fb70334e373417df3028c4cff50",
+          "sizeBytes": 225280
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Shell.dll",
+          "sha256": "da5fcd65c188907abf75deac960f2025863fdf5a88858c9168ab65f7b3785354",
+          "sizeBytes": 1496576
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.Authentication.OpenIdConnect.dll",
+          "sha256": "cdfc499638805ad451402cb58cbbb0678a345fe20834d38e64a144d75e293b9a",
+          "sizeBytes": 126800
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.Http.Connections.Client.dll",
+          "sha256": "a7412c16d2fdb6219e9065a67bec9b7d519707a69bf78c3cfa90f148e8b40252",
+          "sizeBytes": 116560
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.SignalR.Client.Core.dll",
+          "sha256": "df56b3effbd22ee33e5aacea4c3c7730baddb93ec3eebb0b254cc776a063b940",
+          "sizeBytes": 210768
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.SignalR.Client.dll",
+          "sha256": "7367c8c64c670f8229788ac65b4920738f23c6803c83b61d2c621257b6f2ea03",
+          "sizeBytes": 20816
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.Bcl.Cryptography.dll",
+          "sha256": "91c6bab93638c268569a38bc87770a5e3ef9932676f5b7a6d47aef4208062925",
+          "sizeBytes": 19248
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Color.dll",
+          "sha256": "92e1e7ba41c4fe5803c601bca12c9264c26b55ecddb16f66e483a6c059b9e065",
+          "sizeBytes": 3597824
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Filled.dll",
+          "sha256": "959fba69d134ba4f9f76064f433fe1c0b39c10d8051b8c2e4ac5866e0168c700",
+          "sizeBytes": 8982016
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Light.dll",
+          "sha256": "04bd967ff5cf47f46e49cbd4bd6f47afdcc1d92810b92d8eda0bb89dbdaa0955",
+          "sizeBytes": 215552
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.dll",
+          "sha256": "7c120a63a2d8813f56c49b583cabb82590b1f97dd0c8f337c81a212a87bd155e",
+          "sizeBytes": 10675712
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.dll",
+          "sha256": "b93febaa995e1a81f7d6fdc2f9a86f56b5395067c8dbcb2930e4e9ac628f1064",
+          "sizeBytes": 5120
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.dll",
+          "sha256": "8ef828c137885f55528f2246c6abc757909653da0e523b5d9673e2c25d1e45a1",
+          "sizeBytes": 1617920
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Abstractions.dll",
+          "sha256": "46f14d67dfc1894eb24d80282895526db25a854af227eee2fa06a0383fd09e4c",
+          "sizeBytes": 19264
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.JsonWebTokens.dll",
+          "sha256": "b48515aeaa4a8fadc5fcacb45978c808a4d5bbffaf74f8894cc57c0769a9fb9e",
+          "sizeBytes": 174384
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Logging.dll",
+          "sha256": "90b6fa70f28a3b7711fe95aa30a0c5551f1e6aa28565187aa7b3681194215c84",
+          "sizeBytes": 38192
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+          "sha256": "cf37440c96bd178f2676867b77fa651df001b56b2f42be99b08e5226b3ab4918",
+          "sizeBytes": 137008
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Protocols.dll",
+          "sha256": "dd8823215cada7e1c7fe5d2a3b06395fb906baa5f79ec00411ad6a1f80585f60",
+          "sizeBytes": 54064
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Tokens.dll",
+          "sha256": "84409b8c3a52313fe4f4f621fce39544f42074109e870ac2631e627c8b70210f",
+          "sizeBytes": 416024
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/NUlid.dll",
+          "sha256": "6f867f7716683b6b48a67877d616ae3805955eab5b2ec92f0e74b49fae467de7",
+          "sizeBytes": 22528
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/System.IdentityModel.Tokens.Jwt.dll",
+          "sha256": "593c82287b671e9cceefaf10c51df96793f6db30f9cfa60daabaaf80474670bf",
+          "sizeBytes": 91952
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/System.Reactive.dll",
+          "sha256": "e8070137fc07efeb8fd00e1607a096c7718ee1814c6b2032e4cb865f5cf042a9",
+          "sizeBytes": 1387984
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/bin/UiHost/fr/fr/Hexalith.FrontComposer.Shell.resources.dll",
+          "sha256": "e50c8911c5816294d15dc7793e902307ead3aea83b7e2a903d6e50ca0781bb48",
+          "sizeBytes": 23040
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/cs/cs/Aspire.Hosting.resources.dll",
+          "sha256": "d16c4ddc486a0d5f25dfa9d82e894380973174ea821037b691a2c5d64f06b765",
+          "sizeBytes": 26424
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/cs/cs/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "53fa0540b7787d2702df6526dd9df68b1a44575c66ff007f3e11b1e2b528330e",
+          "sizeBytes": 17936
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/cs/cs/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "830b54077b4f3febe75ed87aa163eb49fb58362c61be5ca26cf42d4e13c51f3c",
+          "sizeBytes": 14880
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/cs/cs/StreamJsonRpc.resources.dll",
+          "sha256": "5115a8c09c591d1caa16359b5a45eccece63d9c337e703d89c05a69264ba291b",
+          "sizeBytes": 25944
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/de/de/Aspire.Hosting.resources.dll",
+          "sha256": "39835f67a77e124eb5a3ed95c4d5e7c3f10aa670b6316615724de08aacbe3e79",
+          "sizeBytes": 26464
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/de/de/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "0a68bd16faed213eb7bf17025b25125c6aaee5b86a545449afe297632a503853",
+          "sizeBytes": 18448
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/de/de/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "fd7edef2b3f30903f2c287c49d62cb3394f9656fd82ff1c98eb122ad62a04a56",
+          "sizeBytes": 14864
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/de/de/StreamJsonRpc.resources.dll",
+          "sha256": "01e2c454d751b89aba08d4270ca00d8e07fa8af861650ecd704481ce06b87b24",
+          "sizeBytes": 27016
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/es/es/Aspire.Hosting.resources.dll",
+          "sha256": "bc8ac2b9a6d5d3306c2ade86b19e2f4fc731dcf6af038e82cfcd8af9cfd2cdc0",
+          "sizeBytes": 26424
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/es/es/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "7fc33931e5c544e89ce8d767781a729a7be21c60e559294ef693fa249034b066",
+          "sizeBytes": 18448
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/es/es/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "c40129bf64177dbfbd79bf977e11d46f2888c20c3e807336a36dac82370f6d83",
+          "sizeBytes": 14864
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/es/es/StreamJsonRpc.resources.dll",
+          "sha256": "bacf7fadae7361e00f097dcafbe9a4a759f4346f364676389304a688fdb3b636",
+          "sizeBytes": 26464
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/fr/fr/Aspire.Hosting.resources.dll",
+          "sha256": "02fe566d469f356e6c7c341b86d8c4580d7b206d103dfefc8926e536f52598f3",
+          "sizeBytes": 26976
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/fr/fr/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "abe294e2c7ecf00f3632b83f61e19538b8b9531e6289b5d84992bc447f29783e",
+          "sizeBytes": 18448
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/fr/fr/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "e56fe93ab669c22850389bdb685bbc45317d962849cc683d412bc9e8ad637740",
+          "sizeBytes": 14864
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/fr/fr/StreamJsonRpc.resources.dll",
+          "sha256": "99ee72e2ea1de18367345b83884d0aa8c4192f98f2f3fb6b50bdbbebd6960afc",
+          "sizeBytes": 26976
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/it/it/Aspire.Hosting.resources.dll",
+          "sha256": "87af0c6bf52ea36164698dce598931b4b037dcd82186ecfc0bff64c79799d0cc",
+          "sizeBytes": 26464
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/it/it/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "c6d1c91560f9914f36ff52d9a2704f44255adfd88a2c57ccd44fce62603667a7",
+          "sizeBytes": 18448
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/it/it/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "8918618aaf356bf03333f62507ed4b2511c98850388c3856afe970c41672fae0",
+          "sizeBytes": 14864
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/it/it/StreamJsonRpc.resources.dll",
+          "sha256": "31741ef214310f03ec256b3dd8643e5d4151c9123bd6994bb8f53381ca348244",
+          "sizeBytes": 26464
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ja/ja/Aspire.Hosting.resources.dll",
+          "sha256": "bd4bb82495bbff52ab4b76580e56f1b4e9da5dee9bd13678593f296c37bae304",
+          "sizeBytes": 27448
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ja/ja/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "e375ebb7fe0f6807371dd42f09671b4eafcab6a1464851af68b8fd14494067c9",
+          "sizeBytes": 18456
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ja/ja/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "89963143a49c629f52776c88715544a8a53b12f1f6c7b4cd6c686d0751ea0d5b",
+          "sizeBytes": 14880
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ja/ja/StreamJsonRpc.resources.dll",
+          "sha256": "36897272170334ea43284e4f7c8f908e170bc1f082e9612528787ca03ae9e7ce",
+          "sizeBytes": 28512
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ko/ko/Aspire.Hosting.resources.dll",
+          "sha256": "62acd7fdc9e8a620d3092859b4121be81276f3bcec222a76b3dd05c812c8ca2e",
+          "sizeBytes": 26424
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ko/ko/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "6fda6bb4822f56356cd446ef30750319552780ea28434b741cc35bf3d8111010",
+          "sizeBytes": 17952
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ko/ko/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "a2be5cbddafa74c4d64b6cb46e60a64b151d46056566e3fc39b810e431cf047f",
+          "sizeBytes": 14880
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ko/ko/StreamJsonRpc.resources.dll",
+          "sha256": "53ce6c7e88dd7228d968fc26ff7cbf35bcdc81ee88275ca2325eaf8feffe47bc",
+          "sizeBytes": 26976
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/pl/pl/Aspire.Hosting.resources.dll",
+          "sha256": "ebff9ee8a48c414b3c19bb278305a937568e30082c46312c2bda59ec24049303",
+          "sizeBytes": 26424
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/pl/pl/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "c2d599b82424ac6961d568f411a01e366b359ac3c167ab2fce74c5e2c96c1ca6",
+          "sizeBytes": 18464
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/pl/pl/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "f77bd918ee6d7e3dfade1bbbf192fdd0fcd4f2ceb6296d14775f235f1562aea5",
+          "sizeBytes": 14864
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/pl/pl/StreamJsonRpc.resources.dll",
+          "sha256": "2e3d2bc745170f9b323711bf584b56246a6b9e4235e5e1dcac2ce83b7a9a1e1f",
+          "sizeBytes": 26464
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/projects/EventStore/Host.csproj",
+          "sha256": "a03945c7044bee30586a80d9a8326dd4a60f58363ee2af1e9ea1abef21810827",
+          "sizeBytes": 1510
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/projects/EventStore/Placeholder.cs",
+          "sha256": "070c86886f8d246ad4932af47d8f20fe9d4180861d856019b0bfe1e025c94954",
+          "sizeBytes": 83
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/projects/Ui/Host.csproj",
+          "sha256": "16813c251a95d259e4efdc622466412cea00ced7766b18af13f920619a7f5943",
+          "sizeBytes": 1486
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/projects/Ui/Placeholder.cs",
+          "sha256": "070c86886f8d246ad4932af47d8f20fe9d4180861d856019b0bfe1e025c94954",
+          "sizeBytes": 83
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/pt-BR/pt-BR/Aspire.Hosting.resources.dll",
+          "sha256": "c5032092cd8752c83880f68a0e46db2da1990963ae9e14f4a71447e740b4d914",
+          "sizeBytes": 26464
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/pt-BR/pt-BR/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "432ba5ed5c1f37436ec28d4f4b37b622cee3c833bdb01b44b6cf9fe255a445e5",
+          "sizeBytes": 17952
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/pt-BR/pt-BR/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "656bcea3398e47aff8e86741bfb097940b589f52ebca2236ec104129d0d3014d",
+          "sizeBytes": 14864
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/pt-BR/pt-BR/StreamJsonRpc.resources.dll",
+          "sha256": "990e5f544dd810cc9af2921cd4809c45a4c216697d9a5c4bd22d42700f57d8fc",
+          "sizeBytes": 26464
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ru/ru/Aspire.Hosting.resources.dll",
+          "sha256": "a19ae17a032603c1ba39e20b1cd0131d65e4e877bbd7362cea6af955073d6818",
+          "sizeBytes": 28472
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ru/ru/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "ff177fd4f159895d050fd7a19c4632b8e69792e79ef181f3aa1af9ae6c770f21",
+          "sizeBytes": 19480
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ru/ru/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "db19d56c8e725fc91182ffc75c3803c5d6ca9f0dc6d99d695cbf4e30acc56fce",
+          "sizeBytes": 15392
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/ru/ru/StreamJsonRpc.resources.dll",
+          "sha256": "5a32d75f02d6de17cfabe4f1f7fe57191a5549fcc11d5975fe77427826b38dea",
+          "sizeBytes": 30088
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/linux-arm64/native/runtimes/linux-arm64/native/libhex1binterop.so",
+          "sha256": "285d3f2994da13cc31bd29e757d34adca86c9777248a9898f57eef44368e84fc",
+          "sizeBytes": 71960
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/linux-x64/native/runtimes/linux-x64/native/libhex1binterop.so",
+          "sha256": "1f06a0d471c52fc72b7d3e2e526a30d8b10cf758acdf3e8225407c96352ebf06",
+          "sizeBytes": 21896
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/osx-arm64/native/runtimes/osx-arm64/native/libhex1binterop.dylib",
+          "sha256": "334610a7054265032e7d9643192a6d5d9a46e27adb2e6b09f0e841034bff8e0c",
+          "sizeBytes": 52072
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/osx-x64/native/runtimes/osx-x64/native/libhex1binterop.dylib",
+          "sha256": "ec65750845a042c78802d59c3790135e283bb9a5a20032ac64e28e14120246c0",
+          "sizeBytes": 18752
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/unix/lib/net6.0/runtimes/unix/lib/net6.0/System.Drawing.Common.dll",
+          "sha256": "89ea595ccb1fd1384480c1e30bd487c92af5d06d3b06f295323eff601acd9019",
+          "sizeBytes": 427112
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/win-arm64/native/arm64/runtimes/win-arm64/native/arm64/OpenConsole.exe",
+          "sha256": "ed7622fd0d3bedc9ab9f122f5e58edf0def9e7999224f52dd395ba9f54edbe09",
+          "sizeBytes": 1120056
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/win-arm64/native/runtimes/win-arm64/native/conpty.dll",
+          "sha256": "db3d173640b172bafd42d5b541b638a9aeec1c7d0e40dd636bf02822a32c912c",
+          "sizeBytes": 106336
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/win-arm64/native/runtimes/win-arm64/native/hex1bpty.exe",
+          "sha256": "50375f34089d1562f5bbec9caed634203e42aaf0205e0573e4cfe1a2815b0bf2",
+          "sizeBytes": 5028352
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/win-x64/native/arm64/runtimes/win-x64/native/arm64/OpenConsole.exe",
+          "sha256": "ed7622fd0d3bedc9ab9f122f5e58edf0def9e7999224f52dd395ba9f54edbe09",
+          "sizeBytes": 1120056
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/win-x64/native/runtimes/win-x64/native/conpty.dll",
+          "sha256": "39fba2713e2495117b1591ae8c32a3b904bea7aa66069cf7815e2844c76d75d8",
+          "sizeBytes": 109920
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/win-x64/native/runtimes/win-x64/native/hex1bpty.exe",
+          "sha256": "64b4fed87df4d22ac3a41d3456403cdc809b5bb1b3080bc43a52e032ea57a16d",
+          "sizeBytes": 4914688
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/win-x64/native/x64/runtimes/win-x64/native/x64/OpenConsole.exe",
+          "sha256": "b7fd936c2668b87b9ecf7b3366dc6568afc1c6f981874cba3e955a1c35cf8160",
+          "sizeBytes": 1066296
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/win/lib/net10.0/runtimes/win/lib/net10.0/System.Diagnostics.EventLog.Messages.dll",
+          "sha256": "8f3def30d41d85e2bd87b2d2e7542d49d625f0b4d96a6dc9b03e0f49bd59b8ef",
+          "sizeBytes": 800552
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/win/lib/net6.0/runtimes/win/lib/net6.0/Microsoft.Win32.SystemEvents.dll",
+          "sha256": "142cce4ed8ac9da22d69c38a6f22738abfb22090dc9313e8b58e6f91978e89af",
+          "sizeBytes": 53352
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/runtimes/win/lib/net6.0/runtimes/win/lib/net6.0/System.Drawing.Common.dll",
+          "sha256": "4d3001697df50cca54f32ed2dbbd1f3f415b48d5d756b1bf9500a43ae9b68da0",
+          "sizeBytes": 454248
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/tr/tr/Aspire.Hosting.resources.dll",
+          "sha256": "815115316429de3fca457644881201d37a0ee692171f0daf239b0606935c76b9",
+          "sizeBytes": 26424
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/tr/tr/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "cfd3afd4bd9b0d7f6f782370ca460f3333bb2ebf7db4977e6d2af22a47b71dd9",
+          "sizeBytes": 17952
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/tr/tr/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "620295974b05a36b268169cd94b39f99848224f7774b9748db014c2a2d027073",
+          "sizeBytes": 14880
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/tr/tr/StreamJsonRpc.resources.dll",
+          "sha256": "1df15719aa69c7915028419f93bdb27cf8814f1ea6455e6d4f23dc110d81f1f1",
+          "sizeBytes": 25952
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Aspire.Hosting.resources.dll",
+          "sha256": "bc7cc1c42b9a9e96aa1f331947ee91d9ca8d9fdf6394f675f9c0eed2c167da3f",
+          "sizeBytes": 25440
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "ef07ef11562297acd78ee9ec7a21bee4b9fb0f4255794f87ccff0970f9f3ccb4",
+          "sizeBytes": 16400
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "158f33332fa83a4c01f136482305a1d7d7feffa626fb082d65bfef4a0ce493a3",
+          "sizeBytes": 14880
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/StreamJsonRpc.resources.dll",
+          "sha256": "0c3a6e2b27cd768f6b94b9ffcd86097811f2be89583bef4f1bb24fd81a18fd47",
+          "sizeBytes": 24928
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Aspire.Hosting.resources.dll",
+          "sha256": "e6164da059efefa0606406c0e9ef92e220cc5241bef778afac5857af7db6e608",
+          "sizeBytes": 25400
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Microsoft.VisualStudio.Threading.resources.dll",
+          "sha256": "d0d594d3590ad804b8a9d5f0b23306864c7e8870ce9a445ef6990597d0ad20ab",
+          "sizeBytes": 17424
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Microsoft.VisualStudio.Validation.resources.dll",
+          "sha256": "8a3bffea88dc96fca9c307a9a8843a20fe1c7cafc2534b1cb95d688f07b6dbfd",
+          "sizeBytes": 14864
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/StreamJsonRpc.resources.dll",
+          "sha256": "23e40ffa7c609dbb2b79e8fc38b7097d9d9d9a86f9a03abfd744e5f6bc8330a0",
+          "sizeBytes": 24968
+        },
+        {
+          "path": "tools/net10.0/any/it/System.CommandLine.resources.dll",
+          "sha256": "58c2f07c08d99a4823e441a0f9402a3a07e4f8902543ec97ea6bbc8961af5330",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/ja/System.CommandLine.resources.dll",
+          "sha256": "6f30fcd99bb1597f7b81f4bc26ed9582dc33d013aab211feaf96ab491a35a0b3",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/ko/System.CommandLine.resources.dll",
+          "sha256": "ab5c8b013a53f7a02fef7068434ffc46345f1f07963dd0ef6e26e3ff4b46b763",
+          "sizeBytes": 18784
+        },
+        {
+          "path": "tools/net10.0/any/pl/System.CommandLine.resources.dll",
+          "sha256": "fa37fc6307053ace1003e6dcc72a33cc972dac719a0e1a40965936e1e8413bde",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/pt-BR/System.CommandLine.resources.dll",
+          "sha256": "f648dfab8b24d44177a4455ff9bcd4fefa06210ee5c06e4c6e447fd6f4963d51",
+          "sizeBytes": 18784
+        },
+        {
+          "path": "tools/net10.0/any/ru/System.CommandLine.resources.dll",
+          "sha256": "e3984a1494df49ecccf720346fa3096f5ec546aff797e2e6d9b86df9686ed260",
+          "sizeBytes": 19296
+        },
+        {
+          "path": "tools/net10.0/any/tr/System.CommandLine.resources.dll",
+          "sha256": "38361ec14998f14dbefb3f75e8793830a56e6e18d3a5737b238a6247cfcd72a2",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/zh-Hans/System.CommandLine.resources.dll",
+          "sha256": "425e40dd37692cc9c4fe2d75af4c39d884f7c982bb6ac80e2e34e341331437b6",
+          "sizeBytes": 18744
+        },
+        {
+          "path": "tools/net10.0/any/zh-Hant/System.CommandLine.resources.dll",
+          "sha256": "b3a5d4992b4729d3f9bc1bde92f5bda23cbab6515af11f3cc317ae48a3cfed9c",
+          "sizeBytes": 18744
+        }
+      ],
+      "releaseUnsignedArchiveSha256": "1a34f97c198e2fc1f5fbe1a244cd4639dc36d343aa853f980ea962e73b5f3337",
+      "repositoryRevision": "21ce044ab465ccb2adab58b3d66e394ffbecf3c2",
+      "repositorySignaturePresent": true,
+      "restoredArchiveSha256": "e0405045ba53a23b891bafe523a9cfad3d8b86c4e8b9d4495dbcefea964c1e9f",
+      "unsignedPayloadEquivalence": "not-proven-original-release-archive-unavailable",
+      "version": "4.29.1"
+    }
+  ],
+  "releaseInventorySha256": "edc3802707ad3f3878e31dfb77d432463587ca7291647d836487f2e5e1e5de7d",
+  "releaseUrl": "https://github.com/Hexalith/Hexalith.Builds/releases/tag/v4.29.1"
+}

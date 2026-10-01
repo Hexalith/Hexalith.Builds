@@ -1,0 +1,346 @@
+xUnit.net v3 In-Process Runner v4.0.1+8ed8aa354c (64-bit .NET 10.0.12)
+  Discovering: Hexalith.Builds.Module.Tests
+  Discovered:  Hexalith.Builds.Module.Tests
+  Starting:    Hexalith.Builds.Module.Tests
+    Hexalith.Builds.ModuleTool.Tests.ManifestValidationTests.LoadManifestWithMultipleErrorsReturnsDeterministicDiagnosticOrder [FAIL]
+      Shouldly.ShouldAssertException : result.Diagnostics.Select(diagnostic => diagnostic.RuleId)
+          should be
+      ["HXM001", "HXM005", "HXM010"]
+          but was (case sensitive comparison)
+      ["HXM001", "HXM005", "HXM005", "HXM005", "HXM005", "HXM010"]
+          difference
+      ["HXM001", "HXM005", *"HXM005"*, *"HXM005"*, *"HXM005"*, *"HXM010"*]
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ManifestValidationTests.cs(411,0): at Hexalith.Builds.ModuleTool.Tests.ManifestValidationTests.LoadManifestWithMultipleErrorsReturnsDeterministicDiagnosticOrder()
+           at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+           at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+    Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.TestWithUnknownProfileReturnsUsageExitCodeAsync [FAIL]
+      Shouldly.ShouldAssertException : standardOutput.ToString()
+          should contain (case insensitive comparison)
+      "HXC002"
+          but was actually
+      "failed: UsageOrManifest
+      HXM005 Manifest Manifest field=modules[0].descriptorAssembly: A manifest pat..."
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(284,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.TestWithUnknownProfileReturnsUsageExitCodeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(285,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.TestWithUnknownProfileReturnsUsageExitCodeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(286,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.TestWithUnknownProfileReturnsUsageExitCodeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ManifestValidationTests.LoadManifestWithEscapingDescriptorSymlinkFailsClosed [FAIL]
+      Shouldly.ShouldAssertException : result.Diagnostics.Select(diagnostic => diagnostic.RuleId)
+          should contain
+      "HXM004"
+          but was actually
+      ["HXM005", "HXM005", "HXM005", "HXM005"]
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ManifestValidationTests.cs(139,0): at Hexalith.Builds.ModuleTool.Tests.ManifestValidationTests.LoadManifestWithEscapingDescriptorSymlinkFailsClosed()
+           at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+           at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+    Hexalith.Builds.ModuleTool.Tests.ManifestValidationTests.IdentifierSchemaAndRuntimeValidationRemainInParity [FAIL]
+      Shouldly.ShouldAssertException : ModuleManifestLoader.Load(WriteManifest(directory, rootIdJson)).IsValid
+          should be
+      True
+          but was
+      False
+      
+      Additional Info:
+          root id acceptance for 'module'
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ManifestValidationTests.cs(185,0): at Hexalith.Builds.ModuleTool.Tests.ManifestValidationTests.IdentifierSchemaAndRuntimeValidationRemainInParity()
+           at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+           at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+    Hexalith.Builds.ModuleTool.Tests.ModuleRunEvidenceSerializationTests.CreateEvidenceRejectsFixtureSymlinkRetargetedAfterValidation [FAIL]
+      Shouldly.ShouldAssertException : manifestResult.IsValid
+          should be
+      True
+          but was
+      False
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ModuleRunEvidenceSerializationTests.cs(180,0): at Hexalith.Builds.ModuleTool.Tests.ModuleRunEvidenceSerializationTests.CreateEvidenceRejectsFixtureSymlinkRetargetedAfterValidation()
+           at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+           at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+    Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithValidManifestReturnsSuccessAsync [FAIL]
+      Shouldly.ShouldAssertException : exitCode
+          should be
+      0
+          but was
+      1
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(375,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithValidManifestReturnsSuccessAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(389,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithValidManifestReturnsSuccessAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(390,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithValidManifestReturnsSuccessAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ManifestValidationTests.LoadLongAcyclicDependencyChainReturnsValidManifest [FAIL]
+      Shouldly.ShouldAssertException : ModuleManifestLoader.Load(WriteManifest(directory, json)).IsValid
+          should be
+      True
+          but was
+      False
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ManifestValidationTests.cs(507,0): at Hexalith.Builds.ModuleTool.Tests.ManifestValidationTests.LoadLongAcyclicDependencyChainReturnsValidManifest()
+           at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+           at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+    Hexalith.Builds.ModuleTool.Tests.ManifestValidationTests.LoadValidTwoModuleManifestReturnsManifest [FAIL]
+      Shouldly.ShouldAssertException : result.IsValid
+          should be
+      True
+          but was
+      False
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ManifestValidationTests.cs(39,0): at Hexalith.Builds.ModuleTool.Tests.ManifestValidationTests.LoadValidTwoModuleManifestReturnsManifest()
+           at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+           at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+    Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithEscapingEvidenceSymlinkReturnsEvidenceFailureAsync [FAIL]
+      Shouldly.ShouldAssertException : exitCode
+          should be
+      6
+          but was
+      1
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(603,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithEscapingEvidenceSymlinkReturnsEvidenceFailureAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(606,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithEscapingEvidenceSymlinkReturnsEvidenceFailureAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(607,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithEscapingEvidenceSymlinkReturnsEvidenceFailureAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.SecretBearingProfileIsRedactedFromEvidenceAsync [FAIL]
+      Shouldly.ShouldAssertException : standardOutput.ToString()
+          should contain (case insensitive comparison)
+      "HXC003"
+          but was actually
+      "{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest",..."
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(328,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.SecretBearingProfileIsRedactedFromEvidenceAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(335,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.SecretBearingProfileIsRedactedFromEvidenceAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(336,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.SecretBearingProfileIsRedactedFromEvidenceAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithDescriptorAbiUnavailableAndInvalidEvidenceRetainsPrerequisiteExitCodeAsync [FAIL]
+      Shouldly.ShouldAssertException : exitCode
+          should be
+      2
+          but was
+      1
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(513,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithDescriptorAbiUnavailableAndInvalidEvidenceRetainsPrerequisiteExitCodeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(516,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithDescriptorAbiUnavailableAndInvalidEvidenceRetainsPrerequisiteExitCodeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(517,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithDescriptorAbiUnavailableAndInvalidEvidenceRetainsPrerequisiteExitCodeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithInvalidExecutableDescriptorFailsBeforeRuntimeAsync [FAIL]
+      Shouldly.ShouldAssertException : standardOutput.ToString()
+          should contain (case insensitive comparison)
+      "HXD002"
+          but was actually
+      "{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest",..."
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(471,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithInvalidExecutableDescriptorFailsBeforeRuntimeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(473,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithInvalidExecutableDescriptorFailsBeforeRuntimeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.MultipleManifestErrorsExposeTheFirstDeterministicRuleAsync [FAIL]
+      Shouldly.ShouldAssertException : output.RootElement.GetProperty("diagnostics").EnumerateArray()
+                              .Select(diagnostic => diagnostic.GetProperty("ruleId").GetString())
+          should be
+      ["HXM001", "HXM005", "HXM010"]
+          but was (case sensitive comparison)
+      ["HXM001", "HXM005", "HXM005", "HXM005", "HXM005", "HXM010"]
+          difference
+      ["HXM001", "HXM005", *"HXM005"*, *"HXM005"*, *"HXM005"*, *"HXM010"*]
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(183,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.MultipleManifestErrorsExposeTheFirstDeterministicRuleAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(186,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.MultipleManifestErrorsExposeTheFirstDeterministicRuleAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(187,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.MultipleManifestErrorsExposeTheFirstDeterministicRuleAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.CancelledDownWritesCancelledEvidenceAsync [FAIL]
+      System.IO.DirectoryNotFoundException : Could not find a part of the path '/tmp/hexalith-builds-command-047e9c01303847409f8da88e0e523cb5/evidence/cancelled.json'.
+      Stack Trace:
+           at Interop.ThrowExceptionForIoErrno(ErrorInfo errorInfo, String path, Boolean isDirError)
+           at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String path, OpenFlags flags, Int32 mode, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+           at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+           at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+           at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share, Int32 bufferSize, FileOptions options, Int64 preallocationSize)
+           at System.IO.File.AsyncStreamReader(String path, Encoding encoding)
+           at System.IO.File.InternalReadAllTextAsync(String path, Encoding encoding, CancellationToken cancellationToken)
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(651,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.CancelledDownWritesCancelledEvidenceAsync()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(656,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.CancelledDownWritesCancelledEvidenceAsync()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(657,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.CancelledDownWritesCancelledEvidenceAsync()
+        --- End of stack trace from previous location ---
+    Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithApprovedG6ManifestRetainsDescriptorAbiBlockerAsync [FAIL]
+      Shouldly.ShouldAssertException : exitCode
+          should be
+      2
+          but was
+      1
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(429,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithApprovedG6ManifestRetainsDescriptorAbiBlockerAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(441,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithApprovedG6ManifestRetainsDescriptorAbiBlockerAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(442,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.RunWithApprovedG6ManifestRetainsDescriptorAbiBlockerAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithInvalidEvidenceReturnsEvidenceExitCodeAsync [FAIL]
+      Shouldly.ShouldAssertException : exitCode
+          should be
+      6
+          but was
+      1
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(557,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithInvalidEvidenceReturnsEvidenceExitCodeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(560,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithInvalidEvidenceReturnsEvidenceExitCodeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs(561,0): at Hexalith.Builds.ModuleTool.Tests.ModuleCommandApplicationTests.DownWithInvalidEvidenceReturnsEvidenceExitCodeAsync()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.LoadAsyncAcceptsTwoModulesAndExactUiMarkers [FAIL]
+      Shouldly.ShouldAssertException : result.IsValid
+          should be
+      True
+          but was
+      False
+      
+      Additional Info:
+          HXM005
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ExecutableDescriptorLoaderTests.cs(156,0): at Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.LoadAsyncAcceptsTwoModulesAndExactUiMarkers()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.LoadAsyncExecutesBuiltDescriptorInCredentialFreeChild [FAIL]
+      Shouldly.ShouldAssertException : result.IsValid
+          should be
+      True
+          but was
+      False
+      
+      Additional Info:
+          HXM005
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ExecutableDescriptorLoaderTests.cs(63,0): at Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.LoadAsyncExecutesBuiltDescriptorInCredentialFreeChild()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.LoadAsyncRejectsInvalidAssembly [FAIL]
+      Shouldly.ShouldAssertException : result.Diagnostics.Select(diagnostic => diagnostic.RuleId)
+          should contain
+      "HXD002"
+          but was actually
+      ["HXM005"]
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ExecutableDescriptorLoaderTests.cs(281,0): at Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.LoadAsyncRejectsInvalidAssembly()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.LoadAsyncRejectsTimedOutChild [FAIL]
+      Shouldly.ShouldAssertException : result.Diagnostics.Select(diagnostic => diagnostic.RuleId)
+          should contain
+      "HXD001"
+          but was actually
+      ["HXM005"]
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ExecutableDescriptorLoaderTests.cs(311,0): at Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.LoadAsyncRejectsTimedOutChild()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.PublicRunWithApprovedDescriptorChecksLivePrerequisites [FAIL]
+      Shouldly.ShouldAssertException : exitCode
+          should be
+      2
+          but was
+      1
+      
+      Additional Info:
+          {"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXM005"},"diagnostics":[{"ruleId":"HXM005","phase":"Manifest","category":"Manifest","message":"A manifest path does not resolve to a readable repository file.","field":"modules[0].descriptorAssembly","hint":"Supply an existing file beneath the repository root.","source":null,"location":null,"row":null},{"ruleId":"HXM005","phase":"Manifest","category":"Manifest","message":"A manifest path does not resolve to a readable repository file.","field":"profiles[0].fixture","hint":"Supply an existing file beneath the repository root.","source":null,"location":null,"row":null}]}
+      
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/ExecutableDescriptorLoaderTests.cs(248,0): at Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.PublicRunWithApprovedDescriptorChecksLivePrerequisites()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+        test/Hexalith.Builds.Module.Tests/ExecutableDescriptorLoaderTests.cs(252,0): at Hexalith.Builds.ModuleTool.Tests.ExecutableDescriptorLoaderTests.PublicRunWithApprovedDescriptorChecksLivePrerequisites()
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+  Finished:    Hexalith.Builds.Module.Tests (ID = '4cfb1ab2bea135c6b12d9f5ac95ddfc0c09b6b0253aa4cf2c848b4c338d6da4f')
+=== TEST EXECUTION SUMMARY ===
+   Hexalith.Builds.Module.Tests  Total: 214, Errors: 0, Failed: 21, Skipped: 0, Not Run: 0, Time: 15.178s

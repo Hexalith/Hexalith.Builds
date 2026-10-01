@@ -1,0 +1,1 @@
+{"status":"passed","outcome":{"exitCode":"Success","phase":"None","category":"None","ruleId":null},"diagnostics":[{"ruleId":"HXI210","phase":"Evidence","category":"None","message":"The G-4 P0 acceptance record is complete and consistent.","field":"record","hint":null,"source":null,"location":null,"row":null}]}

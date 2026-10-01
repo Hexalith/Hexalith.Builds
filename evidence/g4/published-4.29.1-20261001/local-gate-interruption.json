@@ -1,0 +1,9 @@
+{
+  "artifactKind": "qualification-timeout",
+  "acceptanceEvidence": false,
+  "reason": "initial solution restore made no progress for more than seven minutes; parent requested bounded first-failure triage",
+  "signal": "SIGTERM",
+  "command": "/home/administrator/.dotnet/dotnet restore /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/Hexalith.Builds.slnx",
+  "invocationOwnedProcess": true,
+  "gateInterruption": "No completed inventory; restore termination was followed by a build start, so the invocation-owned gate and its descendants were bounded as well."
+}

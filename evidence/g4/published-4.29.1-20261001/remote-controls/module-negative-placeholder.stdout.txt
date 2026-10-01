@@ -1,0 +1,1 @@
+{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXM006"},"diagnostics":[{"ruleId":"HXM006","phase":"Manifest","category":"Manifest","message":"The manifest contains an unresolved placeholder.","field":"id","hint":"Resolve placeholders before invoking the runner.","source":null,"location":null,"row":null}]}

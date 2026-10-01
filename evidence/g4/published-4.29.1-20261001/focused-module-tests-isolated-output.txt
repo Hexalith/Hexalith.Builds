@@ -1,0 +1,7 @@
+xUnit.net v3 In-Process Runner v4.0.1+8ed8aa354c (64-bit .NET 10.0.12)
+  Discovering: Hexalith.Builds.Module.Tests
+  Discovered:  Hexalith.Builds.Module.Tests
+  Starting:    Hexalith.Builds.Module.Tests
+  Finished:    Hexalith.Builds.Module.Tests (ID = '4cfb1ab2bea135c6b12d9f5ac95ddfc0c09b6b0253aa4cf2c848b4c338d6da4f')
+=== TEST EXECUTION SUMMARY ===
+   Hexalith.Builds.Module.Tests  Total: 214, Errors: 0, Failed: 0, Skipped: 0, Not Run: 0, Time: 23.194s

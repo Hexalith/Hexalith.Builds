@@ -1,0 +1,4 @@
+runtime-toolchain-baseline.json: 30 packet scenarios, 16 baseline controls and 55 authority controls passed
+runtime-toolchain-baseline-2026-09-27.json: 30 packet scenarios, 16 baseline controls and 55 authority controls passed
+runtime-toolchain-baseline-2026-09-29.json: 30 packet scenarios, 16 baseline controls and 55 authority controls passed
+G6-EVIDENCE-MUTATIONS-PASSED: 30 scenarios for each of 3 baselines; 48 baseline-drift controls; 165 authority controls; 2 historical baseline SHA-256 pins

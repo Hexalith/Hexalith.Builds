@@ -1,0 +1,14 @@
+Description:
+  Runs a named module qualification profile.
+
+Usage:
+  Hexalith.Builds.Module.Cli test [options]
+
+Options:
+  --manifest <manifest> (REQUIRED)
+  --profile <profile> (REQUIRED)
+  --filter <filter>
+  --evidence <evidence>
+  --output <human|json>             [default: human]
+  -?, -h, --help                    Show help and usage information
+

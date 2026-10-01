@@ -1,0 +1,153 @@
+{
+  "acceptanceEvidence": false,
+  "artifactKind": "published-candidate-preparation-observations",
+  "capturedUtc": "2026-10-01T06:16:25Z",
+  "consumer": {
+    "buildOutputCopied": false,
+    "emptyPackageCacheAtStart": true,
+    "manifest": "test/fixtures/package-consumer/.config/dotnet-tools.json",
+    "manifestSha256": "ce9f4d539428d221a70a893a250aec45d244694050dc9216b490f6517eb626f4",
+    "moduleExecutableSourcesCopied": false,
+    "nugetConfig": "test/fixtures/package-consumer/NuGet.Config",
+    "nugetConfigSha256": "aec93b5637ab6d62470979a008990a4a336a287ab83a3f2541849ae735674055",
+    "onlyInstalledCommandsInvoked": true,
+    "packageCache": "/var/tmp/hexalith-p0-20261001-u6scsgu0/remote-attempt-4/remote-nuget",
+    "workingDirectory": "/var/tmp/hexalith-p0-20261001-u6scsgu0/remote-attempt-4/remote-consumer"
+  },
+  "disposition": "blocked-on-exact-p1r-and-g6-acceptance",
+  "focusedFallback": {
+    "checks": [
+      {
+        "artifact": "focused-evidence-build-output.txt",
+        "command": "env CI=true DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet build test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj --configuration Debug --no-restore -m:1 -p:GeneratePackageOnBuild=false -p:NuGetAudit=false -p:MinVerVersionOverride=1.0.0",
+        "exitCode": 0,
+        "key": "focused-evidence-build"
+      },
+      {
+        "artifact": "focused-evidence-tests-output.txt",
+        "command": "dotnet test/Hexalith.Builds.Evidence.Tests/bin/Debug/net10.0/Hexalith.Builds.Evidence.Tests.dll -noColor",
+        "counts": {
+          "failed": 0,
+          "notRun": 0,
+          "passed": 107,
+          "skipped": 0,
+          "total": 107
+        },
+        "exitCode": 0,
+        "key": "focused-evidence-tests"
+      },
+      {
+        "artifact": "focused-module-build-output.txt",
+        "command": "env CI=true DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet build test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj --configuration Debug --no-restore -m:1 -p:GeneratePackageOnBuild=false -p:NuGetAudit=false -p:MinVerVersionOverride=1.0.0",
+        "exitCode": 0,
+        "key": "focused-module-build"
+      },
+      {
+        "artifact": "focused-module-tests-isolated-output.txt",
+        "command": "env TMPDIR=/var/tmp/hexalith-p0-20261001-u6scsgu0/focused-test-temp dotnet test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -noColor",
+        "counts": {
+          "failed": 0,
+          "notRun": 0,
+          "passed": 214,
+          "skipped": 0,
+          "total": 214
+        },
+        "exitCode": 0,
+        "key": "focused-module-tests-isolated"
+      }
+    ],
+    "failedPriorModuleRun": {
+      "artifact": "focused-module-tests-output.txt",
+      "cause": "unrelated /tmp/.git root marker redirected temporary fixture repository roots",
+      "command": "dotnet test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -noColor",
+      "exitCode": 1,
+      "failed": 21,
+      "remediation": "new invocation-owned TMPDIR; no source/test change",
+      "skipped": 0,
+      "total": 214
+    }
+  },
+  "liveQualificationExecuted": false,
+  "localSourcePackageGate": {
+    "artifact": "local-gate-interruption.json",
+    "command": "env NUGET_PACKAGES=/var/tmp/hexalith-p0-20261001-u6scsgu0/local-nuget DOTNET_CLI_HOME=/var/tmp/hexalith-p0-20261001-u6scsgu0/local-dotnet-home CI=true TMPDIR=/var/tmp pwsh -NoProfile -File Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-p0.20261001.1 -RequireControls -PackageDirectory /var/tmp/hexalith-p0-20261001-u6scsgu0/local-packages -RetainPackageDirectory",
+    "exitCode": 143,
+    "inventoryEmitted": false,
+    "reason": "bounded silent restore/build startup; original attempt retained",
+    "result": "interrupted-nonpassing",
+    "sourceValidationBypassed": false
+  },
+  "ownerAcceptanceRecordEmitted": false,
+  "p4HandoffAccepted": false,
+  "prerequisites": {
+    "g6": {
+      "acceptedMatchingPacket": false,
+      "baseline": "Tools/runtime-toolchain-baseline-2026-09-29.json",
+      "baselineSha256": "260d1abae7d9eba358c5eaf749f12a0f46cf6adf5b0b4830d423615908820fbd",
+      "command": "python3 references/Hexalith.Builds/Tools/validate-runtime-toolchain-evidence.py --workspace . --baseline references/Hexalith.Builds/Tools/runtime-toolchain-baseline-2026-09-29.json --packet _bmad-output/implementation-artifacts/qualification-evidence/g-6-runtime-toolchain-20260929/packet.json",
+      "exitCode": 1,
+      "output": "G6-EVIDENCE-INVALID: Central package pin drift: CommunityToolkit.Aspire.Hosting.Dapr",
+      "packet": "_bmad-output/implementation-artifacts/qualification-evidence/g-6-runtime-toolchain-20260929/packet.json",
+      "packetRepository": "Hexalith.Projects",
+      "packetSha256": "f62a8f661c181f5f2554bfc21bf0da918fcf6448199186bbf5a8e8d9a2fb7ac2",
+      "workingRepository": "Hexalith.Projects"
+    },
+    "p1r": {
+      "acceptedBuildsRevision": "ad52f350a2f0bc47849179ae17b4594dafff5363",
+      "acceptedEventStoreVersion": "3.106.0",
+      "matchesSelectedDelivery": false,
+      "path": "_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+      "repository": "Hexalith.Projects",
+      "sha256": "93f5e9e7f733a6bac35f5aad5c8465d280757b7ec7040ac9749afe772f5e8e9f"
+    }
+  },
+  "publishedContractControls": {
+    "acceptanceNegativeChecks": 36,
+    "cleanup": "two metadata-only down calls; no live resources started",
+    "corpus": "synthetic; never persisted or owner acceptance evidence",
+    "count": 97,
+    "fixtureBytesMatchedToReleaseInventory": 233,
+    "helpContractsVerified": 6,
+    "manifestNegativeChecks": 16,
+    "missingAcceptanceChecks": 1,
+    "outputs": "remote-controls/controls.json",
+    "positiveChecks": 13,
+    "readinessNegativeChecks": 29,
+    "result": "passed",
+    "unavailableChecks": 2
+  },
+  "remainingMandatory": [
+    "independently accepted matching P1R tuple",
+    "independently accepted fresh G-6 packet",
+    "clean Debug/source and Release/package qualification and parity",
+    "independent unsigned-payload equivalence using original qualified release archives",
+    "installed VSTest and MTP real persisted two-module runs and native reports",
+    "all required AD-25 profile classes and retained causal native failure evidence",
+    "required persisted negative, unavailable, cancellation, and live repeated-cleanup evidence",
+    "exercised rollback drill; validator rollback currently attestation-only",
+    "dated Builds Owner, Platform Owner, and named Test Architect approvals on the exact delivery",
+    "independently validated evidence/g4/6.1-p0-acceptance.json and P4 handoff"
+  ],
+  "retainedHarnessFailures": {
+    "artifacts": [
+      "failed-harness-attempt-1.json",
+      "failed-harness-attempt-2.json",
+      "failed-harness-attempt-3.json"
+    ],
+    "cause": "fixture enumeration and expectation-sidecar handling in the temporary control harness; not tool behavior failures",
+    "count": 3
+  },
+  "rollbackDrillExecuted": false,
+  "selectedDelivery": {
+    "buildsSourceRevision": "21ce044ab465ccb2adab58b3d66e394ffbecf3c2",
+    "daprRuntimeVersion": "1.18.2",
+    "daprSdkVersion": "1.18.10",
+    "eventStoreRevision": "27279fe6431925a6ea046c3f89af61487185c7de",
+    "eventStoreTag": "v3.110.0",
+    "eventStoreVersion": "3.110.0",
+    "frontComposerVersion": "4.5.0",
+    "publishedToolVersion": "4.29.1"
+  },
+  "story61IndependentGatesRemain": true,
+  "workPackageId": "6.1-P0"
+}

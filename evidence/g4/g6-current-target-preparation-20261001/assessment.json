@@ -1,0 +1,86 @@
+{
+  "acceptanceEvidence": false,
+  "artifactKind": "g6-current-target-source-preparation",
+  "capturedUtc": "2026-10-01T06:23:13.781828Z",
+  "sourceRevisionBeforeChanges": "21ce044ab465ccb2adab58b3d66e394ffbecf3c2",
+  "scope": "working-tree validator correction; not published tool qualification or baseline approval",
+  "mutationControls": {
+    "exitCode": 0,
+    "packetScenariosPerBaseline": 30,
+    "baselines": 3,
+    "baselineDriftControls": 48,
+    "authorityControls": 165,
+    "historicalBaselinePins": 2
+  },
+  "originalValidatorRegression": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 Tools/test-runtime-toolchain-evidence-validator.py",
+    "mode": "hermetic current mutation tests against original validator from Builds 21ce044ab465ccb2adab58b3d66e394ffbecf3c2",
+    "exitCode": 1,
+    "expectedResult": "nonzero with Fluent UI RC exception missing",
+    "matchedExpectation": true,
+    "originalValidatorSha256": "3845fad0b32791a9f16c19f9981777858f29215a835a1c7e9e4108a022cf03cf"
+  },
+  "currentGate": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 tests/tools/run_g6_candidate_gate.py --baseline references/Hexalith.Builds/Tools/runtime-toolchain-baseline-2026-09-29.json --packet _bmad-output/implementation-artifacts/qualification-evidence/g-6-runtime-toolchain-20260929/packet.json",
+    "workingRepository": "Hexalith.Projects",
+    "exitCode": 1,
+    "failedChecks": 7,
+    "stdout": "current-gate.stdout.txt",
+    "stderr": "current-gate.stderr.txt"
+  },
+  "boundFiles": [
+    {
+      "repository": "Hexalith.Builds",
+      "path": "Tools/validate-runtime-toolchain-evidence.py",
+      "sha256": "37e8ad03ba39ffad94a3972f00d9a2809c75cb2cd0aeeb0cd3dcb028707c7fae",
+      "sizeBytes": 48863
+    },
+    {
+      "repository": "Hexalith.Builds",
+      "path": "Tools/test-runtime-toolchain-evidence-validator.py",
+      "sha256": "9897fcc07e7fa69edc141c80ce8e27c9cfecb1f1e113a558bbfbb92413a94555",
+      "sizeBytes": 55669
+    },
+    {
+      "repository": "Hexalith.Builds",
+      "path": "Tools/runtime-toolchain-baseline.json",
+      "sha256": "525615c65ada8cabf5a6911a374bb22b62f6a3c1bfa6c91f7245312da9720265",
+      "sizeBytes": 5343
+    },
+    {
+      "repository": "Hexalith.Builds",
+      "path": "Tools/runtime-toolchain-baseline-2026-09-27.json",
+      "sha256": "b9aa6791effe78cbb9bf405cd8384b81a6d750f996fabf8f79b7cd1c3bedad01",
+      "sizeBytes": 5343
+    },
+    {
+      "repository": "Hexalith.Builds",
+      "path": "Tools/runtime-toolchain-baseline-2026-09-29.json",
+      "sha256": "260d1abae7d9eba358c5eaf749f12a0f46cf6adf5b0b4830d423615908820fbd",
+      "sizeBytes": 5344
+    },
+    {
+      "repository": "Hexalith.Projects",
+      "path": "_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+      "sha256": "93f5e9e7f733a6bac35f5aad5c8465d280757b7ec7040ac9749afe772f5e8e9f",
+      "sizeBytes": 1452
+    },
+    {
+      "repository": "Hexalith.Projects",
+      "path": "_bmad-output/implementation-artifacts/qualification-evidence/g-6-runtime-toolchain-20260929/packet.json",
+      "sha256": "f62a8f661c181f5f2554bfc21bf0da918fcf6448199186bbf5a8e8d9a2fb7ac2",
+      "sizeBytes": 7774
+    }
+  ],
+  "historicalBaselineAndPacketBytesUnchanged": true,
+  "p1rAcceptanceChanged": false,
+  "g6AcceptanceGranted": false,
+  "liveQualificationExecuted": false,
+  "remaining": [
+    "accepted matching P1R delivery tuple",
+    "fresh source-bound G-6 packet with current catalog, gitlinks, CI execution SHA, reports, and independent owner decisions",
+    "clean source/package qualification",
+    "current persisted qualification and rollback drill",
+    "exact final P0 owner acceptance"
+  ]
+}

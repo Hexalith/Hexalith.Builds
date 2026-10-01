@@ -1,0 +1,1 @@
+G6-GATE-VALIDATOR: packet status pending; candidate mode exited 1: G6-EVIDENCE-INVALID: Central package pin drift: CommunityToolkit.Aspire.Hosting.Dapr
