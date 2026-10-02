@@ -93,6 +93,10 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
 
+      - name: Test caller-owned domain release preparation
+        shell: bash
+        run: python3 Tools/test-prepare-domain-release.py
+
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:

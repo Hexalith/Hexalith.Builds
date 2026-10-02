@@ -1,0 +1,168 @@
+name: Prepare domain release
+description: Prepare an ordinary caller-owned publication job using exact-source push CI as test authority
+
+inputs:
+  solution:
+    description: Caller-owned .slnx solution to restore and build
+    required: true
+  builds-execution-sha:
+    description: Approved full Builds commit, identical to this action's uses revision
+    required: true
+  expected-package-count:
+    description: Caller-declared positive package inventory count
+    required: true
+  package-manifest:
+    description: Caller-owned JSON package inventory
+    default: tools/release-packages.json
+  source-branch:
+    description: Protected source branch
+    default: main
+  source-ci-workflow:
+    description: Workflow filename providing successful exact-source push CI
+    default: ci.yml
+  nuget-user:
+    description: Individual NuGet policy creator, required when publication is enabled
+    default: ''
+  dotnet-global-json:
+    description: Caller SDK pin
+    default: global.json
+  packages-lock-file:
+    description: NuGet cache key source
+    default: Directory.Packages.props
+  node-version:
+    description: Node.js major supporting semantic-release
+    default: '24'
+
+outputs:
+  publish-enabled:
+    description: Exact publication verdict after preparation and late source proof
+    value: ${{ steps.publish-gate.outputs.publish-enabled }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate approved shared action identity
+      shell: bash
+      env:
+        BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+        RESOLVED_ACTION_REPOSITORY: ${{ github.action_repository }}
+        RESOLVED_ACTION_REF: ${{ github.action_ref }}
+      run: |
+        set -euo pipefail
+        if [[ ! "$BUILD_EXECUTION_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "builds-execution-sha must be an exact lowercase 40-character commit SHA." >&2
+          exit 1
+        fi
+        if [ "$RESOLVED_ACTION_REPOSITORY" != "Hexalith/Hexalith.Builds" ] || [ "$RESOLVED_ACTION_REF" != "$BUILD_EXECUTION_SHA" ]; then
+          echo "The resolved shared action repository/ref does not match the approved Builds execution identity." >&2
+          exit 1
+        fi
+    - name: Validate preparation contract
+      shell: bash
+      env:
+        SOLUTION: ${{ inputs.solution }}
+        EXPECTED_PACKAGE_COUNT: ${{ inputs.expected-package-count }}
+        PACKAGE_MANIFEST: ${{ inputs.package-manifest }}
+        SOURCE_BRANCH: ${{ inputs.source-branch }}
+        SOURCE_CI_WORKFLOW: ${{ inputs.source-ci-workflow }}
+        DISPATCH_REF: ${{ github.ref }}
+        DISPATCH_SHA: ${{ github.sha }}
+      run: |
+        set -euo pipefail
+        fail() { echo "[prepare-domain-release] $1" >&2; exit 1; }
+        [[ "$SOLUTION" =~ ^[A-Za-z0-9_./-]+\.slnx$ && "$SOLUTION" != /* && ! "$SOLUTION" =~ (^|/)\.\.?(/|$) && -f "$SOLUTION" ]] || fail "solution must identify an existing caller-owned relative .slnx file."
+        [[ "$EXPECTED_PACKAGE_COUNT" =~ ^[1-9][0-9]*$ ]] || fail "expected-package-count must be a positive integer."
+        [[ "$PACKAGE_MANIFEST" =~ ^[A-Za-z0-9_./-]+\.json$ && "$PACKAGE_MANIFEST" != /* && ! "$PACKAGE_MANIFEST" =~ (^|/)\.\.?(/|$) && -f "$PACKAGE_MANIFEST" ]] || fail "package-manifest must identify an existing caller-owned relative JSON file."
+        [[ "$SOURCE_BRANCH" = main && "$DISPATCH_REF" = refs/heads/main ]] || fail "Release must use the main source branch and refs/heads/main dispatch."
+        [[ "$SOURCE_CI_WORKFLOW" =~ ^[A-Za-z0-9_.-]+\.ya?ml$ ]] || fail "source-ci-workflow must be a workflow filename."
+        [[ "$DISPATCH_SHA" =~ ^[0-9a-f]{40}$ ]] || fail "The dispatch source must be an exact lowercase commit SHA."
+        [[ "$(git rev-parse HEAD)" = "$DISPATCH_SHA" ]] || fail "The caller checkout does not match the dispatched source."
+        jq -e --argjson count "$EXPECTED_PACKAGE_COUNT" '
+          .packages | type == "array" and length == $count and
+          all(.[]; (.id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._-]*$")) and
+            (.project | type == "string" and test("^[A-Za-z0-9_./-]+\\.csproj$") and
+              (startswith("/") | not) and (test("(^|/)\\.\\.?(/|$)") | not))) and
+          ([.[].id | ascii_downcase] | unique | length) == $count and
+          ([.[].project] | unique | length) == $count
+        ' "$PACKAGE_MANIFEST" >/dev/null || fail "The manifest must contain exactly the declared unique package IDs and project paths."
+        while IFS= read -r project; do
+          [ -f "$project" ] || fail "A package project declared by the manifest is unavailable."
+        done < <(jq -er '.packages[].project' "$PACKAGE_MANIFEST")
+    - name: Checkout approved Builds actions
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: Hexalith/Hexalith.Builds
+        ref: ${{ inputs.builds-execution-sha }}
+        path: .hexalith/builds-execution
+        submodules: false
+        persist-credentials: false
+    - name: Initialize root-declared submodules
+      uses: ./.hexalith/builds-execution/Github/initialize-build
+    - name: Initialize .NET
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      with:
+        global-json-file: ${{ inputs.dotnet-global-json }}
+    - name: Initialize Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+    - name: Cache NuGet packages
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.nuget/packages
+        key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
+        restore-keys: nuget-
+    - name: Install npm dependencies
+      shell: bash
+      run: npm ci --ignore-scripts
+    - name: Verify npm dependency provenance and signatures
+      shell: bash
+      run: npm audit signatures
+    - name: Restore
+      shell: bash
+      env:
+        SOLUTION: ${{ inputs.solution }}
+      run: dotnet restore "$SOLUTION"
+    - name: Build
+      shell: bash
+      env:
+        SOLUTION: ${{ inputs.solution }}
+      run: dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
+    - name: Resolve publication freeze and revalidate exact green source
+      id: publish-gate
+      shell: bash
+      env:
+        HEXALITH_RELEASE_PUBLISH_ENABLED: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}
+        NUGET_USER: ${{ inputs.nuget-user }}
+        GH_TOKEN: ${{ github.token }}
+        REPOSITORY: ${{ github.repository }}
+        DISPATCH_REF: ${{ github.ref }}
+        DISPATCH_SHA: ${{ github.sha }}
+        SOURCE_BRANCH: ${{ inputs.source-branch }}
+        SOURCE_CI_WORKFLOW: ${{ inputs.source-ci-workflow }}
+      run: |
+        set -euo pipefail
+        fail() { echo "[prepare-domain-release] $1" >&2; exit 1; }
+        # GitHub expression equality folds case. Only the exact untrimmed shell value authorizes publication.
+        if [ "${HEXALITH_RELEASE_PUBLISH_ENABLED-}" != "true" ]; then
+          echo "publish-enabled=false" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Release publication frozen::HEXALITH_RELEASE_PUBLISH_ENABLED is not exactly 'true'; NuGet login and Semantic Release are skipped. Set the value explicitly at repository scope."
+          exit 0
+        fi
+        [[ -n "${NUGET_USER//[[:space:]]/}" ]] || fail "NUGET_USER must name the individual NuGet trusted publishing policy creator."
+        [[ "$SOURCE_BRANCH" = main && "$DISPATCH_REF" = refs/heads/main ]] || fail "Release must use main and refs/heads/main."
+        [[ "$DISPATCH_SHA" =~ ^[0-9a-f]{40}$ ]] || fail "The dispatch source must be an exact lowercase commit SHA."
+        checked_out_sha="$(git rev-parse HEAD)"
+        [[ "$checked_out_sha" =~ ^[0-9a-f]{40}$ && "$checked_out_sha" = "$DISPATCH_SHA" ]] || fail "The caller checkout does not match the dispatched source."
+        live_main_sha="$(gh api "repos/${REPOSITORY}/git/ref/heads/${SOURCE_BRANCH}" --jq '.object.sha')"
+        [[ "$live_main_sha" =~ ^[0-9a-f]{40}$ && "$live_main_sha" = "$checked_out_sha" ]] || fail "The release source became stale during preparation; redispatch from the current main tip after exact-source CI succeeds."
+        ci_runs="$(gh api --method GET \
+          "repos/${REPOSITORY}/actions/workflows/${SOURCE_CI_WORKFLOW}/runs" \
+          -f branch=main -f event=push -f head_sha="$checked_out_sha" -f status=success -f per_page=100)"
+        printf '%s\n' "$ci_runs" | jq -e --arg sha "$checked_out_sha" '
+          [.workflow_runs[] | select(
+            .head_sha == $sha and .head_branch == "main" and .event == "push" and
+            .status == "completed" and .conclusion == "success"
+          )] | length > 0
+        ' >/dev/null || fail "No successful completed push CI run exists for the exact current main SHA."
+        echo "publish-enabled=true" >> "$GITHUB_OUTPUT"
