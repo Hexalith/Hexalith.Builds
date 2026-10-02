@@ -21,7 +21,7 @@ Required inputs are `solution` (an existing relative `.slnx`),
 by the caller). Optional inputs default to `source-branch: main`,
 `source-ci-workflow: ci.yml`, `package-manifest: tools/release-packages.json`,
 `dotnet-global-json: global.json`, `packages-lock-file: Directory.Packages.props`,
-and `node-version: '24'`. The manifest must contain exactly the declared unique
+`node-version: '24'`, and `publication-flag: ''`. The manifest must contain exactly the declared unique
 package IDs and unique existing project paths.
 
 The caller checks out `${{ github.sha }}` with full history, `submodules: false`,
@@ -32,9 +32,12 @@ NuGet must see the package repository's workflow identity, so authentication and
 semantic-release both remain in that caller job.
 
 After npm installation and signature verification, SDK setup, restore, and the
-Release build, the action compares the repository variable
-`HEXALITH_RELEASE_PUBLISH_ENABLED` using a case-sensitive, untrimmed shell
-comparison. Only `true` permits publication. All other values return
+Release build, the action compares the caller-supplied `publication-flag` input
+using a case-sensitive, untrimmed shell comparison. The caller resolves the
+effective variable and passes `publication-flag: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}`;
+the composite reads only its input because it cannot access the `vars` context.
+Omitting the input defaults to empty and keeps publication frozen.
+Only `true` permits publication. All other values return
 `publish-enabled: false` with a notice; the caller skips login and publication.
 Set this variable explicitly at repository scope to avoid inheriting an
 organization value unintentionally.

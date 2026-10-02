@@ -11,6 +11,10 @@ inputs:
   expected-package-count:
     description: Caller-declared positive package inventory count
     required: true
+  publication-flag:
+    description: Effective caller publication variable; only the exact untrimmed lowercase string true enables publication
+    required: false
+    default: ''
   package-manifest:
     description: Caller-owned JSON package inventory
     default: tools/release-packages.json
@@ -132,7 +136,7 @@ runs:
       id: publish-gate
       shell: bash
       env:
-        HEXALITH_RELEASE_PUBLISH_ENABLED: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}
+        HEXALITH_RELEASE_PUBLISH_ENABLED: ${{ inputs.publication-flag }}
         NUGET_USER: ${{ inputs.nuget-user }}
         GH_TOKEN: ${{ github.token }}
         REPOSITORY: ${{ github.repository }}

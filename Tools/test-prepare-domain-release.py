@@ -161,6 +161,31 @@ else:
                 self.assertIn("publication frozen", result.stdout)
                 self.assertFalse((self.root / "calls").exists())
 
+    def test_publication_flag_is_bound_to_explicit_input_and_omission_is_frozen(self) -> None:
+        text = ACTION.read_text(encoding="utf-8")
+        self.assertNotRegex(text, r"\$\{\{[^}]*\bvars\b", "Composite expressions cannot use the caller's vars context")
+        inputs = re.search(r"(?ms)^inputs:\n(.*?)(?=^\S|\Z)", text)
+        self.assertIsNotNone(inputs)
+        flag = re.search(r"(?ms)^  publication-flag:\n(.*?)(?=^  [A-Za-z]|\Z)", inputs[1])
+        self.assertIsNotNone(flag, "The raw publication flag must be a declared action input")
+        self.assertRegex(flag[1], r"(?m)^    required: false$")
+        default = re.search(r"(?m)^    default: (.*)$", flag[1])
+        self.assertIsNotNone(default)
+        self.assertEqual("''", default[1], "An omitted publication flag must default to empty")
+        name = "Resolve publication freeze and revalidate exact green source"
+        gate = step_block(name, text)
+        binding = re.search(r"(?m)^        HEXALITH_RELEASE_PUBLISH_ENABLED: (.*)$", gate)
+        self.assertIsNotNone(binding)
+        self.assertEqual("${{ inputs.publication-flag }}", binding[1])
+        self.assertEqual(1, text.count("HEXALITH_RELEASE_PUBLISH_ENABLED:"))
+        # Resolve the declared empty default through the producer's input binding.
+        result = self.execute(name, HEXALITH_RELEASE_PUBLISH_ENABLED=default[1].strip("'"),
+                              NUGET_USER="", MOCK_MAIN_SHA=OTHER_SHA)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("false", self.caller_publish_enabled())
+        self.assertIn("publication frozen", result.stdout)
+        self.assertFalse((self.root / "calls").exists())
+
     def test_missing_creator_fails_before_token_exchange_or_live_calls(self) -> None:
         for user in ("", " \t\n"):
             self.assert_rejected("Resolve publication freeze and revalidate exact green source", NUGET_USER=user)
