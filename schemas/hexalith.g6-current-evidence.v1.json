@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.com/schemas/hexalith.g6-current-evidence.v1.json",
+  "title": "Current G-6 qualification result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "audit", "qualification", "approval", "artifactSha256"],
+  "properties": {
+    "schema": { "const": "hexalith.g6-current-evidence.v1" },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "policySha256", "source", "materialInputs", "effectiveTuple", "resolvedPackages", "tupleApproved", "issues"],
+      "properties": {
+        "schema": { "const": "hexalith.g6-current-audit.v1" },
+        "policySha256": { "$ref": "#/$defs/sha256" },
+        "source": { "type": "object" },
+        "materialInputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fingerprint", "fileCount"],
+          "properties": {
+            "fingerprint": { "$ref": "#/$defs/sha256" },
+            "fileCount": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "effectiveTuple": { "type": "object" },
+        "resolvedPackages": { "type": "array" },
+        "tupleApproved": { "type": "boolean" },
+        "issues": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "runner", "fixture", "commands", "tests", "cleanup", "environment", "limitations", "receipts"],
+      "properties": {
+        "status": { "enum": ["qualified", "failed", "not verified"] },
+        "runner": { "type": "string", "minLength": 1 },
+        "fixture": { "type": "string", "minLength": 1 },
+        "commands": { "type": "array" },
+        "tests": { "type": "object" },
+        "cleanup": { "type": "object" },
+        "environment": { "type": "object" },
+        "limitations": { "type": "array", "items": { "type": "string" } },
+        "receipts": { "type": "object" }
+      }
+    },
+    "approval": { "type": "object" },
+    "artifactSha256": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

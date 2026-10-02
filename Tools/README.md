@@ -449,3 +449,34 @@ The current 2026-10-01 G-6 contract is separately versioned as `hexalith.runtime
 Run the umbrella `tools/qualification/run_g6_qualification.py` with a new evidence output directory; it retains failures and actual counts even when strict capture validation fails. Pending or failed qualification never grants prerequisite usability. Final acceptance requires a named decision on the exact reviewed packet hash, successful technical qualification, clean committed source and exact root gitlinks. This source implementation does not change published Builds `4.29.1` tool binaries.
 
 The resumed consumer corrections explicitly align published EventStore.Aspire transitive Redis/Keycloak dependencies with the approved catalog in Builds Module.AppHost and the Platform file host. Keycloak remains runtime-unqualified; file-based directives now use the same exact exclusion crosswalk as XML. The current controls reject both an older restored preview and unauthorized file directives. Selected attempt 7 is technically valid, with all 22 commands passing, while dirty committed closure, the preserved Parties checkout/root-gitlink mismatch and separate named acceptance keep prerequisite usability false. No published tool binaries or historical packet bytes were changed.
+
+### Current G-6 policy and compact result
+
+`Tools/g6-current-policy.json` and `Tools/g6_current.py` define the replacement
+current-checkout G-6 contract. The historical v1/v2 packet validator and accepted
+records remain unchanged. Run `python3 Tools/g6_current.py audit --workspace
+<Projects-root> --policy <Projects-root>/references/Hexalith.Builds/Tools/g6-current-policy.json
+--out <audit.json>` after restoring the policy's eleven consumers. The audit
+records current root/submodule revisions, an input fingerprint, effective
+controlled versions, and the restored controlled package graph. Missing assets,
+stale restored packages, a checkout/root-gitlink mismatch, or tuple drift are
+reported as `issues` and set `tupleApproved` to false. An audit does not claim
+that the live runtime passed.
+
+The v3 policy names the current preview Toolkit pin as a pending candidate;
+it needs a fresh live run and a separate named tuple/exception decision. The
+accepted v2 beta.910 packet remains historical. The Platform file host still
+pins beta.910 directly. Until all transitive material
+inputs and Platform's scratch restore graph are reviewed, `reuseEnabled` is
+false: every qualified result must match the current source SHA and gitlinks,
+including non-release validation. This allows routine committed gitlink changes
+after a new run without recapturing a historical packet. Release always uses a
+fresh exact-source result. No dirty checkout can claim qualification.
+
+`python3 Tools/g6_current.py validate --workspace <Projects-root> --policy
+<policy> --evidence <result.json> [--release]` rechecks the compact result's
+canonical digest, current audit, owner decision, exact 1/1 PostgreSQL two-sidecar
+result, 33/33 deterministic cases across the 21 selectors, retained OQ8 capture
+and command-log hashes, and isolated cleanup. The result schema is
+`schemas/hexalith.g6-current-evidence.v1.json`. The selected source-mode test
+does not qualify published EventStore archives, G-4, G-5, P1R, or release.
