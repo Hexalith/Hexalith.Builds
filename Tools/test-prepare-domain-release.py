@@ -17,12 +17,15 @@ SHA = "0123456789abcdef0123456789abcdef01234567"
 OTHER_SHA = "1" * 40
 
 
-def run_body(name: str) -> str:
-    text = ACTION.read_text(encoding="utf-8")
+def step_block(name: str, text: str) -> str:
     block = re.search(r"(?ms)^    - name: " + re.escape(name) + r"\n(.*?)(?=^    - name: |\Z)", text)
     if block is None:
         raise AssertionError(f"Missing composite step {name}")
-    body = re.search(r"(?ms)^      run: \|\n(.*)", block[1])
+    return block[1]
+
+
+def run_body(name: str) -> str:
+    body = re.search(r"(?ms)^      run: \|\n(.*)", step_block(name, ACTION.read_text(encoding="utf-8")))
     if body is None:
         raise AssertionError(f"Missing Bash body for {name}")
     return "\n".join(line[8:] if line.startswith("        ") else line for line in body[1].splitlines())
@@ -91,6 +94,26 @@ else:
         self.assertNotEqual(0, result.returncode, result.stdout)
         self.assertFalse((self.root / "output").exists(), "No publication verdict may escape a failed gate")
 
+    def caller_publish_enabled(self, action_text: str | None = None) -> str:
+        text = action_text if action_text is not None else ACTION.read_text(encoding="utf-8")
+        outputs = re.search(r"(?ms)^outputs:\n(.*?)(?=^\S|\Z)", text)
+        self.assertIsNotNone(outputs, "The action must declare caller-visible outputs")
+        binding = re.search(r"(?ms)^  publish-enabled:\n.*?^    value: ([^\n]+)$", outputs[1])
+        self.assertIsNotNone(binding, "The action must bind its publish-enabled output")
+        gate = step_block("Resolve publication freeze and revalidate exact green source", text)
+        step_id = re.search(r"(?m)^      id: ([A-Za-z0-9_-]+)$", gate)
+        self.assertIsNotNone(step_id, "The executed producer must have a step identity")
+        step_outputs = dict(line.split("=", 1) for line in (self.root / "output").read_text().splitlines())
+        executed_outputs = {step_id[1]: step_outputs}
+        value = binding[1].strip()
+        reference = re.fullmatch(r"\$\{\{\s*steps\.([A-Za-z0-9_-]+)\.outputs\.([A-Za-z0-9_-]+)\s*\}\}", value)
+        if reference is None:
+            self.assertNotIn("${{", value, "Unsupported composite output expression")
+            return value.strip("\"'")
+        self.assertIn(reference[1], executed_outputs, "The export must reference an executed step")
+        self.assertIn(reference[2], executed_outputs[reference[1]], "The export must reference an emitted output")
+        return executed_outputs[reference[1]][reference[2]]
+
     def test_action_identity_is_exact(self) -> None:
         name = "Validate approved shared action identity"
         self.assertEqual(0, self.execute(name).returncode)
@@ -134,6 +157,7 @@ else:
                 result = self.execute(name, HEXALITH_RELEASE_PUBLISH_ENABLED=value, NUGET_USER="", MOCK_MAIN_SHA=OTHER_SHA)
                 self.assertEqual(0, result.returncode, result.stderr)
                 self.assertEqual("publish-enabled=false\n", (self.root / "output").read_text())
+                self.assertEqual("false", self.caller_publish_enabled())
                 self.assertIn("publication frozen", result.stdout)
                 self.assertFalse((self.root / "calls").exists())
 
@@ -155,6 +179,7 @@ else:
         result = self.execute(name)
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual("publish-enabled=true\n", (self.root / "output").read_text())
+        self.assertEqual("true", self.caller_publish_enabled())
         for key, value in (("head_sha", OTHER_SHA), ("head_branch", "feature"), ("event", "pull_request"),
                            ("status", "in_progress"), ("conclusion", "failure")):
             with self.subTest(key=key):
@@ -162,6 +187,22 @@ else:
                 self.assert_rejected(name, MOCK_RUNS=json.dumps({"workflow_runs": [run]}))
         self.assert_rejected(name, MOCK_RUNS='{"workflow_runs": []}')
         self.assert_rejected(name, MOCK_RUNS="malformed")
+
+    def test_mutated_composite_export_cannot_hide_the_producer_verdict(self) -> None:
+        text = ACTION.read_text(encoding="utf-8")
+        result = self.execute("Resolve publication freeze and revalidate exact green source")
+        self.assertEqual(0, result.returncode, result.stderr)
+        for binding in ("false", "${{ steps.missing.outputs.publish-enabled }}", "${{ steps.publish-gate.outputs.missing }}"):
+            with self.subTest(binding=binding):
+                mutated, count = re.subn(r"(?m)^    value: .+$", "    value: " + binding, text, count=1)
+                self.assertEqual(1, count)
+                with self.assertRaises(AssertionError):
+                    self.assertEqual("true", self.caller_publish_enabled(mutated))
+        result = self.execute("Resolve publication freeze and revalidate exact green source", HEXALITH_RELEASE_PUBLISH_ENABLED="")
+        self.assertEqual(0, result.returncode, result.stderr)
+        mutated = re.sub(r"(?m)^    value: .+$", "    value: true", text, count=1)
+        with self.assertRaises(AssertionError):
+            self.assertEqual("false", self.caller_publish_enabled(mutated))
 
 
 if __name__ == "__main__":
