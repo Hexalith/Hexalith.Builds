@@ -463,10 +463,14 @@ stale restored packages, a checkout/root-gitlink mismatch, or tuple drift are
 reported as `issues` and set `tupleApproved` to false. An audit does not claim
 that the live runtime passed.
 
-The v3 policy names the current preview Toolkit pin as a pending candidate;
-it needs a fresh live run and a separate named tuple/exception decision. The
-accepted v2 beta.910 packet remains historical. The Platform file host still
-pins beta.910 directly. Until all transitive material
+The v3 policy approves the current Toolkit pin `13.6.0-preview.1.261001-0243`
+and its prerelease exception. Jérôme Piquot, as Builds/Platform/FrontComposer-Web
+owner, answered verbatim "Approve" at `2026-10-03T07:15:52Z` for tuple
+`52c8d36a…` after the pending candidate passed every critical command (result
+SHA-256 `399befab…`); the policy `reference` names the Projects decision record.
+The approval does not qualify a checkout by itself: each current checkout still
+needs a passing live result. The accepted v2 beta.910 packet remains historical.
+The Platform file host pins the same preview directly. Until all transitive material
 inputs and Platform's scratch restore graph are reviewed, `reuseEnabled` is
 false: every qualified result must match the current source SHA and gitlinks,
 including non-release validation. This allows routine committed gitlink changes

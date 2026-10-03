@@ -13,15 +13,15 @@
     "fluxor": "6.11.0"
   },
   "approval": {
-    "decision": "pending",
-    "approvedBy": null,
-    "approvedAtUtc": null,
-    "reference": "Pending named Builds, Platform, and FrontComposer/Web review of preview.1.261001-0243",
+    "decision": "approved",
+    "approvedBy": "Jérôme Piquot",
+    "approvedAtUtc": "2026-10-03T07:15:52Z",
+    "reference": "Hexalith.Projects _bmad-output/implementation-artifacts/spec-g-6-qualify-current-toolkit-preview-tuple.md#implementation-notes, tuple disposition record 2026-10-03T07:15:52Z: Builds/Platform/FrontComposer-Web owner answered verbatim \"Approve\" for tuple 52c8d36a9db4aae09e7a32f7a62be61ed7eee4e0f33a15099215bd61ff780098 and the CommunityToolkit.Aspire.Hosting.Dapr 13.6.0-preview.1.261001-0243 prerelease exception, given candidate result.json SHA-256 399befab8b1035496f8b60bf59652e6e24bf55189a260f1b4ccd4d5faf97c26e",
     "tupleSha256": "52c8d36a9db4aae09e7a32f7a62be61ed7eee4e0f33a15099215bd61ff780098"
   },
   "exceptions": {
     "daprSupportTable": "approved-explicit-exception",
-    "communityToolkitAspireDapr": "pending-prerelease-exception",
+    "communityToolkitAspireDapr": "approved-prerelease-exception",
     "Dapr.Workflow": "catalog-only-unselected",
     "sourceModeOnly": true
   },
