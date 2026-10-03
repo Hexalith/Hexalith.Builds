@@ -26,6 +26,12 @@
     <VersionSuffix Condition="'$(GITHUB_RUN_NUMBER)' == ''">$([System.DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))</VersionSuffix>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Replace explicitly packed root README items inherited from an enclosing module.
+         Item transforms work during evaluation; metadata Conditions here do not.
+         Preserve unpacked README items and README files packaged below the root. -->
+    <_HexalithPackedRootReadme Include="@(None->HasMetadata('PackagePath')->WithMetadataValue('Pack', 'true')->WithMetadataValue('Filename', 'README')->WithMetadataValue('Extension', '.md'))" />
+    <None Remove="@(_HexalithPackedRootReadme->WithMetadataValue('PackagePath', '/'));@(_HexalithPackedRootReadme->WithMetadataValue('PackagePath', '\'))" MatchOnMetadata="FullPath;Pack;PackagePath" />
+    <_HexalithPackedRootReadme Remove="@(_HexalithPackedRootReadme)" />
     <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="">
       <Link>icon.png</Link>
     </None>
