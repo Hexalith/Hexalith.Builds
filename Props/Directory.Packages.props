@@ -32,11 +32,14 @@
     <PackageVersion Include="Hexalith.Documents.ApiServer" Version="2.7.1" />
     <PackageVersion Include="Hexalith.Commons" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.Configurations" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.Diagnostics" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.Aspire" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.Http" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.Metadatas" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.Publication" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.Serialization" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.ServiceDefaults" Version="$(HexalithCommonsVersion)" />
+    <PackageVersion Include="Hexalith.Commons.TenantAccess" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.UniqueIds" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Commons.StringEncoders" Version="$(HexalithCommonsVersion)" />
     <PackageVersion Include="Hexalith.Domains" Version="2.0.2" />
@@ -54,6 +57,7 @@
     <PackageVersion Include="Hexalith.EventStore.SignalR" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.Testing" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="$(HexalithEventStoreVersion)" />
+    <PackageVersion Include="Hexalith.Conversations.Client" Version="$(HexalithConversationsVersion)" />
     <PackageVersion Include="Hexalith.Conversations.Contracts" Version="$(HexalithConversationsVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Contracts" Version="$(HexalithFrontComposerVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Mcp" Version="$(HexalithFrontComposerVersion)" />
