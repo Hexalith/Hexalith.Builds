@@ -344,24 +344,6 @@ if ($failures.Count -gt 0) {
     Stop-Validation -Failures $failures
 }
 
-try {
-    $catalogEvaluation = Invoke-ProjectEvaluation -ProjectPath $resolvedCatalogPath `
-        -Arguments @('-getItem:PackageVersion')
-}
-catch {
-    $failures.Add($_.Exception.Message)
-    Stop-Validation -Failures $failures
-}
-
-$authoritativePackages = @{}
-foreach ($packageVersion in @($catalogEvaluation.Items.PackageVersion)) {
-    $identity = [string] $packageVersion.Identity
-    $version = [string] $packageVersion.Version
-    if (-not [string]::IsNullOrWhiteSpace($identity)) {
-        $authoritativePackages[$identity] = $version
-    }
-}
-
 foreach ($projectPath in $projectFiles) {
     $relativeProjectPath = [IO.Path]::GetRelativePath($resolvedRepositoryRoot, $projectPath)
     $normalizedProjectPath = $relativeProjectPath.Replace('\', '/')
@@ -387,6 +369,7 @@ foreach ($projectPath in $projectFiles) {
             '-getProperty:ManagePackageVersionsCentrally'
             '-getProperty:CentralPackageVersionOverrideEnabled'
             '-getProperty:HexalithVersionsLoaded'
+            '-getProperty:MSBuildProjectName'
             '-getItem:PackageReference'
             '-getItem:PackageVersion'
         )
@@ -408,9 +391,35 @@ foreach ($projectPath in $projectFiles) {
         $failures.Add("$relativeProjectPath does not import the authoritative catalog marker.")
     }
 
+    try {
+        $catalogOutput = @(& (Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })) `
+                -NoLogo -NoProfile -File (Join-Path $PSScriptRoot 'validate-central-package-versions.ps1') `
+                -CatalogPath $resolvedCatalogPath -ConsumerProjectName ([string] $evaluation.Properties.MSBuildProjectName) `
+                -EmitEvaluation 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            throw "Authoritative catalog evaluation for '$relativeProjectPath' failed: $([string]::Join("`n", $catalogOutput))"
+        }
+
+        $catalogEvaluation = ([string]::Join("`n", $catalogOutput)) | ConvertFrom-Json -ErrorAction Stop
+        $authoritativePackages = @{}
+        foreach ($packageVersion in @($catalogEvaluation.Items.PackageVersion)) {
+            $authoritativePackages[[string] $packageVersion.Identity] = [string] $packageVersion.Version
+        }
+    }
+    catch {
+        $failures.Add($_.Exception.Message)
+        continue
+    }
+
     $effectivePackages = @{}
     foreach ($packageVersion in @($evaluation.Items.PackageVersion)) {
-        $effectivePackages[[string] $packageVersion.Identity] = [string] $packageVersion.Version
+        $identity = [string] $packageVersion.Identity
+        if ([string]::IsNullOrWhiteSpace($identity) -or $effectivePackages.ContainsKey($identity)) {
+            $failures.Add("$relativeProjectPath evaluates a blank or duplicate PackageVersion identity '$identity'.")
+            continue
+        }
+
+        $effectivePackages[$identity] = [string] $packageVersion.Version
     }
 
     foreach ($authoritativePackage in $authoritativePackages.GetEnumerator()) {

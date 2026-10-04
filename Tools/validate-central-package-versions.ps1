@@ -3,6 +3,12 @@ param(
     [Parameter(Position = 0)]
     [string] $CatalogPath = '',
 
+    # Catalog conditions may select versions by the actual consuming project identity.
+    # This is evaluated in a clean probe, without importing consumer build files.
+    [string] $ConsumerProjectName = '',
+
+    [switch] $EmitEvaluation,
+
     [Parameter(DontShow = $true)]
     [string] $EvaluatorScriptPath = ''
 )
@@ -85,10 +91,24 @@ function Invoke-CatalogEvaluation {
         [string] $ResolvedEvaluatorScriptPath
     )
 
+    $probeDirectory = ''
+    $evaluationPath = $ResolvedCatalogPath
+    if (-not [string]::IsNullOrWhiteSpace($ConsumerProjectName)) {
+        if ($ConsumerProjectName -notmatch '^[A-Za-z0-9_.-]+$' -or $ConsumerProjectName -in @('.', '..')) {
+            Stop-Validation 'consumer project name must be a simple MSBuild project identity.'
+        }
+
+        $probeDirectory = Join-Path ([IO.Path]::GetTempPath()) "central-catalog-$([Guid]::NewGuid().ToString('N'))"
+        [void] [IO.Directory]::CreateDirectory($probeDirectory)
+        $evaluationPath = Join-Path $probeDirectory "$ConsumerProjectName.proj"
+        $escapedCatalog = [Security.SecurityElement]::Escape($ResolvedCatalogPath)
+        [IO.File]::WriteAllText($evaluationPath, "<Project><Import Project=""$escapedCatalog"" /></Project>")
+    }
+
     try {
         if ([string]::IsNullOrWhiteSpace($ResolvedEvaluatorScriptPath)) {
             $output = @(
-                & dotnet msbuild $ResolvedCatalogPath -nologo -getItem:PackageVersion 2>&1
+                & dotnet msbuild $evaluationPath -nologo -getItem:PackageVersion 2>&1
             )
         }
         else {
@@ -99,6 +119,12 @@ function Invoke-CatalogEvaluation {
     }
     catch {
         Stop-Validation "catalog evaluation could not start. $($_.Exception.GetBaseException().Message)"
+    }
+
+    finally {
+        if (-not [string]::IsNullOrWhiteSpace($probeDirectory)) {
+            [IO.Directory]::Delete($probeDirectory, $true)
+        }
     }
 
     if ($LASTEXITCODE -ne 0) {
@@ -272,6 +298,11 @@ if ($failures.Count -gt 0) {
     }
 
     exit 1
+}
+
+if ($EmitEvaluation) {
+    [Console]::Out.WriteLine($evaluationText)
+    exit 0
 }
 
 [Console]::Out.WriteLine(

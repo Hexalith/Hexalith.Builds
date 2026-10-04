@@ -116,6 +116,27 @@ if ($overrideEnabled -cne 'false') {
     )
 }
 
+# The approved stable selection belongs exclusively to Builds and retains one package identity.
+$stableOutput = @(& (Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })) `
+        -NoLogo -NoProfile -File (Join-Path $PSScriptRoot 'validate-central-package-versions.ps1') `
+        -CatalogPath $catalogPath -ConsumerProjectName 'Hexalith.Folders.Aspire' -EmitEvaluation 2>&1)
+if ($LASTEXITCODE -ne 0) {
+    $failures.Add("Folders.Aspire central evaluation failed: $([string]::Join("`n", $stableOutput))")
+}
+else {
+    $stableEvaluation = ([string]::Join("`n", $stableOutput)) | ConvertFrom-Json -ErrorAction Stop
+    $stableRows = @($stableEvaluation.Items.PackageVersion | Where-Object { $_.Identity -eq 'CommunityToolkit.Aspire.Hosting.Dapr' })
+    if ($stableRows.Count -ne 1 -or $stableRows[0].Version -cne '13.0.0') {
+        $failures.Add('Folders.Aspire must centrally select exactly one Dapr integration identity at stable 13.0.0.')
+    }
+
+    foreach ($row in @($stableEvaluation.Items.PackageVersion)) {
+        if ($row.Identity -ne 'CommunityToolkit.Aspire.Hosting.Dapr' -and $row.Version -cne $evaluatedPackages[$row.Identity]) {
+            $failures.Add("Folders.Aspire changes unrelated central selection '$($row.Identity)'.")
+        }
+    }
+}
+
 if ($failures.Count -gt 0) {
     [Console]::Error.WriteLine("Authoritative package catalog tests failed with $($failures.Count) error(s):")
     foreach ($failure in $failures) {

@@ -23,7 +23,7 @@ function Write-Utf8File {
 
     $directory = Split-Path -Parent $Path
     New-Item -ItemType Directory -Path $directory -Force | Out-Null
-    [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($true))
 }
 
 function New-ConsumerFixture {
@@ -120,10 +120,12 @@ try {
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
+    <FixtureVersion>1.2.3</FixtureVersion>
+    <FixtureVersion Condition="'$(MSBuildProjectName)' == 'Stable.Consumer'">1.0.0</FixtureVersion>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.28.2</HexalithCommonsVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Fixture.Package" Version="1.2.3" />
+    <PackageVersion Include="Fixture.Package" Version="$(FixtureVersion)" />
     <PackageVersion Include="Hexalith.Commons" Version="$(HexalithCommonsVersion)" />
   </ItemGroup>
 </Project>
@@ -132,6 +134,32 @@ try {
     $validRoot = New-ConsumerFixture -Name 'valid'
     Test-Scenario -Name 'Valid version-free consumer' -RepositoryRoot $validRoot -ExpectedExitCode 0 `
         -ExpectedOutput 'consumer package authority validation passed'
+
+    $stableRoot = New-ConsumerFixture -Name 'central-stable-selection'
+    Move-Item -LiteralPath (Join-Path $stableRoot 'Fixture.csproj') -Destination (Join-Path $stableRoot 'Stable.Consumer.csproj')
+    Test-Scenario -Name 'Project-specific central stable selection' -RepositoryRoot $stableRoot -ExpectedExitCode 0 `
+        -ExpectedOutput 'consumer package authority validation passed'
+
+    $centralPropertyOverride = New-ConsumerFixture -Name 'central-selection-property-override' -BuildPropsContent @'
+<Project><PropertyGroup><FixtureVersion>9.9.9</FixtureVersion></PropertyGroup></Project>
+'@
+    Test-Scenario -Name 'Consumer selection-property override' -RepositoryRoot $centralPropertyOverride -ExpectedExitCode 1 `
+        -ExpectedOutput "overrides authoritative version property 'FixtureVersion'"
+
+    foreach ($drift in @(
+        @{ Name = 'duplicate'; Item = '<PackageVersion Include="Fixture.Package" Version="1.2.3" />'; Diagnostic = 'duplicate PackageVersion identity' }
+        @{ Name = 'missing'; Item = '<PackageVersion Remove="Fixture.Package" />'; Diagnostic = 'is missing authoritative PackageVersion' }
+        @{ Name = 'version'; Item = '<PackageVersion Update="Fixture.Package" Version="9.9.9" />'; Diagnostic = "instead of '1.2.3'" }
+        @{ Name = 'unresolved'; Item = '<PackageVersion Update="Fixture.Package" Version="$(UndefinedVersion)" />'; Diagnostic = "instead of '1.2.3'" }
+    )) {
+        # Import an outside file so static consumer scanning cannot be the only backstop.
+        $outsidePath = Join-Path $temporaryRoot "outside-$($drift.Name).props"
+        Write-Utf8File -Path $outsidePath -Content "<Project><ItemGroup>$($drift.Item)</ItemGroup></Project>"
+        $driftRoot = New-ConsumerFixture -Name "effective-$($drift.Name)"
+        Write-Utf8File -Path (Join-Path $driftRoot 'Directory.Build.targets') -Content "<Project><Import Project=""$outsidePath"" /></Project>"
+        Test-Scenario -Name "Effective imported $($drift.Name)" -RepositoryRoot $driftRoot -ExpectedExitCode 1 `
+            -ExpectedOutput $drift.Diagnostic
+    }
 
     $includeRoot = New-ConsumerFixture -Name 'package-version-include' -BuildPropsContent @'
 <Project><ItemGroup><PackageVersion Include="Local.Package" Version="1.0.0" /></ItemGroup></Project>
