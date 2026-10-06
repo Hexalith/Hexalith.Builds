@@ -2462,6 +2462,37 @@ The concurrent P1R transition is consumed separately in
 It preserves the earlier candidate observations and grants no G-6 or final P0
 acceptance. Both prerequisite gates must match before current live qualification.
 
+### 2026-10-06 prerequisite blocker — live qualification stopped
+
+At Jerome's direction, Stages 6–7 did not resume. Both qualification
+dependencies are unmet. In that case the P0 matrix requires recording the
+blocker and stopping before any live run:
+
+- **P1R:** the four-role acceptance at `2026-10-01T06:17:01Z` of EventStore
+  `3.110.0` / Builds `21ce044ab465ccb2adab58b3d66e394ffbecf3c2` stays a
+  historical decision. Hexalith.Projects
+  `_bmad-output/planning-artifacts/sprint-change-proposal-2026-10-06.md` marks
+  current P1R usability false, because attempt 21 measured seven incompatible
+  dispositions. The `6.1-P1R-remediation` handoff is `handed-off` and waits for
+  EventStore/Builds repository-local scope.
+- **G-6:** current G-6 is failed. CI authority run `37106225245` at Projects
+  `e7dc4d876793f6254ce42409c9067bd6516901d4` failed for two reasons: the pinned
+  PostgreSQL image was absent, and Hexalith.Commons hit `NU5118`. The legacy
+  attempt-16 packet gate still fails on gitlink and Builds execution-SHA
+  differences. The packet is still waiting for owner acceptance.
+- **Drift:** this repository is at `ba4ca78c3868a4757cb92d912a54c8a237871b54`
+  (`v4.29.1-22-gba4ca78`, equal to the Projects gitlink), 22 commits past the
+  accepted revision. Since `567a80f5726960c7ec66864d67849b22f9164bf0`,
+  `Props/Directory.Packages.props` defaults `HexalithEventStoreVersion` to
+  `3.113.0`. The package-consumer fixture still pins tools `4.29.1`.
+
+No build, package gate, live profile, cleanup, rollback drill, acceptance
+record, or owner decision ran or was created. Only this story and the Projects
+P0 spec changed. Resume only once a usable, accepted P1R tuple and an accepted
+G-6 result bind the same immutable source/package tuple. Any tuple other than
+`3.110.0` / `21ce044` / `4.29.1` requires renegotiating the Projects spec's
+frozen target decision.
+
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
@@ -2585,3 +2616,4 @@ acceptance. Both prerequisite gates must match before current live qualification
   - No publication, pin, or acceptance.
   - Committed on local `main` (not pushed) after moving superseded evidence out of the tree.
 - 2026-09-25: Stage 6 readiness repair (not pushed). EventStore `3.108.1` corpus, CR-only renormalization of 54 C# blobs, `Host.csproj.template` shims packed through a pack-time copy, consumer-evidence audit refresh, and a clean-tree `0.0.0-stage5.8` requalification (gate, live campaign, native lane). P1R and G-6 remain open.
+- 2026-10-06: Recorded the prerequisite blocker. Current P1R usability is false and its remediation is open. Current G-6 is failed and its packet is pending. Builds/EventStore drifted to `ba4ca78`/`3.113.0`. Stages 6–7 stay open; no live run, acceptance record, or owner decision.
