@@ -264,6 +264,74 @@ try {
             $failures.Add("Synthetic consumer discovery was not recorded explicitly.")
         }
 
+        # One consumer can reference multiple packages in a preserved family.
+        # Its representative identity remains distinct while both dependency relations survive.
+        $multiPackageCatalogPath = Join-Path $temporaryRoot 'multi-package-consumer.props'
+        Write-Utf8File -Path $multiPackageCatalogPath -Content @'
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="Fixture.Listed" Version="1.0.0" />
+    <PackageVersion Include="Dapr.Client" Version="1.0.0" />
+    <PackageVersion Include="Dapr.Actors" Version="1.0.0" />
+  </ItemGroup>
+</Project>
+'@
+        $multiPackageResponses = $responses | ConvertTo-Json -Depth 20 | ConvertFrom-Json -AsHashtable
+        foreach ($multiPackageId in @('Dapr.Client', 'Dapr.Actors')) {
+            Add-FixtureResponse -Responses $multiPackageResponses `
+                -Uri "$registrationBase/$($multiPackageId.ToLowerInvariant())/index.json" `
+                -Response ([ordered] @{ items = @([ordered] @{ items = @((New-RegistrationLeaf -Version '1.0.0' -Listed $true)) }) })
+        }
+        $multiPackageRequestsPath = Join-Path $temporaryRoot 'multi-package-consumer-requests.json'
+        Write-Utf8File -Path $multiPackageRequestsPath -Content (
+            [ordered] @{ responses = $multiPackageResponses } | ConvertTo-Json -Depth 20
+        )
+        $multiPackageConsumersPath = Join-Path $temporaryRoot 'multi-package-consumers.json'
+        Write-Utf8File -Path $multiPackageConsumersPath -Content (
+            [ordered] @{ entries = @(
+                    [ordered] @{ consumer = 'Fixture.Consumer'; packageId = 'Fixture.Listed' },
+                    [ordered] @{ consumer = 'Fixture.SharedConsumer'; packageId = 'Dapr.Client' },
+                    [ordered] @{ consumer = 'Fixture.SharedConsumer'; packageId = 'Dapr.Actors' }
+                ) } | ConvertTo-Json -Depth 5
+        )
+        $multiPackagePriorPath = Join-Path $temporaryRoot 'multi-package-prior.json'
+        $multiPackagePriorOutput = @(& $generatorPath `
+                -CatalogPath $multiPackageCatalogPath -OutputPath $multiPackagePriorPath `
+                -Source @($sourceOne) -RequestFixturePath $multiPackageRequestsPath `
+                -ConsumerEvidencePath $multiPackageConsumersPath 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            $failures.Add("Shared-consumer prior generation failed. $([string]::Join("`n", $multiPackagePriorOutput))")
+        }
+        else {
+            $multiPackageRefreshedPath = Join-Path $temporaryRoot 'multi-package-refreshed.json'
+            $multiPackageRefreshedOutput = @(& $generatorPath `
+                    -CatalogPath $multiPackageCatalogPath -OutputPath $multiPackageRefreshedPath `
+                    -PriorAuditPath $multiPackagePriorPath -Family 'package:fixture.listed' `
+                    -Source @($sourceOne) -RequestFixturePath $multiPackageRequestsPath `
+                    -ConsumerEvidencePath $multiPackageConsumersPath 2>&1)
+            $scenarioCount++
+            if ($LASTEXITCODE -ne 0) {
+                $failures.Add("Preserving a family with multiple references from one consumer failed. $([string]::Join("`n", $multiPackageRefreshedOutput))")
+            }
+            else {
+                $multiPackagePrior = Get-Content -LiteralPath $multiPackagePriorPath -Raw | ConvertFrom-Json -DateKind String
+                $multiPackageRefreshed = Get-Content -LiteralPath $multiPackageRefreshedPath -Raw | ConvertFrom-Json -DateKind String
+                Assert-Equal -Scenario 'Shared-consumer family decision remains identical' `
+                    -Expected (@($multiPackagePrior.familyDecisions | Where-Object family -eq 'dapr') | ConvertTo-Json -Depth 30 -Compress) `
+                    -Actual (@($multiPackageRefreshed.familyDecisions | Where-Object family -eq 'dapr') | ConvertTo-Json -Depth 30 -Compress)
+                Assert-Equal -Scenario 'Both shared-consumer package rows remain identical' `
+                    -Expected (@($multiPackagePrior.packages | Where-Object family -eq 'dapr') | ConvertTo-Json -Depth 30 -Compress) `
+                    -Actual (@($multiPackageRefreshed.packages | Where-Object family -eq 'dapr') | ConvertTo-Json -Depth 30 -Compress)
+                $multiPackageValidatorOutput = @(& $pwshExecutable -NoLogo -NoProfile -File $validatorPath `
+                        -AuditPath $multiPackageRefreshedPath -CatalogPath $multiPackageCatalogPath `
+                        -ConsumerScanRoot $temporaryRoot 2>&1)
+                $scenarioCount++
+                if ($LASTEXITCODE -ne 0) {
+                    $failures.Add("Shared-consumer incremental audit did not pass validation. $([string]::Join("`n", $multiPackageValidatorOutput))")
+                }
+            }
+        }
+
         $responses[$listedPageUri].response.items = @((New-RegistrationLeaf -Version '1.0.0' -Listed $true))
         $preservationFixturePath = Join-Path $temporaryRoot 'preservation-requests.json'
         Write-Utf8File -Path $preservationFixturePath -Content (

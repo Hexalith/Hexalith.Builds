@@ -1043,7 +1043,7 @@ function Assert-PriorV2PreservedFamily {
             Stop-Audit "prior family '$Family' origin $field does not match its preserved evidence."
         }
     }
-    $expectedConsumers = @($ConsumerEntries | ForEach-Object { Get-PropertyText -Object $_ -Name 'consumer' })
+    $expectedConsumers = @($ConsumerEntries | ForEach-Object { Get-PropertyText -Object $_ -Name 'consumer' } | Sort-Object -CaseSensitive -Unique)
     if ((Get-IdentitySignature -Values @($Decision.representativeConsumers)) -cne
         (Get-IdentitySignature -Values $expectedConsumers)) {
         Stop-Audit "prior family '$Family' representative consumers do not match its preserved consumer evidence."
