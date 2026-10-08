@@ -7,6 +7,7 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
@@ -44,6 +45,8 @@ public sealed class PlatformManifestValidationTests
     /// <param name="field">The expected complete diagnostic path.</param>
     [Theory]
     [InlineData("modules.0.identity.moduleId", "7", "modules[0].identity.moduleId")]
+    [InlineData("modules.0.identity.moduleId", "\"sample\\n\"", "modules[0].identity.moduleId")]
+    [InlineData("modules.0.runtime.dapr.0.configurationKey", "\"Dapr:EventsComponent\\n\"", "modules[0].runtime.dapr[0].configurationKey")]
     [InlineData("modules.0.runtime.dapr.0.role", "<missing>", "modules[0].runtime.dapr[0].role")]
     [InlineData("modules.0.runtime.dapr.0.configurationKey", "<missing>", "modules[0].runtime.dapr[0].configurationKey")]
     [InlineData("modules.0.runtime.dapr.0.componentName", "\"literal-store\"", "modules[0].runtime.dapr[0].componentName")]
@@ -51,6 +54,11 @@ public sealed class PlatformManifestValidationTests
     [InlineData("modules.0.lifecycle.tasks.0.scope", "\"always\"", "modules[0].lifecycle.tasks[0].scope")]
     [InlineData("modules.0.lifecycle.tasks.0.authorityClass", "<missing>", "modules[0].lifecycle.tasks[0].authorityClass")]
     [InlineData("modules.0.lifecycle.readiness.0.endpoint", "<missing>", "modules[0].lifecycle.readiness[0].endpoint")]
+    [InlineData("modules.0.lifecycle.readiness.0.endpoint", "\"/health\\n\"", "modules[0].lifecycle.readiness[0].endpoint")]
+    [InlineData("modules.0.lifecycle.readiness.0.endpoint", "\"/health\\nready\"", "modules[0].lifecycle.readiness[0].endpoint")]
+    [InlineData("modules.0.lifecycle.readiness.0.endpoint", "\"/health\\tready\"", "modules[0].lifecycle.readiness[0].endpoint")]
+    [InlineData("modules.0.lifecycle.readiness.0.endpoint", "\"/health\\u0000ready\"", "modules[0].lifecycle.readiness[0].endpoint")]
+    [InlineData("modules.0.lifecycle.readiness.0.endpoint", "\"/health\\u0085ready\"", "modules[0].lifecycle.readiness[0].endpoint")]
     [InlineData("modules.0.lifecycle.startup.override", "{\"timeoutSeconds\":0,\"justification\":\"needs more time\"}", "modules[0].lifecycle.startup.override.timeoutSeconds")]
     [InlineData("modules.0.lifecycle.startup.override", "{\"timeoutSeconds\":700,\"justification\":\"  \"}", "modules[0].lifecycle.startup.override.justification")]
     [InlineData("modules.0.runtime.resources.0.replicas", "1.5", "modules[0].runtime.resources[0].replicas")]
@@ -58,6 +66,8 @@ public sealed class PlatformManifestValidationTests
     [InlineData("modules.0.integration.topics.0.deadLetter.topic", "<missing>", "modules[0].integration.topics[0].deadLetter.topic")]
     [InlineData("modules.0.surfaces.interfaces.0.Protocol", "\"http\"", "modules[0].surfaces.interfaces[0].Protocol")]
     [InlineData("modules.0.integration.secrets.0.value", "\"literal\"", "modules[0].integration.secrets[0].value")]
+    [InlineData("", "\"unknown\"", "$[\"\"]")]
+    [InlineData("modules.0.identity.", "\"unknown\"", "modules[0].identity[\"\"]")]
     public void InvalidFieldsMatchSchemaAndReportCompletePaths(string path, string json, string field)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -217,6 +227,48 @@ public sealed class PlatformManifestValidationTests
         duplicateDiagnostics.ShouldContain(diagnostic => diagnostic.Field == "modules[0].identity.servers[0].resourceId");
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "modules[0].runtime.dapr[0].role");
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "modules[0].lifecycle.tasks[0].authorityClass");
+    }
+
+    /// <summary>Verifies server identities remain unique within their owning module.</summary>
+    [Fact]
+    public void DuplicateServerIdsCannotShareReadiness()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        JsonArray servers = workspace.Document["modules"]![0]!["identity"]!["servers"]!.AsArray();
+        JsonNode duplicate = servers[0]!.DeepClone();
+        duplicate["appId"] = "second-api";
+        duplicate["resourceId"] = "second-api-host";
+        servers.Add(duplicate);
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP003" && diagnostic.Field == "modules[0].identity.servers[1].id");
+        result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Field!.EndsWith(".appId", StringComparison.Ordinal) || diagnostic.Field.EndsWith(".resourceId", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies invalid Unicode is diagnosed before schema evaluation and later files still validate.</summary>
+    /// <param name="propertyName">Whether the invalid surrogate appears in the property name.</param>
+    /// <param name="escapedSurrogate">The escaped unpaired surrogate.</param>
+    [Theory]
+    [InlineData(false, "\\uD800")]
+    [InlineData(false, "\\uDC00")]
+    [InlineData(true, "\\uD800")]
+    [InlineData(true, "\\uDC00")]
+    public void InvalidUnicodeDoesNotAbortLaterFiles(bool propertyName, string escapedSurrogate)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string invalid = workspace.Save("invalid.json");
+        string marker = propertyName ? "\"reason\"" : "\"Initial sample enrollment\"";
+        File.WriteAllText(invalid, File.ReadAllText(invalid).Replace(marker, $"\"{escapedSurrogate}\"", StringComparison.Ordinal));
+        workspace.Change("modules.0.lifecycle.tasks.0.authorityClass", "<missing>");
+        string later = workspace.Save("later.json");
+        string field = propertyName
+            ? "modules[0].lifecycle.classification[\"<invalid Unicode property name at index 1>\"]"
+            : "modules[0].lifecycle.classification.reason";
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([invalid, later], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP011" && diagnostic.Field == field && diagnostic.Source!.EndsWith("invalid.json", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "modules[0].lifecycle.tasks[0].authorityClass" && diagnostic.Source!.EndsWith("later.json", StringComparison.Ordinal));
+        JsonSerializer.Serialize(result.Diagnostics).ShouldNotContain(escapedSurrogate);
     }
 
     /// <summary>Verifies duplicate nested JSON keys retain their complete location.</summary>

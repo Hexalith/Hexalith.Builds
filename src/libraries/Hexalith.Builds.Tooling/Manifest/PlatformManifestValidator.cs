@@ -149,7 +149,11 @@ public static class PlatformManifestValidator
             string content = new UTF8Encoding(false, true).GetString(buffer, offset, count - offset);
             using JsonDocument document = JsonDocument.Parse(content, new JsonDocumentOptions { MaxDepth = 64 });
             JsonElement root = document.RootElement;
-            InspectValues(root, string.Empty, source, diagnostics, cancellationToken);
+            if (!InspectValues(root, string.Empty, source, diagnostics, cancellationToken))
+            {
+                return;
+            }
+
             string? schema = StringValue(root, "schema");
             if (!SupportedPlatformManifestSchemas.Eligible.Contains(schema, StringComparer.Ordinal))
             {
@@ -199,21 +203,40 @@ public static class PlatformManifestValidator
         }
     }
 
-    private static void InspectValues(JsonElement value, string path, string source, List<ToolDiagnostic> diagnostics, CancellationToken cancellationToken)
+    private static bool InspectValues(JsonElement value, string path, string source, List<ToolDiagnostic> diagnostics, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        bool validUnicode = true;
         if (value.ValueKind == JsonValueKind.Object)
         {
             HashSet<string> names = new(StringComparer.Ordinal);
+            int propertyIndex = 0;
             foreach (JsonProperty property in value.EnumerateObject())
             {
-                string field = AppendField(path, property.Name);
-                if (!names.Add(property.Name))
+                string name;
+                try
+                {
+                    name = property.Name;
+                }
+                catch (InvalidOperationException)
+                {
+                    string invalidField = $"{(path.Length == 0 ? "$" : path)}[\"<invalid Unicode property name at index {propertyIndex++}>\"]";
+                    Add(diagnostics, "HXP011", source, invalidField, "Supply a JSON property name with valid Unicode surrogate pairs.");
+                    validUnicode = false;
+                    continue;
+                }
+
+                propertyIndex++;
+                string field = AppendField(path, name);
+                if (!names.Add(name))
                 {
                     Add(diagnostics, "HXP012", source, field, "Remove the duplicate JSON property.");
                 }
 
-                InspectValues(property.Value, field, source, diagnostics, cancellationToken);
+                if (!InspectValues(property.Value, field, source, diagnostics, cancellationToken))
+                {
+                    validUnicode = false;
+                }
             }
         }
         else if (value.ValueKind == JsonValueKind.Array)
@@ -221,12 +244,22 @@ public static class PlatformManifestValidator
             int index = 0;
             foreach (JsonElement item in value.EnumerateArray())
             {
-                InspectValues(item, $"{path}[{index++}]", source, diagnostics, cancellationToken);
+                validUnicode &= InspectValues(item, $"{path}[{index++}]", source, diagnostics, cancellationToken);
             }
         }
         else if (value.ValueKind == JsonValueKind.String)
         {
-            string text = value.GetString()!;
+            string text;
+            try
+            {
+                text = value.GetString()!;
+            }
+            catch (InvalidOperationException)
+            {
+                Add(diagnostics, "HXP011", source, path.Length == 0 ? "$" : path, "Supply a JSON string with valid Unicode surrogate pairs.");
+                return false;
+            }
+
             if (ManifestSecretDetector.ContainsSecret(text))
             {
                 Add(diagnostics, "HXM007", source, path, "Remove credential material; declare a logical secret reference instead.");
@@ -236,6 +269,8 @@ public static class PlatformManifestValidator
                 Add(diagnostics, "HXM006", source, path, "Resolve the placeholder before enrollment.");
             }
         }
+
+        return validUnicode;
     }
 
     private static void CollectSchemaDiagnostics(EvaluationResults result, JsonElement root, string source, List<ToolDiagnostic> diagnostics)
@@ -320,7 +355,7 @@ public static class PlatformManifestValidator
     private static JsonElement ResolvePointer(JsonElement root, string pointer)
     {
         JsonElement current = root;
-        foreach (string escaped in pointer.Split('/', StringSplitOptions.RemoveEmptyEntries))
+        foreach (string escaped in pointer.Split('/').Skip(1))
         {
             string segment = escaped.Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal);
             if (current.ValueKind == JsonValueKind.Object && current.TryGetProperty(segment, out JsonElement property))
@@ -343,7 +378,7 @@ public static class PlatformManifestValidator
     private static string PointerToPath(string pointer)
     {
         string path = string.Empty;
-        foreach (string escaped in pointer.Split('/', StringSplitOptions.RemoveEmptyEntries))
+        foreach (string escaped in pointer.Split('/').Skip(1))
         {
             string segment = escaped.Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal);
             path = int.TryParse(segment, CultureInfo.InvariantCulture, out int index)
@@ -356,6 +391,11 @@ public static class PlatformManifestValidator
 
     private static string AppendField(string path, string name)
     {
+        if (name.Length == 0)
+        {
+            return $"{(path.Length == 0 ? "$" : path)}[\"\"]";
+        }
+
         string safeName = ManifestSecretDetector.ContainsSecret(name) ? "[redacted field]" : name;
         return path.Length == 0 ? safeName : $"{path}.{safeName}";
     }
@@ -423,6 +463,7 @@ public static class PlatformManifestValidator
         RegisterIdentity(StringValue(identity, "moduleId"), "module", source, $"{prefix}.identity.moduleId", identities);
         JsonElement lifecycle = ObjectValue(module, "lifecycle");
         JsonElement[] readiness = [.. ArrayValue(lifecycle, "readiness")];
+        HashSet<string> serverIds = new(StringComparer.Ordinal);
         int serverIndex = 0;
         foreach (JsonElement server in ArrayValue(identity, "servers"))
         {
@@ -430,6 +471,11 @@ public static class PlatformManifestValidator
             RegisterIdentity(StringValue(server, "appId"), "app", source, $"{serverPath}.appId", identities);
             RegisterIdentity(StringValue(server, "resourceId"), "resource", source, $"{serverPath}.resourceId", identities);
             string? id = StringValue(server, "id");
+            if (id is not null && !serverIds.Add(id))
+            {
+                Add(diagnostics, "HXP003", source, $"{serverPath}.id", "Use a unique server identity within the module.");
+            }
+
             if (ObjectValue(server, "required").ValueKind == JsonValueKind.True)
             {
                 if (ObjectValue(server, "enabled").ValueKind == JsonValueKind.False)

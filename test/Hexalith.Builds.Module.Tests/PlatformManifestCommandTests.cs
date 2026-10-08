@@ -149,6 +149,116 @@ public sealed class PlatformManifestCommandTests
         await AssertInvalidAsync(workspace.Save(), "modules[0].surfaces.interfaces[0].protocol", format).ConfigureAwait(true);
     }
 
+    /// <summary>Verifies a required server cannot be disabled in either diagnostic format.</summary>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task RequiredDisabledServerReturnsLocalFailureAsync(string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.identity.servers.0.enabled", "false");
+        await AssertInvalidAsync(workspace.Save(), "modules[0].identity.servers[0].enabled", format, "HXP020").ConfigureAwait(true);
+    }
+
+    /// <summary>Verifies command-readiness probes must reference an existing local file.</summary>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task MissingCommandReadinessExecutableReturnsLocalFailureAsync(string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.readiness.0.kind", "\"command\"");
+        workspace.Change("modules.0.lifecycle.readiness.0.executable", "\"probes/missing-ready.sh\"");
+        await AssertInvalidAsync(workspace.Save(), "modules[0].lifecycle.readiness[0].executable", format, "HXM005").ConfigureAwait(true);
+    }
+
+    /// <summary>Verifies an empty unknown property has an explicit escaped field in both formats.</summary>
+    /// <param name="nested">Whether the empty name appears inside the identity object.</param>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData(false, "human")]
+    [InlineData(false, "json")]
+    [InlineData(true, "human")]
+    [InlineData(true, "json")]
+    public async Task EmptyPropertyNamesHaveVisibleFieldPathsAsync(bool nested, string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change(nested ? "modules.0.identity." : string.Empty, "\"unknown\"");
+        string field = nested ? "modules[0].identity[\"\"]" : "$[\"\"]";
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", workspace.Save(), "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(1);
+            output.ToString().ShouldNotContain("declarations");
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic => diagnostic.GetProperty("field").GetString() == field);
+            }
+            else
+            {
+                output.ToString().ShouldContain($"field={field}");
+            }
+        }
+    }
+
+    /// <summary>Verifies unpaired surrogate strings and names do not abort later files or structured output.</summary>
+    /// <param name="propertyName">Whether the invalid surrogate appears in the property name.</param>
+    /// <param name="escapedSurrogate">The escaped unpaired surrogate.</param>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData(false, "\\uD800", "human")]
+    [InlineData(false, "\\uD800", "json")]
+    [InlineData(false, "\\uDC00", "human")]
+    [InlineData(false, "\\uDC00", "json")]
+    [InlineData(true, "\\uD800", "human")]
+    [InlineData(true, "\\uD800", "json")]
+    [InlineData(true, "\\uDC00", "human")]
+    [InlineData(true, "\\uDC00", "json")]
+    public async Task InvalidUnicodeRetainsFileDiagnosticsAndContinuesAsync(bool propertyName, string escapedSurrogate, string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string invalid = workspace.Save("invalid.json");
+        string marker = propertyName ? "\"reason\"" : "\"Initial sample enrollment\"";
+        string input = await File.ReadAllTextAsync(invalid, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(invalid, input.Replace(marker, $"\"{escapedSurrogate}\"", StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        workspace.Change("modules.0.lifecycle.tasks.0.authorityClass", "<missing>");
+        string later = workspace.Save("later.json");
+        string field = propertyName
+            ? "modules[0].lifecycle.classification[\"<invalid Unicode property name at index 1>\"]"
+            : "modules[0].lifecycle.classification.reason";
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", invalid, "--manifest", later, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(1);
+            output.ToString().ShouldContain("invalid.json");
+            output.ToString().ShouldContain("later.json");
+            output.ToString().ShouldContain("modules[0].lifecycle.tasks[0].authorityClass");
+            output.ToString().ShouldNotContain("declarations");
+            output.ToString().ShouldNotContain(escapedSurrogate);
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic => diagnostic.GetProperty("ruleId").GetString() == "HXP011" && diagnostic.GetProperty("field").GetString() == field);
+            }
+            else
+            {
+                output.ToString().ShouldContain("HXP011");
+                output.ToString().ShouldContain($"field={field}");
+            }
+        }
+    }
+
     /// <summary>Verifies a blank later repeated manifest is rejected by the parser contract.</summary>
     /// <returns>A task that completes after the command.</returns>
     [Fact]
@@ -190,7 +300,7 @@ public sealed class PlatformManifestCommandTests
         await AssertInvalidAsync(workspace.Save(), field, format).ConfigureAwait(true);
     }
 
-    private static async Task AssertInvalidAsync(string manifest, string field, string format)
+    private static async Task AssertInvalidAsync(string manifest, string field, string format, string? ruleId = null)
     {
         StringWriter output = new();
         await using (output.ConfigureAwait(true))
@@ -201,6 +311,11 @@ public sealed class PlatformManifestCommandTests
             output.ToString().ShouldContain(Path.GetFileName(manifest));
             output.ToString().ShouldContain(field);
             output.ToString().ShouldNotContain("declarations");
+            if (ruleId is not null)
+            {
+                output.ToString().ShouldContain(ruleId);
+            }
+
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(output.ToString());
