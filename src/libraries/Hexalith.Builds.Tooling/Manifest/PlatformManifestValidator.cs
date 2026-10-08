@@ -285,8 +285,19 @@ public static partial class PlatformManifestValidator
         string pointer = result.InstanceLocation.ToString();
         string path = PointerToPath(root, pointer);
         JsonElement instance = ResolvePointer(root, pointer);
-        JsonElement schema = ResolveSchemaNode(Uri.UnescapeDataString(result.SchemaLocation.Fragment.TrimStart('#')));
-        if (result.Errors is not null)
+        string schemaPointer = Uri.UnescapeDataString(result.SchemaLocation.Fragment.TrimStart('#'));
+        JsonElement schema = ResolveSchemaNode(schemaPointer);
+        if (result.Errors?.ContainsKey(string.Empty) == true)
+        {
+            // The evaluator reports a false subschema under an empty keyword. The parent's
+            // additionalProperties diagnostic already reports unknown fields; the rest are
+            // kind- or strategy-specific exclusions.
+            if (!schemaPointer.Split('/').Contains("additionalProperties", StringComparer.Ordinal))
+            {
+                Add(diagnostics, "HXP002", source, path, "Remove the field; it does not apply to the declared kind or strategy.");
+            }
+        }
+        else if (result.Errors is not null)
         {
             foreach (string keyword in result.Errors.Keys)
             {

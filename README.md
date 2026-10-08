@@ -297,7 +297,7 @@ files. The same example is retained as
               {
                 "key": "Sample:Setting",
                 "source": "configuration",
-                "reference": "provider-access"
+                "reference": "sample-setting"
               }
             ]
           }
@@ -383,6 +383,9 @@ files. The same example is retained as
             "audience": "sample-api",
             "roles": [
               "reader"
+            ],
+            "claims": [
+              "eventstore:tenant"
             ],
             "applicationPrincipal": true
           }
@@ -495,8 +498,9 @@ files. The same example is retained as
 File diagnostics include `source` (the supplied file relative to the current
 working directory), `field` (the complete indexed property path), and `message`
 (the reason), together with the stable `ruleId`, `phase`, `category` and optional
-`hint`. JSON syntax failures also set optional `location` to the 1-based line and
-column. Human output renders these same fields; JSON output returns a single
+`hint`. JSON syntax failures also set optional `location` to `line:byte`: the
+1-based line and the 1-based UTF-8 byte offset within that line, which differs
+from the character column after non-ASCII text. Human output renders these same fields; JSON output returns a single
 `status`, `outcome` and `diagnostics` object. Credential values are never copied
 into diagnostics. Errors aggregate deterministically across files, including
 all duplicate module, app and resource identity locations. Any error returns

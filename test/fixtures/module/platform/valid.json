@@ -31,7 +31,7 @@
               {
                 "key": "Sample:Setting",
                 "source": "configuration",
-                "reference": "provider-access"
+                "reference": "sample-setting"
               }
             ]
           }
@@ -117,6 +117,9 @@
             "audience": "sample-api",
             "roles": [
               "reader"
+            ],
+            "claims": [
+              "eventstore:tenant"
             ],
             "applicationPrincipal": true
           }

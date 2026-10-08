@@ -8,6 +8,8 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 using System.Diagnostics;
 using System.Text.Json.Nodes;
 
+using Xunit;
+
 /// <summary>
 /// Provides an isolated complete declaration and local executable reference for validation tests.
 /// </summary>
@@ -93,6 +95,11 @@ internal sealed class PlatformManifestTestWorkspace : IDisposable
     internal static async Task UseNonSeekableManifestAsync(Func<string, Task> validate)
     {
         ArgumentNullException.ThrowIfNull(validate);
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("Named pipes created by mkfifo are POSIX-only.");
+        }
+
         string directory = CompositionTestFiles.CreateDirectory();
         string fifo = Path.Combine(directory, "manifest.fifo");
         using Process process = new();

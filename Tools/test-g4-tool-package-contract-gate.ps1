@@ -37,17 +37,17 @@ function global:dotnet {
         'Validates local Platform module declarations without starting resources.'
     }
     elseif ($joinedArguments -like '*tool run hexalith-module*validate*platform-legacy.json*') {
-        '{"status":"failed","outcome":{"exitCode":"UsageOrManifest"},"diagnostics":[{"ruleId":"HXP001","source":"platform-legacy.json","field":"schema","message":"Legacy v1 cannot enroll."}]}' + "`n"
+        '{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXP001"},"diagnostics":[{"ruleId":"HXP001","source":"platform-legacy.json","field":"schema","message":"Legacy v1 cannot enroll."}]}' + "`n"
         $global:LASTEXITCODE = 1
         return
     }
     elseif ($joinedArguments -like '*tool run hexalith-module*validate*--manifest platform-valid.json --manifest platform-valid.json*') {
-        '{"status":"failed","outcome":{"exitCode":"UsageOrManifest"},"diagnostics":[{"ruleId":"HXP003","source":"platform-valid.json","field":"modules[0].identity.servers[0].appId","message":"Duplicate identity."}]}' + "`n"
+        '{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXP003"},"diagnostics":[{"ruleId":"HXP003","source":"platform-valid.json","field":"modules[0].identity.moduleId","message":"Duplicate identity."},{"ruleId":"HXP003","source":"platform-valid.json","field":"modules[0].identity.servers[0].appId","message":"Duplicate identity."},{"ruleId":"HXP003","source":"platform-valid.json","field":"modules[0].identity.servers[0].resourceId","message":"Duplicate identity."}]}' + "`n"
         $global:LASTEXITCODE = 1
         return
     }
     elseif ($joinedArguments -like '*tool run hexalith-module*validate*') {
-        '{"status":"validated","outcome":{"exitCode":"Success"},"diagnostics":[]}' + "`n"
+        '{"status":"validated","outcome":{"exitCode":"Success","phase":"None","category":"None","ruleId":null},"diagnostics":[]}' + "`n"
     }
     elseif ($joinedArguments -like '*tool run hexalith-module*--help*') {
         'Runs supported Hexalith module qualifications.'

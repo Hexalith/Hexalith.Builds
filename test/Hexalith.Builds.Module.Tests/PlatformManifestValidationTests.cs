@@ -102,6 +102,10 @@ public sealed class PlatformManifestValidationTests
     [InlineData("modules.0.lifecycle.readiness.0.arguments", "[]", "modules[0].lifecycle.readiness[0].arguments")]
     [InlineData("modules.0.lifecycle.readiness.0.executable", "\"README.md\"", "modules[0].lifecycle.readiness[0].executable")]
     [InlineData("modules.0.integration.topics.0.deadLetter.strategy", "\"none\"", "modules[0].integration.topics[0].deadLetter.topic")]
+    [InlineData("modules.0.runtime.resources.0.volumes.0.mountPath", "\"/\"", "modules[0].runtime.resources[0].volumes[0].mountPath")]
+    [InlineData("modules.0.integration.workers.0.kind", "\"background\"", "modules[0].integration.workers[0].kind")]
+    [InlineData("modules.0.integration.identityNeeds.0.claims", "[\"Tenant Id\"]", "modules[0].integration.identityNeeds[0].claims[0]")]
+    [InlineData("modules.0.integration.identityNeeds.0.claims", "[\"eventstore:tenant\",\"eventstore:tenant\"]", "modules[0].integration.identityNeeds[0].claims")]
     public void InvalidFieldsMatchSchemaAndReportCompletePaths(string path, string json, string field)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -114,6 +118,79 @@ public sealed class PlatformManifestValidationTests
         result.IsValid.ShouldBeFalse();
         result.Declarations.ShouldBeNull();
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == field && diagnostic.Source!.EndsWith("manifest.json", StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(diagnostic.Message));
+    }
+
+    /// <summary>Verifies a missing required field reports the stable HXP015 rule at its complete path.</summary>
+    /// <param name="path">The removed declaration path.</param>
+    /// <param name="field">The expected complete diagnostic path.</param>
+    [Theory]
+    [InlineData("modules.0.runtime.dapr.0.role", "modules[0].runtime.dapr[0].role")]
+    [InlineData("modules.0.runtime.dapr.0.configurationKey", "modules[0].runtime.dapr[0].configurationKey")]
+    [InlineData("modules.0.lifecycle.tasks.0.authorityClass", "modules[0].lifecycle.tasks[0].authorityClass")]
+    [InlineData("modules.0.lifecycle.readiness.0.endpoint", "modules[0].lifecycle.readiness[0].endpoint")]
+    [InlineData("modules.0.integration.topics.0.deadLetter.topic", "modules[0].integration.topics[0].deadLetter.topic")]
+    public void MissingRequiredFieldsReportStableRule(string path, string field)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change(path, "<missing>");
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP015" && diagnostic.Field == field);
+    }
+
+    /// <summary>Verifies a forbidden field reports one diagnostic with a reason specific to why it is forbidden.</summary>
+    /// <param name="path">The mutated declaration path.</param>
+    /// <param name="json">The replacement JSON.</param>
+    /// <param name="field">The expected complete diagnostic path.</param>
+    /// <param name="message">The expected reason.</param>
+    [Theory]
+    [InlineData("modules.0.identity.bogus", "1", "modules[0].identity.bogus", "Remove the unknown field; JSON property names use strict camelCase.")]
+    [InlineData("modules.0.lifecycle.readiness.0.service", "\"health\"", "modules[0].lifecycle.readiness[0].service", "Remove the field; it does not apply to the declared kind or strategy.")]
+    [InlineData("modules.0.integration.topics.0.deadLetter.strategy", "\"none\"", "modules[0].integration.topics[0].deadLetter.topic", "Remove the field; it does not apply to the declared kind or strategy.")]
+    public void ForbiddenFieldsReportOneSpecificDiagnostic(string path, string json, string field, string message)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change(path, json);
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        ToolDiagnostic diagnostic = result.Diagnostics.Where(diagnostic => diagnostic.Field == field).ShouldHaveSingleItem();
+        diagnostic.RuleId.ShouldBe("HXP002");
+        diagnostic.Message.ShouldBe(message);
+    }
+
+    /// <summary>Verifies EventStore-style claim names are admitted as required claims.</summary>
+    /// <param name="claim">The declared claim name.</param>
+    [Theory]
+    [InlineData("eventstore:tenant")]
+    [InlineData("eventstore:admin-role")]
+    [InlineData("client_id")]
+    [InlineData("sub")]
+    public void SupportedClaimNamesPass(string claim)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.integration.identityNeeds.0.claims", JsonSerializer.Serialize(new[] { claim }));
+        PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies executables resolve from the enclosing repository root, not the manifest directory.</summary>
+    [Fact]
+    public void ExecutablesResolveFromTheRepositoryRoot()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        _ = Directory.CreateDirectory(Path.Combine(workspace.Root, ".git"));
+        string moduleDirectory = Directory.CreateDirectory(Path.Combine(workspace.Root, "module")).FullName;
+        string manifest = workspace.Save(Path.Combine("module", "manifest.json"));
+        PlatformManifestValidationResult rootRelative = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+        rootRelative.Diagnostics.ShouldBeEmpty();
+        rootRelative.IsValid.ShouldBeTrue();
+
+        File.WriteAllText(Path.Combine(moduleDirectory, "probe.sh"), "Validation must never execute this file.");
+        workspace.Change("modules.0.lifecycle.tasks.0.executable", "\"probe.sh\"");
+        PlatformManifestValidationResult manifestRelative = PlatformManifestValidator.Validate([workspace.Save(Path.Combine("module", "manifest.json"))], TestContext.Current.CancellationToken);
+        manifestRelative.Declarations.ShouldBeNull();
+        manifestRelative.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXM005" && diagnostic.Field == "modules[0].lifecycle.tasks[0].executable");
     }
 
     /// <summary>Verifies all supported task scopes and recovery classes can enroll without running tasks.</summary>
@@ -624,6 +701,11 @@ public sealed class PlatformManifestValidationTests
     [Fact(Timeout = 120000)]
     public async Task DeletedWorkingDirectoryReturnsStructuredPathFailure()
     {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("Windows cannot delete a process's current directory.");
+        }
+
         if (!await PlatformManifestTestWorkspace.IsIsolatedDirectoryProbeAsync(nameof(DeletedWorkingDirectoryReturnsStructuredPathFailure)).ConfigureAwait(true))
         {
             return;

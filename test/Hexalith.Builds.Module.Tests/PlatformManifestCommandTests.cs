@@ -742,6 +742,11 @@ public sealed class PlatformManifestCommandTests
     [Fact(Timeout = 120000)]
     public async Task DeletedWorkingDirectoryCommandReturnsStructuredFailureAsync()
     {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("Windows cannot delete a process's current directory.");
+        }
+
         if (!await PlatformManifestTestWorkspace.IsIsolatedDirectoryProbeAsync(nameof(DeletedWorkingDirectoryCommandReturnsStructuredFailureAsync)).ConfigureAwait(true))
         {
             return;

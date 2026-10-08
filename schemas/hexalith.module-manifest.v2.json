@@ -312,7 +312,7 @@
         },
         "mountPath": {
           "type": "string",
-          "pattern": "^(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))/(?!/)[^\\\\\\u0000-\\u001F\\u007F-\\u009F]*(?![\\s\\S])",
+          "pattern": "^(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))/(?!/)[^\\\\\\u0000-\\u001F\\u007F-\\u009F]+(?![\\s\\S])",
           "maxLength": 2048
         },
         "sizeMiB": {
@@ -633,6 +633,12 @@
         }
       }
     },
+    "claimName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9_]*(?:[:.-][a-z0-9_]+)*(?![\\s\\S])"
+    },
     "identityNeed": {
       "type": "object",
       "additionalProperties": false,
@@ -653,6 +659,13 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/identifier"
+          },
+          "uniqueItems": true
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claimName"
           },
           "uniqueItems": true
         },
@@ -777,8 +790,7 @@
           "type": "string",
           "enum": [
             "external-effect",
-            "destructive-retention",
-            "background"
+            "destructive-retention"
           ]
         },
         "disableControl": {
