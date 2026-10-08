@@ -306,7 +306,7 @@
         },
         "mountPath": {
           "type": "string",
-          "pattern": "^/[^\\\\]*$",
+          "pattern": "^/[^\\\\\\u0000-\\u001F\\u007F-\\u009F]*(?![\\s\\S])",
           "maxLength": 2048
         },
         "sizeMiB": {
@@ -377,7 +377,7 @@
         },
         "routePrefix": {
           "type": "string",
-          "pattern": "^/[^\\\\?#]*$",
+          "pattern": "^/[^\\\\?#\\u0000-\\u001F\\u007F-\\u009F]*(?![\\s\\S])",
           "maxLength": 2048
         },
         "exposure": {

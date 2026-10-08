@@ -112,6 +112,9 @@ public sealed class PlatformManifestCommandTests
             ("modules.0.integration.topics.0.deadLetter.topic", "<missing>", "modules[0].integration.topics[0].deadLetter.topic"),
             ("modules.0.surfaces.interfaces.0.protocol", "\"mcp\"", "modules[0].surfaces.interfaces[0].protocol"),
             ("modules.0.surfaces.interfaces.0.Protocol", "\"http\"", "modules[0].surfaces.interfaces[0].Protocol"),
+            ("modules.0.surfaces.interfaces.0.routePrefix", "\"/sample\\n\"", "modules[0].surfaces.interfaces[0].routePrefix"),
+            ("modules.0.surfaces.interfaces.0.routePrefix", "\"/sample\\u0000route\"", "modules[0].surfaces.interfaces[0].routePrefix"),
+            ("modules.0.runtime.resources.0.volumes.0.mountPath", "\"/data\\u0000path\"", "modules[0].runtime.resources[0].volumes[0].mountPath"),
         ];
         foreach ((string path, string json, string field) in cases)
         {
@@ -174,6 +177,159 @@ public sealed class PlatformManifestCommandTests
         workspace.Change("modules.0.lifecycle.readiness.0.kind", "\"command\"");
         workspace.Change("modules.0.lifecycle.readiness.0.executable", "\"probes/missing-ready.sh\"");
         await AssertInvalidAsync(workspace.Save(), "modules[0].lifecycle.readiness[0].executable", format, "HXM005").ConfigureAwait(true);
+    }
+
+    /// <summary>Verifies required servers enroll with either supported non-HTTP readiness kind without execution.</summary>
+    /// <param name="kind">The supported readiness kind.</param>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData("grpc", "human")]
+    [InlineData("grpc", "json")]
+    [InlineData("command", "human")]
+    [InlineData("command", "json")]
+    public async Task SupportedReadinessKindsEnrollAsync(string kind, string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string sentinel = Path.Combine(workspace.Root, "executed");
+        CompositionTestFiles.WriteScript(Path.Combine(workspace.Root, "ready.sh"), $"touch '{sentinel}'");
+        string probe = kind == "grpc"
+            ? JsonSerializer.Serialize(new { server = "api", kind, service = "sample.Readiness" })
+            : JsonSerializer.Serialize(new { server = "api", kind, executable = "ready.sh", arguments = Array.Empty<string>() });
+        workspace.Change("modules.0.lifecycle.readiness", $"[{probe}]");
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", workspace.Save(), "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(0);
+            File.Exists(sentinel).ShouldBeFalse();
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                result.RootElement.GetProperty("status").GetString().ShouldBe("validated");
+                result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldBeEmpty();
+            }
+            else
+            {
+                output.ToString().ShouldContain("validated");
+                output.ToString().ShouldNotContain("HXP");
+                output.ToString().ShouldNotContain("HXM");
+            }
+        }
+    }
+
+    /// <summary>Verifies excessive repeated inputs retain the file-bound diagnostic in both formats.</summary>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task ManifestFileLimitReturnsLocalFailureAsync(string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string manifest = workspace.Save();
+        List<string> arguments = ["validate", "--output", format];
+        for (int index = 0; index < 257; index++)
+        {
+            arguments.AddRange(["--manifest", manifest]);
+        }
+
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                [.. arguments], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(1);
+            output.ToString().ShouldContain("HXP013");
+            output.ToString().ShouldNotContain("declarations");
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                result.RootElement.GetProperty("status").GetString().ShouldBe("failed");
+                result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic => diagnostic.GetProperty("ruleId").GetString() == "HXP013" && diagnostic.GetProperty("field").GetString() == "manifest");
+            }
+        }
+    }
+
+    /// <summary>Verifies credentials in URI userinfo are rejected without disclosing the credential.</summary>
+    /// <param name="destination">The credential-bearing URI.</param>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData("https://user:fixture-password@example.com", "human")]
+    [InlineData("https://user:fixture-password@example.com", "json")]
+    [InlineData("https://user:fixture%2Dpassword@example.com", "human")]
+    [InlineData("https://user:fixture%2Dpassword@example.com", "json")]
+    public async Task UriCredentialsFailWithoutDisclosureAsync(string destination, string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.integration.egress.0.destination", JsonSerializer.Serialize(destination));
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", workspace.Save(), "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(1);
+            output.ToString().ShouldContain("HXM007");
+            output.ToString().ShouldContain("modules[0].integration.egress[0].destination");
+            output.ToString().ShouldNotContain(destination);
+            output.ToString().ShouldNotContain("fixture-password");
+            output.ToString().ShouldNotContain("fixture%2Dpassword");
+            output.ToString().ShouldNotContain("declarations");
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                result.RootElement.GetProperty("status").GetString().ShouldBe("failed");
+            }
+        }
+    }
+
+    /// <summary>Verifies unusual object names keep one escaped property path rather than fictitious nesting.</summary>
+    /// <param name="name">The unknown object property.</param>
+    /// <param name="field">The expected escaped field path.</param>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData("123", "modules[0].identity[\"123\"]", "human")]
+    [InlineData("123", "modules[0].identity[\"123\"]", "json")]
+    [InlineData("bad.key", "modules[0].identity[\"bad.key\"]", "human")]
+    [InlineData("bad.key", "modules[0].identity[\"bad.key\"]", "json")]
+    [InlineData("bad[0]", "modules[0].identity[\"bad[0]\"]", "human")]
+    [InlineData("bad[0]", "modules[0].identity[\"bad[0]\"]", "json")]
+    [InlineData("bad\nkey", "modules[0].identity[\"bad\\nkey\"]", "human")]
+    [InlineData("bad\nkey", "modules[0].identity[\"bad\\nkey\"]", "json")]
+    [InlineData("a/b~c", "modules[0].identity[\"a/b~c\"]", "human")]
+    [InlineData("a/b~c", "modules[0].identity[\"a/b~c\"]", "json")]
+    public async Task UnusualPropertyNamesHaveUnambiguousPathsAsync(string name, string field, string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Document["modules"]![0]!["identity"]![name] = "unknown";
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", workspace.Save(), "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(1);
+            output.ToString().ShouldNotContain("declarations");
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                JsonElement diagnostics = result.RootElement.GetProperty("diagnostics");
+                diagnostics.GetArrayLength().ShouldBeGreaterThan(0);
+                foreach (JsonElement diagnostic in diagnostics.EnumerateArray())
+                {
+                    diagnostic.GetProperty("field").GetString().ShouldBe(field);
+                }
+            }
+            else
+            {
+                output.ToString().ShouldContain($"field={field}");
+                output.ToString().ShouldNotContain("identity.123");
+                output.ToString().ShouldNotContain("identity[123]");
+                output.ToString().ShouldNotContain("identity.bad.key");
+            }
+        }
     }
 
     /// <summary>Verifies an empty unknown property has an explicit escaped field in both formats.</summary>

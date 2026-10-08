@@ -47,6 +47,12 @@ public sealed class PlatformManifestValidationTests
     [InlineData("modules.0.identity.moduleId", "7", "modules[0].identity.moduleId")]
     [InlineData("modules.0.identity.moduleId", "\"sample\\n\"", "modules[0].identity.moduleId")]
     [InlineData("modules.0.runtime.dapr.0.configurationKey", "\"Dapr:EventsComponent\\n\"", "modules[0].runtime.dapr[0].configurationKey")]
+    [InlineData("modules.0.surfaces.interfaces.0.routePrefix", "\"/sample\\n\"", "modules[0].surfaces.interfaces[0].routePrefix")]
+    [InlineData("modules.0.surfaces.interfaces.0.routePrefix", "\"/sample\\u0000route\"", "modules[0].surfaces.interfaces[0].routePrefix")]
+    [InlineData("modules.0.surfaces.interfaces.0.routePrefix", "\"/sample\\u0085route\"", "modules[0].surfaces.interfaces[0].routePrefix")]
+    [InlineData("modules.0.runtime.resources.0.volumes.0.mountPath", "\"/data\\n\"", "modules[0].runtime.resources[0].volumes[0].mountPath")]
+    [InlineData("modules.0.runtime.resources.0.volumes.0.mountPath", "\"/data\\u0000path\"", "modules[0].runtime.resources[0].volumes[0].mountPath")]
+    [InlineData("modules.0.runtime.resources.0.volumes.0.mountPath", "\"/data\\u0085path\"", "modules[0].runtime.resources[0].volumes[0].mountPath")]
     [InlineData("modules.0.runtime.dapr.0.role", "<missing>", "modules[0].runtime.dapr[0].role")]
     [InlineData("modules.0.runtime.dapr.0.configurationKey", "<missing>", "modules[0].runtime.dapr[0].configurationKey")]
     [InlineData("modules.0.runtime.dapr.0.componentName", "\"literal-store\"", "modules[0].runtime.dapr[0].componentName")]
@@ -139,6 +145,28 @@ public sealed class PlatformManifestValidationTests
         workspace.Change("modules.0.identity.servers.0.resourceId", "\"second-api-host\"");
         string second = workspace.Save("b.json");
         PlatformManifestValidator.Validate([first, second], TestContext.Current.CancellationToken).Declarations.ShouldNotBeNull().Count.ShouldBe(2);
+    }
+
+    /// <summary>Verifies the file limit accepts a complete boundary set and rejects overflow atomically.</summary>
+    [Fact]
+    public void ManifestFileLimitAccepts256AndRejects257()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        List<string> manifests = [];
+        for (int index = 0; index < 257; index++)
+        {
+            workspace.Change("modules.0.identity.moduleId", JsonSerializer.Serialize($"module{index}"));
+            workspace.Change("modules.0.identity.servers.0.appId", JsonSerializer.Serialize($"app{index}"));
+            workspace.Change("modules.0.identity.servers.0.resourceId", JsonSerializer.Serialize($"resource{index}"));
+            manifests.Add(workspace.Save($"module{index}.json"));
+        }
+
+        PlatformManifestValidationResult boundary = PlatformManifestValidator.Validate(manifests.Take(256), TestContext.Current.CancellationToken);
+        boundary.Diagnostics.ShouldBeEmpty();
+        boundary.Declarations.ShouldNotBeNull().Count.ShouldBe(256);
+        PlatformManifestValidationResult overflow = PlatformManifestValidator.Validate(manifests, TestContext.Current.CancellationToken);
+        overflow.Declarations.ShouldBeNull();
+        overflow.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP013" && diagnostic.Field == "manifest");
     }
 
     /// <summary>Verifies missing readiness cannot yield a partial set.</summary>

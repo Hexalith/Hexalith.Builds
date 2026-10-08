@@ -108,7 +108,7 @@ public static class PlatformManifestValidator
             ArgumentException.ThrowIfNullOrWhiteSpace(path);
             fullPath = Path.GetFullPath(path);
             source = Path.GetRelativePath(Directory.GetCurrentDirectory(), fullPath).Replace('\\', '/');
-            if (ManifestSecretDetector.ContainsSecret(source))
+            if (ContainsProhibitedSecret(source))
             {
                 source = "[redacted manifest path]";
             }
@@ -260,7 +260,7 @@ public static class PlatformManifestValidator
                 return false;
             }
 
-            if (ManifestSecretDetector.ContainsSecret(text))
+            if (ContainsProhibitedSecret(text))
             {
                 Add(diagnostics, "HXM007", source, path, "Remove credential material; declare a logical secret reference instead.");
             }
@@ -276,7 +276,7 @@ public static class PlatformManifestValidator
     private static void CollectSchemaDiagnostics(EvaluationResults result, JsonElement root, string source, List<ToolDiagnostic> diagnostics)
     {
         string pointer = result.InstanceLocation.ToString();
-        string path = PointerToPath(pointer);
+        string path = PointerToPath(root, pointer);
         JsonElement instance = ResolvePointer(root, pointer);
         JsonElement schema = ResolveSchemaNode(Uri.UnescapeDataString(result.SchemaLocation.Fragment.TrimStart('#')));
         if (result.Errors is not null)
@@ -375,15 +375,23 @@ public static class PlatformManifestValidator
         return current;
     }
 
-    private static string PointerToPath(string pointer)
+    private static string PointerToPath(JsonElement root, string pointer)
     {
         string path = string.Empty;
+        JsonElement current = root;
         foreach (string escaped in pointer.Split('/').Skip(1))
         {
             string segment = escaped.Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal);
-            path = int.TryParse(segment, CultureInfo.InvariantCulture, out int index)
-                ? $"{path}[{index}]"
-                : AppendField(path, segment);
+            if (current.ValueKind == JsonValueKind.Array && int.TryParse(segment, CultureInfo.InvariantCulture, out int index) && index >= 0 && index < current.GetArrayLength())
+            {
+                path = $"{path}[{index}]";
+                current = current[index];
+            }
+            else
+            {
+                path = AppendField(path, segment);
+                current = ObjectValue(current, segment);
+            }
         }
 
         return path.Length == 0 ? "$" : path;
@@ -396,9 +404,16 @@ public static class PlatformManifestValidator
             return $"{(path.Length == 0 ? "$" : path)}[\"\"]";
         }
 
-        string safeName = ManifestSecretDetector.ContainsSecret(name) ? "[redacted field]" : name;
-        return path.Length == 0 ? safeName : $"{path}.{safeName}";
+        string safeName = ContainsProhibitedSecret(name) ? "[redacted field]" : name;
+        bool simpleName = (char.IsAsciiLetter(safeName[0]) || safeName[0] == '_') && safeName.All(character => char.IsAsciiLetterOrDigit(character) || character == '_');
+        string dottedPath = path.Length == 0 ? safeName : $"{path}.{safeName}";
+        string parentPath = path.Length == 0 ? "$" : path;
+        return simpleName ? dottedPath : $"{parentPath}[{JsonSerializer.Serialize(safeName)}]";
     }
+
+    private static bool ContainsProhibitedSecret(string value) =>
+        ManifestSecretDetector.ContainsSecret(value)
+        || (value.Contains("://", StringComparison.Ordinal) && Uri.TryCreate(value, UriKind.Absolute, out Uri? uri) && uri.UserInfo.Length > 0);
 
     private static JsonElement ObjectValue(JsonElement element, string property) =>
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(property, out JsonElement value) ? value : default;
