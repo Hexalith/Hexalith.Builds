@@ -44,10 +44,10 @@ public sealed class ModuleCommandApplicationTests
             }
           ],
           "platform": {
-            "eventStoreVersion": "3.110.0",
+            "eventStoreVersion": "3.117.1",
             "daprRuntimeVersion": "1.18.2",
             "daprSdkVersion": "1.18.10",
-            "frontComposerVersion": "4.5.0"
+            "frontComposerVersion": "4.6.0"
           },
           "ui": { "descriptorAssembly": "assemblies/ui.dll" },
           "profiles": {
