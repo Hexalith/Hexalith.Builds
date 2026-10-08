@@ -17,6 +17,12 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// </summary>
     public string? DaprHome { get; init; }
 
+    /// <summary>Gets the Aspire CLI executable used for the startup version probe.</summary>
+    public string AspireCommand { get; init; } = "aspire";
+
+    /// <summary>Gets the finite bound on the Aspire version probe.</summary>
+    public TimeSpan AspireProbeTimeout { get; init; } = TimeSpan.FromSeconds(20);
+
     /// <summary>
     /// Gets the Docker CLI command.
     /// </summary>

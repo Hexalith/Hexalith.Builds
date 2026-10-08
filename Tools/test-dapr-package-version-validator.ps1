@@ -522,6 +522,14 @@ try {
         Assert-ValidatorResult -Result $result -ExpectedExitCode 1 -ExpectedOutput @('invalid bare package ID')
     }
 
+    Invoke-Scenario -Name 'all SDK packages follow a changed evaluated Dapr.Client selection' -Body {
+        $overrides = @{}
+        foreach ($id in $requiredPackageIds) { $overrides[$id] = '2.3.4' }
+        $catalogPath = New-CatalogFixture -Name 'changed-authority' -PackageRows (Get-RequiredPackageRows -VersionOverrides $overrides)
+        $result = Invoke-Validator -CatalogPath $catalogPath -EvaluatorScriptPath $null
+        Assert-ValidatorResult -Result $result -ExpectedExitCode 0 -ExpectedOutput @('2.3.4')
+    }
+
     Invoke-Scenario -Name 'catalog with no Dapr family is rejected' -Body {
         $catalogPath = New-CatalogFixture -Name 'no-family' -PackageRows @('    <PackageVersion Include="Example.Package" Version="1.0.0" />')
         $result = Invoke-Validator -CatalogPath $catalogPath -EvaluatorScriptPath $null
@@ -534,7 +542,7 @@ try {
             -PackageRows (Get-RequiredPackageRows) `
             -TrailingItemRows @('    <PackageVersion Update="Dapr.Client" Version="1.17.9" />')
         $result = Invoke-Validator -CatalogPath $catalogPath -EvaluatorScriptPath $null
-        Assert-ValidatorResult -Result $result -ExpectedExitCode 1 -ExpectedOutput @('Dapr.Client=1.17.9')
+        Assert-ValidatorResult -Result $result -ExpectedExitCode 1 -ExpectedOutput @('Dapr.Client=1.17.9', 'Dapr.AspNetCore=1.18.10')
     }
 
     foreach ($omittedPackageId in $requiredPackageIds) {

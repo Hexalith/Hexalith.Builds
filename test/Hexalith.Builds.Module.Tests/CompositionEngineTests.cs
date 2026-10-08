@@ -27,6 +27,11 @@ public sealed class CompositionEngineTests
     [Fact]
     public async Task MissingPrerequisitesStopBeforeAnyResourceAsync()
     {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake Aspire CLI uses POSIX shell scripts.");
+        }
+
         string root = CompositionTestFiles.CreateDirectory();
         try
         {
@@ -247,6 +252,7 @@ public sealed class CompositionEngineTests
             string manifest = Path.Combine(RepositoryRoot(), "test", "fixtures", "module", "executable", "hexalith.module-manifest.v1.json");
             CompositionEngineOptions options = new(Path.Combine(root, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
             {
+                AspireCommand = CompositionTestFiles.CreateAspire(root),
                 DockerCommand = CompositionTestFiles.CreateStubDocker(root),
                 DaprHome = Path.Combine(root, "missing-dapr"),
                 StateDirectory = Path.Combine(root, "state"),
@@ -388,6 +394,125 @@ public sealed class CompositionEngineTests
         }
     }
 
+    /// <summary>Verifies every unavailable Aspire observation stops the engine before descriptors and artifacts.</summary>
+    /// <param name="mode">The fake Aspire behavior.</param>
+    /// <returns>The asynchronous test.</returns>
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("malformed")]
+    [InlineData("different")]
+    [InlineData("empty")]
+    [InlineData("failed")]
+    [InlineData("timeout")]
+    public async Task UnavailableAspireCreatesNoRunArtifactsAsync(string mode)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake Aspire CLI uses POSIX shell scripts.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string aspire = Path.Combine(root, "observed-aspire");
+            if (mode != "missing")
+            {
+                string body = mode switch
+                {
+                    "malformed" => "echo 'bad-version'",
+                    "different" => "echo '0.0.1'",
+                    "empty" => "exit 0",
+                    "failed" => $"echo '{CompositionToolchainPins.AspireAppHostSdkVersion}'; exit 1",
+                    _ => "sleep 30",
+                };
+                CompositionTestFiles.WriteScript(aspire, body);
+            }
+
+            CompositionEngineOptions options = CreateOptions(root) with
+            {
+                AspireCommand = aspire,
+                AspireProbeTimeout = TimeSpan.FromMilliseconds(200),
+                DescriptorChildEntryAssemblyPath = Path.Combine(root, "missing-descriptor-child.dll"),
+                DockerCommand = Path.Combine(root, "missing-docker"),
+            };
+            CompositionStartResult result = await new CompositionEngine(options).StartAsync(
+                ExecutableManifest(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.PrerequisiteUnavailable);
+            result.Result.Diagnostics.Single().RuleId.ShouldBe("HXR015");
+            result.Result.Diagnostics.Single().Message.ShouldContain(CompositionToolchainPins.AspireAppHostSdkVersion);
+            result.RunId.ShouldBeNull();
+            result.Session.ShouldBeNull();
+            Directory.Exists(options.StateDirectory).ShouldBeFalse();
+            Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies incompatible Aspire blocks both public startup commands before descriptor or run artifacts.</summary>
+    /// <param name="command">The public startup command.</param>
+    /// <param name="format">The diagnostic format.</param>
+    /// <returns>The asynchronous test.</returns>
+    [Theory]
+    [InlineData("run", "json")]
+    [InlineData("run", "human")]
+    [InlineData("test", "json")]
+    [InlineData("test", "human")]
+    public async Task AspireMismatchStopsPublicStartupAsync(string command, string format)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake Aspire CLI uses POSIX shell scripts.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string aspire = Path.Combine(root, "wrong-aspire");
+            CompositionTestFiles.WriteScript(aspire, "echo '0.0.1'");
+            CompositionEngineOptions options = CreateOptions(root) with
+            {
+                AspireCommand = aspire,
+                DescriptorChildEntryAssemblyPath = Path.Combine(root, "missing-descriptor-child.dll"),
+                DockerCommand = Path.Combine(root, "missing-docker"),
+            };
+            StringWriter output = new();
+            await using (output.ConfigureAwait(true))
+            {
+                StringWriter error = new();
+                await using (error.ConfigureAwait(true))
+                {
+                    string[] arguments = command == "test"
+                        ? [command, "--manifest", ExecutableManifest(), "--profile", "live", "--output", format]
+                        : [command, "--manifest", ExecutableManifest(), "--output", format];
+                    int exitCode = await ModuleCommandApplication.InvokeAsync(
+                        arguments,
+                        output,
+                        error,
+                        TestContext.Current.CancellationToken,
+                        typeof(ModuleCommandApplication).Assembly.Location,
+                        options).ConfigureAwait(true);
+
+                    exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable);
+                    string diagnostics = string.Concat(output, error);
+                    diagnostics.ShouldContain("HXR015");
+                    diagnostics.ShouldContain("0.0.1");
+                    diagnostics.ShouldContain(CompositionToolchainPins.AspireAppHostSdkVersion);
+                    diagnostics.ShouldNotContain("HXR010");
+                    diagnostics.ShouldNotContain("HXR003");
+                    Directory.Exists(options.StateDirectory).ShouldBeFalse();
+                    Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+                }
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     private static Task WriteRecordedStateAsync(CompositionEngine engine, int processId, DateTimeOffset startedAt) =>
         engine.StateStore.WriteAsync(
             new CompositionRunState(
@@ -408,6 +533,7 @@ public sealed class CompositionEngineTests
     private static CompositionEngineOptions CreateOptions(string root) =>
         new(Path.Combine(root, "missing", "Hexalith.Builds.Module.AppHost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
         {
+            AspireCommand = CompositionTestFiles.CreateAspire(root),
             StateDirectory = Path.Combine(root, "state"),
             WorkspaceRoot = Path.Combine(root, "workspaces"),
             ReadinessTimeout = TimeSpan.FromSeconds(5),

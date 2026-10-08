@@ -61,6 +61,15 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
 
             ModuleManifest manifest = manifestResult.Manifest!;
+            ToolDiagnostic? aspire = await CompositionPrerequisiteProbe.ProbeAspireAsync(
+                _options.AspireCommand,
+                _options.AspireProbeTimeout,
+                cancellationToken).ConfigureAwait(false);
+            if (aspire is not null)
+            {
+                return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, [aspire], null);
+            }
+
             CompositionPrerequisiteResult prerequisites = await CompositionPrerequisiteProbe.ProbeAsync(
                 _options.DaprHome,
                 _options.DockerCommand,

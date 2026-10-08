@@ -1,4 +1,6 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.6.0">
+<Project>
+  <Import Project="../../../Props/Directory.Packages.props" />
+  <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>Hexalith.Builds.Module.AppHost</AssemblyName>
@@ -19,4 +21,5 @@
     <ProjectReference Include="../Hexalith.Builds.Module.UiHost/Hexalith.Builds.Module.UiHost.csproj" />
     <ProjectReference Include="../../libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" />
 </Project>

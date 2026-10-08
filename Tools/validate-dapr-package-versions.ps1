@@ -16,7 +16,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$targetVersion = '1.18.10'
+$targetVersion = ''
 $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
 $requiredPackageIds = @(
     'Dapr.Client'
@@ -471,6 +471,11 @@ if ($missingPackageIds.Count -gt 0) {
     Stop-Validation "required shared Dapr SDK package IDs are missing: $([string]::Join(', ', $missingPackageIds))."
 }
 
+$targetVersion = [string] (@($daprItems | Where-Object { [string]::Equals($_.Identity, 'Dapr.Client', [StringComparison]::OrdinalIgnoreCase) })[0].Version)
+if ($targetVersion -notmatch '^[0-9]+(?:\.[0-9]+){2,3}(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$') {
+    Stop-Validation "Catalog field Dapr.Client has malformed version '$targetVersion'."
+}
+
 $mismatchedItems = @(
     $daprItems | Where-Object {
         -not [string]::Equals($_.Version, $targetVersion, [StringComparison]::Ordinal)
@@ -478,7 +483,7 @@ $mismatchedItems = @(
 )
 if ($mismatchedItems.Count -gt 0) {
     $mismatches = $mismatchedItems | ForEach-Object { "$($_.Identity)=$($_.Version)" }
-    Stop-Validation "every evaluated Dapr.* package must use $targetVersion; mismatches: $([string]::Join(', ', $mismatches))."
+    Stop-Validation "every evaluated Dapr.* package must use evaluated Dapr.Client=$targetVersion; mismatches: $([string]::Join(', ', $mismatches))."
 }
 
 Write-Output "Dapr package validation passed: $($daprItems.Count) unique Dapr.* package IDs use $targetVersion and all required shared SDK IDs are present."

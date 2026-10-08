@@ -9,6 +9,13 @@ $ErrorActionPreference = 'Stop'
 $qualificationPath = Join-Path $PSScriptRoot 'test-g4-tool-package-contracts.ps1'
 $buildPath = Join-Path $PSScriptRoot 'build-g4-tool-packages.ps1'
 $testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "hexalith-g4-gate-$([System.Guid]::NewGuid().ToString('N'))"
+# Synthetic packages include a real catalog-bearing assembly so the installed catalog check remains mandatory.
+$dotnetExecutable = @(Get-Command dotnet -CommandType Application -ErrorAction Stop)[0].Source
+$catalogToolingProject = Join-Path $PSScriptRoot '../src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj'
+$catalogToolingAssembly = Join-Path $PSScriptRoot '../src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll'
+$catalogBuildOutput = @(& $dotnetExecutable build $catalogToolingProject -c Debug -m:1 2>&1) -join "`n"
+if ($LASTEXITCODE -ne 0) { throw "Catalog tooling build for gate controls failed: $catalogBuildOutput" }
+
 $global:HexalithG4GateDotNetMode = 'fail'
 
 function global:dotnet {
@@ -98,6 +105,7 @@ try {
     $fixtureBuildPath = Join-Path $testRoot 'fixture-build.ps1'
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../schemas/hexalith.module-manifest.v2.json') `
         -Destination (Join-Path $testRoot 'platform-schema.json')
+    Copy-Item -LiteralPath $catalogToolingAssembly -Destination (Join-Path $testRoot 'Hexalith.Builds.Tooling.dll')
     [IO.File]::WriteAllText($fixtureBuildPath, @'
 param([string] $Version, [string] $OutputDirectory, [switch] $DeferInventory)
 $null = $DeferInventory
@@ -111,6 +119,7 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
             $writer = [IO.StreamWriter]::new($entry.Open())
             try { $writer.Write([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'platform-schema.json'))) }
             finally { $writer.Dispose() }
+            $null = [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, (Join-Path $PSScriptRoot 'Hexalith.Builds.Tooling.dll'), 'tools/net10.0/any/Hexalith.Builds.Tooling.dll')
         }
         finally { $archive.Dispose() }
     }

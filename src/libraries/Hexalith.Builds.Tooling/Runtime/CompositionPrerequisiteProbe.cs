@@ -8,6 +8,7 @@ namespace Hexalith.Builds.Tooling.Runtime;
 using System.Text.RegularExpressions;
 
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Manifest;
 
 /// <summary>
 /// Verifies the local composition prerequisites by executing them before any resource starts.
@@ -80,6 +81,47 @@ public static partial class CompositionPrerequisiteProbe
             [.. diagnostics.OrderBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)]);
     }
 
+    /// <summary>Checks Aspire CLI equality with the selected AppHost SDK before composition side effects.</summary>
+    /// <param name="aspireCommand">The Aspire executable.</param>
+    /// <param name="timeout">The finite probe bound.</param>
+    /// <param name="cancellationToken">The invocation cancellation token.</param>
+    /// <returns>A diagnostic when Aspire is unavailable or incompatible, otherwise null.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The probe bound is invalid.</exception>
+    public static async Task<ToolDiagnostic?> ProbeAspireAsync(string aspireCommand, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(aspireCommand);
+        if (timeout <= TimeSpan.Zero || timeout > TimeSpan.FromMinutes(5))
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout), "Aspire probe timeout must be positive and at most five minutes.");
+        }
+
+        CompositionProcessResult result = await CompositionProcess.RunAsync(
+            CompositionProcess.CreateStartInfo(aspireCommand, ["--version"], null, null),
+            timeout,
+            cancellationToken).ConfigureAwait(false);
+        string output = result.Output.Trim();
+        Match version = AspireVersionRegex().Match(output);
+        string expected = CompositionToolchainPins.AspireAppHostSdkVersion;
+        if (result.Started && !result.TimedOut && result.ExitCode == 0 && version.Success
+            && PlatformVersionCatalog.VersionsEqual(version.Groups["v"].Value, expected))
+        {
+            return null;
+        }
+
+        string observed = result switch
+        {
+            { Started: false } => "missing",
+            { TimedOut: true } => "timed out",
+            _ when string.IsNullOrWhiteSpace(output) => "empty output",
+            _ => output[..Math.Min(output.Length, 256)],
+        };
+        return Unavailable(
+            "HXR015",
+            $"Aspire CLI observed '{observed}' (exit {result.ExitCode}); expected Aspire.AppHost.Sdk/{expected}.",
+            "aspire",
+            $"Install Aspire CLI {expected} to match the catalog-selected Aspire.AppHost.Sdk/{expected}, then retry.");
+    }
+
     /// <summary>
     /// Parses the CLI and runtime versions reported by <c>dapr --version</c>.
     /// </summary>
@@ -128,7 +170,7 @@ public static partial class CompositionPrerequisiteProbe
                 "HXR012",
                 "The isolated Dapr CLI does not report the selected CLI and runtime versions.",
                 "tools/dapr",
-                "Install Dapr CLI 1.18.0 with runtime 1.18.2 in the isolated Dapr home."));
+                $"Install Dapr CLI {CompositionToolchainPins.DaprCliVersion} with runtime {CompositionToolchainPins.DaprRuntimeVersion} in the isolated Dapr home."));
             return false;
         }
 
@@ -155,7 +197,7 @@ public static partial class CompositionPrerequisiteProbe
                 "HXR013",
                 "The isolated Dapr runtime binaries do not report the selected runtime version.",
                 ".dapr/bin",
-                "Initialize the isolated Dapr home with runtime 1.18.2 (daprd, placement, scheduler)."));
+                $"Initialize the isolated Dapr home with runtime {CompositionToolchainPins.DaprRuntimeVersion} (daprd, placement, scheduler)."));
         }
 
         return verified;
@@ -216,6 +258,9 @@ public static partial class CompositionPrerequisiteProbe
 
     private static ToolDiagnostic Unavailable(string ruleId, string message, string field, string hint) =>
         new(ruleId, ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, message, field, hint);
+
+    [GeneratedRegex(@"^(?:Aspire(?: CLI)?(?: version)?[: ]+)?(?<v>[0-9]+(?:\.[0-9]+){2,3}(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?)$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, 1000)]
+    private static partial Regex AspireVersionRegex();
 
     [GeneratedRegex(@"CLI version:\s*(?<v>[0-9A-Za-z.\-+]+)", RegexOptions.CultureInvariant, 1000)]
     private static partial Regex CliVersionRegex();

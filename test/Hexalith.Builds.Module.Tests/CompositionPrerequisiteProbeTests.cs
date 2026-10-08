@@ -142,6 +142,97 @@ public sealed class CompositionPrerequisiteProbeTests
         }
     }
 
+    /// <summary>Verifies release/prerelease equality ignores only build metadata.</summary>
+    /// <param name="suffix">The observed suffix.</param>
+    /// <param name="accepted">Whether the observation must match.</param>
+    /// <returns>The asynchronous test.</returns>
+    [Theory]
+    [InlineData("", true)]
+    [InlineData("+build.hash", true)]
+    [InlineData("-preview.1", false)]
+    public async Task AspireVersionEqualityAsync(string suffix, bool accepted)
+    {
+        SkipOnWindows();
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string aspire = Path.Combine(root, "aspire");
+            CompositionTestFiles.WriteScript(aspire, $"[ \"$#\" -eq 1 ] && [ \"$1\" = '--version' ] || exit 64\necho '{CompositionToolchainPins.AspireAppHostSdkVersion.Split('+')[0]}{suffix}'");
+            ToolDiagnostic? result = await CompositionPrerequisiteProbe.ProbeAspireAsync(
+                aspire, TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            (result is null).ShouldBe(accepted);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies missing, malformed, failed and timed-out Aspire never succeeds.</summary>
+    /// <param name="mode">The fake executable behavior.</param>
+    /// <returns>The asynchronous test.</returns>
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("malformed")]
+    [InlineData("different")]
+    [InlineData("empty")]
+    [InlineData("failed")]
+    [InlineData("timeout")]
+    public async Task AspireUnavailableObservationsFailClosedAsync(string mode)
+    {
+        SkipOnWindows();
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string aspire = Path.Combine(root, "aspire");
+            if (mode != "missing")
+            {
+                string body = mode switch
+                {
+                    "malformed" => "echo 'invalid-version'",
+                    "different" => "echo '0.0.1'",
+                    "empty" => "exit 0",
+                    "failed" => $"echo '{CompositionToolchainPins.AspireAppHostSdkVersion}'; exit 1",
+                    _ => "sleep 30",
+                };
+                CompositionTestFiles.WriteScript(aspire, body);
+            }
+
+            ToolDiagnostic? result = await CompositionPrerequisiteProbe.ProbeAspireAsync(
+                aspire, TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            _ = result.ShouldNotBeNull();
+            result.RuleId.ShouldBe("HXR015");
+            result.Message.ShouldContain(CompositionToolchainPins.AspireAppHostSdkVersion);
+            result.Phase.ShouldBe(ToolPhase.Prerequisite);
+            result.Category.ShouldBe(ToolFailureCategory.PrerequisiteUnavailable);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies a caller cancellation propagates from the bounded Aspire probe.</summary>
+    /// <returns>The asynchronous test.</returns>
+    [Fact]
+    public async Task AspireProbePropagatesCancellationAsync()
+    {
+        SkipOnWindows();
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string aspire = Path.Combine(root, "aspire");
+            CompositionTestFiles.WriteScript(aspire, "sleep 30");
+            using CancellationTokenSource cancellation = new(TimeSpan.FromMilliseconds(200));
+            _ = await Should.ThrowAsync<OperationCanceledException>(() => CompositionPrerequisiteProbe.ProbeAspireAsync(
+                aspire, TimeSpan.FromSeconds(5), cancellation.Token)).ConfigureAwait(true);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     private static void SkipOnWindows()
     {
         if (OperatingSystem.IsWindows())

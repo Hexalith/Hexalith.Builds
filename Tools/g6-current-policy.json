@@ -52,6 +52,7 @@
     "references/Hexalith.Builds/Props/Directory.Packages.props",
     "references/Hexalith.Builds/Tools/g6-current-policy.json",
     "references/Hexalith.Builds/Tools/g6_current.py",
+    "references/Hexalith.Builds/Tools/evaluated_catalog.py",
     "references/Hexalith.EventStore/global.json",
     "references/Hexalith.EventStore/Directory.Build.props",
     "references/Hexalith.EventStore/Directory.Build.targets",

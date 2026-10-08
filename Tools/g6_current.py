@@ -14,9 +14,16 @@ import importlib.util
 import json
 import re
 import subprocess
+import tempfile
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+
+_catalog_spec = importlib.util.spec_from_file_location("hexalith_evaluated_catalog", Path(__file__).with_name("evaluated_catalog.py"))
+assert _catalog_spec is not None and _catalog_spec.loader is not None
+_catalog_module = importlib.util.module_from_spec(_catalog_spec)
+_catalog_spec.loader.exec_module(_catalog_module)
 from typing import Any
 
 
@@ -173,16 +180,32 @@ def tracked_material(workspace: Path, policy: dict[str, Any]) -> dict[str, Any]:
     return {"fingerprint": digest(files), "fileCount": len(files)}
 
 
+def evaluated_catalog(workspace: Path) -> tuple[dict[str, str], dict[str, str]]:
+    try:
+        return _catalog_module.evaluate_catalog(workspace / "references/Hexalith.Builds/Props/Directory.Packages.props")
+    except (ValueError, ET.ParseError) as error:
+        raise G6Error(str(error)) from error
+
+
 def package_versions(workspace: Path) -> dict[str, str]:
-    catalog = workspace / "references/Hexalith.Builds/Props/Directory.Packages.props"
-    root = ET.parse(catalog).getroot()
-    versions = {}
-    for item in root.iter("PackageVersion"):
-        package, version = item.get("Include"), item.get("Version") or item.findtext("Version")
-        if package:
-            require(package not in versions, f"duplicate central package: {package}")
-            versions[package] = version
-    return versions
+    return evaluated_catalog(workspace)[1]
+
+
+def catalog_properties(workspace: Path) -> dict[str, str]:
+    return evaluated_catalog(workspace)[0]
+
+
+def apphost_sdk_versions(document: ET.Element, properties: dict[str, str], project_path: Path | None = None) -> set[str]:
+    """Evaluate only active controlled SDK declarations in their consuming project context."""
+    try:
+        if project_path is not None:
+            return _catalog_module.apphost_sdk_versions(project_path, properties)
+        with tempfile.TemporaryDirectory(prefix="g6-sdk-document-") as temporary:
+            path = Path(temporary) / "consumer.csproj"
+            path.write_text(ET.tostring(document, encoding="unicode"))
+            return _catalog_module.apphost_sdk_versions(path, properties)
+    except (ValueError, OSError, ET.ParseError) as error:
+        raise G6Error(str(error)) from error
 
 
 def one_match(pattern: str, value: str, label: str) -> str:
@@ -192,14 +215,14 @@ def one_match(pattern: str, value: str, label: str) -> str:
 
 
 def effective_tuple(workspace: Path) -> dict[str, str]:
-    catalog = package_versions(workspace)
+    properties, catalog = evaluated_catalog(workspace)
     workflow = (workspace / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     apphost = (workspace / "src/Hexalith.Projects.AppHost/Hexalith.Projects.AppHost.csproj").read_text(encoding="utf-8")
     dapr_packages = {catalog.get("Dapr.Client"), catalog.get("Dapr.Workflow")}
     require(len(dapr_packages) == 1 and None not in dapr_packages, "Dapr .NET package versions disagree")
     return {
         "dotnetSdk": read_json(workspace / "global.json")["sdk"]["version"],
-        "aspireSdk": one_match(r"Aspire\.AppHost\.Sdk/([^\s\";]+)", apphost, "Aspire SDK"),
+        "aspireSdk": one_match(r"(.+)", "\n".join(apphost_sdk_versions(ET.fromstring(apphost), properties, workspace / "src/Hexalith.Projects.AppHost/Hexalith.Projects.AppHost.csproj")), "Aspire SDK"),
         "aspireCli": one_match(r"dotnet tool install --global Aspire\.Cli --version ([^\s]+)", workflow, "Aspire CLI"),
         "communityToolkitAspireDapr": catalog["CommunityToolkit.Aspire.Hosting.Dapr"],
         "daprCli": one_match(r"dapr-version:\s*'([^']+)'", workflow, "Dapr CLI"),
@@ -261,7 +284,7 @@ def resolved_graph(workspace: Path, policy: dict[str, Any], tuple_values: dict[s
 
 def direct_pin_issues(workspace: Path, policy: dict[str, Any], tuple_values: dict[str, str]) -> list[str]:
     issues = []
-    catalog = package_versions(workspace)
+    properties, catalog = evaluated_catalog(workspace)
     for package, version in catalog.items():
         field = controlled_field(package)
         if field and package != "Dapr.Workflow" and (package, version) not in {
@@ -272,10 +295,9 @@ def direct_pin_issues(workspace: Path, policy: dict[str, Any], tuple_values: dic
     for relative in policy["resolvedProjects"]:
         project = workspace_path(workspace, relative)
         document = ET.parse(project).getroot()
-        sdk = document.get("Sdk", "")
-        match = re.search(r"Aspire\.AppHost\.Sdk/([^;\s]+)", sdk)
-        if match and match[1] != tuple_values["aspireSdk"]:
-            issues.append(f"AppHost SDK differs from effective tuple: {relative} {match[1]}")
+        for sdk_version in apphost_sdk_versions(document, properties, project):
+            if sdk_version != tuple_values["aspireSdk"]:
+                issues.append(f"AppHost SDK differs from effective tuple: {relative} {sdk_version}")
         for item in document.iter("PackageReference"):
             package = item.get("Include") or item.get("Update")
             field = controlled_field(package or "")

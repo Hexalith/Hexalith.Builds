@@ -10,6 +10,7 @@ using System.Text.Json;
 
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Runtime;
 
 using Shouldly;
 
@@ -454,6 +455,11 @@ public sealed class ModuleCommandApplicationTests
     [Fact]
     public async Task RunWithInvalidExecutableDescriptorFailsBeforeRuntimeAsync()
     {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake Aspire CLI uses POSIX shell scripts.");
+        }
+
         string directory = CreateFixtureDirectory();
         try
         {
@@ -465,7 +471,11 @@ public sealed class ModuleCommandApplicationTests
                     standardOutput,
                     TextWriter.Null,
                     TestContext.Current.CancellationToken,
-                    typeof(ModuleCommandApplication).Assembly.Location).ConfigureAwait(true);
+                    typeof(ModuleCommandApplication).Assembly.Location,
+                    new CompositionEngineOptions(Path.Combine(directory, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
+                    {
+                        AspireCommand = CompositionTestFiles.CreateAspire(directory),
+                    }).ConfigureAwait(true);
 
                 exitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
                 standardOutput.ToString().ShouldContain("HXD002");

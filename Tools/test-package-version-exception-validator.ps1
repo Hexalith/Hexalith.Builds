@@ -151,6 +151,60 @@ try {
         -CatalogPath $catalogPath -WorkspaceRoot $workspaceRoot -ExpectedExitCode 0 `
         -ExpectedOutput 'workspace evidence matches the allowlist'
 
+    $explicitWorkspace = Join-Path $temporaryRoot 'explicit-import-workspace'
+    Copy-Item -LiteralPath $workspaceRoot -Destination $explicitWorkspace -Recurse
+    $explicitProject = Join-Path $explicitWorkspace 'references/Fixture.Module/src/Fixture.AppHost/Fixture.AppHost.csproj'
+    Write-Utf8File -Path $explicitProject -Content '<Project><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.4.6" /><Import Project="Sdk.targets" Sdk="Aspire.AppHost.Sdk" Version="13.4.6" /></Project>'
+    Test-Scenario -Name 'Explicit SDK imports are recognized' -InventoryPath $validInventoryPath -CatalogPath $catalogPath -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 0 -ExpectedOutput 'workspace evidence matches the allowlist'
+    Write-Utf8File -Path $explicitProject -Content '<Project><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.4.2" /></Project>'
+    Test-Scenario -Name 'Explicit SDK import drift fails' -InventoryPath $validInventoryPath -CatalogPath $catalogPath -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 1 -ExpectedOutput 'Aspire.AppHost.Sdk/13.4.2 is not aligned'
+
+    Write-Utf8File -Path $explicitProject -Content "<Project><Import Project='Sdk.props' Sdk='Aspire.AppHost.Sdk' Version='13.4.6' /><Import Project='Sdk.targets' Sdk='Aspire.AppHost.Sdk' Version='13.4.6' /></Project>"
+    Test-Scenario -Name 'Active single-quoted SDK imports' -InventoryPath $validInventoryPath -CatalogPath $catalogPath -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 0 -ExpectedOutput 'workspace evidence matches the allowlist'
+    Write-Utf8File -Path $explicitProject -Content '<Project Sdk="Aspire.AppHost.Sdk/13.4.6"><!-- <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /> --></Project>'
+    Test-Scenario -Name 'Commented SDK import ignored' -InventoryPath $validInventoryPath -CatalogPath $catalogPath -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 0 -ExpectedOutput 'workspace evidence matches the allowlist'
+    Write-Utf8File -Path $explicitProject -Content '<Project><!-- <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.4.6" /> --></Project>'
+    Test-Scenario -Name 'Comment alone supplies no active SDK evidence' -InventoryPath $validInventoryPath -CatalogPath $catalogPath -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 1 -ExpectedOutput 'was not found in the workspace'
+
+    $propertyCatalog = Join-Path $temporaryRoot 'property-sdk-catalog.props'
+    Write-Utf8File -Path $propertyCatalog -Content ([IO.File]::ReadAllText($catalogPath).Replace('<Project>', '<Project><PropertyGroup><HexalithAspireAppHostSdkVersion>13.4.6</HexalithAspireAppHostSdkVersion></PropertyGroup>'))
+    Write-Utf8File -Path $explicitProject -Content '<Project><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /><Import Project="Sdk.targets" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>'
+    Test-Scenario -Name 'Explicit SDK import property resolves from catalog' -InventoryPath $validInventoryPath -CatalogPath $propertyCatalog -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 0 -ExpectedOutput 'workspace evidence matches the allowlist'
+
+    foreach ($body in @(
+        '<Project Sdk="Aspire.AppHost.Sdk/$(HexalithAspireAppHostSdkVersion)" />',
+        '<Project><Sdk Name="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>',
+        '<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>',
+        '<Project><Import Project="Sdk.props" Sdk="Unrelated.Sdk" Version="$(UnrelatedVersion)" /><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.4.6" /><Import Condition="false" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /></Project>'
+    )) {
+        Write-Utf8File -Path $explicitProject -Content $body
+        Test-Scenario -Name 'Effective SDK declaration forms and unrelated imports' -InventoryPath $validInventoryPath -CatalogPath $propertyCatalog -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 0 -ExpectedOutput 'workspace evidence matches the allowlist'
+    }
+    Write-Utf8File -Path (Join-Path (Split-Path $explicitProject -Parent) 'selections.props') -Content '<Project><PropertyGroup><SdkBase>13.4.6</SdkBase><SdkAlias>$(SdkBase)</SdkAlias></PropertyGroup></Project>'
+    Write-Utf8File -Path $explicitProject -Content '<Project><Import Project="selections.props" /><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(SdkAlias)" /></Project>'
+    Test-Scenario -Name 'Imported nested consumer properties resolve' -InventoryPath $validInventoryPath -CatalogPath $propertyCatalog -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 0 -ExpectedOutput 'workspace evidence matches the allowlist'
+    Write-Utf8File -Path $explicitProject -Content '<Project><PropertyGroup><HexalithAspireAppHostSdkVersion>13.4.2</HexalithAspireAppHostSdkVersion></PropertyGroup><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>'
+    Test-Scenario -Name 'Consuming-project SDK override is observed' -InventoryPath $validInventoryPath -CatalogPath $propertyCatalog -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 1 -ExpectedOutput 'Aspire.AppHost.Sdk/13.4.2 is not aligned'
+    Write-Utf8File -Path $explicitProject -Content '<Project><Import Condition="false" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.4.6" /></Project>'
+    Test-Scenario -Name 'Inactive SDK import supplies no evidence' -InventoryPath $validInventoryPath -CatalogPath $propertyCatalog -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 1 -ExpectedOutput 'was not found in the workspace'
+
+    Write-Utf8File -Path $explicitProject -Content '<Project><PropertyGroup><HexalithAspireAppHostSdkVersion>99.0.0</HexalithAspireAppHostSdkVersion></PropertyGroup><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /><PropertyGroup><HexalithAspireAppHostSdkVersion>13.4.6</HexalithAspireAppHostSdkVersion></PropertyGroup></Project>'
+    Test-Scenario -Name 'Later assignment cannot conceal SDK import drift' -InventoryPath $validInventoryPath -CatalogPath $propertyCatalog -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 1 -ExpectedOutput 'Aspire.AppHost.Sdk/99.0.0 is not aligned'
+
+    Write-Utf8File -Path $explicitProject -Content '<Project><ImportGroup Condition="true"><Import Condition="false" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /><Import Project="Sdk.targets" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></ImportGroup></Project>'
+    Test-Scenario -Name 'Active SDK ImportGroup respects child conditions' -InventoryPath $validInventoryPath -CatalogPath $propertyCatalog -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 0 -ExpectedOutput 'workspace evidence matches the allowlist'
+    Write-Utf8File -Path $explicitProject -Content '<Project><ImportGroup Condition="false"><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /></ImportGroup></Project>'
+    Test-Scenario -Name 'Inactive SDK ImportGroup supplies no active evidence' -InventoryPath $validInventoryPath -CatalogPath $propertyCatalog -WorkspaceRoot $explicitWorkspace -ExpectedExitCode 1 -ExpectedOutput 'was not found in the workspace'
+
+    $priorSdkEnvironment = [Environment]::GetEnvironmentVariable('HexalithAspireAppHostSdkVersion')
+    try {
+        [Environment]::SetEnvironmentVariable('HexalithAspireAppHostSdkVersion', '99.0.0')
+        Test-Scenario -Name 'Injected SDK environment cannot become catalog authority' -InventoryPath $validInventoryPath -CatalogPath $propertyCatalog -ExpectedExitCode 1 -ExpectedOutput "authoritative catalog selects '13.4.6'"
+        [Environment]::SetEnvironmentVariable('HexalithAspireAppHostSdkVersion', '13.4.6')
+        Test-Scenario -Name 'Matching inherited SDK selection agrees with catalog' -InventoryPath $validInventoryPath -CatalogPath $propertyCatalog -ExpectedExitCode 0 -ExpectedOutput 'validated 2 allowlisted exceptions'
+    }
+    finally { [Environment]::SetEnvironmentVariable('HexalithAspireAppHostSdkVersion', $priorSdkEnvironment) }
+
     $misalignedWorkspace = Join-Path $temporaryRoot 'misaligned-workspace'
     $misalignedModule = Join-Path $misalignedWorkspace 'references/Fixture.Module'
     Write-Utf8File -Path (Join-Path $misalignedWorkspace '.gitmodules') -Content @'

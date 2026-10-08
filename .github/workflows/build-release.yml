@@ -92,6 +92,14 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-package-version-exception-validator.ps1
 
+    - name: Validate Platform version catalog and hosting compatibility
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/validate-platform-version-catalog.ps1
+
+    - name: Test Platform version catalog contracts
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-platform-version-catalog.ps1
+
     - name: Validate Dapr package versions
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/validate-dapr-package-versions.ps1

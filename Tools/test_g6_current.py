@@ -22,6 +22,27 @@ HISTORICAL = WORKSPACE / "_bmad-output/implementation-artifacts/qualification-ev
 
 
 class CurrentG6Tests(unittest.TestCase):
+    def test_sdk_scanner_recognizes_explicit_imports_and_property_selection(self) -> None:
+        import xml.etree.ElementTree as ET
+        document = ET.fromstring('<Project><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /><Import Project="Sdk.targets" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>')
+        self.assertEqual(G6.apphost_sdk_versions(document, {"HexalithAspireAppHostSdkVersion": "13.6.0"}), {"13.6.0"})
+        with self.assertRaisesRegex(G6.G6Error, "Unresolved Aspire.AppHost.Sdk catalog field"):
+            G6.apphost_sdk_versions(document, {})
+        changed = ET.fromstring('<Project><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.7.0" /></Project>')
+        self.assertEqual(G6.apphost_sdk_versions(changed, {}), {"13.7.0"})
+
+    def test_sdk_import_groups_preserve_activation(self) -> None:
+        spec = importlib.util.spec_from_file_location("g6_group_controls", TOOLS / "test_runtime_toolchain_v2.py")
+        controls = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(controls)
+        self.assertEqual(controls.run_sdk_import_group_controls(), 6)
+
+    def test_evaluated_catalog_imports_conditions_and_nested_properties(self) -> None:
+        spec = importlib.util.spec_from_file_location("g6_evaluated_fixture_tests", TOOLS / "test_runtime_toolchain_v2.py")
+        controls = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(controls)
+        self.assertEqual(controls.run_evaluated_catalog_controls(), 37)
+
     def test_material_fingerprint_covers_live_sample_and_ignores_unrelated_docs(self) -> None:
         policy = G6.policy_document(POLICY)
         original = G6.tracked_material(WORKSPACE, policy)

@@ -70,6 +70,16 @@ internal static class CompositionTestFiles
         return home;
     }
 
+    /// <summary>Creates a fake Aspire CLI reporting the embedded catalog selection.</summary>
+    /// <param name="root">The temporary root.</param>
+    /// <returns>The executable path.</returns>
+    public static string CreateAspire(string root)
+    {
+        string path = Path.Combine(root, "aspire");
+        WriteScript(path, $"[ \"$#\" -eq 1 ] && [ \"$1\" = '--version' ] || exit 64\necho '{CompositionToolchainPins.AspireAppHostSdkVersion.Split('+')[0]}+test-build'");
+        return path;
+    }
+
     /// <summary>
     /// Creates a fake Docker CLI that reports a server version.
     /// </summary>

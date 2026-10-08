@@ -159,6 +159,175 @@ def run_file_directive_controls() -> int:
     return 2
 
 
+def run_sdk_import_controls() -> int:
+    import xml.etree.ElementTree as ET
+    document = ET.fromstring('<Project><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /><Import Project="Sdk.targets" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>')
+    assert CURRENT.apphost_sdk_versions(API, document, {"HexalithAspireAppHostSdkVersion": "13.6.0"}) == {"13.6.0"}
+    try:
+        CURRENT.apphost_sdk_versions(API, document, {})
+    except API.ValidationError as error:
+        assert "Unresolved Aspire.AppHost.Sdk catalog field" in str(error)
+    else:
+        raise AssertionError("Unresolved SDK import passed")
+    baseline = API.read_json(TOOLS / "runtime-toolchain-baseline-2026-10-01.json")
+    with tempfile.TemporaryDirectory(prefix="g6-sdk-import-") as temporary:
+        root = Path(temporary)
+        (root / "AppHost.csproj").write_text(ET.tostring(document, encoding="unicode"))
+        assert CURRENT.required_packages(API, root, baseline, "AppHost.csproj") == {"Aspire.Hosting.AppHost"}
+    return 3
+
+
+
+def run_sdk_import_group_controls() -> int:
+    """Actual scanners preserve group/child activation and declaration-point SDK values."""
+    spec = importlib.util.spec_from_file_location("g6_import_group_controls", TOOLS / "g6_current.py")
+    g6 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(g6)
+    baseline = API.read_json(TOOLS / "runtime-toolchain-baseline-2026-10-01.json")
+    with tempfile.TemporaryDirectory(prefix="g6-sdk-import-groups-") as temporary:
+        root = Path(temporary)
+        catalog = root / "references/Hexalith.Builds/Props/Directory.Packages.props"
+        catalog.parent.mkdir(parents=True)
+        catalog.write_text('<Project><PropertyGroup><HexalithAspireAppHostSdkVersion>13.6.0</HexalithAspireAppHostSdkVersion></PropertyGroup><ItemGroup><PackageVersion Include="Dapr.Client" Version="1.18.10" /></ItemGroup></Project>')
+        host = root / "references/Hexalith.Platform/apphost.cs"
+        host.parent.mkdir(parents=True)
+        host.write_text("#:sdk Aspire.AppHost.Sdk@13.6.0\n")
+        project = root / "consumer.csproj"
+        project.with_name("change-group.props").write_text('<Project><PropertyGroup><GroupActive>false</GroupActive></PropertyGroup></Project>')
+        policy = {"resolvedProjects": ["consumer.csproj"]}
+        tuple_values = {"aspireSdk": "13.6.0", "daprDotnetPackages": "1.18.10"}
+        scenarios = [
+            ('<Project><ImportGroup Condition="false"><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /></ImportGroup></Project>', None),
+            ('<Project><ImportGroup Condition="true"><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.6.0" /></ImportGroup></Project>', "13.6.0"),
+            ('<Project><ImportGroup Condition="true"><Import Condition="false" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /><Import Project="Sdk.targets" Sdk="Aspire.AppHost.Sdk" Version="13.6.0" /></ImportGroup></Project>', "13.6.0"),
+            ('<Project><PropertyGroup><HexalithAspireAppHostSdkVersion>99.0.0</HexalithAspireAppHostSdkVersion></PropertyGroup><ImportGroup Condition="true"><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></ImportGroup><PropertyGroup><HexalithAspireAppHostSdkVersion>13.6.0</HexalithAspireAppHostSdkVersion></PropertyGroup></Project>', "99.0.0"),
+            ('<Project><PropertyGroup><GroupActive>true</GroupActive></PropertyGroup><ImportGroup Condition="\'$(GroupActive)\' == \'true\'"><Import Project="change-group.props" /><Import Condition="\'$(GroupActive)\' == \'false\'" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.6.0" /></ImportGroup></Project>', "13.6.0"),
+            ('<Project><PropertyGroup><GroupActive>false</GroupActive></PropertyGroup><ImportGroup Condition="\'$(GroupActive)\' == \'true\'"><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /></ImportGroup><PropertyGroup><GroupActive>true</GroupActive></PropertyGroup></Project>', None),
+        ]
+        for body, observed in scenarios:
+            project.write_text(body)
+            required = {"Aspire.Hosting.AppHost"} if observed else set()
+            assert CURRENT.required_packages(API, root, baseline, "consumer.csproj") == required
+            issues = g6.direct_pin_issues(root, policy, tuple_values)
+            if observed == "99.0.0":
+                assert len(issues) == 1 and observed in issues[0]
+                with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+                    try:
+                        CURRENT.inventory(API, root, baseline)
+                    except API.ValidationError as error:
+                        assert observed in str(error)
+                    else:
+                        raise AssertionError("ImportGroup SDK drift escaped inventory")
+            else:
+                assert issues == []
+                with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+                    inventory = CURRENT.inventory(API, root, baseline)
+                    expected = [{"path": "consumer.csproj", "pins": [{"package": "Aspire.AppHost.Sdk", "version": observed, "qualified": True}]}] if observed else []
+                    assert inventory == expected
+    return len(scenarios)
+
+
+def run_evaluated_catalog_controls() -> int:
+    """Both current scanners honor imported values, group conditions, nested references and item Updates."""
+    from evaluated_catalog import evaluate_catalog
+    import xml.etree.ElementTree as ET
+    spec = importlib.util.spec_from_file_location("g6_evaluated_controls", TOOLS / "g6_current.py")
+    g6 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(g6)
+    baseline = API.read_json(TOOLS / "runtime-toolchain-baseline-2026-10-01.json")
+    with tempfile.TemporaryDirectory(prefix="g6-evaluated-catalog-") as temporary:
+        root = Path(temporary)
+        catalog = root / "references/Hexalith.Builds/Props/Directory.Packages.props"
+        catalog.parent.mkdir(parents=True)
+        imported = catalog.with_name("selections.props")
+        imported.write_text('<Project><PropertyGroup><SdkBase>13.6.0</SdkBase><SdkAlias>$(SdkBase)</SdkAlias><HexalithAspireAppHostSdkVersion>$(SdkAlias)</HexalithAspireAppHostSdkVersion><DaprBase>1.18.10</DaprBase><DaprAlias>$(DaprBase)</DaprAlias></PropertyGroup><PropertyGroup Condition="false"><HexalithAspireAppHostSdkVersion>99.0.0</HexalithAspireAppHostSdkVersion></PropertyGroup><ItemGroup><PackageVersion Include="Dapr.Client" Version="0.0.1" /></ItemGroup><ItemGroup Condition="false"><PackageVersion Include="Dapr.Client" Version="99.0.0" /></ItemGroup></Project>')
+        catalog.write_text('<Project><Import Project="selections.props" /><ItemGroup Condition="\'$(Configuration)\' == \'Debug\'"><PackageVersion Update="Dapr.Client" Version="$(DaprAlias)" /></ItemGroup></Project>')
+        properties, versions = evaluate_catalog(catalog)
+        assert properties["HexalithAspireAppHostSdkVersion"] == "13.6.0"
+        assert versions == {"Dapr.Client": "1.18.10"}
+        assert g6.catalog_properties(root)["HexalithAspireAppHostSdkVersion"] == "13.6.0"
+        assert g6.package_versions(root) == versions
+        document = ET.fromstring("<Project><!-- <Import Sdk='Aspire.AppHost.Sdk' Version='99.0.0' /> --><Import Project='Sdk.props' Sdk='Aspire.AppHost.Sdk' Version='$(HexalithAspireAppHostSdkVersion)' /></Project>")
+        assert g6.apphost_sdk_versions(document, g6.catalog_properties(root)) == {"13.6.0"}
+        project = root / "consumer.csproj"
+        project.write_text(ET.tostring(document, encoding="unicode"))
+        with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+            assert CURRENT.inventory(API, root, baseline)[0]["pins"] == [{"package": "Aspire.AppHost.Sdk", "version": "13.6.0", "qualified": True}]
+        imported.write_text(imported.read_text().replace('<SdkBase>13.6.0', '<SdkBase>13.7.0'))
+        assert g6.catalog_properties(root)["HexalithAspireAppHostSdkVersion"] == "13.7.0"
+        with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+            try:
+                CURRENT.inventory(API, root, baseline)
+            except API.ValidationError as error:
+                assert "Consumer pin drift" in str(error)
+            else:
+                raise AssertionError("Imported SDK mutation escaped inventory")
+        # Exercise the actual G6 audit and runtime inventory using consumer evaluation,
+        # including namespace/conditions, imported aliases, and overrides before SDK imports.
+        imported.write_text(imported.read_text().replace('<SdkBase>13.7.0', '<SdkBase>13.6.0'))
+        host = root / "references/Hexalith.Platform/apphost.cs"
+        host.parent.mkdir(parents=True)
+        host.write_text("#:sdk Aspire.AppHost.Sdk@13.6.0\n")
+        policy = {"resolvedProjects": ["consumer.csproj"]}
+        tuple_values = {"aspireSdk": "13.6.0", "daprDotnetPackages": "1.18.10"}
+        selection_props = project.with_name("consumer-selections.props")
+        selection_props.write_text("<Project><PropertyGroup Condition=\"'$(MSBuildProjectName)' == 'consumer' and Exists('consumer-selections.props')\"><ConsumerBase>13.6.0</ConsumerBase><ConsumerAlias>$(ConsumerBase)</ConsumerAlias></PropertyGroup></Project>")
+        aligned_forms = [
+            '<Project Sdk="Aspire.AppHost.Sdk/$(HexalithAspireAppHostSdkVersion)" />',
+            '<Project><Sdk Name="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>',
+            '<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>',
+            '<Project><Import Project="consumer-selections.props" /><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(ConsumerAlias)" /></Project>',
+            '<Project><PropertyGroup Condition="false"><HexalithAspireAppHostSdkVersion>99.0.0</HexalithAspireAppHostSdkVersion></PropertyGroup><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /><Import Project="Sdk.props" Sdk="Unrelated.Sdk" Version="$(UnrelatedVersion)" /><Import Condition="false" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /></Project>',
+            '<Project><PropertyGroup><TargetFramework>net9.0</TargetFramework></PropertyGroup><Import Condition="\'$(TargetFramework)\' == \'net9.0\'" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.6.0" /></Project>',
+        ]
+        for body in aligned_forms:
+            project.write_text(body)
+            with patch.object(g6, "evaluated_catalog", wraps=g6.evaluated_catalog) as observation:
+                assert g6.direct_pin_issues(root, policy, tuple_values) == []
+                assert observation.call_count == 1
+            with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+                assert CURRENT.inventory(API, root, baseline)[0]["pins"] == [{"package": "Aspire.AppHost.Sdk", "version": "13.6.0", "qualified": True}]
+        project.write_text('<Project><Import Project="consumer-selections.props" /><PropertyGroup><HexalithAspireAppHostSdkVersion>13.7.0</HexalithAspireAppHostSdkVersion></PropertyGroup><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>')
+        issues = g6.direct_pin_issues(root, policy, tuple_values)
+        assert len(issues) == 1 and "13.7.0" in issues[0]
+        with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+            try:
+                CURRENT.inventory(API, root, baseline)
+            except API.ValidationError as error:
+                assert "13.7.0" in str(error)
+            else:
+                raise AssertionError("Consuming project override escaped runtime inventory")
+        for body in ['<Project><Import Condition="false" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /></Project>', '<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><Import Condition="false" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /></Project>']:
+            project.write_text(body)
+            assert CURRENT.required_packages(API, root, baseline, "consumer.csproj") == set()
+            assert g6.direct_pin_issues(root, policy, tuple_values) == []
+            with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+                assert CURRENT.inventory(API, root, baseline) == []
+        project.write_text('<Project><PropertyGroup><HexalithAspireAppHostSdkVersion>99.0.0</HexalithAspireAppHostSdkVersion></PropertyGroup><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /><PropertyGroup><HexalithAspireAppHostSdkVersion>13.6.0</HexalithAspireAppHostSdkVersion></PropertyGroup></Project>')
+        issues = g6.direct_pin_issues(root, policy, tuple_values)
+        assert len(issues) == 1 and "99.0.0" in issues[0]
+        with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+            try:
+                CURRENT.inventory(API, root, baseline)
+            except API.ValidationError as error:
+                assert "99.0.0" in str(error)
+            else:
+                raise AssertionError("Later property assignment concealed SDK import drift")
+        project.write_text('<Project><PropertyGroup><SdkActive>true</SdkActive></PropertyGroup><Import Condition="\'$(SdkActive)\' == \'true\'" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="13.6.0" /><PropertyGroup><SdkActive>false</SdkActive></PropertyGroup></Project>')
+        assert CURRENT.required_packages(API, root, baseline, "consumer.csproj") == {"Aspire.Hosting.AppHost"}
+        assert g6.direct_pin_issues(root, policy, tuple_values) == []
+        project.write_text('<Project><PropertyGroup><SdkActive>false</SdkActive></PropertyGroup><Import Condition="\'$(SdkActive)\' == \'true\'" Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="99.0.0" /><PropertyGroup><SdkActive>true</SdkActive></PropertyGroup></Project>')
+        assert CURRENT.required_packages(API, root, baseline, "consumer.csproj") == set()
+        assert g6.direct_pin_issues(root, policy, tuple_values) == []
+        with patch.dict("os.environ", {"HexalithAspireAppHostSdkVersion": "99.0.0"}):
+            assert evaluate_catalog(catalog)[0]["HexalithAspireAppHostSdkVersion"] == "13.6.0"
+        live_policy = API.read_json(TOOLS / "g6-current-policy.json")
+        assert "references/Hexalith.Builds/Tools/evaluated_catalog.py" in live_policy["materialFiles"]
+    count = 31 + run_sdk_import_group_controls()
+    print(f"EVALUATED-CATALOG-CONTROLS-PASSED: {count}")
+    return count
+
+
 def run_required_package_controls() -> int:
     """Only conditions enclosing controlled PackageReferences affect minimum coverage."""
     baseline = API.read_json(TOOLS / "runtime-toolchain-baseline-2026-10-01.json")
@@ -399,3 +568,6 @@ def run_controls() -> int:
 
 if __name__ == "__main__":
     run_controls()
+    run_sdk_import_controls()
+    run_evaluated_catalog_controls()
+    print("SDK-IMPORT-CONTROLS-PASSED: 3")

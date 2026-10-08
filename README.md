@@ -240,6 +240,33 @@ consumers restore from NuGet.org. Keep those credentials in user or CI NuGet
 configuration/secret storage, never in a module manifest, filter, or retained
 evidence artifact.
 
+### Platform version catalog and startup prerequisites
+
+The tools are published. Versions up to and including `4.27.4` are not
+Platform-accepted; publication and local contract probes grant no Platform
+acceptance. Story 1.9 owns the first Platform tool acceptance.
+
+`Props/Directory.Packages.props` is the authority for package, AppHost SDK,
+Dapr runtime/CLI and Redis selections. Tool builds embed a deterministic
+snapshot of the evaluated catalog and the selected EventStore.Aspire package's
+Toolkit dependency range. Installed tools read this snapshot offline outside
+a source checkout. Missing, duplicate or malformed selections and missing or
+invalid package metadata fail the build without fallback versions. Controlled
+build overrides must agree with the catalog; changing a selection requires
+editing the catalog before rebuilding.
+
+Run `pwsh -NoProfile -File Tools/validate-platform-version-catalog.ps1` to
+validate the Platform EventStore.Aspire/CommunityToolkit.Aspire.Hosting.Dapr
+pair using NuGet dependency range semantics. The Folders.Aspire exception
+continues to apply only to that project.
+
+Before descriptor discovery or run resources, `run` and live `test` probe
+`aspire --version` within a finite bound. Aspire CLI must match the selected
+AppHost SDK, including its prerelease identity; build metadata is ignored.
+`HXR015` reports the observed CLI and expected SDK versions in human and JSON
+diagnostics. Install the version named by the diagnostic and retry. Declaration
+and evidence validation, help and `down` do not require Aspire.
+
 ### Platform Declaration v2 Enrollment
 
 Validate local Platform declarations together before composition:

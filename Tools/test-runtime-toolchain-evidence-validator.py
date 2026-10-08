@@ -872,6 +872,9 @@ def main() -> int:
     current = importlib.util.module_from_spec(current_spec)
     current_spec.loader.exec_module(current)
     assert current.run_controls() == 103
+    assert current.run_sdk_import_controls() == 3
+    print("SDK-IMPORT-CONTROLS-PASSED: 3")
+    current.run_evaluated_catalog_controls()
     print(summary)
     return 0
 

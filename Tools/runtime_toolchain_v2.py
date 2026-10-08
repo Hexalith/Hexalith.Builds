@@ -10,8 +10,15 @@ import json
 import re
 import shlex
 import subprocess
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+
+_catalog_spec = importlib.util.spec_from_file_location("hexalith_evaluated_catalog", Path(__file__).with_name("evaluated_catalog.py"))
+assert _catalog_spec is not None and _catalog_spec.loader is not None
+_catalog_module = importlib.util.module_from_spec(_catalog_spec)
+_catalog_spec.loader.exec_module(_catalog_module)
 
 
 ARTIFACT_KINDS = {
@@ -65,9 +72,24 @@ def declared_version(api, item, catalog: dict, relative: str, properties: dict |
     api.require(isinstance(version, str) and bool(version.strip()), f"Missing package version: {relative}::{package}")
     if version in {"$(HexalithEventStorePackageVersion)", "$(HexalithEventStoreVersion)"} and controlled_field(package or "") == "eventStorePackageVersion":
         version = (properties or {}).get("HexalithEventStoreVersion", catalog.get(package))
+    if isinstance(version, str):
+        version = re.sub(r"\$\(([^)]+)\)", lambda match: (properties or {}).get(match[1], match[0]), version)
     api.require(isinstance(version, str) and "$" not in version and "@(" not in version,
                 f"Unresolved controlled version: {relative}::{package}")
     return version.strip()
+
+
+def apphost_sdk_versions(api, document: ET.Element, properties: dict, project_path: Path | None = None) -> set[str]:
+    """Evaluate controlled SDK declarations without SDK restoration or application startup."""
+    try:
+        if project_path is not None:
+            return _catalog_module.apphost_sdk_versions(project_path, properties)
+        with tempfile.TemporaryDirectory(prefix="g6-sdk-document-") as temporary:
+            path = Path(temporary) / "consumer.csproj"
+            path.write_text(ET.tostring(document, encoding="unicode"))
+            return _catalog_module.apphost_sdk_versions(path, properties)
+    except (ValueError, OSError, ET.ParseError) as error:
+        raise api.ValidationError(str(error)) from error
 
 
 def required_packages(api, workspace: Path, baseline: dict, relative: str) -> set[str]:
@@ -78,6 +100,8 @@ def required_packages(api, workspace: Path, baseline: dict, relative: str) -> se
         required = {package for package, _ in re.findall(r"(?m)^#:?(?:sdk|package)\s+(\S+)@(\S+)\s*$", path.read_text()) if controlled_field(package)}
     else:
         document = ET.fromstring(api.comment_free_text(path))
+        for item in document.iter():
+            item.tag = item.tag.rsplit("}", 1)[-1]
         def active(condition):
             if not condition:
                 return True
@@ -96,7 +120,8 @@ def required_packages(api, workspace: Path, baseline: dict, relative: str) -> se
             for child in element:
                 visit(child, enabled)
         visit(document)
-        if "Aspire.AppHost.Sdk/" in document.get("Sdk", ""):
+        sdk_properties = {"HexalithAspireAppHostSdkVersion": baseline["tuple"]["aspireSdk"]}
+        if apphost_sdk_versions(api, document, sdk_properties, path):
             required.add("Aspire.AppHost.Sdk")
     if "Aspire.AppHost.Sdk" in required:
         required.remove("Aspire.AppHost.Sdk")
@@ -158,11 +183,11 @@ def tracked_files(api, workspace: Path, roots: list[str]) -> list[str]:
 
 
 def inventory(api, workspace: Path, baseline: dict) -> list[dict]:
-    catalog = ET.fromstring((workspace / "references/Hexalith.Builds/Props/Directory.Packages.props").read_text())
-    defaults = list(catalog.iter("HexalithEventStoreVersion"))
-    api.require(len(defaults) <= 1, "Ambiguous controlled EventStore catalog default")
-    properties = {"HexalithEventStoreVersion": defaults[0].text} if defaults else {}
-    versions = {item.get("Include"): declared_version(api, item, {}, "central catalog", properties) for item in catalog.iter("PackageVersion") if controlled_field(item.get("Include") or "")}
+    try:
+        properties, evaluated_versions = _catalog_module.evaluate_catalog(workspace / "references/Hexalith.Builds/Props/Directory.Packages.props")
+    except (ValueError, ET.ParseError) as error:
+        raise api.ValidationError(str(error)) from error
+    versions = {package: version for package, version in evaluated_versions.items() if controlled_field(package)}
     exclusions = {(item["path"], item["package"], item["version"]) for item in baseline["consumerInventory"]["unqualifiedExclusions"]}
     entries = []
     for relative in tracked_files(api, workspace, baseline["consumerInventory"]["roots"]):
@@ -179,10 +204,8 @@ def inventory(api, workspace: Path, baseline: dict) -> list[dict]:
                 document = ET.fromstring(api.comment_free_text(path))
             except ET.ParseError as error:
                 raise api.ValidationError(f"Malformed consumer XML: {relative}") from error
-            sdk = document.get("Sdk", "")
-            match = re.search(r"Aspire.AppHost.Sdk/([^;\s]+)", sdk)
-            if match:
-                pins.append({"package": "Aspire.AppHost.Sdk", "version": match[1], "qualified": True})
+            for sdk_version in sorted(apphost_sdk_versions(api, document, properties, path)):
+                pins.append({"package": "Aspire.AppHost.Sdk", "version": sdk_version, "qualified": True})
             for item in document.iter():
                 if item.tag not in {"PackageReference", "PackageVersion"}:
                     continue
@@ -190,7 +213,7 @@ def inventory(api, workspace: Path, baseline: dict) -> list[dict]:
                 field = controlled_field(package or "")
                 if field is None:
                     continue
-                version = declared_version(api, item, versions, relative)
+                version = declared_version(api, item, versions, relative, properties)
                 excluded = (relative, package, version) in exclusions or (
                     "references/Hexalith.Builds/Props/Directory.Packages.props", package, version) in exclusions
                 pins.append({"package": package, "version": version, "qualified": not excluded})

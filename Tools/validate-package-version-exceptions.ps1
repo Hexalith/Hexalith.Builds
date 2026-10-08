@@ -63,7 +63,7 @@ function Get-PropertyText {
         [string] $Name
     )
 
-    if ($null -eq $Object -or $Object.PSObject.Properties.Name -notcontains $Name) {
+    if ($null -eq $Object -or $null -eq $Object.PSObject.Properties[$Name]) {
         return ''
     }
 
@@ -106,37 +106,19 @@ function Get-RepositoryFiles {
 }
 
 function Get-ProjectSdkVersionPins {
-    param(
-        [Parameter(Mandatory = $true)]
-        [AllowEmptyString()]
-        [string] $ProjectText
-    )
+    param([string] $ProjectPath, [string] $CatalogSdkVersion)
 
-    $pins = [System.Collections.Generic.List[object]]::new()
-    foreach ($attributeMatch in [regex]::Matches($ProjectText, '\bSdk\s*=\s*"([^"]*)"')) {
-        foreach ($sdkReference in $attributeMatch.Groups[1].Value.Split(';')) {
-            $separatorIndex = $sdkReference.IndexOf('/')
-            if ($separatorIndex -gt 0 -and $separatorIndex -lt $sdkReference.Length - 1) {
-                $pins.Add([pscustomobject] @{
-                    Id = $sdkReference.Substring(0, $separatorIndex).Trim()
-                    Version = $sdkReference.Substring($separatorIndex + 1).Trim()
-                })
-            }
-        }
-    }
-
-    foreach ($elementMatch in [regex]::Matches($ProjectText, '<Sdk\b[^>]*>')) {
-        $nameMatch = [regex]::Match($elementMatch.Value, '\bName\s*=\s*"([^"]+)"')
-        $versionMatch = [regex]::Match($elementMatch.Value, '\bVersion\s*=\s*"([^"]+)"')
-        if ($nameMatch.Success -and $versionMatch.Success) {
-            $pins.Add([pscustomobject] @{
-                Id = $nameMatch.Groups[1].Value.Trim()
-                Version = $versionMatch.Groups[1].Value.Trim()
-            })
-        }
-    }
-
-    return @($pins)
+    [xml] $document = [IO.File]::ReadAllText($ProjectPath)
+    $hasControlledSdk = @($document.DocumentElement.GetAttribute('Sdk').Split(';') | Where-Object { $_.Split('/')[0].Trim() -ceq 'Aspire.AppHost.Sdk' }).Count -gt 0 -or
+        $document.SelectNodes("//*[local-name()='Sdk' and @Name='Aspire.AppHost.Sdk' or local-name()='Import' and @Sdk='Aspire.AppHost.Sdk']").Count -gt 0
+    if (-not $hasControlledSdk) { return @() }
+    $python = Get-Command python3, python -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -eq $python) { throw 'Python is required to evaluate consuming-project Aspire SDK declarations through MSBuild.' }
+    $arguments = @((Join-Path $PSScriptRoot 'evaluated_catalog.py'), '--project', $ProjectPath)
+    if ($CatalogSdkVersion) { $arguments += @('--catalog-sdk', $CatalogSdkVersion) }
+    $result = @(& $python.Source @arguments 2>&1) -join "`n"
+    if ($LASTEXITCODE -ne 0) { throw "Consuming-project SDK evaluation failed: $result" }
+    return @($result | ConvertFrom-Json)
 }
 
 try {
@@ -171,7 +153,9 @@ if ($inventoryEntries.Count -eq 0) {
     $failures.Add('Inventory must contain at least one exception.')
 }
 
-$catalogOutput = @(& dotnet msbuild $resolvedCatalogPath -nologo -getItem:PackageVersion 2>&1)
+$python = Get-Command python3, python -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($null -eq $python) { $failures.Add('Python is required for neutral catalog MSBuild evaluation.'); Stop-Validation -Failures $failures }
+$catalogOutput = @(& $python.Source (Join-Path $PSScriptRoot 'evaluated_catalog.py') --catalog $resolvedCatalogPath 2>&1)
 $catalogOutputText = [string]::Join("`n", @($catalogOutput | ForEach-Object { [string] $_ }))
 if ($LASTEXITCODE -ne 0) {
     $failures.Add("Catalog evaluation exited with code $LASTEXITCODE. $catalogOutputText")
@@ -186,6 +170,19 @@ catch {
     Stop-Validation -Failures $failures
 }
 
+foreach ($name in [Environment]::GetEnvironmentVariables().Keys) {
+    if ($name -ieq 'HexalithAspireAppHostSdkVersion') {
+        $inherited = [Environment]::GetEnvironmentVariable($name)
+        if ([string]::IsNullOrEmpty($inherited)) { continue }
+        $selected = Get-PropertyText -Object $catalogEvaluation.Properties -Name 'HexalithAspireAppHostSdkVersion'
+        if ($inherited -cne $selected) {
+            $failures.Add("Catalog field HexalithAspireAppHostSdkVersion has inconsistent inherited environment selection '$inherited'; authoritative catalog selects '$selected'.")
+            Stop-Validation -Failures $failures
+        }
+    }
+}
+
+$catalogSdkVersion = Get-PropertyText -Object $catalogEvaluation.Properties -Name 'HexalithAspireAppHostSdkVersion'
 $catalogPackages = @{}
 foreach ($packageVersion in @($catalogEvaluation.Items.PackageVersion)) {
     $catalogPackages[[string] $packageVersion.Identity] = [string] $packageVersion.Version
@@ -325,7 +322,15 @@ foreach ($repository in $repositoryRoots) {
     foreach ($projectPath in $projectFiles) {
         $projectText = Get-Content -LiteralPath $projectPath -Raw
         $relativePath = [IO.Path]::GetRelativePath($repository.Root, $projectPath).Replace('\', '/')
-        foreach ($sdkPin in @(Get-ProjectSdkVersionPins -ProjectText $projectText)) {
+        foreach ($sdkPin in @(Get-ProjectSdkVersionPins -ProjectPath $projectPath -CatalogSdkVersion $catalogSdkVersion)) {
+            if ($repository.Owner -ceq 'Hexalith.Builds' -and $sdkPin.PSObject.Properties.Name -contains 'CatalogSelected' -and $sdkPin.CatalogSelected) {
+                if ($sdkPin.Version -cne $catalogSdkVersion) {
+                    $failures.Add("Aspire.AppHost.Sdk/$($sdkPin.Version) is not aligned with catalog HexalithAspireAppHostSdkVersion/$($catalogSdkVersion) for '$($repository.Owner)'.")
+                }
+                # Builds' evaluated declaration is catalog-selected only when it agrees.
+                continue
+            }
+
             $key = "apphost-sdk|$($repository.Owner)|$relativePath|$($sdkPin.Id)"
             $actualExceptions[$key] = [pscustomobject] @{
                 Kind = 'apphost-sdk'

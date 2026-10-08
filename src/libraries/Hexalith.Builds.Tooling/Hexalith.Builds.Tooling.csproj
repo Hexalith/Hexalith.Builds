@@ -7,10 +7,39 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JsonSchema.Net" />
+    <PackageReference Include="NuGet.Versioning" />
     <PackageReference Include="StackExchange.Redis" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../../../schemas/hexalith.module-manifest.v2.json" LogicalName="Hexalith.Builds.Tooling.Manifest.hexalith.module-manifest.v2.json" />
   </ItemGroup>
+  <Target Name="GeneratePlatformVersionCatalog" BeforeTargets="AssignTargetPaths">
+    <PropertyGroup>
+      <PlatformVersionCatalogSource Condition="'$(PlatformVersionCatalogSource)' == ''">$(MSBuildThisFileDirectory)../../../Props/Directory.Packages.props</PlatformVersionCatalogSource>
+      <PlatformVersionCatalogDirectory>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)', '$(MSBuildProjectDirectory)'))</PlatformVersionCatalogDirectory>
+      <PlatformVersionCatalogPath>$(PlatformVersionCatalogDirectory)/platform-version-catalog.json</PlatformVersionCatalogPath>
+      <PlatformVersionCatalogBuildSelectionsPath>$(PlatformVersionCatalogDirectory)/platform-version-catalog.build.txt</PlatformVersionCatalogBuildSelectionsPath>
+    </PropertyGroup>
+    <ItemGroup>
+      <_Catalog_eventStoreVersion Include="@(PackageVersion)" Condition="'%(PackageVersion.Identity)' == 'Hexalith.EventStore.Aspire'" />
+      <_Catalog_frontComposerVersion Include="@(PackageVersion)" Condition="'%(PackageVersion.Identity)' == 'Hexalith.FrontComposer.Shell'" />
+      <_Catalog_daprSdkVersion Include="@(PackageVersion)" Condition="'%(PackageVersion.Identity)' == 'Dapr.Client'" />
+      <_Catalog_aspireHostingVersion Include="@(PackageVersion)" Condition="'%(PackageVersion.Identity)' == 'Aspire.Hosting'" />
+      <_Catalog_aspireHostingDaprVersion Include="@(PackageVersion)" Condition="'%(PackageVersion.Identity)' == 'CommunityToolkit.Aspire.Hosting.Dapr'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_CatalogValue_eventStoreVersion>@(_Catalog_eventStoreVersion-&gt;'%(Version)')</_CatalogValue_eventStoreVersion>
+      <_CatalogValue_frontComposerVersion>@(_Catalog_frontComposerVersion-&gt;'%(Version)')</_CatalogValue_frontComposerVersion>
+      <_CatalogValue_daprSdkVersion>@(_Catalog_daprSdkVersion-&gt;'%(Version)')</_CatalogValue_daprSdkVersion>
+      <_CatalogValue_aspireHostingVersion>@(_Catalog_aspireHostingVersion-&gt;'%(Version)')</_CatalogValue_aspireHostingVersion>
+      <_CatalogValue_aspireHostingDaprVersion>@(_Catalog_aspireHostingDaprVersion-&gt;'%(Version)')</_CatalogValue_aspireHostingDaprVersion>
+    </PropertyGroup>
+    <MakeDir Directories="$(PlatformVersionCatalogDirectory)" />
+    <WriteLinesToFile File="$(PlatformVersionCatalogBuildSelectionsPath)" Lines="eventStoreVersion=$(_CatalogValue_eventStoreVersion);frontComposerVersion=$(_CatalogValue_frontComposerVersion);daprSdkVersion=$(_CatalogValue_daprSdkVersion);aspireHostingVersion=$(_CatalogValue_aspireHostingVersion);aspireHostingDaprVersion=$(_CatalogValue_aspireHostingDaprVersion);aspireAppHostSdkVersion=$(HexalithAspireAppHostSdkVersion);daprRuntimeVersion=$(HexalithDaprRuntimeVersion);daprCliVersion=$(HexalithDaprCliVersion);redisImage=$(HexalithRedisImage);redisImageTag=$(HexalithRedisImageTag);redisImageDigest=$(HexalithRedisImageDigest)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <Exec Command="pwsh -NoLogo -NoProfile -File &quot;$(MSBuildThisFileDirectory)../../../Tools/write-platform-version-catalog.ps1&quot; -CatalogPath &quot;$(PlatformVersionCatalogSource)&quot; -OutputPath &quot;$(PlatformVersionCatalogPath)&quot; -BuildSelectionsPath &quot;$(PlatformVersionCatalogBuildSelectionsPath)&quot; -Configuration &quot;$(Configuration)&quot; -TargetFramework &quot;$(TargetFramework)&quot;" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(PlatformVersionCatalogPath)" LogicalName="Hexalith.Builds.Tooling.Manifest.platform-version-catalog.json" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -12,20 +12,23 @@ using Hexalith.Builds.Tooling.Manifest;
 /// </summary>
 public static class CompositionToolchainPins
 {
-    /// <summary>The Dapr CLI version selected by the accepted G-6 tuple.</summary>
-    public const string DaprCliVersion = "1.18.0";
+    /// <summary>Gets the Dapr CLI version selected by the accepted G-6 tuple.</summary>
+    public static string DaprCliVersion => PlatformVersionCatalog.Current.DaprCliVersion;
 
-    /// <summary>The pinned run-scoped Redis image repository.</summary>
-    public const string RedisImage = "docker.io/library/redis";
+    /// <summary>Gets the pinned run-scoped Redis image repository.</summary>
+    public static string RedisImage => PlatformVersionCatalog.Current.RedisImage;
 
-    /// <summary>The run-scoped Redis image tag, kept for readability; the digest below is authoritative.</summary>
-    public const string RedisImageTag = "7.4-alpine";
+    /// <summary>Gets the run-scoped Redis image tag, kept for readability; the digest below is authoritative.</summary>
+    public static string RedisImageTag => PlatformVersionCatalog.Current.RedisImageTag;
 
-    /// <summary>The immutable digest of the qualified Redis <c>7.4-alpine</c> image index.</summary>
-    public const string RedisImageDigest = "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf";
+    /// <summary>Gets the immutable digest of the catalog-selected Redis image index.</summary>
+    public static string RedisImageDigest => PlatformVersionCatalog.Current.RedisImageDigest;
 
     /// <summary>Gets the digest-pinned Redis image reference (<c>repository:tag@sha256:digest</c>).</summary>
     public static string RedisImageReference => $"{RedisImage}:{RedisImageTag}@{RedisImageDigest}";
+
+    /// <summary>Gets the selected Aspire AppHost SDK and required CLI version.</summary>
+    public static string AspireAppHostSdkVersion => PlatformVersionCatalog.Current.AspireAppHostSdkVersion;
 
     /// <summary>Gets the Dapr runtime version selected by the accepted G-6 tuple.</summary>
     public static string DaprRuntimeVersion => SupportedPlatformPins.DaprRuntimeVersion;

@@ -270,6 +270,27 @@ public static class ModuleCommandExecutionService
 
             if (isExecutable && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath))
             {
+                CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
+                ToolDiagnostic? aspire = await CompositionPrerequisiteProbe.ProbeAspireAsync(
+                    options.AspireCommand, options.AspireProbeTimeout, cancellationToken).ConfigureAwait(false);
+                if (aspire is not null)
+                {
+                    return await WriteResultAsync(
+                        "unavailable",
+                        ToolOutcome.Passed().Fail(ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, aspire.RuleId, ToolExitCode.PrerequisiteUnavailable),
+                        [aspire],
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
                 ExecutableDescriptorLoadResult descriptorResult = await ExecutableDescriptorLoader.LoadAsync(
                     manifest,
                     manifestPath,
@@ -302,7 +323,6 @@ public static class ModuleCommandExecutionService
                 PersistedProfileDefinition? persistedProfile = command == ModuleInvocationCommand.Test
                     ? PersistedProfileLoader.TryLoad(manifest, manifestPath, profile, filter)
                     : null;
-                CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
                 if (persistedProfile is not null)
                 {
                     options = options with { EnableSecondEventStoreInstance = true };

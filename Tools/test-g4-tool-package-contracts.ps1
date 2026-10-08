@@ -947,6 +947,10 @@ try {
     }
     $toolManifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $toolManifestPath -Encoding utf8
 
+    $expectedCatalogPath = Join-Path $packageDirectoryPath 'platform-version-catalog.json'
+    & (Join-Path $PSScriptRoot 'write-platform-version-catalog.ps1') -OutputPath $expectedCatalogPath
+    $expectedCatalog = [IO.File]::ReadAllText($expectedCatalogPath)
+
     $env:NUGET_PACKAGES = Join-Path $consumerRoot '.nuget/packages'
     $env:DOTNET_CLI_HOME = Join-Path $consumerRoot '.dotnet'
     $consumerEnvironmentConfigured = $true
@@ -991,6 +995,23 @@ try {
         finally { $schemaReader.Dispose() }
         $expectedSchema = [IO.File]::ReadAllText((Join-Path $repositoryRoot 'schemas/hexalith.module-manifest.v2.json'))
         if ($packagedSchema -cne $expectedSchema) { throw 'The packed Platform schema differs from its source contract.' }
+        $toolingEntry = $archive.GetEntry('tools/net10.0/any/Hexalith.Builds.Tooling.dll')
+        if ($null -eq $toolingEntry) { throw 'The installed tool omitted its catalog-bearing tooling assembly.' }
+        $toolingPath = Join-Path $consumerRoot 'catalog-probe/Hexalith.Builds.Tooling.dll'
+        $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($toolingPath))
+        [IO.Compression.ZipFileExtensions]::ExtractToFile($toolingEntry, $toolingPath)
+        $toolingAssembly = [Reflection.Assembly]::LoadFrom($toolingPath)
+        $catalogStream = $toolingAssembly.GetManifestResourceStream('Hexalith.Builds.Tooling.Manifest.platform-version-catalog.json')
+        if ($null -eq $catalogStream) { throw 'The installed tool omitted its embedded version catalog.' }
+        $catalogReader = [IO.StreamReader]::new($catalogStream)
+        try { $installedCatalog = $catalogReader.ReadToEnd() }
+        finally { $catalogReader.Dispose() }
+        if ($installedCatalog -cne $expectedCatalog) { throw 'The installed catalog differs from the evaluated Builds catalog.' }
+        $catalogRecord = $toolingAssembly.GetType('Hexalith.Builds.Tooling.Manifest.PlatformVersionCatalog').GetProperty('Current').GetValue($null)
+        $installedPins = $toolingAssembly.GetType('Hexalith.Builds.Tooling.Manifest.SupportedPlatformPins')
+        if ($installedPins.GetProperty('EventStoreVersion').GetValue($null) -cne $catalogRecord.EventStoreVersion) { throw 'The installed version facade does not consume its offline catalog.' }
+        $qualificationLog.Add('Installed tooling catalog and pin facade verified offline outside the checkout; no acceptance granted.')
+
     }
     finally { $archive.Dispose() }
 

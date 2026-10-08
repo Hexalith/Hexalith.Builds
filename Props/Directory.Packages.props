@@ -16,6 +16,12 @@
     <!-- Folders.Aspire is a stable public package; all other consumers retain the preview integration. -->
     <HexalithAspireHostingDaprVersion>13.6.0-preview.1.261001-0243</HexalithAspireHostingDaprVersion>
     <HexalithAspireHostingDaprVersion Condition="'$(MSBuildProjectName)' == 'Hexalith.Folders.Aspire'">13.0.0</HexalithAspireHostingDaprVersion>
+    <HexalithAspireAppHostSdkVersion>13.6.0</HexalithAspireAppHostSdkVersion>
+    <HexalithDaprRuntimeVersion>1.18.2</HexalithDaprRuntimeVersion>
+    <HexalithDaprCliVersion>1.18.0</HexalithDaprCliVersion>
+    <HexalithRedisImage>docker.io/library/redis</HexalithRedisImage>
+    <HexalithRedisImageTag>7.4-alpine</HexalithRedisImageTag>
+    <HexalithRedisImageDigest>sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf</HexalithRedisImageDigest>
     <HexalithChatbotVersion Condition="'$(HexalithChatbotVersion)' == ''">1.80.0</HexalithChatbotVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -280,6 +286,7 @@
     <PackageVersion Include="NetArchTest.eNhancedEdition" Version="1.4.5" />
     <PackageVersion Include="NFalkorDB" Version="1.2.0" />
     <PackageVersion Include="NRedisStack" Version="1.8.0" />
+    <PackageVersion Include="NuGet.Versioning" Version="7.9.0" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="NSwag.MSBuild" Version="14.7.1" />
     <!-- FrontComposer Story 2-3: ULID generation for MessageId idempotency. -->
