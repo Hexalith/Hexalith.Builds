@@ -46,7 +46,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 2048,
-      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\/$).+$"
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\/$)[^\\u0000-\\u001F\\u007F-\\u009F]+(?![\\s\\S])"
     },
     "module": {
       "type": "object",
@@ -827,7 +827,7 @@
         },
         "endpoint": {
           "type": "string",
-          "pattern": "^/[^\\\\?#\\u0000-\\u001F\\u007F-\\u009F]*(?![\\s\\S])",
+          "pattern": "^/(?!/)[^\\\\?#\\u0000-\\u001F\\u007F-\\u009F]*(?![\\s\\S])",
           "maxLength": 2048
         },
         "service": {
@@ -839,7 +839,8 @@
         "arguments": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/text"
+            "type": "string",
+            "maxLength": 2048
           }
         }
       },
@@ -920,7 +921,8 @@
         "arguments": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/text"
+            "type": "string",
+            "maxLength": 2048
           }
         }
       }

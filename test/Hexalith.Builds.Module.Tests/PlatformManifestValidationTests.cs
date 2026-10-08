@@ -74,6 +74,20 @@ public sealed class PlatformManifestValidationTests
     [InlineData("modules.0.integration.secrets.0.value", "\"literal\"", "modules[0].integration.secrets[0].value")]
     [InlineData("", "\"unknown\"", "$[\"\"]")]
     [InlineData("modules.0.identity.", "\"unknown\"", "modules[0].identity[\"\"]")]
+    [InlineData("modules.0.runtime.resources.0.requests.cpu", "0", "modules[0].runtime.resources[0].requests.cpu")]
+    [InlineData("modules.0.runtime.resources.0.requests.cpu", "-1", "modules[0].runtime.resources[0].requests.cpu")]
+    [InlineData("modules.0.runtime.resources.0.limits.cpu", "0", "modules[0].runtime.resources[0].limits.cpu")]
+    [InlineData("modules.0.runtime.resources.0.limits.cpu", "-1", "modules[0].runtime.resources[0].limits.cpu")]
+    [InlineData("modules.0.runtime.resources.0.requests.memoryMiB", "0", "modules[0].runtime.resources[0].requests.memoryMiB")]
+    [InlineData("modules.0.runtime.resources.0.requests.memoryMiB", "-1", "modules[0].runtime.resources[0].requests.memoryMiB")]
+    [InlineData("modules.0.runtime.resources.0.limits.memoryMiB", "0", "modules[0].runtime.resources[0].limits.memoryMiB")]
+    [InlineData("modules.0.runtime.resources.0.limits.memoryMiB", "-1", "modules[0].runtime.resources[0].limits.memoryMiB")]
+    [InlineData("modules.0.runtime.resources.0.volumes.0.sizeMiB", "0", "modules[0].runtime.resources[0].volumes[0].sizeMiB")]
+    [InlineData("modules.0.runtime.resources.0.volumes.0.sizeMiB", "-1", "modules[0].runtime.resources[0].volumes[0].sizeMiB")]
+    [InlineData("modules.0.lifecycle.readiness.0.endpoint", "\"//provider.example/health\"", "modules[0].lifecycle.readiness[0].endpoint")]
+    [InlineData("modules.0.lifecycle.readiness.0.executable", "\"probe\\n\"", "modules[0].lifecycle.readiness[0].executable")]
+    [InlineData("modules.0.lifecycle.readiness.0.executable", "\"probe\\u0000\"", "modules[0].lifecycle.readiness[0].executable")]
+    [InlineData("modules.0.lifecycle.readiness.0.executable", "\"probe\\u0085\"", "modules[0].lifecycle.readiness[0].executable")]
     public void InvalidFieldsMatchSchemaAndReportCompletePaths(string path, string json, string field)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -351,6 +365,48 @@ public sealed class PlatformManifestValidationTests
         PlatformManifestValidator.Validate([], TestContext.Current.CancellationToken).Declarations.ShouldBeNull();
         PlatformManifestValidator.Validate([], TestContext.Current.CancellationToken).Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP015");
         Encoding.UTF8.GetByteCount(File.ReadAllText(workspace.Save())).ShouldBeLessThan(1_048_576);
+    }
+
+    /// <summary>Verifies the byte limit accepts exactly 1 MiB and rejects the next byte atomically.</summary>
+    [Fact]
+    public void ManifestByteLimitAcceptsExactBoundary()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = workspace.Save();
+        string input = File.ReadAllText(path);
+        string boundary = input + new string(' ', 1_048_576 - Encoding.UTF8.GetByteCount(input));
+        File.WriteAllText(path, boundary, new UTF8Encoding(false));
+        new FileInfo(path).Length.ShouldBe(1_048_576);
+        PlatformManifestValidator.Validate([path], TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+        File.AppendAllText(path, " ");
+        PlatformManifestValidationResult overflow = PlatformManifestValidator.Validate([path], TestContext.Current.CancellationToken);
+        overflow.Declarations.ShouldBeNull();
+        overflow.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP013" && diagnostic.Field == "$");
+    }
+
+    /// <summary>Verifies syntax at depth 64 reaches schema validation and depth 65 fails parsing.</summary>
+    /// <param name="depth">The JSON nesting depth.</param>
+    [Theory]
+    [InlineData(64)]
+    [InlineData(65)]
+    public void JsonDepthBoundaryReturnsStructuredDiagnostics(int depth)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = workspace.Save();
+        string input = "{\"schema\":\"hexalith.module-manifest.v2\",\"modules\":[],\"unknown\":"
+            + new string('[', depth - 1) + "0" + new string(']', depth - 1) + "}";
+        File.WriteAllText(path, input);
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([path], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        if (depth == 64)
+        {
+            result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.RuleId == "HXP011");
+            result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "unknown" && diagnostic.RuleId == "HXP002");
+        }
+        else
+        {
+            result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP011" && !string.IsNullOrWhiteSpace(diagnostic.Field));
+        }
     }
 
     private static JsonSchema PublishedSchema() => JsonSchema.FromFile(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "schemas/hexalith.module-manifest.v2.json"), new BuildOptions { SchemaRegistry = new SchemaRegistry() });

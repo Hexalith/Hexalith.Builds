@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 
@@ -17,7 +18,7 @@ using Json.Schema;
 /// <summary>
 /// Validates local Platform enrollment without composing resources or executing lifecycle code.
 /// </summary>
-public static class PlatformManifestValidator
+public static partial class PlatformManifestValidator
 {
     private const int _maximumManifestBytes = 1_048_576;
     private const int _maximumFiles = 256;
@@ -84,7 +85,7 @@ public static class PlatformManifestValidator
     }
 
     private static void Add(List<ToolDiagnostic> diagnostics, string rule, string source, string field, string reason) =>
-        diagnostics.Add(new ToolDiagnostic(rule, ToolPhase.Manifest, ToolFailureCategory.Manifest, reason, field, Source: source));
+        diagnostics.Add(new ToolDiagnostic(rule, ToolPhase.Manifest, ToolFailureCategory.Manifest, reason, field.Length == 0 ? "$" : field, Source: source));
 
     private static string ReadSchema()
     {
@@ -413,7 +414,11 @@ public static class PlatformManifestValidator
 
     private static bool ContainsProhibitedSecret(string value) =>
         ManifestSecretDetector.ContainsSecret(value)
+        || CredentialUriAnywhereRegex().IsMatch(value)
         || (value.Contains("://", StringComparison.Ordinal) && Uri.TryCreate(value, UriKind.Absolute, out Uri? uri) && uri.UserInfo.Length > 0);
+
+    [GeneratedRegex(@"[a-z][a-z0-9+.-]*://[^\s/?#@]+@", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
+    private static partial Regex CredentialUriAnywhereRegex();
 
     private static JsonElement ObjectValue(JsonElement element, string property) =>
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(property, out JsonElement value) ? value : default;

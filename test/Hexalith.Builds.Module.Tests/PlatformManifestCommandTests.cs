@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests;
 
+using System.Text;
 using System.Text.Json;
 
 using Hexalith.Builds.ModuleTool.Cli;
@@ -31,6 +32,7 @@ public sealed class PlatformManifestCommandTests
         string sentinel = Path.Combine(workspace.Root, "executed");
         CompositionTestFiles.WriteScript(Path.Combine(workspace.Root, "never-run.sh"), $"touch '{sentinel}'");
         workspace.Change("modules.0.lifecycle.tasks.0.executable", "\"never-run.sh\"");
+        workspace.Change("modules.0.lifecycle.tasks.0.arguments", JsonSerializer.Serialize(new[] { string.Empty, "  " }));
         string manifest = workspace.Save();
         string[] files = [.. Directory.GetFiles(workspace.Root).Order(StringComparer.Ordinal)];
         string input = await File.ReadAllTextAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -89,6 +91,20 @@ public sealed class PlatformManifestCommandTests
     {
         (string Path, string Json, string Field)[] cases =
         [
+            ("modules.0.runtime.resources.0.requests.cpu", "0", "modules[0].runtime.resources[0].requests.cpu"),
+            ("modules.0.runtime.resources.0.requests.cpu", "-1", "modules[0].runtime.resources[0].requests.cpu"),
+            ("modules.0.runtime.resources.0.limits.cpu", "0", "modules[0].runtime.resources[0].limits.cpu"),
+            ("modules.0.runtime.resources.0.limits.cpu", "-1", "modules[0].runtime.resources[0].limits.cpu"),
+            ("modules.0.runtime.resources.0.requests.memoryMiB", "0", "modules[0].runtime.resources[0].requests.memoryMiB"),
+            ("modules.0.runtime.resources.0.requests.memoryMiB", "-1", "modules[0].runtime.resources[0].requests.memoryMiB"),
+            ("modules.0.runtime.resources.0.limits.memoryMiB", "0", "modules[0].runtime.resources[0].limits.memoryMiB"),
+            ("modules.0.runtime.resources.0.limits.memoryMiB", "-1", "modules[0].runtime.resources[0].limits.memoryMiB"),
+            ("modules.0.runtime.resources.0.volumes.0.sizeMiB", "0", "modules[0].runtime.resources[0].volumes[0].sizeMiB"),
+            ("modules.0.runtime.resources.0.volumes.0.sizeMiB", "-1", "modules[0].runtime.resources[0].volumes[0].sizeMiB"),
+            ("modules.0.lifecycle.readiness.0.endpoint", "\"//provider.example/health\"", "modules[0].lifecycle.readiness[0].endpoint"),
+            ("modules.0.lifecycle.readiness.0.executable", "\"probe\\n\"", "modules[0].lifecycle.readiness[0].executable"),
+            ("modules.0.lifecycle.readiness.0.executable", "\"probe\\u0000\"", "modules[0].lifecycle.readiness[0].executable"),
+            ("modules.0.lifecycle.readiness.0.executable", "\"probe\\u0085\"", "modules[0].lifecycle.readiness[0].executable"),
             ("schema", "\"hexalith.module-manifest.v1\"", "schema"),
             ("schema", "\"hexalith.module-manifest.v3\"", "schema"),
             ("schema", "<missing>", "schema"),
@@ -195,7 +211,7 @@ public sealed class PlatformManifestCommandTests
         CompositionTestFiles.WriteScript(Path.Combine(workspace.Root, "ready.sh"), $"touch '{sentinel}'");
         string probe = kind == "grpc"
             ? JsonSerializer.Serialize(new { server = "api", kind, service = "sample.Readiness" })
-            : JsonSerializer.Serialize(new { server = "api", kind, executable = "ready.sh", arguments = Array.Empty<string>() });
+            : JsonSerializer.Serialize(new { server = "api", kind, executable = "ready.sh", arguments = new[] { string.Empty, "  " } });
         workspace.Change("modules.0.lifecycle.readiness", $"[{probe}]");
         StringWriter output = new();
         await using (output.ConfigureAwait(true))
@@ -447,6 +463,114 @@ public sealed class PlatformManifestCommandTests
             exitCode.ShouldBe((int)ToolExitCode.Cancelled);
             output.ToString().ShouldContain("HXC130");
         }
+    }
+
+    /// <summary>Verifies embedded URI credentials fail without reaching command output.</summary>
+    /// <param name="argument">The credential-bearing command argument.</param>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after validation.</returns>
+    [Theory]
+    [InlineData("--endpoint=https://fixture-user:fixture-password@provider.example", "human")]
+    [InlineData("--endpoint=https://fixture-user:fixture-password@provider.example", "json")]
+    [InlineData("fetch https://fixture-user:fixture-password@provider.example", "human")]
+    [InlineData("fetch https://fixture-user:fixture-password@provider.example", "json")]
+    public async Task EmbeddedUriCredentialsFailWithoutDisclosureAsync(string argument, string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.tasks.0.arguments", JsonSerializer.Serialize(new[] { argument }));
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", workspace.Save(), "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(1);
+            output.ToString().ShouldContain("HXM007");
+            output.ToString().ShouldContain("modules[0].lifecycle.tasks[0].arguments[0]");
+            output.ToString().ShouldNotContain("fixture-password");
+            output.ToString().ShouldNotContain("declarations");
+        }
+    }
+
+    /// <summary>Verifies credential-shaped filenames and property names are redacted in every output mode.</summary>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after validation.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task CredentialBearingDiagnosticPathsAreRedactedAsync(string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Document["modules"]![0]!["identity"]!["ghp_fixture123456"] = "unknown";
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", workspace.Save("ghp_fixture123456.json"), "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(1);
+            output.ToString().ShouldNotContain("ghp_fixture123456");
+            output.ToString().ShouldContain("[redacted manifest path]");
+            output.ToString().ShouldContain("[redacted field]");
+            output.ToString().ShouldContain("HXP002");
+            output.ToString().ShouldNotContain("declarations");
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic =>
+                    diagnostic.GetProperty("source").GetString() == "[redacted manifest path]"
+                    && diagnostic.GetProperty("field").GetString() == "modules[0].identity[\"[redacted field]\"]");
+            }
+        }
+    }
+
+    /// <summary>Verifies invalid root strings always report an explicit root field.</summary>
+    /// <param name="input">The raw JSON root string.</param>
+    /// <param name="ruleId">The expected local rejection.</param>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after validation.</returns>
+    [Theory]
+    [InlineData("\"Bearer fixture-root-control\"", "HXM007", "human")]
+    [InlineData("\"Bearer fixture-root-control\"", "HXM007", "json")]
+    [InlineData("\"${REPLACE_ME}\"", "HXM006", "human")]
+    [InlineData("\"${REPLACE_ME}\"", "HXM006", "json")]
+    public async Task InvalidRootStringsHaveExplicitFieldsAsync(string input, string ruleId, string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = workspace.Save();
+        await File.WriteAllTextAsync(path, input, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await AssertInvalidAsync(path, "$", format, ruleId).ConfigureAwait(true);
+    }
+
+    /// <summary>Verifies byte and depth boundaries preserve actionable public diagnostics.</summary>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after all boundary commands.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task ParsingBoundariesRemainActionableAsync(string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = workspace.Save();
+        string input = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(path, input + new string(' ', 1_048_576 - Encoding.UTF8.GetByteCount(input)), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", path, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(0);
+            output.ToString().ShouldContain("validated");
+        }
+
+        await File.AppendAllTextAsync(path, " ", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await AssertInvalidAsync(path, "$", format, "HXP013").ConfigureAwait(true);
+        string depth64 = "{\"schema\":\"hexalith.module-manifest.v2\",\"modules\":[],\"unknown\":"
+            + new string('[', 63) + "0" + new string(']', 63) + "}";
+        await File.WriteAllTextAsync(path, depth64, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await AssertInvalidAsync(path, "unknown", format, "HXP002").ConfigureAwait(true);
+        string depth65 = "{\"schema\":\"hexalith.module-manifest.v2\",\"modules\":[],\"unknown\":"
+            + new string('[', 64) + "0" + new string(']', 64) + "}";
+        await File.WriteAllTextAsync(path, depth65, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await AssertInvalidAsync(path, "$", format, "HXP011").ConfigureAwait(true);
     }
 
     private static async Task AssertMutationAsync(string path, string json, string field, string format)
