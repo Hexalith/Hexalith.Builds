@@ -1,18 +1,15 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "7b6cdcada6c969c94b07af893b8884f960ef2748",
+  "generatedFromRevision": "eaa53b009f1547d1af97a8aa6a8ad6b214a3276d",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "1e2621765f2632077f906e945bf4d74916fef5dec04ec34d630dfce545dfbc78",
-  "catalogRawSha256": "76cad4c795c9f5b482666639c7acaa23c94c9d366df7f408d42aa2daae0bd999",
+  "catalogSha256": "66dafc002f544948ed192971265f4490b11f1c359004cbb486849d8568a3cb5c",
+  "catalogRawSha256": "863a6db9f701dec49f4fc97a9abd31c6e7f1597b081b50218fefe7dd7ab7a69c",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-10-08T11:12:41.8759287+00:00",
+    "auditedAtUtc": "2026-10-08T15:01:34.6819953+00:00",
     "refreshedFamilies": [
-      "hexalith-eventstore",
-      "package:jsonschema.net",
-      "package:stackexchange.redis",
-      "package:system.commandline",
-      "package:yamldotnet"
+      "package:hotchocolate",
+      "verify"
     ],
     "preservedFamilies": [
       "aspire",
@@ -26,6 +23,7 @@
       "hexalith-conversations",
       "hexalith-documents",
       "hexalith-domains",
+      "hexalith-eventstore",
       "hexalith-folders",
       "hexalith-frontcomposer",
       "hexalith-identitystores",
@@ -89,9 +87,9 @@
       "package:grpc",
       "package:grpc.healthcheck",
       "package:grpc.net.clientfactory",
-      "package:hotchocolate",
       "package:humanizer",
       "package:iso3166",
+      "package:jsonschema.net",
       "package:kreuzberg",
       "package:libgit2sharp",
       "package:mailkit",
@@ -145,16 +143,18 @@
       "package:serilog.sinks.file",
       "package:shouldly",
       "package:sonaranalyzer.csharp",
+      "package:stackexchange.redis",
       "package:stylecop.analyzers",
       "package:swashbuckle.aspnetcore",
       "package:swashbuckle.aspnetcore.swaggerui",
+      "package:system.commandline",
       "package:system.componentmodel.annotations",
       "package:system.reactive",
       "package:system.threading.tasks.extensions",
       "package:testcontainers",
       "package:threenine.data",
+      "package:yamldotnet",
       "roslyn",
-      "verify",
       "xunit"
     ]
   },
@@ -171,7 +171,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "7b6cdcada6c969c94b07af893b8884f960ef2748",
+    "repositoryRevision": "eaa53b009f1547d1af97a8aa6a8ad6b214a3276d",
     "sha256": "52bf431edc98e41931b59253abd3807985f8c71c721b9cdada746ca5cffd4f99",
     "entries": [
       {
@@ -33102,11 +33102,11 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
-        "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
-        "familySelectionSha256": "ae1cecc6088ec1d5f9e149b16b250a36c0fd95907ef268eb3c5145a99f897d0c",
+        "auditedAtUtc": "2026-10-08T15:01:34.6819953+00:00",
+        "generatedFromRevision": "eaa53b009f1547d1af97a8aa6a8ad6b214a3276d",
+        "familySelectionSha256": "4c58ddd39a032a490aabd085c7ccd705952f4653282517388e38a21ea326f2ba",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "fc1d2be6533d1341cc1560134453a04c33eb90764544356717c24b11d34c8719",
+        "packageMetadataSha256": "f7d04dd8ef2f09efa30bca56858504d3717008133a825f6efc211d0a03072505",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -33764,6 +33764,31 @@
             "familySelectionSha256": "ae1cecc6088ec1d5f9e149b16b250a36c0fd95907ef268eb3c5145a99f897d0c",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "3edbbbf7ef5e60af6e5c298914e4ed6fe27f85605945e98b30a27e8a0ba4ae59",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
+          "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
+          "family": "package:hotchocolate",
+          "disposition": "retained",
+          "rollbackGroup": "package:hotchocolate",
+          "packageIds": [
+            "HotChocolate"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
+            "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
+            "familySelectionSha256": "ae1cecc6088ec1d5f9e149b16b250a36c0fd95907ef268eb3c5145a99f897d0c",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "fc1d2be6533d1341cc1560134453a04c33eb90764544356717c24b11d34c8719",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -60394,16 +60419,16 @@
         "Verify",
         "Verify.XunitV3"
       ],
-      "rationale": "Retain the complete 33.3.1 pair. Candidate 33.3.2 and retained 33.3.1 both fail the same unconfigured SponsorCheck SC021 build gate in the identical isolated consumer; no regression is inferred and no exemption/suppression was invented.",
-      "compatibilityEvidence": "https://api.nuget.org/v3/index.json: state=listed, stable=33.3.2, prerelease=33.3.2-beta.1; Hexalith.EventStore 2026-10-08 decision evidence: isolated-consumer-build.log, retained-verify-consumer-build.log",
-      "removalTrigger": "An authorized package owner must configure a valid sponsorship/license/exemption and rerun the unchanged paired consumer build plus snapshot-adapter tests before accepting 33.3.2.",
+      "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+      "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+      "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
-        "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
-        "familySelectionSha256": "7e92e2d9d6f3b722b6e72ad21a02ce6ad2f852806611cb894fe6083cc9cddf11",
+        "auditedAtUtc": "2026-10-08T15:01:34.6819953+00:00",
+        "generatedFromRevision": "eaa53b009f1547d1af97a8aa6a8ad6b214a3276d",
+        "familySelectionSha256": "fed3c898246d696364612680a17b694cc471ac79b4edec30a9763378eaf6c8a0",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "af902eb9e799dd191036083cb36ab1c40b29eea219804bdf6c4cab19a451e883",
+        "packageMetadataSha256": "d5a17a8754b707025d755738333052e8a5c548d6bf362e719454e3c9e9abacba",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
       "historicalContext": [
@@ -61112,6 +61137,32 @@
             "familySelectionSha256": "7e92e2d9d6f3b722b6e72ad21a02ce6ad2f852806611cb894fe6083cc9cddf11",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "e46d117bd7b51ae0d617839dc17bfc6e94444de7f7c625b415577a2dda3f76a4",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
+          "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
+          "family": "verify",
+          "disposition": "retained",
+          "rollbackGroup": "verify",
+          "packageIds": [
+            "Verify",
+            "Verify.XunitV3"
+          ],
+          "rationale": "Retain the complete 33.3.1 pair. Candidate 33.3.2 and retained 33.3.1 both fail the same unconfigured SponsorCheck SC021 build gate in the identical isolated consumer; no regression is inferred and no exemption/suppression was invented.",
+          "compatibilityEvidence": "https://api.nuget.org/v3/index.json: state=listed, stable=33.3.2, prerelease=33.3.2-beta.1; Hexalith.EventStore 2026-10-08 decision evidence: isolated-consumer-build.log, retained-verify-consumer-build.log",
+          "removalTrigger": "An authorized package owner must configure a valid sponsorship/license/exemption and rerun the unchanged paired consumer build plus snapshot-adapter tests before accepting 33.3.2.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
+            "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
+            "familySelectionSha256": "7e92e2d9d6f3b722b6e72ad21a02ce6ad2f852806611cb894fe6083cc9cddf11",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "af902eb9e799dd191036083cb36ab1c40b29eea219804bdf6c4cab19a451e883",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -141179,22 +141230,22 @@
     },
     {
       "id": "HotChocolate",
-      "auditedVersion": "16.6.7",
-      "selectedVersion": "16.6.7",
-      "latestStable": "16.6.7",
+      "auditedVersion": "16.6.8",
+      "selectedVersion": "16.6.8",
+      "latestStable": "16.6.8",
       "latestPrerelease": "16.7.0-p.21",
       "listingState": "listed",
       "family": "package:hotchocolate",
       "disposition": "retained",
       "rollbackGroup": "package:hotchocolate",
       "rationale": "Current pin is the latest listed stable release on the configured sources.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=16.6.7, prerelease=16.7.0-p.21",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=16.6.8, prerelease=16.7.0-p.21",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
           "listingState": "listed",
-          "latestStable": "16.6.7",
+          "latestStable": "16.6.8",
           "latestPrerelease": "16.7.0-p.21",
           "diagnostic": "Registration metadata resolved."
         }
@@ -142004,6 +142055,42 @@
             "familySelectionSha256": "ae1cecc6088ec1d5f9e149b16b250a36c0fd95907ef268eb3c5145a99f897d0c",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "3edbbbf7ef5e60af6e5c298914e4ed6fe27f85605945e98b30a27e8a0ba4ae59",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
+          "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
+          "id": "HotChocolate",
+          "auditedVersion": "16.6.7",
+          "selectedVersion": "16.6.7",
+          "latestStable": "16.6.7",
+          "latestPrerelease": "16.7.0-p.21",
+          "listingState": "listed",
+          "family": "package:hotchocolate",
+          "disposition": "retained",
+          "rollbackGroup": "package:hotchocolate",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=16.6.7, prerelease=16.7.0-p.21",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "16.6.7",
+              "latestPrerelease": "16.7.0-p.21",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
+            "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
+            "familySelectionSha256": "ae1cecc6088ec1d5f9e149b16b250a36c0fd95907ef268eb3c5145a99f897d0c",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "fc1d2be6533d1341cc1560134453a04c33eb90764544356717c24b11d34c8719",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -211426,17 +211513,17 @@
     },
     {
       "id": "Verify",
-      "auditedVersion": "33.3.1",
-      "selectedVersion": "33.3.1",
+      "auditedVersion": "33.3.2",
+      "selectedVersion": "33.3.2",
       "latestStable": "33.3.2",
       "latestPrerelease": "33.3.2-beta.1",
       "listingState": "listed",
       "family": "verify",
       "disposition": "retained",
       "rollbackGroup": "verify",
-      "rationale": "Retain the complete 33.3.1 pair. Candidate 33.3.2 and retained 33.3.1 both fail the same unconfigured SponsorCheck SC021 build gate in the identical isolated consumer; no regression is inferred and no exemption/suppression was invented.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=33.3.2, prerelease=33.3.2-beta.1; Hexalith.EventStore 2026-10-08 decision evidence: isolated-consumer-build.log, retained-verify-consumer-build.log",
-      "removalTrigger": "An authorized package owner must configure a valid sponsorship/license/exemption and rerun the unchanged paired consumer build plus snapshot-adapter tests before accepting 33.3.2.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=33.3.2, prerelease=33.3.2-beta.1",
+      "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
@@ -212295,6 +212382,42 @@
             "familySelectionSha256": "7e92e2d9d6f3b722b6e72ad21a02ce6ad2f852806611cb894fe6083cc9cddf11",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "e46d117bd7b51ae0d617839dc17bfc6e94444de7f7c625b415577a2dda3f76a4",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
+          "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
+          "id": "Verify",
+          "auditedVersion": "33.3.1",
+          "selectedVersion": "33.3.1",
+          "latestStable": "33.3.2",
+          "latestPrerelease": "33.3.2-beta.1",
+          "listingState": "listed",
+          "family": "verify",
+          "disposition": "retained",
+          "rollbackGroup": "verify",
+          "rationale": "Retain the complete 33.3.1 pair. Candidate 33.3.2 and retained 33.3.1 both fail the same unconfigured SponsorCheck SC021 build gate in the identical isolated consumer; no regression is inferred and no exemption/suppression was invented.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=33.3.2, prerelease=33.3.2-beta.1; Hexalith.EventStore 2026-10-08 decision evidence: isolated-consumer-build.log, retained-verify-consumer-build.log",
+          "removalTrigger": "An authorized package owner must configure a valid sponsorship/license/exemption and rerun the unchanged paired consumer build plus snapshot-adapter tests before accepting 33.3.2.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "33.3.2",
+              "latestPrerelease": "33.3.2-beta.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
+            "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
+            "familySelectionSha256": "7e92e2d9d6f3b722b6e72ad21a02ce6ad2f852806611cb894fe6083cc9cddf11",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "af902eb9e799dd191036083cb36ab1c40b29eea219804bdf6c4cab19a451e883",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
@@ -212303,17 +212426,17 @@
     },
     {
       "id": "Verify.XunitV3",
-      "auditedVersion": "33.3.1",
-      "selectedVersion": "33.3.1",
+      "auditedVersion": "33.3.2",
+      "selectedVersion": "33.3.2",
       "latestStable": "33.3.2",
       "latestPrerelease": "33.3.2-beta.1",
       "listingState": "listed",
       "family": "verify",
       "disposition": "retained",
       "rollbackGroup": "verify",
-      "rationale": "Retain the complete 33.3.1 pair. Candidate 33.3.2 and retained 33.3.1 both fail the same unconfigured SponsorCheck SC021 build gate in the identical isolated consumer; no regression is inferred and no exemption/suppression was invented.",
-      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=33.3.2, prerelease=33.3.2-beta.1; Hexalith.EventStore 2026-10-08 decision evidence: isolated-consumer-build.log, retained-verify-consumer-build.log",
-      "removalTrigger": "An authorized package owner must configure a valid sponsorship/license/exemption and rerun the unchanged paired consumer build plus snapshot-adapter tests before accepting 33.3.2.",
+      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=33.3.2, prerelease=33.3.2-beta.1",
+      "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
         {
           "source": "https://api.nuget.org/v3/index.json",
@@ -213172,6 +213295,42 @@
             "familySelectionSha256": "7e92e2d9d6f3b722b6e72ad21a02ce6ad2f852806611cb894fe6083cc9cddf11",
             "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
             "packageMetadataSha256": "e46d117bd7b51ae0d617839dc17bfc6e94444de7f7c625b415577a2dda3f76a4",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        },
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
+          "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
+          "id": "Verify.XunitV3",
+          "auditedVersion": "33.3.1",
+          "selectedVersion": "33.3.1",
+          "latestStable": "33.3.2",
+          "latestPrerelease": "33.3.2-beta.1",
+          "listingState": "listed",
+          "family": "verify",
+          "disposition": "retained",
+          "rollbackGroup": "verify",
+          "rationale": "Retain the complete 33.3.1 pair. Candidate 33.3.2 and retained 33.3.1 both fail the same unconfigured SponsorCheck SC021 build gate in the identical isolated consumer; no regression is inferred and no exemption/suppression was invented.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=33.3.2, prerelease=33.3.2-beta.1; Hexalith.EventStore 2026-10-08 decision evidence: isolated-consumer-build.log, retained-verify-consumer-build.log",
+          "removalTrigger": "An authorized package owner must configure a valid sponsorship/license/exemption and rerun the unchanged paired consumer build plus snapshot-adapter tests before accepting 33.3.2.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "33.3.2",
+              "latestPrerelease": "33.3.2-beta.1",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-10-08T08:00:38.6832406+00:00",
+            "generatedFromRevision": "520abb5898ad44b30c0744e707b53cd94741e6b1",
+            "familySelectionSha256": "7e92e2d9d6f3b722b6e72ad21a02ce6ad2f852806611cb894fe6083cc9cddf11",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "af902eb9e799dd191036083cb36ab1c40b29eea219804bdf6c4cab19a451e883",
             "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
           },
           "supersededBecause": "Family-local catalog selection or observation evidence changed."
