@@ -375,6 +375,10 @@ jobs:
             [ -z "$proj" ] && continue
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
+            rm -f -- "$result_file"
+            summary_proj=${proj//\\/\\\\}
+            summary_proj=${summary_proj//|/\\|}
+            summary_proj=${summary_proj//\`/\\\`}
             if dotnet test "$proj" --no-build --configuration Release \
                 --logger "trx;LogFileName=${name}.trx" \
                 --results-directory "TestResults/${name}" \
@@ -385,17 +389,16 @@ jobs:
               exit_code=$?
               annotation_proj=${proj//%/%25}
               if [ ! -f "$result_file" ]; then
+                annotation_result_file=${result_file//%/%25}
                 printf '::error title=Test shard infrastructure failure::%s exited with code %d without producing %s.\n' \
-                  "$annotation_proj" "$exit_code" "$result_file"
+                  "$annotation_proj" "$exit_code" "$annotation_result_file"
+                printf '| %s | FAIL | %d |\n' "$summary_proj" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
                 exit "$exit_code"
               fi
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
             fi
-            summary_proj=${proj//\\/\\\\}
-            summary_proj=${summary_proj//|/\\|}
-            summary_proj=${summary_proj//\`/\\\`}
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$UNIT_TEST_PROJECTS"
           echo >> "$GITHUB_STEP_SUMMARY"
@@ -420,6 +423,10 @@ jobs:
             [ -z "$proj" ] && continue
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
+            rm -f -- "$result_file"
+            summary_proj=${proj//\\/\\\\}
+            summary_proj=${summary_proj//|/\\|}
+            summary_proj=${summary_proj//\`/\\\`}
             coverage_args=()
             if [ "$RUN_COVERAGE_GATE" = "true" ]; then
               coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)
@@ -434,18 +441,22 @@ jobs:
             else
               exit_code=$?
               annotation_proj=${proj//%/%25}
+              if [ "$exit_code" -eq 10 ]; then
+                printf '::error title=Test shard infrastructure failure::%s exited with infrastructure code %d.\n' "$annotation_proj" "$exit_code"
+                printf '| %s | FAIL | %d |\n' "$summary_proj" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
+                exit "$exit_code"
+              fi
               if [ ! -f "$result_file" ]; then
+                annotation_result_file=${result_file//%/%25}
                 printf '::error title=Test shard infrastructure failure::%s exited with code %d without producing %s.\n' \
-                  "$annotation_proj" "$exit_code" "$result_file"
+                  "$annotation_proj" "$exit_code" "$annotation_result_file"
+                printf '| %s | FAIL | %d |\n' "$summary_proj" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
                 exit "$exit_code"
               fi
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
             fi
-            summary_proj=${proj//\\/\\\\}
-            summary_proj=${summary_proj//|/\\|}
-            summary_proj=${summary_proj//\`/\\\`}
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$UNIT_TEST_PROJECTS"
           echo >> "$GITHUB_STEP_SUMMARY"
@@ -481,6 +492,10 @@ jobs:
             [ -z "$proj" ] && continue
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
+            rm -f -- "$result_file"
+            summary_proj=${proj//\\/\\\\}
+            summary_proj=${summary_proj//|/\\|}
+            summary_proj=${summary_proj//\`/\\\`}
             if dotnet test "$proj" --no-build --configuration Release \
                 --logger "trx;LogFileName=${name}.trx" \
                 --results-directory "TestResults/${name}" \
@@ -491,17 +506,16 @@ jobs:
               exit_code=$?
               annotation_proj=${proj//%/%25}
               if [ ! -f "$result_file" ]; then
+                annotation_result_file=${result_file//%/%25}
                 printf '::error title=Test shard infrastructure failure::%s exited with code %d without producing %s.\n' \
-                  "$annotation_proj" "$exit_code" "$result_file"
+                  "$annotation_proj" "$exit_code" "$annotation_result_file"
+                printf '| %s | FAIL | %d |\n' "$summary_proj" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
                 exit "$exit_code"
               fi
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
             fi
-            summary_proj=${proj//\\/\\\\}
-            summary_proj=${summary_proj//|/\\|}
-            summary_proj=${summary_proj//\`/\\\`}
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$INTEGRATION_TEST_PROJECTS"
           echo >> "$GITHUB_STEP_SUMMARY"
@@ -526,6 +540,10 @@ jobs:
             [ -z "$proj" ] && continue
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
+            rm -f -- "$result_file"
+            summary_proj=${proj//\\/\\\\}
+            summary_proj=${summary_proj//|/\\|}
+            summary_proj=${summary_proj//\`/\\\`}
             coverage_args=()
             if [ "$RUN_COVERAGE_GATE" = "true" ]; then
               coverage_args+=(--coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml)
@@ -540,18 +558,22 @@ jobs:
             else
               exit_code=$?
               annotation_proj=${proj//%/%25}
+              if [ "$exit_code" -eq 10 ]; then
+                printf '::error title=Test shard infrastructure failure::%s exited with infrastructure code %d.\n' "$annotation_proj" "$exit_code"
+                printf '| %s | FAIL | %d |\n' "$summary_proj" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
+                exit "$exit_code"
+              fi
               if [ ! -f "$result_file" ]; then
+                annotation_result_file=${result_file//%/%25}
                 printf '::error title=Test shard infrastructure failure::%s exited with code %d without producing %s.\n' \
-                  "$annotation_proj" "$exit_code" "$result_file"
+                  "$annotation_proj" "$exit_code" "$annotation_result_file"
+                printf '| %s | FAIL | %d |\n' "$summary_proj" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
                 exit "$exit_code"
               fi
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
             fi
-            summary_proj=${proj//\\/\\\\}
-            summary_proj=${summary_proj//|/\\|}
-            summary_proj=${summary_proj//\`/\\\`}
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$INTEGRATION_TEST_PROJECTS"
           echo >> "$GITHUB_STEP_SUMMARY"

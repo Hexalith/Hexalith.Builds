@@ -49,9 +49,13 @@ coverage validation, one always-run gate validates and sums the outputs from the
 active shard steps and returns nonzero when any project failed. Outputs from
 inactive platform or empty-project steps are absent and ignored. Unexpected
 shell or infrastructure errors still fail the step where they occur. A nonzero
-test process is aggregated only when it produced the expected TRX; without that
-evidence, its shard step fails immediately. Test and coverage evidence remains
-uploaded through the existing always-run upload.
+test process is aggregated only when it produced the expected TRX for the current
+invocation; its expected report is removed before each attempt so an earlier
+report cannot stand in for fresh evidence. Without that evidence, its shard step
+fails immediately after recording the attempted project's FAIL row. MTP
+infrastructure exit code 10 also fails its shard immediately, even when a report
+exists. Test and coverage evidence remains uploaded through the existing
+always-run upload.
 
 ## Scheduled Performance Evidence
 

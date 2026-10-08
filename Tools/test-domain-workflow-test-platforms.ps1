@@ -153,6 +153,7 @@ dotnet() {
     : > "$result_directory/$trx_filename"
   fi
   case "$project" in
+    *infra-reported*) return 10 ;;
     *fail-first*) return 17 ;;
     *fail-second*) return 23 ;;
     *) return 0 ;;
@@ -291,7 +292,7 @@ function Assert-ShardAggregationRuntime {
     }
 
     $infrastructureEnvironment = @{
-        $ProjectsVariable = "tests/infra-first/Infra%Down.csproj`ntests/pass-later/Pass.Later.csproj"
+        $ProjectsVariable = "tests/infra-first/Infra%0ADown.csproj`ntests/pass-later/Pass.Later.csproj"
     }
     if ($UsesCoverageSwitch) {
         $infrastructureEnvironment.RUN_COVERAGE_GATE = 'true'
@@ -304,7 +305,53 @@ function Assert-ShardAggregationRuntime {
     Assert-Condition -Name "$StepName infrastructure fail-fast runtime" -Condition ($infrastructureInvocations.Count -eq 1) `
         -Failure "ran $($infrastructureInvocations.Count) projects after an infrastructure failure."
     Assert-Contains -Name "$StepName infrastructure annotation" -Content $infrastructureResult.Output `
-        -Expected '::error title=Test shard infrastructure failure::tests/infra-first/Infra%25Down.csproj exited with code 42 without producing'
+        -Expected '::error title=Test shard infrastructure failure::tests/infra-first/Infra%250ADown.csproj exited with code 42 without producing TestResults/Infra%250ADown.csproj/Infra%250ADown.csproj.trx.'
+    $infrastructureRows = @($infrastructureResult.Summary -split '\r?\n' | Where-Object { $_.StartsWith('| tests/', [StringComparison]::Ordinal) })
+    Assert-Condition -Name "$StepName infrastructure summary" `
+        -Condition (($infrastructureRows -join "`n") -ceq '| tests/infra-first/Infra%0ADown.csproj | FAIL | 42 |') `
+        -Failure 'does not record the attempted infrastructure failure exactly once.'
+
+    $collisionEnvironment = @{
+        $ProjectsVariable = "tests/pass-first/Same.csproj`ntests/infra-first/Same.csproj`ntests/pass-later/Pass.Later.csproj"
+    }
+    if ($UsesCoverageSwitch) {
+        $collisionEnvironment.RUN_COVERAGE_GATE = 'true'
+    }
+    $collisionResult = Invoke-WorkflowBashBody -Body $body -Environment $collisionEnvironment
+    $collisionInvocations = @($collisionResult.Invocations -split '\r?\n' | Where-Object { $_ })
+    Assert-Condition -Name "$StepName stale report runtime" -Condition ($collisionResult.ExitCode -eq 42) `
+        -Failure "returned $($collisionResult.ExitCode) instead of rejecting the stale same-basename report."
+    Assert-Condition -Name "$StepName stale report fail-fast runtime" -Condition ($collisionInvocations.Count -eq 2) `
+        -Failure "ran $($collisionInvocations.Count) projects instead of stopping at the evidence-less second project."
+    $collisionRows = @($collisionResult.Summary -split '\r?\n' | Where-Object { $_.StartsWith('| tests/', [StringComparison]::Ordinal) })
+    $expectedCollisionRows = @(
+        '| tests/pass-first/Same.csproj | PASS | 0 |',
+        '| tests/infra-first/Same.csproj | FAIL | 42 |'
+    )
+    Assert-Condition -Name "$StepName stale report summary" `
+        -Condition (($collisionRows -join "`n") -ceq ($expectedCollisionRows -join "`n")) `
+        -Failure 'does not preserve both attempted outcomes in order.'
+    Assert-Contains -Name "$StepName stale report annotation" -Content $collisionResult.Output `
+        -Expected '::error title=Test shard infrastructure failure::tests/infra-first/Same.csproj exited with code 42 without producing TestResults/Same.csproj/Same.csproj.trx.'
+
+    if ($UsesCoverageSwitch) {
+        $reportedInfrastructureEnvironment = @{
+            $ProjectsVariable = "tests/infra-reported/Infra.Reported.csproj`ntests/pass-later/Pass.Later.csproj"
+            RUN_COVERAGE_GATE = 'true'
+        }
+        $reportedInfrastructureResult = Invoke-WorkflowBashBody -Body $body -Environment $reportedInfrastructureEnvironment
+        Assert-Condition -Name "$StepName reported infrastructure runtime" -Condition ($reportedInfrastructureResult.ExitCode -eq 10) `
+            -Failure "returned $($reportedInfrastructureResult.ExitCode) instead of preserving MTP infrastructure exit 10."
+        $reportedInfrastructureInvocations = @($reportedInfrastructureResult.Invocations -split '\r?\n' | Where-Object { $_ })
+        Assert-Condition -Name "$StepName reported infrastructure fail-fast runtime" -Condition ($reportedInfrastructureInvocations.Count -eq 1) `
+            -Failure 'continued after an MTP infrastructure failure with a fresh report.'
+        $reportedInfrastructureRows = @($reportedInfrastructureResult.Summary -split '\r?\n' | Where-Object { $_.StartsWith('| tests/', [StringComparison]::Ordinal) })
+        Assert-Condition -Name "$StepName reported infrastructure summary" `
+            -Condition (($reportedInfrastructureRows -join "`n") -ceq '| tests/infra-reported/Infra.Reported.csproj | FAIL | 10 |') `
+            -Failure 'does not record the reported MTP infrastructure failure exactly once.'
+        Assert-Contains -Name "$StepName reported infrastructure annotation" -Content $reportedInfrastructureResult.Output `
+            -Expected '::error title=Test shard infrastructure failure::tests/infra-reported/Infra.Reported.csproj exited with infrastructure code 10.'
+    }
 }
 
 function New-FailureGateEnvironment {
@@ -506,19 +553,24 @@ Assert-ShardAggregationRuntime -Workflow $ciWorkflow `
     ) `
     -UsesCoverageSwitch $true
 
+$failureOutputChannels = @(
+    [pscustomobject] @{ Name = 'unit VSTest'; Platform = 'vstest'; Unit = 'configured'; Integration = ''; Variable = 'UNIT_VSTEST_FAILURE_COUNT'; StepId = 'unit-tests-vstest'; StepName = 'Unit tests (Tier 1, VSTest)' },
+    [pscustomobject] @{ Name = 'unit MTP'; Platform = 'microsoft-testing-platform'; Unit = 'configured'; Integration = ''; Variable = 'UNIT_MTP_FAILURE_COUNT'; StepId = 'unit-tests-mtp'; StepName = 'Unit tests (Tier 1, Microsoft.Testing.Platform)' },
+    [pscustomobject] @{ Name = 'integration VSTest'; Platform = 'vstest'; Unit = ''; Integration = 'configured'; Variable = 'INTEGRATION_VSTEST_FAILURE_COUNT'; StepId = 'integration-tests-vstest'; StepName = 'Integration tests (Tier 2, VSTest)' },
+    [pscustomobject] @{ Name = 'integration MTP'; Platform = 'microsoft-testing-platform'; Unit = ''; Integration = 'configured'; Variable = 'INTEGRATION_MTP_FAILURE_COUNT'; StepId = 'integration-tests-mtp'; StepName = 'Integration tests (Tier 2, Microsoft.Testing.Platform)' }
+)
+
 $failureGateBlock = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Fail on blocking test failures'
 if ([string]::IsNullOrWhiteSpace($failureGateBlock)) {
     $failures.Add('domain-ci.yml is missing the Fail on blocking test failures step.')
 }
 else {
     Assert-Contains -Name 'domain-ci.yml final failure gate' -Content $failureGateBlock -Expected 'if: always()'
-    foreach ($outputReference in @(
-        'steps.unit-tests-vstest.outputs.failure-count',
-        'steps.unit-tests-mtp.outputs.failure-count',
-        'steps.integration-tests-vstest.outputs.failure-count',
-        'steps.integration-tests-mtp.outputs.failure-count'
-    )) {
-        Assert-Contains -Name 'domain-ci.yml final failure gate' -Content $failureGateBlock -Expected $outputReference
+    foreach ($channel in $failureOutputChannels) {
+        $expectedMapping = '          ' + $channel.Variable + ': ${{ steps.' + $channel.StepId + '.outputs.failure-count }}'
+        Assert-Condition -Name "domain-ci.yml $($channel.Name) output mapping" `
+            -Condition ([regex]::Matches($failureGateBlock, '(?m)^' + [regex]::Escape($expectedMapping) + '\r?$').Count -eq 1) `
+            -Failure 'does not map its failure-count variable to exactly one matching shard output.'
     }
 
     $coverageGateIndex = $ciWorkflow.IndexOf('- name: Validate coverage gates', [StringComparison]::Ordinal)
@@ -527,6 +579,19 @@ else {
     Assert-Condition -Name 'domain-ci.yml final failure gate order' `
         -Condition ($coverageGateIndex -ge 0 -and $failureGateIndex -gt $coverageGateIndex -and $evidenceUploadIndex -gt $failureGateIndex) `
         -Failure 'does not place the final gate after coverage validation and before always-run evidence upload.'
+
+    $governedDaprIndex = $ciWorkflow.IndexOf('- name: Install and initialize Dapr (governed)', [StringComparison]::Ordinal)
+    $legacyDaprIndex = $ciWorkflow.IndexOf("- name: Install and initialize Dapr`n", [StringComparison]::Ordinal)
+    if ($legacyDaprIndex -lt 0) {
+        $legacyDaprIndex = $ciWorkflow.IndexOf("- name: Install and initialize Dapr`r`n", [StringComparison]::Ordinal)
+    }
+    foreach ($platform in @('VSTest', 'Microsoft.Testing.Platform')) {
+        $unitIndex = $ciWorkflow.IndexOf("- name: Unit tests (Tier 1, $platform)", [StringComparison]::Ordinal)
+        $integrationIndex = $ciWorkflow.IndexOf("- name: Integration tests (Tier 2, $platform)", [StringComparison]::Ordinal)
+        Assert-Condition -Name "domain-ci.yml $platform prerequisite order" `
+            -Condition ($unitIndex -ge 0 -and $governedDaprIndex -gt $unitIndex -and $legacyDaprIndex -gt $governedDaprIndex -and $integrationIndex -gt $legacyDaprIndex -and $coverageGateIndex -gt $integrationIndex -and $failureGateIndex -gt $coverageGateIndex) `
+            -Failure 'does not run Tier 1, Dapr initialization, Tier 2, coverage, and the final gate in order.'
+    }
 }
 
 $failureGateBody = $(if ($failureGateBlock) {
@@ -593,12 +658,7 @@ if (-not [string]::IsNullOrWhiteSpace($failureGateBody)) {
     Assert-Contains -Name 'domain-ci.yml leading-zero failure output annotation' -Content $leadingZeroGateResult.Output `
         -Expected '::error title=Blocking test failures::8 test project(s) failed across the blocking tiers.'
 
-    foreach ($channel in @(
-        [pscustomobject] @{ Name = 'unit VSTest'; Platform = 'vstest'; Unit = 'configured'; Integration = ''; Variable = 'UNIT_VSTEST_FAILURE_COUNT' },
-        [pscustomobject] @{ Name = 'unit MTP'; Platform = 'microsoft-testing-platform'; Unit = 'configured'; Integration = ''; Variable = 'UNIT_MTP_FAILURE_COUNT' },
-        [pscustomobject] @{ Name = 'integration VSTest'; Platform = 'vstest'; Unit = ''; Integration = 'configured'; Variable = 'INTEGRATION_VSTEST_FAILURE_COUNT' },
-        [pscustomobject] @{ Name = 'integration MTP'; Platform = 'microsoft-testing-platform'; Unit = ''; Integration = 'configured'; Variable = 'INTEGRATION_MTP_FAILURE_COUNT' }
-    )) {
+    foreach ($channel in $failureOutputChannels) {
         $channelEnvironment = New-FailureGateEnvironment `
             -TestPlatform $channel.Platform `
             -UnitProjects $channel.Unit `
@@ -609,6 +669,23 @@ if (-not [string]::IsNullOrWhiteSpace($failureGateBody)) {
             -Failure "returned $($channelResult.ExitCode) instead of rejecting its isolated nonzero output."
         Assert-Contains -Name "domain-ci.yml $($channel.Name) failure channel annotation" -Content $channelResult.Output `
             -Expected '::error title=Blocking test failures::1 test project(s) failed across the blocking tiers.'
+
+        $projectsVariable = $(if ($channel.Unit) { 'UNIT_TEST_PROJECTS' } else { 'INTEGRATION_TEST_PROJECTS' })
+        $passingShardEnvironment = @{ $projectsVariable = 'tests/pass-first/Pass.First.csproj'; RUN_COVERAGE_GATE = 'false' }
+        $passingShardBody = Get-StepRunBody -Block (Get-NamedStepBlock -Content $ciWorkflow -StepName $channel.StepName) -StepName $channel.StepName
+        $passingShardResult = Invoke-WorkflowBashBody -Body $passingShardBody -Environment $passingShardEnvironment
+        $passingShardCount = [regex]::Match($passingShardResult.StepOutput, '\Afailure-count=([0-9]+)\r?\n\z').Groups[1].Value
+        Assert-Condition -Name "domain-ci.yml $($channel.Name) single-tier shard" `
+            -Condition ($passingShardResult.ExitCode -eq 0 -and $passingShardCount -ceq '0') `
+            -Failure 'does not emit a successful single-tier shard output.'
+        $mappedEnvironment = New-FailureGateEnvironment -TestPlatform $channel.Platform -UnitProjects $channel.Unit -IntegrationProjects $channel.Integration
+        $outputMappings = [regex]::Matches($failureGateBlock, '(?m)^          (?<Variable>[A-Z_]+_FAILURE_COUNT): \$\{\{ steps\.(?<StepId>[a-z-]+)\.outputs\.failure-count \}\}\r?$')
+        foreach ($mapping in $outputMappings) {
+            $mappedEnvironment[$mapping.Groups['Variable'].Value] = $(if ($mapping.Groups['StepId'].Value -ceq $channel.StepId) { $passingShardCount } else { '' })
+        }
+        $mappedResult = Invoke-WorkflowBashBody -Body $failureGateBody -Environment $mappedEnvironment
+        Assert-Condition -Name "domain-ci.yml $($channel.Name) single-tier mapped output" -Condition ($mappedResult.ExitCode -eq 0) `
+            -Failure "returned $($mappedResult.ExitCode) for a passing single tier resolved through the actual workflow mappings."
     }
 
     $unitVstestBody = Get-StepRunBody `
