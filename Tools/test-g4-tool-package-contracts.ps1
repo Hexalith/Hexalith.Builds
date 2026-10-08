@@ -1003,10 +1003,9 @@ try {
             -Arguments @('validate', '--manifest', 'platform-valid.json', '--output', $format) -WorkingDirectory $consumerRoot
         Assert-PositiveResult -Result $validationResult -Description "Packaged Platform enrollment ($format)"
         if ($format -ceq 'json') {
-            $validation = ConvertFrom-ToolResult -Result $validationResult -Description 'Packaged Platform enrollment'
-            if ($validation.status -cne 'validated' -or @($validation.diagnostics).Count -ne 0) {
-                throw 'Packaged Platform enrollment did not return an atomic validated outcome.'
-            }
+            $null = Assert-JsonToolResult -Result $validationResult -Description 'Packaged Platform enrollment' `
+                -Status 'validated' -ExitCode 0 -OutcomeExitCode 'Success' -Phase 'None' -Category 'None' `
+                -OutcomeRuleId $null -RuleIds @()
         }
         elseif (-not $validationResult.Output.Contains('validated', [StringComparison]::Ordinal)) {
             throw 'Packaged Platform enrollment omitted its human validation result.'
@@ -1022,7 +1021,9 @@ try {
         }
 
         if ($format -ceq 'json') {
-            $duplicate = ConvertFrom-ToolResult -Result $duplicateResult -Description 'Packaged Platform duplicate enrollment'
+            $duplicate = Assert-JsonToolResult -Result $duplicateResult -Description 'Packaged Platform duplicate enrollment' `
+                -Status 'failed' -ExitCode 1 -OutcomeExitCode 'UsageOrManifest' -Phase 'Manifest' -Category 'Manifest' `
+                -OutcomeRuleId 'HXP003' -RuleIds @('HXP003', 'HXP003', 'HXP003')
             foreach ($diagnostic in @($duplicate.diagnostics)) {
                 if ($diagnostic.source -cne 'platform-valid.json') {
                     throw "Packaged Platform duplicate enrollment reported source '$($diagnostic.source)' instead of platform-valid.json."
@@ -1041,6 +1042,9 @@ try {
     if ($legacyEnrollmentResult.ExitCode -ne 1 -or -not $legacyEnrollmentResult.Output.Contains('HXP001', [StringComparison]::Ordinal)) {
         throw 'The packaged Platform enrollment validator admitted legacy v1.'
     }
+    $null = Assert-JsonToolResult -Result $legacyEnrollmentResult -Description 'Packaged Platform legacy enrollment' `
+        -Status 'failed' -ExitCode 1 -OutcomeExitCode 'UsageOrManifest' -Phase 'Manifest' -Category 'Manifest' `
+        -OutcomeRuleId 'HXP001' -RuleIds @('HXP001')
 
     if ($RequireControls) {
         $fixtureProvenanceMode = Get-FixtureProvenanceMode -Directory $fixtureRootPath

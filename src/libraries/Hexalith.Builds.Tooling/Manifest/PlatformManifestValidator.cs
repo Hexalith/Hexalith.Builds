@@ -418,10 +418,13 @@ public static partial class PlatformManifestValidator
         return simpleName ? dottedPath : $"{parentPath}[{JsonSerializer.Serialize(safeName)}]";
     }
 
-    private static bool ContainsProhibitedSecret(string value) =>
-        ManifestSecretDetector.ContainsSecret(value)
-        || CredentialUriAnywhereRegex().IsMatch(value)
-        || (value.Contains("://", StringComparison.Ordinal) && Uri.TryCreate(value, UriKind.Absolute, out Uri? uri) && uri.UserInfo.Length > 0);
+    private static bool ContainsProhibitedSecret(string value)
+    {
+        string userInfo = value.Replace("%40", "@", StringComparison.OrdinalIgnoreCase);
+        return ManifestSecretDetector.ContainsSecret(value)
+            || CredentialUriAnywhereRegex().IsMatch(userInfo)
+            || (userInfo.Contains("://", StringComparison.Ordinal) && Uri.TryCreate(userInfo, UriKind.Absolute, out Uri? uri) && uri.UserInfo.Length > 0);
+    }
 
     [GeneratedRegex(@"(?:[a-z][a-z0-9+.-]*:)?//[^\s/?#@]+@", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
     private static partial Regex CredentialUriAnywhereRegex();
@@ -550,11 +553,17 @@ public static partial class PlatformManifestValidator
 
     private static bool IsUsableReadiness(JsonElement probe) => StringValue(probe, "kind") switch
     {
-        "http" => StringValue(probe, "endpoint") is { Length: > 0 } endpoint && endpoint.StartsWith('/') && !string.IsNullOrWhiteSpace(endpoint),
+        "http" => StringValue(probe, "endpoint") is { Length: > 0 } endpoint && IsUsableHttpEndpoint(endpoint),
         "grpc" => !string.IsNullOrWhiteSpace(StringValue(probe, "service")),
         "command" => !string.IsNullOrWhiteSpace(StringValue(probe, "executable")),
         _ => false,
     };
+
+    private static bool IsUsableHttpEndpoint(string endpoint) =>
+        endpoint.StartsWith('/')
+        && !string.IsNullOrWhiteSpace(endpoint)
+        && !endpoint.Contains("//", StringComparison.Ordinal)
+        && endpoint.Split('/').All(segment => segment is not "." and not "..");
 
     private static void ValidateExecutablePaths(JsonElement lifecycle, string prefix, string source, string fullPath, List<ToolDiagnostic> diagnostics)
     {

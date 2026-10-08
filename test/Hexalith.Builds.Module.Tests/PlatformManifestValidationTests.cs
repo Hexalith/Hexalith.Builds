@@ -488,6 +488,36 @@ public sealed class PlatformManifestValidationTests
         PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken).Diagnostics.ShouldBeEmpty();
     }
 
+    /// <summary>Verifies an enabled optional server enrolls when its readiness list is empty.</summary>
+    [Fact]
+    public void EnabledOptionalServerCanOmitReadiness()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.identity.servers.0.required", "false");
+        workspace.Change("modules.0.lifecycle.readiness", "[]");
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Diagnostics.ShouldBeEmpty();
+        result.Declarations.ShouldNotBeNull().Count.ShouldBe(1);
+    }
+
+    /// <summary>Verifies dot segments and repeated slashes are not usable readiness for a required server.</summary>
+    /// <param name="endpoint">The rejected readiness endpoint.</param>
+    [Theory]
+    [InlineData("/health/../admin")]
+    [InlineData("/health//ready")]
+    public void RequiredServerRejectsEscapingReadinessEndpoints(string endpoint)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.readiness.0.endpoint", JsonSerializer.Serialize(endpoint));
+        string manifest = workspace.Save();
+        using JsonDocument input = JsonDocument.Parse(File.ReadAllText(manifest));
+        PublishedSchema().Evaluate(input.RootElement).IsValid.ShouldBeFalse();
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP020" && diagnostic.Field == "modules[0].lifecycle.readiness");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "modules[0].lifecycle.readiness[0].endpoint");
+    }
+
     /// <summary>Verifies a scheme-relative credential URI cannot enroll.</summary>
     [Fact]
     public void SchemeRelativeCredentialUriIsRejected()
@@ -498,6 +528,23 @@ public sealed class PlatformManifestValidationTests
         result.Declarations.ShouldBeNull();
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXM007" && diagnostic.Field == "modules[0].lifecycle.tasks[0].arguments[0]");
         JsonSerializer.Serialize(result.Diagnostics).ShouldNotContain("user:pw");
+    }
+
+    /// <summary>Verifies a percent-encoded userinfo separator cannot enroll or appear in diagnostics.</summary>
+    /// <param name="argument">The credential-bearing argument.</param>
+    [Theory]
+    [InlineData("//user:pw%40host.example")]
+    [InlineData("https://user:pw%40host.example")]
+    public void PercentEncodedUserInfoSeparatorIsRejected(string argument)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.tasks.0.arguments", JsonSerializer.Serialize(new[] { argument }));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXM007" && diagnostic.Field == "modules[0].lifecycle.tasks[0].arguments[0]");
+        string rendered = JsonSerializer.Serialize(result.Diagnostics);
+        rendered.ShouldNotContain("user:pw");
+        rendered.ShouldNotContain("%40");
     }
 
     /// <summary>Verifies placeholder and credential paths keep the value inspection diagnostic only.</summary>
@@ -573,9 +620,15 @@ public sealed class PlatformManifestValidationTests
     }
 
     /// <summary>Verifies a deleted working directory returns a structured path failure.</summary>
-    [Fact]
-    public void DeletedWorkingDirectoryReturnsStructuredPathFailure()
+    /// <returns>A task that completes after the isolated probe.</returns>
+    [Fact(Timeout = 120000)]
+    public async Task DeletedWorkingDirectoryReturnsStructuredPathFailure()
     {
+        if (!await PlatformManifestTestWorkspace.IsIsolatedDirectoryProbeAsync(nameof(DeletedWorkingDirectoryReturnsStructuredPathFailure)).ConfigureAwait(true))
+        {
+            return;
+        }
+
         using PlatformManifestTestWorkspace workspace = new();
         string manifest = workspace.Save();
         string original = Directory.GetCurrentDirectory();

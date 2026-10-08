@@ -13,6 +13,8 @@ using System.Text.Json.Nodes;
 /// </summary>
 internal sealed class PlatformManifestTestWorkspace : IDisposable
 {
+    private const string _isolatedDirectoryVariable = "HEXALITH_PLATFORM_MANIFEST_ISOLATED_DIRECTORY";
+
     /// <summary>Initializes a new instance of the <see cref="PlatformManifestTestWorkspace"/> class.</summary>
     public PlatformManifestTestWorkspace()
     {
@@ -128,5 +130,62 @@ internal sealed class PlatformManifestTestWorkspace : IDisposable
             await writer.WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
             Directory.Delete(directory, true);
         }
+    }
+
+    /// <summary>
+    /// Runs <paramref name="methodName"/> in a child process so a current-directory change stays invisible to other tests.
+    /// </summary>
+    /// <param name="methodName">The test method that performs the directory change.</param>
+    /// <returns><see langword="true"/> when the caller is the child process and should perform the change.</returns>
+    /// <exception cref="InvalidOperationException">The child process did not pass the named test.</exception>
+    internal static async Task<bool> IsIsolatedDirectoryProbeAsync(string methodName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(methodName);
+        if (string.Equals(Environment.GetEnvironmentVariable(_isolatedDirectoryVariable), methodName, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        ProcessStartInfo start = new()
+        {
+            FileName = "dotnet",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            WorkingDirectory = Directory.GetCurrentDirectory(),
+        };
+        start.ArgumentList.Add(typeof(PlatformManifestTestWorkspace).Assembly.Location);
+        start.ArgumentList.Add("-method");
+        start.ArgumentList.Add($"*{methodName}");
+        start.ArgumentList.Add("-noLogo");
+        start.Environment[_isolatedDirectoryVariable] = methodName;
+        using Process process = new() { StartInfo = start };
+        if (!process.Start())
+        {
+            throw new InvalidOperationException($"The isolated directory probe for {methodName} failed to start.");
+        }
+
+        Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(90));
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            throw new InvalidOperationException($"The isolated directory probe for {methodName} did not exit.");
+        }
+
+        string stdout = await stdoutTask.ConfigureAwait(false);
+        string stderr = await stderrTask.ConfigureAwait(false);
+        bool passed = process.ExitCode == 0
+            && stdout.Contains("Total: 1", StringComparison.Ordinal)
+            && stdout.Contains("Failed: 0", StringComparison.Ordinal)
+            && stdout.Contains("Errors: 0", StringComparison.Ordinal);
+        return passed
+            ? false
+            : throw new InvalidOperationException($"The isolated directory probe for {methodName} exited {process.ExitCode}.{Environment.NewLine}{stdout}{Environment.NewLine}{stderr}");
     }
 }

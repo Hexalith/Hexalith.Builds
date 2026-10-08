@@ -45,6 +45,12 @@ public sealed class PlatformManifestCommandTests
                 ["validate", "--manifest", manifest, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
             exitCode.ShouldBe(0);
             output.ToString().ShouldContain("validated");
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                AssertPassedOutcome(result.RootElement);
+            }
+
             File.Exists(sentinel).ShouldBeFalse();
             Directory.GetFiles(workspace.Root).Order(StringComparer.Ordinal).ShouldBe(files);
             (await File.ReadAllTextAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(input);
@@ -77,7 +83,7 @@ public sealed class PlatformManifestCommandTests
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(output.ToString());
-                result.RootElement.GetProperty("status").GetString().ShouldBe("failed");
+                AssertFailedOutcome(result.RootElement);
                 result.RootElement.GetProperty("diagnostics").GetArrayLength().ShouldBeGreaterThanOrEqualTo(7);
             }
         }
@@ -236,7 +242,7 @@ public sealed class PlatformManifestCommandTests
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(output.ToString());
-                result.RootElement.GetProperty("status").GetString().ShouldBe("validated");
+                AssertPassedOutcome(result.RootElement);
                 result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldBeEmpty();
             }
             else
@@ -275,7 +281,7 @@ public sealed class PlatformManifestCommandTests
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(output.ToString());
-                result.RootElement.GetProperty("status").GetString().ShouldBe("failed");
+                AssertFailedOutcome(result.RootElement);
                 result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic => diagnostic.GetProperty("ruleId").GetString() == "HXP013" && diagnostic.GetProperty("field").GetString() == "manifest");
             }
         }
@@ -309,7 +315,7 @@ public sealed class PlatformManifestCommandTests
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(output.ToString());
-                result.RootElement.GetProperty("status").GetString().ShouldBe("failed");
+                AssertFailedOutcome(result.RootElement);
             }
         }
     }
@@ -344,6 +350,7 @@ public sealed class PlatformManifestCommandTests
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(output.ToString());
+                AssertFailedOutcome(result.RootElement);
                 JsonElement diagnostics = result.RootElement.GetProperty("diagnostics");
                 diagnostics.GetArrayLength().ShouldBeGreaterThan(0);
                 foreach (JsonElement diagnostic in diagnostics.EnumerateArray())
@@ -385,6 +392,7 @@ public sealed class PlatformManifestCommandTests
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(output.ToString());
+                AssertFailedOutcome(result.RootElement);
                 result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic => diagnostic.GetProperty("field").GetString() == field);
             }
             else
@@ -434,6 +442,7 @@ public sealed class PlatformManifestCommandTests
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(output.ToString());
+                AssertFailedOutcome(result.RootElement);
                 result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic => diagnostic.GetProperty("ruleId").GetString() == "HXP011" && diagnostic.GetProperty("field").GetString() == field);
             }
             else
@@ -475,6 +484,8 @@ public sealed class PlatformManifestCommandTests
                 ["validate", "--manifest", workspace.Save(), "--output", "json"], output, TextWriter.Null, cancellation.Token).ConfigureAwait(true);
             exitCode.ShouldBe((int)ToolExitCode.Cancelled);
             output.ToString().ShouldContain("HXC130");
+            using JsonDocument result = JsonDocument.Parse(output.ToString());
+            AssertOutcome(result.RootElement, "cancelled", ToolExitCode.Cancelled, ToolPhase.Manifest, ToolFailureCategory.Cancelled, "HXC130");
         }
     }
 
@@ -528,6 +539,7 @@ public sealed class PlatformManifestCommandTests
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(output.ToString());
+                AssertFailedOutcome(result.RootElement);
                 result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic =>
                     diagnostic.GetProperty("source").GetString() == "[redacted manifest path]"
                     && diagnostic.GetProperty("field").GetString() == "modules[0].identity[\"[redacted field]\"]");
@@ -572,6 +584,11 @@ public sealed class PlatformManifestCommandTests
                 ["validate", "--manifest", path, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
             exitCode.ShouldBe(0);
             output.ToString().ShouldContain("validated");
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                AssertPassedOutcome(result.RootElement);
+            }
         }
 
         await File.AppendAllTextAsync(path, " ", TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -617,6 +634,11 @@ public sealed class PlatformManifestCommandTests
                 ["validate", "--manifest", optional.Save(), "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
             exitCode.ShouldBe(0);
             output.ToString().ShouldContain("validated");
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                AssertPassedOutcome(result.RootElement);
+            }
         }
     }
 
@@ -674,7 +696,7 @@ public sealed class PlatformManifestCommandTests
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(output.ToString());
-                result.RootElement.GetProperty("status").GetString().ShouldBe("failed");
+                AssertFailedOutcome(result.RootElement);
                 result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic =>
                     diagnostic.GetProperty("field").GetString() == "$"
                     && diagnostic.GetProperty("location").GetString() == location);
@@ -688,9 +710,9 @@ public sealed class PlatformManifestCommandTests
         }
     }
 
-    /// <summary>Verifies a non-seekable manifest and a deleted working directory stay structured.</summary>
+    /// <summary>Verifies a non-seekable manifest stays structured.</summary>
     /// <param name="format">The diagnostic output format.</param>
-    /// <returns>A task that completes after both commands.</returns>
+    /// <returns>A task that completes after the command.</returns>
     [Theory(Timeout = 15000)]
     [InlineData("human")]
     [InlineData("json")]
@@ -706,8 +728,24 @@ public sealed class PlatformManifestCommandTests
                 exitCode.ShouldBe(1);
                 output.ToString().ShouldContain("HXP005");
                 output.ToString().ShouldContain("failed");
+                if (format == "json")
+                {
+                    using JsonDocument result = JsonDocument.Parse(output.ToString());
+                    AssertFailedOutcome(result.RootElement);
+                }
             }
         }).ConfigureAwait(true);
+    }
+
+    /// <summary>Verifies a deleted working directory stays a structured command failure.</summary>
+    /// <returns>A task that completes after the isolated probe.</returns>
+    [Fact(Timeout = 120000)]
+    public async Task DeletedWorkingDirectoryCommandReturnsStructuredFailureAsync()
+    {
+        if (!await PlatformManifestTestWorkspace.IsIsolatedDirectoryProbeAsync(nameof(DeletedWorkingDirectoryCommandReturnsStructuredFailureAsync)).ConfigureAwait(true))
+        {
+            return;
+        }
 
         using PlatformManifestTestWorkspace workspace = new();
         string manifest = workspace.Save();
@@ -718,15 +756,23 @@ public sealed class PlatformManifestCommandTests
         {
             Directory.SetCurrentDirectory(deleted);
             Directory.Delete(deleted);
-            StringWriter output = new();
-            await using (output.ConfigureAwait(true))
+            foreach (string format in new[] { "human", "json" })
             {
-                int exitCode = await ModuleCommandApplication.InvokeAsync(
-                    ["validate", "--manifest", manifest, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
-                exitCode.ShouldBe(1);
-                output.ToString().ShouldContain("HXP004");
-                output.ToString().ShouldContain("failed");
-                output.ToString().ShouldNotContain("DirectoryNotFoundException");
+                StringWriter output = new();
+                await using (output.ConfigureAwait(true))
+                {
+                    int exitCode = await ModuleCommandApplication.InvokeAsync(
+                        ["validate", "--manifest", manifest, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                    exitCode.ShouldBe(1);
+                    output.ToString().ShouldContain("HXP004");
+                    output.ToString().ShouldContain("failed");
+                    output.ToString().ShouldNotContain("DirectoryNotFoundException");
+                    if (format == "json")
+                    {
+                        using JsonDocument result = JsonDocument.Parse(output.ToString());
+                        AssertFailedOutcome(result.RootElement);
+                    }
+                }
             }
         }
         finally
@@ -760,7 +806,7 @@ public sealed class PlatformManifestCommandTests
             if (format == "json")
             {
                 using JsonDocument result = JsonDocument.Parse(rendered);
-                result.RootElement.GetProperty("status").GetString().ShouldBe("failed");
+                AssertFailedOutcome(result.RootElement);
                 result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic =>
                     diagnostic.GetProperty("field").GetString() == field
                     && diagnostic.GetProperty("source").GetString() == expectedSource
@@ -772,6 +818,33 @@ public sealed class PlatformManifestCommandTests
                 ShouldContainLabel(rendered, "source", expectedSource);
                 ShouldContainLabel(rendered, "field", field);
             }
+        }
+    }
+
+    private static void AssertPassedOutcome(JsonElement root) =>
+        AssertOutcome(root, "validated", ToolExitCode.Success, ToolPhase.None, ToolFailureCategory.None, null);
+
+    private static void AssertFailedOutcome(JsonElement root)
+    {
+        string? ruleId = root.GetProperty("diagnostics").EnumerateArray().First().GetProperty("ruleId").GetString();
+        AssertOutcome(root, "failed", ToolExitCode.UsageOrManifest, ToolPhase.Manifest, ToolFailureCategory.Manifest, ruleId);
+    }
+
+    private static void AssertOutcome(JsonElement root, string status, ToolExitCode exitCode, ToolPhase phase, ToolFailureCategory category, string? ruleId)
+    {
+        root.GetProperty("status").GetString().ShouldBe(status);
+        JsonElement outcome = root.GetProperty("outcome");
+        outcome.GetProperty("exitCode").GetString().ShouldBe(exitCode.ToString());
+        outcome.GetProperty("phase").GetString().ShouldBe(phase.ToString());
+        outcome.GetProperty("category").GetString().ShouldBe(category.ToString());
+        JsonElement rule = outcome.GetProperty("ruleId");
+        if (ruleId is null)
+        {
+            rule.ValueKind.ShouldBe(JsonValueKind.Null);
+        }
+        else
+        {
+            rule.GetString().ShouldBe(ruleId);
         }
     }
 

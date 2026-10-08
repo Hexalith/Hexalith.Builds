@@ -508,7 +508,7 @@ or remote schema downloads.
 
 `source` and `field` are not present on every diagnostic:
 
-- Set-level diagnostics use `source` `manifest`: the 256-file limit (`HXP013`) and an empty request (`HXP015`).
+- `HXP013` reports the 256-file limit (`source` `manifest`) and the 1 MiB file limit (the file `source`, field `$`). `HXP015` reports an empty request (`source` `manifest`) and a missing required field (the file `source` and the missing property path).
 - Cancellation (`HXC130`) and usage (`HXC001`) diagnostics have no `source`.
 - A credential-bearing manifest path is reported as `[redacted manifest path]`.
 - On Windows, a manifest on a different volume from the working directory is reported by its absolute path.
