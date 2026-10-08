@@ -191,41 +191,27 @@ identities, shared package-family alignment, and
 It does not pin dependency versions, so an intentional version bump remains a
 valid release input.
 
-### Story 1.2 audit completion prerequisite
+### Revision-bound audit refresh
 
 Story 1.2 adds `NuGet.Versioning/7.9.0` and changes the catalog plus the Builds
-AppHost and Tooling declarations. The unchanged deterministic audit therefore
-fails until those declarations belong to a real local Builds commit and a fresh
-audit records that commit. Local contract tests grant no publication or Platform
-acceptance. The remaining audit gate blocks story completion.
+AppHost and Tooling declarations. Its refreshed audit is bound to the local
+source commit and retains prior family/package observations as historical
+context. All 304 existing package selections remain unchanged. Local contract
+tests grant no publication or Platform acceptance.
 
-The following sequence is prepared for a separately authorized local commit;
-none of the staging, commit or audit replacement steps runs before that
-permission. Work from the `Hexalith.Builds` repository. Review the exact story
-paths in the retained verification manifest, retain unrelated changes, and
-validate the full commit message with the repository's pinned commitlint CLI.
-If the pinned CLI is absent, install the locked development tools with `npm ci`
-before validating the message. `$messageFile` names the reviewed message file.
+For future declaration changes, commit the reviewed source declarations in
+`Hexalith.Builds` before feed discovery. The generator proves their bytes against
+the owning repository's actual `HEAD`. Preserve unrelated changes and validate
+each complete commit message with the repository's pinned commitlint CLI.
 
-```powershell
-$verification = './artifacts/story-1-2-verification-20261008-v3'
-git status --short --branch
-git -c core.whitespace=cr-at-eol diff --check
-npx --no-install commitlint --edit $messageFile
-git add -- (Get-Content "$verification/reviewed-story-paths.txt")
-git commit --file $messageFile
-git rev-parse HEAD
-```
-
-The declarations must be committed before feed discovery because the generator
-proves their bytes against the owning repository's actual `HEAD`. Preserve the
-prior audit and perform a complete refresh: the new package family makes an
-incremental refresh invalid. Passing `-PriorAuditPath` retains earlier family and
-package observations as explicitly historical context; omitting `-Family`
-refreshes every family. Keep all selected versions unchanged and retain bound
-qualification evidence byte for byte.
+Preserve the prior audit before a deliberate refresh. A new package family
+requires complete refresh: omit `-Family` and pass `-PriorAuditPath` to retain
+historical observations. Keep selected versions and bound qualification evidence
+unchanged unless their change is separately intended.
 
 ```powershell
+$verification = './artifacts/package-audit-refresh'
+New-Item -ItemType Directory -Force $verification | Out-Null
 $priorAudit = "$verification/package-version-audit.before-refresh.json"
 Copy-Item ./Tools/package-version-audit.json $priorAudit
 pwsh -NoProfile -File ./Tools/audit-central-package-versions.ps1 `
@@ -236,13 +222,10 @@ pwsh -NoProfile -File ./Tools/test-package-version-audit-validator.ps1
 git diff -- ./Props/Directory.Packages.props ./Tools/package-version-audit.json
 ```
 
-Review the real feed observations and retained historical context, then validate
-a separate audit commit message before staging only `Tools/package-version-audit.json`
-and creating its local commit. Run the deterministic validator again against the
-committed result. Neither local commit publishes packages, pushes a branch, changes
-Platform's gitlink or grants Platform tool acceptance. Before authorization, the
-precise current validator failure and commands remain in the verification logs,
-and `Tools/package-version-audit.json` stays untouched.
+Review real feed observations and retained history, then create the separately
+authorized audit commit. Run the deterministic validator against the committed
+result. Neither local commit publishes packages, pushes a branch, changes
+Platform's gitlink or grants Platform tool acceptance.
 
 ### Central package freshness audit
 
