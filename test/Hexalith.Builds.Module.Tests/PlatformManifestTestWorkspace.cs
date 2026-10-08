@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests;
 
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 
 /// <summary>
@@ -82,4 +83,50 @@ internal sealed class PlatformManifestTestWorkspace : IDisposable
 
     /// <summary>Removes the isolated workspace.</summary>
     public void Dispose() => Directory.Delete(Root, true);
+
+    /// <summary>Opens a FIFO for the callback so validation observes a non-seekable manifest.</summary>
+    /// <param name="validate">The callback that receives the FIFO path.</param>
+    /// <returns>A task that completes after the callback and the write end close.</returns>
+    /// <exception cref="InvalidOperationException">mkfifo did not create the FIFO.</exception>
+    internal static async Task UseNonSeekableManifestAsync(Func<string, Task> validate)
+    {
+        ArgumentNullException.ThrowIfNull(validate);
+        string directory = CompositionTestFiles.CreateDirectory();
+        string fifo = Path.Combine(directory, "manifest.fifo");
+        using Process process = new();
+        process.StartInfo.FileName = "mkfifo";
+        process.StartInfo.ArgumentList.Add(fifo);
+        process.StartInfo.RedirectStandardError = true;
+        process.StartInfo.UseShellExecute = false;
+        if (!process.Start())
+        {
+            throw new InvalidOperationException("mkfifo failed to start.");
+        }
+
+        await process.WaitForExitAsync().ConfigureAwait(false);
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException(await process.StandardError.ReadToEndAsync().ConfigureAwait(false));
+        }
+
+        using ManualResetEventSlim release = new(false);
+        Task writer = Task.Run(() =>
+        {
+            using FileStream stream = new(fifo, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+            if (!release.Wait(TimeSpan.FromSeconds(10)))
+            {
+                throw new TimeoutException("The non-seekable manifest reader did not finish.");
+            }
+        });
+        try
+        {
+            await validate(fifo).ConfigureAwait(false);
+        }
+        finally
+        {
+            release.Set();
+            await writer.WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+            Directory.Delete(directory, true);
+        }
+    }
 }

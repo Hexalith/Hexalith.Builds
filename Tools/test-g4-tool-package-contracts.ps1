@@ -1020,6 +1020,15 @@ try {
             -not $duplicateResult.Output.Contains('platform-valid.json', [StringComparison]::Ordinal)) {
             throw "Packaged Platform duplicate enrollment ($format) did not fail with source and full field diagnostics."
         }
+
+        if ($format -ceq 'json') {
+            $duplicate = ConvertFrom-ToolResult -Result $duplicateResult -Description 'Packaged Platform duplicate enrollment'
+            foreach ($diagnostic in @($duplicate.diagnostics)) {
+                if ($diagnostic.source -cne 'platform-valid.json') {
+                    throw "Packaged Platform duplicate enrollment reported source '$($diagnostic.source)' instead of platform-valid.json."
+                }
+            }
+        }
     }
     if ((Get-FileHash -LiteralPath $platformManifest -Algorithm SHA256).Hash -cne $platformInputHash) {
         throw 'Packaged validation modified its declaration input.'

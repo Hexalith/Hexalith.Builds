@@ -7,6 +7,7 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -18,6 +19,7 @@ using Xunit;
 /// <summary>
 /// Verifies public validation output, repeatable manifests, cancellation and absence of lifecycle effects.
 /// </summary>
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class PlatformManifestCommandTests
 {
     /// <summary>Verifies valid enrollment leaves all input bytes intact and creates no runtime files.</summary>
@@ -131,6 +133,17 @@ public sealed class PlatformManifestCommandTests
             ("modules.0.surfaces.interfaces.0.routePrefix", "\"/sample\\n\"", "modules[0].surfaces.interfaces[0].routePrefix"),
             ("modules.0.surfaces.interfaces.0.routePrefix", "\"/sample\\u0000route\"", "modules[0].surfaces.interfaces[0].routePrefix"),
             ("modules.0.runtime.resources.0.volumes.0.mountPath", "\"/data\\u0000path\"", "modules[0].runtime.resources[0].volumes[0].mountPath"),
+            ("modules.0.surfaces.interfaces.0.routePrefix", "\"/api/../admin//x\"", "modules[0].surfaces.interfaces[0].routePrefix"),
+            ("modules.0.surfaces.interfaces.0.routePrefix", "\"/./sample\"", "modules[0].surfaces.interfaces[0].routePrefix"),
+            ("modules.0.surfaces.interfaces.0.routePrefix", "\"//sample\"", "modules[0].surfaces.interfaces[0].routePrefix"),
+            ("modules.0.runtime.resources.0.volumes.0.mountPath", "\"/api/../admin//x\"", "modules[0].runtime.resources[0].volumes[0].mountPath"),
+            ("modules.0.runtime.resources.0.volumes.0.mountPath", "\"/./data\"", "modules[0].runtime.resources[0].volumes[0].mountPath"),
+            ("modules.0.surfaces.interfaces.0.surfaceClass", "\"gateway\"", "modules[0].surfaces.interfaces[0].surfaceClass"),
+            ("modules.0.surfaces.interfaces.0.surfaceClass", "\"mcp\"", "modules[0].surfaces.interfaces[0].surfaceClass"),
+            ("modules.0.lifecycle.classification.changeClass", "\"patch\"", "modules[0].lifecycle.classification.changeClass"),
+            ("modules.0.lifecycle.readiness.0.service", "\"health\"", "modules[0].lifecycle.readiness[0].service"),
+            ("modules.0.lifecycle.readiness.0.arguments", "[]", "modules[0].lifecycle.readiness[0].arguments"),
+            ("modules.0.integration.topics.0.deadLetter.strategy", "\"none\"", "modules[0].integration.topics[0].deadLetter.topic"),
         ];
         foreach ((string path, string json, string field) in cases)
         {
@@ -573,6 +586,155 @@ public sealed class PlatformManifestCommandTests
         await AssertInvalidAsync(path, "$", format, "HXP011").ConfigureAwait(true);
     }
 
+    /// <summary>Verifies readiness binding and the required-server gate in both formats.</summary>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after both commands.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task RequiredServerReadinessBindingIsEnforcedAsync(string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Document["modules"]![0]!["identity"]!["servers"]!.AsArray().Add(JsonNode.Parse("""
+            {
+              "id": "worker",
+              "appId": "sample-worker",
+              "resourceId": "sample-worker-host",
+              "enabled": true,
+              "required": true
+            }
+            """));
+        await AssertInvalidAsync(workspace.Save(), "modules[0].lifecycle.readiness", format, "HXP020").ConfigureAwait(true);
+
+        using PlatformManifestTestWorkspace optional = new();
+        optional.Change("modules.0.identity.servers.0.required", "false");
+        optional.Change("modules.0.identity.servers.0.enabled", "false");
+        optional.Change("modules.0.lifecycle.readiness", "[]");
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", optional.Save(), "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(0);
+            output.ToString().ShouldContain("validated");
+        }
+    }
+
+    /// <summary>Verifies scheme-relative credential URIs fail in both formats without disclosure.</summary>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task SchemeRelativeCredentialUriFailsAsync(string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.tasks.0.arguments", "[\"--endpoint=//user:pw@host.example\"]");
+        await AssertInvalidAsync(workspace.Save(), "modules[0].lifecycle.tasks[0].arguments[0]", format, "HXM007").ConfigureAwait(true);
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", workspace.Save("again.json"), "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(1);
+            output.ToString().ShouldNotContain("user:pw");
+        }
+    }
+
+    /// <summary>Verifies JSON syntax failures expose a location in both formats.</summary>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task JsonSyntaxErrorsExposeLocationAsync(string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = Path.Combine(workspace.Root, "syntax.json");
+        const string content = "{\n\"schema\":";
+        await File.WriteAllTextAsync(path, content, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        JsonException? parseError = null;
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(content);
+            _ = document;
+        }
+        catch (JsonException exception)
+        {
+            parseError = exception;
+        }
+
+        string location = $"{parseError!.LineNumber! + 1}:{parseError.BytePositionInLine! + 1}";
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", path, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(1);
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                result.RootElement.GetProperty("status").GetString().ShouldBe("failed");
+                result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic =>
+                    diagnostic.GetProperty("field").GetString() == "$"
+                    && diagnostic.GetProperty("location").GetString() == location);
+            }
+            else
+            {
+                output.ToString().ShouldContain("failed");
+                output.ToString().ShouldContain("field=$ ");
+                output.ToString().ShouldContain($"location={location}");
+            }
+        }
+    }
+
+    /// <summary>Verifies a non-seekable manifest and a deleted working directory stay structured.</summary>
+    /// <param name="format">The diagnostic output format.</param>
+    /// <returns>A task that completes after both commands.</returns>
+    [Theory(Timeout = 15000)]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task UnreadableManifestInputsReturnStructuredFailuresAsync(string format)
+    {
+        await PlatformManifestTestWorkspace.UseNonSeekableManifestAsync(async path =>
+        {
+            StringWriter output = new();
+            await using (output.ConfigureAwait(true))
+            {
+                int exitCode = await ModuleCommandApplication.InvokeAsync(
+                    ["validate", "--manifest", path, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                exitCode.ShouldBe(1);
+                output.ToString().ShouldContain("HXP005");
+                output.ToString().ShouldContain("failed");
+            }
+        }).ConfigureAwait(true);
+
+        using PlatformManifestTestWorkspace workspace = new();
+        string manifest = workspace.Save();
+        string original = Directory.GetCurrentDirectory();
+        string deleted = Path.Combine(workspace.Root, "deleted-cwd");
+        _ = Directory.CreateDirectory(deleted);
+        try
+        {
+            Directory.SetCurrentDirectory(deleted);
+            Directory.Delete(deleted);
+            StringWriter output = new();
+            await using (output.ConfigureAwait(true))
+            {
+                int exitCode = await ModuleCommandApplication.InvokeAsync(
+                    ["validate", "--manifest", manifest, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                exitCode.ShouldBe(1);
+                output.ToString().ShouldContain("HXP004");
+                output.ToString().ShouldContain("failed");
+                output.ToString().ShouldNotContain("DirectoryNotFoundException");
+            }
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(original);
+        }
+    }
+
     private static async Task AssertMutationAsync(string path, string json, string field, string format)
     {
         using PlatformManifestTestWorkspace workspace = new();
@@ -582,30 +744,41 @@ public sealed class PlatformManifestCommandTests
 
     private static async Task AssertInvalidAsync(string manifest, string field, string format, string? ruleId = null)
     {
+        string expectedSource = Path.GetRelativePath(Directory.GetCurrentDirectory(), Path.GetFullPath(manifest)).Replace('\\', '/');
         StringWriter output = new();
         await using (output.ConfigureAwait(true))
         {
             int exitCode = await ModuleCommandApplication.InvokeAsync(
                 ["validate", "--manifest", manifest, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
-            exitCode.ShouldBe(1, $"Expected a local configuration failure for {field}.");
-            output.ToString().ShouldContain(Path.GetFileName(manifest));
-            output.ToString().ShouldContain(field);
-            output.ToString().ShouldNotContain("declarations");
+            string rendered = output.ToString();
+            exitCode.ShouldBe(1, $"Expected a local configuration failure for {field}.{Environment.NewLine}{rendered}");
             if (ruleId is not null)
             {
-                output.ToString().ShouldContain(ruleId);
+                rendered.ShouldContain(ruleId);
             }
 
             if (format == "json")
             {
-                using JsonDocument result = JsonDocument.Parse(output.ToString());
-                foreach (JsonElement diagnostic in result.RootElement.GetProperty("diagnostics").EnumerateArray())
-                {
-                    diagnostic.GetProperty("source").GetString().ShouldNotBeNullOrWhiteSpace();
-                    diagnostic.GetProperty("field").GetString().ShouldNotBeNullOrWhiteSpace();
-                    diagnostic.GetProperty("message").GetString().ShouldNotBeNullOrWhiteSpace();
-                }
+                using JsonDocument result = JsonDocument.Parse(rendered);
+                result.RootElement.GetProperty("status").GetString().ShouldBe("failed");
+                result.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic =>
+                    diagnostic.GetProperty("field").GetString() == field
+                    && diagnostic.GetProperty("source").GetString() == expectedSource
+                    && (ruleId == null || diagnostic.GetProperty("ruleId").GetString() == ruleId));
+            }
+            else
+            {
+                rendered.ShouldContain("failed");
+                ShouldContainLabel(rendered, "source", expectedSource);
+                ShouldContainLabel(rendered, "field", field);
             }
         }
+    }
+
+    private static void ShouldContainLabel(string rendered, string name, string value)
+    {
+        bool labelled = rendered.Contains($"{name}={value} ", StringComparison.Ordinal)
+            || rendered.Contains($"{name}={value}:", StringComparison.Ordinal);
+        labelled.ShouldBeTrue($"Expected {name}={value} in:{Environment.NewLine}{rendered}");
     }
 }

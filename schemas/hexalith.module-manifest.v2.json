@@ -157,6 +157,12 @@
           "items": {
             "$ref": "#/$defs/resource"
           }
+        },
+        "providerExceptions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/providerException"
+          }
         }
       }
     },
@@ -306,7 +312,7 @@
         },
         "mountPath": {
           "type": "string",
-          "pattern": "^/[^\\\\\\u0000-\\u001F\\u007F-\\u009F]*(?![\\s\\S])",
+          "pattern": "^(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))/(?!/)[^\\\\\\u0000-\\u001F\\u007F-\\u009F]*(?![\\s\\S])",
           "maxLength": 2048
         },
         "sizeMiB": {
@@ -377,7 +383,7 @@
         },
         "routePrefix": {
           "type": "string",
-          "pattern": "^/[^\\\\?#\\u0000-\\u001F\\u007F-\\u009F]*(?![\\s\\S])",
+          "pattern": "^(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))/(?!/)[^\\\\?#\\u0000-\\u001F\\u007F-\\u009F]*(?![\\s\\S])",
           "maxLength": 2048
         },
         "exposure": {
@@ -389,7 +395,12 @@
           ]
         },
         "surfaceClass": {
-          "$ref": "#/$defs/identifier"
+          "type": "string",
+          "enum": [
+            "ui",
+            "agent",
+            "service"
+          ]
         },
         "authorization": {
           "$ref": "#/$defs/authorization"
@@ -552,6 +563,9 @@
       "allOf": [
         {
           "if": {
+            "required": [
+              "strategy"
+            ],
             "properties": {
               "strategy": {
                 "const": "topic"
@@ -562,6 +576,23 @@
             "required": [
               "topic"
             ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "strategy"
+            ],
+            "properties": {
+              "strategy": {
+                "const": "none"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "topic": false
+            }
           }
         }
       ]
@@ -673,6 +704,40 @@
         },
         "tenancy": {
           "$ref": "#/$defs/tenancy"
+        }
+      }
+    },
+    "providerException": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "capability",
+        "owner",
+        "surface",
+        "transitional"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "memories-falkordb-graph",
+            "memories-redis-search-vector",
+            "memories-set-nx-preflight-dedup",
+            "memories-redis-coordination"
+          ]
+        },
+        "capability": {
+          "$ref": "#/$defs/text"
+        },
+        "owner": {
+          "$ref": "#/$defs/identifier"
+        },
+        "surface": {
+          "$ref": "#/$defs/identifier"
+        },
+        "transitional": {
+          "type": "boolean"
         }
       }
     },
@@ -847,6 +912,9 @@
       "allOf": [
         {
           "if": {
+            "required": [
+              "kind"
+            ],
             "properties": {
               "kind": {
                 "const": "http"
@@ -856,11 +924,19 @@
           "then": {
             "required": [
               "endpoint"
-            ]
+            ],
+            "properties": {
+              "service": false,
+              "executable": false,
+              "arguments": false
+            }
           }
         },
         {
           "if": {
+            "required": [
+              "kind"
+            ],
             "properties": {
               "kind": {
                 "const": "grpc"
@@ -870,11 +946,19 @@
           "then": {
             "required": [
               "service"
-            ]
+            ],
+            "properties": {
+              "endpoint": false,
+              "executable": false,
+              "arguments": false
+            }
           }
         },
         {
           "if": {
+            "required": [
+              "kind"
+            ],
             "properties": {
               "kind": {
                 "const": "command"
@@ -884,7 +968,11 @@
           "then": {
             "required": [
               "executable"
-            ]
+            ],
+            "properties": {
+              "endpoint": false,
+              "service": false
+            }
           }
         }
       ]
@@ -1012,6 +1100,16 @@
             "$ref": "#/$defs/identifier"
           },
           "uniqueItems": true
+        },
+        "e2eChecks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          },
+          "uniqueItems": true
+        },
+        "tenantLifecycle": {
+          "type": "boolean"
         }
       }
     },
@@ -1046,9 +1144,9 @@
         "changeClass": {
           "type": "string",
           "enum": [
-            "patch",
+            "breaking",
             "additive",
-            "breaking"
+            "none"
           ]
         },
         "reason": {

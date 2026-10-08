@@ -84,8 +84,8 @@ public static partial class PlatformManifestValidator
             Array.AsReadOnly(ordered));
     }
 
-    private static void Add(List<ToolDiagnostic> diagnostics, string rule, string source, string field, string reason) =>
-        diagnostics.Add(new ToolDiagnostic(rule, ToolPhase.Manifest, ToolFailureCategory.Manifest, reason, field.Length == 0 ? "$" : field, Source: source));
+    private static void Add(List<ToolDiagnostic> diagnostics, string rule, string source, string field, string reason, string? location = null) =>
+        diagnostics.Add(new ToolDiagnostic(rule, ToolPhase.Manifest, ToolFailureCategory.Manifest, reason, field.Length == 0 ? "$" : field, Source: source, Location: location));
 
     private static string ReadSchema()
     {
@@ -114,7 +114,7 @@ public static partial class PlatformManifestValidator
                 source = "[redacted manifest path]";
             }
         }
-        catch (Exception exception) when (exception is ArgumentException or NotSupportedException)
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or IOException or UnauthorizedAccessException)
         {
             Add(diagnostics, "HXP004", source, "manifest", "Supply a valid manifest file path.");
             return;
@@ -124,6 +124,12 @@ public static partial class PlatformManifestValidator
         {
             using FileStream stream = File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             int initialDiagnosticCount = diagnostics.Count;
+            if (!stream.CanSeek)
+            {
+                Add(diagnostics, "HXP005", source, "manifest", "Supply an existing readable manifest file.");
+                return;
+            }
+
             if (stream.Length > _maximumManifestBytes)
             {
                 Add(diagnostics, "HXP013", source, "$", "Keep the UTF-8 manifest at or below 1 MiB.");
@@ -190,7 +196,7 @@ public static partial class PlatformManifestValidator
                 }
             }
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException)
         {
             Add(diagnostics, "HXP005", source, "manifest", "Supply an existing readable manifest file.");
         }
@@ -200,7 +206,7 @@ public static partial class PlatformManifestValidator
         }
         catch (JsonException exception)
         {
-            Add(diagnostics, "HXP011", source, exception.Path ?? "$", "Supply valid JSON without comments or trailing commas and with nesting at most 64 levels.");
+            Add(diagnostics, "HXP011", source, exception.Path ?? "$", "Supply valid JSON without comments or trailing commas and with nesting at most 64 levels.", FormatJsonLocation(exception));
         }
     }
 
@@ -417,8 +423,16 @@ public static partial class PlatformManifestValidator
         || CredentialUriAnywhereRegex().IsMatch(value)
         || (value.Contains("://", StringComparison.Ordinal) && Uri.TryCreate(value, UriKind.Absolute, out Uri? uri) && uri.UserInfo.Length > 0);
 
-    [GeneratedRegex(@"[a-z][a-z0-9+.-]*://[^\s/?#@]+@", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
+    [GeneratedRegex(@"(?:[a-z][a-z0-9+.-]*:)?//[^\s/?#@]+@", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
     private static partial Regex CredentialUriAnywhereRegex();
+
+    private static string? FormatJsonLocation(JsonException exception) =>
+        exception.LineNumber is long line && exception.BytePositionInLine is long column
+            ? string.Concat(
+                (line + 1).ToString(CultureInfo.InvariantCulture),
+                ":",
+                (column + 1).ToString(CultureInfo.InvariantCulture))
+            : null;
 
     private static JsonElement ObjectValue(JsonElement element, string property) =>
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(property, out JsonElement value) ? value : default;
@@ -555,7 +569,9 @@ public static partial class PlatformManifestValidator
                 {
                     List<ToolDiagnostic> pathDiagnostics = [];
                     _ = ManifestPathValidator.ValidateExistingFile(executable, ManifestPathValidator.FindRepositoryRoot(fullPath), field, pathDiagnostics);
-                    diagnostics.AddRange(pathDiagnostics.Select(diagnostic => diagnostic with { Source = source }));
+                    diagnostics.AddRange(pathDiagnostics
+                        .Where(diagnostic => diagnostic.RuleId is not "HXM006" and not "HXM007")
+                        .Select(diagnostic => diagnostic with { Source = source }));
                 }
             }
         }

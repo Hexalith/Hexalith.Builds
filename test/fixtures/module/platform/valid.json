@@ -29,8 +29,8 @@
             "packageId": "Hexalith.Sample.Extension",
             "configurationInputs": [
               {
-                "key": "Sample:Secret",
-                "source": "secret",
+                "key": "Sample:Setting",
+                "source": "configuration",
                 "reference": "provider-access"
               }
             ]
@@ -67,7 +67,7 @@
             "protocol": "http",
             "routePrefix": "/sample",
             "exposure": "internal-only",
-            "surfaceClass": "gateway",
+            "surfaceClass": "agent",
             "authorization": {
               "policy": "authenticated",
               "permissions": [

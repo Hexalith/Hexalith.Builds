@@ -21,6 +21,7 @@ using Xunit;
 /// <summary>
 /// Verifies the complete local enrollment schema, atomic results, safeguards and nested diagnostics.
 /// </summary>
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class PlatformManifestValidationTests
 {
     /// <summary>Verifies a complete declaration passes both validators and materializes effective defaults.</summary>
@@ -88,6 +89,19 @@ public sealed class PlatformManifestValidationTests
     [InlineData("modules.0.lifecycle.readiness.0.executable", "\"probe\\n\"", "modules[0].lifecycle.readiness[0].executable")]
     [InlineData("modules.0.lifecycle.readiness.0.executable", "\"probe\\u0000\"", "modules[0].lifecycle.readiness[0].executable")]
     [InlineData("modules.0.lifecycle.readiness.0.executable", "\"probe\\u0085\"", "modules[0].lifecycle.readiness[0].executable")]
+    [InlineData("modules.0.surfaces.interfaces.0.routePrefix", "\"/api/../admin//x\"", "modules[0].surfaces.interfaces[0].routePrefix")]
+    [InlineData("modules.0.surfaces.interfaces.0.routePrefix", "\"/./sample\"", "modules[0].surfaces.interfaces[0].routePrefix")]
+    [InlineData("modules.0.surfaces.interfaces.0.routePrefix", "\"//sample\"", "modules[0].surfaces.interfaces[0].routePrefix")]
+    [InlineData("modules.0.runtime.resources.0.volumes.0.mountPath", "\"/api/../admin//x\"", "modules[0].runtime.resources[0].volumes[0].mountPath")]
+    [InlineData("modules.0.runtime.resources.0.volumes.0.mountPath", "\"/./data\"", "modules[0].runtime.resources[0].volumes[0].mountPath")]
+    [InlineData("modules.0.runtime.resources.0.volumes.0.mountPath", "\"//data\"", "modules[0].runtime.resources[0].volumes[0].mountPath")]
+    [InlineData("modules.0.surfaces.interfaces.0.surfaceClass", "\"gateway\"", "modules[0].surfaces.interfaces[0].surfaceClass")]
+    [InlineData("modules.0.surfaces.interfaces.0.surfaceClass", "\"mcp\"", "modules[0].surfaces.interfaces[0].surfaceClass")]
+    [InlineData("modules.0.lifecycle.classification.changeClass", "\"patch\"", "modules[0].lifecycle.classification.changeClass")]
+    [InlineData("modules.0.lifecycle.readiness.0.service", "\"health\"", "modules[0].lifecycle.readiness[0].service")]
+    [InlineData("modules.0.lifecycle.readiness.0.arguments", "[]", "modules[0].lifecycle.readiness[0].arguments")]
+    [InlineData("modules.0.lifecycle.readiness.0.executable", "\"README.md\"", "modules[0].lifecycle.readiness[0].executable")]
+    [InlineData("modules.0.integration.topics.0.deadLetter.strategy", "\"none\"", "modules[0].integration.topics[0].deadLetter.topic")]
     public void InvalidFieldsMatchSchemaAndReportCompletePaths(string path, string json, string field)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -140,6 +154,7 @@ public sealed class PlatformManifestValidationTests
             "integration.topics", "integration.secrets", "integration.dynamicSecretNamespaces", "integration.identityNeeds",
             "integration.egress", "integration.providers", "integration.workers", "lifecycle.readiness", "lifecycle.tasks",
             "lifecycle.recoveryHooks", "lifecycle.fenceHooks", "lifecycle.criticalFlows", "lifecycle.smokeSurfaces", "lifecycle.recoveryInventory",
+            "runtime.providerExceptions",
         })
         {
             workspace.Change($"modules.0.{path}", "[]");
@@ -406,6 +421,177 @@ public sealed class PlatformManifestValidationTests
         else
         {
             result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP011" && !string.IsNullOrWhiteSpace(diagnostic.Field));
+        }
+    }
+
+    /// <summary>Verifies later stories can declare provider exceptions, flow checks and tenant-lifecycle markers.</summary>
+    /// <param name="surfaceClass">A realm-contract surface class.</param>
+    /// <param name="changeClass">A module-intake change class.</param>
+    /// <param name="exceptionName">A named AD-9 exception.</param>
+    /// <param name="transitional">Whether the exception is transitional.</param>
+    [Theory]
+    [InlineData("ui", "none", "memories-falkordb-graph", false)]
+    [InlineData("agent", "additive", "memories-redis-search-vector", false)]
+    [InlineData("service", "breaking", "memories-set-nx-preflight-dedup", false)]
+    [InlineData("agent", "none", "memories-redis-coordination", true)]
+    public void StoryOwnedDeclarationFieldsPass(string surfaceClass, string changeClass, string exceptionName, bool transitional)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.surfaces.interfaces.0.surfaceClass", JsonSerializer.Serialize(surfaceClass));
+        workspace.Change("modules.0.lifecycle.classification.changeClass", JsonSerializer.Serialize(changeClass));
+        workspace.Change("modules.0.lifecycle.criticalFlows.0.e2eChecks", "[]");
+        workspace.Change("modules.0.lifecycle.criticalFlows.0.tenantLifecycle", "true");
+        workspace.Change("modules.0.runtime.providerExceptions", JsonSerializer.Serialize(new[]
+        {
+            new
+            {
+                name = exceptionName,
+                capability = "named provider capability",
+                owner = "memories",
+                surface = "adapter",
+                transitional,
+            },
+        }));
+        workspace.Change("modules.0.integration.topics.0.deadLetter", "{\"strategy\":\"none\"}");
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Diagnostics.ShouldBeEmpty();
+        result.Declarations.ShouldNotBeNull().Count.ShouldBe(1);
+    }
+
+    /// <summary>Verifies a required server is not covered by a usable probe bound to another server.</summary>
+    [Fact]
+    public void RequiredServerIgnoresReadinessBoundToAnotherServer()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Document["modules"]![0]!["identity"]!["servers"]!.AsArray().Add(JsonNode.Parse("""
+            {
+              "id": "worker",
+              "appId": "sample-worker",
+              "resourceId": "sample-worker-host",
+              "enabled": true,
+              "required": true
+            }
+            """));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP020" && diagnostic.Field == "modules[0].lifecycle.readiness" && diagnostic.Message.Contains("servers[1].id", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies a disabled optional server can enroll without readiness.</summary>
+    [Fact]
+    public void DisabledOptionalServerCanOmitReadiness()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.identity.servers.0.required", "false");
+        workspace.Change("modules.0.identity.servers.0.enabled", "false");
+        workspace.Change("modules.0.lifecycle.readiness", "[]");
+        PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken).Diagnostics.ShouldBeEmpty();
+    }
+
+    /// <summary>Verifies a scheme-relative credential URI cannot enroll.</summary>
+    [Fact]
+    public void SchemeRelativeCredentialUriIsRejected()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.tasks.0.arguments", "[\"--endpoint=//user:pw@host.example\"]");
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXM007" && diagnostic.Field == "modules[0].lifecycle.tasks[0].arguments[0]");
+        JsonSerializer.Serialize(result.Diagnostics).ShouldNotContain("user:pw");
+    }
+
+    /// <summary>Verifies placeholder and credential paths keep the value inspection diagnostic only.</summary>
+    /// <param name="executable">The rejected executable path.</param>
+    /// <param name="ruleId">The single expected safeguard rule.</param>
+    [Theory]
+    [InlineData("$TOOLS/run.sh", "HXM006")]
+    [InlineData("token=fixture-secret-value", "HXM007")]
+    public void ExecutableSafeguardsAreNotDuplicated(string executable, string ruleId)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.tasks.0.executable", JsonSerializer.Serialize(executable));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.Where(diagnostic => diagnostic.RuleId == ruleId).ShouldHaveSingleItem().Hint.ShouldBeNull();
+        JsonSerializer.Serialize(result.Diagnostics).ShouldNotContain("invoking the runner");
+        JsonSerializer.Serialize(result.Diagnostics).ShouldNotContain("fixture-secret-value");
+    }
+
+    /// <summary>Verifies a UTF-8 BOM does not reject an otherwise valid declaration.</summary>
+    [Fact]
+    public void Utf8BomPrefixedManifestRemainsValid()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = workspace.Save();
+        byte[] content = File.ReadAllBytes(path);
+        byte[] prefixed = new byte[content.Length + 3];
+        prefixed[0] = 0xEF;
+        prefixed[1] = 0xBB;
+        prefixed[2] = 0xBF;
+        content.CopyTo(prefixed, 3);
+        File.WriteAllBytes(path, prefixed);
+        PlatformManifestValidator.Validate([path], TestContext.Current.CancellationToken).Diagnostics.ShouldBeEmpty();
+    }
+
+    /// <summary>Verifies JSON syntax failures retain the parser line and column.</summary>
+    [Fact]
+    public void JsonSyntaxErrorsIncludeLocation()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = workspace.Save();
+        const string content = "{\n\"schema\":";
+        File.WriteAllText(path, content);
+        JsonException? parseError = null;
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(content);
+            _ = document.RootElement;
+        }
+        catch (JsonException exception)
+        {
+            parseError = exception;
+        }
+
+        string location = $"{parseError!.LineNumber! + 1}:{parseError.BytePositionInLine! + 1}";
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([path], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP011" && diagnostic.Field == "$" && diagnostic.Location == location);
+    }
+
+    /// <summary>Verifies a non-seekable manifest returns a structured read failure.</summary>
+    /// <returns>A task that completes after validation.</returns>
+    [Fact(Timeout = 15000)]
+    public async Task NonSeekableManifestReturnsStructuredFailureAsync()
+    {
+        await PlatformManifestTestWorkspace.UseNonSeekableManifestAsync(path =>
+        {
+            PlatformManifestValidationResult result = PlatformManifestValidator.Validate([path], TestContext.Current.CancellationToken);
+            result.Declarations.ShouldBeNull();
+            result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP005" && diagnostic.Field == "manifest");
+            return Task.CompletedTask;
+        }).ConfigureAwait(true);
+    }
+
+    /// <summary>Verifies a deleted working directory returns a structured path failure.</summary>
+    [Fact]
+    public void DeletedWorkingDirectoryReturnsStructuredPathFailure()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string manifest = workspace.Save();
+        string original = Directory.GetCurrentDirectory();
+        string deleted = Path.Combine(workspace.Root, "deleted-cwd");
+        _ = Directory.CreateDirectory(deleted);
+        try
+        {
+            Directory.SetCurrentDirectory(deleted);
+            Directory.Delete(deleted);
+            PlatformManifestValidationResult result = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+            result.Declarations.ShouldBeNull();
+            result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP004" && diagnostic.Field == "manifest" && diagnostic.Source == "manifest");
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(original);
         }
     }
 

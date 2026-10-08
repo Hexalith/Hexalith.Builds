@@ -295,8 +295,8 @@ files. The same example is retained as
             "packageId": "Hexalith.Sample.Extension",
             "configurationInputs": [
               {
-                "key": "Sample:Secret",
-                "source": "secret",
+                "key": "Sample:Setting",
+                "source": "configuration",
                 "reference": "provider-access"
               }
             ]
@@ -333,7 +333,7 @@ files. The same example is retained as
             "protocol": "http",
             "routePrefix": "/sample",
             "exposure": "internal-only",
-            "surfaceClass": "gateway",
+            "surfaceClass": "agent",
             "authorization": {
               "policy": "authenticated",
               "permissions": [
@@ -492,10 +492,11 @@ files. The same example is retained as
 }
 ```
 
-Every diagnostic includes `source` (the supplied file relative to the current
+File diagnostics include `source` (the supplied file relative to the current
 working directory), `field` (the complete indexed property path), and `message`
 (the reason), together with the stable `ruleId`, `phase`, `category` and optional
-`hint`. Human output renders these same fields; JSON output returns a single
+`hint`. JSON syntax failures also set optional `location` to the 1-based line and
+column. Human output renders these same fields; JSON output returns a single
 `status`, `outcome` and `diagnostics` object. Credential values are never copied
 into diagnostics. Errors aggregate deterministically across files, including
 all duplicate module, app and resource identity locations. Any error returns
@@ -504,6 +505,13 @@ returns `130`. Validation accepts at most 256 files, with each UTF-8 document
 at most 1 MiB and 64 levels deep. The schema is embedded in Tooling and shipped
 under `tools/net10.0/any/schemas/`, so installed validation uses no source checkout
 or remote schema downloads.
+
+`source` and `field` are not present on every diagnostic:
+
+- Set-level diagnostics use `source` `manifest`: the 256-file limit (`HXP013`) and an empty request (`HXP015`).
+- Cancellation (`HXC130`) and usage (`HXC001`) diagnostics have no `source`.
+- A credential-bearing manifest path is reported as `[redacted manifest path]`.
+- On Windows, a manifest on a different volume from the working directory is reported by its absolute path.
 
 The enrollment window accepts the current and previous Platform major, bounded
 by the first Platform major, 2. Initially only `hexalith.module-manifest.v2`
