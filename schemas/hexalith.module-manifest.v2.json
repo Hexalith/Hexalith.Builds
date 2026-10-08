@@ -1,0 +1,1094 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.com/schemas/hexalith.module-manifest.v2.json",
+  "title": "Platform module declaration v2",
+  "description": "Platform owns semantics; Builds validates local enrollment. Component names and environment bindings are assigned by Platform. Empty collections declare unused capabilities. Replicas default to one; startup defaults to 600 seconds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "modules"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "hexalith.module-manifest.v2"
+    },
+    "modules": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/module"
+      }
+    }
+  },
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "\\S"
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 63,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "configurationKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z][A-Za-z0-9]*(?::[A-Za-z][A-Za-z0-9]*)*$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\/$).+$"
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "runtime",
+        "surfaces",
+        "integration",
+        "lifecycle"
+      ],
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "runtime": {
+          "$ref": "#/$defs/runtime"
+        },
+        "surfaces": {
+          "$ref": "#/$defs/surfaces"
+        },
+        "integration": {
+          "$ref": "#/$defs/integration"
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/lifecycle"
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "moduleId",
+        "servers",
+        "dependencies"
+      ],
+      "properties": {
+        "moduleId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "servers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/server"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "server": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "appId",
+        "resourceId",
+        "enabled",
+        "required"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "appId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "resourceId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dapr",
+        "extensions",
+        "resources"
+      ],
+      "properties": {
+        "dapr": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dapr"
+          }
+        },
+        "extensions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/extension"
+          }
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/resource"
+          }
+        }
+      }
+    },
+    "dapr": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "capability",
+        "recoveryClass",
+        "configurationKey"
+      ],
+      "properties": {
+        "role": {
+          "$ref": "#/$defs/identifier"
+        },
+        "capability": {
+          "type": "string",
+          "enum": [
+            "state",
+            "pubsub",
+            "workflow",
+            "binding",
+            "secret",
+            "configuration",
+            "lock"
+          ]
+        },
+        "recoveryClass": {
+          "type": "string",
+          "enum": [
+            "authoritative-restore",
+            "rebuild-only",
+            "live-authority-only"
+          ]
+        },
+        "configurationKey": {
+          "$ref": "#/$defs/configurationKey"
+        }
+      }
+    },
+    "extension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packageId",
+        "configurationInputs"
+      ],
+      "properties": {
+        "packageId": {
+          "$ref": "#/$defs/text"
+        },
+        "configurationInputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/configurationInput"
+          }
+        }
+      }
+    },
+    "configurationInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "source",
+        "reference"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/configurationKey"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "configuration",
+            "secret",
+            "dynamic-secret"
+          ]
+        },
+        "reference": {
+          "$ref": "#/$defs/identifier"
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "server",
+        "requests",
+        "limits",
+        "volumes"
+      ],
+      "properties": {
+        "server": {
+          "$ref": "#/$defs/identifier"
+        },
+        "requests": {
+          "$ref": "#/$defs/resourceQuantity"
+        },
+        "limits": {
+          "$ref": "#/$defs/resourceQuantity"
+        },
+        "replicas": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "default": 1
+        },
+        "volumes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/volume"
+          }
+        }
+      }
+    },
+    "resourceQuantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "cpu": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "memoryMiB": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "volume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "mountPath",
+        "sizeMiB",
+        "accessMode",
+        "recoveryClass"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "mountPath": {
+          "type": "string",
+          "pattern": "^/[^\\\\]*$",
+          "maxLength": 2048
+        },
+        "sizeMiB": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "accessMode": {
+          "type": "string",
+          "enum": [
+            "read-write-once",
+            "read-only-many",
+            "read-write-many"
+          ]
+        },
+        "recoveryClass": {
+          "type": "string",
+          "enum": [
+            "authoritative-restore",
+            "rebuild-only",
+            "live-authority-only"
+          ]
+        }
+      }
+    },
+    "surfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interfaces"
+      ],
+      "properties": {
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/interface"
+          }
+        }
+      }
+    },
+    "interface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "server",
+        "protocol",
+        "routePrefix",
+        "exposure",
+        "surfaceClass",
+        "authorization",
+        "callers",
+        "operations"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "server": {
+          "$ref": "#/$defs/identifier"
+        },
+        "protocol": {
+          "type": "string",
+          "enum": [
+            "http",
+            "grpc",
+            "dapr"
+          ]
+        },
+        "routePrefix": {
+          "type": "string",
+          "pattern": "^/[^\\\\?#]*$",
+          "maxLength": 2048
+        },
+        "exposure": {
+          "type": "string",
+          "enum": [
+            "public",
+            "internal-only",
+            "disabled"
+          ]
+        },
+        "surfaceClass": {
+          "$ref": "#/$defs/identifier"
+        },
+        "authorization": {
+          "$ref": "#/$defs/authorization"
+        },
+        "callers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          },
+          "uniqueItems": true
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/operation"
+          }
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "permissions"
+      ],
+      "properties": {
+        "policy": {
+          "$ref": "#/$defs/text"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/text"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "kind",
+        "authorizationPolicy"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "command",
+            "query",
+            "administration"
+          ]
+        },
+        "authorizationPolicy": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topics",
+        "secrets",
+        "dynamicSecretNamespaces",
+        "identityNeeds",
+        "egress",
+        "providers",
+        "workers"
+      ],
+      "properties": {
+        "topics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/topic"
+          }
+        },
+        "secrets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/secret"
+          }
+        },
+        "dynamicSecretNamespaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dynamicSecretNamespace"
+          }
+        },
+        "identityNeeds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identityNeed"
+          }
+        },
+        "egress": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/egress"
+          }
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/provider"
+          }
+        },
+        "workers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/worker"
+          }
+        }
+      }
+    },
+    "topic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "role",
+        "deadLetter"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "role": {
+          "$ref": "#/$defs/identifier"
+        },
+        "deadLetter": {
+          "$ref": "#/$defs/deadLetter"
+        }
+      }
+    },
+    "deadLetter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strategy"
+      ],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "none",
+            "topic"
+          ]
+        },
+        "topic": {
+          "$ref": "#/$defs/identifier"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "strategy": {
+                "const": "topic"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "topic"
+            ]
+          }
+        }
+      ]
+    },
+    "secret": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "configurationKey"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "configurationKey": {
+          "$ref": "#/$defs/configurationKey"
+        }
+      }
+    },
+    "dynamicSecretNamespace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "owner",
+        "configurationKey"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "owner": {
+          "$ref": "#/$defs/identifier"
+        },
+        "configurationKey": {
+          "$ref": "#/$defs/configurationKey"
+        }
+      }
+    },
+    "identityNeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "audience",
+        "roles",
+        "applicationPrincipal"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "audience": {
+          "$ref": "#/$defs/identifier"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          },
+          "uniqueItems": true
+        },
+        "applicationPrincipal": {
+          "type": "boolean"
+        }
+      }
+    },
+    "egress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "protocol",
+        "destination"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "protocol": {
+          "type": "string",
+          "enum": [
+            "https",
+            "oidc",
+            "mcp",
+            "tcp"
+          ]
+        },
+        "destination": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "capability",
+        "tenancy"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "capability": {
+          "$ref": "#/$defs/text"
+        },
+        "tenancy": {
+          "$ref": "#/$defs/tenancy"
+        }
+      }
+    },
+    "tenancy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "configurationKey"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "per-environment",
+            "shared"
+          ]
+        },
+        "configurationKey": {
+          "$ref": "#/$defs/configurationKey"
+        }
+      }
+    },
+    "worker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "kind",
+        "disableControl"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "external-effect",
+            "destructive-retention",
+            "background"
+          ]
+        },
+        "disableControl": {
+          "$ref": "#/$defs/disableControl"
+        }
+      }
+    },
+    "disableControl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "configurationKey",
+        "disabledValue"
+      ],
+      "properties": {
+        "configurationKey": {
+          "$ref": "#/$defs/configurationKey"
+        },
+        "disabledValue": {
+          "type": "boolean"
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "readiness",
+        "tasks",
+        "recoveryHooks",
+        "fenceHooks",
+        "replay",
+        "startup",
+        "criticalFlows",
+        "smokeSurfaces",
+        "classification",
+        "recoveryInventory"
+      ],
+      "properties": {
+        "readiness": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/readiness"
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/task"
+          }
+        },
+        "recoveryHooks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hook"
+          }
+        },
+        "fenceHooks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hook"
+          }
+        },
+        "replay": {
+          "$ref": "#/$defs/replay"
+        },
+        "startup": {
+          "$ref": "#/$defs/startup"
+        },
+        "criticalFlows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/criticalFlow"
+          }
+        },
+        "smokeSurfaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/smokeSurface"
+          }
+        },
+        "classification": {
+          "$ref": "#/$defs/classification"
+        },
+        "recoveryInventory": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/recoveryItem"
+          }
+        }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "server",
+        "kind"
+      ],
+      "properties": {
+        "server": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "http",
+            "grpc",
+            "command"
+          ]
+        },
+        "endpoint": {
+          "type": "string",
+          "pattern": "^/[^\\\\?#]*$",
+          "maxLength": 2048
+        },
+        "service": {
+          "$ref": "#/$defs/text"
+        },
+        "executable": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "http"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "endpoint"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "grpc"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "service"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "command"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "executable"
+            ]
+          }
+        }
+      ]
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "scope",
+        "authorityClass",
+        "executable",
+        "arguments"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "per-start-verify",
+            "once-per-environment-creation",
+            "recovery",
+            "operator-only"
+          ]
+        },
+        "authorityClass": {
+          "$ref": "#/$defs/identifier"
+        },
+        "executable": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      }
+    },
+    "hook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "task",
+        "resource"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "task": {
+          "$ref": "#/$defs/identifier"
+        },
+        "resource": {
+          "$ref": "#/$defs/identifier"
+        }
+      }
+    },
+    "replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reopenBeforeReplay"
+      ],
+      "properties": {
+        "reopenBeforeReplay": {
+          "type": "boolean"
+        }
+      }
+    },
+    "startup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "defaultTimeoutSeconds": {
+          "type": "integer",
+          "const": 600,
+          "default": 600
+        },
+        "override": {
+          "$ref": "#/$defs/startupOverride"
+        }
+      }
+    },
+    "startupOverride": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timeoutSeconds",
+        "justification"
+      ],
+      "properties": {
+        "timeoutSeconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "justification": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "criticalFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "surface",
+        "operations"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "surface": {
+          "$ref": "#/$defs/identifier"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "smokeSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "surface",
+        "suite"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "surface": {
+          "$ref": "#/$defs/identifier"
+        },
+        "suite": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "changeClass",
+        "reason"
+      ],
+      "properties": {
+        "changeClass": {
+          "type": "string",
+          "enum": [
+            "patch",
+            "additive",
+            "breaking"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "recoveryItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "recoveryClass",
+        "owner",
+        "dependencies"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "recoveryClass": {
+          "type": "string",
+          "enum": [
+            "authoritative-restore",
+            "rebuild-only",
+            "live-authority-only"
+          ]
+        },
+        "owner": {
+          "$ref": "#/$defs/identifier"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          },
+          "uniqueItems": true
+        },
+        "restoreHook": {
+          "$ref": "#/$defs/identifier"
+        }
+      }
+    }
+  }
+}

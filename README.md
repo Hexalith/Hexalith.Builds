@@ -240,6 +240,277 @@ consumers restore from NuGet.org. Keep those credentials in user or CI NuGet
 configuration/secret storage, never in a module manifest, filter, or retained
 evidence artifact.
 
+### Platform Declaration v2 Enrollment
+
+Validate local Platform declarations together before composition:
+
+```powershell
+dotnet tool run hexalith-module validate --manifest module/first.json --manifest module/second.json --output human
+dotnet tool run hexalith-module validate --manifest module/first.json --output json
+```
+
+The strict [Draft 2020-12 schema](schemas/hexalith.module-manifest.v2.json)
+defines all five groups: identity, runtime, surfaces, integration and lifecycle.
+Unused capabilities use empty collections. Runtime replicas default to one;
+startup defaults to 600 seconds (ten minutes). Overrides require a positive
+finite duration and a nonblank justification. Required servers need usable
+readiness. Tasks declare a scope and authority class; executable references
+must be existing canonical repository-relative files. Validation only reads
+these files. It never starts servers, executes tasks or changes declarations.
+
+The following complete example exercises every group. Its `README.md` task
+references illustrate local path checks; a module supplies its own real task
+files. The same example is retained as
+[test/fixtures/module/platform/valid.json](test/fixtures/module/platform/valid.json).
+
+```json
+{
+  "schema": "hexalith.module-manifest.v2",
+  "modules": [
+    {
+      "identity": {
+        "moduleId": "sample",
+        "servers": [
+          {
+            "id": "api",
+            "appId": "sample-api",
+            "resourceId": "sample-api-host",
+            "enabled": true,
+            "required": true
+          }
+        ],
+        "dependencies": []
+      },
+      "runtime": {
+        "dapr": [
+          {
+            "role": "events",
+            "capability": "pubsub",
+            "recoveryClass": "rebuild-only",
+            "configurationKey": "Dapr:EventsComponent"
+          }
+        ],
+        "extensions": [
+          {
+            "packageId": "Hexalith.Sample.Extension",
+            "configurationInputs": [
+              {
+                "key": "Sample:Secret",
+                "source": "secret",
+                "reference": "provider-access"
+              }
+            ]
+          }
+        ],
+        "resources": [
+          {
+            "server": "api",
+            "requests": {
+              "cpu": 0.25,
+              "memoryMiB": 128
+            },
+            "limits": {
+              "cpu": 1,
+              "memoryMiB": 512
+            },
+            "volumes": [
+              {
+                "name": "data",
+                "mountPath": "/data",
+                "sizeMiB": 1024,
+                "accessMode": "read-write-once",
+                "recoveryClass": "authoritative-restore"
+              }
+            ]
+          }
+        ]
+      },
+      "surfaces": {
+        "interfaces": [
+          {
+            "name": "sample-api",
+            "server": "api",
+            "protocol": "http",
+            "routePrefix": "/sample",
+            "exposure": "internal-only",
+            "surfaceClass": "gateway",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": [
+                "sample.read"
+              ]
+            },
+            "callers": [
+              "mcpcli"
+            ],
+            "operations": [
+              {
+                "name": "read",
+                "kind": "query",
+                "authorizationPolicy": "sample.read"
+              }
+            ]
+          }
+        ]
+      },
+      "integration": {
+        "topics": [
+          {
+            "name": "sample-events",
+            "role": "events",
+            "deadLetter": {
+              "strategy": "topic",
+              "topic": "sample-dead-letter"
+            }
+          }
+        ],
+        "secrets": [
+          {
+            "name": "provider-access",
+            "configurationKey": "Sample:ProviderAccess"
+          }
+        ],
+        "dynamicSecretNamespaces": [
+          {
+            "name": "sample-credentials",
+            "owner": "sample",
+            "configurationKey": "Sample:CredentialsNamespace"
+          }
+        ],
+        "identityNeeds": [
+          {
+            "name": "sample-client",
+            "audience": "sample-api",
+            "roles": [
+              "reader"
+            ],
+            "applicationPrincipal": true
+          }
+        ],
+        "egress": [
+          {
+            "name": "provider",
+            "protocol": "https",
+            "destination": "sample-provider"
+          }
+        ],
+        "providers": [
+          {
+            "name": "sample-provider",
+            "capability": "external-storage",
+            "tenancy": {
+              "mode": "per-environment",
+              "configurationKey": "Sample:ProviderTenant"
+            }
+          }
+        ],
+        "workers": [
+          {
+            "name": "publish",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "Sample:PublishDisabled",
+              "disabledValue": true
+            }
+          }
+        ]
+      },
+      "lifecycle": {
+        "readiness": [
+          {
+            "server": "api",
+            "kind": "http",
+            "endpoint": "/health/ready"
+          }
+        ],
+        "tasks": [
+          {
+            "name": "verify",
+            "scope": "per-start-verify",
+            "authorityClass": "application",
+            "executable": "README.md",
+            "arguments": []
+          },
+          {
+            "name": "recover",
+            "scope": "recovery",
+            "authorityClass": "recovery",
+            "executable": "README.md",
+            "arguments": []
+          }
+        ],
+        "recoveryHooks": [
+          {
+            "name": "restore",
+            "task": "recover",
+            "resource": "data"
+          }
+        ],
+        "fenceHooks": [
+          {
+            "name": "fence",
+            "task": "recover",
+            "resource": "data"
+          }
+        ],
+        "replay": {
+          "reopenBeforeReplay": false
+        },
+        "startup": {},
+        "criticalFlows": [
+          {
+            "name": "sample-read",
+            "surface": "sample-api",
+            "operations": [
+              "read"
+            ]
+          }
+        ],
+        "smokeSurfaces": [
+          {
+            "name": "sample-smoke",
+            "surface": "sample-api",
+            "suite": "sample-smoke-suite"
+          }
+        ],
+        "classification": {
+          "changeClass": "additive",
+          "reason": "Initial sample enrollment"
+        },
+        "recoveryInventory": [
+          {
+            "name": "data",
+            "recoveryClass": "authoritative-restore",
+            "owner": "sample",
+            "dependencies": [],
+            "restoreHook": "restore"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Every diagnostic includes `source` (the supplied file relative to the current
+working directory), `field` (the complete indexed property path), and `message`
+(the reason), together with the stable `ruleId`, `phase`, `category` and optional
+`hint`. Human output renders these same fields; JSON output returns a single
+`status`, `outcome` and `diagnostics` object. Credential values are never copied
+into diagnostics. Errors aggregate deterministically across files, including
+all duplicate module, app and resource identity locations. Any error returns
+exit `1` and no usable declaration set. Success returns `0`; cancellation
+returns `130`. Validation accepts at most 256 files, with each UTF-8 document
+at most 1 MiB and 64 levels deep. The schema is embedded in Tooling and shipped
+under `tools/net10.0/any/schemas/`, so installed validation uses no source checkout
+or remote schema downloads.
+
+The enrollment window accepts the current and previous Platform major, bounded
+by the first Platform major, 2. Initially only `hexalith.module-manifest.v2`
+is eligible. Legacy v1 continues to serve the existing `run`, `down` and `test`
+qualification contracts and can never enroll in Platform. Local validation and
+package contract probes do not grant Platform tool acceptance or change pins.
+
 ### Module Manifest and Runner Contract
 
 `hexalith-module` accepts a strict `hexalith.module-manifest.v1` JSON file.

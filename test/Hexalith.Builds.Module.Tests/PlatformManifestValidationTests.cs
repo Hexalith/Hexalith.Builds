@@ -1,0 +1,277 @@
+// <copyright file="PlatformManifestValidationTests.cs" company="ITANEO">
+// Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// </copyright>
+
+namespace Hexalith.Builds.ModuleTool.Tests;
+
+using System.Text;
+using System.Text.Json;
+
+using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Manifest;
+
+using Json.Schema;
+
+using Shouldly;
+
+using Xunit;
+
+/// <summary>
+/// Verifies the complete local enrollment schema, atomic results, safeguards and nested diagnostics.
+/// </summary>
+public sealed class PlatformManifestValidationTests
+{
+    /// <summary>Verifies a complete declaration passes both validators and materializes effective defaults.</summary>
+    [Fact]
+    public void CompleteFixturePassesSchemaAndEnrollmentWithDefaults()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string manifest = workspace.Save();
+        using JsonDocument input = JsonDocument.Parse(File.ReadAllText(manifest));
+        PublishedSchema().Evaluate(input.RootElement).IsValid.ShouldBeTrue();
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+        result.Diagnostics.ShouldBeEmpty();
+        JsonElement module = result.Declarations.ShouldNotBeNull().Single().Declaration;
+        module.GetProperty("runtime").GetProperty("resources")[0].GetProperty("replicas").GetInt32().ShouldBe(1);
+        module.GetProperty("lifecycle").GetProperty("startup").GetProperty("defaultTimeoutSeconds").GetInt32().ShouldBe(600);
+        SupportedPlatformManifestSchemas.Eligible.ShouldBe(["hexalith.module-manifest.v2"]);
+    }
+
+    /// <summary>Verifies nested schema errors carry complete paths and match the published contract.</summary>
+    /// <param name="path">The mutated declaration path.</param>
+    /// <param name="json">The replacement JSON or missing sentinel.</param>
+    /// <param name="field">The expected complete diagnostic path.</param>
+    [Theory]
+    [InlineData("modules.0.identity.moduleId", "7", "modules[0].identity.moduleId")]
+    [InlineData("modules.0.runtime.dapr.0.role", "<missing>", "modules[0].runtime.dapr[0].role")]
+    [InlineData("modules.0.runtime.dapr.0.configurationKey", "<missing>", "modules[0].runtime.dapr[0].configurationKey")]
+    [InlineData("modules.0.runtime.dapr.0.componentName", "\"literal-store\"", "modules[0].runtime.dapr[0].componentName")]
+    [InlineData("modules.0.runtime.dapr.0.recoveryClass", "\"backup\"", "modules[0].runtime.dapr[0].recoveryClass")]
+    [InlineData("modules.0.lifecycle.tasks.0.scope", "\"always\"", "modules[0].lifecycle.tasks[0].scope")]
+    [InlineData("modules.0.lifecycle.tasks.0.authorityClass", "<missing>", "modules[0].lifecycle.tasks[0].authorityClass")]
+    [InlineData("modules.0.lifecycle.readiness.0.endpoint", "<missing>", "modules[0].lifecycle.readiness[0].endpoint")]
+    [InlineData("modules.0.lifecycle.startup.override", "{\"timeoutSeconds\":0,\"justification\":\"needs more time\"}", "modules[0].lifecycle.startup.override.timeoutSeconds")]
+    [InlineData("modules.0.lifecycle.startup.override", "{\"timeoutSeconds\":700,\"justification\":\"  \"}", "modules[0].lifecycle.startup.override.justification")]
+    [InlineData("modules.0.runtime.resources.0.replicas", "1.5", "modules[0].runtime.resources[0].replicas")]
+    [InlineData("modules.0.integration.workers.0.disableControl", "null", "modules[0].integration.workers[0].disableControl")]
+    [InlineData("modules.0.integration.topics.0.deadLetter.topic", "<missing>", "modules[0].integration.topics[0].deadLetter.topic")]
+    [InlineData("modules.0.surfaces.interfaces.0.Protocol", "\"http\"", "modules[0].surfaces.interfaces[0].Protocol")]
+    [InlineData("modules.0.integration.secrets.0.value", "\"literal\"", "modules[0].integration.secrets[0].value")]
+    public void InvalidFieldsMatchSchemaAndReportCompletePaths(string path, string json, string field)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change(path, json);
+        string manifest = workspace.Save();
+        using JsonDocument input = JsonDocument.Parse(File.ReadAllText(manifest));
+        PublishedSchema().Evaluate(input.RootElement).IsValid.ShouldBeFalse();
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+        result.IsValid.ShouldBeFalse();
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == field && diagnostic.Source!.EndsWith("manifest.json", StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(diagnostic.Message));
+    }
+
+    /// <summary>Verifies all supported task scopes and recovery classes can enroll without running tasks.</summary>
+    /// <param name="scope">A supported lifecycle scope.</param>
+    [Theory]
+    [InlineData("per-start-verify")]
+    [InlineData("once-per-environment-creation")]
+    [InlineData("recovery")]
+    [InlineData("operator-only")]
+    public void SupportedLifecycleScopesPass(string scope)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.tasks.0.scope", JsonSerializer.Serialize(scope));
+        PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies all three recovery classes are admitted as logical Dapr capabilities.</summary>
+    /// <param name="recoveryClass">The declared recovery class.</param>
+    [Theory]
+    [InlineData("authoritative-restore")]
+    [InlineData("rebuild-only")]
+    [InlineData("live-authority-only")]
+    public void SupportedRecoveryClassesPass(string recoveryClass)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.runtime.dapr.0.recoveryClass", JsonSerializer.Serialize(recoveryClass));
+        PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies unused capabilities are represented by empty collections.</summary>
+    [Fact]
+    public void EmptyCapabilityCollectionsRemainValid()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        foreach (string path in new[]
+        {
+            "identity.servers", "runtime.dapr", "runtime.extensions", "runtime.resources", "surfaces.interfaces",
+            "integration.topics", "integration.secrets", "integration.dynamicSecretNamespaces", "integration.identityNeeds",
+            "integration.egress", "integration.providers", "integration.workers", "lifecycle.readiness", "lifecycle.tasks",
+            "lifecycle.recoveryHooks", "lifecycle.fenceHooks", "lifecycle.criticalFlows", "lifecycle.smokeSurfaces", "lifecycle.recoveryInventory",
+        })
+        {
+            workspace.Change($"modules.0.{path}", "[]");
+        }
+
+        PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies distinct valid files produce the entire declaration set.</summary>
+    [Fact]
+    public void DistinctValidFilesReturnAllModules()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string first = workspace.Save("a.json");
+        workspace.Change("modules.0.identity.moduleId", "\"second\"");
+        workspace.Change("modules.0.identity.servers.0.appId", "\"second-api\"");
+        workspace.Change("modules.0.identity.servers.0.resourceId", "\"second-api-host\"");
+        string second = workspace.Save("b.json");
+        PlatformManifestValidator.Validate([first, second], TestContext.Current.CancellationToken).Declarations.ShouldNotBeNull().Count.ShouldBe(2);
+    }
+
+    /// <summary>Verifies missing readiness cannot yield a partial set.</summary>
+    [Fact]
+    public void RequiredServerMustHaveUsableReadiness()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.readiness", "[]");
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP020" && diagnostic.Field == "modules[0].lifecycle.readiness");
+    }
+
+    /// <summary>Verifies overflow cannot bypass the finite startup bound.</summary>
+    [Fact]
+    public void NonFiniteStartupOverrideFailsLocally()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = workspace.Save();
+        string json = File.ReadAllText(path).Replace("\"startup\":{}", "\"startup\":{\"override\":{\"timeoutSeconds\":1e999,\"justification\":\"test\"}}", StringComparison.Ordinal);
+        File.WriteAllText(path, json);
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([path], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "modules[0].lifecycle.startup.override.timeoutSeconds");
+    }
+
+    /// <summary>Verifies positive finite startup overrides preserve values at floating-point bounds.</summary>
+    /// <param name="seconds">The positive finite declared duration.</param>
+    [Theory]
+    [InlineData(700.5)]
+    [InlineData(1e308)]
+    [InlineData(1e-300)]
+    public void PositiveFiniteStartupOverridesPass(double seconds)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.startup.override", JsonSerializer.Serialize(new { timeoutSeconds = seconds, justification = "Declared local budget" }));
+        PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies every MCP exposure is rejected by AD-11.</summary>
+    /// <param name="exposure">The declared exposure.</param>
+    [Theory]
+    [InlineData("public")]
+    [InlineData("internal-only")]
+    [InlineData("disabled")]
+    public void EnrolledHostCannotMapMcpForAnyExposure(string exposure)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.surfaces.interfaces.0.protocol", "\"mcp\"");
+        workspace.Change("modules.0.surfaces.interfaces.0.exposure", JsonSerializer.Serialize(exposure));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP023" && diagnostic.Message.Contains("AD-11", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies v1 remains outside the bounded Platform major window.</summary>
+    /// <param name="schema">The unsupported schema identity.</param>
+    [Theory]
+    [InlineData("hexalith.module-manifest.v1")]
+    [InlineData("hexalith.module-manifest.v3")]
+    [InlineData("hexalith.module-manifest.v0")]
+    public void UnsupportedSchemaExplainsEligibility(string schema)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("schema", JsonSerializer.Serialize(schema));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "schema" && diagnostic.Message.Contains("major 2", StringComparison.Ordinal) && diagnostic.Message.Contains("eligible schemas: hexalith.module-manifest.v2", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies multiple file errors and all duplicate identities aggregate independently of input order.</summary>
+    [Fact]
+    public void CrossFileDuplicatesAndRecoverableErrorsAggregateDeterministically()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.runtime.dapr.0.role", "<missing>");
+        string first = workspace.Save("a.json");
+        workspace.Change("modules.0.lifecycle.tasks.0.authorityClass", "<missing>");
+        string second = workspace.Save("b.json");
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([second, first], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldBe(PlatformManifestValidator.Validate([first, second], TestContext.Current.CancellationToken).Diagnostics);
+        ToolDiagnostic[] duplicateDiagnostics = [.. result.Diagnostics.Where(diagnostic => diagnostic.RuleId == "HXP003")];
+        duplicateDiagnostics.Length.ShouldBe(6);
+        duplicateDiagnostics.ShouldContain(diagnostic => diagnostic.Field == "modules[0].identity.servers[0].appId");
+        duplicateDiagnostics.ShouldContain(diagnostic => diagnostic.Field == "modules[0].identity.servers[0].resourceId");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "modules[0].runtime.dapr[0].role");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "modules[0].lifecycle.tasks[0].authorityClass");
+    }
+
+    /// <summary>Verifies duplicate nested JSON keys retain their complete location.</summary>
+    [Fact]
+    public void DuplicateKeysFailWithNestedLocation()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = workspace.Save();
+        File.WriteAllText(path, File.ReadAllText(path).Replace("\"role\":\"events\"", "\"role\":\"events\",\"role\":\"events\"", StringComparison.Ordinal));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([path], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP012" && diagnostic.Field == "modules[0].runtime.dapr[0].role");
+    }
+
+    /// <summary>Verifies one valid file cannot leak declarations when another file fails.</summary>
+    [Fact]
+    public void MalformedMissingAndOversizedFilesAggregateAtomically()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string valid = workspace.Save();
+        string malformed = Path.Combine(workspace.Root, "malformed.json");
+        File.WriteAllText(malformed, "{\"schema\":");
+        string oversized = Path.Combine(workspace.Root, "oversized.json");
+        File.WriteAllText(oversized, new string(' ', 1_048_577));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([valid, malformed, oversized, Path.Combine(workspace.Root, "missing.json")], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(["HXP011", "HXP005", "HXP013"]);
+    }
+
+    /// <summary>Verifies secret and path safeguards remain metadata-only.</summary>
+    [Fact]
+    public void CredentialsAndEscapingExecutablePathsAreRejectedWithoutDisclosure()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.tasks.0.executable", "\"../escape.sh\"");
+        workspace.Change("modules.0.lifecycle.classification.reason", "\"Bearer fixture-secret-control\"");
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXM004");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXM007");
+        JsonSerializer.Serialize(result.Diagnostics).ShouldNotContain("fixture-secret-control");
+    }
+
+    /// <summary>Verifies invalid UTF-8 and empty input return diagnostics.</summary>
+    [Fact]
+    public void InvalidEncodingAndEmptySetFailClosed()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = Path.Combine(workspace.Root, "encoding.json");
+        File.WriteAllBytes(path, [(byte)'{', 0xFF, (byte)'}']);
+        PlatformManifestValidator.Validate([path], TestContext.Current.CancellationToken).Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP011");
+        PlatformManifestValidator.Validate([], TestContext.Current.CancellationToken).Declarations.ShouldBeNull();
+        PlatformManifestValidator.Validate([], TestContext.Current.CancellationToken).Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP015");
+        Encoding.UTF8.GetByteCount(File.ReadAllText(workspace.Save())).ShouldBeLessThan(1_048_576);
+    }
+
+    private static JsonSchema PublishedSchema() => JsonSchema.FromFile(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "schemas/hexalith.module-manifest.v2.json"), new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+}

@@ -33,6 +33,22 @@ function global:dotnet {
     elseif ($joinedArguments -like '*tool run hexalith-module*test --help*') {
         'Runs a named module qualification profile.'
     }
+    elseif ($joinedArguments -like '*tool run hexalith-module*validate --help*') {
+        'Validates local Platform module declarations without starting resources.'
+    }
+    elseif ($joinedArguments -like '*tool run hexalith-module*validate*platform-legacy.json*') {
+        '{"status":"failed","outcome":{"exitCode":"UsageOrManifest"},"diagnostics":[{"ruleId":"HXP001","source":"platform-legacy.json","field":"schema","message":"Legacy v1 cannot enroll."}]}' + "`n"
+        $global:LASTEXITCODE = 1
+        return
+    }
+    elseif ($joinedArguments -like '*tool run hexalith-module*validate*--manifest platform-valid.json --manifest platform-valid.json*') {
+        '{"status":"failed","outcome":{"exitCode":"UsageOrManifest"},"diagnostics":[{"ruleId":"HXP003","source":"platform-valid.json","field":"modules[0].identity.servers[0].appId","message":"Duplicate identity."}]}' + "`n"
+        $global:LASTEXITCODE = 1
+        return
+    }
+    elseif ($joinedArguments -like '*tool run hexalith-module*validate*') {
+        '{"status":"validated","outcome":{"exitCode":"Success"},"diagnostics":[]}' + "`n"
+    }
     elseif ($joinedArguments -like '*tool run hexalith-module*--help*') {
         'Runs supported Hexalith module qualifications.'
     }
@@ -80,12 +96,27 @@ try {
     }
 
     $fixtureBuildPath = Join-Path $testRoot 'fixture-build.ps1'
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../schemas/hexalith.module-manifest.v2.json') `
+        -Destination (Join-Path $testRoot 'platform-schema.json')
     [IO.File]::WriteAllText($fixtureBuildPath, @'
 param([string] $Version, [string] $OutputDirectory, [switch] $DeferInventory)
 $null = $DeferInventory
 $null = New-Item -ItemType Directory -Path $OutputDirectory
 foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli')) {
-    [IO.File]::WriteAllText((Join-Path $OutputDirectory "$id.$Version.nupkg"), "package:$id")
+    $packagePath = Join-Path $OutputDirectory "$id.$Version.nupkg"
+    if ($id -ceq 'Hexalith.Builds.Module.Cli') {
+        $archive = [IO.Compression.ZipFile]::Open($packagePath, [IO.Compression.ZipArchiveMode]::Create)
+        try {
+            $entry = $archive.CreateEntry('tools/net10.0/any/schemas/hexalith.module-manifest.v2.json')
+            $writer = [IO.StreamWriter]::new($entry.Open())
+            try { $writer.Write([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'platform-schema.json'))) }
+            finally { $writer.Dispose() }
+        }
+        finally { $archive.Dispose() }
+    }
+    else {
+        [IO.File]::WriteAllText($packagePath, "package:$id")
+    }
     [IO.File]::WriteAllText((Join-Path $OutputDirectory "$id.$Version.snupkg"), "symbols:$id")
 }
 '@, [Text.UTF8Encoding]::new($false))

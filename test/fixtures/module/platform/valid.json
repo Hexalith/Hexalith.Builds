@@ -1,0 +1,226 @@
+{
+  "schema": "hexalith.module-manifest.v2",
+  "modules": [
+    {
+      "identity": {
+        "moduleId": "sample",
+        "servers": [
+          {
+            "id": "api",
+            "appId": "sample-api",
+            "resourceId": "sample-api-host",
+            "enabled": true,
+            "required": true
+          }
+        ],
+        "dependencies": []
+      },
+      "runtime": {
+        "dapr": [
+          {
+            "role": "events",
+            "capability": "pubsub",
+            "recoveryClass": "rebuild-only",
+            "configurationKey": "Dapr:EventsComponent"
+          }
+        ],
+        "extensions": [
+          {
+            "packageId": "Hexalith.Sample.Extension",
+            "configurationInputs": [
+              {
+                "key": "Sample:Secret",
+                "source": "secret",
+                "reference": "provider-access"
+              }
+            ]
+          }
+        ],
+        "resources": [
+          {
+            "server": "api",
+            "requests": {
+              "cpu": 0.25,
+              "memoryMiB": 128
+            },
+            "limits": {
+              "cpu": 1,
+              "memoryMiB": 512
+            },
+            "volumes": [
+              {
+                "name": "data",
+                "mountPath": "/data",
+                "sizeMiB": 1024,
+                "accessMode": "read-write-once",
+                "recoveryClass": "authoritative-restore"
+              }
+            ]
+          }
+        ]
+      },
+      "surfaces": {
+        "interfaces": [
+          {
+            "name": "sample-api",
+            "server": "api",
+            "protocol": "http",
+            "routePrefix": "/sample",
+            "exposure": "internal-only",
+            "surfaceClass": "gateway",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": [
+                "sample.read"
+              ]
+            },
+            "callers": [
+              "mcpcli"
+            ],
+            "operations": [
+              {
+                "name": "read",
+                "kind": "query",
+                "authorizationPolicy": "sample.read"
+              }
+            ]
+          }
+        ]
+      },
+      "integration": {
+        "topics": [
+          {
+            "name": "sample-events",
+            "role": "events",
+            "deadLetter": {
+              "strategy": "topic",
+              "topic": "sample-dead-letter"
+            }
+          }
+        ],
+        "secrets": [
+          {
+            "name": "provider-access",
+            "configurationKey": "Sample:ProviderAccess"
+          }
+        ],
+        "dynamicSecretNamespaces": [
+          {
+            "name": "sample-credentials",
+            "owner": "sample",
+            "configurationKey": "Sample:CredentialsNamespace"
+          }
+        ],
+        "identityNeeds": [
+          {
+            "name": "sample-client",
+            "audience": "sample-api",
+            "roles": [
+              "reader"
+            ],
+            "applicationPrincipal": true
+          }
+        ],
+        "egress": [
+          {
+            "name": "provider",
+            "protocol": "https",
+            "destination": "sample-provider"
+          }
+        ],
+        "providers": [
+          {
+            "name": "sample-provider",
+            "capability": "external-storage",
+            "tenancy": {
+              "mode": "per-environment",
+              "configurationKey": "Sample:ProviderTenant"
+            }
+          }
+        ],
+        "workers": [
+          {
+            "name": "publish",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "Sample:PublishDisabled",
+              "disabledValue": true
+            }
+          }
+        ]
+      },
+      "lifecycle": {
+        "readiness": [
+          {
+            "server": "api",
+            "kind": "http",
+            "endpoint": "/health/ready"
+          }
+        ],
+        "tasks": [
+          {
+            "name": "verify",
+            "scope": "per-start-verify",
+            "authorityClass": "application",
+            "executable": "README.md",
+            "arguments": []
+          },
+          {
+            "name": "recover",
+            "scope": "recovery",
+            "authorityClass": "recovery",
+            "executable": "README.md",
+            "arguments": []
+          }
+        ],
+        "recoveryHooks": [
+          {
+            "name": "restore",
+            "task": "recover",
+            "resource": "data"
+          }
+        ],
+        "fenceHooks": [
+          {
+            "name": "fence",
+            "task": "recover",
+            "resource": "data"
+          }
+        ],
+        "replay": {
+          "reopenBeforeReplay": false
+        },
+        "startup": {},
+        "criticalFlows": [
+          {
+            "name": "sample-read",
+            "surface": "sample-api",
+            "operations": [
+              "read"
+            ]
+          }
+        ],
+        "smokeSurfaces": [
+          {
+            "name": "sample-smoke",
+            "surface": "sample-api",
+            "suite": "sample-smoke-suite"
+          }
+        ],
+        "classification": {
+          "changeClass": "additive",
+          "reason": "Initial sample enrollment"
+        },
+        "recoveryInventory": [
+          {
+            "name": "data",
+            "recoveryClass": "authoritative-restore",
+            "owner": "sample",
+            "dependencies": [],
+            "restoreHook": "restore"
+          }
+        ]
+      }
+    }
+  ]
+}

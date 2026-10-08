@@ -972,10 +972,66 @@ try {
         -Result (Invoke-ToolCommand -Command 'hexalith-module' -Arguments @('down', '--help') -WorkingDirectory $consumerRoot)
     Assert-ToolHelp -Description 'hexalith-module test help' -ExpectedText 'Runs a named module qualification profile.' `
         -Result (Invoke-ToolCommand -Command 'hexalith-module' -Arguments @('test', '--help') -WorkingDirectory $consumerRoot)
+    Assert-ToolHelp -Description 'hexalith-module validate help' -ExpectedText 'Validates local Platform module declarations without starting resources.' `
+        -Result (Invoke-ToolCommand -Command 'hexalith-module' -Arguments @('validate', '--help') -WorkingDirectory $consumerRoot)
     Assert-ToolHelp -Description 'hexalith-evidence help' -ExpectedText 'Validates deterministic Hexalith readiness evidence.' `
         -Result (Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments @('--help') -WorkingDirectory $consumerRoot)
     Assert-ToolHelp -Description 'hexalith-evidence validate help' -ExpectedText 'Validates a hexalith.readiness-evidence.v1 YAML matrix or hexalith.g4-p0-acceptance.v1 JSON record.' `
         -Result (Invoke-ToolCommand -Command 'hexalith-evidence' -Arguments @('validate', '--help') -WorkingDirectory $consumerRoot)
+
+    # Enrollment is a metadata-only package contract, independent of the v1
+    # lifecycle controls. Run outside Builds with only the installed local package.
+    $modulePackage = Join-Path $packageDirectoryPath "Hexalith.Builds.Module.Cli.$Version.nupkg"
+    $archive = [IO.Compression.ZipFile]::OpenRead($modulePackage)
+    try {
+        $schemaEntry = $archive.GetEntry('tools/net10.0/any/schemas/hexalith.module-manifest.v2.json')
+        if ($null -eq $schemaEntry) { throw 'The module tool package omitted its Platform v2 schema.' }
+        $schemaReader = [IO.StreamReader]::new($schemaEntry.Open())
+        try { $packagedSchema = $schemaReader.ReadToEnd() }
+        finally { $schemaReader.Dispose() }
+        $expectedSchema = [IO.File]::ReadAllText((Join-Path $repositoryRoot 'schemas/hexalith.module-manifest.v2.json'))
+        if ($packagedSchema -cne $expectedSchema) { throw 'The packed Platform schema differs from its source contract.' }
+    }
+    finally { $archive.Dispose() }
+
+    $platformManifest = Join-Path $consumerRoot 'platform-valid.json'
+    Copy-Item -LiteralPath (Join-Path $fixtureRootPath 'module/platform/valid.json') -Destination $platformManifest
+    [IO.File]::WriteAllText((Join-Path $consumerRoot 'README.md'), 'A local declaration reference; validation must not execute this file.')
+    $platformInputHash = (Get-FileHash -LiteralPath $platformManifest -Algorithm SHA256).Hash
+    foreach ($format in @('human', 'json')) {
+        $validationResult = Invoke-ToolCommand -Command 'hexalith-module' `
+            -Arguments @('validate', '--manifest', 'platform-valid.json', '--output', $format) -WorkingDirectory $consumerRoot
+        Assert-PositiveResult -Result $validationResult -Description "Packaged Platform enrollment ($format)"
+        if ($format -ceq 'json') {
+            $validation = ConvertFrom-ToolResult -Result $validationResult -Description 'Packaged Platform enrollment'
+            if ($validation.status -cne 'validated' -or @($validation.diagnostics).Count -ne 0) {
+                throw 'Packaged Platform enrollment did not return an atomic validated outcome.'
+            }
+        }
+        elseif (-not $validationResult.Output.Contains('validated', [StringComparison]::Ordinal)) {
+            throw 'Packaged Platform enrollment omitted its human validation result.'
+        }
+
+        $duplicateResult = Invoke-ToolCommand -Command 'hexalith-module' `
+            -Arguments @('validate', '--manifest', 'platform-valid.json', '--manifest', 'platform-valid.json', '--output', $format) -WorkingDirectory $consumerRoot
+        if ($duplicateResult.ExitCode -ne 1 -or
+            -not $duplicateResult.Output.Contains('HXP003', [StringComparison]::Ordinal) -or
+            -not $duplicateResult.Output.Contains('modules[0].identity.servers[0].appId', [StringComparison]::Ordinal) -or
+            -not $duplicateResult.Output.Contains('platform-valid.json', [StringComparison]::Ordinal)) {
+            throw "Packaged Platform duplicate enrollment ($format) did not fail with source and full field diagnostics."
+        }
+    }
+    if ((Get-FileHash -LiteralPath $platformManifest -Algorithm SHA256).Hash -cne $platformInputHash) {
+        throw 'Packaged validation modified its declaration input.'
+    }
+
+    $legacyEnrollmentManifest = Join-Path $consumerRoot 'platform-legacy.json'
+    [IO.File]::WriteAllText($legacyEnrollmentManifest, '{"schema":"hexalith.module-manifest.v1","modules":[]}')
+    $legacyEnrollmentResult = Invoke-ToolCommand -Command 'hexalith-module' `
+        -Arguments @('validate', '--manifest', 'platform-legacy.json', '--output', 'json') -WorkingDirectory $consumerRoot
+    if ($legacyEnrollmentResult.ExitCode -ne 1 -or -not $legacyEnrollmentResult.Output.Contains('HXP001', [StringComparison]::Ordinal)) {
+        throw 'The packaged Platform enrollment validator admitted legacy v1.'
+    }
 
     if ($RequireControls) {
         $fixtureProvenanceMode = Get-FixtureProvenanceMode -Directory $fixtureRootPath

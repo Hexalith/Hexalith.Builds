@@ -8,6 +8,7 @@ namespace Hexalith.Builds.ModuleTool.Cli;
 using System.CommandLine;
 
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
 
 /// <summary>
@@ -67,7 +68,65 @@ internal static class ModuleCommandApplication
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Run, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Down, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Test, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
+        rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput, operationStarted));
         return rootCommand;
+    }
+
+    private static Command CreateValidateCommand(TextWriter standardOutput, Action<Task<int>> operationStarted)
+    {
+        Command command = new("validate", "Validates local Platform module declarations without starting resources.");
+        Option<string[]> manifestOption = new("--manifest")
+        {
+            Required = true,
+            Arity = ArgumentArity.OneOrMore,
+            AllowMultipleArgumentsPerToken = false,
+        };
+        Option<string> outputOption = new("--output")
+        {
+            DefaultValueFactory = _ => "human",
+        };
+        _ = outputOption.AcceptOnlyFromAmong("human", "json");
+        command.Options.Add(manifestOption);
+        command.Options.Add(outputOption);
+        command.SetAction((parseResult, cancellationToken) =>
+        {
+            Task<int> execution = ExecuteValidationAsync(
+                parseResult.GetValue(manifestOption)!,
+                ParseOutputFormat(parseResult.GetValue(outputOption)),
+                standardOutput,
+                cancellationToken);
+            operationStarted(execution);
+            return execution;
+        });
+        return command;
+    }
+
+    private static async Task<int> ExecuteValidationAsync(
+        string[] manifestPaths,
+        ToolOutputFormat format,
+        TextWriter writer,
+        CancellationToken cancellationToken)
+    {
+        if (manifestPaths.Any(string.IsNullOrWhiteSpace))
+        {
+            return await ToolCommandHost.WriteParseFailureAsync(writer, format).ConfigureAwait(false);
+        }
+
+        ToolCommandResult commandResult;
+        try
+        {
+            PlatformManifestValidationResult validation = PlatformManifestValidator.Validate(manifestPaths, cancellationToken);
+            ToolOutcome outcome = validation.IsValid ? ToolOutcome.Passed() : ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest);
+            commandResult = new ToolCommandResult(validation.IsValid ? "validated" : "failed", outcome, validation.Diagnostics);
+        }
+        catch (OperationCanceledException)
+        {
+            ToolDiagnostic diagnostic = new("HXC130", ToolPhase.Manifest, ToolFailureCategory.Cancelled, "Platform declaration validation was cancelled.", "manifest");
+            commandResult = new ToolCommandResult("cancelled", ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Cancelled, diagnostic.RuleId, ToolExitCode.Cancelled), [diagnostic]);
+        }
+
+        await ToolDiagnosticFormatter.WriteAsync(writer, commandResult, format, CancellationToken.None).ConfigureAwait(false);
+        return (int)commandResult.Outcome.ExitCode;
     }
 
     private static Command CreateCommand(

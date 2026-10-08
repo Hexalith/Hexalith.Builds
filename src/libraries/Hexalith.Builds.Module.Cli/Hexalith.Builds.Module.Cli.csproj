@@ -20,6 +20,7 @@
     <Compile Remove="pack/**/*.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="../../../schemas/hexalith.module-manifest.v2.json" Pack="true" PackagePath="tools/net10.0/any/schemas/" />
     <None Include="../../hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/%(RecursiveDir)" />
     <None Include="../../hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/bin/EventStoreHost/%(RecursiveDir)" />
     <None Include="../../hosts/Hexalith.Builds.Module.UiHost/bin/Release/net10.0/**" Pack="true" PackagePath="tools/net10.0/any/g4-host/bin/UiHost/%(RecursiveDir)" />
