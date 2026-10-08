@@ -7,7 +7,7 @@
     <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.0.0</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.3</HexalithPolymorphicSerializationsVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.115.0</HexalithEventStoreVersion>
-    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.5.0</HexalithFrontComposerVersion>
+    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.6.0</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.1.1</HexalithFoldersVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.27.1</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.7.0</HexalithTenantsVersion>
@@ -112,7 +112,7 @@
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.6" />
     <!-- FrontComposer bunit transitive floor pulls the vulnerable 1.4.0; pin the GHSA-pgww-w46g-26qg fix. -->
-    <PackageVersion Include="AngleSharp" Version="1.8.3" />
+    <PackageVersion Include="AngleSharp" Version="1.8.4" />
     <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="10.0.0" />
@@ -318,8 +318,8 @@
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
-    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.2.3" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.3.0" />
+    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.3.0" />
     <!-- FrontComposer netstandard2.0 contracts dependencies; net10.0 provides these APIs in-box. -->
     <PackageVersion Include="System.Collections.Immutable" Version="10.0.12" />
     <!-- Microsoft-supported CLI parser chosen per Hexalith.Memories ADR-7.1-008: recursive/global options, async handlers with CancellationToken, global-tool packaging. -->
