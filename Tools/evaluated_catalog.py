@@ -22,14 +22,15 @@ def _controlled_property(name: str) -> bool:
 
 
 def _run(path: Path, arguments: list[str], *, neutral: bool = False,
-         configuration: str = "Debug", target_framework: str = "net10.0") -> str:
+         configuration: str = "Debug", target_framework: str = "net10.0",
+         working_directory: Path | None = None) -> str:
     environment = dict(os.environ)
     if neutral:
         environment = {key: value for key, value in environment.items() if not _controlled_property(key)}
     command = ["dotnet", "msbuild", str(path), "-nologo", "-p:Configuration=" + configuration,
                "-p:TargetFramework=" + target_framework, "-p:UseHexalithProjectReferences=true", *arguments]
     try:
-        result = subprocess.run(command, cwd=path.parent, env=environment, capture_output=True, text=True,
+        result = subprocess.run(command, cwd=working_directory or path.parent, env=environment, capture_output=True, text=True,
                                 timeout=60, check=False)
     except (OSError, subprocess.TimeoutExpired) as error:
         raise ValueError(f"MSBuild evaluation unavailable: {path}: {error}") from error
@@ -234,7 +235,8 @@ finally
         ET.SubElement(invoke, "Output", {"TaskParameter": "Selections", "ItemName": "_HexalithControlledSdk"})
         runner_path = directory / "audit.proj"
         ET.ElementTree(runner).write(runner_path, encoding="utf-8", xml_declaration=True)
-        evaluation = json.loads(_run(runner_path, ["-target:Observe", "-getItem:_HexalithControlledSdk"]))
+        evaluation = json.loads(_run(runner_path, ["-target:Observe", "-getItem:_HexalithControlledSdk"],
+                                     working_directory=path.parent))
     selections = []
     seen = set()
     for item in evaluation.get("Items", {}).get("_HexalithControlledSdk", []):

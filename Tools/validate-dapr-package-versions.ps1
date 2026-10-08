@@ -472,7 +472,7 @@ if ($missingPackageIds.Count -gt 0) {
 }
 
 $targetVersion = [string] (@($daprItems | Where-Object { [string]::Equals($_.Identity, 'Dapr.Client', [StringComparison]::OrdinalIgnoreCase) })[0].Version)
-if ($targetVersion -notmatch '^[0-9]+(?:\.[0-9]+){2,3}(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$') {
+if ($targetVersion -notmatch '^[0-9]+(?:\.[0-9]+){2,3}(?:-(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$') {
     Stop-Validation "Catalog field Dapr.Client has malformed version '$targetVersion'."
 }
 

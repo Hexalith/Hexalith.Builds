@@ -57,6 +57,8 @@ try {
     $sdkBase = [regex]::Match($sdkLine[0], '\[(.+)\]').Groups[1].Value
     Add-Type -Path (Join-Path (Join-Path $sdkBase $sdkVersion) 'NuGet.Versioning.dll')
     Add-Type -Path (Join-Path (Join-Path $sdkBase $sdkVersion) 'NuGet.Frameworks.dll')
+    $target = [NuGet.Frameworks.NuGetFramework]::Parse($TargetFramework)
+    if ($target.IsUnsupported -or $target.IsAny) { throw "TargetFramework '$TargetFramework' is invalid." }
 
     $propertyFields = [ordered] @{
         aspireAppHostSdkVersion = 'HexalithAspireAppHostSdkVersion'
@@ -151,7 +153,7 @@ try {
             throw "Catalog field $catalogField has malformed version '$($snapshot[$field])'."
         }
     }
-    if ($snapshot.redisImage -cnotmatch '^[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$') { throw 'Catalog field HexalithRedisImage is malformed.' }
+    if ($snapshot.redisImage -cnotmatch '^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*)*$') { throw 'Catalog field HexalithRedisImage is malformed.' }
     if ($snapshot.redisImageTag -notmatch '^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$') { throw 'Catalog field HexalithRedisImageTag is malformed.' }
     if ($snapshot.redisImageDigest -cnotmatch '^sha256:[0-9a-f]{64}$') { throw 'Catalog field HexalithRedisImageDigest is malformed.' }
 
@@ -167,7 +169,8 @@ try {
             try {
                 $restoreProject = Join-Path $scratch 'metadata.csproj'
                 $escapedVersion = [Security.SecurityElement]::Escape($snapshot.eventStoreVersion)
-                [IO.File]::WriteAllText($restoreProject, "<Project Sdk=`"Microsoft.NET.Sdk`"><PropertyGroup><TargetFramework>net10.0</TargetFramework><DirectoryBuildPropsPath/><DirectoryBuildTargetsPath/><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally><NuGetAudit>false</NuGetAudit></PropertyGroup><ItemGroup><PackageDownload Include=`"Hexalith.EventStore.Aspire`" Version=`"[$escapedVersion]`" /></ItemGroup></Project>")
+                $escapedFramework = [Security.SecurityElement]::Escape($TargetFramework)
+                [IO.File]::WriteAllText($restoreProject, "<Project Sdk=`"Microsoft.NET.Sdk`"><PropertyGroup><TargetFramework>$escapedFramework</TargetFramework><DirectoryBuildPropsPath/><DirectoryBuildTargetsPath/><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally><NuGetAudit>false</NuGetAudit></PropertyGroup><ItemGroup><PackageDownload Include=`"Hexalith.EventStore.Aspire`" Version=`"[$escapedVersion]`" /></ItemGroup></Project>")
                 $null = Invoke-CatalogProcess @('restore', $restoreProject, '--packages', $packageCache, '-p:DirectoryBuildPropsPath=', '-p:DirectoryBuildTargetsPath=')
             }
             finally { Remove-Item -LiteralPath $scratch -Recurse -Force }
@@ -175,8 +178,13 @@ try {
     }
     if (-not (Test-Path -LiteralPath $NuspecPath -PathType Leaf)) { throw "Missing dependency metadata for Hexalith.EventStore.Aspire/$($snapshot.eventStoreVersion): $NuspecPath" }
     [xml] $metadata = [IO.File]::ReadAllText($NuspecPath)
-    $idNode = $metadata.SelectSingleNode("/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='id']")
-    $versionNode = $metadata.SelectSingleNode("/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='version']")
+    $metadataNodes = @($metadata.SelectNodes("/*[local-name()='package']/*[local-name()='metadata']"))
+    if ($metadataNodes.Count -ne 1) { throw 'Dependency metadata requires exactly one metadata element.' }
+    $idNodes = @($metadataNodes[0].SelectNodes("*[local-name()='id']"))
+    $versionNodes = @($metadataNodes[0].SelectNodes("*[local-name()='version']"))
+    if ($idNodes.Count -ne 1 -or $versionNodes.Count -ne 1) { throw 'Dependency metadata requires exactly one ID and version element.' }
+    $idNode = $idNodes[0]
+    $versionNode = $versionNodes[0]
     $metadataVersion = $null
     if ($null -eq $idNode -or $null -eq $versionNode -or $idNode.InnerText -ine 'Hexalith.EventStore.Aspire' -or
         -not [NuGet.Versioning.NuGetVersion]::TryParse($versionNode.InnerText, [ref] $metadataVersion) -or
@@ -196,8 +204,8 @@ try {
             if ($framework.IsUnsupported -or $frameworks.Contains($framework)) { throw "Invalid or duplicate dependency framework group '$frameworkText'." }
             $frameworks.Add($framework)
         }
-        $nearest = [NuGet.Frameworks.FrameworkReducer]::new().GetNearest([NuGet.Frameworks.NuGetFramework]::Parse('net10.0'), $frameworks)
-        if ($null -eq $nearest) { throw "Hexalith.EventStore.Aspire/$($snapshot.eventStoreVersion) has no dependency framework group applicable to net10.0." }
+        $nearest = [NuGet.Frameworks.FrameworkReducer]::new().GetNearest($target, $frameworks)
+        if ($null -eq $nearest) { throw "Hexalith.EventStore.Aspire/$($snapshot.eventStoreVersion) has no dependency framework group applicable to $TargetFramework." }
         $dependencySet = $groups[$frameworks.IndexOf($nearest)]
     }
     $dependencies = @($dependencySet.SelectNodes("*[local-name()='dependency' and translate(@id,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='communitytoolkit.aspire.hosting.dapr']"))
@@ -208,7 +216,7 @@ try {
     if ($ranges[0] -cne $ranges[0].Trim() -or -not [NuGet.Versioning.VersionRange]::TryParse($ranges[0], [ref] $range)) { throw "Hexalith.EventStore.Aspire/$($snapshot.eventStoreVersion) has invalid CommunityToolkit.Aspire.Hosting.Dapr dependency range '$($ranges[0])'." }
     $snapshot.eventStoreHostingDaprRange = $ranges[0]
     if (-not $range.Satisfies([NuGet.Versioning.NuGetVersion]::Parse($snapshot.aspireHostingDaprVersion))) {
-        throw "Hexalith.EventStore.Aspire/$($snapshot.eventStoreVersion) requires CommunityToolkit.Aspire.Hosting.Dapr range '$($ranges[0])'; selected CommunityToolkit.Aspire.Hosting.Dapr/$($snapshot.aspireHostingDaprVersion) is incompatible."
+        throw "Hexalith.EventStore.Aspire/$($snapshot.eventStoreVersion) requires CommunityToolkit.Aspire.Hosting.Dapr range '$($ranges[0])' for $TargetFramework; selected CommunityToolkit.Aspire.Hosting.Dapr/$($snapshot.aspireHostingDaprVersion) is incompatible."
     }
     $content = ($snapshot | ConvertTo-Json -Depth 10).Replace("`r`n", "`n") + "`n"
     $OutputPath = [IO.Path]::GetFullPath($OutputPath)
@@ -217,7 +225,7 @@ try {
     if (-not [IO.File]::Exists($OutputPath) -or [IO.File]::ReadAllText($OutputPath) -cne $content) {
         [IO.File]::WriteAllText($OutputPath, $content, [Text.UTF8Encoding]::new($false))
     }
-    Write-Output "Platform version catalog validated: Hexalith.EventStore.Aspire/$($snapshot.eventStoreVersion), CommunityToolkit.Aspire.Hosting.Dapr/$($snapshot.aspireHostingDaprVersion), required range $($ranges[0])."
+    Write-Output "Platform version catalog validated: Hexalith.EventStore.Aspire/$($snapshot.eventStoreVersion), CommunityToolkit.Aspire.Hosting.Dapr/$($snapshot.aspireHostingDaprVersion), required range $($ranges[0]) for $TargetFramework."
 }
 catch {
     [Console]::Error.WriteLine("Platform version catalog validation failed: $($_.Exception.GetBaseException().Message)")

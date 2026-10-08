@@ -84,6 +84,10 @@ public sealed class SupportedPlatformPinsCatalogTests
     [InlineData("redisImage", "docker.io//library/redis")]
     [InlineData("redisImage", "/redis")]
     [InlineData("redisImage", "redis/")]
+    [InlineData("redisImage", "docker.io/library/redis..bad")]
+    [InlineData("redisImage", "docker.io/library/redis___bad")]
+    [InlineData("redisImage", "docker.io/library/redis.-bad")]
+    [InlineData("redisImage", "docker.io/library/redis.")]
     [InlineData("daprSdkVersion", "1.2.3-beta.01")]
     [InlineData("daprSdkVersion", "1.2.3.bad")]
     [InlineData("eventStoreHostingDaprRange", "[14.0.0,13.0.0]")]
@@ -96,6 +100,20 @@ public sealed class SupportedPlatformPinsCatalogTests
         JsonObject snapshot = JsonNode.Parse(Snapshot())!.AsObject();
         snapshot[field] = value;
         Should.Throw<InvalidDataException>(() => PlatformVersionCatalog.Parse(snapshot.ToJsonString())).Message.ShouldContain(field);
+    }
+
+    /// <summary>Accepts Docker repository separators in offline snapshots.</summary>
+    /// <param name="image">The valid repository name.</param>
+    [Theory]
+    [InlineData("docker.io/library/redis.good")]
+    [InlineData("docker.io/library/redis_good")]
+    [InlineData("docker.io/library/redis__good")]
+    [InlineData("docker.io/library/redis---good")]
+    public void ValidDockerSeparatorsLoadOffline(string image)
+    {
+        JsonObject snapshot = JsonNode.Parse(Snapshot())!.AsObject();
+        snapshot["redisImage"] = image;
+        PlatformVersionCatalog.Parse(snapshot.ToJsonString()).RedisImage.ShouldBe(image);
     }
 
     /// <summary>Accepts valid NuGet dependency ranges in offline snapshots.</summary>

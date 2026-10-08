@@ -137,7 +137,7 @@ public sealed partial record PlatformVersionCatalog(
         return Parse(reader.ReadToEnd());
     }
 
-    [GeneratedRegex(@"^[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$", RegexOptions.CultureInvariant, 1000)]
+    [GeneratedRegex(@"^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*)*$", RegexOptions.CultureInvariant, 1000)]
     private static partial Regex ImageRegex();
 
     [GeneratedRegex(@"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$", RegexOptions.CultureInvariant, 1000)]

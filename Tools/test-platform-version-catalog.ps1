@@ -86,8 +86,11 @@ try {
         Test-Catalog "duplicate-property-$property" ($catalogText.Replace('</PropertyGroup>', "<$property>0.0.1</$property></PropertyGroup>")) '3.117.1' '13.*' 1 @($property, 'duplicate unconditional')
     }
     Test-Catalog 'intentional-conditional-property' ($catalogText.Replace('</PropertyGroup>', '<HexalithAspireAppHostSdkVersion Condition="false">99.0.0</HexalithAspireAppHostSdkVersion></PropertyGroup>')) '3.117.1' '13.*' 0
-    foreach ($image in @('Docker.io/library/redis', 'docker.io//library/redis', '/redis', 'docker.io/library/')) {
+    foreach ($image in @('Docker.io/library/redis', 'docker.io//library/redis', '/redis', 'docker.io/library/', 'docker.io/library/redis..bad', 'docker.io/library/redis___bad', 'docker.io/library/redis.-bad', 'docker.io/library/redis.')) {
         Test-Catalog ('invalid-image-' + $count) ($catalogText.Replace('docker.io/library/redis', $image)) '3.117.1' '13.*' 1 @('HexalithRedisImage')
+    }
+    foreach ($image in @('docker.io/library/redis.good', 'docker.io/library/redis_good', 'docker.io/library/redis__good', 'docker.io/library/redis---good')) {
+        Test-Catalog ('valid-image-' + $count) ($catalogText.Replace('docker.io/library/redis', $image)) '3.117.1' '13.*' 0
     }
     Test-Catalog 'wildcard-range' ($catalogText.Replace('13.6.0-preview.1.261001-0243', '13.6.0')) '3.117.1' '13.*' 0
     Test-Catalog 'short-range-bounds' $catalogText '3.117.1' '[13,14)' 0
@@ -98,6 +101,12 @@ try {
     Test-Catalog 'misplaced-dependency' $catalogText '3.117.1' '' 1 @('missing', 'CommunityToolkit.Aspire.Hosting.Dapr') $misplaced
     $groups = '<package><metadata><id>Hexalith.EventStore.Aspire</id><version>3.117.1</version><dependencies><group targetFramework="net8.0"><dependency id="CommunityToolkit.Aspire.Hosting.Dapr" version="[12,13)" /></group><group targetFramework="net10.0"><dependency id="CommunityToolkit.Aspire.Hosting.Dapr" version="[13,14)" /></group></dependencies></metadata></package>'
     Test-Catalog 'different-valid-framework-ranges' $catalogText '3.117.1' '' 0 @() $groups
+    Test-Catalog 'net8-selects-incompatible-net8-range' $catalogText '3.117.1' '' 1 @('[12,13)', 'net8.0', 'incompatible') $groups 'Debug' 'net8.0'
+    Test-Catalog 'net8-selects-compatible-net8-range' $catalogText '3.117.1' '' 0 @() ($groups.Replace('[12,13)', '[13,14)')) 'Debug' 'net8.0'
+    $net8Snapshot = Get-Content (Join-Path $temporaryRoot 'net8-selects-compatible-net8-range/catalog.json') -Raw | ConvertFrom-Json
+    if ($net8Snapshot.eventStoreHostingDaprRange -cne '[13,14)') { throw 'The supplied net8.0 dependency range was not serialized.' }
+    Test-Catalog 'net8-has-no-compatible-group' $catalogText '3.117.1' '[13,14)' 1 @('applicable to net8.0') '' 'Debug' 'net8.0'
+    Test-Catalog 'invalid-supplied-framework' $catalogText '3.117.1' '[13,14)' 1 @('TargetFramework', 'invalid') '' 'Debug' 'bad-framework'
     Test-Catalog 'nearest-compatible-framework' $catalogText '3.117.1' '' 0 @() ($groups.Replace('net10.0', 'net9.0'))
     Test-Catalog 'effective-framework-missing-dependency' $catalogText '3.117.1' '' 1 @('missing', 'CommunityToolkit.Aspire.Hosting.Dapr') ($groups.Replace('version="[13,14)"', 'version="[13,14)"').Replace('<group targetFramework="net10.0"><dependency id="CommunityToolkit.Aspire.Hosting.Dapr" version="[13,14)" /></group>', '<group targetFramework="net10.0" />'))
     Test-Catalog 'invalid-framework-group' $catalogText '3.117.1' '' 1 @('Invalid', 'framework') ($groups.Replace('net8.0', 'bad-framework'))
@@ -107,6 +116,14 @@ try {
     Test-Catalog 'missing-dependency-metadata' $catalogText '3.117.1' '' 1 @('missing', 'CommunityToolkit.Aspire.Hosting.Dapr') '<package><metadata><id>Hexalith.EventStore.Aspire</id><version>3.117.1</version></metadata></package>'
     Test-Catalog 'invalid-dependency-range' $catalogText '3.117.1' 'bad' 1 @('invalid', 'CommunityToolkit.Aspire.Hosting.Dapr', 'bad')
     Test-Catalog 'wrong-metadata-identity' $catalogText '3.117.1' '' 1 @('does not identify', '3.117.1') '<package><metadata><id>Hexalith.EventStore.Aspire</id><version>3.109.0</version></metadata></package>'
+
+    $identityMetadata = '<package><metadata><id>Hexalith.EventStore.Aspire</id><version>3.117.1</version><dependencies><dependency id="CommunityToolkit.Aspire.Hosting.Dapr" version="[13,14)" /></dependencies></metadata></package>'
+    Test-Catalog 'missing-metadata-element' $catalogText '3.117.1' '' 1 @('exactly one metadata element') '<package />'
+    Test-Catalog 'duplicate-metadata-elements' $catalogText '3.117.1' '' 1 @('exactly one metadata element') ($identityMetadata.Replace('</package>', '<metadata><id>Wrong.Package</id><version>3.117.1</version></metadata></package>'))
+    Test-Catalog 'missing-metadata-id' $catalogText '3.117.1' '' 1 @('exactly one ID and version') ($identityMetadata.Replace('<id>Hexalith.EventStore.Aspire</id>', ''))
+    Test-Catalog 'duplicate-metadata-ids' $catalogText '3.117.1' '' 1 @('exactly one ID and version') ($identityMetadata.Replace('</id>', '</id><id>Wrong.Package</id>'))
+    Test-Catalog 'missing-metadata-version' $catalogText '3.117.1' '' 1 @('exactly one ID and version') ($identityMetadata.Replace('<version>3.117.1</version>', ''))
+    Test-Catalog 'duplicate-metadata-versions' $catalogText '3.117.1' '' 1 @('exactly one ID and version') ($identityMetadata.Replace('</version>', '</version><version>3.117.1</version>'))
 
     $wrapperOutput = @(& $pwshExecutable -NoProfile -File (Join-Path $PSScriptRoot 'validate-platform-version-catalog.ps1') -NuspecPath (Join-Path $temporaryRoot 'missing-metadata.nuspec') 2>&1) -join "`n"
     if ($LASTEXITCODE -ne 1 -or -not $wrapperOutput.Contains('Missing dependency metadata', [StringComparison]::Ordinal)) { throw "The release validation wrapper did not propagate failure: $wrapperOutput" }
@@ -164,6 +181,14 @@ try {
         $log = @(& dotnet build $project -c Debug -m:1 2>&1) -join "`n"
         if ($LASTEXITCODE -ne 0) { throw "Baseline tooling rebuild failed: $log" }
         $catalogCopy = Join-Path $copyRoot 'Props/Directory.Packages.props'
+        [xml] $alternateCatalog = $authoritativeCatalogText
+        $alternateCatalog.SelectSingleNode('/Project/PropertyGroup/HexalithDaprRuntimeVersion').InnerText = '2.3.4'
+        $alternateCatalogPath = Join-Path $copyRoot 'alternate-catalog.props'
+        [IO.File]::WriteAllText($alternateCatalogPath, $alternateCatalog.OuterXml)
+        $log = @(& dotnet build $project -c Debug -m:1 "-p:PlatformVersionCatalogSource=$alternateCatalogPath" '-p:HexalithDaprRuntimeVersion=2.3.4' 2>&1) -join "`n"
+        if ($LASTEXITCODE -eq 0 -or -not $log.Contains('inconsistent build selection', [StringComparison]::Ordinal) -or -not $log.Contains('HexalithDaprRuntimeVersion', [StringComparison]::Ordinal)) { throw "Alternate production authority with matching runtime override was not rejected: $log" }
+        $count++
+        Write-Output 'PASS: alternate production catalog with matching override cannot replace the owning authority'
         [xml] $changedCatalog = $authoritativeCatalogText
         $changedCatalog.SelectSingleNode('/Project/PropertyGroup/HexalithDaprRuntimeVersion').InnerText = '2.3.4'
         $changedCatalog.SelectSingleNode('/Project/PropertyGroup/HexalithFrontComposerVersion').InnerText = '4.6.9'

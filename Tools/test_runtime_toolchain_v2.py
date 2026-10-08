@@ -227,6 +227,43 @@ def run_sdk_import_group_controls() -> int:
     return len(scenarios)
 
 
+def run_sdk_consumer_context_controls() -> int:
+    """SDK-free observations still honor the actual consumer's global.json selection."""
+    import xml.etree.ElementTree as ET
+    spec = importlib.util.spec_from_file_location("g6_consumer_context_controls", TOOLS / "g6_current.py")
+    g6 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(g6)
+    properties = {"HexalithAspireAppHostSdkVersion": "13.6.0"}
+    sdk = subprocess.run(["dotnet", "--version"], cwd=TOOLS, capture_output=True, text=True, check=True).stdout.strip()
+    with tempfile.TemporaryDirectory(prefix="g6-sdk-consumer-context-") as temporary:
+        root = Path(temporary)
+        consumer = root / "consumer"
+        consumer.mkdir()
+        project = consumer / "AppHost.csproj"
+        project.write_text('<Project><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>')
+        document = ET.parse(project).getroot()
+        global_json = consumer / "global.json"
+        global_json.write_text(json.dumps({"sdk": {"version": sdk, "rollForward": "disable", "allowPrerelease": True}}))
+        selected = subprocess.run(["dotnet", "--version"], cwd=consumer, capture_output=True, text=True, check=False)
+        assert selected.returncode == 0 and selected.stdout.strip() == sdk
+        assert g6.apphost_sdk_versions(document, properties, project_path=project) == {"13.6.0"}
+        assert CURRENT.apphost_sdk_versions(API, document, properties, project_path=project) == {"13.6.0"}
+        global_json.write_text(json.dumps({"sdk": {"version": "111.0.100", "rollForward": "disable"}}))
+        unavailable = subprocess.run(["dotnet", "--version"], cwd=consumer, capture_output=True, text=True, check=False)
+        assert unavailable.returncode != 0 and "111.0.100" in unavailable.stdout + unavailable.stderr
+        for observe, exception in [
+            (lambda: g6.apphost_sdk_versions(document, properties, project_path=project), g6.G6Error),
+            (lambda: CURRENT.apphost_sdk_versions(API, document, properties, project_path=project), API.ValidationError),
+        ]:
+            try:
+                observe()
+            except exception as error:
+                assert "111.0.100" in str(error)
+            else:
+                raise AssertionError("Unavailable consumer SDK was bypassed by the temporary evaluator")
+    return 6
+
+
 def run_evaluated_catalog_controls() -> int:
     """Both current scanners honor imported values, group conditions, nested references and item Updates."""
     from evaluated_catalog import evaluate_catalog
@@ -323,7 +360,7 @@ def run_evaluated_catalog_controls() -> int:
             assert evaluate_catalog(catalog)[0]["HexalithAspireAppHostSdkVersion"] == "13.6.0"
         live_policy = API.read_json(TOOLS / "g6-current-policy.json")
         assert "references/Hexalith.Builds/Tools/evaluated_catalog.py" in live_policy["materialFiles"]
-    count = 31 + run_sdk_import_group_controls()
+    count = 31 + run_sdk_import_group_controls() + run_sdk_consumer_context_controls()
     print(f"EVALUATED-CATALOG-CONTROLS-PASSED: {count}")
     return count
 

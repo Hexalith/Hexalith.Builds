@@ -530,6 +530,26 @@ try {
         Assert-ValidatorResult -Result $result -ExpectedExitCode 0 -ExpectedOutput @('2.3.4')
     }
 
+    foreach ($version in @('1.18.10-beta.01', '1.18.10-01')) {
+        Invoke-Scenario -Name "numeric prerelease leading zero is rejected: $version" -Body {
+            $overrides = @{}
+            foreach ($id in $requiredPackageIds) { $overrides[$id] = $version }
+            $catalogPath = New-CatalogFixture -Name "invalid-prerelease-$version" -PackageRows (Get-RequiredPackageRows -VersionOverrides $overrides)
+            $result = Invoke-Validator -CatalogPath $catalogPath -EvaluatorScriptPath $null
+            Assert-ValidatorResult -Result $result -ExpectedExitCode 1 -ExpectedOutput @('Dapr.Client', 'malformed version', $version)
+        }.GetNewClosure()
+    }
+
+    foreach ($version in @('1.18.10-beta.0', '1.18.10-beta.1', '1.18.10-beta01', '1.18.10-beta.1+build.01')) {
+        Invoke-Scenario -Name "valid prerelease follows evaluated Dapr.Client: $version" -Body {
+            $overrides = @{}
+            foreach ($id in $requiredPackageIds) { $overrides[$id] = $version }
+            $catalogPath = New-CatalogFixture -Name "valid-prerelease-$version" -PackageRows (Get-RequiredPackageRows -VersionOverrides $overrides)
+            $result = Invoke-Validator -CatalogPath $catalogPath -EvaluatorScriptPath $null
+            Assert-ValidatorResult -Result $result -ExpectedExitCode 0 -ExpectedOutput @('validation passed', $version)
+        }.GetNewClosure()
+    }
+
     Invoke-Scenario -Name 'catalog with no Dapr family is rejected' -Body {
         $catalogPath = New-CatalogFixture -Name 'no-family' -PackageRows @('    <PackageVersion Include="Example.Package" Version="1.0.0" />')
         $result = Invoke-Validator -CatalogPath $catalogPath -EvaluatorScriptPath $null
