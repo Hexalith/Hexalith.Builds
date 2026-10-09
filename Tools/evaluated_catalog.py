@@ -41,37 +41,46 @@ def _run(path: Path, arguments: list[str], *, neutral: bool = False,
 
 
 def evaluate_catalog(path: Path, configuration: str = "Debug",
-                     target_framework: str = "net10.0") -> tuple[dict[str, str], dict[str, str]]:
+                     target_framework: str = "net10.0",
+                     consumer_project_name: str | None = None) -> tuple[dict[str, str], dict[str, str]]:
     """Read authoritative evaluated properties/CPM items with inherited selections removed."""
     path = path.resolve()
     with tempfile.TemporaryDirectory(prefix="hexalith-evaluated-catalog-") as temporary:
+        evaluation_path = path
+        if consumer_project_name is not None:
+            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", consumer_project_name):
+                raise ValueError(f"Invalid catalog consumer project name: {consumer_project_name}")
+            evaluation_path = Path(temporary) / f"{consumer_project_name}.proj"
+            project = ET.Element("Project")
+            ET.SubElement(project, "Import", {"Project": str(path)})
+            ET.ElementTree(project).write(evaluation_path, encoding="utf-8")
         preprocessed = Path(temporary) / "catalog.xml"
-        _run(path, ["-preprocess:" + str(preprocessed)], neutral=True,
+        _run(evaluation_path, ["-preprocess:" + str(preprocessed)], neutral=True,
              configuration=configuration, target_framework=target_framework)
         document = ET.parse(preprocessed).getroot()
-    event_store_defaults = []
+        event_store_defaults = []
 
-    def collect_defaults(node: ET.Element, conditioned: bool = False) -> None:
-        conditioned = conditioned or bool(node.get("Condition", "").strip())
-        if _local_name(node.tag) == "PropertyGroup" and not conditioned:
-            event_store_defaults.extend(item for item in node
-                if _local_name(item.tag) == "HexalithEventStoreVersion"
-                and re.sub(r"\s+", "", item.get("Condition", "")) in {
-                    "", "'$(HexalithEventStoreVersion)'==''",
-                    '"$(HexalithEventStoreVersion)"==""'})
-        for child in node:
-            collect_defaults(child, conditioned)
+        def collect_defaults(node: ET.Element, conditioned: bool = False) -> None:
+            conditioned = conditioned or bool(node.get("Condition", "").strip())
+            if _local_name(node.tag) == "PropertyGroup" and not conditioned:
+                event_store_defaults.extend(item for item in node
+                    if _local_name(item.tag) == "HexalithEventStoreVersion"
+                    and re.sub(r"\s+", "", item.get("Condition", "")) in {
+                        "", "'$(HexalithEventStoreVersion)'==''",
+                        '"$(HexalithEventStoreVersion)"==""'})
+            for child in node:
+                collect_defaults(child, conditioned)
 
-    collect_defaults(document)
-    if len(event_store_defaults) > 1:
-        raise ValueError("Ambiguous controlled EventStore catalog default: HexalithEventStoreVersion")
-    names = sorted({_local_name(item.tag) for group in document.iter()
-                    if _local_name(group.tag) == "PropertyGroup" for item in group} | {"HexalithAspireAppHostSdkVersion"})
-    arguments = ["-getItem:PackageVersion"]
-    if names:
-        arguments.append("-getProperty:" + ",".join(names))
-    evaluation = json.loads(_run(path, arguments, neutral=True, configuration=configuration,
-                                target_framework=target_framework))
+        collect_defaults(document)
+        if len(event_store_defaults) > 1:
+            raise ValueError("Ambiguous controlled EventStore catalog default: HexalithEventStoreVersion")
+        names = sorted({_local_name(item.tag) for group in document.iter()
+                        if _local_name(group.tag) == "PropertyGroup" for item in group} | {"HexalithAspireAppHostSdkVersion"})
+        arguments = ["-getItem:PackageVersion"]
+        if names:
+            arguments.append("-getProperty:" + ",".join(names))
+        evaluation = json.loads(_run(evaluation_path, arguments, neutral=True, configuration=configuration,
+                                    target_framework=target_framework))
     properties = evaluation.get("Properties", {})
     versions = {}
     identities = set()
@@ -82,6 +91,20 @@ def evaluate_catalog(path: Path, configuration: str = "Debug",
         identities.add(package.casefold())
         versions[package] = version
     return properties, versions
+
+
+def conditioned_catalog_project_names(path: Path) -> set[str]:
+    """Find consumer names selected by catalog MSBuildProjectName conditions, including imports."""
+    path = path.resolve()
+    with tempfile.TemporaryDirectory(prefix="hexalith-catalog-conditions-") as temporary:
+        preprocessed = Path(temporary) / "catalog.xml"
+        _run(path, ["-preprocess:" + str(preprocessed)], neutral=True)
+        document = ET.parse(preprocessed).getroot()
+    pattern = re.compile(
+        r"['\"]\$\(\s*MSBuildProjectName\s*\)['\"]\s*==\s*['\"]([^'\"]+)['\"]"
+        r"|['\"]([^'\"]+)['\"]\s*==\s*['\"]\$\(\s*MSBuildProjectName\s*\)['\"]")
+    return {name for item in document.iter() for match in pattern.finditer(item.get("Condition", ""))
+            if (name := match.group(1) or match.group(2))}
 
 
 def has_apphost_sdk(document: ET.Element) -> bool:

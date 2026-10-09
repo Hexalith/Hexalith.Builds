@@ -358,6 +358,18 @@ def run_evaluated_catalog_controls() -> int:
         assert g6.direct_pin_issues(root, policy, tuple_values) == []
         with patch.dict("os.environ", {"HexalithAspireAppHostSdkVersion": "99.0.0"}):
             assert evaluate_catalog(catalog)[0]["HexalithAspireAppHostSdkVersion"] == "13.6.0"
+        event_store_version = baseline["qualification"]["eventStorePackageVersion"]
+        catalog.write_text(catalog.read_text().replace("</Project>",
+            f'<PropertyGroup><HexalithEventStoreVersion Condition="\'$(HexalithEventStoreVersion)\' == \'\'">{event_store_version}</HexalithEventStoreVersion></PropertyGroup>'
+            '<ItemGroup><PackageVersion Include="Hexalith.EventStore.Client" Version="$(HexalithEventStoreVersion)" /></ItemGroup></Project>'))
+        project.write_text('<Project><ItemGroup><PackageReference Include="Hexalith.EventStore.Client" /></ItemGroup></Project>')
+        with patch.dict("os.environ", {"HexalithEventStoreVersion": "9.9.9"}):
+            selected_properties, selected_versions = evaluate_catalog(catalog)
+            assert selected_properties["HexalithEventStoreVersion"] == event_store_version
+            assert selected_versions["Hexalith.EventStore.Client"] == event_store_version
+            with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+                assert CURRENT.inventory(API, root, baseline)[0]["pins"] == [
+                    {"package": "Hexalith.EventStore.Client", "version": event_store_version, "qualified": True}]
         live_policy = API.read_json(TOOLS / "g6-current-policy.json")
         assert "references/Hexalith.Builds/Tools/evaluated_catalog.py" in live_policy["materialFiles"]
         toolkit_version = baseline["tuple"]["communityToolkitAspireDapr"]
@@ -365,6 +377,26 @@ def run_evaluated_catalog_controls() -> int:
             f'<PropertyGroup><HexalithAspireHostingDaprVersion>{toolkit_version}</HexalithAspireHostingDaprVersion></PropertyGroup>'
             '<ItemGroup><PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="$(HexalithAspireHostingDaprVersion)" /></ItemGroup></Project>'))
         project.write_text('<Project><ItemGroup><PackageReference Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="$(HexalithAspireHostingDaprVersion)" /></ItemGroup></Project>')
+        with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+            assert CURRENT.inventory(API, root, baseline)[0]["pins"] == [
+                {"package": "CommunityToolkit.Aspire.Hosting.Dapr", "version": toolkit_version, "qualified": True}]
+        catalog.write_text(catalog.read_text().replace(
+            f'<HexalithAspireHostingDaprVersion>{toolkit_version}</HexalithAspireHostingDaprVersion>',
+            f'<HexalithAspireHostingDaprVersion>{toolkit_version}</HexalithAspireHostingDaprVersion>'
+            '<HexalithAspireHostingDaprVersion Condition="\'$(MSBuildProjectName)\' == \'Hexalith.Folders.Aspire\'">'
+            '13.0.0</HexalithAspireHostingDaprVersion>'))
+        folders = root / "references/Hexalith.Folders/src/Hexalith.Folders.Aspire/Hexalith.Folders.Aspire.csproj"
+        folders.parent.mkdir(parents=True)
+        folders.write_text('<Project><ItemGroup><PackageReference Include="CommunityToolkit.Aspire.Hosting.Dapr" /></ItemGroup></Project>')
+        assert evaluate_catalog(catalog, consumer_project_name=folders.stem)[1]["CommunityToolkit.Aspire.Hosting.Dapr"] == "13.0.0"
+        with patch.object(CURRENT, "tracked_files", return_value=[folders.relative_to(root).as_posix()]):
+            try:
+                CURRENT.inventory(API, root, baseline)
+            except API.ValidationError as error:
+                assert "CommunityToolkit.Aspire.Hosting.Dapr 13.0.0" in str(error)
+            else:
+                raise AssertionError("Folders-specific Toolkit selection was silently attributed to the neutral catalog")
+        project.write_text('<Project><ItemGroup><PackageReference Include="CommunityToolkit.Aspire.Hosting.Dapr" /></ItemGroup></Project>')
         with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
             assert CURRENT.inventory(API, root, baseline)[0]["pins"] == [
                 {"package": "CommunityToolkit.Aspire.Hosting.Dapr", "version": toolkit_version, "qualified": True}]

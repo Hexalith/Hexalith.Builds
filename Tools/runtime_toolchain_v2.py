@@ -183,17 +183,32 @@ def tracked_files(api, workspace: Path, roots: list[str]) -> list[str]:
 
 
 def inventory(api, workspace: Path, baseline: dict) -> list[dict]:
+    catalog = workspace / "references/Hexalith.Builds/Props/Directory.Packages.props"
     try:
-        properties, evaluated_versions = _catalog_module.evaluate_catalog(workspace / "references/Hexalith.Builds/Props/Directory.Packages.props")
+        properties, evaluated_versions = _catalog_module.evaluate_catalog(catalog)
+        conditioned_names = _catalog_module.conditioned_catalog_project_names(catalog)
     except (ValueError, OSError, ET.ParseError) as error:
         raise api.ValidationError(str(error)) from error
     versions = {package: version for package, version in evaluated_versions.items() if controlled_field(package)}
+    catalog_by_consumer = {}
     exclusions = {(item["path"], item["package"], item["version"]) for item in baseline["consumerInventory"]["unqualifiedExclusions"]}
     entries = []
     for relative in tracked_files(api, workspace, baseline["consumerInventory"]["roots"]):
         path = workspace / relative
         if any(part in {"_bmad", "_bmad-output", ".agents", ".claude", ".codex", "docs"} for part in path.parts) or "/test/fixtures/" in "/" + relative:
             continue
+        consumer_properties, consumer_versions = properties, versions
+        if path.suffix in {".csproj", ".props", ".targets"} and path.stem in conditioned_names:
+            if path.stem not in catalog_by_consumer:
+                try:
+                    selected_properties, selected_versions = _catalog_module.evaluate_catalog(
+                        catalog, consumer_project_name=path.stem)
+                except (ValueError, OSError, ET.ParseError) as error:
+                    raise api.ValidationError(str(error)) from error
+                catalog_by_consumer[path.stem] = (
+                    selected_properties,
+                    {package: version for package, version in selected_versions.items() if controlled_field(package)})
+            consumer_properties, consumer_versions = catalog_by_consumer[path.stem]
         pins = []
         if path.name == "global.json":
             version = api.read_json(path).get("sdk", {}).get("version")
@@ -204,7 +219,7 @@ def inventory(api, workspace: Path, baseline: dict) -> list[dict]:
                 document = ET.fromstring(api.comment_free_text(path))
             except ET.ParseError as error:
                 raise api.ValidationError(f"Malformed consumer XML: {relative}") from error
-            for sdk_version in sorted(apphost_sdk_versions(api, document, properties, path)):
+            for sdk_version in sorted(apphost_sdk_versions(api, document, consumer_properties, path)):
                 pins.append({"package": "Aspire.AppHost.Sdk", "version": sdk_version, "qualified": True})
             for item in document.iter():
                 if item.tag not in {"PackageReference", "PackageVersion"}:
@@ -213,7 +228,7 @@ def inventory(api, workspace: Path, baseline: dict) -> list[dict]:
                 field = controlled_field(package or "")
                 if field is None:
                     continue
-                version = declared_version(api, item, versions, relative, properties)
+                version = declared_version(api, item, consumer_versions, relative, consumer_properties)
                 excluded = (relative, package, version) in exclusions or (
                     "references/Hexalith.Builds/Props/Directory.Packages.props", package, version) in exclusions
                 pins.append({"package": package, "version": version, "qualified": not excluded})

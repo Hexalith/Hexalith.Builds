@@ -1397,7 +1397,7 @@ finally {
     }
 
     if ($null -ne $consumerRoot -and (Test-Path -LiteralPath $consumerRoot)) {
-        Remove-Item -LiteralPath $consumerRoot -Recurse -Force
+        Remove-Item -LiteralPath $consumerRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 
     if ($null -ne $sourceRoot -and (Test-Path -LiteralPath $sourceRoot)) {

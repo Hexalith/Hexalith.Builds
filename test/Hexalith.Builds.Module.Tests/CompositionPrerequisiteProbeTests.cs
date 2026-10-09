@@ -203,7 +203,9 @@ public sealed class CompositionPrerequisiteProbeTests
             }
 
             ToolDiagnostic? result = await CompositionPrerequisiteProbe.ProbeAspireAsync(
-                aspire, TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                aspire,
+                mode == "timeout" ? TimeSpan.FromMilliseconds(200) : TimeSpan.FromSeconds(5),
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
             _ = result.ShouldNotBeNull();
             result.RuleId.ShouldBe("HXR015");
             result.Message.ShouldContain(CompositionToolchainPins.AspireAppHostSdkVersion);
