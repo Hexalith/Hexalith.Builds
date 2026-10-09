@@ -85,6 +85,13 @@ try {
     foreach ($property in @('HexalithAspireAppHostSdkVersion', 'HexalithDaprRuntimeVersion', 'HexalithDaprCliVersion', 'HexalithRedisImage', 'HexalithRedisImageTag', 'HexalithRedisImageDigest', 'HexalithEventStoreVersion', 'HexalithFrontComposerVersion', 'HexalithAspireHostingDaprVersion')) {
         Test-Catalog "duplicate-property-$property" ($catalogText.Replace('</PropertyGroup>', "<$property>0.0.1</$property></PropertyGroup>")) '3.117.1' '13.*' 1 @($property, 'duplicate unconditional')
     }
+    foreach ($property in @('HexalithEventStoreVersion', 'HexalithFrontComposerVersion')) {
+        $conditionalDefault = "<$property Condition=`"'`$($property)' == ''`">0.0.1</$property>"
+        Test-Catalog "duplicate-self-default-$property" ($catalogText.Replace('</PropertyGroup>', "$conditionalDefault</PropertyGroup>")) '3.117.1' '13.*' 1 @($property, 'duplicate unconditional')
+        $original = "<$property>" + $(if ($property -eq 'HexalithEventStoreVersion') { '3.117.1' } else { '4.6.0' }) + "</$property>"
+        $realForm = $catalogText.Replace($original, "<$property Condition=`"'`$($property)' == ''`">" + $(if ($property -eq 'HexalithEventStoreVersion') { '3.117.1' } else { '4.6.0' }) + "</$property>")
+        Test-Catalog "default-then-unconditional-$property" ($realForm.Replace('</PropertyGroup>', "<$property>0.0.1</$property></PropertyGroup>")) '3.117.1' '13.*' 1 @($property, 'duplicate unconditional')
+    }
     Test-Catalog 'intentional-conditional-property' ($catalogText.Replace('</PropertyGroup>', '<HexalithAspireAppHostSdkVersion Condition="false">99.0.0</HexalithAspireAppHostSdkVersion></PropertyGroup>')) '3.117.1' '13.*' 0
     foreach ($image in @('Docker.io/library/redis', 'docker.io//library/redis', '/redis', 'docker.io/library/', 'docker.io/library/redis..bad', 'docker.io/library/redis___bad', 'docker.io/library/redis.-bad', 'docker.io/library/redis.')) {
         Test-Catalog ('invalid-image-' + $count) ($catalogText.Replace('docker.io/library/redis', $image)) '3.117.1' '13.*' 1 @('HexalithRedisImage')
@@ -250,5 +257,6 @@ try {
     Write-Output "Platform version catalog tests passed: $count scenarios. No Platform acceptance granted."
 }
 finally {
-    Remove-Item -LiteralPath $temporaryRoot -Recurse -Force
+    # Loaded test assemblies remain file-locked on Windows until this PowerShell process exits.
+    Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
 }

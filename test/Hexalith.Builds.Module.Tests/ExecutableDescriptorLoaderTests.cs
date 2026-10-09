@@ -230,6 +230,7 @@ public sealed class ExecutableDescriptorLoaderTests
             CompositionEngineOptions options = new(Path.Combine(root, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
             {
                 DockerCommand = CompositionTestFiles.CreateStubDocker(root),
+                AspireCommand = CompositionTestFiles.CreateAspire(root),
                 DaprHome = Path.Combine(root, "missing-dapr"),
                 StateDirectory = Path.Combine(root, "state"),
                 WorkspaceRoot = Path.Combine(root, "workspaces"),

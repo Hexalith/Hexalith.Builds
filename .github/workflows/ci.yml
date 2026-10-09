@@ -192,6 +192,11 @@ jobs:
           submodules: false
           persist-credentials: false
 
+      - name: Initialize .NET SDK
+        uses: ./Github/initialize-dotnet
+        with:
+          global-json-file: global.json
+
       - name: Test G-6 runtime/toolchain evidence validator
         env:
           PYTHONDONTWRITEBYTECODE: '1'

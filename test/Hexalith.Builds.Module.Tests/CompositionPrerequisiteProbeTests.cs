@@ -203,6 +203,15 @@ public sealed class CompositionPrerequisiteProbeTests
             _ = result.ShouldNotBeNull();
             result.RuleId.ShouldBe("HXR015");
             result.Message.ShouldContain(CompositionToolchainPins.AspireAppHostSdkVersion);
+            if (mode is "missing" or "timeout")
+            {
+                result.Message.ShouldNotContain("(exit ");
+            }
+            else
+            {
+                result.Message.ShouldContain("(exit ");
+            }
+
             result.Phase.ShouldBe(ToolPhase.Prerequisite);
             result.Category.ShouldBe(ToolFailureCategory.PrerequisiteUnavailable);
         }

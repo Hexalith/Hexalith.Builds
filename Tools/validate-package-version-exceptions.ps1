@@ -109,16 +109,42 @@ function Get-ProjectSdkVersionPins {
     param([string] $ProjectPath, [string] $CatalogSdkVersion)
 
     [xml] $document = [IO.File]::ReadAllText($ProjectPath)
+    $literalPins = [System.Collections.Generic.List[object]]::new()
+    foreach ($sdk in $document.DocumentElement.GetAttribute('Sdk').Split(';')) {
+        $parts = $sdk.Trim().Split('/', 2)
+        if ($parts.Count -eq 2 -and $parts[0] -cne 'Aspire.AppHost.Sdk' -and
+            -not [string]::IsNullOrWhiteSpace($parts[0]) -and -not [string]::IsNullOrWhiteSpace($parts[1])) {
+            $literalPins.Add([pscustomobject] @{ Id = $parts[0].Trim(); Version = $parts[1].Trim() })
+        }
+    }
+    foreach ($sdk in $document.SelectNodes("//*[local-name()='Sdk']")) {
+        $id = $sdk.GetAttribute('Name').Trim()
+        $version = $sdk.GetAttribute('Version').Trim()
+        if ($id -cne 'Aspire.AppHost.Sdk' -and -not [string]::IsNullOrWhiteSpace($id) -and
+            -not [string]::IsNullOrWhiteSpace($version)) {
+            $literalPins.Add([pscustomobject] @{ Id = $id; Version = $version })
+        }
+    }
+    foreach ($sdk in $document.SelectNodes("//*[local-name()='Import' and @Sdk]")) {
+        $parts = $sdk.GetAttribute('Sdk').Trim().Split('/', 2)
+        $id = $parts[0].Trim()
+        $version = $sdk.GetAttribute('Version').Trim()
+        if ($parts.Count -eq 2) { $version = $parts[1].Trim() }
+        if ($id -cne 'Aspire.AppHost.Sdk' -and -not [string]::IsNullOrWhiteSpace($id) -and
+            -not [string]::IsNullOrWhiteSpace($version) -and -not $version.Contains('$(', [StringComparison]::Ordinal)) {
+            $literalPins.Add([pscustomobject] @{ Id = $id; Version = $version })
+        }
+    }
     $hasControlledSdk = @($document.DocumentElement.GetAttribute('Sdk').Split(';') | Where-Object { $_.Split('/')[0].Trim() -ceq 'Aspire.AppHost.Sdk' }).Count -gt 0 -or
         $document.SelectNodes("//*[local-name()='Sdk' and @Name='Aspire.AppHost.Sdk' or local-name()='Import' and @Sdk='Aspire.AppHost.Sdk']").Count -gt 0
-    if (-not $hasControlledSdk) { return @() }
+    if (-not $hasControlledSdk) { return $literalPins.ToArray() }
     $python = Get-Command python3, python -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($null -eq $python) { throw 'Python is required to evaluate consuming-project Aspire SDK declarations through MSBuild.' }
     $arguments = @((Join-Path $PSScriptRoot 'evaluated_catalog.py'), '--project', $ProjectPath)
     if ($CatalogSdkVersion) { $arguments += @('--catalog-sdk', $CatalogSdkVersion) }
     $result = @(& $python.Source @arguments 2>&1) -join "`n"
     if ($LASTEXITCODE -ne 0) { throw "Consuming-project SDK evaluation failed: $result" }
-    return @($result | ConvertFrom-Json)
+    return @($literalPins.ToArray()) + @($result | ConvertFrom-Json)
 }
 
 try {

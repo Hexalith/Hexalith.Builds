@@ -90,9 +90,13 @@ try {
         [xml] $declarations = [IO.File]::ReadAllText($preprocessedPath)
         $requiredProperties = @($propertyFields.Values) + @('HexalithEventStoreVersion', 'HexalithFrontComposerVersion', 'HexalithAspireHostingDaprVersion')
         foreach ($property in $requiredProperties) {
-            $unconditional = @($declarations.SelectNodes("//*[local-name()='PropertyGroup' and (not(@Condition) or normalize-space(@Condition)='')]/*[local-name()='$property' and (not(@Condition) or normalize-space(@Condition)='')]") | Where-Object {
+            $unconditional = @($declarations.SelectNodes("//*[local-name()='PropertyGroup']/*[local-name()='$property']") | Where-Object {
                 $conditionalAncestor = $_.SelectSingleNode("ancestor::*[@Condition and normalize-space(@Condition)!='']")
-                $null -eq $conditionalAncestor
+                if ($null -ne $conditionalAncestor) { return $false }
+                $condition = ($_.GetAttribute('Condition') -replace '\s+', '')
+                $singleQuotedDefault = "'" + '$(' + $property + ")'==''"
+                $doubleQuotedDefault = '"' + '$(' + $property + ')"==""'
+                [string]::IsNullOrEmpty($condition) -or $condition -ceq $singleQuotedDefault -or $condition -ceq $doubleQuotedDefault
             })
             if ($unconditional.Count -gt 1) { throw "Catalog field $property has duplicate unconditional declarations; found $($unconditional.Count)." }
         }

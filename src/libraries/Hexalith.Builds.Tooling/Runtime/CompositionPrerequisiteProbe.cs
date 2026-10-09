@@ -115,9 +115,10 @@ public static partial class CompositionPrerequisiteProbe
             _ when string.IsNullOrWhiteSpace(output) => "empty output",
             _ => output[..Math.Min(output.Length, 256)],
         };
+        string exitDetail = result.Started && !result.TimedOut ? $" (exit {result.ExitCode})" : string.Empty;
         return Unavailable(
             "HXR015",
-            $"Aspire CLI observed '{observed}' (exit {result.ExitCode}); expected Aspire.AppHost.Sdk/{expected}.",
+            $"Aspire CLI observed '{observed}'{exitDetail}; expected Aspire.AppHost.Sdk/{expected}.",
             "aspire",
             $"Install Aspire CLI {expected} to match the catalog-selected Aspire.AppHost.Sdk/{expected}, then retry.");
     }

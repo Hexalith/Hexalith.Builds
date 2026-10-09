@@ -25,6 +25,9 @@ public sealed class SupportedPlatformPinsCatalogTests
         XDocument catalog = XDocument.Load(Path.Combine(CompositionTestFiles.RepositoryRoot(), "Props", "Directory.Packages.props"));
         catalog.Descendants("HexalithEventStoreVersion").Single().Value.Trim().ShouldBe(SupportedPlatformPins.EventStoreVersion);
         catalog.Descendants("HexalithFrontComposerVersion").Single().Value.Trim().ShouldBe(SupportedPlatformPins.FrontComposerVersion);
+        catalog.Descendants("HexalithAspireAppHostSdkVersion").Single().Value.Trim().ShouldBe(CompositionToolchainPins.AspireAppHostSdkVersion);
+        catalog.Descendants("HexalithDaprRuntimeVersion").Single().Value.Trim().ShouldBe(SupportedPlatformPins.DaprRuntimeVersion);
+        catalog.Descendants("HexalithDaprCliVersion").Single().Value.Trim().ShouldBe(CompositionToolchainPins.DaprCliVersion);
     }
 
     /// <summary>Verifies both facades read the same embedded catalog and data records keep value equality.</summary>

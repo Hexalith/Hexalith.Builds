@@ -62,6 +62,7 @@ public sealed class PublicCompositionCommandTests
             CompositionEngineOptions options = new(Path.Combine(root, "apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
             {
                 DockerCommand = docker,
+                AspireCommand = CompositionTestFiles.CreateAspire(root),
                 DaprHome = Path.Combine(root, "missing-dapr"),
                 StateDirectory = Path.Combine(root, "state"),
                 WorkspaceRoot = Path.Combine(root, "workspaces"),

@@ -253,6 +253,35 @@ try {
         -CatalogPath $catalogPath -WorkspaceRoot $elementFormWorkspace -ExpectedExitCode 1 `
         -ExpectedOutput "unlisted version exception 'apphost-sdk|Fixture.Module|src/Element.AppHost/Element.AppHost.csproj|Aspire.AppHost.Sdk'"
 
+    Write-Utf8File -Path (Join-Path $elementFormModule 'src/Root.Other/Root.Other.csproj') -Content '<Project Sdk="Microsoft.Build.NoTargets/3.7.0" />'
+    Test-Scenario -Name 'Unlisted non-Aspire root SDK pin' -InventoryPath $validInventoryPath `
+        -CatalogPath $catalogPath -WorkspaceRoot $elementFormWorkspace -ExpectedExitCode 1 `
+        -ExpectedOutput "unlisted version exception 'apphost-sdk|Fixture.Module|src/Root.Other/Root.Other.csproj|Microsoft.Build.NoTargets'"
+    Remove-Item -LiteralPath (Join-Path $elementFormModule 'src/Root.Other/Root.Other.csproj') -Force
+
+    Write-Utf8File -Path (Join-Path $elementFormModule 'src/Element.Other/Element.Other.csproj') -Content '<Project><Sdk Name="Microsoft.Build.NoTargets" Version="3.7.0" /></Project>'
+    Test-Scenario -Name 'Unlisted non-Aspire element SDK pin' -InventoryPath $validInventoryPath `
+        -CatalogPath $catalogPath -WorkspaceRoot $elementFormWorkspace -ExpectedExitCode 1 `
+        -ExpectedOutput "unlisted version exception 'apphost-sdk|Fixture.Module|src/Element.Other/Element.Other.csproj|Microsoft.Build.NoTargets'"
+    Remove-Item -LiteralPath (Join-Path $elementFormModule 'src/Element.Other/Element.Other.csproj') -Force
+
+    Write-Utf8File -Path (Join-Path $elementFormModule 'src/Import.Other/Import.Other.csproj') -Content '<Project><Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" Version="3.7.0" /></Project>'
+    Test-Scenario -Name 'Unlisted non-Aspire import SDK pin' -InventoryPath $validInventoryPath `
+        -CatalogPath $catalogPath -WorkspaceRoot $elementFormWorkspace -ExpectedExitCode 1 `
+        -ExpectedOutput "unlisted version exception 'apphost-sdk|Fixture.Module|src/Import.Other/Import.Other.csproj|Microsoft.Build.NoTargets'"
+    Remove-Item -LiteralPath (Join-Path $elementFormModule 'src/Import.Other/Import.Other.csproj') -Force
+
+    Write-Utf8File -Path (Join-Path $elementFormModule 'src/SlashImport.Other/SlashImport.Other.csproj') -Content '<Project><Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets/3.7.0" /></Project>'
+    Test-Scenario -Name 'Unlisted non-Aspire slash-form import SDK pin' -InventoryPath $validInventoryPath `
+        -CatalogPath $catalogPath -WorkspaceRoot $elementFormWorkspace -ExpectedExitCode 1 `
+        -ExpectedOutput "unlisted version exception 'apphost-sdk|Fixture.Module|src/SlashImport.Other/SlashImport.Other.csproj|Microsoft.Build.NoTargets'"
+    Remove-Item -LiteralPath (Join-Path $elementFormModule 'src/SlashImport.Other/SlashImport.Other.csproj') -Force
+
+    Write-Utf8File -Path (Join-Path $elementFormModule 'src/CaseVariant/CaseVariant.csproj') -Content '<Project Sdk="aspire.AppHost.Sdk/13.4.6" />'
+    Test-Scenario -Name 'Case-variant Aspire SDK is unlisted' -InventoryPath $validInventoryPath `
+        -CatalogPath $catalogPath -WorkspaceRoot $elementFormWorkspace -ExpectedExitCode 1 `
+        -ExpectedOutput "unlisted version exception 'apphost-sdk|Fixture.Module|src/CaseVariant/CaseVariant.csproj|aspire.AppHost.Sdk'"
+
     $uninitializedWorkspace = Join-Path $temporaryRoot 'uninitialized-workspace'
     Write-Utf8File -Path (Join-Path $uninitializedWorkspace '.gitmodules') -Content @'
 [submodule "references/Fixture.Module"]

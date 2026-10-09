@@ -255,6 +255,15 @@ invalid package metadata fail the build without fallback versions. Controlled
 build overrides must agree with the catalog; changing a selection requires
 editing the catalog before rebuilding.
 
+The fixed legacy `schemas/hexalith.module-manifest.v1.json` contract retains
+EventStore, Dapr runtime, Dapr SDK and FrontComposer consts. Edit those consts
+alongside a catalog pin change; `PlatformPinSchemaAndRuntimeValidationRemainInParity`
+enforces their parity.
+
+Building Tooling requires `pwsh` on `PATH` and access to configured NuGet feeds
+when the selected EventStore.Aspire nuspec is not cached. Running
+`Tools/validate-package-version-exceptions.ps1` also requires `python3`.
+
 Run `pwsh -NoProfile -File Tools/validate-platform-version-catalog.ps1` to
 validate the Platform EventStore.Aspire/CommunityToolkit.Aspire.Hosting.Dapr
 pair using NuGet dependency range semantics. The Folders.Aspire exception
