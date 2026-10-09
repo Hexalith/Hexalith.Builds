@@ -258,10 +258,12 @@ editing the catalog before rebuilding.
 The fixed legacy `schemas/hexalith.module-manifest.v1.json` contract retains
 EventStore, Dapr runtime, Dapr SDK and FrontComposer consts. Edit those consts
 alongside a catalog pin change; `PlatformPinSchemaAndRuntimeValidationRemainInParity`
-enforces their parity. An EventStore selection change also requires updating
-`Tools/G4PackageQualification.functions.ps1` and
-`Tools/test-g4-tool-package-contracts.ps1`, then requalifying the bound fixtures
-under `test/fixtures` before their expected run evidence can change.
+enforces their parity. Bound evidence fixtures under `test/fixtures` record all
+four pins and are validated against the catalog, so a change to any of them
+requires requalifying those fixtures. An EventStore selection change also
+requires updating `Tools/G4PackageQualification.functions.ps1` and
+`Tools/test-g4-tool-package-contracts.ps1` before their expected run evidence
+can change.
 
 Building Tooling requires `pwsh` on `PATH` and access to configured NuGet feeds
 when the selected EventStore.Aspire nuspec is not cached. Running

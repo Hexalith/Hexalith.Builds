@@ -76,7 +76,7 @@ public sealed class CompositionEngineTests
         {
             CompositionEngine engine = new(CreateOptions(root) with
             {
-                DaprHome = CompositionTestFiles.CreateDaprHome(root, "1.18.0", "1.18.2"),
+                DaprHome = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
                 DockerCommand = CompositionTestFiles.CreateDocker(root),
             });
 
@@ -315,7 +315,7 @@ public sealed class CompositionEngineTests
             CompositionEngine engine = new(CreateOptions(root) with
             {
                 AppHostAssemblyPath = appHost,
-                DaprHome = CompositionTestFiles.CreateDaprHome(root, "1.18.0", "1.18.2"),
+                DaprHome = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
                 DockerCommand = CompositionTestFiles.CreateStubDocker(root),
                 ReadinessTimeout = TimeSpan.FromSeconds(mode == "never" ? 3 : 60),
             });

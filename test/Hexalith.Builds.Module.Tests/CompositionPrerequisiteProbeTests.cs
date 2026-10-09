@@ -99,7 +99,7 @@ public sealed class CompositionPrerequisiteProbeTests
         string root = CompositionTestFiles.CreateDirectory();
         try
         {
-            string home = CompositionTestFiles.CreateDaprHome(root, "1.18.0", "1.18.2");
+            string home = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion);
             CompositionTestFiles.WriteScript(
                 Path.Combine(home, ".dapr", "bin", "scheduler"),
                 "echo 'msg=\"Starting Dapr Scheduler Service -- version 1.18.4 -- commit test\"'\nsleep 30");
@@ -129,7 +129,7 @@ public sealed class CompositionPrerequisiteProbeTests
         string root = CompositionTestFiles.CreateDirectory();
         try
         {
-            string home = CompositionTestFiles.CreateDaprHome(root, "1.18.0", "1.18.2");
+            string home = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion);
 
             CompositionPrerequisiteResult result = await CompositionPrerequisiteProbe.ProbeAsync(
                 home,
