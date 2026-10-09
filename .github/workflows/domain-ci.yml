@@ -320,7 +320,7 @@ jobs:
         uses: ./.hexalith/builds-execution/Github/initialize-build
       - name: Initialize root-declared submodules
         if: ${{ !inputs.governed-ci }}
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@bea892ef7d378e3806f58dc3ee9cc43391620f60 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -673,7 +673,7 @@ jobs:
           fetch-depth: 0
           submodules: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@bea892ef7d378e3806f58dc3ee9cc43391620f60 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -748,7 +748,7 @@ jobs:
           fetch-depth: 0
           submodules: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@bea892ef7d378e3806f58dc3ee9cc43391620f60 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
