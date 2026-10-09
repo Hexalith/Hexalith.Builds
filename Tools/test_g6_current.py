@@ -41,7 +41,7 @@ class CurrentG6Tests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("g6_evaluated_fixture_tests", TOOLS / "test_runtime_toolchain_v2.py")
         controls = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(controls)
-        self.assertEqual(controls.run_evaluated_catalog_controls(), 46)
+        self.assertEqual(controls.run_evaluated_catalog_controls(), 47)
 
     def test_material_fingerprint_covers_live_sample_and_ignores_unrelated_docs(self) -> None:
         policy = G6.policy_document(POLICY)

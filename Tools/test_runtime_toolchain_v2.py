@@ -389,6 +389,16 @@ def run_evaluated_catalog_controls() -> int:
         folders.parent.mkdir(parents=True)
         folders.write_text('<Project><ItemGroup><PackageReference Include="CommunityToolkit.Aspire.Hosting.Dapr" /></ItemGroup></Project>')
         assert evaluate_catalog(catalog, consumer_project_name=folders.stem)[1]["CommunityToolkit.Aspire.Hosting.Dapr"] == "13.0.0"
+        sdk_selection = catalog.parent / "global.json"
+        sdk_selection.write_text(json.dumps({"sdk": {"version": "111.0.100", "rollForward": "disable"}}))
+        try:
+            evaluate_catalog(catalog, consumer_project_name=folders.stem)
+        except ValueError as error:
+            assert "111.0.100" in str(error)
+        else:
+            raise AssertionError("Per-consumer catalog evaluation bypassed the repository SDK selection")
+        finally:
+            sdk_selection.unlink()
         with patch.object(CURRENT, "tracked_files", return_value=[folders.relative_to(root).as_posix()]):
             try:
                 CURRENT.inventory(API, root, baseline)
@@ -415,7 +425,7 @@ def run_evaluated_catalog_controls() -> int:
             '<HexalithEventStoreVersion Condition="\'$(HexalithEventStoreVersion)\' == \'\'">9.9.9</HexalithEventStoreVersion>',
             '<HexalithEventStoreVersion Condition="false">9.9.9</HexalithEventStoreVersion>'))
         assert evaluate_catalog(duplicate_catalog)[1] == {"Hexalith.EventStore.Aspire": "3.117.1"}
-    count = 34 + run_sdk_import_group_controls() + run_sdk_consumer_context_controls()
+    count = 35 + run_sdk_import_group_controls() + run_sdk_consumer_context_controls()
     print(f"EVALUATED-CATALOG-CONTROLS-PASSED: {count}")
     return count
 

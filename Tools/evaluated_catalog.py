@@ -56,7 +56,7 @@ def evaluate_catalog(path: Path, configuration: str = "Debug",
             ET.ElementTree(project).write(evaluation_path, encoding="utf-8")
         preprocessed = Path(temporary) / "catalog.xml"
         _run(evaluation_path, ["-preprocess:" + str(preprocessed)], neutral=True,
-             configuration=configuration, target_framework=target_framework)
+             configuration=configuration, target_framework=target_framework, working_directory=path.parent)
         document = ET.parse(preprocessed).getroot()
         event_store_defaults = []
 
@@ -80,7 +80,7 @@ def evaluate_catalog(path: Path, configuration: str = "Debug",
         if names:
             arguments.append("-getProperty:" + ",".join(names))
         evaluation = json.loads(_run(evaluation_path, arguments, neutral=True, configuration=configuration,
-                                    target_framework=target_framework))
+                                    target_framework=target_framework, working_directory=path.parent))
     properties = evaluation.get("Properties", {})
     versions = {}
     identities = set()

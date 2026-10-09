@@ -274,9 +274,9 @@ validate the Platform EventStore.Aspire/CommunityToolkit.Aspire.Hosting.Dapr
 pair using NuGet dependency range semantics. The Folders.Aspire exception
 continues to apply only to that project.
 
-Before descriptor discovery or run resources, `run` and live `test` probe
-`aspire --version` within a finite bound. Aspire CLI must match the selected
-AppHost SDK, including its prerelease identity; build metadata is ignored.
+Before descriptor discovery or run resources, `run` and `test` of executable
+manifests probe `aspire --version` within a finite bound. Aspire CLI must match
+the selected AppHost SDK, including its prerelease identity; build metadata is ignored.
 `HXR015` reports the observed CLI and expected SDK versions in human and JSON
 diagnostics. Install the version named by the diagnostic and retry. Declaration
 and evidence validation, help and `down` do not require Aspire.

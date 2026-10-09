@@ -72,7 +72,9 @@ public sealed class SupportedPlatformPinsCatalogTests
     [Fact]
     public void DuplicateSelectionNamesField()
     {
-        string duplicate = Snapshot().Replace("{", "{\"daprSdkVersion\":\"0.0.1\",", StringComparison.Ordinal);
+        string snapshot = Snapshot();
+        string sdkVersion = JsonNode.Parse(snapshot)!["daprSdkVersion"]!.GetValue<string>();
+        string duplicate = snapshot.Replace("{", $"{{\"daprSdkVersion\":\"{sdkVersion}\",", StringComparison.Ordinal);
         Should.Throw<InvalidDataException>(() => PlatformVersionCatalog.Parse(duplicate)).Message.ShouldContain("daprSdkVersion");
     }
 
