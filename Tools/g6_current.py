@@ -183,7 +183,7 @@ def tracked_material(workspace: Path, policy: dict[str, Any]) -> dict[str, Any]:
 def evaluated_catalog(workspace: Path) -> tuple[dict[str, str], dict[str, str]]:
     try:
         return _catalog_module.evaluate_catalog(workspace / "references/Hexalith.Builds/Props/Directory.Packages.props")
-    except (ValueError, ET.ParseError) as error:
+    except (ValueError, OSError, ET.ParseError) as error:
         raise G6Error(str(error)) from error
 
 

@@ -262,7 +262,9 @@ enforces their parity.
 
 Building Tooling requires `pwsh` on `PATH` and access to configured NuGet feeds
 when the selected EventStore.Aspire nuspec is not cached. Running
-`Tools/validate-package-version-exceptions.ps1` also requires `python3`.
+`Tools/validate-package-version-exceptions.ps1` also requires `python3`. Catalog
+and installed-tool contract tests load the net10.0 Tooling assembly and require
+PowerShell 7.6 or later.
 
 Run `pwsh -NoProfile -File Tools/validate-platform-version-catalog.ps1` to
 validate the Platform EventStore.Aspire/CommunityToolkit.Aspire.Hosting.Dapr

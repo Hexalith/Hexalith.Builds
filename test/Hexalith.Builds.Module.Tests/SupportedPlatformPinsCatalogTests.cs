@@ -98,6 +98,8 @@ public sealed class SupportedPlatformPinsCatalogTests
     [InlineData("redisImageTag", "bad tag")]
     [InlineData("redisImageDigest", "sha256:bad")]
     [InlineData("eventStoreHostingDaprRange", "bad")]
+    [InlineData("unexpectedField", "value")]
+    [InlineData("schemaVersion", "2")]
     public void MalformedSelectionFails(string field, string value)
     {
         JsonObject snapshot = JsonNode.Parse(Snapshot())!.AsObject();

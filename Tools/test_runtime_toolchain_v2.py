@@ -360,7 +360,30 @@ def run_evaluated_catalog_controls() -> int:
             assert evaluate_catalog(catalog)[0]["HexalithAspireAppHostSdkVersion"] == "13.6.0"
         live_policy = API.read_json(TOOLS / "g6-current-policy.json")
         assert "references/Hexalith.Builds/Tools/evaluated_catalog.py" in live_policy["materialFiles"]
-    count = 31 + run_sdk_import_group_controls() + run_sdk_consumer_context_controls()
+        toolkit_version = baseline["tuple"]["communityToolkitAspireDapr"]
+        catalog.write_text(catalog.read_text().replace("</Project>",
+            f'<PropertyGroup><HexalithAspireHostingDaprVersion>{toolkit_version}</HexalithAspireHostingDaprVersion></PropertyGroup>'
+            '<ItemGroup><PackageVersion Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="$(HexalithAspireHostingDaprVersion)" /></ItemGroup></Project>'))
+        project.write_text('<Project><ItemGroup><PackageReference Include="CommunityToolkit.Aspire.Hosting.Dapr" Version="$(HexalithAspireHostingDaprVersion)" /></ItemGroup></Project>')
+        with patch.object(CURRENT, "tracked_files", return_value=["consumer.csproj"]):
+            assert CURRENT.inventory(API, root, baseline)[0]["pins"] == [
+                {"package": "CommunityToolkit.Aspire.Hosting.Dapr", "version": toolkit_version, "qualified": True}]
+        duplicate_catalog = root / "duplicate-catalog.props"
+        duplicate_catalog.write_text('<Project><PropertyGroup>'
+            '<HexalithEventStoreVersion Condition="\'$(HexalithEventStoreVersion)\' == \'\'">3.117.1</HexalithEventStoreVersion>'
+            '<HexalithEventStoreVersion Condition="\'$(HexalithEventStoreVersion)\' == \'\'">9.9.9</HexalithEventStoreVersion>'
+            '</PropertyGroup><ItemGroup><PackageVersion Include="Hexalith.EventStore.Aspire" Version="$(HexalithEventStoreVersion)" /></ItemGroup></Project>')
+        try:
+            evaluate_catalog(duplicate_catalog)
+        except ValueError as error:
+            assert "HexalithEventStoreVersion" in str(error)
+        else:
+            raise AssertionError("Ambiguous EventStore catalog defaults passed")
+        duplicate_catalog.write_text(duplicate_catalog.read_text().replace(
+            '<HexalithEventStoreVersion Condition="\'$(HexalithEventStoreVersion)\' == \'\'">9.9.9</HexalithEventStoreVersion>',
+            '<HexalithEventStoreVersion Condition="false">9.9.9</HexalithEventStoreVersion>'))
+        assert evaluate_catalog(duplicate_catalog)[1] == {"Hexalith.EventStore.Aspire": "3.117.1"}
+    count = 34 + run_sdk_import_group_controls() + run_sdk_consumer_context_controls()
     print(f"EVALUATED-CATALOG-CONTROLS-PASSED: {count}")
     return count
 

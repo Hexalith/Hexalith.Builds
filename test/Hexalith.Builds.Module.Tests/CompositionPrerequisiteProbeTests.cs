@@ -78,6 +78,9 @@ public sealed class CompositionPrerequisiteProbeTests
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(["HXR012"]);
+            string hint = result.Diagnostics[0].Hint.ShouldNotBeNull();
+            hint.ShouldContain(CompositionToolchainPins.DaprCliVersion);
+            hint.ShouldContain(CompositionToolchainPins.DaprRuntimeVersion);
         }
         finally
         {
@@ -107,6 +110,7 @@ public sealed class CompositionPrerequisiteProbeTests
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(["HXR013"]);
+            result.Diagnostics[0].Hint.ShouldNotBeNull().ShouldContain(CompositionToolchainPins.DaprRuntimeVersion);
         }
         finally
         {

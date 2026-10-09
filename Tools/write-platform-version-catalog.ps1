@@ -148,7 +148,10 @@ try {
         }
     }
     foreach ($field in @($packageFields.Keys) + @($propertyFields.Keys)) {
-        if ([string]::IsNullOrWhiteSpace($snapshot[$field]) -or $snapshot[$field] -cne $snapshot[$field].Trim()) { throw "Catalog field $field is missing or invalid." }
+        if ([string]::IsNullOrWhiteSpace($snapshot[$field]) -or $snapshot[$field] -cne $snapshot[$field].Trim()) {
+            $catalogField = if ($packageFields.Contains($field)) { $packageFields[$field] } else { $propertyFields[$field] }
+            throw "Catalog field $catalogField is missing or invalid."
+        }
     }
     foreach ($field in @($packageFields.Keys) + @('aspireAppHostSdkVersion', 'daprRuntimeVersion', 'daprCliVersion')) {
         $parsed = $null

@@ -33,7 +33,7 @@ $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pws
 $count = 0
 
 function Test-Catalog {
-    param([string] $Name, [string] $Catalog, [string] $EventStore, [string] $Range, [int] $ExpectedExit, [string[]] $ExpectedText = @(), [string] $Metadata = '', [string] $Configuration = 'Debug', [string] $TargetFramework = 'net10.0')
+    param([string] $Name, [string] $Catalog, [string] $EventStore, [string] $Range, [int] $ExpectedExit, [string[]] $ExpectedText = @(), [string] $Metadata = '', [string] $Configuration = 'Debug', [string] $TargetFramework = 'net10.0', [hashtable] $ExpectedSnapshot = @{})
     $directory = Join-Path $temporaryRoot $Name
     $null = New-Item -ItemType Directory -Path $directory
     $catalogPath = Join-Path $directory 'Directory.Packages.props'
@@ -49,6 +49,12 @@ function Test-Catalog {
     foreach ($expected in $ExpectedText) { if (-not $text.Contains($expected, [StringComparison]::Ordinal)) { throw "$Name omitted '$expected': $text" } }
     if ($ExpectedExit -eq 0) {
         $snapshot = [IO.File]::ReadAllText($outputPath)
+        if ($ExpectedSnapshot.Count -gt 0) {
+            $selection = $snapshot | ConvertFrom-Json
+            foreach ($field in $ExpectedSnapshot.Keys) {
+                if ($selection.$field -cne $ExpectedSnapshot[$field]) { throw "$Name snapshot field $field did not reflect the catalog selection '$($ExpectedSnapshot[$field])'." }
+            }
+        }
         $timestamp = [IO.File]::GetLastWriteTimeUtc($outputPath)
         $null = & $pwshExecutable -NoProfile -File $writer -CatalogPath $catalogPath -NuspecPath $metadataPath -OutputPath $outputPath -Configuration $Configuration -TargetFramework $TargetFramework
         if ($LASTEXITCODE -ne 0 -or [IO.File]::ReadAllText($outputPath) -cne $snapshot -or [IO.File]::GetLastWriteTimeUtc($outputPath) -ne $timestamp) { throw "$Name is not deterministic/incremental." }
@@ -82,6 +88,7 @@ try {
         $missing = [regex]::Replace($catalogText, '<' + $property + '>[^<]*</' + $property + '>', '')
         Test-Catalog "missing-$property" $missing '3.117.1' '13.6.0-preview.1.261001-0243' 1 @($property)
     }
+    Test-Catalog 'missing-eventstore-property-names-package' ($catalogText.Replace('<HexalithEventStoreVersion>3.117.1</HexalithEventStoreVersion>', '')) '3.117.1' '13.6.0-preview.1.261001-0243' 1 @('Catalog field Hexalith.EventStore.Aspire is missing or invalid')
     foreach ($property in @('HexalithAspireAppHostSdkVersion', 'HexalithDaprRuntimeVersion', 'HexalithDaprCliVersion', 'HexalithRedisImage', 'HexalithRedisImageTag', 'HexalithRedisImageDigest', 'HexalithEventStoreVersion', 'HexalithFrontComposerVersion', 'HexalithAspireHostingDaprVersion')) {
         Test-Catalog "duplicate-property-$property" ($catalogText.Replace('</PropertyGroup>', "<$property>0.0.1</$property></PropertyGroup>")) '3.117.1' '13.*' 1 @($property, 'duplicate unconditional')
     }
@@ -97,8 +104,12 @@ try {
         Test-Catalog ('invalid-image-' + $count) ($catalogText.Replace('docker.io/library/redis', $image)) '3.117.1' '13.*' 1 @('HexalithRedisImage')
     }
     foreach ($image in @('docker.io/library/redis.good', 'docker.io/library/redis_good', 'docker.io/library/redis__good', 'docker.io/library/redis---good')) {
-        Test-Catalog ('valid-image-' + $count) ($catalogText.Replace('docker.io/library/redis', $image)) '3.117.1' '13.*' 0
+        Test-Catalog ('valid-image-' + $count) ($catalogText.Replace('docker.io/library/redis', $image)) '3.117.1' '13.*' 0 -ExpectedSnapshot @{ redisImage = $image }
     }
+    $tag = '8.0-rc.1'
+    Test-Catalog 'valid-redis-tag' ($catalogText.Replace('7.4-alpine', $tag)) '3.117.1' '13.*' 0 -ExpectedSnapshot @{ redisImageTag = $tag }
+    $digest = 'sha256:' + ('a' * 64)
+    Test-Catalog 'valid-redis-digest' ($catalogText.Replace('sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf', $digest)) '3.117.1' '13.*' 0 -ExpectedSnapshot @{ redisImageDigest = $digest }
     Test-Catalog 'wildcard-range' ($catalogText.Replace('13.6.0-preview.1.261001-0243', '13.6.0')) '3.117.1' '13.*' 0
     Test-Catalog 'short-range-bounds' $catalogText '3.117.1' '[13,14)' 0
     Test-Catalog 'inverted-range' $catalogText '3.117.1' '[14.0.0,13.0.0]' 1 @('invalid', 'CommunityToolkit.Aspire.Hosting.Dapr')

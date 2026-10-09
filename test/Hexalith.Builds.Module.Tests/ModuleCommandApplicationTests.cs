@@ -449,6 +449,54 @@ public sealed class ModuleCommandApplicationTests
     }
 
     /// <summary>
+    /// Rejects a mismatched Aspire CLI before the public run or test command discovers an invalid descriptor.
+    /// </summary>
+    /// <param name="command">The public command to invoke.</param>
+    /// <returns>A task that completes after the prerequisite ordering is checked.</returns>
+    [Theory]
+    [InlineData("run")]
+    [InlineData("test")]
+    public async Task AspireMismatchPrecedesPublicDescriptorDiscoveryAsync(string command)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake Aspire CLI uses POSIX shell scripts.");
+        }
+
+        string directory = CreateFixtureDirectory();
+        try
+        {
+            string aspire = CompositionTestFiles.CreateAspire(directory);
+            CompositionTestFiles.WriteScript(aspire, "[ \"$#\" -eq 1 ] && [ \"$1\" = '--version' ] || exit 64\necho '0.0.1'");
+            string[] arguments = command == "test"
+                ? [command, "--manifest", Path.Combine(directory, "manifest.json"), "--profile", "full", "--output", "json"]
+                : [command, "--manifest", Path.Combine(directory, "manifest.json"), "--output", "json"];
+            StringWriter standardOutput = new();
+            await using (standardOutput.ConfigureAwait(true))
+            {
+                int exitCode = await ModuleCommandApplication.InvokeAsync(
+                    arguments,
+                    standardOutput,
+                    TextWriter.Null,
+                    TestContext.Current.CancellationToken,
+                    typeof(ModuleCommandApplication).Assembly.Location,
+                    new CompositionEngineOptions(Path.Combine(directory, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
+                    {
+                        AspireCommand = aspire,
+                    }).ConfigureAwait(true);
+
+                exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable);
+                standardOutput.ToString().ShouldContain("HXR015");
+                standardOutput.ToString().ShouldNotContain("HXD002");
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    /// <summary>
     /// Rejects an invalid executable descriptor through the public command before runtime state exists.
     /// </summary>
     /// <returns>A task that completes after the fail-closed command result is checked.</returns>

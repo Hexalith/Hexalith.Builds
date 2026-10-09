@@ -346,7 +346,6 @@ foreach ($repository in $repositoryRoots) {
     $projectFiles = @(Get-RepositoryFiles -Root $repository.Root -Patterns @('*.csproj') `
         -ExcludeReferences:$repository.IsWorkspace)
     foreach ($projectPath in $projectFiles) {
-        $projectText = Get-Content -LiteralPath $projectPath -Raw
         $relativePath = [IO.Path]::GetRelativePath($repository.Root, $projectPath).Replace('\', '/')
         foreach ($sdkPin in @(Get-ProjectSdkVersionPins -ProjectPath $projectPath -CatalogSdkVersion $catalogSdkVersion)) {
             if ($repository.Owner -ceq 'Hexalith.Builds' -and $sdkPin.PSObject.Properties.Name -contains 'CatalogSelected' -and $sdkPin.CatalogSelected) {

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import tempfile
 import uuid
@@ -48,6 +49,22 @@ def evaluate_catalog(path: Path, configuration: str = "Debug",
         _run(path, ["-preprocess:" + str(preprocessed)], neutral=True,
              configuration=configuration, target_framework=target_framework)
         document = ET.parse(preprocessed).getroot()
+    event_store_defaults = []
+
+    def collect_defaults(node: ET.Element, conditioned: bool = False) -> None:
+        conditioned = conditioned or bool(node.get("Condition", "").strip())
+        if _local_name(node.tag) == "PropertyGroup" and not conditioned:
+            event_store_defaults.extend(item for item in node
+                if _local_name(item.tag) == "HexalithEventStoreVersion"
+                and re.sub(r"\s+", "", item.get("Condition", "")) in {
+                    "", "'$(HexalithEventStoreVersion)'==''",
+                    '"$(HexalithEventStoreVersion)"==""'})
+        for child in node:
+            collect_defaults(child, conditioned)
+
+    collect_defaults(document)
+    if len(event_store_defaults) > 1:
+        raise ValueError("Ambiguous controlled EventStore catalog default: HexalithEventStoreVersion")
     names = sorted({_local_name(item.tag) for group in document.iter()
                     if _local_name(group.tag) == "PropertyGroup" for item in group} | {"HexalithAspireAppHostSdkVersion"})
     arguments = ["-getItem:PackageVersion"]

@@ -185,7 +185,7 @@ def tracked_files(api, workspace: Path, roots: list[str]) -> list[str]:
 def inventory(api, workspace: Path, baseline: dict) -> list[dict]:
     try:
         properties, evaluated_versions = _catalog_module.evaluate_catalog(workspace / "references/Hexalith.Builds/Props/Directory.Packages.props")
-    except (ValueError, ET.ParseError) as error:
+    except (ValueError, OSError, ET.ParseError) as error:
         raise api.ValidationError(str(error)) from error
     versions = {package: version for package, version in evaluated_versions.items() if controlled_field(package)}
     exclusions = {(item["path"], item["package"], item["version"]) for item in baseline["consumerInventory"]["unqualifiedExclusions"]}

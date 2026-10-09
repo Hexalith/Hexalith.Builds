@@ -949,6 +949,7 @@ try {
 
     $expectedCatalogPath = Join-Path $packageDirectoryPath 'platform-version-catalog.json'
     & (Join-Path $PSScriptRoot 'write-platform-version-catalog.ps1') -OutputPath $expectedCatalogPath
+    if ($LASTEXITCODE -ne 0) { throw "Catalog writer failed with exit code $LASTEXITCODE." }
     $expectedCatalog = [IO.File]::ReadAllText($expectedCatalogPath)
 
     $env:NUGET_PACKAGES = Join-Path $consumerRoot '.nuget/packages'
