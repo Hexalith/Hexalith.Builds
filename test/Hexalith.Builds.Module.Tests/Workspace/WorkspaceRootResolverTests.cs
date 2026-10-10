@@ -184,7 +184,7 @@ public sealed class WorkspaceRootResolverTests
         error.Diagnostic.Message.ShouldContain("missing-dependency");
         error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("Check the source URL");
         error.Diagnostic.Hint.ShouldContain("references/Hexalith.Dep");
-        error.Diagnostic.Hint.ShouldNotContain("git add");
+        error.Diagnostic.Hint.ShouldNotContain(" add -- ");
     }
 
     /// <summary>Verifies Git URL credentials are removed from diagnostics.</summary>
@@ -193,6 +193,7 @@ public sealed class WorkspaceRootResolverTests
     [InlineData("alice:sec'ret(pa)ss")]
     [InlineData("alice:p@ss")]
     [InlineData("jane@corp.com:TOKEN")]
+    [InlineData("alice:ab/cd+ef")]
     public void GitStderrUrlCredentialsAreRedacted(string userInfo)
     {
         string sanitized = SubmoduleInitializer.SanitizeGitStderr($"clone of 'https://{userInfo}@example.invalid/dependency.git' failed");
@@ -428,7 +429,7 @@ public sealed class WorkspaceRootResolverTests
     {
         if (OperatingSystem.IsWindows())
         {
-            return;
+            Assert.Skip("Bracketed nested repository names are exercised on POSIX filesystems only.");
         }
 
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(withNested: true).ConfigureAwait(true);
@@ -675,8 +676,8 @@ public sealed class WorkspaceRootResolverTests
         error.Diagnostic.RuleId.ShouldBe("HXW004");
         error.Diagnostic.Message.ShouldContain("Hexalith.Dep");
         error.Diagnostic.Message.ShouldContain(stale);
-        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git submodule update --checkout -- 'references/Hexalith.Dep'");
-        error.Diagnostic.Hint.ShouldNotContain("git add");
+        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain(GitCommand(fixture.Checkout) + " submodule update --checkout -- ':(literal)references/Hexalith.Dep'");
+        error.Diagnostic.Hint.ShouldNotContain(" add -- ");
         (await WorkspaceGitFixture.RunGitAsync(direct, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim().ShouldBe(stale);
     }
 
@@ -700,12 +701,12 @@ public sealed class WorkspaceRootResolverTests
         error.Diagnostic.Message.ShouldContain("Git stderr:");
         if (mode == WorkspaceMode.Source)
         {
-            error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git add 'references/Hexalith.Dep'");
+            error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain(GitCommand(fixture.Checkout) + " add -- ':(literal)references/Hexalith.Dep'");
         }
         else
         {
-            error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git submodule update --checkout -- 'references/Hexalith.Dep'");
-            error.Diagnostic.Hint.ShouldNotContain("git add");
+            error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain(GitCommand(fixture.Checkout) + " submodule update --checkout -- ':(literal)references/Hexalith.Dep'");
+            error.Diagnostic.Hint.ShouldNotContain(" add -- ");
         }
     }
 
@@ -750,7 +751,8 @@ public sealed class WorkspaceRootResolverTests
         error.Diagnostic.RuleId.ShouldBe("HXW004");
         error.Diagnostic.Message.ShouldContain(recorded);
         error.Diagnostic.Message.ShouldContain(advanced);
-        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git add 'references/Hexalith.Dep'");
+        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain(GitCommand(fixture.Checkout) + " add -- ':(literal)references/Hexalith.Dep'");
+        error.Diagnostic.Hint.ShouldContain(GitCommand(fixture.Checkout) + " submodule update --checkout -- ':(literal)references/Hexalith.Dep'");
     }
 
     /// <summary>Verifies HXW004 Git commands quote a direct reference containing an apostrophe.</summary>
@@ -781,16 +783,16 @@ public sealed class WorkspaceRootResolverTests
 
         WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, mode, TestContext.Current.CancellationToken)).ConfigureAwait(true);
 
-        string quoted = OperatingSystem.IsWindows() ? "'references/Hexalith.O''Brien'" : "'references/Hexalith.O'\\''Brien'";
+        string quoted = OperatingSystem.IsWindows() ? "':(literal)references/Hexalith.O''Brien'" : "':(literal)references/Hexalith.O'\\''Brien'";
         error.Diagnostic.RuleId.ShouldBe("HXW004");
-        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git submodule update --checkout -- " + quoted);
+        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain(GitCommand(fixture.Checkout) + " submodule update --checkout -- " + quoted);
         if (mode == WorkspaceMode.Source)
         {
-            error.Diagnostic.Hint.ShouldContain("git add " + quoted);
+            error.Diagnostic.Hint.ShouldContain(GitCommand(fixture.Checkout) + " add -- " + quoted);
         }
         else
         {
-            error.Diagnostic.Hint.ShouldNotContain("git add");
+            error.Diagnostic.Hint.ShouldNotContain(" add -- ");
         }
     }
 
@@ -958,8 +960,35 @@ public sealed class WorkspaceRootResolverTests
 
         error.Diagnostic.RuleId.ShouldBe("HXW003");
         error.Diagnostic.Message.ShouldContain(Path.Combine(direct, "nested", "Other"));
-        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("deinit");
+        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain(GitCommand(direct) + " submodule deinit -- ':(literal)nested/Other'");
         File.Exists(Path.Combine(fixture.Checkout, "references", "Hexalith.Second", ".git")).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies the HXW003 deinit command quotes a direct reference containing an apostrophe.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task ApostropheDirectReferenceUsesShellQuotedNestedDeinitAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(withNested: true).ConfigureAwait(true);
+        const string original = "references/Hexalith.Dep";
+        const string renamed = "references/Hexalith.O'Brien";
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(gitmodules, declarations.Replace("path = " + original, "path = " + renamed, StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string indexed = (await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "ls-files", "--stage", "--", original).ConfigureAwait(true)).Output;
+        string commit = indexed.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--add", "--cacheinfo", $"160000,{commit},{renamed}").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--force-remove", original).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "protocol.file.allow=always", "submodule", "update", "--init", "--checkout", "--", ":(literal)" + renamed).ConfigureAwait(true);
+        string direct = Path.Combine(fixture.Checkout, "references", "Hexalith.O'Brien");
+        _ = await WorkspaceGitFixture.RunGitAsync(direct, "-c", "protocol.file.allow=always", "submodule", "update", "--init", "--", "nested/Other").ConfigureAwait(true);
+
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        string quoted = OperatingSystem.IsWindows() ? "Hexalith.O''Brien'" : "Hexalith.O'\\''Brien'";
+        error.Diagnostic.RuleId.ShouldBe("HXW003");
+        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git -C '");
+        error.Diagnostic.Hint.ShouldContain(quoted + " submodule deinit -- ':(literal)nested/Other'");
     }
 
     /// <summary>Verifies a stale nested checkout blocks either mode before another direct reference is touched.</summary>
@@ -1140,7 +1169,7 @@ public sealed class WorkspaceRootResolverTests
     {
         if (OperatingSystem.IsWindows())
         {
-            return;
+            Assert.Skip("Windows does not support trailing spaces in directory names consistently.");
         }
 
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
@@ -1161,7 +1190,7 @@ public sealed class WorkspaceRootResolverTests
     {
         if (OperatingSystem.IsWindows())
         {
-            return;
+            Assert.Skip("Creating a dangling symbolic link can require elevated privileges on Windows.");
         }
 
         string directory = Path.Combine(Path.GetTempPath(), "hexalith-workspace-tests", Guid.NewGuid().ToString("N"));
@@ -1182,4 +1211,6 @@ public sealed class WorkspaceRootResolverTests
             Directory.Delete(directory, recursive: true);
         }
     }
+
+    private static string GitCommand(string directory) => "git -C '" + directory + "'";
 }

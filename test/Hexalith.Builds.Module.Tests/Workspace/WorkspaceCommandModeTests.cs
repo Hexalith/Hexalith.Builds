@@ -347,6 +347,10 @@ public sealed class WorkspaceCommandModeTests
         output.ToString().ShouldNotContain("HXR015");
         output.ToString().ShouldNotContain("HXW004");
         output.ToString().ShouldContain("Qualify the runner-owned G-6 topology before retrying.");
+        using System.Text.Json.JsonDocument response = System.Text.Json.JsonDocument.Parse(output.ToString());
+        System.Text.Json.JsonElement diagnostic = response.RootElement.GetProperty("diagnostics").EnumerateArray().Single(item => item.GetProperty("ruleId").GetString() == "HXR003");
+        diagnostic.GetProperty("field").GetString().ShouldBe("runtime");
+        diagnostic.GetProperty("message").GetString().ShouldBe("The approved descriptor ABI cannot yet be composed into a supported runtime.");
         File.Exists(manifest).ShouldBeTrue();
         Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
     }

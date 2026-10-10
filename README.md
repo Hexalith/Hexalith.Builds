@@ -246,9 +246,11 @@ In source mode, the active module and every root-declared direct reference build
 in Debug. An uninitialized direct reference is checked out at its recorded
 gitlink without `--recursive` or `--remote`. An initialized direct reference
 whose HEAD differs from the staged gitlink fails with `HXW004` without moving
-its checkout. Stage that checkout commit with `git add <reference>`, or move it
-to the staged gitlink with `git submodule update --checkout -- <reference>`.
-Deinitialize a broken checkout before retrying. An initialized nested submodule
+its checkout. Stage that checkout commit with
+`git -C <root> add -- ':(literal)<reference>'`, or move it to the staged gitlink
+with `git -C <root> submodule update --checkout -- ':(literal)<reference>'`.
+The literal pathspec keeps a reference name with `[`, `*` or `?` from matching a
+sibling reference. Deinitialize a broken checkout before retrying. An initialized nested submodule
 stops resolution before any initialization; deinitialize it manually before
 retrying. Package mode leaves dependencies as packages and builds the active
 module in Release. Package versions continue to come from the workspace's

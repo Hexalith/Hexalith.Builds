@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.Tooling.Workspace;
 
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -38,7 +39,7 @@ internal static partial class SubmoduleInitializer
                     string detail = stderr.Length == 0 ? string.Empty : $" Git stderr: {stderr}";
                     if (result.TimedOut)
                     {
-                        detail = $" Git submodule update timed out after {GitWorkspaceProcess.SubmoduleUpdateTimeout}.";
+                        detail = $" Git submodule update timed out after {GitWorkspaceProcess.SubmoduleUpdateTimeout.TotalMinutes.ToString("0", CultureInfo.InvariantCulture)} minutes.";
                     }
 
                     throw Missing(
@@ -55,7 +56,7 @@ internal static partial class SubmoduleInitializer
                     identity,
                     path,
                     "The required source checkout is missing after initialization.",
-                    $"Check the source path and Git credentials, then retry git submodule update --init --checkout -- {QuoteShellArgument(reference)}.");
+                    $"Check the source path and Git credentials, then retry {GitCommand(root)} submodule update --init --checkout -- {LiteralPathspec(reference)}.");
             }
 
             // The stage-zero index gitlink may be staged ahead of HEAD. An existing
@@ -73,7 +74,7 @@ internal static partial class SubmoduleInitializer
                     identity,
                     path,
                     $"Checkout HEAD '{actual}' does not match the root's staged gitlink '{(parts.Length >= 2 ? parts[1] : "missing")}'.{(stderr.Length == 0 ? string.Empty : $" Git stderr: {stderr}")}",
-                    $"Stage the checked-out commit with git add {QuoteShellArgument(reference)}, move the checkout to the staged gitlink with git submodule update --checkout -- {QuoteShellArgument(reference)}, or deinitialize a broken checkout before retrying.");
+                    $"Stage the checked-out commit with {GitCommand(root)} add -- {LiteralPathspec(reference)}, move the checkout to the staged gitlink with {GitCommand(root)} submodule update --checkout -- {LiteralPathspec(reference)}, or deinitialize a broken checkout before retrying.");
             }
         }
     }
@@ -146,7 +147,7 @@ internal static partial class SubmoduleInitializer
                     identity,
                     path,
                     $"Package-origin checkout HEAD '{actual}' does not match the root's staged gitlink '{recorded[reference]}'.{(stderr.Length == 0 ? string.Empty : $" Git stderr: {stderr}")}",
-                    $"Restore the staged gitlink with git submodule update --checkout -- {QuoteShellArgument(reference)}, or deinitialize the stale checkout before retrying.");
+                    $"Restore the staged gitlink with {GitCommand(root)} submodule update --checkout -- {LiteralPathspec(reference)}, or deinitialize the stale checkout before retrying.");
             }
         }
     }
@@ -220,14 +221,14 @@ internal static partial class SubmoduleInitializer
 
                         if (owned)
                         {
-                            string relative = Path.GetRelativePath(repository, child);
+                            string relative = Path.GetRelativePath(repository, child).Replace(Path.DirectorySeparatorChar, '/');
                             throw new WorkspaceMappingException(new ToolDiagnostic(
                                 "HXW003",
                                 ToolPhase.Topology,
                                 ToolFailureCategory.TopologyOrLifecycle,
                                 $"Nested submodule '{child}' is initialized below direct reference '{repository}'.",
                                 child,
-                                $"Deinitialize it with git -C '{repository}' submodule deinit -- '{relative}' before retrying."));
+                                $"Deinitialize it with {GitCommand(repository)} submodule deinit -- {LiteralPathspec(relative)} before retrying."));
                         }
 
                         // An independent Git repository owns its own descendants.
@@ -337,6 +338,10 @@ internal static partial class SubmoduleInitializer
         ? argument.Replace("'", "''", StringComparison.Ordinal)
         : argument.Replace("'", "'\\''", StringComparison.Ordinal)) + "'";
 
+    private static string GitCommand(string directory) => "git -C " + QuoteShellArgument(directory);
+
+    private static string LiteralPathspec(string path) => QuoteShellArgument(":(literal)" + path);
+
     private static WorkspaceMappingException Missing(string identity, string path, string reason, string remediation) => new(new ToolDiagnostic(
         "HXW004",
         ToolPhase.Prerequisite,
@@ -345,7 +350,7 @@ internal static partial class SubmoduleInitializer
         path,
         remediation));
 
-    [GeneratedRegex(@"(?<scheme>[A-Za-z][A-Za-z0-9+.-]*://)[^\s/]+@", RegexOptions.CultureInvariant, 1000)]
+    [GeneratedRegex(@"(?<scheme>[A-Za-z][A-Za-z0-9+.-]*://)\S+@", RegexOptions.CultureInvariant, 1000)]
     private static partial Regex GitCredentialPattern();
 
     private static WorkspaceMappingException InvalidNestedOwnership(string path) => new(new ToolDiagnostic(
