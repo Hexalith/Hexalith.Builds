@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.Runtime;
 
+using Hexalith.Builds.Tooling.Workspace;
+
 /// <summary>
 /// The metadata-only plan the runner hands to the Builds-owned AppHost for one run.
 /// </summary>
@@ -50,6 +52,12 @@ public sealed record CompositionRunPlan(
     /// The supported run-plan schema identity.
     /// </summary>
     public const string SupportedSchema = "hexalith.g4-run-plan.v1";
+
+    /// <summary>Gets the immutable workspace source mapping, when resolved by the command.</summary>
+    public SourceMapping? SourceMapping { get; init; }
+
+    /// <summary>Gets the mapping content hash used by every launched project.</summary>
+    public string? SourceMappingHash => SourceMapping?.ContentHash;
 
     /// <summary>
     /// Gets the Redis container name, which carries the run identity.

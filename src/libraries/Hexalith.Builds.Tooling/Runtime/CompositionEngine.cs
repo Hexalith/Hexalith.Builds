@@ -12,6 +12,7 @@ using System.Security.Cryptography;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
+using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>
 /// The runner-owned composition engine: probes prerequisites, plans one run, launches the Builds-owned
@@ -92,31 +93,67 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 manifest,
                 manifestPath,
                 _options.DescriptorChildEntryAssemblyPath,
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken,
+                _options.SourceMapping).ConfigureAwait(false);
             if (!descriptors.IsValid)
             {
                 bool unavailable = descriptors.Diagnostics[0].Category == ToolFailureCategory.PrerequisiteUnavailable;
+                ToolExitCode descriptorExit = ToolExitCode.UsageOrManifest;
+                if (unavailable)
+                {
+                    descriptorExit = ToolExitCode.PrerequisiteUnavailable;
+                }
+                else if (descriptors.Diagnostics[0].Category == ToolFailureCategory.TopologyOrLifecycle)
+                {
+                    descriptorExit = ToolExitCode.TopologyOrLifecycle;
+                }
+
                 return Failed(
                     unavailable ? "unavailable" : "failed",
-                    unavailable ? ToolExitCode.PrerequisiteUnavailable : ToolExitCode.UsageOrManifest,
+                    descriptorExit,
                     descriptors.Diagnostics,
                     null);
             }
 
             (IReadOnlyList<CompositionRunModule> modules, IReadOnlyList<CompositionRunUiMarker> markers) =
                 CompositionRunPlanFactory.Bind(manifest, descriptors);
+            if (_options.SourceMapping is { } mapping)
+            {
+                CompositionRunModule? unmapped = modules.FirstOrDefault(module => !mapping.ContainsProject(module.ProjectPath));
+                if (unmapped is not null)
+                {
+                    return Failed(
+                        "failed",
+                        ToolExitCode.TopologyOrLifecycle,
+                        [Diagnostic(
+                            "HXW006",
+                            ToolPhase.Topology,
+                            ToolFailureCategory.TopologyOrLifecycle,
+                            $"Module project '{unmapped.ProjectPath}' is outside the active module and mapped source roots.",
+                            unmapped.ProjectPath,
+                            "Use a project in the active module or a mapped source root.")],
+                        null);
+                }
+            }
+
             manifestHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false)));
             runId = CompositionRunPlanFactory.NewRunId();
             string workspace = WorkspaceFor(runId);
             CompositionWorkspace.CreatePrivateDirectory(Path.GetFullPath(_options.WorkspaceRoot));
             CompositionWorkspace.CreatePrivateDirectory(workspace);
+            if (_options.SourceMapping is not null)
+            {
+                await SourceMappingMaterializer.WriteAsync(_options.SourceMapping, workspace, cancellationToken).ConfigureAwait(false);
+            }
+
             CompositionRunPlan plan = CompositionRunPlanFactory.Create(
                 runId,
                 workspace,
                 prerequisites.DaprHome!,
                 CompositionPortAllocator.Allocate(modules.Count, _options.EnableSecondEventStoreInstance),
                 modules,
-                markers);
+                markers,
+                _options.SourceMapping);
             await CompositionDaprComponentRenderer.WriteAsync(plan, cancellationToken).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");
             await CompositionDocumentStore.WriteAsync(planPath, plan, cancellationToken).ConfigureAwait(false);
@@ -580,6 +617,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             ["ASPIRE_ALLOW_UNSECURED_TRANSPORT"] = "true",
             ["DOTNET_ENVIRONMENT"] = "Development",
         };
+        if (plan.SourceMapping is not null)
+        {
+            foreach (KeyValuePair<string, string> pair in SourceMappingMaterializer.Environment(plan.SourceMapping, plan.Workspace))
+            {
+                environment[pair.Key] = pair.Value;
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(_options.AppHostLogPath))
         {
             environment[CompositionEnvironment.ResourceLogs] = "1";

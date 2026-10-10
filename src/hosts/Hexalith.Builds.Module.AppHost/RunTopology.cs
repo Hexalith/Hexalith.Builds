@@ -154,6 +154,11 @@ internal static class RunTopology
         for (int index = 0; index < plan.Modules.Count; index++)
         {
             CompositionRunModule module = plan.Modules[index];
+            if (plan.SourceMapping?.ContainsProject(module.ProjectPath) == false)
+            {
+                throw new InvalidOperationException($"HXW006: module project '{module.ProjectPath}' is outside active module '{plan.SourceMapping?.ActiveModule}' and mapped source roots.");
+            }
+
             IResourceBuilder<ProjectResource> moduleProject = Tag(builder.AddProject(module.ModuleId, module.ProjectPath), plan, plan.Ports.ModuleHttp[index])
                 .WithHttpHealthCheck("/alive")
                 .AddEventStoreDomainModule(
@@ -163,6 +168,14 @@ internal static class RunTopology
                     plan.IsolatedResourcesPath,
                     placementAddress,
                     schedulerAddress);
+            if (plan.SourceMapping is not null)
+            {
+                foreach (KeyValuePair<string, string> pair in Hexalith.Builds.Tooling.Workspace.SourceMappingMaterializer.Environment(plan.SourceMapping, plan.Workspace))
+                {
+                    _ = moduleProject.WithEnvironment(pair.Key, pair.Value);
+                }
+            }
+
             ConfigureSidecar(moduleProject.Resource, plan.Ports.ModuleDapr[index]);
         }
 

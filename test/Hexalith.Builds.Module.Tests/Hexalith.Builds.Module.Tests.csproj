@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj" />
     <ProjectReference Include="../../src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj" />
+    <ProjectReference Include="../../src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj" />
   </ItemGroup>
   <!-- Build-order only: public command and engine readiness tests load the built executable fixture descriptors. -->
   <ItemGroup>

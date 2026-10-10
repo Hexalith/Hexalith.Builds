@@ -12,7 +12,23 @@
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.Build">
+      <HintPath>$(MSBuildBinPath)/Microsoft.Build.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Build.Framework">
+      <HintPath>$(MSBuildBinPath)/Microsoft.Build.Framework.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Build.Utilities.Core">
+      <HintPath>$(MSBuildBinPath)/Microsoft.Build.Utilities.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="../../../schemas/hexalith.module-manifest.v2.json" LogicalName="Hexalith.Builds.Tooling.Manifest.hexalith.module-manifest.v2.json" />
+    <EmbeddedResource Include="Workspace/SourceMapping.props" LogicalName="Hexalith.Builds.Tooling.Workspace.SourceMapping.props" />
+    <EmbeddedResource Include="Workspace/SourceMapping.targets" LogicalName="Hexalith.Builds.Tooling.Workspace.SourceMapping.targets" />
   </ItemGroup>
   <Target Name="GeneratePlatformVersionCatalog" BeforeTargets="AssignTargetPaths">
     <PropertyGroup>

@@ -1,0 +1,5 @@
+<Project>
+  <UsingTask TaskName="Hexalith.Builds.Tooling.Workspace.SourceMappingValidationTask" AssemblyFile="__TOOLING_ASSEMBLY__" />
+  <UsingTask TaskName="Hexalith.Builds.Tooling.Workspace.SourceMappingReconciliationTask" AssemblyFile="__TOOLING_ASSEMBLY__" />
+  <Import Project="$(MSBuildThisFileDirectory)SourceMapping.values.targets" />
+</Project>

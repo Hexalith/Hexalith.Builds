@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.RunEvidence;
+using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>
 /// Executes validated module runner commands while preserving the first causal outcome.
@@ -59,6 +60,7 @@ public static class ModuleCommandExecutionService
     /// <param name="descriptorChildEntryAssemblyPath">The optional private descriptor child entry assembly.</param>
     /// <param name="runId">The optional run identity to tear down.</param>
     /// <param name="compositionOptions">The optional runner-owned composition settings.</param>
+    /// <param name="mode">The tool-selected build mode.</param>
     /// <returns>The stable process exit code.</returns>
     public static async Task<int> ExecuteAsync(
         ModuleInvocationCommand command,
@@ -71,7 +73,8 @@ public static class ModuleCommandExecutionService
         CancellationToken cancellationToken,
         string? descriptorChildEntryAssemblyPath = null,
         string? runId = null,
-        CompositionEngineOptions? compositionOptions = null)
+        CompositionEngineOptions? compositionOptions = null,
+        WorkspaceMode mode = WorkspaceMode.Source)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         ArgumentNullException.ThrowIfNull(writer);
@@ -110,7 +113,12 @@ public static class ModuleCommandExecutionService
 
             ModuleManifest manifest = manifestResult.Manifest!;
             loadedManifest = manifest;
-            if (!ValidateProfile(command, profile, manifest, out ToolDiagnostic? profileDiagnostic))
+            bool isExecutable = manifest.Modules.Count > 0
+                && manifest.Modules.All(module => module.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                && (manifest.Ui?.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ?? true);
+            bool requiresMapping = command != ModuleInvocationCommand.Down
+                && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath);
+            if (!requiresMapping && !ValidateProfile(command, profile, manifest, out ToolDiagnostic? profileDiagnostic))
             {
                 return await WriteResultAsync(
                     "failed",
@@ -131,10 +139,6 @@ public static class ModuleCommandExecutionService
                     startedUtc,
                     cancellationToken).ConfigureAwait(false);
             }
-
-            bool isExecutable = manifest.Modules.Count > 0
-                && manifest.Modules.All(module => module.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                && (manifest.Ui?.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ?? true);
 
             if (command == ModuleInvocationCommand.Down && isExecutable && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath))
             {
@@ -245,8 +249,8 @@ public static class ModuleCommandExecutionService
                     cancellationToken).ConfigureAwait(false);
             }
 
-            RuntimePrerequisiteCheck prerequisite = RuntimePrerequisiteGate.Check(manifest);
-            if (!prerequisite.IsAvailable)
+            RuntimePrerequisiteCheck? prerequisite = requiresMapping ? null : RuntimePrerequisiteGate.Check(manifest);
+            if (prerequisite?.IsAvailable == false)
             {
                 return await WriteResultAsync(
                     "unavailable",
@@ -268,9 +272,100 @@ public static class ModuleCommandExecutionService
                     cancellationToken).ConfigureAwait(false);
             }
 
-            if (isExecutable && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath))
+            if (requiresMapping && descriptorChildEntryAssemblyPath is not null)
             {
                 CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
+                loadedManifest = null;
+                SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
+                options = options with { SourceMapping = mapping };
+
+                // The recorded gitlink can replace the manifest in an already initialized direct checkout.
+                // Everything after resolution must use the bytes that will actually be built.
+                ManifestLoadResult currentManifest = ModuleManifestLoader.Load(manifestPath);
+                if (!currentManifest.IsValid)
+                {
+                    return await WriteResultAsync(
+                        "failed",
+                        ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, currentManifest.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest),
+                        currentManifest.Diagnostics,
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        null,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                manifest = currentManifest.Manifest!;
+                loadedManifest = manifest;
+                isExecutable = manifest.Modules.Count > 0
+                    && manifest.Modules.All(module => module.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                    && (manifest.Ui?.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ?? true);
+                if (!isExecutable)
+                {
+                    ToolDiagnostic changedShape = new(
+                        "HXR003",
+                        ToolPhase.Prerequisite,
+                        ToolFailureCategory.PrerequisiteUnavailable,
+                        "The checked-out manifest does not declare an executable descriptor topology.",
+                        manifestPath);
+                    return await WriteResultAsync(
+                        "unavailable",
+                        ToolOutcome.Passed().Fail(changedShape.Phase, changedShape.Category, changedShape.RuleId, ToolExitCode.PrerequisiteUnavailable),
+                        [changedShape],
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                if (!ValidateProfile(command, profile, manifest, out ToolDiagnostic? currentProfileDiagnostic))
+                {
+                    return await WriteResultAsync(
+                        "failed",
+                        ToolOutcome.Passed().Fail(ToolPhase.Usage, ToolFailureCategory.Usage, currentProfileDiagnostic!.RuleId, ToolExitCode.UsageOrManifest),
+                        [currentProfileDiagnostic],
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                prerequisite = RuntimePrerequisiteGate.Check(manifest);
+                if (!prerequisite.IsAvailable)
+                {
+                    return await WriteResultAsync(
+                        "unavailable",
+                        ToolOutcome.Passed().Fail(ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, prerequisite.Diagnostic!.RuleId, ToolExitCode.PrerequisiteUnavailable),
+                        [prerequisite.Diagnostic],
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
                 ToolDiagnostic? aspire = await CompositionPrerequisiteProbe.ProbeAspireAsync(
                     options.AspireCommand, options.AspireProbeTimeout, cancellationToken).ConfigureAwait(false);
                 if (aspire is not null)
@@ -295,18 +390,29 @@ public static class ModuleCommandExecutionService
                     manifest,
                     manifestPath,
                     descriptorChildEntryAssemblyPath,
-                    cancellationToken).ConfigureAwait(false);
+                    cancellationToken,
+                    mapping).ConfigureAwait(false);
                 if (!descriptorResult.IsValid)
                 {
                     ToolDiagnostic descriptorDiagnostic = descriptorResult.Diagnostics[0];
                     bool unavailable = descriptorDiagnostic.Category == ToolFailureCategory.PrerequisiteUnavailable;
+                    ToolExitCode descriptorExit = ToolExitCode.UsageOrManifest;
+                    if (unavailable)
+                    {
+                        descriptorExit = ToolExitCode.PrerequisiteUnavailable;
+                    }
+                    else if (descriptorDiagnostic.Category == ToolFailureCategory.TopologyOrLifecycle)
+                    {
+                        descriptorExit = ToolExitCode.TopologyOrLifecycle;
+                    }
+
                     return await WriteResultAsync(
                         unavailable ? "unavailable" : "failed",
                         ToolOutcome.Passed().Fail(
                             descriptorDiagnostic.Phase,
                             descriptorDiagnostic.Category,
                             descriptorDiagnostic.RuleId,
-                            unavailable ? ToolExitCode.PrerequisiteUnavailable : ToolExitCode.UsageOrManifest),
+                            descriptorExit),
                         descriptorResult.Diagnostics,
                         format,
                         writer,
@@ -323,6 +429,37 @@ public static class ModuleCommandExecutionService
                 PersistedProfileDefinition? persistedProfile = command == ModuleInvocationCommand.Test
                     ? PersistedProfileLoader.TryLoad(manifest, manifestPath, profile, filter)
                     : null;
+                if (persistedProfile?.NativeTests is { } primaryTests)
+                {
+                    string nativeRoot = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));
+                    List<ToolDiagnostic> nativePathDiagnostics = [];
+                    string? nativeProject = ManifestPathValidator.ValidateExistingFile(primaryTests.Project, nativeRoot, "profile.nativeTests.project", nativePathDiagnostics);
+                    if (nativeProject is not null && !mapping.ContainsProject(nativeProject))
+                    {
+                        ToolDiagnostic unmapped = new(
+                            "HXW006",
+                            ToolPhase.Topology,
+                            ToolFailureCategory.TopologyOrLifecycle,
+                            $"Native test project '{nativeProject}' is outside the active module and mapped source roots.",
+                            nativeProject,
+                            "Use a test project in the active module or a mapped source root.");
+                        return await WriteResultAsync(
+                            "failed",
+                            ToolOutcome.Passed().Fail(unmapped.Phase, unmapped.Category, unmapped.RuleId, ToolExitCode.TopologyOrLifecycle),
+                            [unmapped],
+                            format,
+                            writer,
+                            command,
+                            manifestPath,
+                            manifest,
+                            profile,
+                            filter,
+                            evidencePath,
+                            startedUtc,
+                            cancellationToken).ConfigureAwait(false);
+                    }
+                }
+
                 if (persistedProfile is not null)
                 {
                     options = options with { EnableSecondEventStoreInstance = true };
@@ -388,10 +525,11 @@ public static class ModuleCommandExecutionService
 
                 ToolCommandResult? profileResult = persistedProfile is null
                     ? null
-                    : await PersistedProfileExecutor.ExecuteAsync(session!, persistedProfile, cancellationToken).ConfigureAwait(false);
+                    : await (options.ProfileExecutorOverride?.Invoke(session!, persistedProfile, cancellationToken)
+                        ?? PersistedProfileExecutor.ExecuteAsync(session!, persistedProfile, cancellationToken)).ConfigureAwait(false);
                 NativeTestExecutionResult? nativeResult = profileResult?.Outcome.ExitCode == ToolExitCode.Success
                     && persistedProfile!.NativeTests is PersistedProfileNativeTests nativeTests
-                        ? await NativeTestExecutor.ExecuteAsync(session!, nativeTests, manifestPath, cancellationToken).ConfigureAwait(false)
+                        ? await NativeTestExecutor.ExecuteAsync(session!, nativeTests, manifestPath, cancellationToken, options.NativeDotnetCommand ?? "dotnet").ConfigureAwait(false)
                         : null;
                 CompositionDownResult cleanup = await engine.DownAsync(session!, CancellationToken.None).ConfigureAwait(false);
                 session = null;
@@ -465,6 +603,27 @@ public static class ModuleCommandExecutionService
                 command,
                 manifestPath,
                 manifest,
+                profile,
+                filter,
+                evidencePath,
+                startedUtc,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (WorkspaceMappingException exception)
+        {
+            ToolDiagnostic diagnostic = exception.Diagnostic;
+            ToolExitCode exitCode = diagnostic.Category == ToolFailureCategory.PrerequisiteUnavailable
+                ? ToolExitCode.PrerequisiteUnavailable
+                : ToolExitCode.TopologyOrLifecycle;
+            return await WriteResultAsync(
+                "failed",
+                ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, exitCode),
+                [diagnostic],
+                format,
+                writer,
+                command,
+                manifestPath,
+                loadedManifest,
                 profile,
                 filter,
                 evidencePath,

@@ -224,6 +224,35 @@ dotnet tool run hexalith-module test --manifest module/hexalith-projects.module.
 dotnet tool run hexalith-evidence validate _bmad-output/planning-artifacts/implementation-readiness-traceability-matrix.yaml
 ```
 
+`run` and `test` accept `--mode source|package` and default to `source`. CI uses
+`--mode package`. The tool resolves the outermost Git superproject containing
+the manifest once, selects the active module and every direct
+`references/*` entry in that root's `.gitmodules`, and writes the resulting
+mapping to the run workspace (`source-mapping/mapping.json`) and `plan.json`.
+Native tests and module projects launched by the AppHost receive the same
+mapping hash and generated MSBuild imports. Builds verify the persisted mapping
+against that hash before choosing dependencies. A workspace outside Git maps
+only its active module.
+
+In source mode, the active module and every root-declared direct reference build
+in Debug. An uninitialized direct reference is checked out at its recorded
+gitlink without `--recursive` or `--remote`. An initialized nested submodule
+stops resolution before any initialization; deinitialize it manually before
+retrying. Package mode leaves dependencies as packages and builds the active
+module in Release. Package versions continue to come from the workspace's
+central package management; the mapping supplies no package versions.
+
+Mapping values override optional `Directory.Build.props` source probes and
+reconcile references selected by consumer targets before restore. Builds fail
+rather than using a sibling, ancestor, or nested source outside the map.
+The `HXW` diagnostics identify workspace failures: `HXW001` invalid active
+root or manifest location, `HXW002` invalid root references, `HXW003`
+initialized nested reference, `HXW004` missing or stale direct source, `HXW005`
+duplicate source and direct or restored package identity, and `HXW006` an
+unmapped project or executable assembly, ambiguous package conversion, or
+dependency metadata that changes the selected configuration. Each diagnostic
+names the relevant identity or path and a reason.
+
 The checked-in [candidate consumer](test/fixtures/package-consumer/README.md)
 pins both published tools to `4.29.1` from source
 `21ce044ab465ccb2adab58b3d66e394ffbecf3c2`. Its isolated remote restore,

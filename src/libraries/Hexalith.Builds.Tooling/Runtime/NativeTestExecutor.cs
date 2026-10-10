@@ -12,6 +12,7 @@ using System.Xml.Linq;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.TestReports;
+using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>
 /// Runs a product-owned native test project against a ready run and binds only its native TRX result.
@@ -30,12 +31,14 @@ internal static class NativeTestExecutor
     /// <param name="tests">The declared native tests.</param>
     /// <param name="manifestPath">The manifest path that anchors repository-relative paths.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="dotnetCommand">The native dotnet command; tests may supply a local process double.</param>
     /// <returns>A result that passes only for a zero native exit and a passing native report.</returns>
     public static async Task<NativeTestExecutionResult> ExecuteAsync(
         CompositionRunSession session,
         PersistedProfileNativeTests tests,
         string manifestPath,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string dotnetCommand = "dotnet")
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(tests);
@@ -47,6 +50,24 @@ internal static class NativeTestExecutor
         if (project is null)
         {
             return Failed("HXT007", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
+        }
+
+        if (session.Plan.SourceMapping is { } sourceMapping && !sourceMapping.ContainsProject(project))
+        {
+            ToolDiagnostic diagnostic = new(
+                "HXW006",
+                ToolPhase.Topology,
+                ToolFailureCategory.TopologyOrLifecycle,
+                $"Native test project '{project}' is outside the active module and mapped source roots.",
+                project,
+                "Use a test project in the active module or a mapped source root.");
+            return new NativeTestExecutionResult(
+                new ToolCommandResult(
+                    "failed",
+                    ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle),
+                    [diagnostic]),
+                null,
+                null);
         }
 
         string results = Path.Combine(session.Plan.Workspace, "native-tests");
@@ -61,12 +82,21 @@ internal static class NativeTestExecutor
                 false,
                 _timeout + TimeSpan.FromMinutes(5)),
             DateTimeOffset.UtcNow);
+        Dictionary<string, string> environment = new(NativeTestHandoff.Create(session.Plan, session.Readiness, token), StringComparer.Ordinal);
+        if (session.Plan.SourceMapping is not null)
+        {
+            foreach (KeyValuePair<string, string> pair in SourceMappingMaterializer.Environment(session.Plan.SourceMapping, session.Plan.Workspace))
+            {
+                environment[pair.Key] = pair.Value;
+            }
+        }
+
         CompositionProcessResult process = await CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo(
-                "dotnet",
-                CreateArguments(tests.Platform, project, results),
+                dotnetCommand,
+                CreateArguments(tests.Platform, project, results, session.Plan.SourceMapping),
                 Path.GetDirectoryName(project),
-                NativeTestHandoff.Create(session.Plan, session.Readiness, token)),
+                environment),
             _timeout,
             cancellationToken).ConfigureAwait(false);
         string reportPath = Path.Combine(results, _reportFileName);
@@ -94,16 +124,27 @@ internal static class NativeTestExecutor
     /// <param name="platform">The declared platform.</param>
     /// <param name="projectPath">The test project path.</param>
     /// <param name="resultsDirectory">The private results directory.</param>
+    /// <param name="mapping">The optional workspace mapping.</param>
     /// <returns>The arguments.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The platform is not supported.</exception>
-    internal static IReadOnlyList<string> CreateArguments(string platform, string projectPath, string resultsDirectory) => platform switch
+    internal static IReadOnlyList<string> CreateArguments(string platform, string projectPath, string resultsDirectory, SourceMapping? mapping = null)
     {
-        PersistedProfileNativeTests.VsTest =>
-            ["test", projectPath, "--logger", "trx;LogFileName=" + _reportFileName, "--results-directory", resultsDirectory],
-        PersistedProfileNativeTests.MicrosoftTestingPlatform =>
-            ["test", "--project", projectPath, "--results-directory", resultsDirectory, "--report-xunit-trx", "--report-xunit-trx-filename", _reportFileName],
-        _ => throw new ArgumentOutOfRangeException(nameof(platform), platform, "Unsupported native test platform."),
-    };
+        IReadOnlyList<string> arguments = platform switch
+        {
+            PersistedProfileNativeTests.VsTest =>
+                ["test", projectPath, "--logger", "trx;LogFileName=" + _reportFileName, "--results-directory", resultsDirectory],
+            PersistedProfileNativeTests.MicrosoftTestingPlatform =>
+                ["test", "--project", projectPath, "--results-directory", resultsDirectory, "--report-xunit-trx", "--report-xunit-trx-filename", _reportFileName],
+            _ => throw new ArgumentOutOfRangeException(nameof(platform), platform, "Unsupported native test platform."),
+        };
+        if (mapping is null)
+        {
+            return arguments;
+        }
+
+        string configuration = mapping.Mode == WorkspaceMode.Source ? "Debug" : "Release";
+        return [.. arguments, "--configuration", configuration];
+    }
 
     /// <summary>
     /// Gets the repository-relative path of the report retained beside an evidence artifact.

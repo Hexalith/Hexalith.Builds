@@ -8,6 +8,7 @@ namespace Hexalith.Builds.Tooling.Runtime;
 using System.Security.Cryptography;
 
 using Hexalith.Builds.Tooling.Manifest;
+using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>
 /// Creates run identities and deterministic, metadata-only run plans.
@@ -72,6 +73,7 @@ public static class CompositionRunPlanFactory
     /// <param name="ports">The allocated ports.</param>
     /// <param name="modules">The validated modules.</param>
     /// <param name="uiMarkers">The validated UI markers.</param>
+    /// <param name="sourceMapping">The immutable workspace source mapping.</param>
     /// <returns>The run plan.</returns>
     /// <exception cref="ArgumentException">An identity or path is malformed.</exception>
     public static CompositionRunPlan Create(
@@ -80,7 +82,8 @@ public static class CompositionRunPlanFactory
         string daprHome,
         CompositionRunPorts ports,
         IReadOnlyList<CompositionRunModule> modules,
-        IReadOnlyList<CompositionRunUiMarker> uiMarkers)
+        IReadOnlyList<CompositionRunUiMarker> uiMarkers,
+        SourceMapping? sourceMapping = null)
     {
         ArgumentNullException.ThrowIfNull(ports);
         ArgumentNullException.ThrowIfNull(modules);
@@ -118,6 +121,9 @@ public static class CompositionRunPlanFactory
             CompositionToolchainPins.RedisImageReference,
             ports,
             [.. modules.OrderBy(module => module.ModuleId, StringComparer.Ordinal)],
-            [.. uiMarkers.OrderBy(marker => marker.ModuleId, StringComparer.Ordinal)]);
+            [.. uiMarkers.OrderBy(marker => marker.ModuleId, StringComparer.Ordinal)])
+        {
+            SourceMapping = sourceMapping,
+        };
     }
 }

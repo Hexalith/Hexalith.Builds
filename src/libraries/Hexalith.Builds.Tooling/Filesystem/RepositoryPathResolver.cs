@@ -38,10 +38,11 @@ internal static class RepositoryPathResolver
 
     private static bool IsContainedBy(string candidatePath, string rootPath)
     {
-        string relativePath = Path.GetRelativePath(rootPath, candidatePath);
-        return !relativePath.Equals("..", StringComparison.Ordinal)
-            && !relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-            && !Path.IsPathRooted(relativePath);
+        string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
+        string candidate = Path.TrimEndingDirectorySeparator(Path.GetFullPath(candidatePath));
+        StringComparison comparison = FilesystemPathRules.Comparison(root);
+        return string.Equals(candidate, root, comparison)
+            || candidate.StartsWith(root + Path.DirectorySeparatorChar, comparison);
     }
 
     private static bool TryResolveDirectory(string path, out string resolvedPath)

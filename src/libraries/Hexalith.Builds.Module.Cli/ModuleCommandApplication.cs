@@ -10,6 +10,7 @@ using System.CommandLine;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
+using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>
 /// Hosts the public <c>hexalith-module</c> command contract.
@@ -153,6 +154,8 @@ internal static class ModuleCommandApplication
             DefaultValueFactory = _ => "human",
         };
         _ = outputOption.AcceptOnlyFromAmong("human", "json");
+        Option<string> modeOption = new("--mode") { DefaultValueFactory = _ => "source" };
+        _ = modeOption.AcceptOnlyFromAmong("source", "package");
 
         commandDefinition.Options.Add(manifestOption);
         commandDefinition.Options.Add(profileOption);
@@ -164,8 +167,16 @@ internal static class ModuleCommandApplication
         }
 
         commandDefinition.Options.Add(outputOption);
+        if (command != ModuleInvocationCommand.Down)
+        {
+            commandDefinition.Options.Add(modeOption);
+        }
+
         commandDefinition.SetAction((parseResult, cancellationToken) =>
         {
+            WorkspaceMode mode = command != ModuleInvocationCommand.Down && string.Equals(parseResult.GetValue(modeOption), "package", StringComparison.Ordinal)
+                ? WorkspaceMode.Package
+                : WorkspaceMode.Source;
             Task<int> execution = ModuleCommandExecutionService.ExecuteAsync(
                 command,
                 parseResult.GetValue(manifestOption)!,
@@ -177,7 +188,8 @@ internal static class ModuleCommandApplication
                 cancellationToken,
                 descriptorChildEntryAssemblyPath,
                 command == ModuleInvocationCommand.Down ? parseResult.GetValue(runIdOption) : null,
-                compositionOptions);
+                compositionOptions,
+                mode);
             operationStarted(execution);
             return execution;
         });

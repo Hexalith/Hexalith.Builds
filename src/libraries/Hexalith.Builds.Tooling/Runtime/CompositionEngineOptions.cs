@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.Runtime;
 
+using Hexalith.Builds.Tooling.Workspace;
+
 /// <summary>
 /// Options for the runner composition engine.
 /// </summary>
@@ -12,6 +14,9 @@ namespace Hexalith.Builds.Tooling.Runtime;
 /// <param name="DescriptorChildEntryAssemblyPath">The absolute path of the runner assembly hosting the descriptor child command.</param>
 public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string DescriptorChildEntryAssemblyPath)
 {
+    /// <summary>Gets the already-resolved workspace source mapping.</summary>
+    public SourceMapping? SourceMapping { get; init; }
+
     /// <summary>
     /// Gets the verified Dapr home, or null to read <c>HEXALITH_DAPR_HOME</c>.
     /// </summary>
@@ -62,4 +67,10 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// Gets a value indicating whether the full persisted profile starts a second EventStore instance.
     /// </summary>
     public bool EnableSecondEventStoreInstance { get; init; }
+
+    /// <summary>Gets a test-only profile execution replacement for process-boundary verification.</summary>
+    internal Func<CompositionRunSession, PersistedProfileDefinition, CancellationToken, Task<Diagnostics.ToolCommandResult>>? ProfileExecutorOverride { get; init; }
+
+    /// <summary>Gets a test-only native dotnet command replacement.</summary>
+    internal string? NativeDotnetCommand { get; init; }
 }

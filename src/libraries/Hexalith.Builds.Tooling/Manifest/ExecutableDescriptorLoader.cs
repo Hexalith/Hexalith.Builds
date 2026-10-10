@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Text;
 
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>
 /// Loads executable descriptor results through a bounded, credential-free child process.
@@ -27,12 +28,14 @@ public static class ExecutableDescriptorLoader
     /// <param name="manifestPath">The manifest path used to resolve the checkout root.</param>
     /// <param name="childEntryAssemblyPath">The runner CLI assembly containing the private child dispatch.</param>
     /// <param name="cancellationToken">The invocation cancellation token.</param>
+    /// <param name="mapping">The resolved workspace source mapping, when present.</param>
     /// <returns>Validated bindings or metadata-only diagnostics.</returns>
     public static async Task<ExecutableDescriptorLoadResult> LoadAsync(
         ModuleManifest manifest,
         string manifestPath,
         string childEntryAssemblyPath,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        SourceMapping? mapping = null)
     {
         ArgumentNullException.ThrowIfNull(manifest);
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
@@ -58,6 +61,12 @@ public static class ExecutableDescriptorLoader
                 return Result(modules, null, diagnostics);
             }
 
+            if (mapping?.ContainsProject(assemblyPath) == false)
+            {
+                diagnostics.Add(UnmappedAssembly(assemblyPath));
+                return Result(modules, null, diagnostics);
+            }
+
             (int exitCode, string? json, bool unavailable) = await RunChildAsync(
                 childEntryAssemblyPath, repositoryRoot, ["module", assemblyPath], cancellationToken).ConfigureAwait(false);
             if (unavailable || exitCode != 0 || json is null)
@@ -73,6 +82,12 @@ public static class ExecutableDescriptorLoader
                 json, repositoryRoot, module.Id, field, diagnostics);
             if (loaded is null)
             {
+                return Result(modules, null, diagnostics);
+            }
+
+            if (loaded.UiAssembly is not null && mapping?.ContainsProject(loaded.UiAssembly) == false)
+            {
+                diagnostics.Add(UnmappedAssembly(loaded.UiAssembly));
                 return Result(modules, null, diagnostics);
             }
 
@@ -93,6 +108,12 @@ public static class ExecutableDescriptorLoader
             string? assemblyPath = ResolveAssembly(manifest.Ui.DescriptorAssembly, repositoryRoot, field, diagnostics);
             if (assemblyPath is null)
             {
+                return Result(modules, null, diagnostics);
+            }
+
+            if (mapping?.ContainsProject(assemblyPath) == false)
+            {
+                diagnostics.Add(UnmappedAssembly(assemblyPath));
                 return Result(modules, null, diagnostics);
             }
 
@@ -137,6 +158,14 @@ public static class ExecutableDescriptorLoader
             field,
             hint);
     }
+
+    private static ToolDiagnostic UnmappedAssembly(string path) => new(
+        "HXW006",
+        ToolPhase.Topology,
+        ToolFailureCategory.TopologyOrLifecycle,
+        $"Descriptor or UI assembly '{path}' is outside the active module and mapped source roots.",
+        path,
+        "Use an assembly in the active module or a mapped source root.");
 
     private static string DotnetHostPath()
     {
