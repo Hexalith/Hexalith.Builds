@@ -14,6 +14,73 @@ using Xunit;
 /// <summary>Verifies active-root mapping and safe direct-submodule initialization.</summary>
 public sealed class WorkspaceRootResolverTests
 {
+    /// <summary>Verifies both modes require a real stage-zero gitlink for each declaration.</summary>
+    /// <param name="mode">The selected tool mode.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData(WorkspaceMode.Source)]
+    [InlineData(WorkspaceMode.Package)]
+    public async Task DeclaredReferenceWithoutIndexedGitlinkFailsAsync(WorkspaceMode mode)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "rm", "--cached", "--", "references/Hexalith.Dep").ConfigureAwait(true);
+
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, mode, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        error.Diagnostic.RuleId.ShouldBe("HXW002");
+        error.Diagnostic.Message.ShouldContain("Hexalith.Dep");
+        error.Diagnostic.Message.ShouldContain("stage-zero gitlink");
+        File.Exists(Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", ".git")).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies a legal Git subsection name with spaces preserves its declared path.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task SpaceContainingGitSubsectionKeepsDirectReferenceAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(gitmodules, declarations.Replace("[submodule \"references/Hexalith.Dep\"]", "[submodule \"a direct reference with spaces\"]", StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        mapping.Entries.ShouldContain(new SourceMappingEntry("Hexalith.Dep", "package", null));
+    }
+
+    /// <summary>Verifies root declarations cannot be supplied by an external symlink.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task ExternalGitmodulesSymlinkFailsBeforeCheckoutAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        string external = Path.Combine(fixture.Directory, "external.gitmodules");
+        File.Move(gitmodules, external);
+        _ = File.CreateSymbolicLink(gitmodules, external);
+
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        error.Diagnostic.RuleId.ShouldBe("HXW002");
+        error.Diagnostic.Message.ShouldContain(gitmodules);
+        File.Exists(Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", ".git")).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies a mixed-separator declaration is never interpreted as a direct path.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task MixedSeparatorDirectReferenceFailsAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(gitmodules, declarations.Replace("path = references/Hexalith.Dep", "path = references/Hexalith\\Dep", StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        error.Diagnostic.RuleId.ShouldBe("HXW002");
+    }
+
     /// <summary>Verifies a manifest symlink cannot escape the physical active root.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]

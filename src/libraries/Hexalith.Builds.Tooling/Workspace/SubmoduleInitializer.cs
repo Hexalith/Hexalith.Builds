@@ -52,6 +52,36 @@ internal static class SubmoduleInitializer
         }
     }
 
+    /// <summary>Requires exactly one staged gitlink for every declared direct reference in either mode.</summary>
+    /// <param name="root">The active superproject root.</param>
+    /// <param name="references">The declared direct paths.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task for index validation.</returns>
+    /// <exception cref="WorkspaceMappingException">A declaration has no matching stage-zero gitlink.</exception>
+    internal static async Task ValidateRecordedGitlinksAsync(string root, IReadOnlyList<string> references, CancellationToken cancellationToken)
+    {
+        foreach (string reference in references)
+        {
+            string identity = Path.GetFileName(reference);
+            CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "-z", "--", reference).ConfigureAwait(false);
+            string[] records = result.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            if (!result.Started || result.TimedOut || result.ExitCode != 0 || records.Length != 1)
+            {
+                throw InvalidGitlink(identity, reference, root, "expected exactly one stage-zero gitlink in the index");
+            }
+
+            int separator = records[0].IndexOf('\t', StringComparison.Ordinal);
+            string[] fields = separator < 0 ? [] : records[0][..separator].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string indexedPath = separator < 0 ? string.Empty : records[0][(separator + 1)..];
+            if (fields.Length != 3 || fields[0] != "160000" || fields[2] != "0"
+                || fields[1].Length is not (40 or 64) || !fields[1].All(Uri.IsHexDigit)
+                || !string.Equals(indexedPath, reference, FilesystemPathRules.Comparison(root)))
+            {
+                throw InvalidGitlink(identity, reference, root, $"index entry '{records[0]}' is not the declared stage-zero gitlink");
+            }
+        }
+    }
+
     /// <summary>Checks initialized nested checkouts, including paths absent from the current gitlink.</summary>
     /// <param name="root">The active superproject root.</param>
     /// <param name="references">The direct reference paths.</param>
@@ -185,4 +215,12 @@ internal static class SubmoduleInitializer
         $"Required source '{identity}' at '{path}' is unavailable: {reason}",
         path,
         "Check the root gitlink and local submodule source, then retry."));
+
+    private static WorkspaceMappingException InvalidGitlink(string identity, string reference, string root, string reason) => new(new ToolDiagnostic(
+        "HXW002",
+        ToolPhase.Topology,
+        ToolFailureCategory.TopologyOrLifecycle,
+        $"Direct reference '{identity}' at '{Path.Combine(root, reference)}' has no valid recorded gitlink: {reason}.",
+        Path.Combine(root, reference),
+        "Stage one direct submodule gitlink matching the .gitmodules declaration."));
 }

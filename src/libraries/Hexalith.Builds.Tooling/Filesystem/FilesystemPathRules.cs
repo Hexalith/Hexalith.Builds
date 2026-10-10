@@ -22,43 +22,31 @@ internal static class FilesystemPathRules
                 continue;
             }
 
-            string name = Path.GetFileName(current.TrimEnd(Path.DirectorySeparatorChar));
-            int index = -1;
-            for (int position = 0; position < name.Length; position++)
+            string probe = Path.Combine(current, ".hexalith-case-" + Guid.NewGuid().ToString("N"));
+            try
             {
-                if (char.IsAsciiLetter(name[position]))
+                File.WriteAllText(probe, string.Empty);
+
+                string alternate = Path.Combine(current, ".Hexalith-case-" + Path.GetFileName(probe)[".hexalith-case-".Length..]);
+                return File.Exists(alternate) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            }
+            catch (IOException)
+            {
+                return StringComparison.Ordinal;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return StringComparison.Ordinal;
+            }
+            finally
+            {
+                if (File.Exists(probe))
                 {
-                    index = position;
-                    break;
+                    File.Delete(probe);
                 }
             }
-
-            if (index >= 0)
-            {
-                char replacement = char.IsUpper(name[index]) ? char.ToLowerInvariant(name[index]) : char.ToUpperInvariant(name[index]);
-                string parent = Path.GetDirectoryName(current)!;
-                string alternate = Path.Combine(parent, name[..index] + replacement + name[(index + 1)..]);
-                bool caseVariantsExist;
-                try
-                {
-                    caseVariantsExist = Directory.EnumerateFileSystemEntries(parent)
-                        .Count(entry => string.Equals(Path.GetFileName(entry), name, StringComparison.OrdinalIgnoreCase)) > 1;
-                }
-                catch (IOException)
-                {
-                    return StringComparison.Ordinal;
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    return StringComparison.Ordinal;
-                }
-
-                return !caseVariantsExist && Directory.Exists(alternate) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-            }
-
-            current = Path.GetDirectoryName(current);
         }
 
-        return OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        return StringComparison.Ordinal;
     }
 }

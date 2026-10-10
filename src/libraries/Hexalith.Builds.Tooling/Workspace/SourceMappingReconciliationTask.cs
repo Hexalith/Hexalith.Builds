@@ -95,11 +95,23 @@ public sealed class SourceMappingReconciliationTask : ITask
                     continue;
                 }
 
+                List<string> skippedCandidates = [];
                 EnumerationOptions options = new() { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
                 foreach (string project in Directory.EnumerateFiles(sourceTree, "*.csproj", options)
                     .Where(candidate => IsProductionCandidate(sourceTree, candidate)))
                 {
-                    (string packageId, bool packable) = EvaluatePackageIdentity(project);
+                    string packageId;
+                    bool packable;
+                    try
+                    {
+                        (packageId, packable) = EvaluatePackageIdentity(project);
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidProjectFileException or ArgumentException)
+                    {
+                        skippedCandidates.Add($"'{project}': {exception.Message}");
+                        continue;
+                    }
+
                     if (!packable || !MatchesIdentity(packageId, identity) || !requested.Contains(packageId))
                     {
                         continue;
@@ -109,6 +121,12 @@ public sealed class SourceMappingReconciliationTask : ITask
                     {
                         return Error("HXW002", $"Source package identity '{packageId}' is declared by both '{sourceProjects[packageId]}' and '{project}'.");
                     }
+                }
+
+                string[] missing = [.. requested.Where(packageId => !sourceProjects.ContainsKey(packageId))];
+                if (missing.Length > 0 && skippedCandidates.Count > 0)
+                {
+                    return Error("HXW006", $"No valid source candidate for identity '{identity}' and package(s) {string.Join(", ", missing)}; skipped project evaluation errors: {string.Join("; ", skippedCandidates)}");
                 }
             }
 
@@ -170,7 +188,7 @@ public sealed class SourceMappingReconciliationTask : ITask
                     return Error("HXW006", $"ProjectReference '{path}' resolves inside package-origin '{packageRoot.Path}', but package identity '{packageId}' does not match '{packageRoot.Identity}'.");
                 }
 
-                string? unsupportedProjectMetadata = UnsupportedMetadata(project, ["Version", "VersionOverride", "OutputItemType", "Targets", "SetTargetFramework", "SetConfiguration", "SetPlatform", "GlobalPropertiesToRemove", "AdditionalProperties", "SkipGetTargetFrameworkProperties", "BuildReference", "Private", "ExternallyResolved"]);
+                string? unsupportedProjectMetadata = UnsupportedMetadata(project, ["Version", "VersionOverride", "OutputItemType", "Targets", "SetTargetFramework", "SetConfiguration", "SetPlatform", "GlobalPropertiesToRemove", "AdditionalProperties", "SkipGetTargetFrameworkProperties", "BuildReference", "Private", "ExternallyResolved", "IncludeAssets", "ExcludeAssets"]);
                 if (unsupportedProjectMetadata is not null || string.Equals(project.GetMetadata("ReferenceOutputAssembly"), "false", StringComparison.OrdinalIgnoreCase))
                 {
                     return Error("HXW006", $"ProjectReference '{path}' cannot become package '{packageId}' because metadata '{unsupportedProjectMetadata ?? "ReferenceOutputAssembly"}' has no equivalent package behavior.");
@@ -185,7 +203,7 @@ public sealed class SourceMappingReconciliationTask : ITask
                 if (sourceProjects.TryGetValue(package.ItemSpec, out string? project)
                     && !selectedProjects.Any(selected => SamePath(selected.GetMetadata("FullPath"), project)))
                 {
-                    string? unsupportedPackageMetadata = UnsupportedMetadata(package, ["Version", "VersionOverride", "GeneratePathProperty", "IncludeAssets", "ExcludeAssets", "NoWarn", "TreatAsUsed", "PrunePackageReference", "ExcludeRestorePackageImports", "SetConfiguration", "SetPlatform", "AdditionalProperties", "GlobalPropertiesToRemove"]);
+                    string? unsupportedPackageMetadata = UnsupportedMetadata(package, ["Version", "VersionOverride", "GeneratePathProperty", "IncludeAssets", "ExcludeAssets", "NoWarn", "TreatAsUsed", "PrunePackageReference", "ExcludeRestorePackageImports", "SetConfiguration", "SetPlatform", "AdditionalProperties", "GlobalPropertiesToRemove", "ReferenceOutputAssembly", "Private"]);
                     if (unsupportedPackageMetadata is not null)
                     {
                         return Error("HXW006", $"PackageReference '{package.ItemSpec}' cannot become source project '{project}' because metadata '{unsupportedPackageMetadata}' has no equivalent project behavior.");

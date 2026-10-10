@@ -116,8 +116,12 @@ public static class ModuleCommandExecutionService
             bool isExecutable = manifest.Modules.Count > 0
                 && manifest.Modules.All(module => module.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                 && (manifest.Ui?.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ?? true);
+            bool nonExecutableAtRoot = !isExecutable && command != ModuleInvocationCommand.Down
+                && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath)
+                && await WorkspaceRootResolver.IsRootManifestAsync(manifestPath, cancellationToken).ConfigureAwait(false);
             bool requiresMapping = command != ModuleInvocationCommand.Down
-                && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath);
+                && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath)
+                && !nonExecutableAtRoot;
             if (!requiresMapping && !ValidateProfile(command, profile, manifest, out ToolDiagnostic? profileDiagnostic))
             {
                 return await WriteResultAsync(
@@ -434,6 +438,25 @@ public static class ModuleCommandExecutionService
                     string nativeRoot = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));
                     List<ToolDiagnostic> nativePathDiagnostics = [];
                     string? nativeProject = ManifestPathValidator.ValidateExistingFile(primaryTests.Project, nativeRoot, "profile.nativeTests.project", nativePathDiagnostics);
+                    if (nativeProject is null && nativePathDiagnostics.Count > 0)
+                    {
+                        ToolDiagnostic invalidNativeProject = nativePathDiagnostics[0];
+                        return await WriteResultAsync(
+                            "failed",
+                            ToolOutcome.Passed().Fail(invalidNativeProject.Phase, invalidNativeProject.Category, invalidNativeProject.RuleId, ToolExitCode.UsageOrManifest),
+                            nativePathDiagnostics,
+                            format,
+                            writer,
+                            command,
+                            manifestPath,
+                            manifest,
+                            profile,
+                            filter,
+                            evidencePath,
+                            startedUtc,
+                            cancellationToken).ConfigureAwait(false);
+                    }
+
                     if (nativeProject is not null && !mapping.ContainsProject(nativeProject))
                     {
                         ToolDiagnostic unmapped = new(

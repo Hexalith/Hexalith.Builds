@@ -79,11 +79,14 @@ public sealed class WorkspaceCommandModeTests
 
     /// <summary>Verifies public test mode carries its resolved hash into the spawned native test process.</summary>
     /// <param name="mode">The selected mode.</param>
+    /// <param name="profile">The selected native test platform.</param>
     /// <returns>A task for the assertion.</returns>
     [Theory]
-    [InlineData("source")]
-    [InlineData("package")]
-    public async Task PublicTestCarriesResolvedHashIntoNativeProcessAsync(string mode)
+    [InlineData("source", "full")]
+    [InlineData("package", "full")]
+    [InlineData("source", "full-mtp")]
+    [InlineData("package", "full-mtp")]
+    public async Task PublicTestCarriesResolvedHashIntoNativeProcessAsync(string mode, string profile)
     {
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
         string repository = CompositionTestFiles.RepositoryRoot();
@@ -109,7 +112,7 @@ public sealed class WorkspaceCommandModeTests
         await using StringWriter error = new();
 #pragma warning restore CA2007
         _ = await ModuleCommandApplication.InvokeAsync(
-            ["test", "--manifest", manifest, "--profile", "full", "--mode", mode, "--output", "json"],
+            ["test", "--manifest", manifest, "--profile", profile, "--mode", mode, "--output", "json"],
             output,
             error,
             TestContext.Current.CancellationToken,
@@ -121,11 +124,17 @@ public sealed class WorkspaceCommandModeTests
         using System.Text.Json.JsonDocument plan = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(planFile, TestContext.Current.CancellationToken).ConfigureAwait(true));
         string hash = plan.RootElement.GetProperty("sourceMappingHash").GetString()!;
         plan.RootElement.GetProperty("sourceMapping").GetProperty("mode").GetString().ShouldBe(mode);
-        string nativeCapture = Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable", "P0Fixture.NativeTests.VsTest", "native-environment.txt");
+        string nativeFolder = profile == "full-mtp" ? "P0Fixture.NativeTests" : "P0Fixture.NativeTests.VsTest";
+        string nativeCapture = Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable", nativeFolder, "native-environment.txt");
         File.Exists(nativeCapture).ShouldBeTrue(output.ToString());
         string[] nativeEnvironment = await File.ReadAllLinesAsync(nativeCapture, TestContext.Current.CancellationToken).ConfigureAwait(true);
         nativeEnvironment[0].ShouldBe(hash);
         nativeEnvironment[4].ShouldBe(mode == "source" ? "Debug" : "Release");
+        nativeEnvironment[5].ShouldContain("--configuration " + (mode == "source" ? "Debug" : "Release"));
+        if (profile == "full-mtp")
+        {
+            nativeEnvironment[5].ShouldContain("--project");
+        }
     }
 
     /// <summary>Verifies a nonexecutable manifest keeps its prerequisite diagnostic when Aspire is absent.</summary>

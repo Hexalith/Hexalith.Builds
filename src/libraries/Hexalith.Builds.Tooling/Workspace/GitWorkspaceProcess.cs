@@ -29,6 +29,7 @@ internal static class GitWorkspaceProcess
             "GIT_CONFIG_SYSTEM",
             "GIT_SSH",
             "GIT_SSH_COMMAND",
+            "GIT_SSH_VARIANT",
             "GIT_ASKPASS",
             "GIT_TERMINAL_PROMPT",
             "XDG_CONFIG_HOME",
