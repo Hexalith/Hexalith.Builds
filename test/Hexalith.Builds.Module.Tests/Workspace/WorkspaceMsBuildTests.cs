@@ -175,6 +175,9 @@ public sealed class WorkspaceMsBuildTests
             string workspace = Path.Combine(root, "run");
             await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
+            SourceMapping.LoadVerified(Path.Combine(workspace, "source-mapping", "mapping.json"), mapping.ContentHash)
+                .ContentHash.ShouldBe(mapping.ContentHash);
+
             CompositionProcessResult run = await RunDotnetAsync(active, mapping, workspace, "run", "--project", consumer, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
 
             run.ExitCode.ShouldBe(0, run.Output);

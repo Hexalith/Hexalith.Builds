@@ -56,6 +56,9 @@ public sealed record CompositionRunPlan(
     /// <summary>Gets the immutable workspace source mapping, when resolved by the command.</summary>
     public SourceMapping? SourceMapping { get; init; }
 
+    /// <summary>Gets the Platform identity used by this composition.</summary>
+    public PlatformIdentity? PlatformIdentity => SourceMapping?.PlatformIdentity;
+
     /// <summary>Gets the mapping content hash used by every launched project.</summary>
     public string? SourceMappingHash => SourceMapping?.ContentHash;
 

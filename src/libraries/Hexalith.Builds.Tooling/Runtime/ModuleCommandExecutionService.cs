@@ -17,6 +17,8 @@ using Hexalith.Builds.Tooling.Workspace;
 /// </summary>
 public static class ModuleCommandExecutionService
 {
+    private static readonly AsyncLocal<IReadOnlyList<ToolDiagnostic>?> _identityWarnings = new();
+
     /// <summary>
     /// Executes one module runner command.
     /// </summary>
@@ -84,6 +86,8 @@ public static class ModuleCommandExecutionService
         CompositionRunSession? session = null;
         bool sessionHandedOff = false;
         ModuleManifest? loadedManifest = null;
+        IReadOnlyList<ToolDiagnostic>? previousIdentityWarnings = _identityWarnings.Value;
+        _identityWarnings.Value = null;
 
         try
         {
@@ -97,6 +101,7 @@ public static class ModuleCommandExecutionService
                 && !await WorkspaceRootResolver.IsRootManifestAsync(manifestPath, cancellationToken).ConfigureAwait(false))
             {
                 preResolvedMapping = await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
+                _identityWarnings.Value = PlatformIdentityResolver.Diagnostics(preResolvedMapping.IdentityFindings, warning: true);
             }
 
             ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
@@ -318,6 +323,7 @@ public static class ModuleCommandExecutionService
                 loadedManifest = null;
                 SourceMapping mapping = preResolvedMapping
                     ?? await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
+                _identityWarnings.Value = PlatformIdentityResolver.Diagnostics(mapping.IdentityFindings, warning: true);
                 options = options with { SourceMapping = mapping };
 
                 // Initialization can supply a missing direct-reference manifest, and the root
@@ -686,7 +692,7 @@ public static class ModuleCommandExecutionService
             return await WriteResultAsync(
                 diagnostic.Category == ToolFailureCategory.PrerequisiteUnavailable ? "unavailable" : "failed",
                 ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, exitCode),
-                [diagnostic],
+                exception.Diagnostics,
                 format,
                 writer,
                 command,
@@ -759,6 +765,7 @@ public static class ModuleCommandExecutionService
         }
         finally
         {
+            _identityWarnings.Value = previousIdentityWarnings;
             if (session is not null && !sessionHandedOff && engine is not null)
             {
                 try
@@ -820,7 +827,8 @@ public static class ModuleCommandExecutionService
         NativeTestExecutionResult? nativeTests = null,
         string? nativePlatform = null)
     {
-        ToolCommandResult result = new(status, outcome, diagnostics) { RunId = runId };
+        IReadOnlyList<ToolDiagnostic> warnings = _identityWarnings.Value ?? [];
+        ToolCommandResult result = new(status, outcome, [.. warnings, .. diagnostics]) { RunId = runId };
         if (!string.IsNullOrWhiteSpace(evidencePath))
         {
             ModuleRunTestCounts? testCounts = null;

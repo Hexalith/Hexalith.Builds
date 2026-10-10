@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.com/schemas/hexalith.platform-identity.v1.json",
+  "title": "Hexalith Platform identity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "toolVersionRange": { "type": "string", "minLength": 1 }
+  }
+}

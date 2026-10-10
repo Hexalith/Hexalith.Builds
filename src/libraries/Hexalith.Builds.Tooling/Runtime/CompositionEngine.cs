@@ -50,6 +50,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
 
         string? runId = null;
+        string? preparedWorkspace = null;
         Process? appHost = null;
         string manifestHash = string.Empty;
         try
@@ -89,6 +90,16 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     null);
             }
 
+            // A rejected pinned catalog must not run descriptor child code.
+            if (_options.SourceMapping is { Mode: WorkspaceMode.Package } packageMapping)
+            {
+                runId = CompositionRunPlanFactory.NewRunId();
+                preparedWorkspace = WorkspaceFor(runId);
+                CompositionWorkspace.CreatePrivateDirectory(Path.GetFullPath(_options.WorkspaceRoot));
+                CompositionWorkspace.CreatePrivateDirectory(preparedWorkspace);
+                await SourceMappingMaterializer.WriteAsync(packageMapping, preparedWorkspace, cancellationToken).ConfigureAwait(false);
+            }
+
             ExecutableDescriptorLoadResult descriptors = await ExecutableDescriptorLoader.LoadAsync(
                 manifest,
                 manifestPath,
@@ -97,6 +108,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 _options.SourceMapping).ConfigureAwait(false);
             if (!descriptors.IsValid)
             {
+                IReadOnlyList<ToolDiagnostic> descriptorDiagnostics = await CleanupPreparedWorkspaceAsync(preparedWorkspace, descriptors.Diagnostics).ConfigureAwait(false);
+
                 bool unavailable = descriptors.Diagnostics[0].Category == ToolFailureCategory.PrerequisiteUnavailable;
                 ToolExitCode descriptorExit = ToolExitCode.UsageOrManifest;
                 if (unavailable)
@@ -111,7 +124,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 return Failed(
                     unavailable ? "unavailable" : "failed",
                     descriptorExit,
-                    descriptors.Diagnostics,
+                    descriptorDiagnostics,
                     null);
             }
 
@@ -122,28 +135,35 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 CompositionRunModule? unmapped = modules.FirstOrDefault(module => !mapping.ContainsProject(module.ProjectPath));
                 if (unmapped is not null)
                 {
-                    return Failed(
-                        "failed",
-                        ToolExitCode.TopologyOrLifecycle,
-                        [Diagnostic(
+                    IReadOnlyList<ToolDiagnostic> unmappedDiagnostics =
+                    [
+                        Diagnostic(
                             "HXW006",
                             ToolPhase.Topology,
                             ToolFailureCategory.TopologyOrLifecycle,
                             $"Module project '{unmapped.ProjectPath}' is outside the active module and mapped source roots.",
                             unmapped.ProjectPath,
-                            "Use a project in the active module or a mapped source root.")],
+                            "Use a project in the active module or a mapped source root."),
+                    ];
+                    return Failed(
+                        "failed",
+                        ToolExitCode.TopologyOrLifecycle,
+                        await CleanupPreparedWorkspaceAsync(preparedWorkspace, unmappedDiagnostics).ConfigureAwait(false),
                         null);
                 }
             }
 
             manifestHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false)));
-            runId = CompositionRunPlanFactory.NewRunId();
-            string workspace = WorkspaceFor(runId);
-            CompositionWorkspace.CreatePrivateDirectory(Path.GetFullPath(_options.WorkspaceRoot));
-            CompositionWorkspace.CreatePrivateDirectory(workspace);
-            if (_options.SourceMapping is not null)
+            runId ??= CompositionRunPlanFactory.NewRunId();
+            string workspace = preparedWorkspace ?? WorkspaceFor(runId);
+            if (preparedWorkspace is null)
             {
-                await SourceMappingMaterializer.WriteAsync(_options.SourceMapping, workspace, cancellationToken).ConfigureAwait(false);
+                CompositionWorkspace.CreatePrivateDirectory(Path.GetFullPath(_options.WorkspaceRoot));
+                CompositionWorkspace.CreatePrivateDirectory(workspace);
+                if (_options.SourceMapping is not null)
+                {
+                    await SourceMappingMaterializer.WriteAsync(_options.SourceMapping, workspace, cancellationToken).ConfigureAwait(false);
+                }
             }
 
             CompositionRunPlan plan = CompositionRunPlanFactory.Create(
@@ -181,6 +201,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             return runId is null
                 ? Failed("cancelled", ToolExitCode.Cancelled, [cancelled], null)
                 : await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Cancelled, cancelled, ToolExitCode.Cancelled).ConfigureAwait(false);
+        }
+        catch (WorkspaceMappingException exception) when (runId is not null && appHost is null)
+        {
+            IReadOnlyList<ToolDiagnostic> diagnostics = await CleanupPreparedWorkspaceAsync(preparedWorkspace, exception.Diagnostics).ConfigureAwait(false);
+            return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, diagnostics, null);
         }
         catch (Exception exception) when (runId is not null && exception is not OutOfMemoryException)
         {
@@ -250,6 +275,19 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
     private static ToolDiagnostic Diagnostic(string ruleId, ToolPhase phase, ToolFailureCategory category, string message, string field, string? hint) =>
         new(ruleId, phase, category, message, field, hint);
+
+    private static async Task<IReadOnlyList<ToolDiagnostic>> CleanupPreparedWorkspaceAsync(string? workspace, IReadOnlyList<ToolDiagnostic> diagnostics)
+    {
+        return workspace is null || await CompositionWorkspace.TryDeleteAsync(workspace, CancellationToken.None).ConfigureAwait(false)
+            ? diagnostics
+            : [.. diagnostics, Diagnostic(
+                "HXW009",
+                ToolPhase.Prerequisite,
+                ToolFailureCategory.PrerequisiteUnavailable,
+                $"Private catalog workspace '{workspace}' could not be removed after refusal.",
+                workspace,
+                "Remove this private workspace before retrying.")];
+    }
 
     private static bool IsTeardownFailure(Exception exception) =>
         exception is IOException or UnauthorizedAccessException or OperationCanceledException or InvalidOperationException

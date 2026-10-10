@@ -42,8 +42,18 @@ internal sealed class WorkspaceGitFixture : IDisposable
     /// <param name="withNested">Whether the direct submodule declares a nested submodule.</param>
     /// <param name="withSecond">Whether the root declares a second direct submodule.</param>
     /// <param name="withDirectManifest">Whether the direct submodule contains a committed manifest.</param>
+    /// <param name="conditionalCatalog">Whether the catalog has a project-name-specific version.</param>
+    /// <param name="largeCatalog">Whether the catalog has enough items to exceed the generic process capture bound.</param>
+    /// <param name="relativeCatalogImport">Whether the pinned catalog imports a sibling props file.</param>
+    /// <param name="compoundCatalogCondition">Whether the project-name condition uses a compound expression.</param>
+    /// <param name="optionalCatalogImport">Whether an absent conditional import is present.</param>
+    /// <param name="malformedCatalog">Whether the pinned catalog cannot be evaluated as XML.</param>
+    /// <param name="functionCatalogCondition">Whether the project-name condition uses a valid MSBuild property function.</param>
+    /// <param name="toolVersionRange">The Platform's accepted tool range.</param>
+    /// <param name="emptyCatalogVersion">Whether the catalog evaluates an empty package version.</param>
+    /// <param name="onDemandCatalogFailure">Whether one project name fails during isolated evaluation.</param>
     /// <returns>The fixture.</returns>
-    public static async Task<WorkspaceGitFixture> CreateAsync(bool withNested = false, bool withSecond = false, bool withDirectManifest = false)
+    public static async Task<WorkspaceGitFixture> CreateAsync(bool withNested = false, bool withSecond = false, bool withDirectManifest = false, bool conditionalCatalog = false, bool largeCatalog = false, bool relativeCatalogImport = false, bool compoundCatalogCondition = false, bool optionalCatalogImport = false, bool malformedCatalog = false, bool functionCatalogCondition = false, string? toolVersionRange = null, bool emptyCatalogVersion = false, bool onDemandCatalogFailure = false)
     {
         string directory = Path.Combine(Path.GetTempPath(), "hexalith-workspace-tests", Guid.NewGuid().ToString("N"));
         _ = System.IO.Directory.CreateDirectory(directory);
@@ -75,6 +85,70 @@ internal sealed class WorkspaceGitFixture : IDisposable
                 _ = await fixture.CreateRepositoryAsync("second", "second.txt").ConfigureAwait(true);
             }
 
+            string builds = await fixture.CreateRepositoryAsync("builds", "builds.txt").ConfigureAwait(true);
+            _ = System.IO.Directory.CreateDirectory(Path.Combine(builds, "Props"));
+            string catalog = conditionalCatalog
+                ? "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"'$(msbuildprojectname)' == 'Hexalith.Folders.Aspire'\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>"
+                : "<Project><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /></ItemGroup></Project>";
+            if (compoundCatalogCondition)
+            {
+                catalog = "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"'$(MSBuildProjectName)' == 'Hexalith.Folders.Aspire' Or '$(Configuration)' == '__never__'\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>";
+            }
+
+            if (functionCatalogCondition)
+            {
+                catalog = "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"$([System.String]::Copy('$(MSBuildProjectName)').StartsWith('Hexalith.Folders.'))\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>";
+            }
+
+            if (emptyCatalogVersion)
+            {
+                catalog = "<Project><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\" \" /></ItemGroup></Project>";
+            }
+
+            if (onDemandCatalogFailure)
+            {
+                catalog = "<Project><PropertyGroup><BrokenVersion Condition=\"$([System.String]::Copy('$(MSBuildProjectName)').StartsWith('Broken'))\">$([System.Int32]::Parse('bad'))</BrokenVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /></ItemGroup></Project>";
+            }
+
+            if (relativeCatalogImport)
+            {
+                await File.WriteAllTextAsync(Path.Combine(builds, "Props", "Imported.Packages.props"), catalog, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                catalog = "<Project><Import Project=\"$(MSBuildThisFileDirectory)Imported.Packages.props\" /></Project>";
+            }
+
+            if (largeCatalog)
+            {
+                catalog = "<Project><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" />"
+                    + string.Concat(Enumerable.Range(0, 600).Select(index => $"<PackageVersion Include=\"Hexalith.Fixture.Package.{index:D4}\" Version=\"1.0.0\" />"))
+                    + "</ItemGroup></Project>";
+            }
+
+            if (optionalCatalogImport)
+            {
+                catalog = catalog.Replace("</Project>", "<ImportGroup Condition=\"Exists('Absent.props')\"><Import Project=\"Absent.props\" /></ImportGroup></Project>", StringComparison.Ordinal);
+            }
+
+            if (malformedCatalog)
+            {
+                catalog = "<Project><ItemGroup>";
+            }
+
+            await File.WriteAllTextAsync(
+                Path.Combine(builds, "Props", "Directory.Packages.props"),
+                catalog,
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+            _ = await RunGitAsync(builds, "add", "Props").ConfigureAwait(true);
+            _ = await RunGitAsync(builds, "commit", "-m", "add catalog").ConfigureAwait(true);
+            string platform = await fixture.CreateRepositoryAsync("platform", "platform.txt").ConfigureAwait(true);
+            await File.WriteAllTextAsync(
+                Path.Combine(platform, "hexalith-platform.json"),
+                $"{{\"schemaVersion\":1,\"toolVersionRange\":\"{toolVersionRange ?? "[0.0.0,)"}\"}}",
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+            _ = await RunGitAsync(platform, "add", "hexalith-platform.json").ConfigureAwait(true);
+            _ = await RunGitAsync(platform, "-c", "protocol.file.allow=always", "submodule", "add", new Uri(builds).AbsoluteUri, "references/Hexalith.Builds").ConfigureAwait(true);
+            _ = await RunGitAsync(platform, "commit", "-am", "add Platform identity").ConfigureAwait(true);
+            _ = await RunGitAsync(platform, "tag", "v1.0.0").ConfigureAwait(true);
+
             string root = Path.Combine(directory, "root");
             _ = System.IO.Directory.CreateDirectory(root);
             _ = await RunGitAsync(root, "init", "-b", "main").ConfigureAwait(true);
@@ -85,6 +159,8 @@ internal sealed class WorkspaceGitFixture : IDisposable
             _ = await RunGitAsync(root, "add", "module.json").ConfigureAwait(true);
             _ = await RunGitAsync(root, "commit", "-m", "initial").ConfigureAwait(true);
             _ = await RunGitAsync(root, "-c", "protocol.file.allow=always", "submodule", "add", new Uri(Path.Combine(directory, "dependency")).AbsoluteUri, "references/Hexalith.Dep").ConfigureAwait(true);
+            _ = await RunGitAsync(root, "-c", "protocol.file.allow=always", "submodule", "add", new Uri(builds).AbsoluteUri, "references/Hexalith.Builds").ConfigureAwait(true);
+            _ = await RunGitAsync(root, "-c", "protocol.file.allow=always", "submodule", "add", new Uri(platform).AbsoluteUri, "references/Hexalith.Platform").ConfigureAwait(true);
             if (withSecond)
             {
                 _ = await RunGitAsync(root, "-c", "protocol.file.allow=always", "submodule", "add", new Uri(Path.Combine(directory, "second")).AbsoluteUri, "references/Hexalith.Second").ConfigureAwait(true);

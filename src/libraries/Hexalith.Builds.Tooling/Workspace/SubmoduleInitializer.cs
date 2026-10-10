@@ -83,9 +83,10 @@ internal static partial class SubmoduleInitializer
     /// <param name="root">The active superproject root.</param>
     /// <param name="references">The declared direct paths.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="collectMissingBuilds">Whether an absent Builds entry is reported by identity resolution.</param>
     /// <returns>The staged commit for each validated direct reference.</returns>
     /// <exception cref="WorkspaceMappingException">A declaration has no matching stage-zero gitlink.</exception>
-    internal static async Task<IReadOnlyDictionary<string, string>> ValidateRecordedGitlinksAsync(string root, IReadOnlyList<string> references, CancellationToken cancellationToken)
+    internal static async Task<IReadOnlyDictionary<string, string>> ValidateRecordedGitlinksAsync(string root, IReadOnlyList<string> references, CancellationToken cancellationToken, bool collectMissingBuilds = false)
     {
         Dictionary<string, string> recorded = new(FilesystemPathRules.Comparison(root) == StringComparison.OrdinalIgnoreCase
             ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
@@ -94,6 +95,12 @@ internal static partial class SubmoduleInitializer
             string identity = Path.GetFileName(reference);
             CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "-z", "--", ":(literal)" + reference).ConfigureAwait(false);
             string[] records = result.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            if (collectMissingBuilds && reference == "references/Hexalith.Builds" && result.Started && !result.TimedOut
+                && !result.OutputTruncated && result.ExitCode == 0 && records.Length == 0)
+            {
+                continue;
+            }
+
             if (!result.Started || result.TimedOut || result.OutputTruncated || result.ExitCode != 0 || records.Length != 1)
             {
                 throw InvalidGitlink(identity, reference, root, "expected exactly one stage-zero gitlink in the index");
@@ -250,7 +257,10 @@ internal static partial class SubmoduleInitializer
     /// <returns>Standard error with URL credentials removed.</returns>
     internal static string SanitizeGitStderr(string stderr) => GitCredentialPattern().Replace(stderr, "${scheme}[redacted]@");
 
-    private static bool IsInitialized(string path) => Directory.Exists(path)
+    /// <summary>Checks whether a direct path has Git checkout metadata without changing it.</summary>
+    /// <param name="path">The direct checkout path.</param>
+    /// <returns>True when Git metadata is present.</returns>
+    internal static bool IsInitialized(string path) => Directory.Exists(path)
         && (File.Exists(Path.Combine(path, ".git")) || Directory.Exists(Path.Combine(path, ".git"))
             || new FileInfo(Path.Combine(path, ".git")).LinkTarget is not null);
 

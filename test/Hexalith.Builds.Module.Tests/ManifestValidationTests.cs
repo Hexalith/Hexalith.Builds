@@ -215,7 +215,7 @@ public sealed class ManifestValidationTests
         JsonElement properties = platform.GetProperty("properties");
 
         properties.GetProperty("eventStoreVersion").GetProperty("const").GetString()
-            .ShouldBe(SupportedPlatformPins.EventStoreVersion);
+            .ShouldBe(ModuleManifestLoader.ModuleManifestEventStoreVersion);
         properties.GetProperty("daprRuntimeVersion").GetProperty("const").GetString()
             .ShouldBe(SupportedPlatformPins.DaprRuntimeVersion);
         properties.GetProperty("daprSdkVersion").GetProperty("const").GetString()

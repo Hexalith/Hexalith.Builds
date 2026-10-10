@@ -191,7 +191,7 @@ internal static class CompositionTestFiles
             using System.Threading;
             string tool = Path.GetFileNameWithoutExtension(Environment.ProcessPath!);
             if (tool == "aspire") { Console.WriteLine("__ASPIRE__+test-build"); return 0; }
-            if (tool == "stub-docker") { Console.WriteLine("29.0.0"); return 0; }
+            if (tool == "stub-docker") { if (args.Length > 0 && args[0] == "version") Console.WriteLine("29.0.0"); return 0; }
             if (tool == "dapr") { Console.WriteLine("CLI version: __DAPR_CLI__"); Console.WriteLine("Runtime version: __DAPR_RUNTIME__"); return 0; }
             if (tool == "daprd") { Console.WriteLine("__DAPR_RUNTIME__"); return 0; }
             if (tool == "placement" || tool == "scheduler")

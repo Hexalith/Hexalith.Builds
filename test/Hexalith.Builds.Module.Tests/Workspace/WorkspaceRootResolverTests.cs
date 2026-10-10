@@ -35,11 +35,11 @@ public sealed class WorkspaceRootResolverTests
 
         if (Directory.Exists(Path.Combine(fixture.Checkout, "References")))
         {
-            references.ShouldBe(["References/Hexalith.Dep"]);
+            references.ShouldBe(["References/Hexalith.Dep", "references/Hexalith.Builds", "references/Hexalith.Platform"], ignoreOrder: true);
         }
         else
         {
-            references.ShouldBeEmpty();
+            references.ShouldBe(["references/Hexalith.Builds", "references/Hexalith.Platform"], ignoreOrder: true);
         }
     }
 
@@ -69,7 +69,7 @@ public sealed class WorkspaceRootResolverTests
             await File.WriteAllTextAsync(manifest, "{}", TestContext.Current.CancellationToken).ConfigureAwait(true);
             CompositionProcessResult unavailable = new(false, -1, string.Empty, false);
 
-            SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Package, unavailable, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Source, unavailable, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             mapping.HasGit.ShouldBeFalse();
             mapping.Root.ShouldBe(directory);
@@ -133,7 +133,7 @@ public sealed class WorkspaceRootResolverTests
     public async Task MissingGitmodulesIgnoresDeepReferenceFilesAsync()
     {
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
-        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "rm", "--cached", "--", ".gitmodules", "references/Hexalith.Dep").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "rm", "--cached", "--", ".gitmodules", "references/Hexalith.Dep", "references/Hexalith.Builds", "references/Hexalith.Platform").ConfigureAwait(true);
         File.Delete(Path.Combine(fixture.Checkout, ".gitmodules"));
         string nested = Path.Combine(fixture.Checkout, "references", "cache", "nested");
         _ = Directory.CreateDirectory(nested);
@@ -1061,6 +1061,13 @@ public sealed class WorkspaceRootResolverTests
         {
             string manifest = Path.Combine(directory, "module.json");
             await File.WriteAllTextAsync(manifest, "{}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            if (mode == WorkspaceMode.Package)
+            {
+                WorkspaceMappingException refusal = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(manifest, mode, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+                refusal.Diagnostic.RuleId.ShouldBe("HXW007");
+                return;
+            }
+
             SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, mode, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             mapping.HasGit.ShouldBeFalse();

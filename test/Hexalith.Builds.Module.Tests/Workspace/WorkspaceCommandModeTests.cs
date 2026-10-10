@@ -78,8 +78,12 @@ public sealed class WorkspaceCommandModeTests
         File.Exists(capturedPlan).ShouldBeTrue(output.ToString());
         using System.Text.Json.JsonDocument plan = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(capturedPlan, TestContext.Current.CancellationToken).ConfigureAwait(true));
         System.Text.Json.JsonElement sourceMapping = plan.RootElement.GetProperty("sourceMapping");
+        System.Text.Json.JsonElement identity = plan.RootElement.GetProperty("platformIdentity");
+        identity.GetProperty("commit").GetString().ShouldBe(sourceMapping.GetProperty("platformIdentity").GetProperty("commit").GetString());
+        identity.GetProperty("catalogCommit").GetString().ShouldNotBeNullOrWhiteSpace();
+        identity.GetProperty("releaseTag").GetString().ShouldBe("v1.0.0");
         sourceMapping.GetProperty("mode").GetString().ShouldBe(mode ?? "source");
-        sourceMapping.GetProperty("entries").GetArrayLength().ShouldBe(2);
+        sourceMapping.GetProperty("entries").GetArrayLength().ShouldBe(4);
         sourceMapping.GetProperty("entries").EnumerateArray().Single(entry => entry.GetProperty("identity").GetString() == "Hexalith.Dep")
             .GetProperty("origin").GetString().ShouldBe(mode ?? "source");
         string hash = plan.RootElement.GetProperty("sourceMappingHash").GetString()!;
@@ -131,6 +135,16 @@ public sealed class WorkspaceCommandModeTests
             options).ConfigureAwait(true);
 
         string capturedPlan = Path.Combine(fixture.Directory, "fake-apphost", "out", "captured-plan.json");
+        if (mode == "package")
+        {
+            output.ToString().ShouldContain("HXW007");
+            File.Exists(capturedPlan).ShouldBeFalse();
+            Directory.Exists(options.StateDirectory).ShouldBeFalse();
+            Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+            return;
+        }
+
+        output.ToString().ShouldContain("HXW007");
         File.Exists(capturedPlan).ShouldBeTrue(output.ToString());
         using System.Text.Json.JsonDocument plan = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(capturedPlan, TestContext.Current.CancellationToken).ConfigureAwait(true));
         System.Text.Json.JsonElement mapping = plan.RootElement.GetProperty("sourceMapping");
@@ -140,6 +154,258 @@ public sealed class WorkspaceCommandModeTests
         mapping.GetProperty("entries")[0].GetProperty("origin").GetString().ShouldBe("source");
         (await File.ReadAllTextAsync(Path.Combine(fixture.Directory, "fake-apphost", "out", "captured-mapping-hash.txt"), TestContext.Current.CancellationToken).ConfigureAwait(true))
             .ShouldBe(plan.RootElement.GetProperty("sourceMappingHash").GetString());
+    }
+
+    /// <summary>Verifies each identity mismatch is reported at the public command boundary.</summary>
+    /// <param name="mismatch">The mismatch to create.</param>
+    /// <param name="format">The requested output format.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("composition", "human")]
+    [InlineData("composition", "json")]
+    [InlineData("catalog", "human")]
+    [InlineData("catalog", "json")]
+    [InlineData("tool", "human")]
+    [InlineData("tool", "json")]
+    public async Task PublicPackageIdentityMismatchRendersBeforeDescriptorsAsync(string mismatch, string format)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(
+            withDirectManifest: true,
+            toolVersionRange: mismatch == "tool" ? "[9999.0.0,)" : null).ConfigureAwait(true);
+        string manifest = Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", "module.json");
+        _ = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (mismatch == "composition")
+        {
+            string platform = Path.Combine(fixture.Checkout, "references", "Hexalith.Platform");
+            await File.WriteAllTextAsync(Path.Combine(platform, "next.txt"), "next", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            _ = await WorkspaceGitFixture.RunGitAsync(platform, "add", "next.txt").ConfigureAwait(true);
+            _ = await WorkspaceGitFixture.RunGitAsync(platform, "-c", "user.name=Workspace Test", "-c", "user.email=workspace@example.invalid", "commit", "-m", "next Platform").ConfigureAwait(true);
+            _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "add", "references/Hexalith.Platform").ConfigureAwait(true);
+        }
+        else if (mismatch == "catalog")
+        {
+            await File.WriteAllTextAsync(Path.Combine(fixture.Checkout, "references", "Hexalith.Builds", "dirty.txt"), "dirty", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        CompositionEngineOptions options = new(Path.Combine(fixture.Directory, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            StateDirectory = Path.Combine(fixture.Directory, "state"),
+            WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
+        };
+#pragma warning disable CA2007 // Test assertions require the xUnit synchronization context.
+        await using StringWriter output = new();
+        await using StringWriter error = new();
+#pragma warning restore CA2007
+        int exitCode = await ModuleCommandApplication.InvokeAsync(
+            ["run", "--manifest", manifest, "--mode", "package", "--output", format],
+            output,
+            error,
+            TestContext.Current.CancellationToken,
+            typeof(ModuleCommandApplication).Assembly.Location,
+            options).ConfigureAwait(true);
+
+        string rule = mismatch switch { "composition" => "HXW008", "catalog" => "HXW009", _ => "HXW010" };
+        exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable, output.ToString());
+        string rendered = output.ToString();
+        switch (mismatch)
+        {
+            case "composition":
+                rendered.ShouldContain("composition gitlink");
+                rendered.ShouldContain("committed identity");
+                break;
+            case "catalog":
+                rendered.ShouldContain("dirty");
+                rendered.ShouldContain("pins");
+                rendered.ShouldContain("references/Hexalith.Builds");
+                break;
+            default:
+                rendered.ShouldContain("Tool version");
+                rendered.ShouldContain("[9999.0.0,)");
+                rendered.ShouldContain("hexalith-platform.json");
+                break;
+        }
+
+        if (format == "human")
+        {
+            rendered.ShouldContain(rule + " Prerequisite PrerequisiteUnavailable");
+        }
+        else
+        {
+            using System.Text.Json.JsonDocument response = System.Text.Json.JsonDocument.Parse(rendered);
+            System.Text.Json.JsonElement diagnostic = response.RootElement.GetProperty("diagnostics").EnumerateArray()
+                .Single(item => item.GetProperty("ruleId").GetString() == rule);
+            diagnostic.GetProperty("phase").GetString().ShouldBe("Prerequisite");
+            diagnostic.GetProperty("category").GetString().ShouldBe("PrerequisiteUnavailable");
+        }
+
+        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies source identity warnings remain visible when the public test command passes.</summary>
+    /// <param name="format">The public diagnostic format.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task PublicSourceWarningAppearsOnSuccessAsync(string format)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string manifest = await PrepareDirtyPlatformExecutableAsync(fixture).ConfigureAwait(true);
+        string fakeAppHost = await CompositionTestFiles.BuildFakeAppHostAsync(fixture.Directory, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        (string aspire, string docker, string daprHome, string nativeDotnet) = await CompositionTestFiles.BuildPortableToolchainAsync(fixture.Directory, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionEngineOptions options = new(fakeAppHost, typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            AspireCommand = aspire,
+            DockerCommand = docker,
+            DaprHome = daprHome,
+            NativeDotnetCommand = nativeDotnet,
+            ProfileExecutorOverride = (_, _, _) => Task.FromResult(new ToolCommandResult("completed", ToolOutcome.Passed(), [])),
+            StateDirectory = Path.Combine(fixture.Directory, "state"),
+            WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
+            ReadinessTimeout = TimeSpan.FromSeconds(5),
+        };
+
+#pragma warning disable CA2007 // Test assertions require the xUnit synchronization context.
+        await using StringWriter output = new();
+        await using StringWriter error = new();
+#pragma warning restore CA2007
+        int exitCode = await ModuleCommandApplication.InvokeAsync(
+            ["test", "--manifest", manifest, "--profile", "full", "--mode", "source", "--output", format],
+            output,
+            error,
+            TestContext.Current.CancellationToken,
+            typeof(ModuleCommandApplication).Assembly.Location,
+            options).ConfigureAwait(true);
+
+        exitCode.ShouldBe((int)ToolExitCode.Success, output.ToString());
+        AssertPublicIdentityWarning(output.ToString(), format, "HXW011");
+    }
+
+    /// <summary>Verifies source identity warnings remain visible when the public run command later fails.</summary>
+    /// <param name="format">The public diagnostic format.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task PublicSourceWarningAppearsOnFailureAsync(string format)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string manifest = await PrepareDirtyPlatformExecutableAsync(fixture).ConfigureAwait(true);
+        CompositionEngineOptions options = new(Path.Combine(fixture.Directory, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            AspireCommand = CompositionTestFiles.CreateAspire(fixture.Directory),
+            DaprHome = Path.Combine(fixture.Directory, "missing-dapr-home"),
+            DockerCommand = CompositionTestFiles.CreateStubDocker(fixture.Directory),
+            StateDirectory = Path.Combine(fixture.Directory, "state"),
+            WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
+        };
+
+#pragma warning disable CA2007 // Test assertions require the xUnit synchronization context.
+        await using StringWriter output = new();
+        await using StringWriter error = new();
+#pragma warning restore CA2007
+        int exitCode = await ModuleCommandApplication.InvokeAsync(
+            ["run", "--manifest", manifest, "--mode", "source", "--output", format],
+            output,
+            error,
+            TestContext.Current.CancellationToken,
+            typeof(ModuleCommandApplication).Assembly.Location,
+            options).ConfigureAwait(true);
+
+        exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable, output.ToString());
+        AssertPublicIdentityWarning(output.ToString(), format, "HXW011");
+        output.ToString().ShouldContain("HXR011");
+    }
+
+    /// <summary>Verifies one public package refusal renders all observable identity conditions in both formats.</summary>
+    /// <param name="format">The public diagnostic format.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task PublicPackageRefusalReportsSeveralIdentityConditionsAsync(string format)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string manifest = await PrepareDirtyPlatformExecutableAsync(fixture).ConfigureAwait(true);
+        string platform = Path.Combine(fixture.Checkout, "references", "Hexalith.Platform");
+        string builds = Path.Combine(fixture.Checkout, "references", "Hexalith.Builds");
+        _ = await WorkspaceGitFixture.RunGitAsync(platform, "tag", "-d", "v1.0.0").ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(builds, "dirty.txt"), "dirty", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionEngineOptions options = new(Path.Combine(fixture.Directory, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            AspireCommand = CompositionTestFiles.CreateAspire(fixture.Directory),
+            StateDirectory = Path.Combine(fixture.Directory, "state"),
+            WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
+        };
+
+#pragma warning disable CA2007 // Test assertions require the xUnit synchronization context.
+        await using StringWriter output = new();
+        await using StringWriter error = new();
+#pragma warning restore CA2007
+        int exitCode = await ModuleCommandApplication.InvokeAsync(
+            ["run", "--manifest", manifest, "--mode", "package", "--output", format],
+            output,
+            error,
+            TestContext.Current.CancellationToken,
+            typeof(ModuleCommandApplication).Assembly.Location,
+            options).ConfigureAwait(true);
+
+        exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable, output.ToString());
+        output.ToString().ShouldContain("HXW009");
+        output.ToString().ShouldContain("HXW011");
+        if (format == "json")
+        {
+            using System.Text.Json.JsonDocument response = System.Text.Json.JsonDocument.Parse(output.ToString());
+            response.RootElement.GetProperty("diagnostics").EnumerateArray().Count().ShouldBeGreaterThanOrEqualTo(2);
+        }
+
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies catalog refusal precedes descriptors and removes its private run workspace.</summary>
+    /// <param name="format">The public diagnostic format.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task PublicCatalogFailureRetainsHxw009BeforeDescriptorsAsync(string format)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(malformedCatalog: true).ConfigureAwait(true);
+        string repository = CompositionTestFiles.RepositoryRoot();
+        CopyFixtureTree(Path.Combine(repository, "artifacts", "g4-fixture", "bin"), Path.Combine(fixture.Checkout, "artifacts", "g4-fixture", "bin"), skipBuildFolders: false);
+        CopyFixtureTree(Path.Combine(repository, "test", "fixtures", "module", "executable"), Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable"), skipBuildFolders: true);
+        string manifest = Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable", "hexalith.module-manifest.v1.json");
+        CompositionEngineOptions options = new(typeof(ModuleCommandApplication).Assembly.Location, Path.Combine(fixture.Directory, "missing-descriptor-child.dll"))
+        {
+            AspireCommand = CompositionTestFiles.CreateAspire(fixture.Directory),
+            DockerCommand = CompositionTestFiles.CreateStubDocker(fixture.Directory),
+            DaprHome = CompositionTestFiles.CreateDaprHome(fixture.Directory, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+            StateDirectory = Path.Combine(fixture.Directory, "state"),
+            WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
+        };
+
+#pragma warning disable CA2007 // Test assertions require the xUnit synchronization context.
+        await using StringWriter output = new();
+        await using StringWriter error = new();
+#pragma warning restore CA2007
+        int exitCode = await ModuleCommandApplication.InvokeAsync(
+            ["run", "--manifest", manifest, "--mode", "package", "--output", format],
+            output,
+            error,
+            TestContext.Current.CancellationToken,
+            typeof(ModuleCommandApplication).Assembly.Location,
+            options).ConfigureAwait(true);
+
+        exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable, output.ToString());
+        output.ToString().ShouldContain("HXW009");
+        output.ToString().ShouldNotContain("HXR020");
+        output.ToString().ShouldNotContain("HXD");
+        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+        if (Directory.Exists(options.WorkspaceRoot))
+        {
+            Directory.GetDirectories(options.WorkspaceRoot).ShouldBeEmpty();
+        }
     }
 
     /// <summary>Verifies missing and unmapped primary native test paths fail before composition starts.</summary>
@@ -989,6 +1255,32 @@ public sealed class WorkspaceCommandModeTests
         packageOutput.ToString().ShouldNotContain("HXW004");
         packageOutput.ToString().ShouldContain("HXD002");
         Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+    }
+
+    private static async Task<string> PrepareDirtyPlatformExecutableAsync(WorkspaceGitFixture fixture)
+    {
+        _ = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string platform = Path.Combine(fixture.Checkout, "references", "Hexalith.Platform");
+        await File.WriteAllTextAsync(Path.Combine(platform, "identity-dirty.txt"), "dirty", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string repository = CompositionTestFiles.RepositoryRoot();
+        CopyFixtureTree(Path.Combine(repository, "artifacts", "g4-fixture", "bin"), Path.Combine(fixture.Checkout, "artifacts", "g4-fixture", "bin"), skipBuildFolders: false);
+        CopyFixtureTree(Path.Combine(repository, "test", "fixtures", "module", "executable"), Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable"), skipBuildFolders: true);
+        return Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable", "hexalith.module-manifest.v1.json");
+    }
+
+    private static void AssertPublicIdentityWarning(string rendered, string format, string ruleId)
+    {
+        if (format == "human")
+        {
+            rendered.ShouldContain(ruleId + " Prerequisite None");
+            return;
+        }
+
+        using System.Text.Json.JsonDocument response = System.Text.Json.JsonDocument.Parse(rendered);
+        System.Text.Json.JsonElement warning = response.RootElement.GetProperty("diagnostics").EnumerateArray()
+            .Single(item => item.GetProperty("ruleId").GetString() == ruleId);
+        warning.GetProperty("phase").GetString().ShouldBe("Prerequisite");
+        warning.GetProperty("category").GetString().ShouldBe("None");
     }
 
     private static void CopyFixtureTree(string source, string destination, bool skipBuildFolders)

@@ -62,7 +62,13 @@ public static class WorkspaceRootResolver
             }
 
             string identity = Path.GetFileName(standalone.TrimEnd(Path.DirectorySeparatorChar));
-            return new SourceMapping(mode, standalone, identity, Array.AsReadOnly([new SourceMappingEntry(identity, "source", standalone)]), false);
+            PlatformIdentityFinding missing = PlatformIdentityResolver.NoGit(standalone);
+            return mode == WorkspaceMode.Package
+                ? throw new WorkspaceMappingException(PlatformIdentityResolver.Diagnostics([missing], warning: false))
+                : new SourceMapping(mode, standalone, identity, Array.AsReadOnly([new SourceMappingEntry(identity, "source", standalone)]), false)
+                {
+                    IdentityFindings = [missing],
+                };
         }
 
         string root = Path.GetFullPath(TrimGitLineEnding(probe.Output));
@@ -95,6 +101,14 @@ public static class WorkspaceRootResolver
         }
 
         IReadOnlyList<string> references = await ReadDirectReferencesAsync(root, cancellationToken).ConfigureAwait(false);
+        bool missingPlatformReference = false;
+        if (!references.Contains("references/Hexalith.Platform", StringComparer.Ordinal))
+        {
+            CompositionProcessResult marker = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-tree", "-z", "HEAD", "--", "hexalith-platform.json").ConfigureAwait(false);
+            missingPlatformReference = !marker.Started || marker.TimedOut || marker.OutputTruncated || marker.ExitCode != 0
+                || !PlatformIdentityResolver.IsRegularBlob(marker.Output, "hexalith-platform.json");
+        }
+
         string relativeManifest = declaredManifest.Replace('\\', '/');
         if (relativeManifest == ".." || relativeManifest.StartsWith("../", StringComparison.Ordinal) || Path.IsPathRooted(relativeManifest))
         {
@@ -183,37 +197,87 @@ public static class WorkspaceRootResolver
         }
 
         await SubmoduleInitializer.CheckNestedReferencesAsync(root, references, cancellationToken).ConfigureAwait(false);
-        IReadOnlyDictionary<string, string> recordedGitlinks = await SubmoduleInitializer.ValidateRecordedGitlinksAsync(root, references, cancellationToken).ConfigureAwait(false);
-        if (mode == WorkspaceMode.Source)
+        IReadOnlyDictionary<string, string> recordedGitlinks = await SubmoduleInitializer.ValidateRecordedGitlinksAsync(root, references, cancellationToken, collectMissingBuilds: true).ConfigureAwait(false);
+        if (missingPlatformReference)
         {
-            await SubmoduleInitializer.InitializeDirectAsync(root, references, cancellationToken).ConfigureAwait(false);
+            // A non-Platform workspace must fail before initializing any direct reference, while
+            // preserving independently observable Builds findings in the same result.
+            (_, IReadOnlyList<PlatformIdentityFinding> missingFindings) =
+                await PlatformIdentityResolver.ResolveAsync(root, references, recordedGitlinks, cancellationToken).ConfigureAwait(false);
+            throw new WorkspaceMappingException(PlatformIdentityResolver.Diagnostics(missingFindings, warning: false));
         }
-        else
+
+        string[] identityReferences = [.. references.Where(reference => reference is "references/Hexalith.Platform" or "references/Hexalith.Builds")];
+        IReadOnlyList<ToolDiagnostic> initializationDiagnostics = [];
+        foreach (string reference in identityReferences)
         {
-            await SubmoduleInitializer.ValidateInitializedPackageRootsAsync(root, references.Where(reference => reference != activeReference), recordedGitlinks, cancellationToken).ConfigureAwait(false);
-            if (activeReference is not null)
+            string checkout = Path.Combine(root, reference.Replace('/', Path.DirectorySeparatorChar));
+            if (recordedGitlinks.ContainsKey(reference) && !SubmoduleInitializer.IsInitialized(checkout))
             {
-                await SubmoduleInitializer.InitializeDirectAsync(root, [activeReference], cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await SubmoduleInitializer.InitializeDirectAsync(root, [reference], cancellationToken).ConfigureAwait(false);
+                }
+                catch (WorkspaceMappingException exception)
+                {
+                    initializationDiagnostics = [.. initializationDiagnostics, .. exception.Diagnostics];
+                }
             }
         }
 
-        if (!RepositoryPathResolver.TryResolveExistingFile(root, declaredManifest, out string physicalManifest)
-            || !RepositoryPathResolver.TryResolvePathWithinRoot(root, ".", out string physicalRoot))
+        (PlatformIdentity? platformIdentity, IReadOnlyList<PlatformIdentityFinding> findings) =
+            await PlatformIdentityResolver.ResolveAsync(root, references, recordedGitlinks, cancellationToken).ConfigureAwait(false);
+        if (!references.Contains("references/Hexalith.Platform", StringComparer.Ordinal) && platformIdentity?.IsPlatformRepository != true)
         {
-            throw Failure("HXW001", $"Manifest '{manifest}' physically escapes active root '{root}' or is unavailable after checkout.", manifest);
+            throw new WorkspaceMappingException(PlatformIdentityResolver.Diagnostics(findings, warning: false));
         }
 
-        string physicalRelative = Path.GetRelativePath(physicalRoot, physicalManifest).Replace('\\', '/');
-        string? physicalReference = references.FirstOrDefault(reference => physicalRelative.StartsWith(reference + "/", pathComparison));
-#pragma warning disable IDE0046 // Keep a single diagnostic for both physical ownership failures.
-        if ((physicalRelative.StartsWith("references/", pathComparison) && physicalReference is null)
-            || !string.Equals(activeReference, physicalReference, StringComparison.Ordinal))
+        if (initializationDiagnostics.Count > 0 || (mode == WorkspaceMode.Package && findings.Count > 0))
         {
-            throw Failure("HXW001", $"Manifest '{manifest}' does not physically belong to its declared active module '{activeRoot}'.", manifest);
+            throw new WorkspaceMappingException([.. initializationDiagnostics, .. PlatformIdentityResolver.Diagnostics(findings, warning: mode == WorkspaceMode.Source)]);
         }
+
+        try
+        {
+            if (mode == WorkspaceMode.Source)
+            {
+                await SubmoduleInitializer.InitializeDirectAsync(root, [.. references.Except(identityReferences, StringComparer.Ordinal)], cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await SubmoduleInitializer.ValidateInitializedPackageRootsAsync(root, references.Where(reference => reference != activeReference && !identityReferences.Contains(reference, StringComparer.Ordinal)), recordedGitlinks, cancellationToken).ConfigureAwait(false);
+                if (activeReference is not null && !identityReferences.Contains(activeReference, StringComparer.Ordinal))
+                {
+                    await SubmoduleInitializer.InitializeDirectAsync(root, [activeReference], cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            if (!RepositoryPathResolver.TryResolveExistingFile(root, declaredManifest, out string physicalManifest)
+                || !RepositoryPathResolver.TryResolvePathWithinRoot(root, ".", out string physicalRoot))
+            {
+                throw Failure("HXW001", $"Manifest '{manifest}' physically escapes active root '{root}' or is unavailable after checkout.", manifest);
+            }
+
+            string physicalRelative = Path.GetRelativePath(physicalRoot, physicalManifest).Replace('\\', '/');
+            string? physicalReference = references.FirstOrDefault(reference => physicalRelative.StartsWith(reference + "/", pathComparison));
+#pragma warning disable IDE0046 // Keep a single diagnostic for both physical ownership failures.
+            if ((physicalRelative.StartsWith("references/", pathComparison) && physicalReference is null)
+                || !string.Equals(activeReference, physicalReference, StringComparison.Ordinal))
+            {
+                throw Failure("HXW001", $"Manifest '{manifest}' does not physically belong to its declared active module '{activeRoot}'.", manifest);
+            }
 #pragma warning restore IDE0046
 
-        return new SourceMapping(mode, root, activeIdentity, Array.AsReadOnly(entries.OrderBy(entry => entry.Identity, StringComparer.Ordinal).ToArray()), true);
+            return new SourceMapping(mode, root, activeIdentity, Array.AsReadOnly(entries.OrderBy(entry => entry.Identity, StringComparer.Ordinal).ToArray()), true)
+            {
+                PlatformIdentity = platformIdentity,
+                IdentityFindings = findings,
+            };
+        }
+        catch (WorkspaceMappingException exception) when (mode == WorkspaceMode.Source && findings.Count > 0)
+        {
+            throw new WorkspaceMappingException([.. exception.Diagnostics, .. PlatformIdentityResolver.Diagnostics(findings, warning: true)]);
+        }
     }
 
     /// <summary>Reads direct <c>references/*</c> paths from a .gitmodules file.</summary>

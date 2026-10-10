@@ -111,34 +111,7 @@ public static class CompositionProcess
     public static async Task<CompositionProcessResult> RunAsync(
         ProcessStartInfo start,
         TimeSpan timeout,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(start);
-        using Process process = new() { StartInfo = start };
-        if (!TryStart(process))
-        {
-            return new CompositionProcessResult(false, -1, string.Empty, false);
-        }
-
-        process.StandardInput.Close();
-        using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        bound.CancelAfter(timeout);
-        Task<(string Text, bool Truncated)> output = ReadBoundedAsync(process.StandardOutput, bound.Token);
-        Task<string> error = ReadTailAsync(process.StandardError, bound.Token);
-        try
-        {
-            await process.WaitForExitAsync(bound.Token).ConfigureAwait(false);
-            (string text, bool truncated) = await output.ConfigureAwait(false);
-            string errorText = await error.ConfigureAwait(false);
-            return new CompositionProcessResult(true, process.ExitCode, text, false) { OutputTruncated = truncated, ErrorOutput = errorText };
-        }
-        catch (OperationCanceledException)
-        {
-            Kill(process);
-            cancellationToken.ThrowIfCancellationRequested();
-            return new CompositionProcessResult(true, -1, string.Empty, true);
-        }
-    }
+        CancellationToken cancellationToken) => await RunAsync(start, timeout, _maximumOutputCharacters, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Starts a long-running process, returns the first standard-output line containing a marker, and stops the process.
@@ -218,6 +191,46 @@ public static class CompositionProcess
         }
     }
 
+    /// <summary>Runs a process with a caller-specific bounded standard-output capture.</summary>
+    /// <param name="start">The start description.</param>
+    /// <param name="timeout">The bound.</param>
+    /// <param name="maximumOutputCharacters">The maximum number of captured standard-output characters.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The bounded result.</returns>
+    internal static async Task<CompositionProcessResult> RunAsync(
+        ProcessStartInfo start,
+        TimeSpan timeout,
+        int maximumOutputCharacters,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(start);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumOutputCharacters);
+        using Process process = new() { StartInfo = start };
+        if (!TryStart(process))
+        {
+            return new CompositionProcessResult(false, -1, string.Empty, false);
+        }
+
+        process.StandardInput.Close();
+        using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        bound.CancelAfter(timeout);
+        Task<(string Text, bool Truncated)> output = ReadBoundedAsync(process.StandardOutput, maximumOutputCharacters, bound.Token);
+        Task<string> error = ReadTailAsync(process.StandardError, bound.Token);
+        try
+        {
+            await process.WaitForExitAsync(bound.Token).ConfigureAwait(false);
+            (string text, bool truncated) = await output.ConfigureAwait(false);
+            string errorText = await error.ConfigureAwait(false);
+            return new CompositionProcessResult(true, process.ExitCode, text, false) { OutputTruncated = truncated, ErrorOutput = errorText };
+        }
+        catch (OperationCanceledException)
+        {
+            Kill(process);
+            cancellationToken.ThrowIfCancellationRequested();
+            return new CompositionProcessResult(true, -1, string.Empty, true);
+        }
+    }
+
     private static bool TryStart(Process process)
     {
         try
@@ -230,7 +243,7 @@ public static class CompositionProcess
         }
     }
 
-    private static async Task<(string Text, bool Truncated)> ReadBoundedAsync(StreamReader reader, CancellationToken cancellationToken)
+    private static async Task<(string Text, bool Truncated)> ReadBoundedAsync(StreamReader reader, int maximumOutputCharacters, CancellationToken cancellationToken)
     {
         StringBuilder result = new();
         char[] buffer = new char[4096];
@@ -243,7 +256,7 @@ public static class CompositionProcess
                 return (result.ToString(), truncated);
             }
 
-            int accepted = Math.Min(read, _maximumOutputCharacters - result.Length);
+            int accepted = Math.Min(read, maximumOutputCharacters - result.Length);
             if (accepted > 0)
             {
                 _ = result.Append(buffer, 0, accepted);

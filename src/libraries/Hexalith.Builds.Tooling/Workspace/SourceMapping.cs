@@ -23,6 +23,12 @@ public sealed record SourceMapping(
     IReadOnlyList<SourceMappingEntry> Entries,
     bool HasGit)
 {
+    /// <summary>Gets the resolved Platform identity, when one is available.</summary>
+    public PlatformIdentity? PlatformIdentity { get; init; }
+
+    /// <summary>Gets non-fatal identity findings for source mode.</summary>
+    public IReadOnlyList<PlatformIdentityFinding> IdentityFindings { get; init; } = [];
+
     /// <summary>Gets a content hash shared by the plan and all project builds.</summary>
     public string ContentHash => Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
     {
@@ -31,6 +37,8 @@ public sealed record SourceMapping(
         ActiveModule,
         Entries,
         HasGit,
+        PlatformIdentity,
+        IdentityFindings,
     })));
 
     /// <summary>Loads persisted mapping only when its content matches the command's hash.</summary>
@@ -45,7 +53,7 @@ public sealed record SourceMapping(
         return !string.IsNullOrWhiteSpace(expectedHash)
             && string.Equals(mapping.ContentHash, expectedHash, StringComparison.OrdinalIgnoreCase)
                 ? mapping
-                : throw new InvalidDataException($"Source mapping '{path}' differs from the command-resolved hash '{expectedHash}'.");
+                : throw new InvalidDataException($"Source mapping '{path}' has hash '{mapping.ContentHash}' and differs from the command-resolved hash '{expectedHash}'.");
     }
 
     /// <summary>Tests whether a project is inside the active module or a source identity.</summary>

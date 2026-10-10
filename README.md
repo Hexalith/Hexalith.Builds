@@ -246,7 +246,8 @@ In source mode, the active module and every root-declared direct reference build
 in Debug. An uninitialized direct reference is checked out at its recorded
 gitlink without `--recursive` or `--remote`. An initialized direct reference
 whose HEAD differs from the staged gitlink fails with `HXW004` without moving
-its checkout. Stage that checkout commit with
+its checkout, except Platform and Builds identity mismatches, which warn in
+source mode. Stage that checkout commit with
 `git -C <root> add -- ':(literal)<reference>'`, or move it to the staged gitlink
 with `git -C <root> submodule update --checkout -- ':(literal)<reference>'`.
 The literal pathspec keeps a reference name with `[`, `*` or `?` from matching a
@@ -254,7 +255,32 @@ sibling reference. Deinitialize a broken checkout before retrying. An initialize
 stops resolution before any initialization; deinitialize it manually before
 retrying. Package mode leaves dependencies as packages and builds the active
 module in Release. Package versions continue to come from the workspace's
-central package management; the mapping supplies no package versions.
+central package management. For packages defined by the Platform-pinned Builds
+catalog, a generated guard compares the effective version, including
+`VersionOverride` and restored versions, with the isolated pinned catalog.
+The catalog is evaluated for the consumer project name, so conditional pins
+apply to that project. Equivalent exact NuGet ranges are accepted before
+restore; the guard checks the resolved package version after restore.
+
+The Platform identity is the committed `references/Hexalith.Platform` gitlink
+in a module workspace, or HEAD when `hexalith-platform.json` is tracked at
+HEAD in the Platform repository. The record has `schemaVersion: 1` and an
+optional NuGet `toolVersionRange`. Platform pins Builds through its own
+`references/Hexalith.Builds` gitlink. The mapping and run plan record the
+identity, composition checkout, release tag, catalog pin, and tool range;
+the identity also contributes to the mapping hash. Resolution uses local Git
+objects and refs only. Package mode initializes direct Platform and Builds
+references at their recorded gitlinks, leaving other package-origin references
+uninitialized. Existing checkouts are never moved.
+
+Package mode requires an aligned, clean Builds checkout, an aligned Platform
+checkout with a local `v<SemVer>` tag and no changes, and a running tool within
+the Platform range. Source mode reports all identity conditions as warnings
+and continues. A Git workspace missing the direct Platform reference fails in
+both modes; a standalone workspace warns in source mode and refuses package
+mode. The Platform record added in this story has no tool range, so package
+mode remains unavailable for the live Platform identity until that range is
+ratified.
 
 Mapping values override optional `Directory.Build.props` source probes and
 reconcile references selected by consumer targets before restore. Builds fail
@@ -267,6 +293,12 @@ duplicate source and direct or restored package identity, and `HXW006` an
 unmapped project or executable assembly, ambiguous package conversion, or
 dependency metadata that changes the selected configuration. Each diagnostic
 names the relevant identity or path and a reason.
+`HXW007` reports an unavailable identity, record, or catalog pin; `HXW008`
+reports composition commit mismatch; `HXW009` reports a Builds catalog pin or
+checkout mismatch; `HXW010` reports an unsupported or unavailable tool range;
+`HXW011` reports an untagged or dirty Platform checkout; `HXW012` rejects a
+referenced package version that differs from the pinned catalog. Package
+identity refusals list every holding condition in one command result.
 
 The checked-in [candidate consumer](test/fixtures/package-consumer/README.md)
 pins both published tools to `4.29.1` from source

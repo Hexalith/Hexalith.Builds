@@ -29,6 +29,9 @@ public static partial class ModuleManifestLoader
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     };
 
+    /// <summary>Gets the unchanged EventStore pin for v1 module manifests.</summary>
+    internal static string ModuleManifestEventStoreVersion => "3.119.0";
+
     /// <summary>
     /// Loads a manifest and returns deterministic, metadata-only diagnostics.
     /// </summary>
@@ -320,7 +323,7 @@ public static partial class ModuleManifestLoader
             return;
         }
 
-        ValidatePlatformPin(platform.EventStoreVersion, SupportedPlatformPins.EventStoreVersion, "platform.eventStoreVersion", diagnostics);
+        ValidatePlatformPin(platform.EventStoreVersion, ModuleManifestEventStoreVersion, "platform.eventStoreVersion", diagnostics);
         ValidatePlatformPin(platform.DaprRuntimeVersion, SupportedPlatformPins.DaprRuntimeVersion, "platform.daprRuntimeVersion", diagnostics);
         ValidatePlatformPin(platform.DaprSdkVersion, SupportedPlatformPins.DaprSdkVersion, "platform.daprSdkVersion", diagnostics);
         ValidatePlatformPin(platform.FrontComposerVersion, SupportedPlatformPins.FrontComposerVersion, "platform.frontComposerVersion", diagnostics);

@@ -55,6 +55,7 @@ public static class SourceMappingMaterializer
             Path.Combine(directory, "mapping.json"),
             JsonSerializer.SerializeToUtf8Bytes(mapping, _jsonOptions),
             cancellationToken).ConfigureAwait(false);
+        await CatalogVersionMaterializer.WriteAsync(mapping, workspace, cancellationToken).ConfigureAwait(false);
         await WriteResourceAsync("SourceMapping.props", PropsPath(workspace), cancellationToken).ConfigureAwait(false);
         await WriteResourceAsync("SourceMapping.targets", TargetsPath(workspace), cancellationToken).ConfigureAwait(false);
         string props = CreateProps(mapping, workspace, initializeObserved: true);
@@ -199,6 +200,14 @@ public static class SourceMappingMaterializer
         }
 
         string condition = ConsumerProjectCondition(mapping, workspace);
+        string catalogTask = "<CatalogVersionValidationTask MappingFile=\"$(MSBuildThisFileDirectory)mapping.json\" MappingHash=\""
+            + mapping.ContentHash
+            + "\" CatalogFile=\"$(MSBuildThisFileDirectory)catalog-versions.json\" AssetsFile=\"$(ProjectAssetsFile)\" ProjectName=\"$(MSBuildProjectName)\" TargetFramework=\"$(TargetFramework)\" RuntimeIdentifier=\"$(RuntimeIdentifier)\" Packages=\"@(PackageReference);@(GlobalPackageReference)\" PackageVersions=\"@(PackageVersion)\" CheckAssets=\"false\" />";
+        string catalogTargets = mapping.Mode == WorkspaceMode.Package && mapping.PlatformIdentity is not null
+            ? "<Target Name=\"HexalithValidateCatalogBeforeRestore\" BeforeTargets=\"Restore;CollectPackageReferences;_GenerateRestoreGraphProjectEntry;CoreCompile\">"
+                + catalogTask + "</Target><Target Name=\"HexalithValidateCatalogAfterRestore\" DependsOnTargets=\"ResolvePackageAssets\" BeforeTargets=\"CoreCompile\">"
+                + catalogTask.Replace("CheckAssets=\"false\"", "CheckAssets=\"true\"", StringComparison.Ordinal) + "</Target>"
+            : string.Empty;
         StringBuilder guard = new();
         GuardProperty(guard, "HexalithSourceMappingApplies", "true");
         GuardProperty(guard, "HexalithSourceMappingHasGit", "true");
@@ -249,7 +258,9 @@ public static class SourceMappingMaterializer
             }
         }
 
-        return "<Project InitialTargets=\"HexalithVerifySourceMappingSelection;HexalithValidateSourceProjectsBeforeRestore\">"
+        return "<Project InitialTargets=\"HexalithVerifySourceMappingSelection;HexalithValidateSourceProjectsBeforeRestore"
+            + (catalogTargets.Length == 0 ? string.Empty : ";HexalithValidateCatalogBeforeRestore") + "\">"
+            + catalogTargets
             + "<Target Name=\"HexalithVerifySourceMappingSelection\" Condition=\"" + condition + "\">" + guard + "</Target>"
             + "<Target Name=\"HexalithVerifyPreLateSourceMappingSelection\" BeforeTargets=\"Restore;_GenerateRestoreGraphProjectEntry;_GenerateRestoreProjectPathItemsPerFramework;_GenerateProjectRestoreGraphPerFramework;CollectPackageReferences;AssignProjectConfiguration;_SplitProjectReferencesByFileExistence;_GetProjectReferenceTargetFrameworkProperties;ResolveProjectReferences;ResolveReferences;CoreCompile\" Condition=\"" + condition + "\">" + preLateGuard + "</Target>"
             + "<Target Name=\"HexalithReconcileSourceMapping\" BeforeTargets=\"Restore;_GenerateRestoreGraphProjectEntry;_GenerateRestoreProjectPathItemsPerFramework;_GenerateProjectRestoreGraphPerFramework;CollectPackageReferences;AssignProjectConfiguration;_SplitProjectReferencesByFileExistence;_GetProjectReferenceTargetFrameworkProperties;ResolveReferences;ResolvePackageAssets\" Condition=\"" + condition + "\">"
