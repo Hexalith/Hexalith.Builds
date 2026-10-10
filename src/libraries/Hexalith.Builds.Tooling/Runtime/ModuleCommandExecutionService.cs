@@ -385,12 +385,7 @@ public static class ModuleCommandExecutionService
 
                 if (!isExecutable)
                 {
-                    ToolDiagnostic changedShape = new(
-                        "HXR003",
-                        ToolPhase.Prerequisite,
-                        ToolFailureCategory.PrerequisiteUnavailable,
-                        "The checked-out manifest does not declare an executable descriptor topology.",
-                        manifestPath);
+                    ToolDiagnostic changedShape = NonexecutableTopologyDiagnostic();
                     return await WriteResultAsync(
                         "unavailable",
                         ToolOutcome.Passed().Fail(changedShape.Phase, changedShape.Category, changedShape.RuleId, ToolExitCode.PrerequisiteUnavailable),
@@ -662,13 +657,7 @@ public static class ModuleCommandExecutionService
                     start.RunId).ConfigureAwait(false);
             }
 
-            ToolDiagnostic prerequisiteDiagnostic = new(
-                "HXR003",
-                ToolPhase.Prerequisite,
-                ToolFailureCategory.PrerequisiteUnavailable,
-                "The approved descriptor ABI cannot yet be composed into a supported runtime.",
-                "runtime",
-                "Qualify the runner-owned G-6 topology before retrying.");
+            ToolDiagnostic prerequisiteDiagnostic = NonexecutableTopologyDiagnostic();
             return await WriteResultAsync(
                 "unavailable",
                 ToolOutcome.Passed().Fail(
@@ -943,6 +932,14 @@ public static class ModuleCommandExecutionService
             startedUtc,
             cancellationToken).ConfigureAwait(false);
     }
+
+    private static ToolDiagnostic NonexecutableTopologyDiagnostic() => new(
+        "HXR003",
+        ToolPhase.Prerequisite,
+        ToolFailureCategory.PrerequisiteUnavailable,
+        "The approved descriptor ABI cannot yet be composed into a supported runtime.",
+        "runtime",
+        "Qualify the runner-owned G-6 topology before retrying.");
 
     private static bool ValidateProfile(
         ModuleInvocationCommand command,

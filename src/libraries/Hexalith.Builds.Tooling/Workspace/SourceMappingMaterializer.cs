@@ -347,7 +347,8 @@ public static class SourceMappingMaterializer
     private static void GuardImportListMember(StringBuilder xml, string name, string value) =>
         _ = xml.Append("<Error Condition=\"!$([System.String]::Copy(';$(").Append(name)
             .Append(");').Contains(';").Append(ConditionLiteral(value)).Append(";', System.StringComparison.Ordinal))\" Text=\"HXW006: Source mapping property '")
-            .Append(name).Append("' must include selected mapping import '").Append(XmlEscape(MsBuildEscape(value))).AppendLine("'.\" />");
+            .Append(name).Append("' must include selected mapping import '").Append(XmlEscape(MsBuildEscape(value)))
+            .Append("' but was '$(").Append(name).AppendLine(")'.\" />");
 
     private static void GuardFinalImportMarker(StringBuilder xml) =>
         _ = xml.AppendLine("<Error Condition=\"'$(IsCrossTargetingBuild)' != 'true' and '$(_HXWFinalTargetsImported)' != 'true'\" Text=\"HXW006: The final SDK source mapping targets import was cleared or never evaluated.\" />");

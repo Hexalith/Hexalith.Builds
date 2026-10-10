@@ -972,7 +972,8 @@ public sealed class WorkspaceMsBuildTests
             result.ExitCode.ShouldNotBe(0, result.Output);
             result.Output.ShouldContain("HXW006");
             result.Output.ShouldContain("AfterMicrosoftNETSdkTargets");
-            result.Output.ShouldContain(SourceMappingMaterializer.FinalTargetsPath(workspace));
+            result.Output.ShouldContain("import '" + SourceMappingMaterializer.FinalTargetsPath(workspace) + "'");
+            result.Output.ShouldContain("but was '" + lookalike + "'");
         }
         finally
         {

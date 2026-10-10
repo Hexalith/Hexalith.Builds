@@ -10,6 +10,9 @@ using Hexalith.Builds.Tooling.Runtime;
 /// <summary>Runs bounded Git inspections and recorded-gitlink submodule operations.</summary>
 internal static class GitWorkspaceProcess
 {
+    /// <summary>Gets the bound for checking out a required direct submodule.</summary>
+    internal static TimeSpan SubmoduleUpdateTimeout { get; } = TimeSpan.FromMinutes(10);
+
     /// <summary>Runs Git without inherited recursive-submodule configuration.</summary>
     /// <param name="directory">The Git working directory.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -62,7 +65,7 @@ internal static class GitWorkspaceProcess
         }
 
         TimeSpan timeout = arguments.Length >= 2 && arguments[0] == "submodule" && arguments[1] == "update"
-            ? TimeSpan.FromMinutes(10)
+            ? SubmoduleUpdateTimeout
             : TimeSpan.FromMinutes(2);
         return CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo("git", command, directory, environment),

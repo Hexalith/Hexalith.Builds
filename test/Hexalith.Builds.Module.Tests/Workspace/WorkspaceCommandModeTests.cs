@@ -346,6 +346,61 @@ public sealed class WorkspaceCommandModeTests
         output.ToString().ShouldContain("HXR003");
         output.ToString().ShouldNotContain("HXR015");
         output.ToString().ShouldNotContain("HXW004");
+        output.ToString().ShouldContain("Qualify the runner-owned G-6 topology before retrying.");
+        File.Exists(manifest).ShouldBeTrue();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies an executable direct-reference manifest reaches the Aspire probe after recorded checkout.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task DirectReferenceExecutableManifestProbesAspireAfterCheckoutAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(withDirectManifest: true).ConfigureAwait(true);
+        string dependency = Path.Combine(fixture.Directory, "dependency");
+        string repository = CompositionTestFiles.RepositoryRoot();
+        string executable = Path.Combine(repository, "test", "fixtures", "module", "executable", "hexalith.module-manifest.v1.json");
+        File.Copy(executable, Path.Combine(dependency, "module.json"), overwrite: true);
+        CopyFixtureTree(
+            Path.Combine(repository, "test", "fixtures", "module", "executable", "profiles"),
+            Path.Combine(dependency, "test", "fixtures", "module", "executable", "profiles"),
+            skipBuildFolders: true);
+        foreach (string descriptor in new[] { "P0Fixture.Orders.Descriptor", "P0Fixture.Inventory.Descriptor", "P0Fixture.Ui.Descriptor" })
+        {
+            string relative = Path.Combine("artifacts", "g4-fixture", "bin", descriptor, descriptor + ".dll");
+            string target = Path.Combine(dependency, relative);
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(Path.Combine(repository, relative), target);
+        }
+
+        _ = await WorkspaceGitFixture.RunGitAsync(dependency, "add", "-f", "module.json", "test", "artifacts").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(dependency, "commit", "-m", "add executable manifest").ConfigureAwait(true);
+        string recorded = (await WorkspaceGitFixture.RunGitAsync(dependency, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--cacheinfo", $"160000,{recorded},references/Hexalith.Dep").ConfigureAwait(true);
+        string manifest = Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", "module.json");
+        CompositionEngineOptions options = new(Path.Combine(fixture.Directory, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            AspireCommand = Path.Combine(fixture.Directory, "missing-aspire"),
+            StateDirectory = Path.Combine(fixture.Directory, "state"),
+            WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
+        };
+
+#pragma warning disable CA2007 // Test assertions require the xUnit synchronization context.
+        await using StringWriter output = new();
+        await using StringWriter error = new();
+#pragma warning restore CA2007
+        int exitCode = await ModuleCommandApplication.InvokeAsync(
+            ["run", "--manifest", manifest, "--mode", "source", "--output", "json"],
+            output,
+            error,
+            TestContext.Current.CancellationToken,
+            typeof(ModuleCommandApplication).Assembly.Location,
+            options).ConfigureAwait(true);
+
+        exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable, output.ToString());
+        output.ToString().ShouldContain("HXR015");
+        output.ToString().ShouldNotContain("HXR003");
+        output.ToString().ShouldNotContain("HXD");
         File.Exists(manifest).ShouldBeTrue();
         Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
     }
@@ -429,6 +484,7 @@ public sealed class WorkspaceCommandModeTests
         exitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
         output.ToString().ShouldContain("HXC002");
         output.ToString().ShouldNotContain("HXR003");
+        output.ToString().ShouldNotContain("HXR015");
         File.Exists(Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", ".git")).ShouldBeTrue();
     }
 

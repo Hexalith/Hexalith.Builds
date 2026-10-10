@@ -182,28 +182,39 @@ public sealed class WorkspaceRootResolverTests
         error.Diagnostic.RuleId.ShouldBe("HXW004");
         error.Diagnostic.Message.ShouldContain("Git stderr:");
         error.Diagnostic.Message.ShouldContain("missing-dependency");
+        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("Check the source URL");
+        error.Diagnostic.Hint.ShouldContain("references/Hexalith.Dep");
+        error.Diagnostic.Hint.ShouldNotContain("git add");
     }
 
     /// <summary>Verifies Git URL credentials are removed from diagnostics.</summary>
-    [Fact]
-    public void GitStderrUrlCredentialsAreRedacted()
+    /// <param name="userInfo">Credential-bearing URL user information.</param>
+    [Theory]
+    [InlineData("alice:sec'ret(pa)ss")]
+    [InlineData("alice:p@ss")]
+    [InlineData("jane@corp.com:TOKEN")]
+    public void GitStderrUrlCredentialsAreRedacted(string userInfo)
     {
-        string sanitized = SubmoduleInitializer.SanitizeGitStderr("clone of 'https://alice:sec'ret(pa)ss@example.invalid/dependency.git' failed");
+        string sanitized = SubmoduleInitializer.SanitizeGitStderr($"clone of 'https://{userInfo}@example.invalid/dependency.git' failed");
 
         sanitized.ShouldContain("https://[redacted]@example.invalid/dependency.git");
-        sanitized.ShouldNotContain("alice:sec'ret(pa)ss");
+        sanitized.ShouldNotContain(userInfo);
     }
 
     /// <summary>Verifies failed direct checkout diagnostics redact URL credentials from Git stderr.</summary>
+    /// <param name="userInfo">Credential-bearing URL user information.</param>
     /// <returns>A task for the assertion.</returns>
-    [Fact]
-    public async Task FailedDirectCheckoutRedactsGitUrlCredentialsAsync()
+    [Theory]
+    [InlineData("alice:sec'ret(pa)ss")]
+    [InlineData("alice:p@ss")]
+    [InlineData("jane@corp.com:TOKEN")]
+    public async Task FailedDirectCheckoutRedactsGitUrlCredentialsAsync(string userInfo)
     {
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
         string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
         string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string originalUrl = new Uri(Path.Combine(fixture.Directory, "dependency")).AbsoluteUri;
-        string missingUrl = "file://alice:sec'ret(pa)ss@localhost" + Path.Combine(fixture.Directory, "missing-dependency").Replace('\\', '/');
+        string missingUrl = $"file://{userInfo}@localhost" + Path.Combine(fixture.Directory, "missing-dependency").Replace('\\', '/');
         await File.WriteAllTextAsync(gitmodules, declarations.Replace(originalUrl, missingUrl, StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken)).ConfigureAwait(true);
@@ -211,7 +222,7 @@ public sealed class WorkspaceRootResolverTests
         error.Diagnostic.RuleId.ShouldBe("HXW004");
         error.Diagnostic.Message.ShouldContain("file://[redacted]@localhost");
         error.Diagnostic.Message.ShouldContain("missing-dependency");
-        error.Diagnostic.Message.ShouldNotContain("alice:sec'ret(pa)ss");
+        error.Diagnostic.Message.ShouldNotContain(userInfo);
     }
 
     /// <summary>Verifies Git-quoted unusual gitlinks remain visible when declarations are missing.</summary>
@@ -410,6 +421,27 @@ public sealed class WorkspaceRootResolverTests
         mapping.Entries.ShouldContain(entry => entry.Identity == "Hexalith.Dep" && entry.Origin == "source");
     }
 
+    /// <summary>Verifies an independent repository with a glob character is not confused with a sibling gitlink in Git history.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task IndependentNestedRepositoryUsesLiteralHistoryPathAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(withNested: true).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "protocol.file.allow=always", "submodule", "update", "--init", "--", "references/Hexalith.Dep").ConfigureAwait(true);
+        string independent = Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", "nested", "Othe[r]");
+        _ = Directory.CreateDirectory(independent);
+        _ = await WorkspaceGitFixture.RunGitAsync(independent, "init", "-b", "main").ConfigureAwait(true);
+
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        mapping.Entries.ShouldContain(entry => entry.Identity == "Hexalith.Dep" && entry.Origin == "source");
+    }
+
     /// <summary>Verifies a stale nested gitfile is found when the direct checkout marker is absent.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]
@@ -559,7 +591,8 @@ public sealed class WorkspaceRootResolverTests
         string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(gitmodules, declarations.Replace("path = " + original, "path = " + renamed, StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--add", "--cacheinfo", $"160000,{commit},{renamed}").ConfigureAwait(true);
-        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--add", "--cacheinfo", $"160000,{commit},references/Hexalith.Dep1").ConfigureAwait(true);
+        string siblingCommit = new(commit[0] == 'a' ? 'b' : 'a', commit.Length);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--add", "--cacheinfo", $"160000,{siblingCommit},references/Hexalith.Dep1").ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--force-remove", original).ConfigureAwait(true);
 
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -642,7 +675,38 @@ public sealed class WorkspaceRootResolverTests
         error.Diagnostic.RuleId.ShouldBe("HXW004");
         error.Diagnostic.Message.ShouldContain("Hexalith.Dep");
         error.Diagnostic.Message.ShouldContain(stale);
+        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git submodule update --checkout -- 'references/Hexalith.Dep'");
+        error.Diagnostic.Hint.ShouldNotContain("git add");
         (await WorkspaceGitFixture.RunGitAsync(direct, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim().ShouldBe(stale);
+    }
+
+    /// <summary>Verifies a broken initialized Git marker reports unavailable HEAD and Git's cause in either mode.</summary>
+    /// <param name="mode">The requested mapping mode.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData(WorkspaceMode.Source)]
+    [InlineData(WorkspaceMode.Package)]
+    public async Task BrokenInitializedCheckoutReportsGitFailureAsync(WorkspaceMode mode)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "protocol.file.allow=always", "submodule", "update", "--init", "--", "references/Hexalith.Dep").ConfigureAwait(true);
+        string direct = Path.Combine(fixture.Checkout, "references", "Hexalith.Dep");
+        await File.WriteAllTextAsync(Path.Combine(direct, ".git"), "gitdir: missing\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, mode, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        error.Diagnostic.RuleId.ShouldBe("HXW004");
+        error.Diagnostic.Message.ShouldContain("HEAD 'unavailable'");
+        error.Diagnostic.Message.ShouldContain("Git stderr:");
+        if (mode == WorkspaceMode.Source)
+        {
+            error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git add 'references/Hexalith.Dep'");
+        }
+        else
+        {
+            error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git submodule update --checkout -- 'references/Hexalith.Dep'");
+            error.Diagnostic.Hint.ShouldNotContain("git add");
+        }
     }
 
     /// <summary>Verifies a manifest in a direct reference still resolves the outermost superproject.</summary>
@@ -686,6 +750,48 @@ public sealed class WorkspaceRootResolverTests
         error.Diagnostic.RuleId.ShouldBe("HXW004");
         error.Diagnostic.Message.ShouldContain(recorded);
         error.Diagnostic.Message.ShouldContain(advanced);
+        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git add 'references/Hexalith.Dep'");
+    }
+
+    /// <summary>Verifies HXW004 Git commands quote a direct reference containing an apostrophe.</summary>
+    /// <param name="mode">The requested mapping mode.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData(WorkspaceMode.Source)]
+    [InlineData(WorkspaceMode.Package)]
+    public async Task ApostropheDirectReferenceUsesShellQuotedRemediationAsync(WorkspaceMode mode)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        const string original = "references/Hexalith.Dep";
+        const string renamed = "references/Hexalith.O'Brien";
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(gitmodules, declarations.Replace("path = " + original, "path = " + renamed, StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string indexed = (await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "ls-files", "--stage", "--", original).ConfigureAwait(true)).Output;
+        string commit = indexed.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--add", "--cacheinfo", $"160000,{commit},{renamed}").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--force-remove", original).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "protocol.file.allow=always", "submodule", "update", "--init", "--checkout", "--", ":(literal)" + renamed).ConfigureAwait(true);
+        string direct = Path.Combine(fixture.Checkout, "references", "Hexalith.O'Brien");
+        _ = await WorkspaceGitFixture.RunGitAsync(direct, "config", "user.name", "Workspace Test").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(direct, "config", "user.email", "workspace@example.invalid").ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(direct, "changed.txt"), "new commit", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(direct, "add", "changed.txt").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(direct, "commit", "-m", "advance direct source").ConfigureAwait(true);
+
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, mode, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        string quoted = OperatingSystem.IsWindows() ? "'references/Hexalith.O''Brien'" : "'references/Hexalith.O'\\''Brien'";
+        error.Diagnostic.RuleId.ShouldBe("HXW004");
+        error.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("git submodule update --checkout -- " + quoted);
+        if (mode == WorkspaceMode.Source)
+        {
+            error.Diagnostic.Hint.ShouldContain("git add " + quoted);
+        }
+        else
+        {
+            error.Diagnostic.Hint.ShouldNotContain("git add");
+        }
     }
 
     /// <summary>Verifies a local update=none setting cannot hide an initialized checkout mismatch.</summary>
