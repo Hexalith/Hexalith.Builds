@@ -22,13 +22,41 @@ internal static class FilesystemPathRules
                 continue;
             }
 
-            string probe = Path.Combine(current, ".hexalith-case-" + Guid.NewGuid().ToString("N"));
             try
             {
-                File.WriteAllText(probe, string.Empty);
+                string[] entries = [.. Directory.EnumerateFileSystemEntries(current)];
+                foreach (string entry in entries)
+                {
+                    string name = Path.GetFileName(entry);
+                    int letter = -1;
+                    for (int index = 0; index < name.Length; index++)
+                    {
+                        if (char.IsAsciiLetter(name[index]))
+                        {
+                            letter = index;
+                            break;
+                        }
+                    }
 
-                string alternate = Path.Combine(current, ".Hexalith-case-" + Path.GetFileName(probe)[".hexalith-case-".Length..]);
-                return File.Exists(alternate) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+                    if (letter < 0 || (!File.Exists(entry) && !Directory.Exists(entry)))
+                    {
+                        continue;
+                    }
+
+                    char replacement = char.IsUpper(name[letter]) ? char.ToLowerInvariant(name[letter]) : char.ToUpperInvariant(name[letter]);
+                    string alternateName = name[..letter] + replacement + name[(letter + 1)..];
+                    if (entries.Any(candidate => string.Equals(Path.GetFileName(candidate), alternateName, StringComparison.Ordinal)))
+                    {
+                        return StringComparison.Ordinal;
+                    }
+
+                    string alternate = Path.Combine(current, alternateName);
+                    return File.Exists(alternate) || Directory.Exists(alternate)
+                        ? StringComparison.OrdinalIgnoreCase
+                        : StringComparison.Ordinal;
+                }
+
+                return StringComparison.Ordinal;
             }
             catch (IOException)
             {
@@ -37,13 +65,6 @@ internal static class FilesystemPathRules
             catch (UnauthorizedAccessException)
             {
                 return StringComparison.Ordinal;
-            }
-            finally
-            {
-                if (File.Exists(probe))
-                {
-                    File.Delete(probe);
-                }
             }
         }
 

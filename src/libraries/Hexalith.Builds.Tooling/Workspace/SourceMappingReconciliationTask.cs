@@ -48,6 +48,9 @@ public sealed class SourceMappingReconciliationTask : ITask
     /// <summary>Gets or sets the selected target framework.</summary>
     public string TargetFramework { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets a value indicating whether the consumer uses centrally managed package versions.</summary>
+    public bool ManagePackageVersionsCentrally { get; set; }
+
     /// <summary>Gets the selected project references, with the original applicable metadata.</summary>
     [Output]
     public ITaskItem[] SelectedProjects { get; private set; } = [];
@@ -71,7 +74,14 @@ public sealed class SourceMappingReconciliationTask : ITask
                 string identity = entry.Identity;
                 if (entry.Origin == "package")
                 {
-                    packageRoots.Add((identity, Path.Combine(root, "references", identity)));
+                    string packagePath = Path.Combine(root, "references", identity);
+                    if (Directory.Exists(packagePath)
+                        && !RepositoryPathResolver.TryResolvePathWithinRoot(root, Path.GetRelativePath(root, packagePath), out _))
+                    {
+                        return Error("HXW006", $"Package-origin '{identity}' at '{packagePath}' physically escapes active root '{root}'.");
+                    }
+
+                    packageRoots.Add((identity, packagePath));
                     continue;
                 }
 
@@ -106,7 +116,7 @@ public sealed class SourceMappingReconciliationTask : ITask
                     {
                         (packageId, packable) = EvaluatePackageIdentity(project);
                     }
-                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidProjectFileException or ArgumentException)
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidProjectFileException or ArgumentException or InvalidDataException)
                     {
                         skippedCandidates.Add($"'{project}': {exception.Message}");
                         continue;
@@ -135,7 +145,7 @@ public sealed class SourceMappingReconciliationTask : ITask
             foreach ((string identity, string packagePath) in packageRoots)
             {
                 string[] absent = [.. Projects.Select(project => project.GetMetadata("FullPath"))
-                    .Where(path => IsInPackageRoot(packagePath, path) && !File.Exists(path))
+                    .Where(path => IsInPackageRoot(packagePath, path) && (!File.Exists(path) || !HasGitMarker(packagePath)))
                     .Distinct(FilesystemPathRules.Comparison(packagePath) == StringComparison.OrdinalIgnoreCase
                         ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)];
                 if (absent.Length > 1)
@@ -160,27 +170,28 @@ public sealed class SourceMappingReconciliationTask : ITask
                     continue;
                 }
 
-                string packageId;
-                if (File.Exists(path))
+                string? unsupportedProjectMetadata = UnsupportedMetadata(project, ["Version", "VersionOverride", "OutputItemType", "Targets", "SetTargetFramework", "SetConfiguration", "SetPlatform", "GlobalPropertiesToRemove", "AdditionalProperties", "SkipGetTargetFrameworkProperties", "BuildReference", "Private", "ExternallyResolved", "IncludeAssets", "ExcludeAssets", "GeneratePathProperty", "TreatAsUsed", "PrunePackageReference"]);
+                if (unsupportedProjectMetadata is not null || string.Equals(project.GetMetadata("ReferenceOutputAssembly"), "false", StringComparison.OrdinalIgnoreCase))
                 {
-                    (packageId, bool packable) = EvaluatePackageIdentity(path);
-                    if (!packable)
-                    {
-                        return Error("HXW006", $"ProjectReference '{path}' is not a packable source project and cannot become a catalog package.");
-                    }
+                    return Error("HXW006", $"ProjectReference '{path}' in package-origin '{packageRoot.Identity}' cannot become a package because metadata '{unsupportedProjectMetadata ?? "ReferenceOutputAssembly"}' has no equivalent package behavior.");
                 }
-                else
+
+                if (!ManagePackageVersionsCentrally)
                 {
-                    string stem = Path.GetFileNameWithoutExtension(path);
-                    string[] candidates = [.. PackageVersions.Select(version => version.ItemSpec)
-                        .Where(id => MatchesIdentity(id, packageRoot.Identity))
-                        .Distinct(StringComparer.OrdinalIgnoreCase)];
-                    packageId = candidates.FirstOrDefault(id => id.Equals(stem, StringComparison.OrdinalIgnoreCase))
-                        ?? (candidates.Length == 1 ? candidates[0] : string.Empty);
-                    if (packageId.Length == 0)
-                    {
-                        return Error("HXW006", $"Uninitialized package root '{packageRoot.Path}' has no project '{path}'. Catalog candidates for '{packageRoot.Identity}' are {(candidates.Length == 0 ? "missing" : "ambiguous")}; declare one matching central PackageVersion or initialize the source to identify it.");
-                    }
+                    return Error("HXW006", $"ProjectReference '{path}' in package-origin '{packageRoot.Identity}' requires ManagePackageVersionsCentrally=true before it can become a versionless PackageReference.");
+                }
+
+                // Package mode chooses only from the central catalog. A working-tree
+                // project may be stale, and its PackageId cannot select a package.
+                string stem = Path.GetFileNameWithoutExtension(path);
+                string[] candidates = [.. PackageVersions.Select(version => version.ItemSpec)
+                    .Where(id => MatchesIdentity(id, packageRoot.Identity))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)];
+                string packageId = candidates.FirstOrDefault(id => id.Equals(stem, StringComparison.OrdinalIgnoreCase))
+                    ?? (candidates.Length == 1 ? candidates[0] : string.Empty);
+                if (packageId.Length == 0)
+                {
+                    return Error("HXW006", $"Package-origin '{packageRoot.Identity}' at '{packageRoot.Path}' cannot identify project '{path}' from the central catalog; candidates are {(candidates.Length == 0 ? "missing" : "ambiguous")}. Declare one matching PackageVersion or use a project filename matching a catalog package ID.");
                 }
 
                 if (!MatchesIdentity(packageId, packageRoot.Identity))
@@ -188,10 +199,10 @@ public sealed class SourceMappingReconciliationTask : ITask
                     return Error("HXW006", $"ProjectReference '{path}' resolves inside package-origin '{packageRoot.Path}', but package identity '{packageId}' does not match '{packageRoot.Identity}'.");
                 }
 
-                string? unsupportedProjectMetadata = UnsupportedMetadata(project, ["Version", "VersionOverride", "OutputItemType", "Targets", "SetTargetFramework", "SetConfiguration", "SetPlatform", "GlobalPropertiesToRemove", "AdditionalProperties", "SkipGetTargetFrameworkProperties", "BuildReference", "Private", "ExternallyResolved", "IncludeAssets", "ExcludeAssets"]);
-                if (unsupportedProjectMetadata is not null || string.Equals(project.GetMetadata("ReferenceOutputAssembly"), "false", StringComparison.OrdinalIgnoreCase))
+                if (Packages.Any(package => string.Equals(package.ItemSpec, packageId, StringComparison.OrdinalIgnoreCase))
+                    || selectedPackages.Any(package => string.Equals(package.ItemSpec, packageId, StringComparison.OrdinalIgnoreCase)))
                 {
-                    return Error("HXW006", $"ProjectReference '{path}' cannot become package '{packageId}' because metadata '{unsupportedProjectMetadata ?? "ReferenceOutputAssembly"}' has no equivalent package behavior.");
+                    return Error("HXW006", $"ProjectReference '{path}' would duplicate package '{packageId}' already declared by this project.");
                 }
 
                 TaskItem replacement = new(project) { ItemSpec = packageId };
@@ -237,27 +248,26 @@ public sealed class SourceMappingReconciliationTask : ITask
     private static bool IsProductionCandidate(string sourceTree, string project)
     {
         string[] parts = Path.GetRelativePath(sourceTree, project).Split(Path.DirectorySeparatorChar);
-        if (parts.Length < 2)
+        string projectDirectory;
+        string projectFile;
+        if (parts.Length == 2)
+        {
+            projectDirectory = parts[0];
+            projectFile = parts[1];
+        }
+        else if (parts.Length == 3 && string.Equals(parts[0], "libraries", FilesystemPathRules.Comparison(sourceTree)))
+        {
+            projectDirectory = parts[1];
+            projectFile = parts[2];
+        }
+        else
         {
             return false;
         }
 
-        // Production layouts include src/<project> and src/libraries/<project>.
-        // A matching PackageId in a utility or archived subtree must not win.
-        return !parts.SelectMany((part, index) => (index == parts.Length - 1 ? Path.GetFileNameWithoutExtension(part) : part)
-                .Split(['.', '-', '_'], StringSplitOptions.RemoveEmptyEntries))
-            .Any(token => token.Equals("tool", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("tools", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("sample", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("samples", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("evidence", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("archive", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("archived", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("test", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("tests", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("bin", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("obj", StringComparison.OrdinalIgnoreCase)
-                || token.Equals("references", StringComparison.OrdinalIgnoreCase));
+        string[] utilityDirectories = ["tools", "samples", "examples", "evidence", "archive", "archives", "archived", "test", "tests", "hosts", "_bmad-output"];
+        return !utilityDirectories.Contains(projectDirectory, StringComparer.OrdinalIgnoreCase)
+            && string.Equals(projectDirectory, Path.GetFileNameWithoutExtension(projectFile), FilesystemPathRules.Comparison(sourceTree));
     }
 
     private static bool MatchesIdentity(string packageId, string identity) => packageId.Equals(identity, StringComparison.OrdinalIgnoreCase)
@@ -287,7 +297,46 @@ public sealed class SourceMappingReconciliationTask : ITask
         };
     }
 
+    private static bool HasGitMarker(string root)
+    {
+        string marker = Path.Combine(root, ".git");
+        return File.Exists(marker) || Directory.Exists(marker) || new FileInfo(marker).LinkTarget is not null;
+    }
+
     private (string PackageId, bool Packable) EvaluatePackageIdentity(string project)
+    {
+        (string packageId, bool packable, string frameworks) = EvaluateProject(project, TargetFramework);
+        if (string.IsNullOrWhiteSpace(TargetFramework))
+        {
+            string? selectedId = null;
+            bool? selectedPackable = null;
+            foreach (string framework in frameworks.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                (string innerId, bool innerPackable, _) = EvaluateProject(project, framework);
+                if (selectedId is not null && !string.Equals(selectedId, innerId, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidDataException(
+                        $"Project '{project}' has framework-dependent PackageId values '{selectedId}' and '{innerId}' without a selected TargetFramework.");
+                }
+
+                if (selectedPackable is not null && selectedPackable != innerPackable)
+                {
+                    throw new InvalidDataException(
+                        $"Project '{project}' has framework-dependent IsPackable values without a selected TargetFramework.");
+                }
+
+                selectedId = innerId;
+                selectedPackable = innerPackable;
+            }
+
+            packageId = selectedId ?? packageId;
+            packable = selectedPackable ?? packable;
+        }
+
+        return (packageId, packable);
+    }
+
+    private (string PackageId, bool Packable, string Frameworks) EvaluateProject(string project, string framework)
     {
         using ProjectCollection projects = new();
         if (!string.IsNullOrWhiteSpace(Configuration))
@@ -300,15 +349,16 @@ public sealed class SourceMappingReconciliationTask : ITask
             projects.SetGlobalProperty("Platform", Platform);
         }
 
-        if (!string.IsNullOrWhiteSpace(TargetFramework))
+        if (!string.IsNullOrWhiteSpace(framework))
         {
-            projects.SetGlobalProperty("TargetFramework", TargetFramework);
+            projects.SetGlobalProperty("TargetFramework", framework);
         }
 
         Project evaluated = projects.LoadProject(project);
         string packageId = evaluated.GetPropertyValue("PackageId");
         return (string.IsNullOrWhiteSpace(packageId) ? Path.GetFileNameWithoutExtension(project) : packageId.Trim(),
-            !string.Equals(evaluated.GetPropertyValue("IsPackable"), "false", StringComparison.OrdinalIgnoreCase));
+            !string.Equals(evaluated.GetPropertyValue("IsPackable"), "false", StringComparison.OrdinalIgnoreCase),
+            evaluated.GetPropertyValue("TargetFrameworks"));
     }
 
     private bool Error(string ruleId, string message)

@@ -204,7 +204,7 @@ public sealed class WorkspaceRunPlanTests
             else
             {
                 fakeDotnet = Path.Combine(root, "fake-dotnet");
-                string script = "printf '%s\\n' \"$HEXALITH_SOURCE_MAPPING_HASH\" \"$CustomAfterMicrosoftCommonProps\" \"$CustomAfterDirectoryBuildTargets\" \"$AfterMicrosoftNETSdkTargets\" \"$Configuration\" \"$*\" > '" + capture + "'\n"
+                string script = "printf '%s\\n' \"$HEXALITH_SOURCE_MAPPING_HASH\" \"$CustomBeforeDirectoryBuildProps\" \"$CustomAfterMicrosoftCommonProps\" \"$CustomAfterDirectoryBuildTargets\" \"$AfterMicrosoftNETSdkTargets\" \"$Configuration\" \"$*\" > '" + capture + "'\n"
                     + "while [ $# -gt 0 ]; do if [ \"$1\" = '--results-directory' ]; then shift; results=\"$1\"; fi; shift; done\n"
                     + "mkdir -p \"$results\"\n"
                     + "printf '%s' '<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" notExecuted=\"0\" /></ResultSummary></TestRun>' > \"$results/native.trx\"";
@@ -221,12 +221,13 @@ public sealed class WorkspaceRunPlanTests
 
             result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
             captured[0].ShouldBe(mapping.ContentHash);
-            captured[1].ShouldBe(SourceMappingMaterializer.PropsPath(plan.Workspace));
-            captured[2].ShouldBe(SourceMappingMaterializer.LatePropsPath(plan.Workspace));
-            captured[3].ShouldBe(SourceMappingMaterializer.TargetsPath(plan.Workspace));
-            captured[4].ShouldBe(configuration);
-            captured[5].ShouldContain("--configuration " + configuration);
-            captured[5].ShouldContain(platform == "mtp" ? "--project" : "--logger");
+            captured[1].ShouldBe(SourceMappingMaterializer.TargetsPath(plan.Workspace));
+            captured[2].ShouldBe(SourceMappingMaterializer.PropsPath(plan.Workspace));
+            captured[3].ShouldBe(SourceMappingMaterializer.LatePropsPath(plan.Workspace));
+            captured[4].ShouldBe(SourceMappingMaterializer.FinalTargetsPath(plan.Workspace));
+            captured[5].ShouldBe(configuration);
+            captured[6].ShouldContain("--configuration " + configuration);
+            captured[6].ShouldContain(platform == "mtp" ? "--project" : "--logger");
         }
         finally
         {

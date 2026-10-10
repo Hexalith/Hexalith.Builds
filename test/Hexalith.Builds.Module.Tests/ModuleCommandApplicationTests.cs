@@ -45,7 +45,7 @@ public sealed class ModuleCommandApplicationTests
             }
           ],
           "platform": {
-            "eventStoreVersion": "3.117.1",
+            "eventStoreVersion": "3.119.0",
             "daprRuntimeVersion": "1.18.2",
             "daprSdkVersion": "1.18.10",
             "frontComposerVersion": "4.6.0"

@@ -22,9 +22,28 @@ public static class WorkspaceRootResolver
     public static async Task<SourceMapping> ResolveAsync(string manifestPath, WorkspaceMode mode, CancellationToken cancellationToken)
     {
         string manifest = Path.GetFullPath(manifestPath);
-        string directory = Path.GetDirectoryName(manifest)!;
+        string directory = ExistingAncestor(Path.GetDirectoryName(manifest)!);
         CompositionProcessResult probe = await GitWorkspaceProcess.RunAsync(directory, cancellationToken, "rev-parse", "--show-toplevel").ConfigureAwait(false);
-        if (!probe.Started || probe.TimedOut)
+        return await ResolveAsync(manifest, mode, probe, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Resolves from a completed initial Git probe, including an unavailable executable.</summary>
+    /// <param name="manifestPath">The validated manifest path.</param>
+    /// <param name="mode">The tool-selected mode.</param>
+    /// <param name="probe">The initial Git probe result.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The mapping.</returns>
+    /// <exception cref="WorkspaceMappingException">The active root or a required reference is invalid.</exception>
+    internal static async Task<SourceMapping> ResolveAsync(string manifestPath, WorkspaceMode mode, CompositionProcessResult probe, CancellationToken cancellationToken)
+    {
+        string manifest = Path.GetFullPath(manifestPath);
+        string directory = ExistingAncestor(Path.GetDirectoryName(manifest)!);
+        if (mode is not (WorkspaceMode.Source or WorkspaceMode.Package))
+        {
+            throw Failure("HXW001", $"Unsupported workspace mode '{mode}'.", manifest);
+        }
+
+        if (probe.TimedOut || probe.OutputTruncated)
         {
             throw Failure("HXW001", $"Cannot inspect Git workspace containing manifest '{manifest}': Git did not complete.", manifest);
         }
@@ -46,11 +65,11 @@ public static class WorkspaceRootResolver
             return new SourceMapping(mode, standalone, identity, Array.AsReadOnly([new SourceMappingEntry(identity, "source", standalone)]), false);
         }
 
-        string root = Path.GetFullPath(probe.Output.Trim());
+        string root = Path.GetFullPath(TrimGitLineEnding(probe.Output));
         while (true)
         {
             CompositionProcessResult parent = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "rev-parse", "--show-superproject-working-tree").ConfigureAwait(false);
-            if (!parent.Started || parent.TimedOut || parent.ExitCode != 0)
+            if (!parent.Started || parent.TimedOut || parent.OutputTruncated || parent.ExitCode != 0)
             {
                 throw Failure("HXW001", $"Cannot inspect parent Git workspace of '{root}'.", root);
             }
@@ -60,7 +79,7 @@ public static class WorkspaceRootResolver
                 break;
             }
 
-            string next = Path.GetFullPath(parent.Output.Trim());
+            string next = Path.GetFullPath(TrimGitLineEnding(parent.Output));
             if (next == root)
             {
                 break;
@@ -69,14 +88,14 @@ public static class WorkspaceRootResolver
             root = next;
         }
 
-        if (!RepositoryPathResolver.TryResolveExistingFile(root, Path.GetRelativePath(root, manifest), out string physicalManifest)
-            || !RepositoryPathResolver.TryResolvePathWithinRoot(root, ".", out string physicalRoot))
+        string declaredManifest = Path.GetRelativePath(root, manifest);
+        if (!RepositoryPathResolver.TryResolvePathWithinRoot(root, declaredManifest, out _))
         {
-            throw Failure("HXW001", $"Manifest '{manifest}' physically escapes active root '{root}' or is unavailable.", manifest);
+            throw Failure("HXW001", $"Manifest '{manifest}' physically escapes active root '{root}'.", manifest);
         }
 
         IReadOnlyList<string> references = await ReadDirectReferencesAsync(root, cancellationToken).ConfigureAwait(false);
-        string relativeManifest = Path.GetRelativePath(physicalRoot, physicalManifest).Replace('\\', '/');
+        string relativeManifest = declaredManifest.Replace('\\', '/');
         if (relativeManifest == ".." || relativeManifest.StartsWith("../", StringComparison.Ordinal) || Path.IsPathRooted(relativeManifest))
         {
             throw Failure("HXW001", $"Manifest '{manifest}' is outside active root '{root}'.", manifest);
@@ -91,7 +110,7 @@ public static class WorkspaceRootResolver
 
         string activeRoot = activeReference is null ? root : Path.Combine(root, activeReference.Replace('/', Path.DirectorySeparatorChar));
         string activeIdentity = Path.GetFileName(activeRoot);
-        if (!RepositoryPathResolver.TryResolvePathWithinRoot(root, Path.GetRelativePath(root, activeRoot) == "." ? Path.GetFileName(manifest) : Path.GetRelativePath(root, activeRoot), out _))
+        if (!RepositoryPathResolver.TryResolvePathWithinRoot(root, Path.GetRelativePath(root, activeRoot), out _))
         {
             throw Failure("HXW001", $"Active module '{activeIdentity}' escapes active root '{root}': '{activeRoot}'.", activeRoot);
         }
@@ -121,6 +140,13 @@ public static class WorkspaceRootResolver
             "HexalithSourceMappingApplies", "HexalithSourceMappingMode", "HexalithSourceMappingHash",
             "HexalithSourceMappingRoot", "HexalithSourceMappingActiveModule", "HexalithSourceMappingHasGit",
         ];
+        string? emptySuffix = entries.Select(entry => entry.Identity)
+            .FirstOrDefault(identity => SourceMapping.PropertySuffix(identity).Length == 0);
+        if (emptySuffix is not null)
+        {
+            throw Failure("HXW002", $"Identity '{emptySuffix}' generates an empty MSBuild property suffix.", root);
+        }
+
         string? reserved = entries.SelectMany(entry => GeneratedPropertyNames(entry.Identity).Select(name => (Name: name, entry.Identity)))
             .FirstOrDefault(property => fixedNames.Contains(property.Name, StringComparer.OrdinalIgnoreCase)
                 || ((string.Equals(property.Name, "HexalithCommonsHttpFromSource", StringComparison.OrdinalIgnoreCase)
@@ -147,12 +173,45 @@ public static class WorkspaceRootResolver
             throw Failure("HXW002", $"Generated MSBuild property names collide for identities {collision}.", root);
         }
 
+        foreach (string reference in references)
+        {
+            string path = Path.Combine(root, reference.Replace('/', Path.DirectorySeparatorChar));
+            if (Directory.Exists(path) && !RepositoryPathResolver.TryResolvePathWithinRoot(root, reference, out _))
+            {
+                throw Failure("HXW002", $"Direct reference '{Path.GetFileName(reference)}' at '{path}' physically escapes active root '{root}'.", path);
+            }
+        }
+
         await SubmoduleInitializer.CheckNestedReferencesAsync(root, references, cancellationToken).ConfigureAwait(false);
-        await SubmoduleInitializer.ValidateRecordedGitlinksAsync(root, references, cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<string, string> recordedGitlinks = await SubmoduleInitializer.ValidateRecordedGitlinksAsync(root, references, cancellationToken).ConfigureAwait(false);
         if (mode == WorkspaceMode.Source)
         {
             await SubmoduleInitializer.InitializeDirectAsync(root, references, cancellationToken).ConfigureAwait(false);
         }
+        else
+        {
+            await SubmoduleInitializer.ValidateInitializedPackageRootsAsync(root, references.Where(reference => reference != activeReference), recordedGitlinks, cancellationToken).ConfigureAwait(false);
+            if (activeReference is not null)
+            {
+                await SubmoduleInitializer.InitializeDirectAsync(root, [activeReference], cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        if (!RepositoryPathResolver.TryResolveExistingFile(root, declaredManifest, out string physicalManifest)
+            || !RepositoryPathResolver.TryResolvePathWithinRoot(root, ".", out string physicalRoot))
+        {
+            throw Failure("HXW001", $"Manifest '{manifest}' physically escapes active root '{root}' or is unavailable after checkout.", manifest);
+        }
+
+        string physicalRelative = Path.GetRelativePath(physicalRoot, physicalManifest).Replace('\\', '/');
+        string? physicalReference = references.FirstOrDefault(reference => physicalRelative.StartsWith(reference + "/", pathComparison));
+#pragma warning disable IDE0046 // Keep a single diagnostic for both physical ownership failures.
+        if ((physicalRelative.StartsWith("references/", pathComparison) && physicalReference is null)
+            || !string.Equals(activeReference, physicalReference, StringComparison.Ordinal))
+        {
+            throw Failure("HXW001", $"Manifest '{manifest}' does not physically belong to its declared active module '{activeRoot}'.", manifest);
+        }
+#pragma warning restore IDE0046
 
         return new SourceMapping(mode, root, activeIdentity, Array.AsReadOnly(entries.OrderBy(entry => entry.Identity, StringComparer.Ordinal).ToArray()), true);
     }
@@ -167,16 +226,30 @@ public static class WorkspaceRootResolver
         string gitmodules = Path.Combine(root, ".gitmodules");
         if (!File.Exists(gitmodules))
         {
-            CompositionProcessResult tracked = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "--", ".gitmodules", "references").ConfigureAwait(false);
-            if (!tracked.Started || tracked.ExitCode != 0)
+            if (new FileInfo(gitmodules).LinkTarget is not null)
+            {
+                throw Failure("HXW002", $"Reference declarations '{gitmodules}' point to a missing target.", gitmodules);
+            }
+
+            CompositionProcessResult tracked = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "-z", "--", ".gitmodules", "references").ConfigureAwait(false);
+            if (!tracked.Started || tracked.TimedOut || tracked.OutputTruncated || tracked.ExitCode != 0)
             {
                 throw Failure("HXW002", $"Cannot inspect tracked reference declarations in '{root}'.", gitmodules);
             }
 
 #pragma warning disable IDE0046 // Keep separate diagnostics for Git inspection and missing working-tree declarations.
-            if (!string.IsNullOrWhiteSpace(tracked.Output)
-                && tracked.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Any(line => line.Contains("\t.gitmodules", StringComparison.Ordinal)
-                    || (line.StartsWith("160000 ", StringComparison.Ordinal) && line.Contains("\treferences/", StringComparison.Ordinal))))
+            if (!string.IsNullOrEmpty(tracked.Output)
+                && tracked.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries).Any(record =>
+                {
+                    int separator = record.IndexOf('\t', StringComparison.Ordinal);
+                    if (separator < 0)
+                    {
+                        throw Failure("HXW002", $"Invalid tracked reference record in '{root}'.", gitmodules);
+                    }
+
+                    string path = record[(separator + 1)..];
+                    return path == ".gitmodules" || (record.StartsWith("160000 ", StringComparison.Ordinal) && path.StartsWith("references/", StringComparison.Ordinal));
+                }))
             {
                 throw Failure("HXW002", $"Working-tree '{gitmodules}' is missing while Git still tracks direct reference declarations or gitlinks.", gitmodules);
             }
@@ -191,7 +264,7 @@ public static class WorkspaceRootResolver
         }
 
         CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "config", "-z", "--file", gitmodules, "--get-regexp", "^submodule\\..*\\.path$").ConfigureAwait(false);
-        if (!result.Started || (result.ExitCode != 0 && result.ExitCode != 1))
+        if (!result.Started || result.TimedOut || result.OutputTruncated || (result.ExitCode != 0 && result.ExitCode != 1))
         {
             throw Failure("HXW002", $"Cannot read direct references from '{gitmodules}'.", gitmodules);
         }
@@ -221,7 +294,8 @@ public static class WorkspaceRootResolver
 
                 if (!RepositoryPathResolver.TryResolvePathWithinRoot(root, path, out _))
                 {
-                    throw Failure("HXW002", $"Reference '{path}' escapes active root '{root}'.", path);
+                    string absolute = Path.Combine(root, path.Replace('/', Path.DirectorySeparatorChar));
+                    throw Failure("HXW002", $"Direct reference '{Path.GetFileName(path)}' at '{absolute}' physically escapes active root '{root}'.", absolute);
                 }
 
                 references.Add(path);
@@ -243,17 +317,22 @@ public static class WorkspaceRootResolver
         string manifest = Path.GetFullPath(manifestPath);
         CompositionProcessResult probe = await GitWorkspaceProcess.RunAsync(Path.GetDirectoryName(manifest)!, cancellationToken, "rev-parse", "--show-toplevel").ConfigureAwait(false);
         string root;
-        if (!probe.Started || probe.TimedOut || probe.ExitCode != 0 || string.IsNullOrWhiteSpace(probe.Output))
+        if (!probe.Started || probe.TimedOut || probe.OutputTruncated || probe.ExitCode != 0 || string.IsNullOrWhiteSpace(probe.Output))
         {
+            if (HasGitMarker(Path.GetDirectoryName(manifest)!))
+            {
+                return false;
+            }
+
             root = Path.GetFullPath(ManifestPathValidator.FindRepositoryRoot(manifest));
         }
         else
         {
-            root = Path.GetFullPath(probe.Output.Trim());
+            root = Path.GetFullPath(TrimGitLineEnding(probe.Output));
             while (true)
             {
                 CompositionProcessResult parent = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "rev-parse", "--show-superproject-working-tree").ConfigureAwait(false);
-                if (!parent.Started || parent.TimedOut || parent.ExitCode != 0)
+                if (!parent.Started || parent.TimedOut || parent.OutputTruncated || parent.ExitCode != 0)
                 {
                     return false;
                 }
@@ -263,7 +342,7 @@ public static class WorkspaceRootResolver
                     break;
                 }
 
-                string next = Path.GetFullPath(parent.Output.Trim());
+                string next = Path.GetFullPath(TrimGitLineEnding(parent.Output));
                 if (next == root)
                 {
                     break;
@@ -273,7 +352,16 @@ public static class WorkspaceRootResolver
             }
         }
 
-        if (!RepositoryPathResolver.TryResolveExistingFile(root, Path.GetRelativePath(root, manifest), out string physicalManifest)
+        string declaredPath = Path.GetRelativePath(root, manifest);
+        if (!File.Exists(manifest) && new FileInfo(manifest).LinkTarget is null
+            && RepositoryPathResolver.TryResolvePathWithinRoot(root, declaredPath, out _))
+        {
+            string missingRelative = declaredPath.Replace('\\', '/');
+            return missingRelative != ".." && !missingRelative.StartsWith("../", StringComparison.Ordinal)
+                && !missingRelative.StartsWith("references/", FilesystemPathRules.Comparison(root));
+        }
+
+        if (!RepositoryPathResolver.TryResolveExistingFile(root, declaredPath, out string physicalManifest)
             || !RepositoryPathResolver.TryResolvePathWithinRoot(root, ".", out string physicalRoot))
         {
             return false;
@@ -309,12 +397,37 @@ public static class WorkspaceRootResolver
         }
     }
 
+    private static string ExistingAncestor(string directory)
+    {
+        for (string? current = directory; current is not null; current = Path.GetDirectoryName(current))
+        {
+            if (Directory.Exists(current))
+            {
+                return current;
+            }
+        }
+
+        return directory;
+    }
+
+    private static string TrimGitLineEnding(string output)
+    {
+#pragma warning disable IDE0046 // Keep distinct CRLF and LF handling without nested conditionals.
+        if (output.EndsWith("\r\n", StringComparison.Ordinal))
+        {
+            return output[..^2];
+        }
+#pragma warning restore IDE0046
+
+        return output.EndsWith('\n') ? output[..^1] : output;
+    }
+
     private static bool HasGitMarker(string directory)
     {
         for (string? current = directory; current is not null; current = Path.GetDirectoryName(current))
         {
             string marker = Path.Combine(current, ".git");
-            if (File.Exists(marker) || Directory.Exists(marker))
+            if (File.Exists(marker) || Directory.Exists(marker) || new FileInfo(marker).LinkTarget is not null)
             {
                 return true;
             }

@@ -27,8 +27,8 @@ internal static class SubmoduleInitializer
         {
             string path = Path.Combine(root, reference.Replace('/', Path.DirectorySeparatorChar));
             string identity = Path.GetFileName(path);
-            CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "submodule", "update", "--init", "--", reference).ConfigureAwait(false);
-            if (!result.Started || result.ExitCode != 0)
+            CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "submodule", "update", "--init", "--checkout", "--", reference).ConfigureAwait(false);
+            if (!result.Started || result.TimedOut || result.OutputTruncated || result.ExitCode != 0)
             {
                 throw Missing(identity, path, "Git could not check out the recorded gitlink.");
             }
@@ -43,8 +43,8 @@ internal static class SubmoduleInitializer
             CompositionProcessResult recorded = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "--", reference).ConfigureAwait(false);
             CompositionProcessResult checkedOut = await GitWorkspaceProcess.RunAsync(path, cancellationToken, "rev-parse", "HEAD").ConfigureAwait(false);
             string[] parts = recorded.Output.Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
-            if (!recorded.Started || recorded.ExitCode != 0 || parts.Length < 4 || parts[0] != "160000" || parts[2] != "0"
-                || !checkedOut.Started || checkedOut.ExitCode != 0
+            if (!recorded.Started || recorded.TimedOut || recorded.OutputTruncated || recorded.ExitCode != 0 || parts.Length < 4 || parts[0] != "160000" || parts[2] != "0"
+                || !checkedOut.Started || checkedOut.TimedOut || checkedOut.OutputTruncated || checkedOut.ExitCode != 0
                 || !string.Equals(parts[1], checkedOut.Output.Trim(), StringComparison.OrdinalIgnoreCase))
             {
                 throw Missing(identity, path, $"Checkout HEAD '{checkedOut.Output.Trim()}' does not match the root's staged gitlink '{(parts.Length >= 2 ? parts[1] : "missing")}'.");
@@ -56,16 +56,18 @@ internal static class SubmoduleInitializer
     /// <param name="root">The active superproject root.</param>
     /// <param name="references">The declared direct paths.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task for index validation.</returns>
+    /// <returns>The staged commit for each validated direct reference.</returns>
     /// <exception cref="WorkspaceMappingException">A declaration has no matching stage-zero gitlink.</exception>
-    internal static async Task ValidateRecordedGitlinksAsync(string root, IReadOnlyList<string> references, CancellationToken cancellationToken)
+    internal static async Task<IReadOnlyDictionary<string, string>> ValidateRecordedGitlinksAsync(string root, IReadOnlyList<string> references, CancellationToken cancellationToken)
     {
+        Dictionary<string, string> recorded = new(FilesystemPathRules.Comparison(root) == StringComparison.OrdinalIgnoreCase
+            ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         foreach (string reference in references)
         {
             string identity = Path.GetFileName(reference);
             CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "-z", "--", reference).ConfigureAwait(false);
             string[] records = result.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries);
-            if (!result.Started || result.TimedOut || result.ExitCode != 0 || records.Length != 1)
+            if (!result.Started || result.TimedOut || result.OutputTruncated || result.ExitCode != 0 || records.Length != 1)
             {
                 throw InvalidGitlink(identity, reference, root, "expected exactly one stage-zero gitlink in the index");
             }
@@ -78,6 +80,42 @@ internal static class SubmoduleInitializer
                 || !string.Equals(indexedPath, reference, FilesystemPathRules.Comparison(root)))
             {
                 throw InvalidGitlink(identity, reference, root, $"index entry '{records[0]}' is not the declared stage-zero gitlink");
+            }
+
+            recorded.Add(reference, fields[1]);
+        }
+
+        return recorded;
+    }
+
+    /// <summary>Rejects initialized package-origin checkouts that do not match their staged gitlinks.</summary>
+    /// <param name="root">The active superproject root.</param>
+    /// <param name="references">Package-origin direct references.</param>
+    /// <param name="recorded">Validated staged gitlink commits.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task for checkout validation.</returns>
+    /// <exception cref="WorkspaceMappingException">An initialized checkout is stale or cannot be inspected.</exception>
+    internal static async Task ValidateInitializedPackageRootsAsync(
+        string root,
+        IEnumerable<string> references,
+        IReadOnlyDictionary<string, string> recorded,
+        CancellationToken cancellationToken)
+    {
+        foreach (string reference in references)
+        {
+            string path = Path.Combine(root, reference.Replace('/', Path.DirectorySeparatorChar));
+            if (!IsInitialized(path))
+            {
+                continue;
+            }
+
+            string identity = Path.GetFileName(path);
+            CompositionProcessResult checkedOut = await GitWorkspaceProcess.RunAsync(path, cancellationToken, "rev-parse", "HEAD").ConfigureAwait(false);
+            string actual = TrimGitLineEnding(checkedOut.Output);
+            if (!checkedOut.Started || checkedOut.TimedOut || checkedOut.OutputTruncated || checkedOut.ExitCode != 0
+                || !string.Equals(actual, recorded[reference], StringComparison.OrdinalIgnoreCase))
+            {
+                throw Missing(identity, path, $"Package-origin checkout HEAD '{actual}' does not match the root's staged gitlink '{recorded[reference]}'; deinitialize the stale checkout or restore the recorded commit.");
             }
         }
     }
@@ -99,10 +137,13 @@ internal static class SubmoduleInitializer
         }
     }
 
-    private static bool IsInitialized(string path) => Directory.Exists(path)
-        && (File.Exists(Path.Combine(path, ".git")) || Directory.Exists(Path.Combine(path, ".git")));
-
-    private static async Task CheckNestedAsync(string root, string repository, CancellationToken cancellationToken)
+    /// <summary>Inspects a direct reference's nested directories and reports filesystem failures with HXW context.</summary>
+    /// <param name="root">The active superproject root.</param>
+    /// <param name="repository">The direct reference path.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task for the inspection.</returns>
+    /// <exception cref="WorkspaceMappingException">Nested ownership is invalid or cannot be inspected.</exception>
+    internal static async Task CheckNestedAsync(string root, string repository, CancellationToken cancellationToken)
     {
         Stack<string> pending = new();
         pending.Push(repository);
@@ -110,51 +151,92 @@ internal static class SubmoduleInitializer
         {
             cancellationToken.ThrowIfCancellationRequested();
             string current = pending.Pop();
-            foreach (string child in Directory.EnumerateDirectories(current))
+            string[] children;
+            try
+            {
+                children = [.. Directory.EnumerateDirectories(current)];
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                throw InvalidNestedOwnership(repository, current);
+            }
+
+            foreach (string child in children)
             {
                 if (Path.GetFileName(child) == ".git")
                 {
                     continue;
                 }
 
-                if ((File.GetAttributes(child) & FileAttributes.ReparsePoint) != 0)
+                try
                 {
-                    continue;
-                }
-
-                if (IsInitialized(child))
-                {
-                    if (await IsOwnedSubmoduleAsync(root, repository, child, cancellationToken).ConfigureAwait(false))
+                    if ((File.GetAttributes(child) & FileAttributes.ReparsePoint) != 0)
                     {
-                        string relative = Path.GetRelativePath(repository, child);
-                        throw new WorkspaceMappingException(new ToolDiagnostic(
-                            "HXW003",
-                            ToolPhase.Topology,
-                            ToolFailureCategory.TopologyOrLifecycle,
-                            $"Nested submodule '{child}' is initialized below direct reference '{repository}'.",
-                            child,
-                            $"Deinitialize it with git -C '{repository}' submodule deinit -- '{relative}' before retrying."));
+                        continue;
                     }
 
-                    // An independent Git repository owns its own descendants.
-                    continue;
-                }
+                    if (IsInitialized(child))
+                    {
+                        bool owned;
+                        try
+                        {
+                            owned = await IsOwnedSubmoduleAsync(root, repository, child, cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (WorkspaceMappingException)
+                        {
+                            throw InvalidNestedOwnership(repository, child);
+                        }
 
-                pending.Push(child);
+                        if (owned)
+                        {
+                            string relative = Path.GetRelativePath(repository, child);
+                            throw new WorkspaceMappingException(new ToolDiagnostic(
+                                "HXW003",
+                                ToolPhase.Topology,
+                                ToolFailureCategory.TopologyOrLifecycle,
+                                $"Nested submodule '{child}' is initialized below direct reference '{repository}'.",
+                                child,
+                                $"Deinitialize it with git -C '{repository}' submodule deinit -- '{relative}' before retrying."));
+                        }
+
+                        // An independent Git repository owns its own descendants.
+                        continue;
+                    }
+
+                    pending.Push(child);
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                {
+                    throw InvalidNestedOwnership(repository, child);
+                }
             }
         }
     }
 
+    private static bool IsInitialized(string path) => Directory.Exists(path)
+        && (File.Exists(Path.Combine(path, ".git")) || Directory.Exists(Path.Combine(path, ".git"))
+            || new FileInfo(Path.Combine(path, ".git")).LinkTarget is not null);
+
     private static async Task<bool> IsOwnedSubmoduleAsync(string root, string repository, string child, CancellationToken cancellationToken)
     {
+        string marker = Path.Combine(child, ".git");
+        if (!File.Exists(marker) && !Directory.Exists(marker) && new FileInfo(marker).LinkTarget is not null)
+        {
+            throw InvalidNestedOwnership(child);
+        }
+
         CompositionProcessResult parent = await GitWorkspaceProcess.RunAsync(child, cancellationToken, "rev-parse", "--show-superproject-working-tree").ConfigureAwait(false);
-        if (parent.Started && parent.ExitCode == 0 && !string.IsNullOrWhiteSpace(parent.Output)
-            && RepositoryPathResolver.TryResolvePathWithinRoot(repository, Path.GetRelativePath(repository, parent.Output.Trim()), out _))
+        if (!parent.Started || parent.TimedOut || parent.OutputTruncated || parent.ExitCode != 0)
+        {
+            throw InvalidNestedOwnership(child);
+        }
+
+        if (!string.IsNullOrWhiteSpace(parent.Output)
+            && RepositoryPathResolver.TryResolvePathWithinRoot(repository, Path.GetRelativePath(repository, TrimGitLineEnding(parent.Output)), out _))
         {
             return true;
         }
 
-        string marker = Path.Combine(child, ".git");
         if (!File.Exists(marker))
         {
             // Old-form submodules retain a directory-form .git marker. A prior
@@ -169,10 +251,16 @@ internal static class SubmoduleInitializer
                 "--raw",
                 "--",
                 relative).ConfigureAwait(false);
-            return history.Started && history.ExitCode == 0
-                && history.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                    .Any(line => line.StartsWith(":160000 ", StringComparison.Ordinal)
-                        || line.Contains(" 160000 ", StringComparison.Ordinal));
+#pragma warning disable IDE0046 // Keep an explicit failure before inspecting bounded Git history.
+            if (!history.Started || history.TimedOut || history.OutputTruncated || history.ExitCode != 0)
+            {
+                throw InvalidNestedOwnership(child);
+            }
+#pragma warning restore IDE0046
+
+            return history.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Any(line => line.StartsWith(":160000 ", StringComparison.Ordinal)
+                    || line.Contains(" 160000 ", StringComparison.Ordinal));
         }
 
         string markerText = await File.ReadAllTextAsync(marker, cancellationToken).ConfigureAwait(false);
@@ -181,7 +269,7 @@ internal static class SubmoduleInitializer
             return false;
         }
 
-        string gitDirectory = Path.GetFullPath(Path.Combine(child, markerText["gitdir: ".Length..].Trim()));
+        string gitDirectory = Path.GetFullPath(Path.Combine(child, TrimGitLineEnding(markerText["gitdir: ".Length..])));
         return await IsWithinGitModulesAsync(root, gitDirectory, cancellationToken).ConfigureAwait(false)
             || await IsWithinGitModulesAsync(repository, gitDirectory, cancellationToken).ConfigureAwait(false);
     }
@@ -189,12 +277,13 @@ internal static class SubmoduleInitializer
     private static async Task<bool> IsWithinGitModulesAsync(string repository, string gitDirectory, CancellationToken cancellationToken)
     {
         CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(repository, cancellationToken, "rev-parse", "--absolute-git-dir").ConfigureAwait(false);
-        if (!result.Started || result.ExitCode != 0 || string.IsNullOrWhiteSpace(result.Output))
+        if (!result.Started || result.TimedOut || result.OutputTruncated || result.ExitCode != 0
+            || string.IsNullOrWhiteSpace(result.Output))
         {
-            return false;
+            throw InvalidNestedOwnership(gitDirectory);
         }
 
-        string modules = Path.Combine(result.Output.Trim(), "modules");
+        string modules = Path.Combine(TrimGitLineEnding(result.Output), "modules");
         if (Directory.Exists(modules)
             && RepositoryPathResolver.TryResolvePathWithinRoot(modules, Path.GetRelativePath(modules, gitDirectory), out _))
         {
@@ -215,6 +304,32 @@ internal static class SubmoduleInitializer
         $"Required source '{identity}' at '{path}' is unavailable: {reason}",
         path,
         "Check the root gitlink and local submodule source, then retry."));
+
+    private static WorkspaceMappingException InvalidNestedOwnership(string path) => new(new ToolDiagnostic(
+        "HXW003",
+        ToolPhase.Topology,
+        ToolFailureCategory.TopologyOrLifecycle,
+        $"Cannot inspect nested Git ownership of '{path}'.",
+        path));
+
+    private static WorkspaceMappingException InvalidNestedOwnership(string repository, string nestedPath) => new(new ToolDiagnostic(
+        "HXW003",
+        ToolPhase.Topology,
+        ToolFailureCategory.TopologyOrLifecycle,
+        $"Cannot inspect nested Git ownership of '{nestedPath}' below direct reference '{Path.GetFileName(repository)}' at '{repository}'.",
+        nestedPath));
+
+    private static string TrimGitLineEnding(string output)
+    {
+#pragma warning disable IDE0046 // Keep distinct CRLF and LF handling without nested conditionals.
+        if (output.EndsWith("\r\n", StringComparison.Ordinal))
+        {
+            return output[..^2];
+        }
+#pragma warning restore IDE0046
+
+        return output.EndsWith('\n') ? output[..^1] : output;
+    }
 
     private static WorkspaceMappingException InvalidGitlink(string identity, string reference, string root, string reason) => new(new ToolDiagnostic(
         "HXW002",

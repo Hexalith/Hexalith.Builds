@@ -88,6 +88,17 @@ public static class ModuleCommandExecutionService
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            // A direct reference may contain a stale or absent working-tree manifest.
+            // Resolve its recorded gitlink before parsing any of its bytes.
+            SourceMapping? preResolvedMapping = null;
+            if (command != ModuleInvocationCommand.Down
+                && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath)
+                && !await WorkspaceRootResolver.IsRootManifestAsync(manifestPath, cancellationToken).ConfigureAwait(false))
+            {
+                preResolvedMapping = await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
+            }
+
             ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
             if (!manifestResult.IsValid)
             {
@@ -280,7 +291,8 @@ public static class ModuleCommandExecutionService
             {
                 CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
                 loadedManifest = null;
-                SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
+                SourceMapping mapping = preResolvedMapping
+                    ?? await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
                 options = options with { SourceMapping = mapping };
 
                 // The recorded gitlink can replace the manifest in an already initialized direct checkout.
@@ -430,9 +442,28 @@ public static class ModuleCommandExecutionService
                         cancellationToken).ConfigureAwait(false);
                 }
 
+                ToolDiagnostic? primaryNativePathDiagnostic = null;
                 PersistedProfileDefinition? persistedProfile = command == ModuleInvocationCommand.Test
-                    ? PersistedProfileLoader.TryLoad(manifest, manifestPath, profile, filter)
+                    ? PersistedProfileLoader.TryLoad(manifest, manifestPath, profile, filter, out primaryNativePathDiagnostic)
                     : null;
+                if (primaryNativePathDiagnostic is not null)
+                {
+                    return await WriteResultAsync(
+                        "failed",
+                        ToolOutcome.Passed().Fail(primaryNativePathDiagnostic.Phase, primaryNativePathDiagnostic.Category, primaryNativePathDiagnostic.RuleId, ToolExitCode.UsageOrManifest),
+                        [primaryNativePathDiagnostic],
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
                 if (persistedProfile?.NativeTests is { } primaryTests)
                 {
                     string nativeRoot = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));

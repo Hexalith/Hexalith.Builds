@@ -224,11 +224,16 @@ dotnet tool run hexalith-module test --manifest module/hexalith-projects.module.
 dotnet tool run hexalith-evidence validate _bmad-output/planning-artifacts/implementation-readiness-traceability-matrix.yaml
 ```
 
-`run` and `test` accept `--mode source|package` and default to `source`. CI uses
-`--mode package`. The tool resolves the outermost Git superproject containing
+`run` and `test` accept `--mode source|package` and default to `source`. CI jobs
+that invoke this tool should pass `--mode package` explicitly. The tool resolves
+the outermost Git superproject containing
 the manifest once, selects the active module and every direct
 `references/*` entry in that root's `.gitmodules`, and writes the resulting
 mapping to the run workspace (`source-mapping/mapping.json`) and `plan.json`.
+Both modes require each declared direct reference to have exactly one staged
+Git gitlink. Package mode checks out the active module if its manifest is in a
+direct reference, while other package-origin references stay uninitialized.
+A missing or mismatched declaration fails before any build or launch.
 Native tests and module projects launched by the AppHost receive the same
 mapping hash and generated MSBuild imports. Builds verify the persisted mapping
 against that hash before choosing dependencies. A workspace outside Git maps

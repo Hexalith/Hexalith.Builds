@@ -64,9 +64,10 @@ public sealed class WorkspaceAppHostTests
                 }
 
                 environment["HEXALITH_SOURCE_MAPPING_HASH"].ShouldBe(mapping.ContentHash);
+                environment["CustomBeforeDirectoryBuildProps"].ShouldBe(SourceMappingMaterializer.TargetsPath(plan.Workspace));
                 environment["CustomAfterMicrosoftCommonProps"].ShouldBe(SourceMappingMaterializer.PropsPath(plan.Workspace));
                 environment["CustomAfterDirectoryBuildTargets"].ShouldBe(SourceMappingMaterializer.LatePropsPath(plan.Workspace));
-                environment["AfterMicrosoftNETSdkTargets"].ShouldBe(SourceMappingMaterializer.TargetsPath(plan.Workspace));
+                environment["AfterMicrosoftNETSdkTargets"].ShouldBe(SourceMappingMaterializer.FinalTargetsPath(plan.Workspace));
                 environment["Configuration"].ShouldBe(configuration);
             }
         }

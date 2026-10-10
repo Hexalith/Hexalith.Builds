@@ -163,6 +163,7 @@ internal static class CompositionTestFiles
                 File.WriteAllLines(capture,
                 [
                     Environment.GetEnvironmentVariable("HEXALITH_SOURCE_MAPPING_HASH") ?? "",
+                    Environment.GetEnvironmentVariable("CustomBeforeDirectoryBuildProps") ?? "",
                     Environment.GetEnvironmentVariable("CustomAfterMicrosoftCommonProps") ?? "",
                     Environment.GetEnvironmentVariable("CustomAfterDirectoryBuildTargets") ?? "",
                     Environment.GetEnvironmentVariable("AfterMicrosoftNETSdkTargets") ?? "",

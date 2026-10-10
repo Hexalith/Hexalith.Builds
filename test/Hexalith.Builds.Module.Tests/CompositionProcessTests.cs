@@ -16,6 +16,26 @@ using Xunit;
 /// </summary>
 public sealed class CompositionProcessTests
 {
+    /// <summary>Verifies callers can distinguish complete output from a bounded prefix.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task OutputBeyondCaptureBoundIsMarkedTruncatedAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The output probe uses a POSIX shell.");
+        }
+
+        CompositionProcessResult result = await CompositionProcess.RunAsync(
+            CompositionProcess.CreateStartInfo("/bin/sh", ["-c", "printf '%070000d' 0"], null, null),
+            TimeSpan.FromSeconds(20),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        result.ExitCode.ShouldBe(0);
+        result.Output.Length.ShouldBe(65_536);
+        result.OutputTruncated.ShouldBeTrue();
+    }
+
     /// <summary>
     /// Verifies a variable of the runner process never reaches a helper while explicit values do.
     /// </summary>

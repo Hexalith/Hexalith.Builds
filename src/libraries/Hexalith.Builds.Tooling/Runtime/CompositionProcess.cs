@@ -123,14 +123,14 @@ public static class CompositionProcess
         process.StandardInput.Close();
         using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         bound.CancelAfter(timeout);
-        Task<string> output = ReadBoundedAsync(process.StandardOutput, bound.Token);
+        Task<(string Text, bool Truncated)> output = ReadBoundedAsync(process.StandardOutput, bound.Token);
         Task error = process.StandardError.BaseStream.CopyToAsync(Stream.Null, bound.Token);
         try
         {
             await process.WaitForExitAsync(bound.Token).ConfigureAwait(false);
-            string text = await output.ConfigureAwait(false);
+            (string text, bool truncated) = await output.ConfigureAwait(false);
             await error.ConfigureAwait(false);
-            return new CompositionProcessResult(true, process.ExitCode, text, false);
+            return new CompositionProcessResult(true, process.ExitCode, text, false) { OutputTruncated = truncated };
         }
         catch (OperationCanceledException)
         {
@@ -230,16 +230,17 @@ public static class CompositionProcess
         }
     }
 
-    private static async Task<string> ReadBoundedAsync(StreamReader reader, CancellationToken cancellationToken)
+    private static async Task<(string Text, bool Truncated)> ReadBoundedAsync(StreamReader reader, CancellationToken cancellationToken)
     {
         StringBuilder result = new();
         char[] buffer = new char[4096];
+        bool truncated = false;
         while (true)
         {
             int read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
             if (read == 0)
             {
-                return result.ToString();
+                return (result.ToString(), truncated);
             }
 
             int accepted = Math.Min(read, _maximumOutputCharacters - result.Length);
@@ -247,6 +248,8 @@ public static class CompositionProcess
             {
                 _ = result.Append(buffer, 0, accepted);
             }
+
+            truncated |= accepted < read;
         }
     }
 }

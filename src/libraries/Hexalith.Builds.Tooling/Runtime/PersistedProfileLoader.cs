@@ -8,6 +8,7 @@ namespace Hexalith.Builds.Tooling.Runtime;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 
 /// <summary>
@@ -29,7 +30,18 @@ public static class PersistedProfileLoader
     /// <param name="filter">The optional test filter.</param>
     /// <returns>The supported definition, or null.</returns>
     public static PersistedProfileDefinition? TryLoad(ModuleManifest manifest, string manifestPath, string? profile, string? filter)
+        => TryLoad(manifest, manifestPath, profile, filter, out _);
+
+    /// <summary>Loads a supported profile and exposes a primary native-project path diagnostic.</summary>
+    /// <param name="manifest">The validated manifest.</param>
+    /// <param name="manifestPath">The manifest path.</param>
+    /// <param name="profile">The selected profile.</param>
+    /// <param name="filter">The optional test filter.</param>
+    /// <param name="nativePathDiagnostic">The invalid native-project path diagnostic, when present.</param>
+    /// <returns>The supported definition, or null.</returns>
+    internal static PersistedProfileDefinition? TryLoad(ModuleManifest manifest, string manifestPath, string? profile, string? filter, out ToolDiagnostic? nativePathDiagnostic)
     {
+        nativePathDiagnostic = null;
         ArgumentNullException.ThrowIfNull(manifest);
         if (filter is not null || profile is null || !manifest.Profiles.TryGetValue(profile, out ModuleProfile? declared)
             || !declared.Classes.Contains("persisted-boundary", StringComparer.Ordinal)
@@ -60,8 +72,12 @@ public static class PersistedProfileLoader
                     || module.InitialQuantity <= 0 || module.RetryQuantity <= 0)
                 && definition.Modules.Select(module => module.ModuleId).Distinct(StringComparer.Ordinal).Count() == 2
                 && definition.Modules.Select(module => module.ModuleId).Order(StringComparer.Ordinal)
-                    .SequenceEqual(manifest.Modules.Select(module => module.Id).Order(StringComparer.Ordinal), StringComparer.Ordinal)
-                && (definition.NativeTests is null || IsValidNativeTests(definition.NativeTests, root));
+                    .SequenceEqual(manifest.Modules.Select(module => module.Id).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+
+            if (valid && definition!.NativeTests is { } nativeTests)
+            {
+                valid = IsValidNativeTests(nativeTests, root, out nativePathDiagnostic);
+            }
 
             return valid ? definition : null;
         }
@@ -71,11 +87,18 @@ public static class PersistedProfileLoader
         }
     }
 
-    private static bool IsValidNativeTests(PersistedProfileNativeTests tests, string root)
+    private static bool IsValidNativeTests(PersistedProfileNativeTests tests, string root, out ToolDiagnostic? pathDiagnostic)
     {
+        pathDiagnostic = null;
+        if (tests.Platform is not (PersistedProfileNativeTests.VsTest or PersistedProfileNativeTests.MicrosoftTestingPlatform)
+            || tests.Project?.EndsWith(".csproj", StringComparison.Ordinal) != true)
+        {
+            return false;
+        }
+
         List<Diagnostics.ToolDiagnostic> diagnostics = [];
-        return tests.Platform is PersistedProfileNativeTests.VsTest or PersistedProfileNativeTests.MicrosoftTestingPlatform
-            && tests.Project?.EndsWith(".csproj", StringComparison.Ordinal) == true
-            && ManifestPathValidator.ValidateExistingFile(tests.Project, root, "profile.nativeTests.project", diagnostics) is not null;
+        bool valid = ManifestPathValidator.ValidateExistingFile(tests.Project, root, "profile.nativeTests.project", diagnostics) is not null;
+        pathDiagnostic = valid ? null : diagnostics.FirstOrDefault();
+        return valid;
     }
 }

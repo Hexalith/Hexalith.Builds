@@ -78,7 +78,7 @@ public sealed class SourceMappingValidationTask : ITask
                 }
             }
 
-            return ProjectsOnly || (CheckDirectPackages(sources) && CheckPackages(sources));
+            return CheckDirectPackages(sources) && (ProjectsOnly || CheckPackages(sources));
         }
         catch (IOException exception)
         {
@@ -116,7 +116,12 @@ public sealed class SourceMappingValidationTask : ITask
                     continue;
                 }
 
-                string version = package.GetMetadata("Version");
+                string version = package.GetMetadata("VersionOverride");
+                if (string.IsNullOrWhiteSpace(version))
+                {
+                    version = package.GetMetadata("Version");
+                }
+
                 if (string.IsNullOrWhiteSpace(version))
                 {
                     version = PackageVersions.FirstOrDefault(candidate => candidate.ItemSpec.Equals(package.ItemSpec, StringComparison.OrdinalIgnoreCase))?.GetMetadata("Version") ?? "unknown";
