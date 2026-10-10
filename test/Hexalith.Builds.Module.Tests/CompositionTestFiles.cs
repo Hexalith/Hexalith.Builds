@@ -32,6 +32,53 @@ internal static class CompositionTestFiles
         return path;
     }
 
+    /// <summary>Copies the executable manifest and files it names into a standalone test workspace.</summary>
+    /// <param name="sourceManifest">The checked-in executable fixture manifest.</param>
+    /// <param name="destinationRoot">The workspace outside Git.</param>
+    /// <returns>The copied manifest path.</returns>
+    /// <exception cref="InvalidOperationException">The source fixture root cannot be located.</exception>
+    public static string CopyExecutableManifest(string sourceManifest, string destinationRoot)
+    {
+        DirectoryInfo? sourceRoot = new(Path.GetDirectoryName(sourceManifest)!);
+        while (sourceRoot is not null && !File.Exists(Path.Combine(sourceRoot.FullName, "Hexalith.Builds.slnx")))
+        {
+            sourceRoot = sourceRoot.Parent;
+        }
+
+        string root = sourceRoot?.FullName ?? throw new InvalidOperationException("Cannot locate the executable fixture root.");
+        string sourceFixture = Path.GetDirectoryName(sourceManifest)!;
+        foreach (string file in Directory.EnumerateFiles(sourceFixture, "*", SearchOption.AllDirectories))
+        {
+            string relativeFixturePath = Path.GetRelativePath(sourceFixture, file);
+            string[] segments = relativeFixturePath.Split(Path.DirectorySeparatorChar);
+            if (segments.Contains("bin", StringComparer.OrdinalIgnoreCase) || segments.Contains("obj", StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string destination = Path.Combine(destinationRoot, "test", "fixtures", "module", "executable", relativeFixturePath);
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Copy(file, destination);
+        }
+
+        string destinationManifest = Path.Combine(destinationRoot, "test", "fixtures", "module", "executable", Path.GetFileName(sourceManifest));
+        File.Copy(Path.Combine(root, "Hexalith.Builds.slnx"), Path.Combine(destinationRoot, "Hexalith.Builds.slnx"));
+        foreach (string relative in new[]
+        {
+            "artifacts/g4-fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll",
+            "artifacts/g4-fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll",
+            "artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll",
+            "artifacts/g4-fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll",
+        })
+        {
+            string destination = Path.Combine(destinationRoot, relative);
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Copy(Path.Combine(root, relative), destination);
+        }
+
+        return destinationManifest;
+    }
+
     /// <summary>
     /// Writes an executable POSIX shell script.
     /// </summary>

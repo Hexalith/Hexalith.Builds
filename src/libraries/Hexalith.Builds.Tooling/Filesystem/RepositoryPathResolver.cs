@@ -42,7 +42,7 @@ internal static class RepositoryPathResolver
         string candidate = Path.TrimEndingDirectorySeparator(Path.GetFullPath(candidatePath));
         StringComparison comparison = FilesystemPathRules.Comparison(root);
         return string.Equals(candidate, root, comparison)
-            || candidate.StartsWith(root + Path.DirectorySeparatorChar, comparison);
+            || candidate.StartsWith(Path.EndsInDirectorySeparator(root) ? root : root + Path.DirectorySeparatorChar, comparison);
     }
 
     private static bool TryResolveDirectory(string path, out string resolvedPath)

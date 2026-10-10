@@ -127,6 +127,63 @@ public sealed class WorkspaceRootResolverTests
         error.Diagnostic.RuleId.ShouldBe("HXW002");
     }
 
+    /// <summary>Verifies nested ordinary files cannot exhaust the missing-declaration index probe.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task MissingGitmodulesIgnoresDeepReferenceFilesAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "rm", "--cached", "--", ".gitmodules", "references/Hexalith.Dep").ConfigureAwait(true);
+        File.Delete(Path.Combine(fixture.Checkout, ".gitmodules"));
+        string nested = Path.Combine(fixture.Checkout, "references", "cache", "nested");
+        _ = Directory.CreateDirectory(nested);
+        for (int index = 0; index < 700; index++)
+        {
+            await File.WriteAllTextAsync(Path.Combine(nested, "A" + index.ToString("D4", CultureInfo.InvariantCulture) + "-" + new string('x', 80)), "filler", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "add", "--", "references/cache").ConfigureAwait(true);
+
+        IReadOnlyList<string> references = await WorkspaceRootResolver.ReadDirectReferencesAsync(fixture.Checkout, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        references.ShouldBeEmpty();
+    }
+
+    /// <summary>Verifies duplicate declaration diagnostics name the identity and declared path.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task DuplicateDirectIdentityNamesItsPathsAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        await File.AppendAllTextAsync(gitmodules, "\n[submodule \"second declaration\"]\n\tpath = references/Hexalith.Dep\n\turl = file:///unused\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ReadDirectReferencesAsync(fixture.Checkout, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        error.Diagnostic.RuleId.ShouldBe("HXW002");
+        error.Diagnostic.Message.ShouldContain("Hexalith.Dep");
+        error.Diagnostic.Message.ShouldContain("references/Hexalith.Dep");
+    }
+
+    /// <summary>Verifies a failed local checkout includes Git's bounded error detail.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task FailedDirectCheckoutReportsGitStderrAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        string contents = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string originalUrl = new Uri(Path.Combine(fixture.Directory, "dependency")).AbsoluteUri;
+        string missingUrl = new Uri(Path.Combine(fixture.Directory, "missing-dependency")).AbsoluteUri;
+        await File.WriteAllTextAsync(gitmodules, contents.Replace(originalUrl, missingUrl, StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        error.Diagnostic.RuleId.ShouldBe("HXW004");
+        error.Diagnostic.Message.ShouldContain("Git stderr:");
+        error.Diagnostic.Message.ShouldContain("missing-dependency");
+    }
+
     /// <summary>Verifies Git-quoted unusual gitlinks remain visible when declarations are missing.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]
@@ -416,12 +473,21 @@ public sealed class WorkspaceRootResolverTests
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
         string? originalCertificate = Environment.GetEnvironmentVariable("GIT_SSL_CERT");
         string? originalKey = Environment.GetEnvironmentVariable("GIT_SSL_KEY");
+        string? originalProxy = Environment.GetEnvironmentVariable("HTTPS_PROXY");
+        string? originalLowerProxy = Environment.GetEnvironmentVariable("http_proxy");
+        string? originalAgent = Environment.GetEnvironmentVariable("SSH_AUTH_SOCK");
         const string certificate = "hexalith-fixture-client-cert";
         const string key = "hexalith-fixture-client-key";
+        const string proxy = "http://hexalith-proxy.invalid:3128";
+        const string lowerProxy = "http://hexalith-lower-proxy.invalid:3128";
+        const string agent = "/tmp/hexalith-fixture-ssh-agent.sock";
         try
         {
             Environment.SetEnvironmentVariable("GIT_SSL_CERT", certificate);
             Environment.SetEnvironmentVariable("GIT_SSL_KEY", key);
+            Environment.SetEnvironmentVariable("HTTPS_PROXY", proxy);
+            Environment.SetEnvironmentVariable("http_proxy", lowerProxy);
+            Environment.SetEnvironmentVariable("SSH_AUTH_SOCK", agent);
 
             CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(
                 fixture.Checkout,
@@ -435,12 +501,41 @@ public sealed class WorkspaceRootResolverTests
             result.OutputTruncated.ShouldBeFalse();
             result.Output.ShouldContain("GIT_SSL_CERT=" + certificate);
             result.Output.ShouldContain("GIT_SSL_KEY=" + key);
+            result.Output.ShouldContain("HTTPS_PROXY=" + proxy);
+            result.Output.ShouldContain("http_proxy=" + lowerProxy);
+            result.Output.ShouldContain("SSH_AUTH_SOCK=" + agent);
         }
         finally
         {
             Environment.SetEnvironmentVariable("GIT_SSL_CERT", originalCertificate);
             Environment.SetEnvironmentVariable("GIT_SSL_KEY", originalKey);
+            Environment.SetEnvironmentVariable("HTTPS_PROXY", originalProxy);
+            Environment.SetEnvironmentVariable("http_proxy", originalLowerProxy);
+            Environment.SetEnvironmentVariable("SSH_AUTH_SOCK", originalAgent);
         }
+    }
+
+    /// <summary>Verifies a legal wildcard character in a direct gitlink is interpreted literally by Git.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task DirectReferenceWithPathspecMetacharacterInitializesAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        const string original = "references/Hexalith.Dep";
+        const string renamed = "references/Hexalith.Dep[1]";
+        string staged = (await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "ls-files", "--stage", "--", original).ConfigureAwait(true)).Output;
+        string commit = staged.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(gitmodules, declarations.Replace("path = " + original, "path = " + renamed, StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--add", "--cacheinfo", $"160000,{commit},{renamed}").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--force-remove", original).ConfigureAwait(true);
+
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        string checkout = Path.Combine(fixture.Checkout, "references", "Hexalith.Dep[1]");
+        mapping.Entries.ShouldContain(new SourceMappingEntry("Hexalith.Dep[1]", "source", checkout));
+        File.Exists(Path.Combine(checkout, ".git")).ShouldBeTrue();
     }
 
     /// <summary>Verifies source mode initializes the recorded direct gitlink and leaves nested submodules untouched.</summary>
@@ -536,10 +631,10 @@ public sealed class WorkspaceRootResolverTests
         mapping.Entries.ShouldContain(new SourceMappingEntry("Hexalith.Dep", "source", direct));
     }
 
-    /// <summary>Verifies an initialized direct reference is returned to its recorded gitlink.</summary>
+    /// <summary>Verifies an initialized direct reference is never moved to its recorded gitlink.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]
-    public async Task InitializedDirectReferenceChecksOutRecordedGitlinkAsync()
+    public async Task InitializedDirectReferenceMismatchFailsWithoutMovingCheckoutAsync()
     {
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "protocol.file.allow=always", "submodule", "update", "--init", "--", "references/Hexalith.Dep").ConfigureAwait(true);
@@ -551,16 +646,20 @@ public sealed class WorkspaceRootResolverTests
         _ = await WorkspaceGitFixture.RunGitAsync(direct, "add", "changed.txt").ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(direct, "commit", "-m", "advance direct source").ConfigureAwait(true);
 
-        _ = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string advanced = (await WorkspaceGitFixture.RunGitAsync(direct, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken)).ConfigureAwait(true);
 
         string actual = (await WorkspaceGitFixture.RunGitAsync(direct, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
-        actual.ShouldBe(recorded);
+        actual.ShouldBe(advanced);
+        error.Diagnostic.RuleId.ShouldBe("HXW004");
+        error.Diagnostic.Message.ShouldContain(recorded);
+        error.Diagnostic.Message.ShouldContain(advanced);
     }
 
-    /// <summary>Verifies a local update=none setting cannot skip the recorded checkout.</summary>
+    /// <summary>Verifies a local update=none setting cannot hide an initialized checkout mismatch.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]
-    public async Task UpdateNoneCannotSkipRecordedCheckoutAsync()
+    public async Task UpdateNoneCannotHideInitializedMismatchAsync()
     {
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "protocol.file.allow=always", "submodule", "update", "--init", "--", "references/Hexalith.Dep").ConfigureAwait(true);
@@ -573,10 +672,13 @@ public sealed class WorkspaceRootResolverTests
         _ = await WorkspaceGitFixture.RunGitAsync(direct, "commit", "-m", "advance source").ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "config", "submodule.references/Hexalith.Dep.update", "none").ConfigureAwait(true);
 
-        _ = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken)).ConfigureAwait(true);
 
         string actual = (await WorkspaceGitFixture.RunGitAsync(direct, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
-        actual.ShouldBe(recorded);
+        actual.ShouldNotBe(recorded);
+        error.Diagnostic.RuleId.ShouldBe("HXW004");
+        error.Diagnostic.Message.ShouldContain(actual);
+        error.Diagnostic.Message.ShouldContain(recorded);
     }
 
     /// <summary>Verifies a staged gitlink is the update target even before the root commit changes.</summary>

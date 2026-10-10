@@ -27,10 +27,14 @@ internal static class SubmoduleInitializer
         {
             string path = Path.Combine(root, reference.Replace('/', Path.DirectorySeparatorChar));
             string identity = Path.GetFileName(path);
-            CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "submodule", "update", "--init", "--checkout", "--", reference).ConfigureAwait(false);
-            if (!result.Started || result.TimedOut || result.OutputTruncated || result.ExitCode != 0)
+            if (!IsInitialized(path))
             {
-                throw Missing(identity, path, "Git could not check out the recorded gitlink.");
+                CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "submodule", "update", "--init", "--checkout", "--", ":(literal)" + reference).ConfigureAwait(false);
+                if (!result.Started || result.TimedOut || result.OutputTruncated || result.ExitCode != 0)
+                {
+                    string reason = result.ErrorOutput.Trim();
+                    throw Missing(identity, path, $"Git could not check out the recorded gitlink.{(reason.Length == 0 ? string.Empty : $" Git stderr: {reason}")}");
+                }
             }
 
             if (!IsInitialized(path) || !RepositoryPathResolver.TryResolvePathWithinRoot(root, reference, out string physical) || !Directory.Exists(physical))
@@ -38,9 +42,9 @@ internal static class SubmoduleInitializer
                 throw Missing(identity, path, "The required source checkout is missing after initialization.");
             }
 
-            // Git's update command checks out the stage-zero index gitlink, which may
-            // already be staged ahead of HEAD in a developer's working tree.
-            CompositionProcessResult recorded = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "--", reference).ConfigureAwait(false);
+            // The stage-zero index gitlink may be staged ahead of HEAD. An existing
+            // checkout must never be moved merely because a command is invoked.
+            CompositionProcessResult recorded = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "--", ":(literal)" + reference).ConfigureAwait(false);
             CompositionProcessResult checkedOut = await GitWorkspaceProcess.RunAsync(path, cancellationToken, "rev-parse", "HEAD").ConfigureAwait(false);
             string[] parts = recorded.Output.Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
             if (!recorded.Started || recorded.TimedOut || recorded.OutputTruncated || recorded.ExitCode != 0 || parts.Length < 4 || parts[0] != "160000" || parts[2] != "0"
@@ -65,7 +69,7 @@ internal static class SubmoduleInitializer
         foreach (string reference in references)
         {
             string identity = Path.GetFileName(reference);
-            CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "-z", "--", reference).ConfigureAwait(false);
+            CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "-z", "--", ":(literal)" + reference).ConfigureAwait(false);
             string[] records = result.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries);
             if (!result.Started || result.TimedOut || result.OutputTruncated || result.ExitCode != 0 || records.Length != 1)
             {

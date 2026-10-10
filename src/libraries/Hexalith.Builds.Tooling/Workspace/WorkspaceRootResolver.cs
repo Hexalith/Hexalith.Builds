@@ -231,7 +231,7 @@ public static class WorkspaceRootResolver
                 throw Failure("HXW002", $"Reference declarations '{gitmodules}' point to a missing target.", gitmodules);
             }
 
-            CompositionProcessResult tracked = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "-z", "--", ".gitmodules", "references").ConfigureAwait(false);
+            CompositionProcessResult tracked = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "--stage", "-z", "--", ".gitmodules", ":(glob)references/*").ConfigureAwait(false);
             if (!tracked.Started || tracked.TimedOut || tracked.OutputTruncated || tracked.ExitCode != 0)
             {
                 throw Failure("HXW002", $"Cannot inspect tracked reference declarations in '{root}'.", gitmodules);
@@ -302,10 +302,13 @@ public static class WorkspaceRootResolver
             }
         }
 
-        return references.Count != references.Distinct(StringComparer.OrdinalIgnoreCase).Count()
-            || references.Select(Path.GetFileName).Distinct(StringComparer.OrdinalIgnoreCase).Count() != references.Count
-                ? throw Failure("HXW002", $"Duplicate direct reference identity in '{gitmodules}'.", gitmodules)
-                : [.. references.Order(StringComparer.Ordinal)];
+        string? duplicate = references.GroupBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => $"identity '{group.Key}' from paths {string.Join(" and ", group.Select(path => $"'{path}'"))}")
+            .FirstOrDefault();
+        return duplicate is not null
+            ? throw Failure("HXW002", $"Duplicate direct reference {duplicate} in '{gitmodules}'.", gitmodules)
+            : [.. references.Order(StringComparer.Ordinal)];
     }
 
     /// <summary>Determines whether a nonexecutable manifest is physically in the active root before checkout.</summary>

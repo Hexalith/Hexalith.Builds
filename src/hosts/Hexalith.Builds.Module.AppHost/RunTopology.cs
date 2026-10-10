@@ -12,6 +12,7 @@ using Aspire.Hosting.Lifecycle;
 using CommunityToolkit.Aspire.Hosting.Dapr;
 
 using Hexalith.Builds.Tooling.Runtime;
+using Hexalith.Builds.Tooling.Workspace;
 using Hexalith.EventStore.Aspire;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -170,6 +171,15 @@ internal static class RunTopology
                     schedulerAddress);
             if (plan.SourceMapping is not null)
             {
+                // Aspire otherwise passes the AppHost assembly configuration as a
+                // global dotnet-run option, which can disagree with this mapping.
+                _ = moduleProject
+                    .WithAnnotation(new ExecutableAnnotation
+                    {
+                        Command = "dotnet",
+                        WorkingDirectory = Path.GetDirectoryName(module.ProjectPath)!,
+                    })
+                    .WithArgs("run", "--project", module.ProjectPath, "--configuration", plan.SourceMapping.Mode == WorkspaceMode.Source ? "Debug" : "Release", "--no-launch-profile");
                 foreach (KeyValuePair<string, string> pair in Hexalith.Builds.Tooling.Workspace.SourceMappingMaterializer.Environment(plan.SourceMapping, plan.Workspace))
                 {
                     _ = moduleProject.WithEnvironment(pair.Key, pair.Value);

@@ -5,12 +5,17 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
+using System.Reflection;
+
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 
 using Hexalith.Builds.ModuleHosts.AppHost;
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
+
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 
 using Shouldly;
 
@@ -42,12 +47,14 @@ public sealed class WorkspaceAppHostTests
             CompositionRunPlan plan = CompositionRunPlanFactory.Create(sample.RunId, sample.Workspace, sample.DaprHome, sample.Ports, sample.Modules, sample.UiMarkers, mapping);
             await SourceMappingMaterializer.WriteAsync(mapping, plan.Workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
             await CompositionDaprComponentRenderer.WriteAsync(plan, TestContext.Current.CancellationToken).ConfigureAwait(true);
-            IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
+            DistributedApplicationOptions launchOptions = new()
             {
                 Args = [],
+                AssemblyName = typeof(RunTopology).Assembly.GetName().Name,
                 DisableDashboard = true,
                 AllowUnsecuredTransport = true,
-            });
+            };
+            IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(launchOptions);
             _ = builder.AddDapr(options => options.DaprPath = Path.Combine(root, "dapr-home", "tools", "dapr"));
 
             RunTopology.Compose(builder, plan, CompositionSigningKey.Create());
@@ -69,11 +76,77 @@ public sealed class WorkspaceAppHostTests
                 environment["CustomAfterDirectoryBuildTargets"].ShouldBe(SourceMappingMaterializer.LatePropsPath(plan.Workspace));
                 environment["AfterMicrosoftNETSdkTargets"].ShouldBe(SourceMappingMaterializer.FinalTargetsPath(plan.Workspace));
                 environment["Configuration"].ShouldBe(configuration);
+                project.TryGetLastAnnotation<ExecutableAnnotation>(out ExecutableAnnotation? executable).ShouldBeTrue();
+                executable.Command.ShouldBe("dotnet");
+#pragma warning disable CS0618 // Inspect Aspire's composed resource arguments at the public resource boundary.
+                string[] launchArguments = await project.GetArgumentValuesAsync().ConfigureAwait(true);
+#pragma warning restore CS0618
+                launchArguments.ShouldBe(["run", "--project", module.ProjectPath, "--configuration", configuration, "--no-launch-profile"]);
+                string[] generatedArguments = await GenerateAspireLaunchArgumentsAsync(project, launchOptions, launchArguments).ConfigureAwait(true);
+                generatedArguments.ShouldBe(launchArguments);
             }
         }
         finally
         {
             CompositionTestFiles.Delete(root);
         }
+    }
+
+    private static async Task<string[]> GenerateAspireLaunchArgumentsAsync(ProjectResource project, DistributedApplicationOptions launchOptions, string[] resourceArguments)
+    {
+        // Aspire 13.6.1 keeps its launch-plan recipe and context internal. Exercise
+        // that actual recipe so appended AppHost options cannot escape this test.
+        Assembly aspire = typeof(ExecutableAnnotation).Assembly;
+        Type recipeType = aspire.GetType("Aspire.Hosting.ApplicationModel.ProjectExecutableLaunchRecipe", throwOnError: true)!;
+        Type decisionType = aspire.GetType("Aspire.Hosting.ApplicationModel.ExecutableLaunchDecision", throwOnError: true)!;
+        Type contextType = aspire.GetType("Aspire.Hosting.ApplicationModel.ExecutableLaunchContext", throwOnError: true)!;
+        Type mechanismType = aspire.GetType("Aspire.Hosting.ApplicationModel.ExecutableLaunchMechanism", throwOnError: true)!;
+        object[] decisionArguments = [Enum.Parse(mechanismType, "Process"), "Run", null!, false, null!];
+        object decision = Activator.CreateInstance(
+            decisionType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            null,
+            decisionArguments,
+            null)!;
+        object[] contextArguments =
+        [
+            project,
+            new ConfigurationBuilder().Build(),
+            launchOptions,
+            new LaunchExecutionConfiguration(resourceArguments),
+            decision,
+            NullLogger.Instance,
+            TestContext.Current.CancellationToken,
+        ];
+        object context = Activator.CreateInstance(
+            contextType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            null,
+            contextArguments,
+            null)!;
+        object recipe = recipeType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!.GetValue(null)!;
+        object pending = recipeType.GetMethod("CreateLaunchPlanAsync", BindingFlags.Public | BindingFlags.Instance)!.Invoke(recipe, [context])!;
+        await ((Task)pending).ConfigureAwait(true);
+        object plan = pending.GetType().GetProperty("Result")!.GetValue(pending)!;
+        IEnumerable<string> arguments = (IEnumerable<string>)plan.GetType().GetProperty("Arguments")!.GetValue(plan)!;
+        return [.. arguments];
+    }
+
+    private sealed class LaunchExecutionConfiguration(string[] arguments) : IExecutionConfigurationResult
+    {
+        public IEnumerable<object> References => [];
+
+        public IEnumerable<(object Unprocessed, string Processed, bool IsSensitive)> ArgumentsWithUnprocessed =>
+            arguments.Select(argument => ((object)argument, argument, false));
+
+        public IEnumerable<(string Value, bool IsSensitive)> Arguments => arguments.Select(argument => (argument, false));
+
+        public IEnumerable<KeyValuePair<string, (object Unprocessed, string Processed)>> EnvironmentVariablesWithUnprocessed => [];
+
+        public IEnumerable<KeyValuePair<string, string>> EnvironmentVariables => [];
+
+        public IEnumerable<IExecutionConfigurationData> AdditionalConfigurationData => [];
+
+        public Exception? Exception => null;
     }
 }

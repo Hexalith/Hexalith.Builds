@@ -241,7 +241,9 @@ only its active module.
 
 In source mode, the active module and every root-declared direct reference build
 in Debug. An uninitialized direct reference is checked out at its recorded
-gitlink without `--recursive` or `--remote`. An initialized nested submodule
+gitlink without `--recursive` or `--remote`. An initialized direct reference
+whose HEAD differs from the staged gitlink fails with `HXW004` without moving
+its checkout. An initialized nested submodule
 stops resolution before any initialization; deinitialize it manually before
 retrying. Package mode leaves dependencies as packages and builds the active
 module in Release. Package versions continue to come from the workspace's
@@ -251,7 +253,8 @@ Mapping values override optional `Directory.Build.props` source probes and
 reconcile references selected by consumer targets before restore. Builds fail
 rather than using a sibling, ancestor, or nested source outside the map.
 The `HXW` diagnostics identify workspace failures: `HXW001` invalid active
-root or manifest location, `HXW002` invalid root references, `HXW003`
+root or manifest location, `HXW002` invalid root references or duplicate source
+projects declaring the same package identity, `HXW003`
 initialized nested reference, `HXW004` missing or stale direct source, `HXW005`
 duplicate source and direct or restored package identity, and `HXW006` an
 unmapped project or executable assembly, ambiguous package conversion, or

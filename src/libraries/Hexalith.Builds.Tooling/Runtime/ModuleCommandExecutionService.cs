@@ -133,7 +133,7 @@ public static class ModuleCommandExecutionService
             bool requiresMapping = command != ModuleInvocationCommand.Down
                 && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath)
                 && !nonExecutableAtRoot;
-            if (!requiresMapping && !ValidateProfile(command, profile, manifest, out ToolDiagnostic? profileDiagnostic))
+            if ((!requiresMapping || preResolvedMapping is null) && !ValidateProfile(command, profile, manifest, out ToolDiagnostic? profileDiagnostic))
             {
                 return await WriteResultAsync(
                     "failed",
@@ -264,7 +264,7 @@ public static class ModuleCommandExecutionService
                     cancellationToken).ConfigureAwait(false);
             }
 
-            RuntimePrerequisiteCheck? prerequisite = requiresMapping ? null : RuntimePrerequisiteGate.Check(manifest);
+            RuntimePrerequisiteCheck? prerequisite = preResolvedMapping is null ? RuntimePrerequisiteGate.Check(manifest) : null;
             if (prerequisite?.IsAvailable == false)
             {
                 return await WriteResultAsync(
@@ -285,6 +285,31 @@ public static class ModuleCommandExecutionService
                     evidencePath,
                     startedUtc,
                     cancellationToken).ConfigureAwait(false);
+            }
+
+            ToolDiagnostic? preResolutionAspire = null;
+            if (requiresMapping && preResolvedMapping is null && descriptorChildEntryAssemblyPath is not null)
+            {
+                CompositionEngineOptions earlyOptions = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
+                preResolutionAspire = await CompositionPrerequisiteProbe.ProbeAspireAsync(
+                    earlyOptions.AspireCommand, earlyOptions.AspireProbeTimeout, cancellationToken).ConfigureAwait(false);
+                if (preResolutionAspire is not null)
+                {
+                    return await WriteResultAsync(
+                        "unavailable",
+                        ToolOutcome.Passed().Fail(ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, preResolutionAspire.RuleId, ToolExitCode.PrerequisiteUnavailable),
+                        [preResolutionAspire],
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
             }
 
             if (requiresMapping && descriptorChildEntryAssemblyPath is not null)
@@ -321,30 +346,6 @@ public static class ModuleCommandExecutionService
                 isExecutable = manifest.Modules.Count > 0
                     && manifest.Modules.All(module => module.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                     && (manifest.Ui?.DescriptorAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ?? true);
-                if (!isExecutable)
-                {
-                    ToolDiagnostic changedShape = new(
-                        "HXR003",
-                        ToolPhase.Prerequisite,
-                        ToolFailureCategory.PrerequisiteUnavailable,
-                        "The checked-out manifest does not declare an executable descriptor topology.",
-                        manifestPath);
-                    return await WriteResultAsync(
-                        "unavailable",
-                        ToolOutcome.Passed().Fail(changedShape.Phase, changedShape.Category, changedShape.RuleId, ToolExitCode.PrerequisiteUnavailable),
-                        [changedShape],
-                        format,
-                        writer,
-                        command,
-                        manifestPath,
-                        manifest,
-                        profile,
-                        filter,
-                        evidencePath,
-                        startedUtc,
-                        cancellationToken).ConfigureAwait(false);
-                }
-
                 if (!ValidateProfile(command, profile, manifest, out ToolDiagnostic? currentProfileDiagnostic))
                 {
                     return await WriteResultAsync(
@@ -363,7 +364,7 @@ public static class ModuleCommandExecutionService
                         cancellationToken).ConfigureAwait(false);
                 }
 
-                prerequisite = RuntimePrerequisiteGate.Check(manifest);
+                prerequisite = preResolvedMapping is null ? prerequisite ?? RuntimePrerequisiteGate.Check(manifest) : RuntimePrerequisiteGate.Check(manifest);
                 if (!prerequisite.IsAvailable)
                 {
                     return await WriteResultAsync(
@@ -382,7 +383,7 @@ public static class ModuleCommandExecutionService
                         cancellationToken).ConfigureAwait(false);
                 }
 
-                ToolDiagnostic? aspire = await CompositionPrerequisiteProbe.ProbeAspireAsync(
+                ToolDiagnostic? aspire = preResolvedMapping is null ? preResolutionAspire : await CompositionPrerequisiteProbe.ProbeAspireAsync(
                     options.AspireCommand, options.AspireProbeTimeout, cancellationToken).ConfigureAwait(false);
                 if (aspire is not null)
                 {
@@ -390,6 +391,30 @@ public static class ModuleCommandExecutionService
                         "unavailable",
                         ToolOutcome.Passed().Fail(ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, aspire.RuleId, ToolExitCode.PrerequisiteUnavailable),
                         [aspire],
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                if (!isExecutable)
+                {
+                    ToolDiagnostic changedShape = new(
+                        "HXR003",
+                        ToolPhase.Prerequisite,
+                        ToolFailureCategory.PrerequisiteUnavailable,
+                        "The checked-out manifest does not declare an executable descriptor topology.",
+                        manifestPath);
+                    return await WriteResultAsync(
+                        "unavailable",
+                        ToolOutcome.Passed().Fail(changedShape.Phase, changedShape.Category, changedShape.RuleId, ToolExitCode.PrerequisiteUnavailable),
+                        [changedShape],
                         format,
                         writer,
                         command,
@@ -670,7 +695,7 @@ public static class ModuleCommandExecutionService
                 ? ToolExitCode.PrerequisiteUnavailable
                 : ToolExitCode.TopologyOrLifecycle;
             return await WriteResultAsync(
-                "failed",
+                diagnostic.Category == ToolFailureCategory.PrerequisiteUnavailable ? "unavailable" : "failed",
                 ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, exitCode),
                 [diagnostic],
                 format,

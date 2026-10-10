@@ -148,9 +148,13 @@ public sealed class SourceMappingReconciliationTask : ITask
                     .Where(path => IsInPackageRoot(packagePath, path) && (!File.Exists(path) || !HasGitMarker(packagePath)))
                     .Distinct(FilesystemPathRules.Comparison(packagePath) == StringComparison.OrdinalIgnoreCase
                         ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)];
-                if (absent.Length > 1)
+                string[] catalogIds = [.. PackageVersions.Select(version => version.ItemSpec)
+                    .Where(id => MatchesIdentity(id, identity))];
+                string[] fallbackPaths = [.. absent.Where(path => !catalogIds.Any(id =>
+                    id.Equals(Path.GetFileNameWithoutExtension(path), StringComparison.OrdinalIgnoreCase)))];
+                if (fallbackPaths.Length > 1)
                 {
-                    return Error("HXW006", $"Package-origin '{identity}' at '{packagePath}' has multiple absent project paths ({string.Join(", ", absent)}); the catalog cannot identify each path unambiguously.");
+                    return Error("HXW006", $"Package-origin '{identity}' at '{packagePath}' has multiple absent project paths requiring the sole-candidate fallback ({string.Join(", ", fallbackPaths)}); the catalog cannot identify each path unambiguously.");
                 }
             }
 
@@ -170,7 +174,7 @@ public sealed class SourceMappingReconciliationTask : ITask
                     continue;
                 }
 
-                string? unsupportedProjectMetadata = UnsupportedMetadata(project, ["Version", "VersionOverride", "OutputItemType", "Targets", "SetTargetFramework", "SetConfiguration", "SetPlatform", "GlobalPropertiesToRemove", "AdditionalProperties", "SkipGetTargetFrameworkProperties", "BuildReference", "Private", "ExternallyResolved", "IncludeAssets", "ExcludeAssets", "GeneratePathProperty", "TreatAsUsed", "PrunePackageReference"]);
+                string? unsupportedProjectMetadata = UnsupportedMetadata(project, ["Version", "VersionOverride", "OutputItemType", "Targets", "SetTargetFramework", "SetConfiguration", "SetPlatform", "GlobalPropertiesToRemove", "AdditionalProperties", "SkipGetTargetFrameworkProperties", "BuildReference", "Private", "ExternallyResolved", "EmbedInteropTypes", "IncludeAssets", "ExcludeAssets", "GeneratePathProperty", "TreatAsUsed", "PrunePackageReference"]);
                 if (unsupportedProjectMetadata is not null || string.Equals(project.GetMetadata("ReferenceOutputAssembly"), "false", StringComparison.OrdinalIgnoreCase))
                 {
                     return Error("HXW006", $"ProjectReference '{path}' in package-origin '{packageRoot.Identity}' cannot become a package because metadata '{unsupportedProjectMetadata ?? "ReferenceOutputAssembly"}' has no equivalent package behavior.");

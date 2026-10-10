@@ -249,7 +249,7 @@ public sealed class CompositionEngineTests
         string root = CompositionTestFiles.CreateDirectory();
         try
         {
-            string manifest = Path.Combine(RepositoryRoot(), "test", "fixtures", "module", "executable", "hexalith.module-manifest.v1.json");
+            string manifest = CompositionTestFiles.CopyExecutableManifest(ExecutableManifest(), root);
             CompositionEngineOptions options = new(Path.Combine(root, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
             {
                 AspireCommand = CompositionTestFiles.CreateAspire(root),

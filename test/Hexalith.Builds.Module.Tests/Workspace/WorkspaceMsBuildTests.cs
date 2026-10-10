@@ -140,6 +140,52 @@ public sealed class WorkspaceMsBuildTests
         }
     }
 
+    /// <summary>Verifies a mapped child project converts its dependency on another mapped identity to source.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task MappedChildBuildSelectsSecondSourceIdentityAsync()
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            string first = Path.Combine(active, "references", "Hexalith.First", "src", "Hexalith.First.Core");
+            string second = Path.Combine(active, "references", "Hexalith.Second", "src", "Hexalith.Second.Core");
+            _ = Directory.CreateDirectory(first);
+            _ = Directory.CreateDirectory(second);
+            await File.WriteAllTextAsync(Path.Combine(root, "NuGet.Config"), "<configuration><packageSources><clear /></packageSources></configuration>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string version = "1.0.0-mapping-" + Guid.NewGuid().ToString("N");
+            await File.WriteAllTextAsync(Path.Combine(active, "Directory.Packages.props"), "<Project><PropertyGroup><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.First.Core\" Version=\"" + version + "\" /><PackageVersion Include=\"Hexalith.Second.Core\" Version=\"" + version + "\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await File.WriteAllTextAsync(Path.Combine(second, "Hexalith.Second.Core.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Hexalith.Second.Core</PackageId></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await File.WriteAllTextAsync(Path.Combine(second, "Origin.cs"), "namespace Hexalith.Second; public static class Origin { public const string Value = \"second-source\"; }", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await File.WriteAllTextAsync(Path.Combine(first, "Hexalith.First.Core.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Hexalith.First.Core</PackageId></PropertyGroup><ItemGroup><PackageReference Include=\"Hexalith.Second.Core\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await File.WriteAllTextAsync(Path.Combine(first, "Origin.cs"), "namespace Hexalith.First; public static class Origin { public static string Read() => Hexalith.Second.Origin.Value; }", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string consumer = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType></PropertyGroup><ItemGroup><PackageReference Include=\"Hexalith.First.Core\" /></ItemGroup></Project>");
+            await File.WriteAllTextAsync(Path.Combine(active, "Program.cs"), "System.Console.Write(Hexalith.First.Origin.Read());", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            SourceMapping mapping = new(
+                WorkspaceMode.Source,
+                active,
+                "Hexalith.Active",
+                [
+                    new SourceMappingEntry("Hexalith.Active", "source", active),
+                    new SourceMappingEntry("Hexalith.First", "source", Path.Combine(active, "references", "Hexalith.First")),
+                    new SourceMappingEntry("Hexalith.Second", "source", Path.Combine(active, "references", "Hexalith.Second")),
+                ],
+                true);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            CompositionProcessResult run = await RunDotnetAsync(active, mapping, workspace, "run", "--project", consumer, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+
+            run.ExitCode.ShouldBe(0, run.Output);
+            run.Output.ShouldContain("second-source");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     /// <summary>Verifies an uninitialized package root uses the single matching catalog identity.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]
@@ -190,6 +236,38 @@ public sealed class WorkspaceMsBuildTests
             result.ExitCode.ShouldNotBe(0);
             result.Output.ShouldContain("HXW006");
             result.Output.ShouldContain("multiple absent project paths");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies distinct absent paths with exact catalog IDs convert independently.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task MultipleAbsentExactCatalogProjectsConvertToPackagesAsync()
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            _ = Directory.CreateDirectory(active);
+            await File.WriteAllTextAsync(Path.Combine(active, "Directory.Packages.props"), "<Project><PropertyGroup><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep.Contracts\" Version=\"1.0.0\" /><PackageVersion Include=\"Hexalith.Dep.Client\" Version=\"1.0.0\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><ProjectReference Include=\"references/Hexalith.Dep/src/Hexalith.Dep.Contracts.csproj\" /><ProjectReference Include=\"references/Hexalith.Dep/src/Hexalith.Dep.Client.csproj\" /></ItemGroup></Project>");
+            SourceMapping mapping = Mapping(active, WorkspaceMode.Package);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "msbuild", project, "-target:HexalithReconcileSourceMapping", "-getItem:ProjectReference,PackageReference").ConfigureAwait(true);
+
+            result.ExitCode.ShouldBe(0, result.Output);
+            using JsonDocument output = JsonDocument.Parse(result.Output);
+            output.RootElement.GetProperty("Items").GetProperty("ProjectReference").GetArrayLength().ShouldBe(0);
+            string[] packageIds = [.. output.RootElement.GetProperty("Items").GetProperty("PackageReference").EnumerateArray().Select(item => item.GetProperty("Identity").GetString()!)];
+            packageIds.Length.ShouldBe(2);
+            packageIds.ShouldContain("Hexalith.Dep.Contracts");
+            packageIds.ShouldContain("Hexalith.Dep.Client");
         }
         finally
         {
@@ -620,10 +698,14 @@ public sealed class WorkspaceMsBuildTests
         }
     }
 
-    /// <summary>Verifies a project-only reference setting fails conversion with an actionable rule.</summary>
+    /// <summary>Verifies project-only reference settings fail conversion with an actionable rule.</summary>
+    /// <param name="metadata">The project-only metadata name.</param>
+    /// <param name="value">The metadata value.</param>
     /// <returns>A task for the assertion.</returns>
-    [Fact]
-    public async Task UnsupportedProjectMetadataStopsPackageConversionAsync()
+    [Theory]
+    [InlineData("ReferenceOutputAssembly", "false")]
+    [InlineData("EmbedInteropTypes", "true")]
+    public async Task UnsupportedProjectMetadataStopsPackageConversionAsync(string metadata, string value)
     {
         string root = NewDirectory();
         try
@@ -632,7 +714,7 @@ public sealed class WorkspaceMsBuildTests
             string packageRoot = Path.Combine(active, "references", "Hexalith.Dep");
             _ = Directory.CreateDirectory(packageRoot);
             await File.WriteAllTextAsync(Path.Combine(packageRoot, "Hexalith.Dep.Contracts.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\" />", TestContext.Current.CancellationToken).ConfigureAwait(true);
-            string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><ProjectReference Include=\"references/Hexalith.Dep/Hexalith.Dep.Contracts.csproj\" ReferenceOutputAssembly=\"false\" /></ItemGroup></Project>");
+            string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><ProjectReference Include=\"references/Hexalith.Dep/Hexalith.Dep.Contracts.csproj\" " + metadata + "=\"" + value + "\" /></ItemGroup></Project>");
             SourceMapping mapping = Mapping(active, WorkspaceMode.Package);
             string workspace = Path.Combine(root, "run");
             await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -641,7 +723,7 @@ public sealed class WorkspaceMsBuildTests
 
             result.ExitCode.ShouldNotBe(0);
             result.Output.ShouldContain("HXW006");
-            result.Output.ShouldContain("ReferenceOutputAssembly");
+            result.Output.ShouldContain(metadata);
         }
         finally
         {
@@ -811,6 +893,7 @@ public sealed class WorkspaceMsBuildTests
             result.ExitCode.ShouldNotBe(0);
             result.Output.ShouldContain("HXW006");
             result.Output.ShouldContain("_HXWPreLateUseHexalithProjectReferences");
+            result.Output.ShouldContain(mode == WorkspaceMode.Source ? "expected 'true' but was 'false'" : "expected 'false' but was 'true'");
             File.Exists(Path.Combine(active, "obj", "project.assets.json")).ShouldBeFalse();
         }
         finally
@@ -889,6 +972,37 @@ public sealed class WorkspaceMsBuildTests
             result.ExitCode.ShouldNotBe(0, result.Output);
             result.Output.ShouldContain("HXW006");
             result.Output.ShouldContain("AfterMicrosoftNETSdkTargets");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies restoring the final import-list property cannot hide an explicitly suppressed SDK import.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task SuppressedFinalSdkImportFailsMappingGuardAsync()
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            _ = Directory.CreateDirectory(active);
+            SourceMapping mapping = Mapping(active, WorkspaceMode.Source);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string content = "<Project><Import Project=\"Sdk.props\" Sdk=\"Microsoft.NET.Sdk\" />"
+                + "<PropertyGroup><TargetFramework>net10.0</TargetFramework><AfterMicrosoftNETSdkTargets></AfterMicrosoftNETSdkTargets></PropertyGroup>"
+                + "<Import Project=\"Sdk.targets\" Sdk=\"Microsoft.NET.Sdk\" />"
+                + "<PropertyGroup><AfterMicrosoftNETSdkTargets>" + SourceMappingMaterializer.FinalTargetsPath(workspace) + "</AfterMicrosoftNETSdkTargets></PropertyGroup></Project>";
+            string project = WriteProject(active, content);
+
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "msbuild", project, "-target:HexalithVerifySourceMappingSelection", "-v:q").ConfigureAwait(true);
+
+            result.ExitCode.ShouldNotBe(0, result.Output);
+            result.Output.ShouldContain("HXW006");
+            result.Output.ShouldContain("_HXWFinalTargetsImported");
         }
         finally
         {

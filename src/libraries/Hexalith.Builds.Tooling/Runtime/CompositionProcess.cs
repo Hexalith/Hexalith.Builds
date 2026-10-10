@@ -124,13 +124,13 @@ public static class CompositionProcess
         using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         bound.CancelAfter(timeout);
         Task<(string Text, bool Truncated)> output = ReadBoundedAsync(process.StandardOutput, bound.Token);
-        Task error = process.StandardError.BaseStream.CopyToAsync(Stream.Null, bound.Token);
+        Task<string> error = ReadTailAsync(process.StandardError, bound.Token);
         try
         {
             await process.WaitForExitAsync(bound.Token).ConfigureAwait(false);
             (string text, bool truncated) = await output.ConfigureAwait(false);
-            await error.ConfigureAwait(false);
-            return new CompositionProcessResult(true, process.ExitCode, text, false) { OutputTruncated = truncated };
+            string errorText = await error.ConfigureAwait(false);
+            return new CompositionProcessResult(true, process.ExitCode, text, false) { OutputTruncated = truncated, ErrorOutput = errorText };
         }
         catch (OperationCanceledException)
         {
@@ -250,6 +250,27 @@ public static class CompositionProcess
             }
 
             truncated |= accepted < read;
+        }
+    }
+
+    private static async Task<string> ReadTailAsync(StreamReader reader, CancellationToken cancellationToken)
+    {
+        const int maximumCharacters = 4096;
+        StringBuilder result = new();
+        char[] buffer = new char[1024];
+        while (true)
+        {
+            int read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+            if (read == 0)
+            {
+                return result.ToString();
+            }
+
+            _ = result.Append(buffer, 0, read);
+            if (result.Length > maximumCharacters)
+            {
+                _ = result.Remove(0, result.Length - maximumCharacters);
+            }
         }
     }
 }

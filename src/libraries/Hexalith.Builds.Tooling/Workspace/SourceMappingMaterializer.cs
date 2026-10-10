@@ -223,6 +223,7 @@ public static class SourceMappingMaterializer
         GuardProperty(guard, "CustomBeforeDirectoryBuildTargets", BeforeTargetsPath(workspace));
         GuardProperty(guard, "CustomAfterDirectoryBuildTargets", LatePropsPath(workspace));
         GuardImportListMember(guard, "AfterMicrosoftNETSdkTargets", FinalTargetsPath(workspace));
+        GuardFinalImportMarker(guard);
         foreach (SourceMappingEntry entry in mapping.Entries)
         {
             string fromSource = entry.Origin == "source" ? "true" : "false";
@@ -299,7 +300,7 @@ public static class SourceMappingMaterializer
             }
         }
 
-        return "<Project><Target Name=\"HexalithValidateFinalSourceProjects\" BeforeTargets=\"ResolveProjectReferences;_ResolveProjectReferences;GetTargetPath\" Condition=\"" + condition + "\">"
+        return "<Project><PropertyGroup><_HXWFinalTargetsImported>true</_HXWFinalTargetsImported></PropertyGroup><Target Name=\"HexalithValidateFinalSourceProjects\" BeforeTargets=\"ResolveProjectReferences;_ResolveProjectReferences;GetTargetPath\" Condition=\"" + condition + "\">"
             + guard
             + "<SourceMappingValidationTask MappingFile=\"$(MSBuildThisFileDirectory)mapping.json\" MappingHash=\"$(HexalithSourceMappingHash)\" AssetsFile=\"$(ProjectAssetsFile)\" Projects=\"@(ProjectReference);@(ProjectReferenceWithConfiguration);@(_MSBuildProjectReferenceExistent)\" Packages=\"@(PackageReference)\" PackageVersions=\"@(PackageVersion)\" ProjectsOnly=\"true\" /></Target></Project>";
     }
@@ -327,23 +328,29 @@ public static class SourceMappingMaterializer
 
     private static void GuardProperty(StringBuilder xml, string name, string value) =>
         _ = xml.Append("<Error Condition=\"'$(").Append(name).Append(")' != '").Append(ConditionLiteral(value))
-            .Append("'\" Text=\"HXW006: Source mapping property '").Append(name).AppendLine("' differs from the selected mapping.\" />");
+            .Append("'\" Text=\"HXW006: Source mapping property '").Append(name).Append("' expected '")
+            .Append(XmlEscape(MsBuildEscape(value))).Append("' but was '$(").Append(name).AppendLine(")'.\" />");
 
     private static void GuardObservedProperty(StringBuilder xml, string name, string value) =>
         _ = xml.Append("<Error Condition=\"'$(").Append(name).Append(")' != '' and '$(").Append(name)
             .Append(")' != '").Append(ConditionLiteral(value)).Append("'\" Text=\"HXW006: Consumer-selected mapping property '")
-            .Append(name).AppendLine("' differs from the selected mapping.\" />");
+            .Append(name).Append("' expected '").Append(XmlEscape(MsBuildEscape(value)))
+            .Append("' but was '$(").Append(name).AppendLine(")'.\" />");
 
     private static void GuardPreLateProperty(StringBuilder xml, string name, string value) =>
         _ = xml.Append("<Error Condition=\"'$(_HXWPreLateSelectionCaptured)' == 'true' and '$(_HXWPreLate")
             .Append(name).Append(")' != '").Append(ConditionLiteral(value))
             .Append("'\" Text=\"HXW006: Consumer-selected mapping property '_HXWPreLate")
-            .Append(name).AppendLine("' differs from the selected mapping.\" />");
+            .Append(name).Append("' expected '").Append(XmlEscape(MsBuildEscape(value)))
+            .Append("' but was '$(_HXWPreLate").Append(name).AppendLine(")'.\" />");
 
     private static void GuardImportListMember(StringBuilder xml, string name, string value) =>
         _ = xml.Append("<Error Condition=\"!$([System.String]::Copy(';$(").Append(name)
             .Append(");').Contains(';").Append(ConditionLiteral(value)).Append(";', System.StringComparison.Ordinal))\" Text=\"HXW006: Source mapping property '")
             .Append(name).AppendLine("' does not include the selected mapping import.\" />");
+
+    private static void GuardFinalImportMarker(StringBuilder xml) =>
+        _ = xml.AppendLine("<Error Condition=\"'$(IsCrossTargetingBuild)' != 'true' and '$(_HXWFinalTargetsImported)' != 'true'\" Text=\"HXW006: Source mapping property '_HXWFinalTargetsImported' expected 'true' but was '$(_HXWFinalTargetsImported)'.\" />");
 
     private static void Property(StringBuilder xml, string name, string value) => _ = xml.Append('<').Append(name).Append('>').Append(XmlEscape(MsBuildEscape(value))).Append("</").Append(name).AppendLine(">");
 

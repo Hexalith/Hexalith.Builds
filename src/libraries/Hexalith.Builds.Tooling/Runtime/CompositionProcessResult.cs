@@ -16,4 +16,7 @@ public sealed record CompositionProcessResult(bool Started, int ExitCode, string
 {
     /// <summary>Gets a value indicating whether standard output exceeded the capture bound.</summary>
     public bool OutputTruncated { get; init; }
+
+    /// <summary>Gets a bounded tail of standard error for actionable process failures.</summary>
+    public string ErrorOutput { get; init; } = string.Empty;
 }

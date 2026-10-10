@@ -61,9 +61,12 @@ internal static class GitWorkspaceProcess
             }
         }
 
+        TimeSpan timeout = arguments.Length >= 2 && arguments[0] == "submodule" && arguments[1] == "update"
+            ? TimeSpan.FromMinutes(10)
+            : TimeSpan.FromMinutes(2);
         return CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo("git", command, directory, environment),
-            TimeSpan.FromMinutes(2),
+            timeout,
             cancellationToken);
     }
 }

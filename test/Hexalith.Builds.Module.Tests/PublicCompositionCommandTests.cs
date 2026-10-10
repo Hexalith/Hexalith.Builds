@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.RunEvidence;
 using Hexalith.Builds.Tooling.Runtime;
 
@@ -57,7 +58,9 @@ public sealed class PublicCompositionCommandTests
         string root = CompositionTestFiles.CreateDirectory();
         try
         {
-            string manifest = ExecutableManifest();
+            string manifest = CompositionTestFiles.CopyExecutableManifest(ExecutableManifest(), root);
+            File.Exists(Path.Combine(root, "artifacts", "g4-fixture", "bin", "P0Fixture.Orders.Descriptor", "P0Fixture.Orders.Descriptor.dll")).ShouldBeTrue();
+            ModuleManifestLoader.Load(manifest).IsValid.ShouldBeTrue($"Root: {ManifestPathValidator.FindRepositoryRoot(manifest)}");
             string docker = CompositionTestFiles.CreateStubDocker(root);
             CompositionEngineOptions options = new(Path.Combine(root, "apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
             {
@@ -78,7 +81,7 @@ public sealed class PublicCompositionCommandTests
                     typeof(ModuleCommandApplication).Assembly.Location,
                     options).ConfigureAwait(true);
 
-                exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable);
+                exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable, output.ToString());
                 output.ToString().ShouldContain("\"ruleId\":\"HXR011\"");
                 output.ToString().ShouldNotContain("HXR003");
                 Directory.Exists(options.StateDirectory).ShouldBeFalse();
