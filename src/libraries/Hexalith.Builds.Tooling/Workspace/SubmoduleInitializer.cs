@@ -5,12 +5,14 @@
 
 namespace Hexalith.Builds.Tooling.Workspace;
 
+using System.Text.RegularExpressions;
+
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Filesystem;
 using Hexalith.Builds.Tooling.Runtime;
 
 /// <summary>Initializes only required direct references at recorded gitlinks.</summary>
-internal static class SubmoduleInitializer
+internal static partial class SubmoduleInitializer
 {
     /// <summary>Checks every initialized nested submodule before changing any direct reference.</summary>
     /// <param name="root">The active superproject root.</param>
@@ -32,7 +34,9 @@ internal static class SubmoduleInitializer
                 CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "submodule", "update", "--init", "--checkout", "--", ":(literal)" + reference).ConfigureAwait(false);
                 if (!result.Started || result.TimedOut || result.OutputTruncated || result.ExitCode != 0)
                 {
-                    string reason = result.ErrorOutput.Trim();
+                    string reason = result.TimedOut
+                        ? "Git submodule update timed out after 10 minutes."
+                        : SanitizeGitStderr(result.ErrorOutput.Trim());
                     throw Missing(identity, path, $"Git could not check out the recorded gitlink.{(reason.Length == 0 ? string.Empty : $" Git stderr: {reason}")}");
                 }
             }
@@ -51,7 +55,9 @@ internal static class SubmoduleInitializer
                 || !checkedOut.Started || checkedOut.TimedOut || checkedOut.OutputTruncated || checkedOut.ExitCode != 0
                 || !string.Equals(parts[1], checkedOut.Output.Trim(), StringComparison.OrdinalIgnoreCase))
             {
-                throw Missing(identity, path, $"Checkout HEAD '{checkedOut.Output.Trim()}' does not match the root's staged gitlink '{(parts.Length >= 2 ? parts[1] : "missing")}'.");
+                string actual = checkedOut.ExitCode == 0 ? checkedOut.Output.Trim() : "unavailable";
+                string stderr = SanitizeGitStderr(checkedOut.ErrorOutput.Trim());
+                throw Missing(identity, path, $"Checkout HEAD '{actual}' does not match the root's staged gitlink '{(parts.Length >= 2 ? parts[1] : "missing")}'.{(stderr.Length == 0 ? string.Empty : $" Git stderr: {stderr}")}");
             }
         }
     }
@@ -217,6 +223,11 @@ internal static class SubmoduleInitializer
         }
     }
 
+    /// <summary>Removes URL user-info from Git stderr before it reaches diagnostics.</summary>
+    /// <param name="stderr">The bounded Git standard error.</param>
+    /// <returns>Standard error with URL credentials removed.</returns>
+    internal static string SanitizeGitStderr(string stderr) => GitCredentialPattern().Replace(stderr, "${scheme}[redacted]@");
+
     private static bool IsInitialized(string path) => Directory.Exists(path)
         && (File.Exists(Path.Combine(path, ".git")) || Directory.Exists(Path.Combine(path, ".git"))
             || new FileInfo(Path.Combine(path, ".git")).LinkTarget is not null);
@@ -254,7 +265,7 @@ internal static class SubmoduleInitializer
                 "--format=",
                 "--raw",
                 "--",
-                relative).ConfigureAwait(false);
+                ":(literal)" + relative).ConfigureAwait(false);
 #pragma warning disable IDE0046 // Keep an explicit failure before inspecting bounded Git history.
             if (!history.Started || history.TimedOut || history.OutputTruncated || history.ExitCode != 0)
             {
@@ -307,7 +318,10 @@ internal static class SubmoduleInitializer
         ToolFailureCategory.PrerequisiteUnavailable,
         $"Required source '{identity}' at '{path}' is unavailable: {reason}",
         path,
-        "Check the root gitlink and local submodule source, then retry."));
+        "Stage the checked-out commit with git add <reference>, move the checkout to the staged gitlink with git submodule update --checkout -- <reference>, or deinitialize a broken checkout before retrying."));
+
+    [GeneratedRegex(@"(?<scheme>[A-Za-z][A-Za-z0-9+.-]*://)[^\s/@]+@", RegexOptions.CultureInvariant, 1000)]
+    private static partial Regex GitCredentialPattern();
 
     private static WorkspaceMappingException InvalidNestedOwnership(string path) => new(new ToolDiagnostic(
         "HXW003",

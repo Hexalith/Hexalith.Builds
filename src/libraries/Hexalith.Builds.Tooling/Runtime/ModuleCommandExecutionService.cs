@@ -320,8 +320,8 @@ public static class ModuleCommandExecutionService
                     ?? await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
                 options = options with { SourceMapping = mapping };
 
-                // The recorded gitlink can replace the manifest in an already initialized direct checkout.
-                // Everything after resolution must use the bytes that will actually be built.
+                // Initialization can supply a missing direct-reference manifest, and the root
+                // manifest may change while initialization is in progress. Use current bytes.
                 ManifestLoadResult currentManifest = ModuleManifestLoader.Load(manifestPath);
                 if (!currentManifest.IsValid)
                 {
@@ -364,33 +364,13 @@ public static class ModuleCommandExecutionService
                         cancellationToken).ConfigureAwait(false);
                 }
 
-                prerequisite = preResolvedMapping is null ? prerequisite ?? RuntimePrerequisiteGate.Check(manifest) : RuntimePrerequisiteGate.Check(manifest);
+                prerequisite = RuntimePrerequisiteGate.Check(manifest);
                 if (!prerequisite.IsAvailable)
                 {
                     return await WriteResultAsync(
                         "unavailable",
                         ToolOutcome.Passed().Fail(ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, prerequisite.Diagnostic!.RuleId, ToolExitCode.PrerequisiteUnavailable),
                         [prerequisite.Diagnostic],
-                        format,
-                        writer,
-                        command,
-                        manifestPath,
-                        manifest,
-                        profile,
-                        filter,
-                        evidencePath,
-                        startedUtc,
-                        cancellationToken).ConfigureAwait(false);
-                }
-
-                ToolDiagnostic? aspire = preResolvedMapping is null ? preResolutionAspire : await CompositionPrerequisiteProbe.ProbeAspireAsync(
-                    options.AspireCommand, options.AspireProbeTimeout, cancellationToken).ConfigureAwait(false);
-                if (aspire is not null)
-                {
-                    return await WriteResultAsync(
-                        "unavailable",
-                        ToolOutcome.Passed().Fail(ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, aspire.RuleId, ToolExitCode.PrerequisiteUnavailable),
-                        [aspire],
                         format,
                         writer,
                         command,
@@ -415,6 +395,26 @@ public static class ModuleCommandExecutionService
                         "unavailable",
                         ToolOutcome.Passed().Fail(changedShape.Phase, changedShape.Category, changedShape.RuleId, ToolExitCode.PrerequisiteUnavailable),
                         [changedShape],
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                ToolDiagnostic? aspire = preResolvedMapping is null ? preResolutionAspire : await CompositionPrerequisiteProbe.ProbeAspireAsync(
+                    options.AspireCommand, options.AspireProbeTimeout, cancellationToken).ConfigureAwait(false);
+                if (aspire is not null)
+                {
+                    return await WriteResultAsync(
+                        "unavailable",
+                        ToolOutcome.Passed().Fail(ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, aspire.RuleId, ToolExitCode.PrerequisiteUnavailable),
+                        [aspire],
                         format,
                         writer,
                         command,

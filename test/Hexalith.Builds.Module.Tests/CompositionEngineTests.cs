@@ -470,6 +470,7 @@ public sealed class CompositionEngineTests
         string root = CompositionTestFiles.CreateDirectory();
         try
         {
+            string manifest = CompositionTestFiles.CopyExecutableManifest(ExecutableManifest(), root);
             string aspire = Path.Combine(root, "wrong-aspire");
             CompositionTestFiles.WriteScript(aspire, "echo '0.0.1'");
             CompositionEngineOptions options = CreateOptions(root) with
@@ -485,8 +486,8 @@ public sealed class CompositionEngineTests
                 await using (error.ConfigureAwait(true))
                 {
                     string[] arguments = command == "test"
-                        ? [command, "--manifest", ExecutableManifest(), "--profile", "live", "--output", format]
-                        : [command, "--manifest", ExecutableManifest(), "--output", format];
+                        ? [command, "--manifest", manifest, "--profile", "live", "--output", format]
+                        : [command, "--manifest", manifest, "--output", format];
                     int exitCode = await ModuleCommandApplication.InvokeAsync(
                         arguments,
                         output,

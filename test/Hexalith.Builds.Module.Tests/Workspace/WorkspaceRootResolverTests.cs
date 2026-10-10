@@ -184,6 +184,36 @@ public sealed class WorkspaceRootResolverTests
         error.Diagnostic.Message.ShouldContain("missing-dependency");
     }
 
+    /// <summary>Verifies Git URL credentials are removed from diagnostics.</summary>
+    [Fact]
+    public void GitStderrUrlCredentialsAreRedacted()
+    {
+        string sanitized = SubmoduleInitializer.SanitizeGitStderr("clone of 'https://alice:sec'ret(pa)ss@example.invalid/dependency.git' failed");
+
+        sanitized.ShouldContain("https://[redacted]@example.invalid/dependency.git");
+        sanitized.ShouldNotContain("alice:sec'ret(pa)ss");
+    }
+
+    /// <summary>Verifies failed direct checkout diagnostics redact URL credentials from Git stderr.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task FailedDirectCheckoutRedactsGitUrlCredentialsAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string originalUrl = new Uri(Path.Combine(fixture.Directory, "dependency")).AbsoluteUri;
+        string missingUrl = "file://alice:sec'ret(pa)ss@localhost" + Path.Combine(fixture.Directory, "missing-dependency").Replace('\\', '/');
+        await File.WriteAllTextAsync(gitmodules, declarations.Replace(originalUrl, missingUrl, StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        WorkspaceMappingException error = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        error.Diagnostic.RuleId.ShouldBe("HXW004");
+        error.Diagnostic.Message.ShouldContain("file://[redacted]@localhost");
+        error.Diagnostic.Message.ShouldContain("missing-dependency");
+        error.Diagnostic.Message.ShouldNotContain("alice:sec'ret(pa)ss");
+    }
+
     /// <summary>Verifies Git-quoted unusual gitlinks remain visible when declarations are missing.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]
@@ -529,6 +559,7 @@ public sealed class WorkspaceRootResolverTests
         string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(gitmodules, declarations.Replace("path = " + original, "path = " + renamed, StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--add", "--cacheinfo", $"160000,{commit},{renamed}").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--add", "--cacheinfo", $"160000,{commit},references/Hexalith.Dep1").ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--force-remove", original).ConfigureAwait(true);
 
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -536,6 +567,7 @@ public sealed class WorkspaceRootResolverTests
         string checkout = Path.Combine(fixture.Checkout, "references", "Hexalith.Dep[1]");
         mapping.Entries.ShouldContain(new SourceMappingEntry("Hexalith.Dep[1]", "source", checkout));
         File.Exists(Path.Combine(checkout, ".git")).ShouldBeTrue();
+        File.Exists(Path.Combine(fixture.Checkout, "references", "Hexalith.Dep1", ".git")).ShouldBeFalse();
     }
 
     /// <summary>Verifies source mode initializes the recorded direct gitlink and leaves nested submodules untouched.</summary>

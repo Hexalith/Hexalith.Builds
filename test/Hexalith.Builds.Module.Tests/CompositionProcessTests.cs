@@ -36,6 +36,26 @@ public sealed class CompositionProcessTests
         result.OutputTruncated.ShouldBeTrue();
     }
 
+    /// <summary>Verifies standard error retains only the bounded tail.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task ErrorBeyondCaptureBoundRetainsLastMarkerAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The output probe uses a POSIX shell.");
+        }
+
+        CompositionProcessResult result = await CompositionProcess.RunAsync(
+            CompositionProcess.CreateStartInfo("/bin/sh", ["-c", "printf '%05000dEND' 0 >&2"], null, null),
+            TimeSpan.FromSeconds(20),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        result.ExitCode.ShouldBe(0);
+        result.ErrorOutput.Length.ShouldBe(4096);
+        result.ErrorOutput.ShouldEndWith("END");
+    }
+
     /// <summary>
     /// Verifies a variable of the runner process never reaches a helper while explicit values do.
     /// </summary>

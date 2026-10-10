@@ -972,6 +972,7 @@ public sealed class WorkspaceMsBuildTests
             result.ExitCode.ShouldNotBe(0, result.Output);
             result.Output.ShouldContain("HXW006");
             result.Output.ShouldContain("AfterMicrosoftNETSdkTargets");
+            result.Output.ShouldContain(SourceMappingMaterializer.FinalTargetsPath(workspace));
         }
         finally
         {
@@ -1002,7 +1003,7 @@ public sealed class WorkspaceMsBuildTests
 
             result.ExitCode.ShouldNotBe(0, result.Output);
             result.Output.ShouldContain("HXW006");
-            result.Output.ShouldContain("_HXWFinalTargetsImported");
+            result.Output.ShouldContain("final SDK source mapping targets import was cleared or never evaluated");
         }
         finally
         {
@@ -1700,6 +1701,40 @@ public sealed class WorkspaceMsBuildTests
             result.ExitCode.ShouldNotBe(0);
             result.Output.ShouldContain("HXW006");
             result.Output.ShouldContain(property);
+            result.Output.ShouldContain("expected '");
+            result.Output.ShouldContain("but was '");
+            result.Output.ShouldContain(outside);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies the observed consumer selection diagnostic names expected and actual values.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task ObservedConsumerSelectionReportsExpectedAndActualAsync()
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            _ = Directory.CreateDirectory(active);
+            await File.WriteAllTextAsync(
+                Path.Combine(active, "Directory.Build.targets"),
+                "<Project><PropertyGroup><_HXWObservedHexalithDepFromSource>false</_HXWObservedHexalithDepFromSource></PropertyGroup></Project>",
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>");
+            SourceMapping mapping = Mapping(active, WorkspaceMode.Source);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "build", project, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+
+            result.ExitCode.ShouldNotBe(0);
+            result.Output.ShouldContain("_HXWObservedHexalithDepFromSource");
+            result.Output.ShouldContain("expected 'true' but was 'false'");
         }
         finally
         {

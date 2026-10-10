@@ -10,7 +10,7 @@ using System.Diagnostics;
 using System.Text;
 
 /// <summary>
-/// Runs bounded helper processes with a scrubbed environment and captures only bounded standard output.
+/// Runs bounded helper processes with a scrubbed environment and captures bounded standard output and standard error.
 /// </summary>
 public static class CompositionProcess
 {

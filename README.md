@@ -230,6 +230,9 @@ the outermost Git superproject containing
 the manifest once, selects the active module and every direct
 `references/*` entry in that root's `.gitmodules`, and writes the resulting
 mapping to the run workspace (`source-mapping/mapping.json`) and `plan.json`.
+Until a declared module identity is available, the active root identity is its
+checkout directory name. That name determines generated mapping property names
+and the source/package duplicate identity prefix.
 Both modes require each declared direct reference to have exactly one staged
 Git gitlink. Package mode checks out the active module if its manifest is in a
 direct reference, while other package-origin references stay uninitialized.
@@ -243,7 +246,9 @@ In source mode, the active module and every root-declared direct reference build
 in Debug. An uninitialized direct reference is checked out at its recorded
 gitlink without `--recursive` or `--remote`. An initialized direct reference
 whose HEAD differs from the staged gitlink fails with `HXW004` without moving
-its checkout. An initialized nested submodule
+its checkout. Stage that checkout commit with `git add <reference>`, or move it
+to the staged gitlink with `git submodule update --checkout -- <reference>`.
+Deinitialize a broken checkout before retrying. An initialized nested submodule
 stops resolution before any initialization; deinitialize it manually before
 retrying. Package mode leaves dependencies as packages and builds the active
 module in Release. Package versions continue to come from the workspace's

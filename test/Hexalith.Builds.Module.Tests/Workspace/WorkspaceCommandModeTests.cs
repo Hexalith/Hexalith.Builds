@@ -298,9 +298,12 @@ public sealed class WorkspaceCommandModeTests
     }
 
     /// <summary>Verifies a nonexecutable manifest in an uninitialized direct reference is classified after checkout.</summary>
+    /// <param name="aspireAvailable">Whether an Aspire probe is available.</param>
     /// <returns>A task for the assertion.</returns>
-    [Fact]
-    public async Task DirectReferenceNonexecutableManifestReportsHxr003Async()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DirectReferenceNonexecutableManifestReportsHxr003Async(bool aspireAvailable)
     {
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(withDirectManifest: true).ConfigureAwait(true);
         string repository = CompositionTestFiles.RepositoryRoot();
@@ -312,11 +315,17 @@ public sealed class WorkspaceCommandModeTests
         string recorded = (await WorkspaceGitFixture.RunGitAsync(dependency, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
         _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--cacheinfo", $"160000,{recorded},references/Hexalith.Dep").ConfigureAwait(true);
         string manifest = Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", "module.json");
+        string aspire = Path.Combine(fixture.Directory, "missing-aspire");
+        if (aspireAvailable)
+        {
+            aspire = OperatingSystem.IsWindows()
+                ? (await CompositionTestFiles.BuildPortableToolchainAsync(fixture.Directory, TestContext.Current.CancellationToken).ConfigureAwait(true)).Aspire
+                : CompositionTestFiles.CreateAspire(fixture.Directory);
+        }
+
         CompositionEngineOptions options = new(Path.Combine(fixture.Directory, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
         {
-            AspireCommand = OperatingSystem.IsWindows()
-                ? (await CompositionTestFiles.BuildPortableToolchainAsync(fixture.Directory, TestContext.Current.CancellationToken).ConfigureAwait(true)).Aspire
-                : CompositionTestFiles.CreateAspire(fixture.Directory),
+            AspireCommand = aspire,
             StateDirectory = Path.Combine(fixture.Directory, "state"),
             WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
         };
@@ -335,9 +344,132 @@ public sealed class WorkspaceCommandModeTests
 
         exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable);
         output.ToString().ShouldContain("HXR003");
+        output.ToString().ShouldNotContain("HXR015");
         output.ToString().ShouldNotContain("HXW004");
         File.Exists(manifest).ShouldBeTrue();
         Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies root usage and Aspire failures happen before direct initialization.</summary>
+    /// <param name="command">The public command.</param>
+    /// <param name="expectedRule">The expected early rule.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("run", "HXR015")]
+    [InlineData("test", "HXC002")]
+    public async Task RootManifestEarlyFailureDoesNotInitializeReferenceAsync(string command, string expectedRule)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string repository = CompositionTestFiles.RepositoryRoot();
+        CopyFixtureTree(Path.Combine(repository, "artifacts", "g4-fixture", "bin"), Path.Combine(fixture.Checkout, "artifacts", "g4-fixture", "bin"), skipBuildFolders: false);
+        CopyFixtureTree(Path.Combine(repository, "test", "fixtures", "module", "executable"), Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable"), skipBuildFolders: true);
+        string manifest = Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable", "hexalith.module-manifest.v1.json");
+        CompositionEngineOptions options = new(Path.Combine(fixture.Directory, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            AspireCommand = Path.Combine(fixture.Directory, "missing-aspire"),
+            StateDirectory = Path.Combine(fixture.Directory, "state"),
+            WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
+        };
+
+#pragma warning disable CA2007 // Test assertions require the xUnit synchronization context.
+        await using StringWriter output = new();
+        await using StringWriter error = new();
+#pragma warning restore CA2007
+        string[] arguments = command == "test"
+            ? [command, "--manifest", manifest, "--profile", "missing", "--output", "json"]
+            : [command, "--manifest", manifest, "--output", "json"];
+        int exitCode = await ModuleCommandApplication.InvokeAsync(
+            arguments,
+            output,
+            error,
+            TestContext.Current.CancellationToken,
+            typeof(ModuleCommandApplication).Assembly.Location,
+            options).ConfigureAwait(true);
+
+        exitCode.ShouldBe(command == "test" ? (int)ToolExitCode.UsageOrManifest : (int)ToolExitCode.PrerequisiteUnavailable);
+        output.ToString().ShouldContain(expectedRule);
+        File.Exists(Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", ".git")).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies direct-reference usage errors take precedence over nonexecutable topology.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task DirectReferenceProfileErrorPrecedesHxr003Async()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(withDirectManifest: true).ConfigureAwait(true);
+        string dependency = Path.Combine(fixture.Directory, "dependency");
+        string repository = CompositionTestFiles.RepositoryRoot();
+        CopyFixtureTree(Path.Combine(repository, "test", "fixtures", "module"), Path.Combine(dependency, "test", "fixtures", "module"), skipBuildFolders: true);
+        string positive = Path.Combine(repository, "test", "fixtures", "module", "positive", "hexalith.module-manifest.v1.json");
+        File.Copy(positive, Path.Combine(dependency, "module.json"), overwrite: true);
+        _ = await WorkspaceGitFixture.RunGitAsync(dependency, "add", "module.json", "test").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(dependency, "commit", "-m", "add nonexecutable profile manifest").ConfigureAwait(true);
+        string recorded = (await WorkspaceGitFixture.RunGitAsync(dependency, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "update-index", "--cacheinfo", $"160000,{recorded},references/Hexalith.Dep").ConfigureAwait(true);
+        string manifest = Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", "module.json");
+        CompositionEngineOptions options = new(Path.Combine(fixture.Directory, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            AspireCommand = Path.Combine(fixture.Directory, "missing-aspire"),
+            StateDirectory = Path.Combine(fixture.Directory, "state"),
+            WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
+        };
+
+#pragma warning disable CA2007 // Test assertions require the xUnit synchronization context.
+        await using StringWriter output = new();
+        await using StringWriter error = new();
+#pragma warning restore CA2007
+        int exitCode = await ModuleCommandApplication.InvokeAsync(
+            ["test", "--manifest", manifest, "--profile", "missing", "--output", "json"],
+            output,
+            error,
+            TestContext.Current.CancellationToken,
+            typeof(ModuleCommandApplication).Assembly.Location,
+            options).ConfigureAwait(true);
+
+        exitCode.ShouldBe((int)ToolExitCode.UsageOrManifest);
+        output.ToString().ShouldContain("HXC002");
+        output.ToString().ShouldNotContain("HXR003");
+        File.Exists(Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", ".git")).ShouldBeTrue();
+    }
+
+    /// <summary>Verifies a resolver failure keeps the topology exit code at the public command boundary.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task InvalidDirectDeclarationUsesTopologyExitCodeAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string repository = CompositionTestFiles.RepositoryRoot();
+        CopyFixtureTree(Path.Combine(repository, "artifacts", "g4-fixture", "bin"), Path.Combine(fixture.Checkout, "artifacts", "g4-fixture", "bin"), skipBuildFolders: false);
+        CopyFixtureTree(Path.Combine(repository, "test", "fixtures", "module", "executable"), Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable"), skipBuildFolders: true);
+        string manifest = Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable", "hexalith.module-manifest.v1.json");
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(gitmodules, declarations.Replace("path = references/Hexalith.Dep", "path = references/Hexalith.Other", StringComparison.Ordinal), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string aspire = OperatingSystem.IsWindows()
+            ? (await CompositionTestFiles.BuildPortableToolchainAsync(fixture.Directory, TestContext.Current.CancellationToken).ConfigureAwait(true)).Aspire
+            : CompositionTestFiles.CreateAspire(fixture.Directory);
+        CompositionEngineOptions options = new(Path.Combine(fixture.Directory, "missing-apphost.dll"), typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            AspireCommand = aspire,
+            StateDirectory = Path.Combine(fixture.Directory, "state"),
+            WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
+        };
+
+#pragma warning disable CA2007 // Test assertions require the xUnit synchronization context.
+        await using StringWriter output = new();
+        await using StringWriter error = new();
+#pragma warning restore CA2007
+        int exitCode = await ModuleCommandApplication.InvokeAsync(
+            ["run", "--manifest", manifest, "--mode", "source", "--output", "json"],
+            output,
+            error,
+            TestContext.Current.CancellationToken,
+            typeof(ModuleCommandApplication).Assembly.Location,
+            options).ConfigureAwait(true);
+
+        exitCode.ShouldBe((int)ToolExitCode.TopologyOrLifecycle);
+        output.ToString().ShouldContain("HXW002");
+        File.Exists(Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", ".git")).ShouldBeFalse();
     }
 
     /// <summary>Verifies an absent root manifest keeps the manifest loader diagnostic without initializing references.</summary>
@@ -432,6 +564,8 @@ public sealed class WorkspaceCommandModeTests
         (await File.ReadAllTextAsync(directManifest, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBe("{}");
         output.ToString().ShouldContain("HXW004");
         output.ToString().ShouldContain("Hexalith.Dep");
+        using System.Text.Json.JsonDocument response = System.Text.Json.JsonDocument.Parse(output.ToString());
+        response.RootElement.GetProperty("status").GetString().ShouldBe("unavailable");
         Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
     }
 
@@ -563,7 +697,7 @@ public sealed class WorkspaceCommandModeTests
         await using StringWriter output = new();
         await using StringWriter error = new();
 #pragma warning restore CA2007
-        _ = await ModuleCommandApplication.InvokeAsync(
+        int exitCode = await ModuleCommandApplication.InvokeAsync(
             ["run", "--manifest", fixture.Manifest, "--mode", "package", "--output", "json"],
             output,
             error,
@@ -571,6 +705,7 @@ public sealed class WorkspaceCommandModeTests
             typeof(ModuleCommandApplication).Assembly.Location,
             options).ConfigureAwait(true);
 
+        exitCode.ShouldBe((int)ToolExitCode.TopologyOrLifecycle);
         output.ToString().ShouldContain("HXW006");
         output.ToString().ShouldContain(descriptor);
         output.ToString().ShouldNotContain("HXD002");
