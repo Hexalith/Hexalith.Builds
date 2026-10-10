@@ -248,7 +248,7 @@ public static class WorkspaceRootResolver
                     }
 
                     string path = record[(separator + 1)..];
-                    return path == ".gitmodules" || (record.StartsWith("160000 ", StringComparison.Ordinal) && path.StartsWith("references/", StringComparison.Ordinal));
+                    return path == ".gitmodules" || (record.StartsWith("160000 ", StringComparison.Ordinal) && path.StartsWith("references/", FilesystemPathRules.Comparison(root)));
                 }))
             {
                 throw Failure("HXW002", $"Working-tree '{gitmodules}' is missing while Git still tracks direct reference declarations or gitlinks.", gitmodules);
@@ -285,7 +285,7 @@ public static class WorkspaceRootResolver
                 throw Failure("HXW002", $"Reference '{path}' must use a direct references/* path.", path);
             }
 
-            if (parts[0] == "references")
+            if (string.Equals(parts[0], "references", FilesystemPathRules.Comparison(root)))
             {
                 if (parts.Length != 2 || parts[1].Length == 0 || parts[1] is "." or "..")
                 {
@@ -315,7 +315,7 @@ public static class WorkspaceRootResolver
     internal static async Task<bool> IsRootManifestAsync(string manifestPath, CancellationToken cancellationToken)
     {
         string manifest = Path.GetFullPath(manifestPath);
-        CompositionProcessResult probe = await GitWorkspaceProcess.RunAsync(Path.GetDirectoryName(manifest)!, cancellationToken, "rev-parse", "--show-toplevel").ConfigureAwait(false);
+        CompositionProcessResult probe = await GitWorkspaceProcess.RunAsync(ExistingAncestor(Path.GetDirectoryName(manifest)!), cancellationToken, "rev-parse", "--show-toplevel").ConfigureAwait(false);
         string root;
         if (!probe.Started || probe.TimedOut || probe.OutputTruncated || probe.ExitCode != 0 || string.IsNullOrWhiteSpace(probe.Output))
         {

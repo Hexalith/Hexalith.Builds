@@ -91,11 +91,12 @@ public static class SourceMappingMaterializer
         if (!initializeObserved)
         {
             _ = xml.Append("<PropertyGroup Condition=\"").Append(ConsumerProjectCondition(mapping, workspace)).AppendLine("\">");
-            foreach (string name in MappedSelectionProperties(mapping))
+            foreach ((string name, _) in MappedSelectionValues(mapping))
             {
                 _ = xml.Append("<_HXWPreLate").Append(name).Append(">$(").Append(name).Append(")</_HXWPreLate").Append(name).AppendLine(">");
             }
 
+            Property(xml, "_HXWPreLateSelectionCaptured", "true");
             _ = xml.AppendLine("</PropertyGroup>");
         }
 
@@ -156,7 +157,7 @@ public static class SourceMappingMaterializer
     {
         StringBuilder xml = new();
         _ = xml.Append("<Project><PropertyGroup Condition=\"").Append(ConsumerProjectCondition(mapping, workspace)).Append("\">");
-        foreach (string name in MappedSelectionProperties(mapping))
+        foreach ((string name, _) in MappedSelectionValues(mapping))
         {
             _ = xml.Append("<_HXWObserved").Append(name).Append(">$(").Append(name).Append(")</_HXWObserved").Append(name).Append('>');
         }
@@ -165,25 +166,27 @@ public static class SourceMappingMaterializer
         return xml.ToString();
     }
 
-    private static IEnumerable<string> MappedSelectionProperties(SourceMapping mapping)
+    private static IEnumerable<(string Name, string Value)> MappedSelectionValues(SourceMapping mapping)
     {
-        yield return "HexalithSourceMappingRoot";
-        yield return "Configuration";
-        yield return "UseHexalithProjectReferences";
-        yield return "UseNuGetDeps";
-        foreach (string identity in mapping.Entries.Select(entry => entry.Identity))
+        yield return ("HexalithSourceMappingRoot", mapping.Root);
+        yield return ("Configuration", mapping.Mode == WorkspaceMode.Source ? "Debug" : "Release");
+        yield return ("UseHexalithProjectReferences", mapping.Mode == WorkspaceMode.Source ? "true" : "false");
+        yield return ("UseNuGetDeps", mapping.Mode == WorkspaceMode.Package ? "true" : "false");
+        foreach (SourceMappingEntry entry in mapping.Entries)
         {
-            yield return "Hexalith" + SourceMapping.PropertySuffix(identity) + "Root";
-            yield return "Hexalith" + SourceMapping.PropertySuffix(identity) + "FromSource";
-            if (string.Equals(identity, "Hexalith.Tenants", StringComparison.OrdinalIgnoreCase))
+            string suffix = SourceMapping.PropertySuffix(entry.Identity);
+            string origin = entry.Origin == "source" ? "true" : "false";
+            yield return ("Hexalith" + suffix + "Root", entry.Path ?? Path.Combine(mapping.Root, "references", entry.Identity));
+            yield return ("Hexalith" + suffix + "FromSource", origin);
+            if (string.Equals(entry.Identity, "Hexalith.Tenants", StringComparison.OrdinalIgnoreCase))
             {
-                yield return "HexalithTenantsBasePath";
+                yield return ("HexalithTenantsBasePath", entry.Origin == "source" ? Path.Combine(entry.Path!, "src") : string.Empty);
             }
 
-            if (string.Equals(identity, "Hexalith.Commons", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(entry.Identity, "Hexalith.Commons", StringComparison.OrdinalIgnoreCase))
             {
-                yield return "HexalithCommonsHttpFromSource";
-                yield return "HexalithCommonsServiceDefaultsFromSource";
+                yield return ("HexalithCommonsHttpFromSource", origin);
+                yield return ("HexalithCommonsServiceDefaultsFromSource", origin);
             }
         }
     }
@@ -210,10 +213,16 @@ public static class SourceMappingMaterializer
         GuardObservedProperty(guard, "_HXWObservedConfiguration", mapping.Mode == WorkspaceMode.Source ? "Debug" : "Release");
         GuardObservedProperty(guard, "_HXWObservedUseHexalithProjectReferences", mapping.Mode == WorkspaceMode.Source ? "true" : "false");
         GuardObservedProperty(guard, "_HXWObservedUseNuGetDeps", mapping.Mode == WorkspaceMode.Package ? "true" : "false");
+        StringBuilder preLateGuard = new();
+        foreach ((string name, string expected) in MappedSelectionValues(mapping))
+        {
+            GuardPreLateProperty(preLateGuard, name, expected);
+        }
+
         GuardProperty(guard, "CustomBeforeDirectoryBuildProps", TargetsPath(workspace));
         GuardProperty(guard, "CustomBeforeDirectoryBuildTargets", BeforeTargetsPath(workspace));
         GuardProperty(guard, "CustomAfterDirectoryBuildTargets", LatePropsPath(workspace));
-        GuardPropertyContains(guard, "AfterMicrosoftNETSdkTargets", FinalTargetsPath(workspace));
+        GuardImportListMember(guard, "AfterMicrosoftNETSdkTargets", FinalTargetsPath(workspace));
         foreach (SourceMappingEntry entry in mapping.Entries)
         {
             string fromSource = entry.Origin == "source" ? "true" : "false";
@@ -241,6 +250,7 @@ public static class SourceMappingMaterializer
 
         return "<Project InitialTargets=\"HexalithVerifySourceMappingSelection;HexalithValidateSourceProjectsBeforeRestore\">"
             + "<Target Name=\"HexalithVerifySourceMappingSelection\" Condition=\"" + condition + "\">" + guard + "</Target>"
+            + "<Target Name=\"HexalithVerifyPreLateSourceMappingSelection\" BeforeTargets=\"Restore;_GenerateRestoreGraphProjectEntry;_GenerateRestoreProjectPathItemsPerFramework;_GenerateProjectRestoreGraphPerFramework;CollectPackageReferences;AssignProjectConfiguration;_SplitProjectReferencesByFileExistence;_GetProjectReferenceTargetFrameworkProperties;ResolveProjectReferences;ResolveReferences;CoreCompile\" Condition=\"" + condition + "\">" + preLateGuard + "</Target>"
             + "<Target Name=\"HexalithReconcileSourceMapping\" BeforeTargets=\"Restore;_GenerateRestoreGraphProjectEntry;_GenerateRestoreProjectPathItemsPerFramework;_GenerateProjectRestoreGraphPerFramework;CollectPackageReferences;AssignProjectConfiguration;_SplitProjectReferencesByFileExistence;_GetProjectReferenceTargetFrameworkProperties;ResolveReferences;ResolvePackageAssets\" Condition=\"" + condition + "\">"
             + guard
             + "<SourceMappingReconciliationTask MappingFile=\"$(MSBuildThisFileDirectory)mapping.json\" MappingHash=\"$(HexalithSourceMappingHash)\" Projects=\"@(ProjectReference)\" Packages=\"@(PackageReference)\" PackageVersions=\"@(PackageVersion)\" Configuration=\"$(Configuration)\" Platform=\"$(Platform)\" TargetFramework=\"$(TargetFramework)\" ManagePackageVersionsCentrally=\"$(ManagePackageVersionsCentrally)\">"
@@ -324,9 +334,15 @@ public static class SourceMappingMaterializer
             .Append(")' != '").Append(ConditionLiteral(value)).Append("'\" Text=\"HXW006: Consumer-selected mapping property '")
             .Append(name).AppendLine("' differs from the selected mapping.\" />");
 
-    private static void GuardPropertyContains(StringBuilder xml, string name, string value) =>
-        _ = xml.Append("<Error Condition=\"!$([System.String]::Copy('$(").Append(name)
-            .Append(")').Contains('").Append(ConditionLiteral(value)).Append("', System.StringComparison.Ordinal))\" Text=\"HXW006: Source mapping property '")
+    private static void GuardPreLateProperty(StringBuilder xml, string name, string value) =>
+        _ = xml.Append("<Error Condition=\"'$(_HXWPreLateSelectionCaptured)' == 'true' and '$(_HXWPreLate")
+            .Append(name).Append(")' != '").Append(ConditionLiteral(value))
+            .Append("'\" Text=\"HXW006: Consumer-selected mapping property '_HXWPreLate")
+            .Append(name).AppendLine("' differs from the selected mapping.\" />");
+
+    private static void GuardImportListMember(StringBuilder xml, string name, string value) =>
+        _ = xml.Append("<Error Condition=\"!$([System.String]::Copy(';$(").Append(name)
+            .Append(");').Contains(';").Append(ConditionLiteral(value)).Append(";', System.StringComparison.Ordinal))\" Text=\"HXW006: Source mapping property '")
             .Append(name).AppendLine("' does not include the selected mapping import.\" />");
 
     private static void Property(StringBuilder xml, string name, string value) => _ = xml.Append('<').Append(name).Append('>').Append(XmlEscape(MsBuildEscape(value))).Append("</").Append(name).AppendLine(">");

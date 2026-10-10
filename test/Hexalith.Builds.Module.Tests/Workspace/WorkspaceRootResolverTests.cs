@@ -18,6 +18,44 @@ using Xunit;
 /// <summary>Verifies active-root mapping and safe direct-submodule initialization.</summary>
 public sealed class WorkspaceRootResolverTests
 {
+    /// <summary>Verifies direct declaration casing follows the containing filesystem.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task DirectReferencesComponentUsesFilesystemCasingAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string gitmodules = Path.Combine(fixture.Checkout, ".gitmodules");
+        string declarations = await File.ReadAllTextAsync(gitmodules, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(
+            gitmodules,
+            declarations.Replace("path = references/Hexalith.Dep", "path = References/Hexalith.Dep", StringComparison.Ordinal),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        IReadOnlyList<string> references = await WorkspaceRootResolver.ReadDirectReferencesAsync(fixture.Checkout, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        if (Directory.Exists(Path.Combine(fixture.Checkout, "References")))
+        {
+            references.ShouldBe(["References/Hexalith.Dep"]);
+        }
+        else
+        {
+            references.ShouldBeEmpty();
+        }
+    }
+
+    /// <summary>Verifies a missing parent directory does not hide a missing root manifest from classification.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task MissingRootManifestParentStillClassifiesAsRootAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string manifest = Path.Combine(fixture.Checkout, "missing", "child", "module.json");
+
+        bool isRoot = await WorkspaceRootResolver.IsRootManifestAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        isRoot.ShouldBeTrue();
+    }
+
     /// <summary>Verifies missing Git falls back only when no Git marker claims the workspace.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]

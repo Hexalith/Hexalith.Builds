@@ -771,10 +771,163 @@ public sealed class WorkspaceMsBuildTests
                 project,
                 "-v:q",
                 "-p:NuGetAudit=false").ConfigureAwait(true);
-            build.ExitCode.ShouldBe(0, build.Output);
+            build.ExitCode.ShouldNotBe(0);
+            build.Output.ShouldContain("HXW006");
+            build.Output.ShouldContain("_HXWPreLateConfiguration");
             result.Output.ShouldContain("\"HexalithDepFromSource\": \"" + sourceExpected + "\"");
             using JsonDocument output = JsonDocument.Parse(result.Output);
             output.RootElement.GetProperty("Properties").GetProperty("HexalithDepRoot").GetString().ShouldBe(Path.Combine(active, "references", "Hexalith.Dep"));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies a late consumer origin flag cannot be hidden by the mapping's final property import.</summary>
+    /// <param name="mode">The selected tool mode.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData(WorkspaceMode.Source)]
+    [InlineData(WorkspaceMode.Package)]
+    public async Task DirectoryBuildTargetsCannotHideOriginFlagOverrideAsync(WorkspaceMode mode)
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            _ = Directory.CreateDirectory(active);
+            string lateTargets = "<Project><PropertyGroup><UseHexalithProjectReferences>"
+                + (mode == WorkspaceMode.Source ? "false" : "true")
+                + "</UseHexalithProjectReferences></PropertyGroup></Project>";
+            await File.WriteAllTextAsync(Path.Combine(active, "Directory.Build.targets"), lateTargets, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>");
+            SourceMapping mapping = Mapping(active, mode);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "build", project, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+
+            result.ExitCode.ShouldNotBe(0);
+            result.Output.ShouldContain("HXW006");
+            result.Output.ShouldContain("_HXWPreLateUseHexalithProjectReferences");
+            File.Exists(Path.Combine(active, "obj", "project.assets.json")).ShouldBeFalse();
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies late root and Tenants path overrides cannot be hidden by the final import.</summary>
+    /// <param name="property">The consumer property to redirect.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("HexalithSourceMappingRoot")]
+    [InlineData("HexalithDepRoot")]
+    [InlineData("HexalithTenantsBasePath")]
+    public async Task DirectoryBuildTargetsCannotHideMappedPathOverrideAsync(string property)
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            string outside = Path.Combine(root, "outside");
+            _ = Directory.CreateDirectory(active);
+            _ = Directory.CreateDirectory(outside);
+            string lateTargets = "<Project><PropertyGroup><" + property + ">" + outside + "</" + property + "></PropertyGroup></Project>";
+            await File.WriteAllTextAsync(Path.Combine(active, "Directory.Build.targets"), lateTargets, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>");
+            SourceMapping mapping = new(
+                WorkspaceMode.Source,
+                active,
+                "Hexalith.Active",
+                [
+                    new SourceMappingEntry("Hexalith.Active", "source", active),
+                    new SourceMappingEntry("Hexalith.Dep", "source", Path.Combine(active, "references", "Hexalith.Dep")),
+                    new SourceMappingEntry("Hexalith.Tenants", "source", Path.Combine(active, "references", "Hexalith.Tenants")),
+                ],
+                true);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "build", project, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+
+            result.ExitCode.ShouldNotBe(0);
+            result.Output.ShouldContain("HXW006");
+            result.Output.ShouldContain("_HXWPreLate" + property);
+            File.Exists(Path.Combine(active, "obj", "project.assets.json")).ShouldBeFalse();
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies a lookalike final import path is not accepted as the selected import.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task LookalikeFinalImportPathFailsMappingGuardAsync()
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            _ = Directory.CreateDirectory(active);
+            string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>");
+            SourceMapping mapping = Mapping(active, WorkspaceMode.Source);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string lookalike = SourceMappingMaterializer.FinalTargetsPath(workspace) + ".lookalike.targets";
+            File.Copy(SourceMappingMaterializer.FinalTargetsPath(workspace), lookalike);
+            Dictionary<string, string> environment = SourceMappingMaterializer.Environment(mapping, workspace)
+                .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+            environment["AfterMicrosoftNETSdkTargets"] = lookalike;
+
+            CompositionProcessResult result = await RunProcessAsync(active, environment, "msbuild", project, "-target:HexalithVerifySourceMappingSelection", "-v:q").ConfigureAwait(true);
+
+            result.ExitCode.ShouldNotBe(0, result.Output);
+            result.Output.ShouldContain("HXW006");
+            result.Output.ShouldContain("AfterMicrosoftNETSdkTargets");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies malformed NuGet library shapes return a mapping diagnostic.</summary>
+    /// <param name="assets">The malformed assets JSON.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("{\"libraries\":[]}")]
+    [InlineData("{\"libraries\":{\"Hexalith.Dep.Contracts/1.0.0\":{\"type\":5}}}")]
+    [InlineData("{\"libraries\":{\"Hexalith.Dep.Contracts/1.0.0\":[]}}")]
+    public async Task MalformedAssetsLibrariesReportHxw005Async(string assets)
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            _ = Directory.CreateDirectory(active);
+            SourceMapping mapping = Mapping(active, WorkspaceMode.Source);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string assetsFile = Path.Combine(root, "malformed.assets.json");
+            await File.WriteAllTextAsync(assetsFile, assets, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string project = Path.Combine(active, "Validate.proj");
+            string taskAssembly = typeof(SourceMappingMaterializer).Assembly.Location;
+            string mappingFile = Path.Combine(workspace, "source-mapping", "mapping.json");
+            string content = "<Project><UsingTask TaskName=\"Hexalith.Builds.Tooling.Workspace.SourceMappingValidationTask\" AssemblyFile=\"" + taskAssembly + "\" />"
+                + "<Target Name=\"Validate\"><SourceMappingValidationTask MappingFile=\"" + mappingFile + "\" MappingHash=\"" + mapping.ContentHash
+                + "\" AssetsFile=\"" + assetsFile + "\" /></Target></Project>";
+            await File.WriteAllTextAsync(project, content, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            CompositionProcessResult result = await RunPlainDotnetAsync(active, "msbuild", project, "-target:Validate", "-v:q").ConfigureAwait(true);
+
+            result.ExitCode.ShouldNotBe(0);
+            result.Output.ShouldContain("HXW005");
+            result.Output.ShouldContain(assetsFile);
         }
         finally
         {

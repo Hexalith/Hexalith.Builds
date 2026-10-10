@@ -142,14 +142,23 @@ public sealed class SourceMappingValidationTask : ITask
         }
 
         using JsonDocument assets = JsonDocument.Parse(File.ReadAllText(AssetsFile));
-        if (!assets.RootElement.TryGetProperty("libraries", out JsonElement libraries))
+        if (assets.RootElement.ValueKind != JsonValueKind.Object
+            || !assets.RootElement.TryGetProperty("libraries", out JsonElement libraries)
+            || libraries.ValueKind != JsonValueKind.Object)
         {
-            return Error("HXW005", $"NuGet assets file '{AssetsFile}' has no libraries; source/package duplicates cannot be checked.");
+            return Error("HXW005", $"NuGet assets file '{AssetsFile}' has no object-valued libraries; source/package duplicates cannot be checked.");
         }
 
         foreach (JsonProperty library in libraries.EnumerateObject())
         {
-            if (!library.Value.TryGetProperty("type", out JsonElement type) || type.GetString() != "package")
+            if (library.Value.ValueKind != JsonValueKind.Object
+                || !library.Value.TryGetProperty("type", out JsonElement type)
+                || type.ValueKind != JsonValueKind.String)
+            {
+                return Error("HXW005", $"NuGet assets file '{AssetsFile}' has invalid library type for '{library.Name}'; source/package duplicates cannot be checked.");
+            }
+
+            if (type.GetString() != "package")
             {
                 continue;
             }
