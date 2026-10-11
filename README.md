@@ -275,10 +275,12 @@ uninitialized. Existing checkouts are never moved.
 
 Package mode requires an aligned, clean Builds checkout, an aligned Platform
 checkout with a local `v<SemVer>` tag and no changes, and a running tool within
-the Platform range. Source mode reports all identity conditions as warnings
-and continues. A Git workspace missing the direct Platform reference fails in
-both modes; a standalone workspace warns in source mode and refuses package
-mode. The Platform record added in this story has no tool range, so package
+the Platform range. Inside the Platform repository the identity is HEAD, so the
+tag and clean-tree requirements do not apply. Source mode reports all identity
+conditions as warnings and continues. A Git workspace missing the direct
+Platform reference fails in both modes, while its other identity conditions
+stay warnings in source mode; a standalone workspace warns in source mode and
+refuses package mode. The Platform record added in this story has no tool range, so package
 mode remains unavailable for the live Platform identity until that range is
 ratified.
 
@@ -295,10 +297,14 @@ dependency metadata that changes the selected configuration. Each diagnostic
 names the relevant identity or path and a reason.
 `HXW007` reports an unavailable identity, record, or catalog pin; `HXW008`
 reports composition commit mismatch; `HXW009` reports a Builds catalog pin or
-checkout mismatch; `HXW010` reports an unsupported or unavailable tool range;
-`HXW011` reports an untagged or dirty Platform checkout; `HXW012` rejects a
-referenced package version that differs from the pinned catalog. Package
-identity refusals list every holding condition in one command result.
+checkout mismatch, or a pinned catalog that cannot be read, evaluated or
+materialized, including a private catalog workspace left after refusal;
+`HXW010` reports an unsupported or unavailable tool range; `HXW011` reports an
+untagged or dirty Platform checkout; `HXW012` rejects a referenced package
+version that differs from the pinned catalog, a missing or modified catalog
+snapshot, unavailable restored assets, or a catalog package absent from the
+active restored target. Package identity refusals list every holding condition
+in one command result.
 
 The checked-in [candidate consumer](test/fixtures/package-consumer/README.md)
 pins both published tools to `4.29.1` from source

@@ -256,6 +256,109 @@ public sealed class CatalogVersionTests
         engine.Error.ShouldNotBeNull().Code.ShouldBe("HXW012");
     }
 
+    /// <summary>Verifies a modified pinned tree or snapshot binding is refused.</summary>
+    /// <param name="tamper">The binding to break.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("pinned-file")]
+    [InlineData("pinned-entry")]
+    [InlineData("hash")]
+    [InlineData("mapping")]
+    [InlineData("commit")]
+    public async Task TamperedSnapshotFailsWithHxw012Async(string tamper)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "run");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string directory = Path.Combine(workspace, "source-mapping");
+        string catalog = Path.Combine(directory, "catalog-versions.json");
+        CatalogTestBuildEngine engine = new();
+        CatalogVersionValidationTask task = new()
+        {
+            BuildEngine = engine,
+            MappingFile = Path.Combine(directory, "mapping.json"),
+            MappingHash = mapping.ContentHash,
+            CatalogFile = catalog,
+            Packages = [new TaskItem("Hexalith.Dep")],
+        };
+        task.Execute().ShouldBeTrue();
+
+        CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(await File.ReadAllTextAsync(catalog, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+        CatalogVersionSnapshot changed = tamper switch
+        {
+            "pinned-entry" => snapshot with { PinnedFiles = new Dictionary<string, string>(snapshot.PinnedFiles, StringComparer.Ordinal) { ["Props/Extra.props"] = new string('0', 64) } },
+            "hash" => snapshot with { Hash = new string('0', 64) },
+            "mapping" => snapshot with { MappingHash = new string('a', 64) },
+            "commit" => snapshot with { CatalogCommit = new string('b', 40) },
+            _ => snapshot,
+        };
+        if (tamper is "pinned-entry" or "mapping" or "commit")
+        {
+            changed = changed with
+            {
+                Hash = CatalogVersionSnapshot.ComputeHash(changed.MappingHash, changed.CatalogCommit, changed.CatalogFileHash, changed.PinnedFiles, changed.Versions, changed.ProjectVersions),
+            };
+        }
+
+        await File.WriteAllTextAsync(catalog, JsonSerializer.Serialize(changed), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (tamper == "pinned-file")
+        {
+            await File.AppendAllTextAsync(Path.Combine(directory, "pinned-tree", "Props", "Directory.Packages.props"), "<!-- changed -->", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        task.Execute().ShouldBeFalse();
+        engine.Error.ShouldNotBeNull().Code.ShouldBe("HXW012");
+        engine.Error.Message.ShouldNotBeNull().ShouldContain("differs from the command-resolved identity");
+    }
+
+    /// <summary>Verifies a target framework absent from the assets project section reports the missing active target.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task UnmatchedTargetFrameworkReportsNoActiveTargetAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "run");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string directory = Path.Combine(workspace, "source-mapping");
+        string assets = Path.Combine(workspace, "project.assets.json");
+        await File.WriteAllTextAsync(assets, "{\"project\":{\"frameworks\":{\"net9.0\":{\"targetAlias\":\"net9.0\"}}},\"targets\":{\"net9.0\":{\"Hexalith.Dep/1.0.0\":{\"type\":\"package\"}}}}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CatalogTestBuildEngine engine = new();
+        CatalogVersionValidationTask task = new()
+        {
+            BuildEngine = engine,
+            MappingFile = Path.Combine(directory, "mapping.json"),
+            MappingHash = mapping.ContentHash,
+            CatalogFile = Path.Combine(directory, "catalog-versions.json"),
+            AssetsFile = assets,
+            CheckAssets = true,
+            TargetFramework = "net10.0",
+            Packages = [new TaskItem("Hexalith.Dep")],
+        };
+
+        task.Execute().ShouldBeFalse();
+        engine.Error.ShouldNotBeNull().Code.ShouldBe("HXW012");
+        engine.Error.Message.ShouldNotBeNull().ShouldContain("no active target 'net10.0'");
+    }
+
+    /// <summary>Verifies an ancestor <c>Directory.Build.rsp</c> cannot change the isolated catalog evaluation.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task AncestorResponseFileDoesNotChangeIsolatedCatalogAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(conditionalCatalog: true).ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Directory, "Directory.Build.rsp"), "-p:DaprVersion=9.9.9", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "run");
+
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(await File.ReadAllTextAsync(Path.Combine(workspace, "source-mapping", "catalog-versions.json"), TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+        snapshot.Versions["CommunityToolkit.Aspire.Hosting.Dapr"].ShouldBe("13.6.0-preview.1");
+        snapshot.ProjectVersions["Hexalith.Folders.Aspire"]["CommunityToolkit.Aspire.Hosting.Dapr"].ShouldBe("13.0.0");
+    }
+
     /// <summary>Verifies generated and Builds host builds run the package catalog guard.</summary>
     /// <param name="buildsHost">Whether the consumer is a Builds host.</param>
     /// <returns>A task for the assertion.</returns>

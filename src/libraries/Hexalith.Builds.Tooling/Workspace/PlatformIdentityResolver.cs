@@ -42,6 +42,14 @@ internal static partial class PlatformIdentityResolver
     internal static PlatformIdentityFinding NoGit(string root) => new(
         "HXW007", $"Platform identity is unavailable because '{root}' is not a Git workspace.", root);
 
+    /// <summary>Creates the finding for a Git workspace without a direct Platform reference.</summary>
+    /// <param name="root">The active Git root.</param>
+    /// <returns>The finding.</returns>
+    internal static PlatformIdentityFinding MissingReference(string root) => new(
+        "HXW007",
+        $"Git workspace '{root}' has no direct '{_platformReference}' reference.",
+        Path.Combine(root, _platformReference.Replace('/', Path.DirectorySeparatorChar)));
+
     /// <summary>Converts findings into existing result diagnostics.</summary>
     /// <param name="findings">The identity findings.</param>
     /// <param name="warning">Whether the command is in source mode.</param>
@@ -78,7 +86,7 @@ internal static partial class PlatformIdentityResolver
         string recordPath = Path.Combine(platformPath, _record);
         if (!hasPlatformReference && !platformRoot)
         {
-            findings.Add(new PlatformIdentityFinding("HXW007", $"Git workspace '{root}' has no direct '{_platformReference}' reference.", platformPath));
+            findings.Add(MissingReference(root));
         }
 
         string? identityCommit = platformRoot ? head : null;
@@ -331,14 +339,15 @@ internal static partial class PlatformIdentityResolver
             return false;
         }
 
-        int prereleaseStart = candidate.IndexOf('-', StringComparison.Ordinal);
+        int metadataStart = candidate.IndexOf('+', StringComparison.Ordinal);
+        string version = metadataStart < 0 ? candidate : candidate[..metadataStart];
+        int prereleaseStart = version.IndexOf('-', StringComparison.Ordinal);
         if (prereleaseStart < 0)
         {
             return true;
         }
 
-        int metadataStart = candidate.IndexOf('+', prereleaseStart);
-        string prerelease = candidate[(prereleaseStart + 1)..(metadataStart < 0 ? candidate.Length : metadataStart)];
+        string prerelease = version[(prereleaseStart + 1)..];
         return prerelease.Split('.').All(identifier => identifier.Length < 2 || identifier[0] != '0' || !identifier.All(char.IsAsciiDigit));
     }
 

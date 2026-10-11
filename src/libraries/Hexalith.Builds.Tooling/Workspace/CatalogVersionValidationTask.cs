@@ -137,13 +137,15 @@ public sealed class CatalogVersionValidationTask : ITask
                 if (assets.RootElement.TryGetProperty("project", out JsonElement project)
                     && project.TryGetProperty("frameworks", out JsonElement frameworks))
                 {
-                    JsonProperty? framework = frameworks.EnumerateObject().FirstOrDefault(item =>
+                    string? framework = frameworks.EnumerateObject().Where(item =>
                         string.Equals(item.Name, TargetFramework, StringComparison.OrdinalIgnoreCase)
                         || (item.Value.TryGetProperty("targetAlias", out JsonElement alias)
-                            && string.Equals(alias.GetString(), TargetFramework, StringComparison.OrdinalIgnoreCase)));
-                    if (framework is { } selectedFramework && selectedFramework.Name is not null)
+                            && string.Equals(alias.GetString(), TargetFramework, StringComparison.OrdinalIgnoreCase)))
+                        .Select(item => item.Name)
+                        .FirstOrDefault();
+                    if (framework is not null)
                     {
-                        normalizedFramework = selectedFramework.Name;
+                        normalizedFramework = framework;
                     }
                 }
 

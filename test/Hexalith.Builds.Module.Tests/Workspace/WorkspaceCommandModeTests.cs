@@ -376,7 +376,10 @@ public sealed class WorkspaceCommandModeTests
         CopyFixtureTree(Path.Combine(repository, "artifacts", "g4-fixture", "bin"), Path.Combine(fixture.Checkout, "artifacts", "g4-fixture", "bin"), skipBuildFolders: false);
         CopyFixtureTree(Path.Combine(repository, "test", "fixtures", "module", "executable"), Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable"), skipBuildFolders: true);
         string manifest = Path.Combine(fixture.Checkout, "test", "fixtures", "module", "executable", "hexalith.module-manifest.v1.json");
-        CompositionEngineOptions options = new(typeof(ModuleCommandApplication).Assembly.Location, Path.Combine(fixture.Directory, "missing-descriptor-child.dll"))
+
+        // Any descriptor load, by the command or the engine, would report HXD001 for this child.
+        string missingChild = Path.Combine(fixture.Directory, "missing-descriptor-child.dll");
+        CompositionEngineOptions options = new(typeof(ModuleCommandApplication).Assembly.Location, missingChild)
         {
             AspireCommand = CompositionTestFiles.CreateAspire(fixture.Directory),
             DockerCommand = CompositionTestFiles.CreateStubDocker(fixture.Directory),
@@ -394,7 +397,7 @@ public sealed class WorkspaceCommandModeTests
             output,
             error,
             TestContext.Current.CancellationToken,
-            typeof(ModuleCommandApplication).Assembly.Location,
+            missingChild,
             options).ConfigureAwait(true);
 
         exitCode.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable, output.ToString());

@@ -204,7 +204,7 @@ public static class WorkspaceRootResolver
             // preserving independently observable Builds findings in the same result.
             (_, IReadOnlyList<PlatformIdentityFinding> missingFindings) =
                 await PlatformIdentityResolver.ResolveAsync(root, references, recordedGitlinks, cancellationToken).ConfigureAwait(false);
-            throw new WorkspaceMappingException(PlatformIdentityResolver.Diagnostics(missingFindings, warning: false));
+            throw MissingPlatformReference(root, missingFindings, mode);
         }
 
         string[] identityReferences = [.. references.Where(reference => reference is "references/Hexalith.Platform" or "references/Hexalith.Builds")];
@@ -229,7 +229,7 @@ public static class WorkspaceRootResolver
             await PlatformIdentityResolver.ResolveAsync(root, references, recordedGitlinks, cancellationToken).ConfigureAwait(false);
         if (!references.Contains("references/Hexalith.Platform", StringComparer.Ordinal) && platformIdentity?.IsPlatformRepository != true)
         {
-            throw new WorkspaceMappingException(PlatformIdentityResolver.Diagnostics(findings, warning: false));
+            throw MissingPlatformReference(root, findings, mode);
         }
 
         if (initializationDiagnostics.Count > 0 || (mode == WorkspaceMode.Package && findings.Count > 0))
@@ -437,6 +437,21 @@ public static class WorkspaceRootResolver
         string relative = Path.GetRelativePath(physicalRoot, physicalManifest).Replace('\\', '/');
         return relative != ".." && !relative.StartsWith("../", StringComparison.Ordinal)
             && !relative.StartsWith("references/", FilesystemPathRules.Comparison(root));
+    }
+
+    /// <summary>Fails on the missing Platform reference while other source-mode findings stay warnings.</summary>
+    /// <param name="root">The active Git root.</param>
+    /// <param name="findings">Every identity finding.</param>
+    /// <param name="mode">The selected mode.</param>
+    /// <returns>The refusal, led by the missing-reference failure.</returns>
+    private static WorkspaceMappingException MissingPlatformReference(string root, IReadOnlyList<PlatformIdentityFinding> findings, WorkspaceMode mode)
+    {
+        PlatformIdentityFinding missing = PlatformIdentityResolver.MissingReference(root);
+        return new WorkspaceMappingException(
+        [
+            .. PlatformIdentityResolver.Diagnostics([missing], warning: false),
+            .. PlatformIdentityResolver.Diagnostics(findings.Where(finding => finding != missing), warning: mode == WorkspaceMode.Source),
+        ]);
     }
 
     private static WorkspaceMappingException Failure(string rule, string message, string path) => new(new ToolDiagnostic(

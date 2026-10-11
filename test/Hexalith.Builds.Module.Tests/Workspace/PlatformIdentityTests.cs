@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
+using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
 
@@ -262,8 +263,13 @@ public sealed class PlatformIdentityTests
 
         WorkspaceMappingException refusal = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, mode, TestContext.Current.CancellationToken)).ConfigureAwait(true);
 
-        refusal.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW007" && diagnostic.Message.Contains("no direct", StringComparison.Ordinal));
-        refusal.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW009" && diagnostic.Message.Contains("dirty", StringComparison.Ordinal));
+        ToolFailureCategory expectedCategory = mode == WorkspaceMode.Source ? ToolFailureCategory.None : ToolFailureCategory.PrerequisiteUnavailable;
+        refusal.Diagnostic.RuleId.ShouldBe("HXW007");
+        refusal.Diagnostic.Message.ShouldContain("no direct");
+        refusal.Diagnostic.Category.ShouldBe(ToolFailureCategory.PrerequisiteUnavailable);
+        refusal.Diagnostics.Count(diagnostic => diagnostic.RuleId == "HXW007" && diagnostic.Message.Contains("no direct", StringComparison.Ordinal)).ShouldBe(1);
+        refusal.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW009" && diagnostic.Message.Contains("dirty", StringComparison.Ordinal)
+            && diagnostic.Category == expectedCategory);
     }
 
     /// <summary>Verifies the tool version seam and strict record fields.</summary>
@@ -480,5 +486,132 @@ public sealed class PlatformIdentityTests
         refusal.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW009");
         refusal.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW011" && diagnostic.Message.Contains("changes", StringComparison.Ordinal));
         refusal.Diagnostics.Count.ShouldBeGreaterThanOrEqualTo(2);
+    }
+
+    /// <summary>Verifies a Platform checkout moved without staging warns or refuses against the staged gitlink.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task MovedUnstagedPlatformCheckoutWarnsOrRefusesAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        _ = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string platform = Path.Combine(fixture.Checkout, "references", "Hexalith.Platform");
+        string next = await CommitAsync(platform, "next Platform").ConfigureAwait(true);
+
+        SourceMapping source = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        WorkspaceMappingException refusal = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        source.IdentityFindings.ShouldContain(finding => finding.RuleId == "HXW008" && finding.Message.Contains(next, StringComparison.Ordinal)
+            && finding.Message.Contains("staged composition gitlink", StringComparison.Ordinal));
+        refusal.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW008" && diagnostic.Message.Contains("staged composition gitlink", StringComparison.Ordinal));
+        (await WorkspaceGitFixture.RunGitAsync(platform, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim().ShouldBe(next);
+    }
+
+    /// <summary>Verifies a Builds checkout moved without staging warns or refuses against the staged gitlink.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task MovedUnstagedBuildsCheckoutWarnsOrRefusesAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        _ = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string builds = Path.Combine(fixture.Checkout, "references", "Hexalith.Builds");
+        string next = await CommitAsync(builds, "next catalog").ConfigureAwait(true);
+
+        SourceMapping source = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        WorkspaceMappingException refusal = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        source.IdentityFindings.ShouldContain(finding => finding.RuleId == "HXW009" && finding.Message.Contains("checked out " + next, StringComparison.Ordinal));
+        refusal.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW009" && diagnostic.Message.Contains("checked out " + next, StringComparison.Ordinal));
+        (await WorkspaceGitFixture.RunGitAsync(builds, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim().ShouldBe(next);
+    }
+
+    /// <summary>Verifies a source mapping carrying identity findings reloads with the command-resolved hash.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task SourceMappingWithFindingsLoadsVerifiedAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(toolVersionRange: "[9999.0.0,)").ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        mapping.IdentityFindings.ShouldContain(finding => finding.RuleId == "HXW010");
+        string workspace = Path.Combine(fixture.Directory, "run");
+
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        SourceMapping loaded = SourceMapping.LoadVerified(Path.Combine(workspace, "source-mapping", "mapping.json"), mapping.ContentHash);
+
+        loaded.ContentHash.ShouldBe(mapping.ContentHash);
+        loaded.PlatformIdentity.ShouldBe(mapping.PlatformIdentity);
+        loaded.IdentityFindings.ShouldBe(mapping.IdentityFindings);
+    }
+
+    /// <summary>Verifies records whose schema version is not one are unreadable identities.</summary>
+    /// <param name="schemaVersion">A JSON value other than one.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("2")]
+    [InlineData("10")]
+    [InlineData("0.1")]
+    [InlineData("11e-1")]
+    [InlineData("1e1")]
+    [InlineData("-1")]
+    [InlineData("\"1\"")]
+    public async Task OtherSchemaVersionIsUnreadableIdentityAsync(string schemaVersion)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string platform = Path.Combine(fixture.Directory, "platform");
+        string record = Path.Combine(platform, "hexalith-platform.json");
+        await File.WriteAllTextAsync(record, $"{{\"schemaVersion\":{schemaVersion},\"toolVersionRange\":\"[0.0.0,)\"}}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(platform, "add", "hexalith-platform.json").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(platform, "commit", "-m", "other schema version").ConfigureAwait(true);
+
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(record, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        mapping.IdentityFindings.ShouldContain(finding => finding.RuleId == "HXW007" && finding.Message.Contains("expected schemaVersion 1", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies build metadata containing a hyphen does not make a release tag invalid.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task BuildMetadataWithHyphenIsReleaseTagAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        _ = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string platform = Path.Combine(fixture.Checkout, "references", "Hexalith.Platform");
+        _ = await WorkspaceGitFixture.RunGitAsync(platform, "tag", "-d", "v1.0.0").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(platform, "tag", "v1.0.0+build-01").ConfigureAwait(true);
+
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        mapping.PlatformIdentity.ShouldNotBeNull().ReleaseTag.ShouldBe("v1.0.0+build-01");
+        mapping.IdentityFindings.ShouldBeEmpty();
+    }
+
+    /// <summary>Verifies source-mode resolver failures keep identity findings as warnings.</summary>
+    /// <param name="failingReference">The direct reference whose checkout cannot be initialized.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("Hexalith.Builds")]
+    [InlineData("Hexalith.Dep")]
+    public async Task SourceResolverFailureKeepsIdentityWarningsAsync(string failingReference)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "-c", "protocol.file.allow=always", "submodule", "update", "--init", "--", "references/Hexalith.Platform").ConfigureAwait(true);
+        string platform = Path.Combine(fixture.Checkout, "references", "Hexalith.Platform");
+        await File.WriteAllTextAsync(Path.Combine(platform, "dirty.txt"), "changed", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(fixture.Checkout, "config", $"submodule.references/{failingReference}.url", "file:///nonexistent/" + failingReference).ConfigureAwait(true);
+
+        WorkspaceMappingException refusal = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        refusal.Diagnostic.RuleId.ShouldBe("HXW004");
+        refusal.Diagnostic.Message.ShouldContain(failingReference);
+        refusal.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW011" && diagnostic.Message.Contains("changes", StringComparison.Ordinal)
+            && diagnostic.Category == ToolFailureCategory.None);
+    }
+
+    private static async Task<string> CommitAsync(string checkout, string message)
+    {
+        await File.WriteAllTextAsync(Path.Combine(checkout, "next.txt"), message, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(checkout, "add", "next.txt").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(checkout, "-c", "user.name=Workspace Test", "-c", "user.email=workspace@example.invalid", "commit", "-m", message).ConfigureAwait(true);
+        return (await WorkspaceGitFixture.RunGitAsync(checkout, "rev-parse", "HEAD").ConfigureAwait(true)).Output.Trim();
     }
 }

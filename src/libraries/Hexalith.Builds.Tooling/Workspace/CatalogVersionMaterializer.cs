@@ -266,7 +266,7 @@ internal static partial class CatalogVersionMaterializer
         string wrapperPath = Path.Combine(directory, projectName + ".proj");
         await WritePinnedTextAsync(wrapperPath, "<Project><Import Project=\"" + XmlEscape(catalogPath) + "\" /></Project>", cancellationToken).ConfigureAwait(false);
         CompositionProcessResult evaluated = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["msbuild", wrapperPath, "-nologo", "-getItem:PackageVersion"], directory, null),
+            CompositionProcess.CreateStartInfo("dotnet", ["msbuild", wrapperPath, "-nologo", "-noAutoResponse", "-getItem:PackageVersion"], directory, null),
             TimeSpan.FromMinutes(2),
             1_048_576,
             cancellationToken).ConfigureAwait(false);

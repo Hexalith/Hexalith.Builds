@@ -428,6 +428,26 @@ public static class ModuleCommandExecutionService
                         cancellationToken).ConfigureAwait(false);
                 }
 
+                // A rejected pinned catalog must not run descriptor child code.
+                IReadOnlyList<ToolDiagnostic>? catalogRefusal = await PreflightPinnedCatalogAsync(mapping, options.WorkspaceRoot, cancellationToken).ConfigureAwait(false);
+                if (catalogRefusal is not null)
+                {
+                    return await WriteResultAsync(
+                        "unavailable",
+                        ToolOutcome.Passed().Fail(catalogRefusal[0].Phase, catalogRefusal[0].Category, catalogRefusal[0].RuleId, ToolExitCode.PrerequisiteUnavailable),
+                        catalogRefusal,
+                        format,
+                        writer,
+                        command,
+                        manifestPath,
+                        manifest,
+                        profile,
+                        filter,
+                        evidencePath,
+                        startedUtc,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
                 ExecutableDescriptorLoadResult descriptorResult = await ExecutableDescriptorLoader.LoadAsync(
                     manifest,
                     manifestPath,
@@ -901,6 +921,62 @@ public static class ModuleCommandExecutionService
         }
 
         return new ToolCommandResult(result.Status, result.Outcome, [.. result.Diagnostics, diagnostic]);
+    }
+
+    /// <summary>
+    /// Evaluates the pinned package catalog in a private scratch workspace before any descriptor child runs.
+    /// </summary>
+    /// <param name="mapping">The resolved mapping.</param>
+    /// <param name="workspaceRoot">The runner-owned workspace root.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The refusal diagnostics, or null when the catalog is usable or not in package mode.</returns>
+    private static async Task<IReadOnlyList<ToolDiagnostic>?> PreflightPinnedCatalogAsync(SourceMapping mapping, string workspaceRoot, CancellationToken cancellationToken)
+    {
+        if (mapping.Mode != WorkspaceMode.Package || mapping.PlatformIdentity is null)
+        {
+            return null;
+        }
+
+        string root = Path.GetFullPath(workspaceRoot);
+        bool rootExisted = Directory.Exists(root);
+        string workspace = Path.Combine(root, "catalog-preflight-" + Guid.NewGuid().ToString("N"));
+        IReadOnlyList<ToolDiagnostic>? refusal = null;
+        bool removed;
+        try
+        {
+            CompositionWorkspace.CreatePrivateDirectory(root);
+            CompositionWorkspace.CreatePrivateDirectory(workspace);
+            await CatalogVersionMaterializer.WriteAsync(mapping, workspace, cancellationToken).ConfigureAwait(false);
+        }
+        catch (WorkspaceMappingException exception)
+        {
+            refusal = exception.Diagnostics;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            refusal = [new ToolDiagnostic("HXW009", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, $"I/O failure preparing the pinned catalog preflight under '{workspace}': {exception.Message}", workspace)];
+        }
+        finally
+        {
+            removed = await CompositionWorkspace.TryDeleteAsync(workspace, CancellationToken.None).ConfigureAwait(false);
+            if (removed && !rootExisted)
+            {
+                try
+                {
+                    // Leave no workspace footprint before composition.
+                    Directory.Delete(root);
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                {
+                    // A non-empty root now belongs to another run.
+                }
+            }
+        }
+
+        // A usable catalog continues even if the scratch copy lingers; the engine materializes its own.
+        return refusal is null || removed
+            ? refusal
+            : [.. refusal, new ToolDiagnostic("HXW009", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, $"Private catalog workspace '{workspace}' could not be removed after refusal.", workspace, "Remove this private workspace before retrying.")];
     }
 
     private static async Task<int> WriteLifecycleFailureAsync(
