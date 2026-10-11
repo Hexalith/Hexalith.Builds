@@ -65,6 +65,9 @@ function Read-XmlFile {
 
     try {
         [xml] $xml = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
+        if ($null -eq $xml -or $null -eq $xml.DocumentElement) {
+            throw 'The XML document is empty.'
+        }
         return $xml
     }
     catch {
