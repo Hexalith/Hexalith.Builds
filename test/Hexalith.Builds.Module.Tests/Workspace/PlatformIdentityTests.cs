@@ -192,8 +192,13 @@ public sealed class PlatformIdentityTests
         File.Copy(typeof(PlatformIdentityResolver).Assembly.Location, Path.Combine(cliOutput, "Hexalith.Builds.Tooling.dll"));
         string repository = CompositionTestFiles.RepositoryRoot();
         string project = Path.Combine(repository, "src", "libraries", "Hexalith.Builds.Module.Cli", "Hexalith.Builds.Module.Cli.csproj");
+#if DEBUG
+        const string configuration = "Debug";
+#else
+        const string configuration = "Release";
+#endif
         CompositionProcessResult build = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["build", project, "-c", "Debug", "--no-restore", "--no-dependencies", "-p:Version=9.9.9", "-p:OutputPath=" + cliOutput, "-v:q"], repository, null),
+            CompositionProcess.CreateStartInfo("dotnet", ["build", project, "-c", configuration, "--no-restore", "--no-dependencies", "-p:Version=9.9.9", "-p:OutputPath=" + cliOutput, "-v:q"], repository, null),
             TimeSpan.FromMinutes(2),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
         build.ExitCode.ShouldBe(0, build.Output + build.ErrorOutput);

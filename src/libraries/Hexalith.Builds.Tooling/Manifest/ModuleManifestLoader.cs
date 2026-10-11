@@ -30,7 +30,7 @@ public static partial class ModuleManifestLoader
     };
 
     /// <summary>Gets the unchanged EventStore pin for v1 module manifests.</summary>
-    internal static string ModuleManifestEventStoreVersion => "3.119.0";
+    internal static string ModuleManifestEventStoreVersion => "3.120.0";
 
     /// <summary>
     /// Loads a manifest and returns deterministic, metadata-only diagnostics.

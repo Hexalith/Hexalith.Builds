@@ -45,7 +45,7 @@ public sealed class ModuleCommandApplicationTests
             }
           ],
           "platform": {
-            "eventStoreVersion": "3.119.0",
+            "eventStoreVersion": "3.120.0",
             "daprRuntimeVersion": "1.18.2",
             "daprSdkVersion": "1.18.10",
             "frontComposerVersion": "4.6.0"
@@ -435,8 +435,15 @@ public sealed class ModuleCommandApplicationTests
                     {
                         foreach (string statePath in Directory.EnumerateFiles(stateDirectory, "*.json"))
                         {
-                            string state = await File.ReadAllTextAsync(statePath, TestContext.Current.CancellationToken).ConfigureAwait(true);
-                            state.Contains(manifestHash, StringComparison.OrdinalIgnoreCase).ShouldBeFalse();
+                            try
+                            {
+                                string state = await File.ReadAllTextAsync(statePath, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                                state.Contains(manifestHash, StringComparison.OrdinalIgnoreCase).ShouldBeFalse();
+                            }
+                            catch (FileNotFoundException)
+                            {
+                                // A concurrent test completed and cleaned up its run file.
+                            }
                         }
                     }
                 }
