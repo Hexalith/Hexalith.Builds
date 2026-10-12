@@ -56,6 +56,18 @@ public sealed record CompositionRunPlan(
     /// <summary>Gets the immutable workspace source mapping, when resolved by the command.</summary>
     public SourceMapping? SourceMapping { get; init; }
 
+    /// <summary>Gets the v2 owner declaration paths handed to the Platform model.</summary>
+    public IReadOnlyList<string> PlatformDeclarationPaths { get; init; } = [];
+
+    /// <summary>Gets the selected v2 module identity.</summary>
+    public string? PlatformActiveModule { get; init; }
+
+    /// <summary>Gets the built model from the pinned Platform checkout.</summary>
+    public string? PlatformModelAssemblyPath { get; init; }
+
+    /// <summary>Gets a value indicating whether this is a declaration-driven Platform composition.</summary>
+    public bool IsPlatformComposition => PlatformDeclarationPaths.Count > 0;
+
     /// <summary>Gets the Platform identity used by this composition.</summary>
     public PlatformIdentity? PlatformIdentity => SourceMapping?.PlatformIdentity;
 

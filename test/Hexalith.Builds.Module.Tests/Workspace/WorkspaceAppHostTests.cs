@@ -92,6 +92,69 @@ public sealed class WorkspaceAppHostTests
         }
     }
 
+    /// <summary>Verifies v2 delegates to the pinned Platform model and keeps one source gateway.</summary>
+    [Fact]
+    public void PlatformPlanDelegatesToThePinnedModel()
+    {
+        DirectoryInfo? directory = new(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "apphost.cs")))
+        {
+            directory = directory.Parent;
+        }
+
+        if (directory is null)
+        {
+            Assert.Skip("This integration assertion requires the enclosing Platform checkout.");
+        }
+
+        string platform = directory.FullName;
+        string model = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "bin", "Debug", "net10.0", "Hexalith.Platform.Composition.dll");
+        if (!File.Exists(model))
+        {
+            Assert.Skip("Build the Platform composition model before its integration assertion.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan sample = CompositionTestFiles.CreatePlan(root);
+            SourceMappingEntry[] entries =
+            [
+                new SourceMappingEntry("Hexalith.Platform", "source", platform),
+                new SourceMappingEntry("Hexalith.EventStore", "source", Path.Combine(platform, "references", "Hexalith.EventStore")),
+                new SourceMappingEntry("Hexalith.Tenants", "source", Path.Combine(platform, "references", "Hexalith.Tenants")),
+                new SourceMappingEntry("Hexalith.Memories", "source", Path.Combine(platform, "references", "Hexalith.Memories")),
+            ];
+            SourceMapping mapping = new(WorkspaceMode.Source, platform, "Hexalith.Platform", entries, false);
+            CompositionRunPlan plan = sample with
+            {
+                SourceMapping = mapping,
+                PlatformDeclarationPaths = [Path.Combine(platform, "references", "Hexalith.EventStore", "module", "hexalith.module-manifest.v2.json")],
+                PlatformModelAssemblyPath = model,
+            };
+            IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
+            {
+                Args = [],
+                AssemblyName = typeof(RunTopology).Assembly.GetName().Name,
+                DisableDashboard = true,
+                AllowUnsecuredTransport = true,
+            });
+            _ = builder.AddDapr(options => options.DaprPath = Path.Combine(root, "dapr-home", "tools", "dapr"));
+
+            RunTopology.Compose(builder, plan, CompositionSigningKey.Create());
+
+            builder.Resources.Count(resource => resource.Name == "eventstore").ShouldBe(1);
+            builder.Resources.ShouldNotContain(resource => resource.Name == "eventstore-2" || resource.Name.Contains("admin", StringComparison.Ordinal));
+            builder.Resources.Count(resource => resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation")).ShouldBe(6);
+            builder.Resources.OfType<ProjectResource>().Single(resource => resource.Name == "eventstore")
+                .Annotations.OfType<ExecutableAnnotation>().Last().WorkingDirectory.ShouldBe(Path.Combine(platform, "references", "Hexalith.EventStore", "src", "Hexalith.EventStore"));
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     private static async Task<string[]> GenerateAspireLaunchArgumentsAsync(ProjectResource project, DistributedApplicationOptions launchOptions, string[] resourceArguments)
     {
         // Aspire 13.6.1 keeps its launch-plan recipe and context internal. Exercise

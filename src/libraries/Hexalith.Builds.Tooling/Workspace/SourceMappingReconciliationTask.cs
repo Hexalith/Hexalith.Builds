@@ -164,7 +164,19 @@ public sealed class SourceMappingReconciliationTask : ITask
                 (string Identity, string Path) packageRoot = packageRoots.FirstOrDefault(candidate => IsInPackageRoot(candidate.Path, path));
                 if (packageRoot.Path is null)
                 {
-                    string? unsupportedRetainedMetadata = UnsupportedMetadata(project, ["SetConfiguration", "SetPlatform", "AdditionalProperties", "GlobalPropertiesToRemove"]);
+                    string? unsupportedRetainedMetadata = UnsupportedMetadata(project, ["SetConfiguration", "SetPlatform", "GlobalPropertiesToRemove"]);
+                    string additional = project.GetMetadata("AdditionalProperties");
+                    if (!string.IsNullOrWhiteSpace(additional))
+                    {
+                        string[] assignments = additional.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        string retainedId = Path.GetFileNameWithoutExtension(path);
+                        string? selectedVersion = PackageVersions.FirstOrDefault(version => version.ItemSpec.Equals(retainedId, StringComparison.OrdinalIgnoreCase))?.GetMetadata("Version");
+                        if (assignments.Length != 1 || selectedVersion is null || assignments[0] != "Version=" + selectedVersion)
+                        {
+                            unsupportedRetainedMetadata ??= "AdditionalProperties";
+                        }
+                    }
+
                     if (unsupportedRetainedMetadata is not null)
                     {
                         return Error("HXW006", $"Retained ProjectReference '{path}' cannot override the mapped configuration because metadata '{unsupportedRetainedMetadata}' is set.");
@@ -282,7 +294,11 @@ public sealed class SourceMappingReconciliationTask : ITask
         Path.GetFullPath(right),
         FilesystemPathRules.Comparison(right));
 
-    private static string? UnsupportedMetadata(ITaskItem item, IReadOnlyList<string> names) => names.FirstOrDefault(name => !string.IsNullOrWhiteSpace(item.GetMetadata(name)));
+    private static string? UnsupportedMetadata(ITaskItem item, IReadOnlyList<string> names) => names.FirstOrDefault(name =>
+        !string.IsNullOrWhiteSpace(item.GetMetadata(name))
+        && !(name == "GlobalPropertiesToRemove"
+            && item.GetMetadata(name).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .All(property => property == "WebPublishProfileFile")));
 
     private static bool IsLexicallyInside(string root, string path)
     {

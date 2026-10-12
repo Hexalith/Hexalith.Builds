@@ -70,7 +70,7 @@ internal static class RunReadiness
 
         // Resource health does not prove the Dapr invocation boundary: a module sidecar reports Running before it
         // is registered in the run's name resolution. Probe EventStore-to-module invocation through the sidecars.
-        if (!await WaitForModuleInvocationAsync(plan, cancellationToken).ConfigureAwait(false))
+        if (!plan.IsPlatformComposition && !await WaitForModuleInvocationAsync(plan, cancellationToken).ConfigureAwait(false))
         {
             return false;
         }

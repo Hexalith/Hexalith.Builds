@@ -41,6 +41,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <param name="manifestPath">The manifest path.</param>
     /// <param name="cancellationToken">The cancellation token. Cancellation runs bounded teardown.</param>
     /// <returns>The start outcome; a session only when every resource is healthy.</returns>
+    /// <exception cref="InvalidOperationException">A v2 command has no resolved source mapping.</exception>
     [System.Diagnostics.CodeAnalysis.SuppressMessage(
         "Reliability",
         "CA2000:Dispose objects before losing scope",
@@ -56,8 +57,15 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
-            if (!manifestResult.IsValid)
+            bool platformComposition = PlatformManifestCommand.IsV2(manifestPath);
+            PlatformManifestValidationResult? platformDeclarations = platformComposition ? PlatformManifestValidator.Validate([manifestPath], cancellationToken) : null;
+            if (platformDeclarations is { IsValid: false })
+            {
+                return Failed("failed", ToolExitCode.UsageOrManifest, platformDeclarations.Diagnostics, null);
+            }
+
+            ManifestLoadResult manifestResult = platformComposition ? new ManifestLoadResult(null, []) : ModuleManifestLoader.Load(manifestPath);
+            if (!platformComposition && !manifestResult.IsValid)
             {
                 return Failed("failed", ToolExitCode.UsageOrManifest, manifestResult.Diagnostics, null);
             }
@@ -100,56 +108,72 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 await SourceMappingMaterializer.WriteAsync(packageMapping, preparedWorkspace, cancellationToken).ConfigureAwait(false);
             }
 
-            ExecutableDescriptorLoadResult descriptors = await ExecutableDescriptorLoader.LoadAsync(
-                manifest,
-                manifestPath,
-                _options.DescriptorChildEntryAssemblyPath,
-                cancellationToken,
-                _options.SourceMapping).ConfigureAwait(false);
-            if (!descriptors.IsValid)
+            IReadOnlyList<CompositionRunModule> modules;
+            IReadOnlyList<CompositionRunUiMarker> markers;
+            string? platformModel = null;
+            if (platformComposition)
             {
-                IReadOnlyList<ToolDiagnostic> descriptorDiagnostics = await CleanupPreparedWorkspaceAsync(preparedWorkspace, descriptors.Diagnostics).ConfigureAwait(false);
-
-                bool unavailable = descriptors.Diagnostics[0].Category == ToolFailureCategory.PrerequisiteUnavailable;
-                ToolExitCode descriptorExit = ToolExitCode.UsageOrManifest;
-                if (unavailable)
-                {
-                    descriptorExit = ToolExitCode.PrerequisiteUnavailable;
-                }
-                else if (descriptors.Diagnostics[0].Category == ToolFailureCategory.TopologyOrLifecycle)
-                {
-                    descriptorExit = ToolExitCode.TopologyOrLifecycle;
-                }
-
-                return Failed(
-                    unavailable ? "unavailable" : "failed",
-                    descriptorExit,
-                    descriptorDiagnostics,
-                    null);
+                SourceMapping mapping = _options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping.");
+                runId ??= CompositionRunPlanFactory.NewRunId();
+                preparedWorkspace ??= WorkspaceFor(runId);
+                CompositionWorkspace.CreatePrivateDirectory(preparedWorkspace);
+                await SourceMappingMaterializer.WriteAsync(mapping, preparedWorkspace, cancellationToken).ConfigureAwait(false);
+                platformModel = await PlatformManifestCommand.BuildModelAsync(mapping, preparedWorkspace, cancellationToken).ConfigureAwait(false);
+                modules = [];
+                markers = [];
             }
-
-            (IReadOnlyList<CompositionRunModule> modules, IReadOnlyList<CompositionRunUiMarker> markers) =
-                CompositionRunPlanFactory.Bind(manifest, descriptors);
-            if (_options.SourceMapping is { } mapping)
+            else
             {
-                CompositionRunModule? unmapped = modules.FirstOrDefault(module => !mapping.ContainsProject(module.ProjectPath));
-                if (unmapped is not null)
+                ExecutableDescriptorLoadResult descriptors = await ExecutableDescriptorLoader.LoadAsync(
+                    manifest,
+                    manifestPath,
+                    _options.DescriptorChildEntryAssemblyPath,
+                    cancellationToken,
+                    _options.SourceMapping).ConfigureAwait(false);
+                if (!descriptors.IsValid)
                 {
-                    IReadOnlyList<ToolDiagnostic> unmappedDiagnostics =
-                    [
-                        Diagnostic(
-                            "HXW006",
-                            ToolPhase.Topology,
-                            ToolFailureCategory.TopologyOrLifecycle,
-                            $"Module project '{unmapped.ProjectPath}' is outside the active module and mapped source roots.",
-                            unmapped.ProjectPath,
-                            "Use a project in the active module or a mapped source root."),
-                    ];
+                    IReadOnlyList<ToolDiagnostic> descriptorDiagnostics = await CleanupPreparedWorkspaceAsync(preparedWorkspace, descriptors.Diagnostics).ConfigureAwait(false);
+
+                    bool unavailable = descriptors.Diagnostics[0].Category == ToolFailureCategory.PrerequisiteUnavailable;
+                    ToolExitCode descriptorExit = ToolExitCode.UsageOrManifest;
+                    if (unavailable)
+                    {
+                        descriptorExit = ToolExitCode.PrerequisiteUnavailable;
+                    }
+                    else if (descriptors.Diagnostics[0].Category == ToolFailureCategory.TopologyOrLifecycle)
+                    {
+                        descriptorExit = ToolExitCode.TopologyOrLifecycle;
+                    }
+
                     return Failed(
-                        "failed",
-                        ToolExitCode.TopologyOrLifecycle,
-                        await CleanupPreparedWorkspaceAsync(preparedWorkspace, unmappedDiagnostics).ConfigureAwait(false),
+                        unavailable ? "unavailable" : "failed",
+                        descriptorExit,
+                        descriptorDiagnostics,
                         null);
+                }
+
+                (modules, markers) = CompositionRunPlanFactory.Bind(manifest, descriptors);
+                if (_options.SourceMapping is { } mapping)
+                {
+                    CompositionRunModule? unmapped = modules.FirstOrDefault(module => !mapping.ContainsProject(module.ProjectPath));
+                    if (unmapped is not null)
+                    {
+                        IReadOnlyList<ToolDiagnostic> unmappedDiagnostics =
+                        [
+                            Diagnostic(
+                                "HXW006",
+                                ToolPhase.Topology,
+                                ToolFailureCategory.TopologyOrLifecycle,
+                                $"Module project '{unmapped.ProjectPath}' is outside the active module and mapped source roots.",
+                                unmapped.ProjectPath,
+                                "Use a project in the active module or a mapped source root."),
+                        ];
+                        return Failed(
+                            "failed",
+                            ToolExitCode.TopologyOrLifecycle,
+                            await CleanupPreparedWorkspaceAsync(preparedWorkspace, unmappedDiagnostics).ConfigureAwait(false),
+                            null);
+                    }
                 }
             }
 
@@ -170,16 +194,41 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 runId,
                 workspace,
                 prerequisites.DaprHome!,
-                CompositionPortAllocator.Allocate(modules.Count, _options.EnableSecondEventStoreInstance),
+                CompositionPortAllocator.Allocate(Math.Max(1, modules.Count), !platformComposition && _options.EnableSecondEventStoreInstance),
                 modules,
                 markers,
-                _options.SourceMapping);
+                _options.SourceMapping,
+                platformComposition ? [Path.GetFullPath(manifestPath)] : [],
+                platformDeclarations?.Declarations?.Single().Declaration.GetProperty("identity").GetProperty("moduleId").GetString(),
+                platformModel);
             await CompositionDaprComponentRenderer.WriteAsync(plan, cancellationToken).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");
             await CompositionDocumentStore.WriteAsync(planPath, plan, cancellationToken).ConfigureAwait(false);
-            await WriteStateAsync(runId, CompositionRunStatus.Starting, manifestHash, null, null, cancellationToken).ConfigureAwait(false);
-
             string signingKey = CompositionSigningKey.Create();
+            if (platformComposition)
+            {
+                CompositionProcessResult preflight = await CompositionProcess.RunAsync(
+                    CompositionProcess.CreateStartInfo(
+                        DotnetHostPath(),
+                        ["exec", _options.AppHostAssemblyPath, "--validate-platform"],
+                        Path.GetDirectoryName(_options.AppHostAssemblyPath),
+                        new Dictionary<string, string>(StringComparer.Ordinal)
+                        {
+                            [CompositionEnvironment.PlanPath] = planPath,
+                            [CompositionEnvironment.SigningKey] = signingKey,
+                            [CompositionEnvironment.RunId] = plan.RunId,
+                            [CompositionEnvironment.DaprRuntimePath] = plan.DaprHome,
+                        }),
+                    TimeSpan.FromMinutes(5),
+                    cancellationToken).ConfigureAwait(false);
+                if (preflight.ExitCode != 0)
+                {
+                    IReadOnlyList<ToolDiagnostic> refusal = [Diagnostic("HXP020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, preflight.Output + preflight.ErrorOutput, "platform", "Supply the named owner input; no resources were started.")];
+                    return Failed("failed", ToolExitCode.TopologyOrLifecycle, await CleanupPreparedWorkspaceAsync(workspace, refusal).ConfigureAwait(false), null);
+                }
+            }
+
+            await WriteStateAsync(runId, CompositionRunStatus.Starting, manifestHash, null, null, cancellationToken).ConfigureAwait(false);
             appHost = StartAppHost(plan, planPath, signingKey);
             if (appHost is null)
             {

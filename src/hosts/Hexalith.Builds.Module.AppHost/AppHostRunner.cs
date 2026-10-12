@@ -26,7 +26,7 @@ internal static class AppHostRunner
 
         IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
         {
-            Args = args,
+            Args = [.. args.Where(argument => argument != "--validate-platform")],
             DisableDashboard = true,
             AllowUnsecuredTransport = true,
             EnableResourceLogging = string.Equals(
@@ -40,6 +40,11 @@ internal static class AppHostRunner
             options.EnableTelemetry = false;
         });
         RunTopology.Compose(builder, plan, signingKey);
+
+        if (args.Contains("--validate-platform", StringComparer.Ordinal))
+        {
+            return 0;
+        }
 
         DistributedApplication app = builder.Build();
         StopSignal stop = StopSignal.Listen(plan);
@@ -59,7 +64,7 @@ internal static class AppHostRunner
                 // Start blocks while dependents wait for a healthy EventStore, and EventStore becomes healthy
                 // only after the runner-owned writer-protocol cutover, so the cutover runs concurrently.
 #pragma warning disable CA2025 // The cutover task is awaited below, before the application is disposed.
-                cutover = WriterProtocolCutover.ActivateAsync(app, plan, signingKey, readinessBound.Token);
+                cutover = plan.IsPlatformComposition ? Task.CompletedTask : WriterProtocolCutover.ActivateAsync(app, plan, signingKey, readinessBound.Token);
 #pragma warning restore CA2025
                 starting = app.StartAsync(readinessBound.Token);
 #pragma warning disable CA2025 // The readiness task is cancelled and drained below before the application is disposed.

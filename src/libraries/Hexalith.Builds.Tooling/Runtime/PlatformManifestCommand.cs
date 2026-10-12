@@ -1,0 +1,73 @@
+// <copyright file="PlatformManifestCommand.cs" company="ITANEO">
+// Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// </copyright>
+
+namespace Hexalith.Builds.Tooling.Runtime;
+
+using System.Text.Json;
+
+using Hexalith.Builds.Tooling.Workspace;
+
+/// <summary>Identifies declaration commands and builds their pinned Platform model.</summary>
+public static class PlatformManifestCommand
+{
+    /// <summary>Tests the document schema without converting v2 into a legacy manifest.</summary>
+    /// <param name="path">The declaration path.</param>
+    /// <returns>Whether the document declares v2.</returns>
+    public static bool IsV2(string path)
+    {
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+            return document.RootElement.TryGetProperty("schema", out JsonElement schema)
+                && schema.ValueKind == JsonValueKind.String
+                && schema.GetString() == "hexalith.module-manifest.v2";
+        }
+        catch (Exception exception) when (exception is IOException or JsonException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Builds the pinned model without importing nested owner source trees.</summary>
+    /// <param name="mapping">The command-resolved mapping.</param>
+    /// <param name="workspace">The run-owned output workspace.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The built model assembly path.</returns>
+    /// <exception cref="InvalidOperationException">The model cannot be built.</exception>
+    public static async Task<string> BuildModelAsync(SourceMapping mapping, string workspace, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        ArgumentException.ThrowIfNullOrWhiteSpace(workspace);
+        string root = mapping.PlatformIdentity?.PlatformPath
+            ?? mapping.Entries.SingleOrDefault(entry => entry.Identity == "Hexalith.Platform")?.Path
+            ?? throw new InvalidOperationException("Platform identity has no composition checkout path.");
+        string project = Path.Combine(root, "src", "Hexalith.Platform.Composition", "Hexalith.Platform.Composition.csproj");
+        if (!File.Exists(project))
+        {
+            throw new InvalidOperationException($"Platform model project '{project}' is unavailable.");
+        }
+
+        string output = Path.Combine(workspace, "hosts", "platform-model");
+        List<string> arguments =
+        [
+            "build", project, "--configuration", mapping.Mode == WorkspaceMode.Source ? "Debug" : "Release", "--output", output,
+            "-p:BuildsToolingAssemblyPath=" + typeof(PlatformManifestCommand).Assembly.Location,
+            "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0",
+        ];
+        if (mapping.Mode == WorkspaceMode.Package)
+        {
+            arguments.Add("-p:DirectoryPackagesPropsPath=" + Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props"));
+        }
+
+        CompositionProcessResult result = await CompositionProcess.RunAsync(
+            CompositionProcess.CreateStartInfo("dotnet", arguments, root, null),
+            TimeSpan.FromMinutes(5),
+            cancellationToken).ConfigureAwait(false);
+        string assembly = Path.Combine(output, "Hexalith.Platform.Composition.dll");
+        return result.ExitCode == 0 && File.Exists(assembly)
+            ? assembly
+            : throw new InvalidOperationException($"Platform model '{project}' could not build: {result.Output}");
+    }
+}

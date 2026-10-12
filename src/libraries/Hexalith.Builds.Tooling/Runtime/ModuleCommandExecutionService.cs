@@ -93,6 +93,11 @@ public static class ModuleCommandExecutionService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (PlatformManifestCommand.IsV2(manifestPath))
+            {
+                return await ExecutePlatformAsync(command, manifestPath, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, cancellationToken).ConfigureAwait(false);
+            }
+
             // A direct reference may contain a stale or absent working-tree manifest.
             // Resolve its recorded gitlink before parsing any of its bytes.
             SourceMapping? preResolvedMapping = null;
@@ -905,6 +910,67 @@ public static class ModuleCommandExecutionService
             result,
             format,
             cancellationToken).ConfigureAwait(false);
+        return (int)result.Outcome.ExitCode;
+    }
+
+    private static async Task<int> ExecutePlatformAsync(
+        ModuleInvocationCommand command,
+        string manifestPath,
+        ToolOutputFormat format,
+        TextWriter writer,
+        string? descriptorChildEntryAssemblyPath,
+        string? runId,
+        CompositionEngineOptions? compositionOptions,
+        WorkspaceMode mode,
+        CancellationToken cancellationToken)
+    {
+        PlatformManifestValidationResult validation = PlatformManifestValidator.Validate([manifestPath], cancellationToken);
+        ToolCommandResult result;
+        if (!validation.IsValid)
+        {
+            result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest), validation.Diagnostics);
+        }
+        else if (descriptorChildEntryAssemblyPath is null)
+        {
+            ToolDiagnostic unavailable = new("HXR014", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, "Platform composition requires the packaged Builds AppHost.", "apphost");
+            result = new ToolCommandResult("unavailable", ToolOutcome.Passed().Fail(unavailable.Phase, unavailable.Category, unavailable.RuleId, ToolExitCode.PrerequisiteUnavailable), [unavailable]);
+        }
+        else
+        {
+            CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
+            SourceMapping? mapping = command == ModuleInvocationCommand.Down ? null : options.SourceMapping ?? await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
+            CompositionEngine engine = new(options with { SourceMapping = mapping, PersistAfterParentExit = command == ModuleInvocationCommand.Run });
+            if (command == ModuleInvocationCommand.Down)
+            {
+                string hash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false)));
+                IReadOnlyList<CompositionRunState> matches = await engine.StateStore.FindByManifestHashAsync(hash, cancellationToken).ConfigureAwait(false);
+                CompositionRunState? target = runId is null && matches.Count == 1 ? matches[0] : matches.FirstOrDefault(state => state.RunId == runId);
+                if (target is null)
+                {
+                    ToolDiagnostic missing = new("HXR024", ToolPhase.Usage, ToolFailureCategory.Usage, "A matching v2 run identity is required.", "runId");
+                    result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(missing.Phase, missing.Category, missing.RuleId, ToolExitCode.UsageOrManifest), [missing]);
+                }
+                else
+                {
+                    result = (await engine.DownAsync(target.RunId, cancellationToken).ConfigureAwait(false)).Result;
+                }
+            }
+            else
+            {
+                CompositionStartResult started = await engine.StartAsync(manifestPath, cancellationToken).ConfigureAwait(false);
+                result = started.Result with { RunId = started.Session?.Plan.RunId };
+                if (started.Session is { } session && command == ModuleInvocationCommand.Test)
+                {
+                    // v2 declares executable lifecycle tasks, not the v1 qualification profiles.
+                    // Until a test plan is supplied, never claim process health as a passing test run.
+                    _ = await engine.DownAsync(session, cancellationToken).ConfigureAwait(false);
+                    ToolDiagnostic absent = new("HXR028", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The v2 declaration has no executable test profile; readiness alone does not prove tests completed.", "profile");
+                    result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(absent.Phase, absent.Category, absent.RuleId, ToolExitCode.TopologyOrLifecycle), [absent]);
+                }
+            }
+        }
+
+        await ToolDiagnosticFormatter.WriteAsync(writer, result, format, cancellationToken).ConfigureAwait(false);
         return (int)result.Outcome.ExitCode;
     }
 

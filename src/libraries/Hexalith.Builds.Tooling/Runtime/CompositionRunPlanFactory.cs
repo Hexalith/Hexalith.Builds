@@ -74,6 +74,9 @@ public static class CompositionRunPlanFactory
     /// <param name="modules">The validated modules.</param>
     /// <param name="uiMarkers">The validated UI markers.</param>
     /// <param name="sourceMapping">The immutable workspace source mapping.</param>
+    /// <param name="platformDeclarationPaths">The v2 declaration selection, or null for legacy runs.</param>
+    /// <param name="platformActiveModule">The active v2 module identity.</param>
+    /// <param name="platformModelAssemblyPath">The model built from the pinned Platform checkout.</param>
     /// <returns>The run plan.</returns>
     /// <exception cref="ArgumentException">An identity or path is malformed.</exception>
     public static CompositionRunPlan Create(
@@ -83,7 +86,10 @@ public static class CompositionRunPlanFactory
         CompositionRunPorts ports,
         IReadOnlyList<CompositionRunModule> modules,
         IReadOnlyList<CompositionRunUiMarker> uiMarkers,
-        SourceMapping? sourceMapping = null)
+        SourceMapping? sourceMapping = null,
+        IReadOnlyList<string>? platformDeclarationPaths = null,
+        string? platformActiveModule = null,
+        string? platformModelAssemblyPath = null)
     {
         ArgumentNullException.ThrowIfNull(ports);
         ArgumentNullException.ThrowIfNull(modules);
@@ -98,7 +104,8 @@ public static class CompositionRunPlanFactory
             throw new ArgumentException("The workspace and Dapr home must be absolute paths.", nameof(workspace));
         }
 
-        if (modules.Count == 0 || ports.ModuleHttp.Count != modules.Count || ports.ModuleDapr.Count != modules.Count || ports.ToList().Distinct().Count() != ports.ToList().Count)
+        bool platformComposition = platformDeclarationPaths is { Count: > 0 };
+        if ((!platformComposition && (modules.Count == 0 || ports.ModuleHttp.Count != modules.Count || ports.ModuleDapr.Count != modules.Count)) || ports.ToList().Distinct().Count() != ports.ToList().Count)
         {
             throw new ArgumentException("A run requires one HTTP and four sidecar ports per module and distinct ports.", nameof(modules));
         }
@@ -124,6 +131,9 @@ public static class CompositionRunPlanFactory
             [.. uiMarkers.OrderBy(marker => marker.ModuleId, StringComparer.Ordinal)])
         {
             SourceMapping = sourceMapping,
+            PlatformDeclarationPaths = platformDeclarationPaths ?? [],
+            PlatformActiveModule = platformActiveModule,
+            PlatformModelAssemblyPath = platformModelAssemblyPath,
         };
     }
 }

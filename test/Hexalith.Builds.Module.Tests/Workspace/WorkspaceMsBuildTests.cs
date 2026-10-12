@@ -435,6 +435,118 @@ public sealed class WorkspaceMsBuildTests
         }
     }
 
+    /// <summary>Verifies only the Web SDK's harmless publish-profile removal is permitted.</summary>
+    /// <param name="removedProperty">The property named by ProjectReference metadata.</param>
+    /// <param name="accepted">Whether the property is harmless.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("WebPublishProfileFile", true)]
+    [InlineData("Configuration", false)]
+    [InlineData("WebPublishProfileFile;Configuration", false)]
+    public async Task RetainedProjectPropertyRemovalPreservesMappedConfigurationAsync(string removedProperty, bool accepted)
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            _ = Directory.CreateDirectory(active);
+            await File.WriteAllTextAsync(Path.Combine(active, "Dep.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><ProjectReference Include=\"Dep.csproj\" GlobalPropertiesToRemove=\";" + removedProperty + "\" /></ItemGroup></Project>");
+            SourceMapping mapping = Mapping(active, WorkspaceMode.Source);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "msbuild", project, "-target:HexalithReconcileSourceMapping", "-v:q").ConfigureAwait(true);
+
+            if (accepted)
+            {
+                result.ExitCode.ShouldBe(0, result.Output);
+            }
+            else
+            {
+                result.ExitCode.ShouldNotBe(0);
+                result.Output.ShouldContain("HXW006");
+                result.Output.ShouldContain("GlobalPropertiesToRemove");
+            }
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies source Version metadata must equal the central catalog and contain no other override.</summary>
+    /// <param name="additionalProperties">The consumer project metadata.</param>
+    /// <param name="accepted">Whether it exactly matches the catalog.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("Version=1.0.0", true)]
+    [InlineData("Version=2.0.0", false)]
+    [InlineData("Version=1.0.0;Configuration=Release", false)]
+    public async Task RetainedProjectVersionMetadataMatchesCatalogAsync(string additionalProperties, bool accepted)
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            _ = Directory.CreateDirectory(active);
+            await File.WriteAllTextAsync(Path.Combine(active, "Dep.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageVersion Include=\"Dep\" Version=\"1.0.0\" /><ProjectReference Include=\"Dep.csproj\" AdditionalProperties=\"" + additionalProperties + "\" /></ItemGroup></Project>");
+            SourceMapping mapping = Mapping(active, WorkspaceMode.Source);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "msbuild", project, "-target:HexalithReconcileSourceMapping", "-v:q").ConfigureAwait(true);
+
+            if (accepted)
+            {
+                result.ExitCode.ShouldBe(0, result.Output);
+            }
+            else
+            {
+                result.ExitCode.ShouldNotBe(0);
+                result.Output.ShouldContain("HXW006");
+                result.Output.ShouldContain("AdditionalProperties");
+            }
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies an owner submodule guard resolves the active Platform identity without a nested checkout.</summary>
+    /// <returns>A task for the assertion.</returns>
+    [Fact]
+    public async Task OwnerSubmoduleGuardUsesMappedPlatformRootAsync()
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            string platform = Path.Combine(root, "platform");
+            _ = Directory.CreateDirectory(active);
+            _ = Directory.CreateDirectory(Path.Combine(platform, ".git"));
+            const string content = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><RequiredRootSubmodule Include=\"references/Hexalith.Platform\"><RootName>Hexalith.Platform</RootName></RequiredRootSubmodule></ItemGroup><Target Name=\"CheckSubmodules\"><Error Condition=\"!Exists('%(RequiredRootSubmodule.ResolvedRoot)/.git')\" Text=\"Nested Platform is unavailable\" /></Target></Project>";
+            string project = WriteProject(active, content);
+            SourceMapping mapping = Mapping(active, WorkspaceMode.Source) with
+            {
+                PlatformIdentity = new PlatformIdentity("commit", "commit", "commit", platform, null, null, null, "identity", true),
+            };
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "msbuild", project, "-target:CheckSubmodules", "-v:q").ConfigureAwait(true);
+
+            result.ExitCode.ShouldBe(0, result.Output);
+            Directory.Exists(Path.Combine(active, "references", "Hexalith.Platform")).ShouldBeFalse();
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     /// <summary>Verifies retained project items cannot override the selected build configuration.</summary>
     /// <param name="metadata">The project metadata that would override mapped build settings.</param>
     /// <returns>A task for the assertion.</returns>

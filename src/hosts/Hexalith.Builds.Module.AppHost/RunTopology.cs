@@ -46,6 +46,12 @@ internal static class RunTopology
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentException.ThrowIfNullOrWhiteSpace(signingKey);
 
+        if (plan.IsPlatformComposition)
+        {
+            ComposePlatform(builder, plan, signingKey);
+            return;
+        }
+
         IResourceBuilder<ParameterResource> key = builder.AddParameter("g4-signing-key", () => signingKey, secret: true);
         string placementAddress = Loopback(plan.Ports.Placement);
         string schedulerAddress = Loopback(plan.Ports.Scheduler);
@@ -228,6 +234,84 @@ internal static class RunTopology
         PackagedHostProject.TryMaterialize(AppContext.BaseDirectory, "Ui", "UiHost", HostDirectory(plan, UiName), out string? packagedProject)
             ? builder.AddProject(UiName, packagedProject!)
             : builder.AddProject<Projects.Hexalith_Builds_Module_UiHost>(UiName);
+
+    private static void ComposePlatform(IDistributedApplicationBuilder builder, CompositionRunPlan plan, string signingKey)
+    {
+        string modelPath = plan.PlatformModelAssemblyPath
+            ?? throw new InvalidOperationException("Platform v2 plan has no model assembly path.");
+        if (!File.Exists(modelPath))
+        {
+            throw new FileNotFoundException("Platform declaration model is unavailable.", modelPath);
+        }
+
+        string? seed = null;
+        if (plan.SourceMapping?.Mode == WorkspaceMode.Package)
+        {
+            seed = PackagedHostProject.TryMaterialize(AppContext.BaseDirectory, "EventStore", "EventStoreHost", HostDirectory(plan, EventStoreName), out string? packagedProject)
+                ? packagedProject
+                : Path.Combine(plan.SourceMapping.PlatformIdentity!.PlatformPath, "references", "Hexalith.Builds", "src", "hosts", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost.csproj");
+        }
+
+        System.Reflection.Assembly model = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(modelPath);
+        System.Reflection.MethodInfo compose = model.GetType("Hexalith.Platform.Composition.PlatformAppModel", throwOnError: true)!
+            .GetMethod("ComposeRun", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
+        try
+        {
+            _ = compose.Invoke(null, [builder, plan, signingKey, seed]);
+        }
+        catch (System.Reflection.TargetInvocationException exception) when (exception.InnerException is not null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
+        }
+
+        string schedulerAddress = Loopback(plan.Ports.Scheduler);
+        string controlPlane = Path.Combine(plan.Workspace, "dapr", "control-plane");
+        _ = Directory.CreateDirectory(controlPlane);
+        string[] placementArguments =
+        [
+            "--port", Text(plan.Ports.Placement),
+            "--listen-address", "127.0.0.1",
+            "--healthz-port", Text(plan.Ports.PlacementHealth),
+            "--healthz-listen-address", "127.0.0.1",
+            "--metrics-port", Text(plan.Ports.PlacementMetrics),
+            "--metrics-listen-address", "127.0.0.1",
+            "--initial-cluster", "dapr-placement-0=127.0.0.1:" + Text(plan.Ports.PlacementRaft)
+        ];
+        _ = builder.AddExecutable("placement", RunPlanSource.DaprBinaryPath(plan, "placement"), controlPlane, placementArguments)
+            .WithEnvironment(CompositionEnvironment.RunId, plan.RunId)
+            .WithHttpEndpoint(port: plan.Ports.PlacementHealth, name: "healthz", isProxied: false)
+            .WithHttpHealthCheck("/healthz", endpointName: "healthz");
+        string[] schedulerArguments =
+        [
+            "--port", Text(plan.Ports.Scheduler),
+            "--listen-address", "127.0.0.1",
+            "--override-broadcast-host-port", schedulerAddress,
+            "--healthz-port", Text(plan.Ports.SchedulerHealth),
+            "--healthz-listen-address", "127.0.0.1",
+            "--metrics-port", Text(plan.Ports.SchedulerMetrics),
+            "--metrics-listen-address", "127.0.0.1",
+            "--etcd-data-dir", Path.Combine(controlPlane, "scheduler-data"),
+            "--etcd-client-port", Text(plan.Ports.SchedulerEtcdClient),
+            "--etcd-client-listen-address", "127.0.0.1",
+            "--etcd-initial-cluster", "dapr-scheduler-server-0=http://127.0.0.1:" + Text(plan.Ports.SchedulerEtcdPeer)
+        ];
+        _ = builder.AddExecutable("scheduler", RunPlanSource.DaprBinaryPath(plan, "scheduler"), controlPlane, schedulerArguments)
+            .WithEnvironment(CompositionEnvironment.RunId, plan.RunId)
+            .WithHttpEndpoint(port: plan.Ports.SchedulerHealth, name: "healthz", isProxied: false)
+            .WithHttpHealthCheck("/healthz", endpointName: "healthz");
+
+        if (plan.UiMarkers.Count > 0)
+        {
+            IResourceBuilder<ProjectResource> ui = Tag(AddUiProject(builder, plan), plan, plan.Ports.UiHttp).WithHttpHealthCheck("/health");
+            for (int index = 0; index < plan.UiMarkers.Count; index++)
+            {
+                string prefix = $"Hexalith__G4__UiMarkers__{Text(index)}__";
+                _ = ui.WithEnvironment(prefix + "Assembly", plan.UiMarkers[index].AssemblyPath).WithEnvironment(prefix + "Type", plan.UiMarkers[index].MarkerType);
+            }
+        }
+
+        _ = builder.Services.AddSingleton<IDistributedApplicationEventingSubscriber>(new DaprDirectEndpointSubscriber());
+    }
 
     private static string HostDirectory(CompositionRunPlan plan, string resourceName) => Path.Combine(plan.Workspace, "hosts", resourceName);
 

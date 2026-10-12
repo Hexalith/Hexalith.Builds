@@ -258,9 +258,23 @@ public static class SourceMappingMaterializer
             }
         }
 
+        StringBuilder mappedSubmodules = new();
+        foreach (SourceMappingEntry entry in mapping.Entries.Where(entry => entry.Origin == "source" && entry.Path is not null))
+        {
+            _ = mappedSubmodules.Append("<RequiredRootSubmodule Update=\"references/").Append(XmlEscape(entry.Identity))
+                .Append("\"><ResolvedRoot>").Append(XmlEscape(MsBuildEscape(entry.Path!))).Append("</ResolvedRoot></RequiredRootSubmodule>");
+        }
+
+        if (mapping.PlatformIdentity is { } platformIdentity)
+        {
+            _ = mappedSubmodules.Append("<RequiredRootSubmodule Update=\"references/Hexalith.Platform\"><ResolvedRoot>")
+                .Append(XmlEscape(MsBuildEscape(platformIdentity.PlatformPath))).Append("</ResolvedRoot></RequiredRootSubmodule>");
+        }
+
         return "<Project InitialTargets=\"HexalithVerifySourceMappingSelection;HexalithValidateSourceProjectsBeforeRestore"
             + (catalogTargets.Length == 0 ? string.Empty : ";HexalithValidateCatalogBeforeRestore") + "\">"
             + catalogTargets
+            + "<Target Name=\"HexalithBindMappedRootSubmodules\" BeforeTargets=\"CheckSubmodules\" Condition=\"" + condition + "\"><ItemGroup>" + mappedSubmodules + "</ItemGroup></Target>"
             + "<Target Name=\"HexalithVerifySourceMappingSelection\" Condition=\"" + condition + "\">" + guard + "</Target>"
             + "<Target Name=\"HexalithVerifyPreLateSourceMappingSelection\" BeforeTargets=\"Restore;_GenerateRestoreGraphProjectEntry;_GenerateRestoreProjectPathItemsPerFramework;_GenerateProjectRestoreGraphPerFramework;CollectPackageReferences;AssignProjectConfiguration;_SplitProjectReferencesByFileExistence;_GetProjectReferenceTargetFrameworkProperties;ResolveProjectReferences;ResolveReferences;CoreCompile\" Condition=\"" + condition + "\">" + preLateGuard + "</Target>"
             + "<Target Name=\"HexalithReconcileSourceMapping\" BeforeTargets=\"Restore;_GenerateRestoreGraphProjectEntry;_GenerateRestoreProjectPathItemsPerFramework;_GenerateProjectRestoreGraphPerFramework;CollectPackageReferences;AssignProjectConfiguration;_SplitProjectReferencesByFileExistence;_GetProjectReferenceTargetFrameworkProperties;ResolveReferences;ResolvePackageAssets\" Condition=\"" + condition + "\">"
