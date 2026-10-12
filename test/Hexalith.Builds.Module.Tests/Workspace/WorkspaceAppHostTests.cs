@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
+using System.Net;
 using System.Reflection;
 
 using Aspire.Hosting;
@@ -58,6 +59,7 @@ public sealed class WorkspaceAppHostTests
             _ = builder.AddDapr(options => options.DaprPath = Path.Combine(root, "dapr-home", "tools", "dapr"));
 
             RunTopology.Compose(builder, plan, CompositionSigningKey.Create());
+            RunReadiness.InvocationProbes(plan, new DistributedApplicationModel(builder.Resources)).ShouldAllBe(probe => probe.Endpoint == "/alive");
 
             foreach (CompositionRunModule module in plan.Modules)
             {
@@ -92,9 +94,10 @@ public sealed class WorkspaceAppHostTests
         }
     }
 
-    /// <summary>Verifies v2 delegates to the pinned Platform model and keeps one source gateway.</summary>
+    /// <summary>Verifies v2 delegates to the pinned model and probes declared readiness through Dapr.</summary>
+    /// <returns>The graph and invocation assertions.</returns>
     [Fact]
-    public void PlatformPlanDelegatesToThePinnedModel()
+    public async Task PlatformPlanDelegatesToThePinnedModelAsync()
     {
         DirectoryInfo? directory = new(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "apphost.cs")))
@@ -129,6 +132,7 @@ public sealed class WorkspaceAppHostTests
             CompositionRunPlan plan = sample with
             {
                 SourceMapping = mapping,
+                Ports = CompositionPortAllocator.Allocate(1),
                 PlatformDeclarationPaths = [Path.Combine(platform, "references", "Hexalith.EventStore", "module", "hexalith.module-manifest.v2.json")],
                 PlatformModelAssemblyPath = model,
             };
@@ -140,6 +144,7 @@ public sealed class WorkspaceAppHostTests
                 AllowUnsecuredTransport = true,
             });
             _ = builder.AddDapr(options => options.DaprPath = Path.Combine(root, "dapr-home", "tools", "dapr"));
+            await CompositionDaprComponentRenderer.WriteAsync(plan, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             RunTopology.Compose(builder, plan, CompositionSigningKey.Create());
 
@@ -148,6 +153,29 @@ public sealed class WorkspaceAppHostTests
             builder.Resources.Count(resource => resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation")).ShouldBe(6);
             builder.Resources.OfType<ProjectResource>().Single(resource => resource.Name == "eventstore")
                 .Annotations.OfType<ExecutableAnnotation>().Last().WorkingDirectory.ShouldBe(Path.Combine(platform, "references", "Hexalith.EventStore", "src", "Hexalith.EventStore"));
+            DistributedApplicationModel applicationModel = new(builder.Resources);
+            IReadOnlyList<(string Resource, string AppId, string Endpoint)> probes = RunReadiness.InvocationProbes(plan, applicationModel);
+            probes.Count.ShouldBe(5);
+            probes.ShouldAllBe(probe => probe.Endpoint == "/ready");
+            using HttpListener listener = new();
+            listener.Prefixes.Add($"http://127.0.0.1:{plan.Ports.EventStoreDaprHttp}/");
+            listener.Start();
+            List<string> invoked = [];
+            Task responder = Task.Run(
+                async () =>
+                {
+                    for (int index = 0; index < probes.Count; index++)
+                    {
+                        HttpListenerContext context = await listener.GetContextAsync().WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+                        invoked.Add(context.Request.RawUrl!);
+                        context.Response.StatusCode = 200;
+                        context.Response.Close();
+                    }
+                },
+                TestContext.Current.CancellationToken);
+            (await RunReadiness.WaitForModuleInvocationAsync(plan, applicationModel, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
+            await responder.ConfigureAwait(true);
+            invoked.Order(StringComparer.Ordinal).ShouldBe(probes.Select(probe => $"/v1.0/invoke/{probe.AppId}/method/ready").Order(StringComparer.Ordinal));
         }
         finally
         {

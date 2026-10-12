@@ -159,7 +159,7 @@ public sealed class ModuleCommandApplicationTests
         try
         {
             string invalidManifest = _manifestJson
-                .Replace("hexalith.module-manifest.v1", "hexalith.module-manifest.v2", StringComparison.Ordinal)
+                .Replace("hexalith.module-manifest.v1", "hexalith.module-manifest.v3", StringComparison.Ordinal)
                 .Replace("\"id\": \"command-fixture\"", "\"id\": \"Invalid\"", StringComparison.Ordinal)
                 .Replace("assemblies/module-a.dll", "assemblies/missing.dll", StringComparison.Ordinal);
             await File.WriteAllTextAsync(

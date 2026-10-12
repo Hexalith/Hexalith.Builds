@@ -199,7 +199,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 markers,
                 _options.SourceMapping,
                 platformComposition ? [Path.GetFullPath(manifestPath)] : [],
-                platformDeclarations?.Declarations?.Single().Declaration.GetProperty("identity").GetProperty("moduleId").GetString(),
+                PlatformManifestCommand.ActiveModule(platformDeclarations?.Declarations),
                 platformModel);
             await CompositionDaprComponentRenderer.WriteAsync(plan, cancellationToken).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");

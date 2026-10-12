@@ -73,4 +73,10 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
 
     /// <summary>Gets a test-only native dotnet command replacement.</summary>
     internal string? NativeDotnetCommand { get; init; }
+
+    /// <summary>Gets a test-only replacement for the v2 session start boundary.</summary>
+    internal Func<string, CancellationToken, Task<CompositionStartResult>>? PlatformStartOverride { get; init; }
+
+    /// <summary>Gets a test-only replacement for bounded v2 session cleanup.</summary>
+    internal Func<CompositionRunSession, CancellationToken, Task<CompositionDownResult>>? PlatformDownOverride { get; init; }
 }

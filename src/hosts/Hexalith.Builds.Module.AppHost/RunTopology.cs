@@ -309,8 +309,6 @@ internal static class RunTopology
                 _ = ui.WithEnvironment(prefix + "Assembly", plan.UiMarkers[index].AssemblyPath).WithEnvironment(prefix + "Type", plan.UiMarkers[index].MarkerType);
             }
         }
-
-        _ = builder.Services.AddSingleton<IDistributedApplicationEventingSubscriber>(new DaprDirectEndpointSubscriber());
     }
 
     private static string HostDirectory(CompositionRunPlan plan, string resourceName) => Path.Combine(plan.Workspace, "hosts", resourceName);

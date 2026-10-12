@@ -64,7 +64,7 @@ internal static class AppHostRunner
                 // Start blocks while dependents wait for a healthy EventStore, and EventStore becomes healthy
                 // only after the runner-owned writer-protocol cutover, so the cutover runs concurrently.
 #pragma warning disable CA2025 // The cutover task is awaited below, before the application is disposed.
-                cutover = plan.IsPlatformComposition ? Task.CompletedTask : WriterProtocolCutover.ActivateAsync(app, plan, signingKey, readinessBound.Token);
+                cutover = WriterProtocolCutover.ActivateAsync(app, plan, signingKey, readinessBound.Token);
 #pragma warning restore CA2025
                 starting = app.StartAsync(readinessBound.Token);
 #pragma warning disable CA2025 // The readiness task is cancelled and drained below before the application is disposed.

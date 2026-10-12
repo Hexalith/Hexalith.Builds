@@ -7,6 +7,8 @@ namespace Hexalith.Builds.ModuleHosts.AppHost;
 
 using System.Net;
 
+using CommunityToolkit.Aspire.Hosting.Dapr;
+
 using Hexalith.Builds.Tooling.Runtime;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -70,7 +72,7 @@ internal static class RunReadiness
 
         // Resource health does not prove the Dapr invocation boundary: a module sidecar reports Running before it
         // is registered in the run's name resolution. Probe EventStore-to-module invocation through the sidecars.
-        if (!plan.IsPlatformComposition && !await WaitForModuleInvocationAsync(plan, cancellationToken).ConfigureAwait(false))
+        if (!await WaitForModuleInvocationAsync(plan, model, cancellationToken).ConfigureAwait(false))
         {
             return false;
         }
@@ -126,6 +128,104 @@ internal static class RunReadiness
             CancellationToken.None).ConfigureAwait(false);
     }
 
+    /// <summary>Proves selected server readiness through the existing bounded Dapr invocation boundary.</summary>
+    /// <param name="plan">The signed run plan.</param>
+    /// <param name="model">The actual selected resource model.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>True when every selected server can be invoked.</returns>
+    internal static async Task<bool> WaitForModuleInvocationAsync(CompositionRunPlan plan, DistributedApplicationModel model, CancellationToken cancellationToken)
+    {
+        using HttpClient sidecar = new()
+        {
+            BaseAddress = new UriBuilder(Uri.UriSchemeHttp, IPAddress.Loopback.ToString(), plan.Ports.EventStoreDaprHttp).Uri,
+            Timeout = TimeSpan.FromSeconds(10),
+        };
+        foreach ((string resource, string appId, string endpoint) in InvocationProbes(plan, model))
+        {
+            Console.WriteLine($"g4: waiting for Dapr invocation of '{appId}'.");
+            using CancellationTokenSource probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            probe.CancelAfter(_invocationBound);
+            string status = "unreported";
+            while (!probe.IsCancellationRequested)
+            {
+                try
+                {
+                    using HttpResponseMessage response = await sidecar
+                        .GetAsync(new Uri($"/v1.0/invoke/{appId}/method{endpoint}", UriKind.Relative), probe.Token)
+                        .ConfigureAwait(false);
+                    status = "HTTP " + ((int)response.StatusCode).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        break;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    status = "connection-unavailable";
+                }
+                catch (TaskCanceledException) when (!probe.IsCancellationRequested)
+                {
+                    status = "request-timeout";
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && probe.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                if (probe.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                try
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(500), probe.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && probe.IsCancellationRequested)
+                {
+                    break;
+                }
+            }
+
+            if (probe.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                await ReportFailureAsync(plan, "HXR026", resource, appId, status + ";probe-timeout").ConfigureAwait(false);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Derives v2 probes from composed bindings while retaining v1 alive endpoints.</summary>
+    /// <param name="plan">The signed run plan.</param>
+    /// <param name="model">The actual selected resource model.</param>
+    /// <returns>The resource, sidecar identity, and declared endpoint.</returns>
+    internal static IReadOnlyList<(string Resource, string AppId, string Endpoint)> InvocationProbes(CompositionRunPlan plan, DistributedApplicationModel model)
+    {
+        if (!plan.IsPlatformComposition)
+        {
+            return [.. plan.Modules.Select(module => (module.ModuleId, module.AppId, "/alive"))];
+        }
+
+        List<(string Resource, string AppId, string Endpoint)> probes = [];
+        foreach (IResource resource in model.Resources.Where(resource => resource.Name != RunTopology.EventStoreName))
+        {
+            IResourceAnnotation? selected = resource.Annotations.FirstOrDefault(annotation => annotation.GetType().Name == "PlatformServerAnnotation");
+            if (selected is null)
+            {
+                continue;
+            }
+
+            object binding = selected.GetType().GetProperty("Binding")!.GetValue(selected)!;
+            string endpoint = (string)binding.GetType().GetProperty("ReadinessEndpoint")!.GetValue(binding)!;
+            DaprSidecarOptions sidecar = resource.Annotations.OfType<DaprSidecarAnnotation>().Single().Sidecar.Annotations.OfType<DaprSidecarOptionsAnnotation>().Single().Options;
+            probes.Add((resource.Name, sidecar.AppId!, endpoint));
+        }
+
+        return probes;
+    }
+
     private static string AppId(CompositionRunPlan plan, string resourceName) =>
         string.Equals(resourceName, RunTopology.EventStoreName, StringComparison.Ordinal)
         || string.Equals(resourceName, RunTopology.EventStoreName + "-dapr-cli", StringComparison.Ordinal)
@@ -165,70 +265,6 @@ internal static class RunReadiness
         notifications.TryGetCurrentState(resourceName, out ResourceEvent? current)
             ? $"state={current.Snapshot.State?.Text ?? "unknown"};health={current.Snapshot.HealthStatus?.ToString() ?? "unknown"}"
             : "state=unreported;health=unreported";
-
-    private static async Task<bool> WaitForModuleInvocationAsync(CompositionRunPlan plan, CancellationToken cancellationToken)
-    {
-        using HttpClient sidecar = new()
-        {
-            BaseAddress = new UriBuilder(Uri.UriSchemeHttp, IPAddress.Loopback.ToString(), plan.Ports.EventStoreDaprHttp).Uri,
-            Timeout = TimeSpan.FromSeconds(10),
-        };
-        foreach (CompositionRunModule module in plan.Modules)
-        {
-            Console.WriteLine($"g4: waiting for Dapr invocation of '{module.AppId}'.");
-            using CancellationTokenSource probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            probe.CancelAfter(_invocationBound);
-            string status = "unreported";
-            while (!probe.IsCancellationRequested)
-            {
-                try
-                {
-                    using HttpResponseMessage response = await sidecar
-                        .GetAsync(new Uri($"/v1.0/invoke/{module.AppId}/method/alive", UriKind.Relative), probe.Token)
-                        .ConfigureAwait(false);
-                    status = "HTTP " + ((int)response.StatusCode).ToString(System.Globalization.CultureInfo.InvariantCulture);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        break;
-                    }
-                }
-                catch (HttpRequestException)
-                {
-                    status = "connection-unavailable";
-                }
-                catch (TaskCanceledException) when (!probe.IsCancellationRequested)
-                {
-                    status = "request-timeout";
-                }
-                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && probe.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                if (probe.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                try
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(500), probe.Token).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && probe.IsCancellationRequested)
-                {
-                    break;
-                }
-            }
-
-            if (probe.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-            {
-                await ReportFailureAsync(plan, "HXR026", module.ModuleId, module.AppId, status + ";probe-timeout").ConfigureAwait(false);
-                return false;
-            }
-        }
-
-        return true;
-    }
 
     private static string Kind(IResource resource) => resource switch
     {

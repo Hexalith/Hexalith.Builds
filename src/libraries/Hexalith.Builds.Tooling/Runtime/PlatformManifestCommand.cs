@@ -20,7 +20,8 @@ public static class PlatformManifestCommand
         try
         {
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
-            return document.RootElement.TryGetProperty("schema", out JsonElement schema)
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("schema", out JsonElement schema)
                 && schema.ValueKind == JsonValueKind.String
                 && schema.GetString() == "hexalith.module-manifest.v2";
         }
@@ -70,4 +71,10 @@ public static class PlatformManifestCommand
             ? assembly
             : throw new InvalidOperationException($"Platform model '{project}' could not build: {result.Output}");
     }
+
+    /// <summary>Uses reference composition when a valid document has no unique active declaration.</summary>
+    /// <param name="declarations">The validated module set.</param>
+    /// <returns>The unique active identity, or the reference default.</returns>
+    internal static string? ActiveModule(IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformModuleDeclaration>? declarations) =>
+        declarations is { Count: 1 } ? declarations[0].Declaration.GetProperty("identity").GetProperty("moduleId").GetString() : null;
 }
