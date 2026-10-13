@@ -34,8 +34,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Release
     environment: ${{ github.ref_name == 'prerelease' && 'prerelease' || 'production' }}
-    env:
-      HEXALITH_NUGET_VERIFY_ATTEMPTS: '75'
     permissions:
       contents: write        # push tag and create GitHub release
       issues: write          # semantic-release comments on released issues
