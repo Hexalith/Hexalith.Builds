@@ -114,8 +114,8 @@ function Assert-RemotePackageHash {
     # serves it. The 4.29.0 Evidence.Cli push was visible only after about eight
     # minutes, so a one-minute poll reported BlobNotFound and aborted the rest
     # of the inventory. Forty-five attempts at 20 seconds cover a 15-minute window.
-    $maximumAttempts = 45
-    $retryDelaySeconds = 20
+    $maximumAttempts = if ($env:HEXALITH_NUGET_VERIFY_ATTEMPTS) { [int]$env:HEXALITH_NUGET_VERIFY_ATTEMPTS } else { 45 }
+    $retryDelaySeconds = if ($env:HEXALITH_NUGET_VERIFY_DELAY_SECONDS) { [int]$env:HEXALITH_NUGET_VERIFY_DELAY_SECONDS } else { 20 }
     try {
         for ($attempt = 1; $attempt -le $maximumAttempts; $attempt++) {
             try {
