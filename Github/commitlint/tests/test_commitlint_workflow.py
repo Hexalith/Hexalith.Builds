@@ -54,6 +54,7 @@ class CommitlintWorkflowTests(unittest.TestCase):
             fake_bin.mkdir()
             marker = root / "injected"
             stdin_log = root / "stdin.log"
+            stdin_log.touch()
             args_log = root / "args.log"
             npx = fake_bin / "npx"
             npx.write_text(
