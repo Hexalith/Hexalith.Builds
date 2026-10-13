@@ -33,6 +33,7 @@ None.
 |----------|----------|-------------|
 | `GITHUB_TOKEN` | Yes | Token used by semantic-release to create tags and the GitHub release. |
 | `NUGET_API_KEY` | Only for configured NuGet.org publication | Temporary key from `NuGet/login` passed through unchanged for stable NuGet publication. |
+| `HEXALITH_NUGET_VERIFY_ATTEMPTS` | No | Maximum download verification attempts for publishers that honor this variable. Defaults to 180 during semantic-release only, allowing up to one hour at the publisher's default 20-second interval. |
 
 ## Requirements
 

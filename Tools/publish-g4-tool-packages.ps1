@@ -503,9 +503,15 @@ if ($Version.Contains('-', [System.StringComparison]::Ordinal)) {
 Write-Host "Publishing the verified G-4 tool package inventory to $channel."
 # dotnet discovers and publishes the adjacent .snupkg automatically. Submitting
 # the symbol package again produces a duplicate-symbol 409 from NuGet.org.
+# Submit the complete inventory while the temporary upload key is valid, before
+# waiting for repository signing and indexing to make the package blobs visible.
 foreach ($artifactName in @($primaryArtifactNames | Sort-Object)) {
     $artifactPath = Join-Path $packageDirectoryPath $artifactName
     Invoke-DotNet -Arguments @('nuget', 'push', $artifactPath, '--skip-duplicate', '--api-key', $apiKey, '--source', $source)
+}
+
+foreach ($artifactName in @($primaryArtifactNames | Sort-Object)) {
+    $artifactPath = Join-Path $packageDirectoryPath $artifactName
     $package = @($inventoryPackages | Where-Object { $_.nupkg.file -ceq $artifactName })
     if ($package.Count -ne 1) {
         throw "Qualified inventory has no unique package row for '$artifactName'."

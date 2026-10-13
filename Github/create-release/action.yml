@@ -33,5 +33,5 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         NUGET_API_KEY: ${{ inputs.nuget-api-key }}
-        HEXALITH_NUGET_VERIFY_ATTEMPTS: ${{ env.HEXALITH_NUGET_VERIFY_ATTEMPTS || '75' }}
+        HEXALITH_NUGET_VERIFY_ATTEMPTS: ${{ env.HEXALITH_NUGET_VERIFY_ATTEMPTS || '180' }}
       run: npx semantic-release

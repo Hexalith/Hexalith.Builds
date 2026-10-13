@@ -586,6 +586,7 @@ try {
     $global:HexalithG4PublisherRemoteDirectory = $packageDirectory
     $global:HexalithG4PublisherRemoteMode = 'unavailable'
     $global:HexalithG4PublisherSleepSeconds = 0
+    $global:HexalithG4PublisherTestInvocations.Clear()
     try {
         & $publisherPath -Version '9.8.33' -PackageDirectory $packageDirectory
         throw 'Publisher accepted a package blob that never became available.'
@@ -594,6 +595,8 @@ try {
         if (-not $_.Exception.Message.Contains('not available for hash verification after 45 attempts', [StringComparison]::Ordinal)) { throw }
     }
     Assert-Equal -Actual $global:HexalithG4PublisherSleepSeconds -Expected (44 * 20) -Because 'A persistently missing blob must consume every retry delay before failing.'
+    Assert-Equal -Actual $global:HexalithG4PublisherTestInvocations.Count -Expected 2 `
+        -Because 'A missing first package blob must not prevent uploading the other qualified package.'
     try {
         Invoke-PublisherCase -PublishedVersion '9.8.31' -ExpectedSource 'https://api.nuget.org/v3/index.json' -RemoteMode tampered
         throw 'Publisher accepted a remote package with a changed payload.'
