@@ -23,6 +23,43 @@ using Xunit;
 /// <summary>Exercises v2 command ownership and result boundaries without launching real resources.</summary>
 public sealed class PlatformExecutionReviewTests
 {
+    /// <summary>Verifies v2 run rejects a named profile before any runner work.</summary>
+    /// <returns>The command assertion.</returns>
+    [Fact]
+    public async Task V2RunRejectsUndeclaredProfileBeforeStartupAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        int starts = 0;
+        CompositionEngineOptions options = Options(workspace.Root) with
+        {
+            PlatformStartOverride = (_, _) =>
+            {
+                starts++;
+                throw new InvalidOperationException("No startup is permitted.");
+            },
+        };
+        StringWriter writer = new();
+        await using ConfiguredAsyncDisposable writerLifetime = writer.ConfigureAwait(true);
+        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Run, workspace.Save(), "missing-profile", null, null, ToolOutputFormat.Json, writer, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
+        using JsonDocument result = JsonDocument.Parse(writer.ToString());
+        result.RootElement.GetProperty("diagnostics").EnumerateArray().Select(diagnostic => diagnostic.GetProperty("ruleId").GetString()).ShouldContain("HXC002");
+        starts.ShouldBe(0);
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies bounded model diagnostics retain the late compiler error and both streams.</summary>
+    [Fact]
+    public void BoundedModelOutputRetainsTheFailureCause()
+    {
+        string output = new string('x', 1000) + " model.csproj: error NU1101 missing package";
+        string bounded = PlatformManifestCommand.BoundedOutput(output, "stderr: restore failed\n");
+        bounded.ShouldContain("error NU1101 missing package");
+        bounded.ShouldContain("stderr: restore failed");
+        bounded.Length.ShouldBeLessThanOrEqualTo(1024);
+        bounded.ShouldNotContain("\n");
+    }
+
     /// <summary>Verifies non-object JSON uses normal manifest diagnostics.</summary>
     /// <param name="json">The valid JSON root.</param>
     /// <returns>The command assertion.</returns>
@@ -117,22 +154,25 @@ public sealed class PlatformExecutionReviewTests
         cleanupCalls.ShouldBe(failure == "success" ? 0 : 1);
     }
 
-    /// <summary>Verifies failed test teardown retains its diagnostics and run identity.</summary>
+    /// <summary>Verifies v2 test refusal happens before startup or teardown.</summary>
     /// <returns>The result assertion.</returns>
     [Fact]
-    public async Task TestRefusalRetainsFailedCleanupAndRunIdentityAsync()
+    public async Task TestRefusalOccursBeforeStartupAsync()
     {
         using PlatformManifestTestWorkspace workspace = new();
-        using Process process = new();
-        CompositionRunSession session = Session(workspace.Root, process);
+        int starts = 0;
+        int downs = 0;
         CompositionEngineOptions options = Options(workspace.Root) with
         {
-            PlatformStartOverride = (_, _) => Task.FromResult(new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), session.RunId, session)),
-            PlatformDownOverride = (_, token) =>
+            PlatformStartOverride = (_, _) =>
             {
-                token.ShouldBe(CancellationToken.None);
-                ToolDiagnostic failed = new("HXR029", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Cleanup retained resources.", "down");
-                return Task.FromResult(new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(failed.Phase, failed.Category, failed.RuleId, ToolExitCode.TopologyOrLifecycle), [failed]), new CompositionRunResources([], [])));
+                starts++;
+                throw new InvalidOperationException("A v2 test must not start resources.");
+            },
+            PlatformDownOverride = (_, _) =>
+            {
+                downs++;
+                throw new InvalidOperationException("A v2 test must not tear down a run that was never started.");
             },
         };
         StringWriter writer = new();
@@ -140,12 +180,14 @@ public sealed class PlatformExecutionReviewTests
         int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, workspace.Save(), null, null, "artifacts/v2.json", ToolOutputFormat.Json, writer, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options).ConfigureAwait(true);
         exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle);
         using JsonDocument result = JsonDocument.Parse(writer.ToString());
-        result.RootElement.GetProperty("runId").GetString().ShouldBe(session.RunId);
-        result.RootElement.GetProperty("diagnostics").EnumerateArray().Select(d => d.GetProperty("ruleId").GetString()).ShouldContain("HXR029");
+        result.RootElement.GetProperty("diagnostics").EnumerateArray().Select(d => d.GetProperty("ruleId").GetString()).ShouldContain("HXR028");
         using JsonDocument evidence = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(workspace.Root, "artifacts", "v2.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
-        evidence.RootElement.GetProperty("runId").GetString().ShouldBe(session.RunId);
         evidence.RootElement.GetProperty("testCounts").GetProperty("reported").GetBoolean().ShouldBeFalse();
         evidence.RootElement.GetProperty("invocation").GetProperty("profile").ValueKind.ShouldBe(JsonValueKind.Null);
+        starts.ShouldBe(0);
+        downs.ShouldBe(0);
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+        Directory.Exists(options.StateDirectory).ShouldBeFalse();
     }
 
     /// <summary>Verifies repeated down is idempotent and preserves foreign runs and identity refusals.</summary>

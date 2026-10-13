@@ -7,6 +7,7 @@ namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
 using System.Net;
 using System.Reflection;
+using System.Security.Cryptography;
 
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
@@ -25,6 +26,49 @@ using Xunit;
 /// <summary>Verifies composed AppHost module projects receive the runner's mapping settings.</summary>
 public sealed class WorkspaceAppHostTests
 {
+    /// <summary>Verifies an edited v2 declaration cannot be composed under the signed hash.</summary>
+    [Fact]
+    public void PlatformDeclarationHashRefusesAnEditedSource()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string declaration = Path.Combine(root, "module.json");
+            File.WriteAllText(declaration, "{\"schema\":\"hexalith.module-manifest.v2\"}");
+            string hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(declaration)));
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { PlatformDeclarationPaths = [declaration], PlatformDeclarationHash = hash };
+            RunTopology.VerifyPlatformDeclaration(plan);
+            File.AppendAllText(declaration, " ");
+            Should.Throw<InvalidDataException>(() => RunTopology.VerifyPlatformDeclaration(plan)).Message.ShouldContain(declaration);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies package composition chooses the retained EventStore host seed from Platform.</summary>
+    [Fact]
+    public void PackageCompositionSelectsTheSingleEventStoreSeed()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan sample = CompositionTestFiles.CreatePlan(root);
+            SourceMapping mapping = new(WorkspaceMode.Package, root, "Hexalith.Platform", [], false)
+            {
+                PlatformIdentity = new PlatformIdentity("commit", "commit", "commit", root, null, "pin", null, "identity", true),
+            };
+            CompositionRunPlan plan = sample with { SourceMapping = mapping };
+            string seed = RunTopology.ResolvePackageEventStoreSeed(plan, Path.Combine(root, "unpacked-host"));
+            seed.ShouldBe(Path.Combine(root, "references", "Hexalith.Builds", "src", "hosts", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost.csproj"));
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     /// <summary>Verifies every composed module project receives the same imports, hash and configuration.</summary>
     /// <param name="mode">The tool-selected mode.</param>
     /// <param name="configuration">The expected configuration.</param>
@@ -59,7 +103,8 @@ public sealed class WorkspaceAppHostTests
             _ = builder.AddDapr(options => options.DaprPath = Path.Combine(root, "dapr-home", "tools", "dapr"));
 
             RunTopology.Compose(builder, plan, CompositionSigningKey.Create());
-            RunReadiness.InvocationProbes(plan, new DistributedApplicationModel(builder.Resources)).ShouldAllBe(probe => probe.Endpoint == "/alive");
+            RunReadiness.InvocationProbes(plan, new DistributedApplicationModel(builder.Resources))
+                .ShouldBe([.. plan.Modules.Select(module => (module.ModuleId, module.AppId, "/alive"))]);
 
             foreach (CompositionRunModule module in plan.Modules)
             {
@@ -129,11 +174,14 @@ public sealed class WorkspaceAppHostTests
                 new SourceMappingEntry("Hexalith.Memories", "source", Path.Combine(platform, "references", "Hexalith.Memories")),
             ];
             SourceMapping mapping = new(WorkspaceMode.Source, platform, "Hexalith.Platform", entries, false);
+            string declaration = Path.Combine(platform, "references", "Hexalith.EventStore", "module", "hexalith.module-manifest.v2.json");
+            string declarationHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(declaration, TestContext.Current.CancellationToken).ConfigureAwait(true)));
             CompositionRunPlan plan = sample with
             {
                 SourceMapping = mapping,
                 Ports = CompositionPortAllocator.Allocate(1),
-                PlatformDeclarationPaths = [Path.Combine(platform, "references", "Hexalith.EventStore", "module", "hexalith.module-manifest.v2.json")],
+                PlatformDeclarationPaths = [declaration],
+                PlatformDeclarationHash = declarationHash,
                 PlatformModelAssemblyPath = model,
             };
             IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions

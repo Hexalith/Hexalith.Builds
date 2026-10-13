@@ -941,6 +941,16 @@ public static class ModuleCommandExecutionService
             {
                 result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest), validation.Diagnostics);
             }
+            else if (!string.IsNullOrWhiteSpace(profile))
+            {
+                ToolDiagnostic absent = new("HXC002", ToolPhase.Usage, ToolFailureCategory.Usage, "The requested qualification profile is not declared by this v2 manifest.", "profile");
+                result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(absent.Phase, absent.Category, absent.RuleId, ToolExitCode.UsageOrManifest), [absent]);
+            }
+            else if (command == ModuleInvocationCommand.Test)
+            {
+                ToolDiagnostic absent = new("HXR028", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The v2 declaration has no executable test profile; readiness alone does not prove tests completed.", "profile");
+                result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(absent.Phase, absent.Category, absent.RuleId, ToolExitCode.TopologyOrLifecycle), [absent]);
+            }
             else if (descriptorChildEntryAssemblyPath is null)
             {
                 ToolDiagnostic unavailable = new("HXR014", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, "Platform composition requires the packaged Builds AppHost.", "apphost");
@@ -974,15 +984,6 @@ public static class ModuleCommandExecutionService
                     CompositionStartResult started = await (options.PlatformStartOverride?.Invoke(manifestPath, cancellationToken) ?? engine.StartAsync(manifestPath, cancellationToken)).ConfigureAwait(false);
                     ownedSession = started.Session;
                     result = started.Result with { RunId = started.Session?.Plan.RunId ?? started.RunId };
-                    if (ownedSession is not null && command == ModuleInvocationCommand.Test)
-                    {
-                        // v2 declares executable tasks; health never claims qualification or native tests ran.
-                        ToolDiagnostic absent = new("HXR028", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The v2 declaration has no executable test profile; readiness alone does not prove tests completed.", "profile");
-                        ToolCommandResult qualification = new("failed", ToolOutcome.Passed().Fail(absent.Phase, absent.Category, absent.RuleId, ToolExitCode.TopologyOrLifecycle), [absent]);
-                        CompositionDownResult cleanup = await cleanupSession(ownedSession, CancellationToken.None).ConfigureAwait(false);
-                        result = CombineTestResults(qualification, null, cleanup.Result) with { RunId = ownedSession.RunId };
-                        ownedSession = null;
-                    }
                 }
             }
 

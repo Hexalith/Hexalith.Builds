@@ -1,5 +1,5 @@
 {
-  "schema": "hexalith.module-manifest.v2",
+  "schema": "hexalith.module-manifest.v3",
   "id": "p0-two-module-persisted",
   "modules": [
     {

@@ -39,7 +39,16 @@ internal static class AppHostRunner
             options.DaprPath = RunPlanSource.DaprCliPath(plan);
             options.EnableTelemetry = false;
         });
-        RunTopology.Compose(builder, plan, signingKey);
+        try
+        {
+            RunTopology.Compose(builder, plan, signingKey);
+        }
+        catch (Exception exception) when (args.Contains("--validate-platform", StringComparer.Ordinal)
+            && exception is InvalidDataException or InvalidOperationException or FileNotFoundException)
+        {
+            await Console.Error.WriteLineAsync(exception.Message).ConfigureAwait(false);
+            return 3;
+        }
 
         if (args.Contains("--validate-platform", StringComparer.Ordinal))
         {

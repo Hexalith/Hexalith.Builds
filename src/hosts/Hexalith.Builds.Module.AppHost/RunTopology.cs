@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.ModuleHosts.AppHost;
 
 using System.Globalization;
+using System.Security.Cryptography;
 
 using Aspire.Hosting.Lifecycle;
 
@@ -211,6 +212,39 @@ internal static class RunTopology
         _ = builder.Services.AddSingleton<IDistributedApplicationEventingSubscriber>(new DaprDirectEndpointSubscriber());
     }
 
+    /// <summary>Resolves the sole package-mode EventStore host seed from the packaged layout or Platform checkout.</summary>
+    /// <param name="plan">The signed Platform run plan.</param>
+    /// <param name="baseDirectory">The AppHost package directory.</param>
+    /// <returns>The EventStore host seed project.</returns>
+    /// <exception cref="InvalidDataException">The package-mode Platform checkout path is missing.</exception>
+    internal static string ResolvePackageEventStoreSeed(CompositionRunPlan plan, string baseDirectory)
+    {
+        if (PackagedHostProject.TryMaterialize(baseDirectory, "EventStore", "EventStoreHost", HostDirectory(plan, EventStoreName), out string? packagedProject))
+        {
+            return packagedProject!;
+        }
+
+        string platform = plan.SourceMapping?.PlatformIdentity?.PlatformPath ?? throw new InvalidDataException("Package-mode Platform identity has no checkout path.");
+        return Path.Combine(platform, "references", "Hexalith.Builds", "src", "hosts", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost.csproj");
+    }
+
+    /// <summary>Refuses an edited declaration before the Platform model can add resources.</summary>
+    /// <param name="plan">The signed run plan.</param>
+    /// <exception cref="InvalidDataException">The selected declaration changed or is unavailable.</exception>
+    internal static void VerifyPlatformDeclaration(CompositionRunPlan plan)
+    {
+        if (plan.PlatformDeclarationPaths.Count != 1 || string.IsNullOrWhiteSpace(plan.PlatformDeclarationHash))
+        {
+            throw new InvalidDataException("Platform v2 plan has no selected declaration hash.");
+        }
+
+        string path = plan.PlatformDeclarationPaths[0];
+        if (!File.Exists(path) || !string.Equals(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))), plan.PlatformDeclarationHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidDataException($"Platform v2 declaration '{path}' changed after the signed run plan was created.");
+        }
+    }
+
     /// <summary>
     /// Adds an EventStore host. From a package, each resource builds its own private shim copy, so the installed
     /// tool stays read-only and parallel resources never share an obj/bin directory.
@@ -237,6 +271,7 @@ internal static class RunTopology
 
     private static void ComposePlatform(IDistributedApplicationBuilder builder, CompositionRunPlan plan, string signingKey)
     {
+        VerifyPlatformDeclaration(plan);
         string modelPath = plan.PlatformModelAssemblyPath
             ?? throw new InvalidOperationException("Platform v2 plan has no model assembly path.");
         if (!File.Exists(modelPath))
@@ -247,10 +282,15 @@ internal static class RunTopology
         string? seed = null;
         if (plan.SourceMapping?.Mode == WorkspaceMode.Package)
         {
-            seed = PackagedHostProject.TryMaterialize(AppContext.BaseDirectory, "EventStore", "EventStoreHost", HostDirectory(plan, EventStoreName), out string? packagedProject)
-                ? packagedProject
-                : Path.Combine(plan.SourceMapping.PlatformIdentity!.PlatformPath, "references", "Hexalith.Builds", "src", "hosts", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost.csproj");
+            seed = ResolvePackageEventStoreSeed(plan, AppContext.BaseDirectory);
         }
+
+        string modelDirectory = Path.GetDirectoryName(modelPath)!;
+        System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += (context, name) =>
+        {
+            string dependency = Path.Combine(modelDirectory, name.Name + ".dll");
+            return File.Exists(dependency) ? context.LoadFromAssemblyPath(dependency) : null;
+        };
 
         System.Reflection.Assembly model = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(modelPath);
         System.Reflection.MethodInfo compose = model.GetType("Hexalith.Platform.Composition.PlatformAppModel", throwOnError: true)!
@@ -262,6 +302,12 @@ internal static class RunTopology
         catch (System.Reflection.TargetInvocationException exception) when (exception.InnerException is not null)
         {
             System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
+        }
+
+        if (!builder.Resources.Any(resource => resource.Name == EventStoreName
+            && resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation")))
+        {
+            throw new InvalidDataException("Platform v2 model did not annotate its eventstore gateway; invocation readiness cannot be verified.");
         }
 
         string schedulerAddress = Loopback(plan.Ports.Scheduler);

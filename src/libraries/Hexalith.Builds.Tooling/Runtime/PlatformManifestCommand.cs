@@ -50,6 +50,12 @@ public static class PlatformManifestCommand
             throw new InvalidOperationException($"Platform model project '{project}' is unavailable.");
         }
 
+        string pinnedCatalog = Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props");
+        if (!File.Exists(pinnedCatalog))
+        {
+            throw new InvalidOperationException($"Platform model '{project}' cannot use the selected Builds catalog because '{pinnedCatalog}' was not materialized from the Platform identity.");
+        }
+
         string output = Path.Combine(workspace, "hosts", "platform-model");
         List<string> arguments =
         [
@@ -57,10 +63,7 @@ public static class PlatformManifestCommand
             "-p:BuildsToolingAssemblyPath=" + typeof(PlatformManifestCommand).Assembly.Location,
             "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0",
         ];
-        if (mapping.Mode == WorkspaceMode.Package)
-        {
-            arguments.Add("-p:DirectoryPackagesPropsPath=" + Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props"));
-        }
+        arguments.Add("-p:DirectoryPackagesPropsPath=" + pinnedCatalog);
 
         CompositionProcessResult result = await CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo("dotnet", arguments, root, null),
@@ -69,7 +72,23 @@ public static class PlatformManifestCommand
         string assembly = Path.Combine(output, "Hexalith.Platform.Composition.dll");
         return result.ExitCode == 0 && File.Exists(assembly)
             ? assembly
-            : throw new InvalidOperationException($"Platform model '{project}' could not build: {result.Output}");
+            : throw new InvalidOperationException($"Platform model '{project}' could not build: {BoundedOutput(result.Output, result.ErrorOutput)}");
+    }
+
+    /// <summary>Formats process diagnostics without passing log dumps to command output.</summary>
+    /// <param name="output">The process standard output.</param>
+    /// <param name="errorOutput">The process standard error.</param>
+    /// <returns>Bounded process diagnostics.</returns>
+    internal static string BoundedOutput(string output, string errorOutput)
+    {
+        string combined = string.Join("; ", new[] { output, errorOutput }
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value =>
+            {
+                string safe = new([.. value.Select(character => char.IsControl(character) ? ' ' : character)]);
+                return (safe.Length > 512 ? safe[^512..] : safe).Trim();
+            }));
+        return combined.Length > 1024 ? combined[..1024] : combined;
     }
 
     /// <summary>Uses reference composition when a valid document has no unique active declaration.</summary>

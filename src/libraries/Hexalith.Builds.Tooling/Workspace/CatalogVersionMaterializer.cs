@@ -26,7 +26,8 @@ internal static partial class CatalogVersionMaterializer
 #pragma warning disable RCS1140 // Fail-closed parsing and process failures share WorkspaceMappingException.
     internal static async Task WriteAsync(SourceMapping mapping, string workspace, CancellationToken cancellationToken)
     {
-        if (mapping.Mode != WorkspaceMode.Package || mapping.PlatformIdentity is null)
+        if (mapping.PlatformIdentity is null
+            || (mapping.Mode == WorkspaceMode.Source && string.IsNullOrWhiteSpace(mapping.PlatformIdentity.CatalogCommit)))
         {
             return;
         }

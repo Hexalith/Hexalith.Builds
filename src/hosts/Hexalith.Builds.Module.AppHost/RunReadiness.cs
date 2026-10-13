@@ -57,13 +57,13 @@ internal static class RunReadiness
             catch (DistributedApplicationException)
             {
                 IResource stalled = TerminalFailure(runnable, notifications) ?? resource;
-                await ReportFailureAsync(plan, "HXR025", stalled.Name, AppId(plan, stalled.Name), Status(notifications, stalled.Name)).ConfigureAwait(false);
+                await ReportFailureAsync(plan, "HXR025", stalled.Name, AppId(plan, model, stalled.Name), Status(notifications, stalled.Name)).ConfigureAwait(false);
                 return false;
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
                 IResource stalled = TerminalFailure(runnable, notifications) ?? resource;
-                await ReportFailureAsync(plan, "HXR025", stalled.Name, AppId(plan, stalled.Name), Status(notifications, stalled.Name)).ConfigureAwait(false);
+                await ReportFailureAsync(plan, "HXR025", stalled.Name, AppId(plan, model, stalled.Name), Status(notifications, stalled.Name)).ConfigureAwait(false);
                 return false;
             }
 
@@ -106,7 +106,7 @@ internal static class RunReadiness
             !notifications.TryGetCurrentState(resource.Name, out ResourceEvent? current)
             || current.Snapshot.HealthStatus != HealthStatus.Healthy);
         string name = stalled?.Name ?? "apphost-start";
-        return ReportFailureAsync(plan, "HXR025", name, AppId(plan, name), Status(notifications, name));
+        return ReportFailureAsync(plan, "HXR025", name, AppId(plan, model, name), Status(notifications, name));
     }
 
     /// <summary>
@@ -201,6 +201,7 @@ internal static class RunReadiness
     /// <param name="plan">The signed run plan.</param>
     /// <param name="model">The actual selected resource model.</param>
     /// <returns>The resource, sidecar identity, and declared endpoint.</returns>
+    /// <exception cref="InvalidDataException">The model has no annotated gateway.</exception>
     internal static IReadOnlyList<(string Resource, string AppId, string Endpoint)> InvocationProbes(CompositionRunPlan plan, DistributedApplicationModel model)
     {
         if (!plan.IsPlatformComposition)
@@ -209,6 +210,12 @@ internal static class RunReadiness
         }
 
         List<(string Resource, string AppId, string Endpoint)> probes = [];
+        if (!model.Resources.Any(resource => resource.Name == RunTopology.EventStoreName
+            && resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation")))
+        {
+            throw new InvalidDataException("Platform v2 model has no annotated eventstore gateway; invocation readiness cannot be verified.");
+        }
+
         foreach (IResource resource in model.Resources.Where(resource => resource.Name != RunTopology.EventStoreName))
         {
             IResourceAnnotation? selected = resource.Annotations.FirstOrDefault(annotation => annotation.GetType().Name == "PlatformServerAnnotation");
@@ -226,12 +233,29 @@ internal static class RunReadiness
         return probes;
     }
 
-    private static string AppId(CompositionRunPlan plan, string resourceName) =>
-        string.Equals(resourceName, RunTopology.EventStoreName, StringComparison.Ordinal)
-        || string.Equals(resourceName, RunTopology.EventStoreName + "-dapr-cli", StringComparison.Ordinal)
-            ? RunTopology.EventStoreName
-            : plan.Modules.FirstOrDefault(module => string.Equals(resourceName, module.ModuleId, StringComparison.Ordinal)
-                || string.Equals(resourceName, module.ModuleId + "-dapr-cli", StringComparison.Ordinal))?.AppId ?? "-";
+    private static string AppId(CompositionRunPlan plan, DistributedApplicationModel model, string resourceName)
+    {
+        if (string.Equals(resourceName, RunTopology.EventStoreName, StringComparison.Ordinal)
+            || string.Equals(resourceName, RunTopology.EventStoreName + "-dapr-cli", StringComparison.Ordinal))
+        {
+            return RunTopology.EventStoreName;
+        }
+
+        if (plan.IsPlatformComposition)
+        {
+            string serverName = resourceName.EndsWith("-dapr-cli", StringComparison.Ordinal) ? resourceName[..^"-dapr-cli".Length] : resourceName;
+            IResource? server = model.Resources.FirstOrDefault(resource => resource.Name == serverName);
+            string? selected = server?.Annotations.OfType<DaprSidecarAnnotation>().SingleOrDefault()?.Sidecar.Annotations
+                .OfType<DaprSidecarOptionsAnnotation>().SingleOrDefault()?.Options.AppId;
+            if (!string.IsNullOrWhiteSpace(selected))
+            {
+                return selected;
+            }
+        }
+
+        return plan.Modules.FirstOrDefault(module => string.Equals(resourceName, module.ModuleId, StringComparison.Ordinal)
+            || string.Equals(resourceName, module.ModuleId + "-dapr-cli", StringComparison.Ordinal))?.AppId ?? "-";
+    }
 
     private static IResource? TerminalFailure(IEnumerable<IResource> resources, ResourceNotificationService notifications) =>
         resources.FirstOrDefault(resource => notifications.TryGetCurrentState(resource.Name, out ResourceEvent? current)

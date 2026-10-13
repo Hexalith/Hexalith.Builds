@@ -118,7 +118,17 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 preparedWorkspace ??= WorkspaceFor(runId);
                 CompositionWorkspace.CreatePrivateDirectory(preparedWorkspace);
                 await SourceMappingMaterializer.WriteAsync(mapping, preparedWorkspace, cancellationToken).ConfigureAwait(false);
-                platformModel = await PlatformManifestCommand.BuildModelAsync(mapping, preparedWorkspace, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    platformModel = await (_options.PlatformModelBuildOverride?.Invoke(mapping, preparedWorkspace, cancellationToken)
+                        ?? PlatformManifestCommand.BuildModelAsync(mapping, preparedWorkspace, cancellationToken)).ConfigureAwait(false);
+                }
+                catch (InvalidOperationException exception)
+                {
+                    IReadOnlyList<ToolDiagnostic> refusal = [Diagnostic("HXR020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, PlatformManifestCommand.BoundedOutput(exception.Message, string.Empty), Path.Combine(mapping.PlatformIdentity?.PlatformPath ?? mapping.Entries.Single(entry => entry.Identity == "Hexalith.Platform").Path!, "src", "Hexalith.Platform.Composition", "Hexalith.Platform.Composition.csproj"), "Correct the named model-build input; no resources were started.")];
+                    return Failed("failed", ToolExitCode.TopologyOrLifecycle, await CleanupPreparedWorkspaceAsync(preparedWorkspace, refusal).ConfigureAwait(false), null);
+                }
+
                 modules = [];
                 markers = [];
             }
@@ -178,6 +188,24 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
 
             manifestHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false)));
+            if (platformComposition)
+            {
+                PlatformManifestValidationResult current = PlatformManifestValidator.Validate([manifestPath], cancellationToken);
+                if (!current.IsValid)
+                {
+                    return Failed("failed", ToolExitCode.UsageOrManifest, await CleanupPreparedWorkspaceAsync(preparedWorkspace, current.Diagnostics).ConfigureAwait(false), null);
+                }
+
+                string checkedHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false)));
+                if (!string.Equals(manifestHash, checkedHash, StringComparison.Ordinal))
+                {
+                    IReadOnlyList<ToolDiagnostic> changed = [Diagnostic("HXP020", ToolPhase.Manifest, ToolFailureCategory.Manifest, $"Platform declaration '{manifestPath}' changed while the run plan was being prepared.", manifestPath, "Retry with a stable declaration file.")];
+                    return Failed("failed", ToolExitCode.UsageOrManifest, await CleanupPreparedWorkspaceAsync(preparedWorkspace, changed).ConfigureAwait(false), null);
+                }
+
+                platformDeclarations = current;
+            }
+
             runId ??= CompositionRunPlanFactory.NewRunId();
             string workspace = preparedWorkspace ?? WorkspaceFor(runId);
             if (preparedWorkspace is null)
@@ -201,6 +229,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 platformComposition ? [Path.GetFullPath(manifestPath)] : [],
                 PlatformManifestCommand.ActiveModule(platformDeclarations?.Declarations),
                 platformModel);
+            if (platformComposition)
+            {
+                plan = plan with { PlatformDeclarationHash = manifestHash };
+            }
+
             await CompositionDaprComponentRenderer.WriteAsync(plan, cancellationToken).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");
             await CompositionDocumentStore.WriteAsync(planPath, plan, cancellationToken).ConfigureAwait(false);
@@ -223,7 +256,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     cancellationToken).ConfigureAwait(false);
                 if (preflight.ExitCode != 0)
                 {
-                    IReadOnlyList<ToolDiagnostic> refusal = [Diagnostic("HXP020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, preflight.Output + preflight.ErrorOutput, "platform", "Supply the named owner input; no resources were started.")];
+                    IReadOnlyList<ToolDiagnostic> refusal = [Diagnostic("HXP020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, PlatformManifestCommand.BoundedOutput(preflight.Output, preflight.ErrorOutput), "platform", "Supply the named owner input; no resources were started.")];
                     return Failed("failed", ToolExitCode.TopologyOrLifecycle, await CleanupPreparedWorkspaceAsync(workspace, refusal).ConfigureAwait(false), null);
                 }
             }

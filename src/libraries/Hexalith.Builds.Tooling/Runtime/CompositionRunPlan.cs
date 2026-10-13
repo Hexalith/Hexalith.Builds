@@ -59,6 +59,9 @@ public sealed record CompositionRunPlan(
     /// <summary>Gets the v2 owner declaration paths handed to the Platform model.</summary>
     public IReadOnlyList<string> PlatformDeclarationPaths { get; init; } = [];
 
+    /// <summary>Gets the content hash of the v2 declaration that the command selected.</summary>
+    public string? PlatformDeclarationHash { get; init; }
+
     /// <summary>Gets the selected v2 module identity.</summary>
     public string? PlatformActiveModule { get; init; }
 

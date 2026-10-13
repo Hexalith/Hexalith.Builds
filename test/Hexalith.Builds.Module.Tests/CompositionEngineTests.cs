@@ -10,6 +10,7 @@ using System.Diagnostics;
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Runtime;
+using Hexalith.Builds.Tooling.Workspace;
 
 using Shouldly;
 
@@ -20,6 +21,77 @@ using Xunit;
 /// </summary>
 public sealed class CompositionEngineTests
 {
+    /// <summary>Verifies a v2 AppHost preflight refusal leaves no run state or workspace.</summary>
+    /// <returns>The result assertion.</returns>
+    [Fact]
+    public async Task PlatformPreflightRefusesBeforeStateOrResourcesAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake toolchain uses POSIX scripts.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "preflight-refusal", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        SourceMapping mapping = new(
+            WorkspaceMode.Source,
+            workspace.Root,
+            "Hexalith.Platform",
+            [new SourceMappingEntry("Hexalith.Platform", "source", workspace.Root)],
+            false);
+        CompositionEngineOptions options = CreateOptions(workspace.Root) with
+        {
+            AppHostAssemblyPath = appHost,
+            SourceMapping = mapping,
+            DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+            DockerCommand = CompositionTestFiles.CreateDocker(workspace.Root),
+            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+        };
+        CompositionStartResult result = await new CompositionEngine(options).StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Session.ShouldBeNull();
+        result.Result.Outcome.RuleId.ShouldBe("HXP020");
+        result.Result.Diagnostics.Single().Message.ShouldContain("owner/source.json: gateway: required binding is unavailable");
+        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeTrue();
+        Directory.GetDirectories(options.WorkspaceRoot).ShouldBeEmpty();
+    }
+
+    /// <summary>Verifies a failed Platform model build reports its cause before run state exists.</summary>
+    /// <returns>The result assertion.</returns>
+    [Fact]
+    public async Task PlatformModelBuildFailureKeepsCauseAndDeletesWorkspaceAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake toolchain uses POSIX scripts.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "preflight-refusal", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        SourceMapping mapping = new(
+            WorkspaceMode.Source,
+            workspace.Root,
+            "Hexalith.Platform",
+            [new SourceMappingEntry("Hexalith.Platform", "source", workspace.Root)],
+            false);
+        CompositionEngineOptions options = CreateOptions(workspace.Root) with
+        {
+            AppHostAssemblyPath = appHost,
+            SourceMapping = mapping,
+            DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+            DockerCommand = CompositionTestFiles.CreateDocker(workspace.Root),
+            PlatformModelBuildOverride = (_, _, _) => throw new InvalidOperationException("model.csproj: package restore failed"),
+        };
+        CompositionStartResult result = await new CompositionEngine(options).StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Session.ShouldBeNull();
+        result.Result.Outcome.RuleId.ShouldBe("HXR020");
+        result.Result.Diagnostics.Single().Message.ShouldContain("package restore failed");
+        result.Result.Diagnostics.Single().Field!.ShouldContain("Hexalith.Platform.Composition.csproj");
+        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeTrue();
+        Directory.GetDirectories(options.WorkspaceRoot).ShouldBeEmpty();
+    }
+
     /// <summary>
     /// Verifies unavailable prerequisites return <c>HXR01x</c> with exit code 2 and create no run state or workspace.
     /// </summary>
