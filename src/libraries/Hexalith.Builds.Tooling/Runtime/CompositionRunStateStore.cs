@@ -43,11 +43,11 @@ public sealed class CompositionRunStateStore(string directory)
     /// <param name="state">The state.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task that completes after the write.</returns>
-    public async Task WriteAsync(CompositionRunState state, CancellationToken cancellationToken)
+    public Task WriteAsync(CompositionRunState state, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(state);
         CompositionWorkspace.CreatePrivateDirectory(Directory);
-        await CompositionDocumentStore.WriteAsync(PathFor(state.RunId), state, cancellationToken).ConfigureAwait(false);
+        return CompositionDocumentStore.WriteAsync(PathFor(state.RunId), state, cancellationToken);
     }
 
     /// <summary>

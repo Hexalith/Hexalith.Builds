@@ -335,7 +335,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 ToolFailureCategory.PrerequisiteUnavailable,
                 $"Private catalog workspace '{workspace}' could not be removed after refusal.",
                 workspace,
-                "Remove this private workspace before retrying.")];
+                "Remove this private workspace before retrying."),
+            ];
     }
 
     private static bool IsTeardownFailure(Exception exception) =>

@@ -61,7 +61,8 @@ internal static partial class PlatformIdentityResolver
             warning ? ToolFailureCategory.None : ToolFailureCategory.PrerequisiteUnavailable,
             finding.Message,
             finding.Path,
-            finding.Hint))];
+            finding.Hint)),
+        ];
 
     /// <summary>Resolves the committed identity and all locally observable conditions.</summary>
     /// <param name="root">The active Git root.</param>
@@ -352,8 +353,8 @@ internal static partial class PlatformIdentityResolver
     }
 
 #pragma warning disable CA1068 // This private wrapper follows the GitWorkspaceProcess argument order.
-    private static async Task<CompositionProcessResult> GitAsync(string path, CancellationToken cancellationToken, string command, params string[] arguments)
-        => await GitAsync(path, cancellationToken, [command, .. arguments], false).ConfigureAwait(false);
+    private static Task<CompositionProcessResult> GitAsync(string path, CancellationToken cancellationToken, string command, params string[] arguments)
+        => GitAsync(path, cancellationToken, [command, .. arguments], false);
 
     private static async Task<CompositionProcessResult> GitAsync(string path, CancellationToken cancellationToken, string[] arguments, bool allowMissing)
     {

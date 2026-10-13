@@ -36,10 +36,10 @@ internal sealed class PersistedProfileStore : IAsyncDisposable
     /// <param name="aggregateId">The aggregate ID.</param>
     /// <param name="sequence">The event sequence.</param>
     /// <returns>The event JSON, or null if absent.</returns>
-    public async Task<JsonElement?> ReadEventAsync(string tenant, string domain, string aggregateId, int sequence)
+    public Task<JsonElement?> ReadEventAsync(string tenant, string domain, string aggregateId, int sequence)
     {
         string actor = $"{tenant}:{domain}:{aggregateId}";
-        return await ReadAsync($"eventstore||AggregateActor||{actor}||{actor}:events:{sequence.ToString(CultureInfo.InvariantCulture)}").ConfigureAwait(false);
+        return ReadAsync($"eventstore||AggregateActor||{actor}||{actor}:events:{sequence.ToString(CultureInfo.InvariantCulture)}");
     }
 
     /// <summary>Reads the persisted aggregate sequence, or null when absent.</summary>

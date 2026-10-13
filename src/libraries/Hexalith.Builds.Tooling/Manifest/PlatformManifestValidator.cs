@@ -78,7 +78,8 @@ public static partial class PlatformManifestValidator
             .OrderBy(diagnostic => diagnostic.Source, StringComparer.Ordinal)
             .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal)
             .ThenBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.Message, StringComparer.Ordinal)];
+            .ThenBy(diagnostic => diagnostic.Message, StringComparer.Ordinal),
+        ];
         return new PlatformManifestValidationResult(
             ordered.Length == 0 ? declarations.AsReadOnly() : null,
             Array.AsReadOnly(ordered));

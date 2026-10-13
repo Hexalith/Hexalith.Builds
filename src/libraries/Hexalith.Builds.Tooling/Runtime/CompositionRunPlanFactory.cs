@@ -60,7 +60,8 @@ public static class CompositionRunPlanFactory
             ? []
             : [.. descriptors.Ui.ModuleUiMarkers
                 .OrderBy(marker => marker.ModuleId, StringComparer.Ordinal)
-                .Select(marker => new CompositionRunUiMarker(marker.ModuleId, marker.UiAssembly, marker.UiMarkerType))];
+                .Select(marker => new CompositionRunUiMarker(marker.ModuleId, marker.UiAssembly, marker.UiMarkerType)),
+            ];
         return (modules, markers);
     }
 

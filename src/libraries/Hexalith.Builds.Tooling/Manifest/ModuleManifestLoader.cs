@@ -159,7 +159,8 @@ public static partial class ModuleManifestLoader
             [.. diagnostics
                 .OrderBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
                 .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal)
-                .ThenBy(diagnostic => diagnostic.Hint, StringComparer.Ordinal)]);
+                .ThenBy(diagnostic => diagnostic.Hint, StringComparer.Ordinal),
+            ]);
 
     private static string MessageFor(string ruleId) => ruleId switch
     {

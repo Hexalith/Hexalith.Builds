@@ -108,10 +108,10 @@ public static class CompositionProcess
     /// <param name="timeout">The bound.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The bounded result.</returns>
-    public static async Task<CompositionProcessResult> RunAsync(
+    public static Task<CompositionProcessResult> RunAsync(
         ProcessStartInfo start,
         TimeSpan timeout,
-        CancellationToken cancellationToken) => await RunAsync(start, timeout, _maximumOutputCharacters, cancellationToken).ConfigureAwait(false);
+        CancellationToken cancellationToken) => RunAsync(start, timeout, _maximumOutputCharacters, cancellationToken);
 
     /// <summary>
     /// Starts a long-running process, returns the first standard-output line containing a marker, and stops the process.

@@ -42,8 +42,8 @@ public sealed class G4P0AcceptanceValidatorTests
     /// </summary>
     /// <returns>A task that completes after the assertion.</returns>
     [Fact]
-    public async Task PositiveRecordMatchesItsExpectationAsync() =>
-        await AssertMatchesExpectationAsync("acceptance/positive/p0-acceptance.json").ConfigureAwait(true);
+    public Task PositiveRecordMatchesItsExpectationAsync() =>
+        AssertMatchesExpectationAsync("acceptance/positive/p0-acceptance.json");
 
     /// <summary>
     /// Checks each negative control fails with its declared stable rule.
@@ -52,8 +52,8 @@ public sealed class G4P0AcceptanceValidatorTests
     /// <returns>A task that completes after the assertion.</returns>
     [Theory]
     [MemberData(nameof(NegativeControls))]
-    public async Task NegativeControlMatchesItsExpectationAsync(string control) =>
-        await AssertMatchesExpectationAsync("acceptance/negative/" + control).ConfigureAwait(true);
+    public Task NegativeControlMatchesItsExpectationAsync(string control) =>
+        AssertMatchesExpectationAsync("acceptance/negative/" + control);
 
     /// <summary>
     /// Checks the corpus covers every acceptance rule.
@@ -62,7 +62,8 @@ public sealed class G4P0AcceptanceValidatorTests
     public void NegativeControlsCoverEveryAcceptanceRule()
     {
         HashSet<string> rules = [.. Directory.EnumerateFiles(EvidenceFixturePath.Get("acceptance/negative"), "*.expected.json")
-            .Select(path => JsonDocument.Parse(File.ReadAllText(path)).RootElement.GetProperty("outcomeRuleId").GetString()!)];
+            .Select(path => JsonDocument.Parse(File.ReadAllText(path)).RootElement.GetProperty("outcomeRuleId").GetString()!),
+        ];
 
         rules.ShouldBe(["HXE200", "HXE201", "HXE202", "HXE203", "HXE204", "HXE205", "HXE206", "HXE207", "HXE208"], ignoreOrder: true);
     }

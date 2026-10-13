@@ -147,11 +147,14 @@ public sealed class SourceMappingReconciliationTask : ITask
                 string[] absent = [.. Projects.Select(project => project.GetMetadata("FullPath"))
                     .Where(path => IsInPackageRoot(packagePath, path) && (!File.Exists(path) || !HasGitMarker(packagePath)))
                     .Distinct(FilesystemPathRules.Comparison(packagePath) == StringComparison.OrdinalIgnoreCase
-                        ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)];
+                        ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal),
+                    ];
                 string[] catalogIds = [.. PackageVersions.Select(version => version.ItemSpec)
-                    .Where(id => MatchesIdentity(id, identity))];
+                    .Where(id => MatchesIdentity(id, identity)),
+                ];
                 string[] fallbackPaths = [.. absent.Where(path => !catalogIds.Any(id =>
-                    id.Equals(Path.GetFileNameWithoutExtension(path), StringComparison.OrdinalIgnoreCase)))];
+                    id.Equals(Path.GetFileNameWithoutExtension(path), StringComparison.OrdinalIgnoreCase))),
+                ];
                 if (fallbackPaths.Length > 1)
                 {
                     return Error("HXW006", $"Package-origin '{identity}' at '{packagePath}' has multiple absent project paths requiring the sole-candidate fallback ({string.Join(", ", fallbackPaths)}); the catalog cannot identify each path unambiguously.");
@@ -202,7 +205,8 @@ public sealed class SourceMappingReconciliationTask : ITask
                 string stem = Path.GetFileNameWithoutExtension(path);
                 string[] candidates = [.. PackageVersions.Select(version => version.ItemSpec)
                     .Where(id => MatchesIdentity(id, packageRoot.Identity))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)];
+                    .Distinct(StringComparer.OrdinalIgnoreCase),
+                ];
                 string packageId = candidates.FirstOrDefault(id => id.Equals(stem, StringComparison.OrdinalIgnoreCase))
                     ?? (candidates.Length == 1 ? candidates[0] : string.Empty);
                 if (packageId.Length == 0)

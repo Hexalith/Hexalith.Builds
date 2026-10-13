@@ -204,7 +204,8 @@ public sealed class ManifestValidationTests
             Path.Combine(FindRepositoryRoot(), "schemas", "hexalith.module-manifest.v1.json")));
         JsonElement platform = schema.RootElement.GetProperty("$defs").GetProperty("platform");
         string[] required = [.. platform.GetProperty("required").EnumerateArray()
-            .Select(element => element.GetString() ?? string.Empty)];
+            .Select(element => element.GetString() ?? string.Empty),
+        ];
         required.ShouldBe([
             "eventStoreVersion",
             "daprRuntimeVersion",
@@ -481,7 +482,8 @@ public sealed class ManifestValidationTests
                     domain = $"domain-{index}",
                     applicationId = $"application-{index}",
                     resourceId = $"resource-{index}",
-                })];
+                }),
+            ];
             string json = JsonSerializer.Serialize(new
             {
                 schema = "hexalith.module-manifest.v1",

@@ -36,7 +36,8 @@ public sealed record ModuleRuntimePlan(
         string scope = runId[..12];
         IReadOnlyList<ModuleRuntimeModule> modules = [.. manifest.Modules
             .OrderBy(module => module.Id, StringComparer.Ordinal)
-            .Select(module => new ModuleRuntimeModule(module.Id, module.Domain, module.ApplicationId, module.ResourceId))];
+            .Select(module => new ModuleRuntimeModule(module.Id, module.Domain, module.ApplicationId, module.ResourceId)),
+        ];
         return new ModuleRuntimePlan(
             runId,
             $"g4-{scope}",

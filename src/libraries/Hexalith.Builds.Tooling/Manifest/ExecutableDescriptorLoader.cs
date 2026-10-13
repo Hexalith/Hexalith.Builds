@@ -187,7 +187,8 @@ public static class ExecutableDescriptorLoader
             modules,
             ui,
             [.. diagnostics.OrderBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
-                .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal)]);
+                .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal),
+            ]);
 
     private static string? ResolveAssembly(
         string relativePath,

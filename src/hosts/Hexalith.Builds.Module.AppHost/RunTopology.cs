@@ -78,7 +78,7 @@ internal static class RunTopology
             "--healthz-listen-address", "127.0.0.1",
             "--metrics-port", Text(plan.Ports.PlacementMetrics),
             "--metrics-listen-address", "127.0.0.1",
-            "--initial-cluster", "dapr-placement-0=127.0.0.1:" + Text(plan.Ports.PlacementRaft)
+            "--initial-cluster", "dapr-placement-0=127.0.0.1:" + Text(plan.Ports.PlacementRaft),
         ];
         IResourceBuilder<ExecutableResource> placement = builder.AddExecutable("placement", RunPlanSource.DaprBinaryPath(plan, "placement"), controlPlane, placementArguments)
             .WithEnvironment(CompositionEnvironment.RunId, plan.RunId)
@@ -96,7 +96,7 @@ internal static class RunTopology
             "--etcd-data-dir", Path.Combine(controlPlane, "scheduler-data"),
             "--etcd-client-port", Text(plan.Ports.SchedulerEtcdClient),
             "--etcd-client-listen-address", "127.0.0.1",
-            "--etcd-initial-cluster", "dapr-scheduler-server-0=http://127.0.0.1:" + Text(plan.Ports.SchedulerEtcdPeer)
+            "--etcd-initial-cluster", "dapr-scheduler-server-0=http://127.0.0.1:" + Text(plan.Ports.SchedulerEtcdPeer),
         ];
         IResourceBuilder<ExecutableResource> scheduler = builder.AddExecutable("scheduler", RunPlanSource.DaprBinaryPath(plan, "scheduler"), controlPlane, schedulerArguments)
             .WithEnvironment(CompositionEnvironment.RunId, plan.RunId)
@@ -275,7 +275,7 @@ internal static class RunTopology
             "--healthz-listen-address", "127.0.0.1",
             "--metrics-port", Text(plan.Ports.PlacementMetrics),
             "--metrics-listen-address", "127.0.0.1",
-            "--initial-cluster", "dapr-placement-0=127.0.0.1:" + Text(plan.Ports.PlacementRaft)
+            "--initial-cluster", "dapr-placement-0=127.0.0.1:" + Text(plan.Ports.PlacementRaft),
         ];
         _ = builder.AddExecutable("placement", RunPlanSource.DaprBinaryPath(plan, "placement"), controlPlane, placementArguments)
             .WithEnvironment(CompositionEnvironment.RunId, plan.RunId)
@@ -293,7 +293,7 @@ internal static class RunTopology
             "--etcd-data-dir", Path.Combine(controlPlane, "scheduler-data"),
             "--etcd-client-port", Text(plan.Ports.SchedulerEtcdClient),
             "--etcd-client-listen-address", "127.0.0.1",
-            "--etcd-initial-cluster", "dapr-scheduler-server-0=http://127.0.0.1:" + Text(plan.Ports.SchedulerEtcdPeer)
+            "--etcd-initial-cluster", "dapr-scheduler-server-0=http://127.0.0.1:" + Text(plan.Ports.SchedulerEtcdPeer),
         ];
         _ = builder.AddExecutable("scheduler", RunPlanSource.DaprBinaryPath(plan, "scheduler"), controlPlane, schedulerArguments)
             .WithEnvironment(CompositionEnvironment.RunId, plan.RunId)

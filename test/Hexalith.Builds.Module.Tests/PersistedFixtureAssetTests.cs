@@ -65,7 +65,8 @@ public sealed class PersistedFixtureAssetTests
         IReadOnlyList<string> expectedRuleIds = [.. expected.RootElement
             .GetProperty("ruleIds")
             .EnumerateArray()
-            .Select(ruleId => ruleId.GetString() ?? string.Empty)];
+            .Select(ruleId => ruleId.GetString() ?? string.Empty),
+        ];
         bool expectedIsValid = expected.RootElement.GetProperty("isValid").GetBoolean();
 
         expectedIsValid.ShouldBeFalse();

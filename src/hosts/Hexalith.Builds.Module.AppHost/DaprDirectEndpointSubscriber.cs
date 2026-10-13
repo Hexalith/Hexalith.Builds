@@ -20,7 +20,8 @@ internal sealed class DaprDirectEndpointSubscriber : IDistributedApplicationEven
         {
             ExecutableResource[] sidecars = [.. startup.Model.Resources
                 .OfType<ExecutableResource>()
-                .Where(resource => resource.Name.EndsWith("-dapr-cli", StringComparison.Ordinal))];
+                .Where(resource => resource.Name.EndsWith("-dapr-cli", StringComparison.Ordinal)),
+            ];
             if (sidecars.Length == 0)
             {
                 throw new InvalidOperationException("Dapr CLI resources were not created before endpoint configuration.");

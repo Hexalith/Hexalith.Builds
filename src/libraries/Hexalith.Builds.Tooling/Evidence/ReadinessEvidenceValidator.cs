@@ -229,7 +229,8 @@ internal static class ReadinessEvidenceValidator
             .ThenBy(diagnostic => diagnostic.RuleId, StringComparer.Ordinal)
             .ThenBy(diagnostic => diagnostic.Field, StringComparer.Ordinal)
             .ThenBy(diagnostic => diagnostic.Location, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.Hint, StringComparer.Ordinal)];
+            .ThenBy(diagnostic => diagnostic.Hint, StringComparer.Ordinal),
+        ];
         ToolDiagnostic firstDiagnostic = orderedDiagnostics.Count == 0
             ? new ToolDiagnostic(
                 "HXE999",
@@ -390,7 +391,8 @@ internal static class ReadinessEvidenceValidator
                 .OfType<YamlScalarNode>()
                 .Select(value => value.Value)
                 .Where(value => !string.IsNullOrWhiteSpace(value))
-                .Select(value => value!)]
+                .Select(value => value!),
+            ]
             : [];
 
     private static bool TryGetNode(YamlMappingNode mapping, string key, out YamlNode? value)

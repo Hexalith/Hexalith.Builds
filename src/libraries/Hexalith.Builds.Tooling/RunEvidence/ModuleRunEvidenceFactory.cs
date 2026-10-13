@@ -333,7 +333,8 @@ public static partial class ModuleRunEvidenceFactory
             module.Domain,
             module.ApplicationId,
             module.ResourceId,
-            module.DescriptorAssembly))];
+            module.DescriptorAssembly)),
+        ];
         return new ModuleRunTopology(modules, manifest.Platform);
     }
 

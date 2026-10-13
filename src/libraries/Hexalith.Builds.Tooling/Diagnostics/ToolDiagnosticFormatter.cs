@@ -30,7 +30,7 @@ public static class ToolDiagnosticFormatter
     /// <param name="format">The output format.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task that completes when writing finishes.</returns>
-    public static async Task WriteAsync(
+    public static Task WriteAsync(
         TextWriter writer,
         ToolCommandResult result,
         ToolOutputFormat format,
@@ -42,7 +42,7 @@ public static class ToolDiagnosticFormatter
         string output = format == ToolOutputFormat.Json
             ? JsonSerializer.Serialize(result, _jsonSerializerOptions)
             : FormatHuman(result);
-        await writer.WriteLineAsync(output.AsMemory(), cancellationToken).ConfigureAwait(false);
+        return writer.WriteLineAsync(output.AsMemory(), cancellationToken);
     }
 
     private static string FormatHuman(ToolCommandResult result)

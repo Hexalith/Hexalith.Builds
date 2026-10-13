@@ -339,7 +339,7 @@ public sealed class PlatformManifestCommandTests
     public async Task UnusualPropertyNamesHaveUnambiguousPathsAsync(string name, string field, string format)
     {
         using PlatformManifestTestWorkspace workspace = new();
-        workspace.Document["modules"]![0]!["identity"]![name] = "unknown";
+        workspace.Document["modules"].ShouldNotBeNull()[0].ShouldNotBeNull()["identity"].ShouldNotBeNull()[name] = "unknown";
         StringWriter output = new();
         await using (output.ConfigureAwait(true))
         {
@@ -524,7 +524,7 @@ public sealed class PlatformManifestCommandTests
     public async Task CredentialBearingDiagnosticPathsAreRedactedAsync(string format)
     {
         using PlatformManifestTestWorkspace workspace = new();
-        workspace.Document["modules"]![0]!["identity"]!["ghp_fixture123456"] = "unknown";
+        workspace.Document["modules"].ShouldNotBeNull()[0].ShouldNotBeNull()["identity"].ShouldNotBeNull()["ghp_fixture123456"] = "unknown";
         StringWriter output = new();
         await using (output.ConfigureAwait(true))
         {
@@ -612,7 +612,7 @@ public sealed class PlatformManifestCommandTests
     public async Task RequiredServerReadinessBindingIsEnforcedAsync(string format)
     {
         using PlatformManifestTestWorkspace workspace = new();
-        workspace.Document["modules"]![0]!["identity"]!["servers"]!.AsArray().Add(JsonNode.Parse("""
+        workspace.Document["modules"].ShouldNotBeNull()[0].ShouldNotBeNull()["identity"].ShouldNotBeNull()["servers"]!.AsArray().Add(JsonNode.Parse("""
             {
               "id": "worker",
               "appId": "sample-worker",
@@ -716,9 +716,9 @@ public sealed class PlatformManifestCommandTests
     [Theory(Timeout = 15000)]
     [InlineData("human")]
     [InlineData("json")]
-    public async Task UnreadableManifestInputsReturnStructuredFailuresAsync(string format)
+    public Task UnreadableManifestInputsReturnStructuredFailuresAsync(string format)
     {
-        await PlatformManifestTestWorkspace.UseNonSeekableManifestAsync(async path =>
+        return PlatformManifestTestWorkspace.UseNonSeekableManifestAsync(async path =>
         {
             StringWriter output = new();
             await using (output.ConfigureAwait(true))
@@ -734,7 +734,7 @@ public sealed class PlatformManifestCommandTests
                     AssertFailedOutcome(result.RootElement);
                 }
             }
-        }).ConfigureAwait(true);
+        });
     }
 
     /// <summary>Verifies a deleted working directory stays a structured command failure.</summary>

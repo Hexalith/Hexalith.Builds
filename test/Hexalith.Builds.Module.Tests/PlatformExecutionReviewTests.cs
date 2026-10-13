@@ -48,7 +48,7 @@ public sealed class PlatformExecutionReviewTests
     public void MultiModuleDocumentsUseTheReferenceDefault()
     {
         using PlatformManifestTestWorkspace workspace = new();
-        JsonNode second = workspace.Document["modules"]![0]!.DeepClone();
+        JsonNode second = workspace.Document["modules"].ShouldNotBeNull()[0]!.DeepClone();
         second = JsonNode.Parse(second.ToJsonString().Replace("sample", "second", StringComparison.Ordinal))!;
         workspace.Document["modules"]!.AsArray().Add(second);
         PlatformManifestValidationResult validation = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);

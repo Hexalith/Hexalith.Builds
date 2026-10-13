@@ -30,7 +30,7 @@ public static class ModuleCommandExecutionService
     /// <param name="writer">The destination writer.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The stable process exit code.</returns>
-    public static async Task<int> ExecuteAsync(
+    public static Task<int> ExecuteAsync(
         ModuleInvocationCommand command,
         string manifestPath,
         string? profile,
@@ -38,7 +38,7 @@ public static class ModuleCommandExecutionService
         ToolOutputFormat format,
         TextWriter writer,
         CancellationToken cancellationToken)
-        => await ExecuteAsync(
+        => ExecuteAsync(
             command,
             manifestPath,
             profile,
@@ -46,7 +46,7 @@ public static class ModuleCommandExecutionService
             null,
             format,
             writer,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
 
     /// <summary>
     /// Executes one module runner command and optionally emits its canonical run evidence.
@@ -1077,7 +1077,7 @@ public static class ModuleCommandExecutionService
             : [.. refusal, new ToolDiagnostic("HXW009", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, $"Private catalog workspace '{workspace}' could not be removed after refusal.", workspace, "Remove this private workspace before retrying.")];
     }
 
-    private static async Task<int> WriteLifecycleFailureAsync(
+    private static Task<int> WriteLifecycleFailureAsync(
         ModuleInvocationCommand command,
         string manifestPath,
         string? profile,
@@ -1095,7 +1095,7 @@ public static class ModuleCommandExecutionService
             "The runner-owned lifecycle state could not be safely managed.",
             "runtime",
             "Resolve runner-owned state access before retrying.");
-        return await WriteResultAsync(
+        return WriteResultAsync(
             "failed",
             ToolOutcome.Passed().Fail(
                 ToolPhase.Topology,
@@ -1112,7 +1112,7 @@ public static class ModuleCommandExecutionService
             filter,
             evidencePath,
             startedUtc,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
     }
 
     private static ToolDiagnostic NonexecutableTopologyDiagnostic() => new(

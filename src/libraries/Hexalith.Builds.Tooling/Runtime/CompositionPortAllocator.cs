@@ -118,7 +118,8 @@ public static class CompositionPortAllocator
                     {
                         int start = _basePortsPerRun + (index * 5) + 1;
                         return new CompositionDaprSidecarPorts(ports[start], ports[start + 1], ports[start + 2], ports[start + 3]);
-                    })],
+                    }),
+                    ],
                     includeSecondEventStore ? ports[secondEventStoreStart] : null,
                     secondSidecar);
             }

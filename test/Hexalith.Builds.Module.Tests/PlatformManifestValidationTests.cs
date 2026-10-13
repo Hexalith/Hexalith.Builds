@@ -368,7 +368,7 @@ public sealed class PlatformManifestValidationTests
     public void DuplicateServerIdsCannotShareReadiness()
     {
         using PlatformManifestTestWorkspace workspace = new();
-        JsonArray servers = workspace.Document["modules"]![0]!["identity"]!["servers"]!.AsArray();
+        JsonArray servers = workspace.Document["modules"].ShouldNotBeNull()[0].ShouldNotBeNull()["identity"].ShouldNotBeNull()["servers"]!.AsArray();
         JsonNode duplicate = servers[0]!.DeepClone();
         duplicate["appId"] = "second-api";
         duplicate["resourceId"] = "second-api-host";
@@ -540,7 +540,7 @@ public sealed class PlatformManifestValidationTests
     public void RequiredServerIgnoresReadinessBoundToAnotherServer()
     {
         using PlatformManifestTestWorkspace workspace = new();
-        workspace.Document["modules"]![0]!["identity"]!["servers"]!.AsArray().Add(JsonNode.Parse("""
+        workspace.Document["modules"].ShouldNotBeNull()[0].ShouldNotBeNull()["identity"].ShouldNotBeNull()["servers"]!.AsArray().Add(JsonNode.Parse("""
             {
               "id": "worker",
               "appId": "sample-worker",
@@ -685,15 +685,15 @@ public sealed class PlatformManifestValidationTests
     /// <summary>Verifies a non-seekable manifest returns a structured read failure.</summary>
     /// <returns>A task that completes after validation.</returns>
     [Fact(Timeout = 15000)]
-    public async Task NonSeekableManifestReturnsStructuredFailureAsync()
+    public Task NonSeekableManifestReturnsStructuredFailureAsync()
     {
-        await PlatformManifestTestWorkspace.UseNonSeekableManifestAsync(path =>
+        return PlatformManifestTestWorkspace.UseNonSeekableManifestAsync(path =>
         {
             PlatformManifestValidationResult result = PlatformManifestValidator.Validate([path], TestContext.Current.CancellationToken);
             result.Declarations.ShouldBeNull();
             result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP005" && diagnostic.Field == "manifest");
             return Task.CompletedTask;
-        }).ConfigureAwait(true);
+        });
     }
 
     /// <summary>Verifies a deleted working directory returns a structured path failure.</summary>

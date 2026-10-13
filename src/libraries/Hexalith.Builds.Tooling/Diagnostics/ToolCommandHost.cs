@@ -17,13 +17,13 @@ public static class ToolCommandHost
     /// </summary>
     /// <param name="operation">The operation to invoke.</param>
     /// <returns>The operation exit code.</returns>
-    public static async Task<int> RunWithConsoleCancellationAsync(Func<CancellationToken, Task<int>> operation)
+    public static Task<int> RunWithConsoleCancellationAsync(Func<CancellationToken, Task<int>> operation)
     {
         ArgumentNullException.ThrowIfNull(operation);
 
         ConsoleCancelEventHandler? handler = null;
         PosixSignalRegistration? signalRegistration = null;
-        return await RunWithCancellationRegistrationAsync(
+        return RunWithCancellationRegistrationAsync(
             operation,
             cancel =>
             {
@@ -49,7 +49,7 @@ public static class ToolCommandHost
                 {
                     Console.CancelKeyPress -= handler;
                 }
-            }).ConfigureAwait(false);
+            });
     }
 
     /// <summary>

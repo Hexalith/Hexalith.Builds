@@ -246,7 +246,8 @@ internal static class RunReadiness
                 && !resource.Annotations.OfType<ExplicitStartupAnnotation>().Any()
                 && !string.Equals(resource.GetType().Name, "ProjectRebuilderResource", StringComparison.Ordinal))
             .OrderBy(resource => StartupOrder(resource.Name))
-            .ThenBy(resource => resource.Name, StringComparer.Ordinal)];
+            .ThenBy(resource => resource.Name, StringComparer.Ordinal),
+        ];
 
     private static int StartupOrder(string resourceName) => resourceName switch
     {
@@ -259,7 +260,8 @@ internal static class RunReadiness
 
     private static string SafeStatus(string value) => new([.. value
         .Where(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '/' or '.' or ':' or ';' or '=' or ' ')
-        .Take(120)]);
+        .Take(120),
+    ]);
 
     private static string Status(ResourceNotificationService notifications, string resourceName) =>
         notifications.TryGetCurrentState(resourceName, out ResourceEvent? current)

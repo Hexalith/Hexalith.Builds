@@ -80,7 +80,8 @@ public static class NativeTestReportLoader
         }
 
         XElement[] resultSummaries = [.. document.Root.Elements().Where(element =>
-            string.Equals(element.Name.LocalName, "ResultSummary", StringComparison.Ordinal))];
+            string.Equals(element.Name.LocalName, "ResultSummary", StringComparison.Ordinal)),
+        ];
         if (resultSummaries.Length != 1)
         {
             return Failed("HXT002", "resultSummary");
@@ -99,7 +100,8 @@ public static class NativeTestReportLoader
         }
 
         XElement[] counterElements = [.. resultSummary.Elements().Where(element =>
-            string.Equals(element.Name.LocalName, "Counters", StringComparison.Ordinal))];
+            string.Equals(element.Name.LocalName, "Counters", StringComparison.Ordinal)),
+        ];
         XElement? counters = counterElements.Length == 1 ? counterElements[0] : null;
         return counters is null || !TryReadCounters(counters, out int total, out int passed, out int failed, out int skipped)
             ? Failed("HXT002", "counters")
