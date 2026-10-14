@@ -12,6 +12,8 @@ using Hexalith.Builds.Tooling.Workspace;
 /// <summary>Identifies declaration commands and builds their pinned Platform model.</summary>
 public static class PlatformManifestCommand
 {
+    private const int _maximumManifestBytes = 1_048_576;
+
     /// <summary>Tests the document schema without converting v2 into a legacy manifest.</summary>
     /// <param name="path">The declaration path.</param>
     /// <returns>Whether the document declares v2.</returns>
@@ -19,7 +21,21 @@ public static class PlatformManifestCommand
     {
         try
         {
-            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+            using FileStream stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            if (!stream.CanSeek || stream.Length > _maximumManifestBytes)
+            {
+                return false;
+            }
+
+            byte[] buffer = new byte[_maximumManifestBytes + 1];
+            int count = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);
+            if (count > _maximumManifestBytes)
+            {
+                return false;
+            }
+
+            int offset = count >= 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF ? 3 : 0;
+            using JsonDocument document = JsonDocument.Parse(buffer.AsMemory(offset, count - offset));
             return document.RootElement.ValueKind == JsonValueKind.Object
                 && document.RootElement.TryGetProperty("schema", out JsonElement schema)
                 && schema.ValueKind == JsonValueKind.String
@@ -61,7 +77,7 @@ public static class PlatformManifestCommand
         [
             "build", project, "--configuration", mapping.Mode == WorkspaceMode.Source ? "Debug" : "Release", "--output", output,
             "-p:BuildsToolingAssemblyPath=" + typeof(PlatformManifestCommand).Assembly.Location,
-            "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0",
+            "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0", "-nodeReuse:false", "-p:UseSharedCompilation=false",
         ];
         arguments.Add("-p:DirectoryPackagesPropsPath=" + pinnedCatalog);
 

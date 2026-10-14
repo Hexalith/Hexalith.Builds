@@ -276,7 +276,7 @@ internal static class RunTopology
             ?? throw new InvalidOperationException("Platform v2 plan has no model assembly path.");
         if (!File.Exists(modelPath))
         {
-            throw new FileNotFoundException("Platform declaration model is unavailable.", modelPath);
+            throw new FileNotFoundException($"Platform declaration model '{modelPath}' is unavailable.", modelPath);
         }
 
         string? seed = null;

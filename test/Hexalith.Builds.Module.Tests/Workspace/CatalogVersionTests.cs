@@ -44,6 +44,32 @@ public sealed class CatalogVersionTests
             .ShouldContain("CatalogVersionValidationTask");
     }
 
+    /// <summary>Verifies source composition materializes the catalog when the identity supplies a pin.</summary>
+    /// <param name="hasPin">Whether the source identity has a catalog commit.</param>
+    /// <returns>The source-mode materialization assertion.</returns>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SourceMappingMaterializesOnlyTheAvailableCatalogPinAsync(bool hasPin)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        SourceMapping resolved = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        SourceMapping mapping = hasPin ? resolved : resolved with { PlatformIdentity = resolved.PlatformIdentity! with { CatalogCommit = null } };
+        string workspace = Path.Combine(fixture.Directory, "source-run");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string snapshotPath = Path.Combine(workspace, "source-mapping", "catalog-versions.json");
+        File.Exists(snapshotPath).ShouldBe(hasPin);
+        File.Exists(Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props")).ShouldBe(hasPin);
+        File.Exists(Path.Combine(workspace, "source-mapping", "mapping.json")).ShouldBeTrue();
+        if (hasPin)
+        {
+            using JsonDocument snapshot = JsonDocument.Parse(await File.ReadAllTextAsync(snapshotPath, TestContext.Current.CancellationToken).ConfigureAwait(true));
+            snapshot.RootElement.GetProperty("MappingHash").GetString().ShouldBe(mapping.ContentHash);
+            snapshot.RootElement.GetProperty("CatalogCommit").GetString().ShouldBe(mapping.PlatformIdentity!.CatalogCommit);
+            snapshot.RootElement.GetProperty("Versions").GetProperty("Hexalith.Dep").GetString().ShouldBe("1.0.0");
+        }
+    }
+
     /// <summary>Verifies a local catalog snapshot write failure retains its HXW prerequisite and exact path.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]

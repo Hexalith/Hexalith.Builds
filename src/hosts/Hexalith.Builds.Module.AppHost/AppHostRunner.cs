@@ -21,9 +21,32 @@ internal static class AppHostRunner
     /// <returns>Zero after a graceful stop; three when a resource could not become healthy.</returns>
     public static async Task<int> RunAsync(string[] args)
     {
-        CompositionRunPlan plan = await RunPlanSource.LoadAsync(CancellationToken.None).ConfigureAwait(false);
-        string signingKey = RunPlanSource.TakeSigningKey();
+        try
+        {
+            CompositionRunPlan plan = await RunPlanSource.LoadAsync(CancellationToken.None).ConfigureAwait(false);
+            string signingKey = RunPlanSource.TakeSigningKey();
+            return await RunAsync(args, plan, signingKey, RunTopology.Compose).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (args.Contains("--validate-platform", StringComparer.Ordinal)
+            && exception is not (OutOfMemoryException or StackOverflowException or AccessViolationException))
+        {
+            await Console.Error.WriteLineAsync(exception.Message).ConfigureAwait(false);
+            return 3;
+        }
+    }
 
+    /// <summary>Executes the runner protocol with an explicit composition boundary.</summary>
+    /// <param name="args">The AppHost arguments.</param>
+    /// <param name="plan">The selected run plan.</param>
+    /// <param name="signingKey">The per-run signing key.</param>
+    /// <param name="compose">The topology composer.</param>
+    /// <returns>The validation or run exit code.</returns>
+    internal static async Task<int> RunAsync(
+        string[] args,
+        CompositionRunPlan plan,
+        string signingKey,
+        Action<IDistributedApplicationBuilder, CompositionRunPlan, string> compose)
+    {
         IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
         {
             Args = [.. args.Where(argument => argument != "--validate-platform")],
@@ -41,10 +64,10 @@ internal static class AppHostRunner
         });
         try
         {
-            RunTopology.Compose(builder, plan, signingKey);
+            compose(builder, plan, signingKey);
         }
         catch (Exception exception) when (args.Contains("--validate-platform", StringComparer.Ordinal)
-            && exception is InvalidDataException or InvalidOperationException or FileNotFoundException)
+            && exception is not (OutOfMemoryException or StackOverflowException or AccessViolationException))
         {
             await Console.Error.WriteLineAsync(exception.Message).ConfigureAwait(false);
             return 3;

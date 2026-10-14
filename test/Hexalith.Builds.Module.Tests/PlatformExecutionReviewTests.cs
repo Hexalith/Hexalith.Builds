@@ -80,6 +80,40 @@ public sealed class PlatformExecutionReviewTests
         writer.ToString().ShouldContain("Manifest");
     }
 
+    /// <summary>Verifies schema detection respects the loader byte limit and keeps its oversized refusal.</summary>
+    /// <param name="withBom">Whether the UTF-8 input begins with a byte order mark.</param>
+    /// <returns>The bounded dispatch assertion.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SchemaDetectionBoundsInputAndRetainsOversizedManifestRefusalAsync(bool withBom)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = workspace.Save();
+        byte[] prefix = System.Text.Encoding.UTF8.GetBytes("{\"schema\":\"hexalith.module-manifest.v2\"}");
+        byte[] content = new byte[1_048_576];
+        Array.Fill(content, (byte)' ');
+        int offset = withBom ? 3 : 0;
+        if (withBom)
+        {
+            content[0] = 0xEF;
+            content[1] = 0xBB;
+            content[2] = 0xBF;
+        }
+
+        prefix.CopyTo(content, offset);
+        await File.WriteAllBytesAsync(path, content, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        PlatformManifestCommand.IsV2(path).ShouldBeTrue();
+        await File.AppendAllTextAsync(path, " ", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        PlatformManifestCommand.IsV2(path).ShouldBeFalse();
+        StringWriter writer = new();
+        await using ConfiguredAsyncDisposable writerLifetime = writer.ConfigureAwait(true);
+        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Run, path, null, null, null, ToolOutputFormat.Json, writer, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
+        writer.ToString().ShouldContain("HXM013");
+        writer.ToString().ShouldContain("1 MiB");
+    }
+
     /// <summary>Verifies a valid multi-module declaration selects reference composition.</summary>
     [Fact]
     public void MultiModuleDocumentsUseTheReferenceDefault()

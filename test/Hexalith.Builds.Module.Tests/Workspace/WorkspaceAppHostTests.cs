@@ -12,6 +12,8 @@ using System.Security.Cryptography;
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 
+using CommunityToolkit.Aspire.Hosting.Dapr;
+
 using Hexalith.Builds.ModuleHosts.AppHost;
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
@@ -224,6 +226,86 @@ public sealed class WorkspaceAppHostTests
             (await RunReadiness.WaitForModuleInvocationAsync(plan, applicationModel, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
             await responder.ConfigureAwait(true);
             invoked.Order(StringComparer.Ordinal).ShouldBe(probes.Select(probe => $"/v1.0/invoke/{probe.AppId}/method/ready").Order(StringComparer.Ordinal));
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies v2 invocation readiness in a standalone Builds checkout.</summary>
+    /// <returns>The annotation and real HTTP invocation assertions.</returns>
+    [Fact]
+    public async Task PlatformInvocationProbesUseLocalAnnotationContractAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { PlatformDeclarationPaths = ["module-v2.json"] };
+            IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
+            {
+                Args = [],
+                AssemblyName = typeof(RunTopology).Assembly.GetName().Name,
+                DisableDashboard = true,
+                AllowUnsecuredTransport = true,
+            });
+            _ = builder.AddDapr(options => options.DaprPath = Path.Combine(root, "dapr"));
+            _ = builder.AddExecutable("eventstore", "unused", root)
+                .WithAnnotation(new PlatformServerAnnotation(new { ReadinessEndpoint = "/ready" }));
+            _ = builder.AddExecutable("selected", "unused", root)
+                .WithAnnotation(new PlatformServerAnnotation(new { ReadinessEndpoint = "/declared-ready" }))
+                .WithDaprSidecar(sidecar => sidecar.WithOptions(new DaprSidecarOptions { AppId = "selected-app" }));
+            _ = builder.AddExecutable("unrelated", "unused", root);
+            DistributedApplicationModel model = new(builder.Resources);
+            RunReadiness.InvocationProbes(plan, model).ShouldBe([("selected", "selected-app", "/declared-ready")]);
+            using HttpListener listener = new();
+            listener.Prefixes.Add($"http://127.0.0.1:{plan.Ports.EventStoreDaprHttp}/");
+            listener.Start();
+            Task responder = Task.Run(
+                async () =>
+                {
+                    HttpListenerContext request = await listener.GetContextAsync().WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+                    request.Request.RawUrl.ShouldBe("/v1.0/invoke/selected-app/method/declared-ready");
+                    request.Response.StatusCode = 200;
+                    request.Response.Close();
+                },
+                TestContext.Current.CancellationToken);
+            (await RunReadiness.WaitForModuleInvocationAsync(plan, model, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
+            await responder.ConfigureAwait(true);
+            builder.Resources.Single(resource => resource.Name == "eventstore").Annotations.Clear();
+            Should.Throw<InvalidDataException>(() => RunReadiness.InvocationProbes(plan, model)).Message.ShouldContain("no annotated eventstore gateway");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies unavailable model diagnostics retain the exact selected path.</summary>
+    [Fact]
+    public void MissingPlatformModelNamesItsPath()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string declaration = Path.Combine(root, "module.json");
+            File.WriteAllText(declaration, "{}");
+            string missing = Path.Combine(root, "missing", "Hexalith.Platform.Composition.dll");
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with
+            {
+                PlatformDeclarationPaths = [declaration],
+                PlatformDeclarationHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(declaration))),
+                PlatformModelAssemblyPath = missing,
+            };
+            IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
+            {
+                Args = [],
+                AssemblyName = typeof(RunTopology).Assembly.GetName().Name,
+                DisableDashboard = true,
+                AllowUnsecuredTransport = true,
+            });
+            Should.Throw<FileNotFoundException>(() => RunTopology.Compose(builder, plan, CompositionSigningKey.Create())).Message.ShouldContain(missing);
+            builder.Resources.ShouldBeEmpty();
         }
         finally
         {
