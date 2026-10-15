@@ -380,7 +380,7 @@ jobs:
           done <<< "$TEST_PROJECTS"
       - name: Upload release test evidence
         if: ${{ always() && inputs.test-projects != '' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-test-results
           path: |
@@ -484,7 +484,7 @@ jobs:
         run: npm exec --no -- semantic-release
       - name: Upload complete release evidence
         if: ${{ always() && inputs.publish-containers }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: .hexalith/release-evidence/**
@@ -795,7 +795,7 @@ jobs:
           done <<< "$TEST_PROJECTS"
       - name: Upload release test evidence
         if: ${{ always() && inputs.test-projects != '' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-test-results
           path: |
@@ -1182,7 +1182,7 @@ jobs:
           echo "path=$destination" >> "$GITHUB_OUTPUT"
       - name: Upload governed release evidence
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: governed-release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: .hexalith/release/governed/**
@@ -1191,7 +1191,7 @@ jobs:
           retention-days: 30
       - name: Upload complete release evidence
         if: ${{ always() && inputs.publish-containers }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: .hexalith/release-evidence/**
