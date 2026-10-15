@@ -539,6 +539,8 @@ public static partial class PlatformManifestValidator
             }
         }
 
+        ValidateDaprBindings(module, prefix, source, serverIds, diagnostics);
+
         int interfaceIndex = 0;
         foreach (JsonElement surface in ArrayValue(ObjectValue(module, "surfaces"), "interfaces"))
         {
@@ -561,6 +563,145 @@ public static partial class PlatformManifestValidator
         }
 
         ValidateExecutablePaths(lifecycle, prefix, source, fullPath, diagnostics);
+    }
+
+    private static void ValidateDaprBindings(JsonElement module, string prefix, string source, HashSet<string> servers, List<ToolDiagnostic> diagnostics)
+    {
+        JsonElement[] capabilities = ArrayValue(ObjectValue(module, "runtime"), "dapr");
+        Dictionary<string, (string Kind, string Recovery)> roles = new(StringComparer.Ordinal);
+        Dictionary<string, Dictionary<string, string>> keys = new(StringComparer.Ordinal);
+        for (int index = 0; index < capabilities.Length; index++)
+        {
+            JsonElement capability = capabilities[index];
+            string field = $"{prefix}.runtime.dapr[{index}]";
+            string? role = StringValue(capability, "role");
+            if (role is null)
+            {
+                continue;
+            }
+
+            (string Kind, string Recovery) binding = (Kind: StringValue(capability, "capability")!, Recovery: StringValue(capability, "recoveryClass")!);
+            if (roles.TryGetValue(role, out (string Kind, string Recovery) previous) && previous != binding)
+            {
+                Add(diagnostics, "HXP024", source, field + ".role", "One logical role must use one capability and recovery class.");
+            }
+
+            roles[role] = binding;
+            string[] selected = ObjectValue(capability, "servers").ValueKind == JsonValueKind.Array
+                ? [.. ArrayValue(capability, "servers").Where(value => value.ValueKind == JsonValueKind.String).Select(value => value.GetString()!)] : [.. servers];
+            foreach (string server in selected)
+            {
+                if (!servers.Contains(server))
+                {
+                    Add(diagnostics, "HXP024", source, field + ".servers", $"Unknown owner server '{server}'.");
+                }
+
+                if (StringValue(capability, "configurationKey") is not { } configurationKey)
+                {
+                    continue;
+                }
+
+                if (!keys.TryGetValue(server, out Dictionary<string, string>? serverKeys))
+                {
+                    serverKeys = new(StringComparer.OrdinalIgnoreCase);
+                    keys.Add(server, serverKeys);
+                }
+
+                string key = configurationKey.Replace("__", ":", StringComparison.Ordinal);
+                if (serverKeys.TryGetValue(key, out string? previousRole) && previousRole != role)
+                {
+                    Add(diagnostics, "HXP024", source, field + ".configurationKey", "Conflicting capabilities bind the same server configuration key.");
+                }
+
+                serverKeys[key] = role;
+            }
+        }
+
+        HashSet<string> enabledServers = [.. ArrayValue(ObjectValue(module, "identity"), "servers")
+            .Where(server => ObjectValue(server, "enabled").ValueKind == JsonValueKind.True)
+            .Select(server => StringValue(server, "id"))
+            .OfType<string>(),
+        ];
+        HashSet<string> subscriptions = new(StringComparer.Ordinal);
+        JsonElement[] topics = ArrayValue(ObjectValue(module, "integration"), "topics");
+        static string? PhysicalTopic(JsonElement topic) => StringValue(ObjectValue(topic, "subscription"), "topic") ?? StringValue(topic, "name");
+        for (int index = 0; index < topics.Length; index++)
+        {
+            JsonElement topic = topics[index];
+            string field = $"{prefix}.integration.topics[{index}]";
+            if (!capabilities.Any(capability => StringValue(capability, "role") == StringValue(topic, "role") && StringValue(capability, "capability") == "pubsub"))
+            {
+                Add(diagnostics, "HXP024", source, field + ".role", "Bind the topic to a declared pubsub capability role.");
+            }
+
+            JsonElement subscription = ObjectValue(topic, "subscription");
+            if (subscription.ValueKind == JsonValueKind.Object)
+            {
+                string server = StringValue(subscription, "server")!;
+                if (!enabledServers.Contains(server))
+                {
+                    Add(diagnostics, "HXP024", source, field + ".subscription.server", "Receiving owner server is unknown or disabled.");
+                }
+
+                if (!subscriptions.Add(server + "/" + StringValue(topic, "role") + "/" + PhysicalTopic(topic)))
+                {
+                    Add(diagnostics, "HXP024", source, field + ".subscription", "Duplicate subscription for the same receiver, pubsub role and topic.");
+                }
+
+                if (!capabilities.Any(capability => StringValue(capability, "role") == StringValue(topic, "role") &&
+                    (ObjectValue(capability, "servers").ValueKind != JsonValueKind.Array || ArrayValue(capability, "servers").Any(value => value.ValueKind == JsonValueKind.String && value.GetString() == server))))
+                {
+                    Add(diagnostics, "HXP024", source, field + ".subscription.server", "The receiving server is outside the pubsub capability scope.");
+                }
+
+                JsonElement deadLetter = ObjectValue(topic, "deadLetter");
+                if (StringValue(deadLetter, "strategy") == "topic")
+                {
+                    string?[] targets = [.. topics.Where(target => StringValue(target, "name") == StringValue(deadLetter, "topic") && StringValue(target, "role") == StringValue(topic, "role"))
+                        .Select(PhysicalTopic).Distinct(StringComparer.Ordinal),
+                    ];
+                    if (targets.Length != 1 || targets[0] is not { } target || target.Contains('*', StringComparison.Ordinal) || target == PhysicalTopic(topic))
+                    {
+                        Add(diagnostics, "HXP024", source, field + ".deadLetter.topic", "Reference an inventory name on the same pubsub role that resolves to one distinct concrete physical topic.");
+                    }
+                }
+            }
+        }
+
+        int surfaceIndex = 0;
+        foreach (JsonElement surface in ArrayValue(ObjectValue(module, "surfaces"), "interfaces"))
+        {
+            string field = $"{prefix}.surfaces.interfaces[{surfaceIndex++}]";
+            if (!servers.Contains(StringValue(surface, "server")!))
+            {
+                Add(diagnostics, "HXP024", source, field + ".server", "Unknown receiving owner server.");
+            }
+
+            foreach (JsonElement rule in ArrayValue(surface, "invocationRules"))
+            {
+                if (StringValue(surface, "protocol") != "http" || StringValue(surface, "exposure") == "disabled")
+                {
+                    Add(diagnostics, "HXP024", source, field + ".invocationRules", "Invocation rules require an enabled HTTP interface.");
+                }
+
+                if (!ArrayValue(surface, "callers").Any(caller => caller.ValueKind == JsonValueKind.String && caller.GetString() == StringValue(rule, "caller")))
+                {
+                    Add(diagnostics, "HXP024", source, field + ".invocationRules", "Each explicit caller must be in the interface caller inventory.");
+                }
+
+                string? path = StringValue(rule, "path");
+                string? route = StringValue(surface, "routePrefix");
+                if (path is null || route is null)
+                {
+                    continue;
+                }
+
+                if (path.Contains('*', StringComparison.Ordinal) || path.Contains('{', StringComparison.Ordinal) || path.Contains('}', StringComparison.Ordinal) || (route != "/" && path != route && !path.StartsWith(route.TrimEnd('/') + "/", StringComparison.Ordinal)))
+                {
+                    Add(diagnostics, "HXP024", source, field + ".invocationRules", "Use a concrete invocation path within the interface route prefix.");
+                }
+            }
+        }
     }
 
     private static bool IsUsableReadiness(JsonElement probe) => StringValue(probe, "kind") switch

@@ -24,6 +24,8 @@ using Xunit;
 [Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class PlatformManifestValidationTests
 {
+    private static readonly string[] _postVerbs = ["POST"];
+
     /// <summary>Verifies a complete declaration passes both validators and materializes effective defaults.</summary>
     [Fact]
     public void CompleteFixturePassesSchemaAndEnrollmentWithDefaults()
@@ -38,6 +40,46 @@ public sealed class PlatformManifestValidationTests
         module.GetProperty("runtime").GetProperty("resources")[0].GetProperty("replicas").GetInt32().ShouldBe(1);
         module.GetProperty("lifecycle").GetProperty("startup").GetProperty("defaultTimeoutSeconds").GetInt32().ShouldBe(600);
         SupportedPlatformManifestSchemas.Eligible.ShouldBe(["hexalith.module-manifest.v2"]);
+    }
+
+    /// <summary>Optional Dapr bindings reject unknown receivers and incomplete HTTP permissions atomically.</summary>
+    /// <param name="path">The optional field.</param>
+    /// <param name="json">The invalid binding.</param>
+    [Theory]
+    [InlineData("modules.0.runtime.dapr.0.servers", "[\"missing\"]")]
+    [InlineData("modules.0.integration.topics.0.subscription", "{\"server\":\"missing\",\"route\":\"/events\"}")]
+    [InlineData("modules.0.integration.topics.0.subscription", "{\"server\":\"api\"}")]
+    [InlineData("modules.0.surfaces.interfaces.0.invocationRules", "[{\"caller\":\"eventstore\",\"path\":\"/process\",\"verbs\":[\"*\"]}]")]
+    public void InvalidOptionalDaprBindingsAreAtomic(string path, string json)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change(path, json);
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.IsValid.ShouldBeFalse();
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Source != null && diagnostic.Field != null);
+    }
+
+    /// <summary>Verifies otherwise-valid permissions obey caller inventory and concrete interface boundaries.</summary>
+    /// <param name="caller">The explicit caller.</param>
+    /// <param name="path">The invocation path.</param>
+    /// <param name="reason">The expected semantic refusal.</param>
+    [Theory]
+    [InlineData("unlisted", "/sample/read", "Each explicit caller must be in the interface caller inventory.")]
+    [InlineData("mcpcli", "/sample/*", "Use a concrete invocation path within the interface route prefix.")]
+    [InlineData("mcpcli", "/sample/{id}", "Use a concrete invocation path within the interface route prefix.")]
+    [InlineData("mcpcli", "/outside", "Use a concrete invocation path within the interface route prefix.")]
+    public void InvalidInvocationPermissionSemanticsAreAtomic(string caller, string path, string reason)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.surfaces.interfaces.0.invocationRules", JsonSerializer.Serialize(new[] { new { caller, path, verbs = _postVerbs } }));
+        string source = workspace.Save();
+        string diagnosticSource = Path.GetRelativePath(Directory.GetCurrentDirectory(), source).Replace('\\', '/');
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([source], TestContext.Current.CancellationToken);
+        result.IsValid.ShouldBeFalse();
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP024" && diagnostic.Source == diagnosticSource && diagnostic.Field == "modules[0].surfaces.interfaces[0].invocationRules" && diagnostic.Message == reason);
     }
 
     /// <summary>Verifies nested schema errors carry complete paths and match the published contract.</summary>

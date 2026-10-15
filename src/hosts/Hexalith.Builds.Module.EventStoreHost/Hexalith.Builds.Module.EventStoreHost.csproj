@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Hexalith.EventStore.Gateway" />
+    <InternalsVisibleTo Include="Hexalith.Platform.Composition.Tests" />
   </ItemGroup>
 </Project>

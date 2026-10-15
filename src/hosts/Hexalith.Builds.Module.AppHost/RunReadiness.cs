@@ -135,6 +135,11 @@ internal static class RunReadiness
     /// <returns>True when every selected server can be invoked.</returns>
     internal static async Task<bool> WaitForModuleInvocationAsync(CompositionRunPlan plan, DistributedApplicationModel model, CancellationToken cancellationToken)
     {
+        if (plan.IsPlatformComposition)
+        {
+            return await WaitForPlatformSidecarsAsync(plan, model, cancellationToken).ConfigureAwait(false);
+        }
+
         using HttpClient sidecar = new()
         {
             BaseAddress = new UriBuilder(Uri.UriSchemeHttp, IPAddress.Loopback.ToString(), plan.Ports.EventStoreDaprHttp).Uri,
@@ -231,6 +236,76 @@ internal static class RunReadiness
         }
 
         return probes;
+    }
+
+    /// <summary>Checks authenticated sidecar health and retains structured refusal evidence on timeout.</summary>
+    /// <param name="plan">The run owning the failure document.</param>
+    /// <param name="model">The selected resource model.</param>
+    /// <param name="cancellationToken">The caller cancellation token.</param>
+    /// <param name="probeBound">An optional bounded probe duration for focused verification.</param>
+    /// <returns>Whether every selected sidecar became ready.</returns>
+    /// <exception cref="InvalidDataException">A selected sidecar has no HTTP listener.</exception>
+    internal static async Task<bool> WaitForPlatformSidecarsAsync(CompositionRunPlan plan, DistributedApplicationModel model, CancellationToken cancellationToken, TimeSpan? probeBound = null)
+    {
+        foreach (IResource resource in model.Resources.Where(resource => resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation")))
+        {
+            IDaprSidecarResource sidecar = resource.Annotations.OfType<DaprSidecarAnnotation>().Single().Sidecar;
+            DaprSidecarOptions options = sidecar.Annotations.OfType<DaprSidecarOptionsAnnotation>().Single().Options;
+            int port = options.DaprHttpPort ?? throw new InvalidDataException($"{resource.Name}: Dapr HTTP listener is missing.");
+            using HttpClient client = new() { Timeout = TimeSpan.FromSeconds(5) };
+            IResourceAnnotation annotation = resource.Annotations.Single(annotation => annotation.GetType().Name == "PlatformServerAnnotation");
+            object? binding = annotation.GetType().GetProperty("Binding")?.GetValue(annotation);
+            if (binding?.GetType().GetProperty("Environment")?.GetValue(binding) is IReadOnlyDictionary<string, string> environment
+                && environment.TryGetValue("DAPR_API_TOKEN", out string? token))
+            {
+                client.DefaultRequestHeaders.Add("dapr-api-token", token);
+            }
+
+            using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(probeBound ?? _invocationBound);
+            string status = "unreported";
+            while (!timeout.IsCancellationRequested)
+            {
+                try
+                {
+                    using HttpResponseMessage response = await client.GetAsync(new Uri($"http://127.0.0.1:{port}/v1.0/healthz/outbound"), timeout.Token).ConfigureAwait(false);
+                    status = "HTTP " + ((int)response.StatusCode).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        break;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    status = "connection-unavailable";
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    if (!timeout.IsCancellationRequested || status == "unreported")
+                    {
+                        status = "request-timeout";
+                    }
+                }
+
+                try
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(200), timeout.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (timeout.IsCancellationRequested)
+            {
+                await ReportFailureAsync(plan, "HXR026", resource.Name, options.AppId!, status + ";probe-timeout").ConfigureAwait(false);
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static string AppId(CompositionRunPlan plan, DistributedApplicationModel model, string resourceName)

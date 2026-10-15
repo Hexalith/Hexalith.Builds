@@ -310,42 +310,6 @@ internal static class RunTopology
             throw new InvalidDataException("Platform v2 model did not annotate its eventstore gateway; invocation readiness cannot be verified.");
         }
 
-        string schedulerAddress = Loopback(plan.Ports.Scheduler);
-        string controlPlane = Path.Combine(plan.Workspace, "dapr", "control-plane");
-        _ = Directory.CreateDirectory(controlPlane);
-        string[] placementArguments =
-        [
-            "--port", Text(plan.Ports.Placement),
-            "--listen-address", "127.0.0.1",
-            "--healthz-port", Text(plan.Ports.PlacementHealth),
-            "--healthz-listen-address", "127.0.0.1",
-            "--metrics-port", Text(plan.Ports.PlacementMetrics),
-            "--metrics-listen-address", "127.0.0.1",
-            "--initial-cluster", "dapr-placement-0=127.0.0.1:" + Text(plan.Ports.PlacementRaft),
-        ];
-        _ = builder.AddExecutable("placement", RunPlanSource.DaprBinaryPath(plan, "placement"), controlPlane, placementArguments)
-            .WithEnvironment(CompositionEnvironment.RunId, plan.RunId)
-            .WithHttpEndpoint(port: plan.Ports.PlacementHealth, name: "healthz", isProxied: false)
-            .WithHttpHealthCheck("/healthz", endpointName: "healthz");
-        string[] schedulerArguments =
-        [
-            "--port", Text(plan.Ports.Scheduler),
-            "--listen-address", "127.0.0.1",
-            "--override-broadcast-host-port", schedulerAddress,
-            "--healthz-port", Text(plan.Ports.SchedulerHealth),
-            "--healthz-listen-address", "127.0.0.1",
-            "--metrics-port", Text(plan.Ports.SchedulerMetrics),
-            "--metrics-listen-address", "127.0.0.1",
-            "--etcd-data-dir", Path.Combine(controlPlane, "scheduler-data"),
-            "--etcd-client-port", Text(plan.Ports.SchedulerEtcdClient),
-            "--etcd-client-listen-address", "127.0.0.1",
-            "--etcd-initial-cluster", "dapr-scheduler-server-0=http://127.0.0.1:" + Text(plan.Ports.SchedulerEtcdPeer),
-        ];
-        _ = builder.AddExecutable("scheduler", RunPlanSource.DaprBinaryPath(plan, "scheduler"), controlPlane, schedulerArguments)
-            .WithEnvironment(CompositionEnvironment.RunId, plan.RunId)
-            .WithHttpEndpoint(port: plan.Ports.SchedulerHealth, name: "healthz", isProxied: false)
-            .WithHttpHealthCheck("/healthz", endpointName: "healthz");
-
         if (plan.UiMarkers.Count > 0)
         {
             IResourceBuilder<ProjectResource> ui = Tag(AddUiProject(builder, plan), plan, plan.Ports.UiHttp).WithHttpHealthCheck("/health");

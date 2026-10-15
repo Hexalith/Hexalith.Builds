@@ -208,13 +208,20 @@ public sealed class WorkspaceAppHostTests
             probes.Count.ShouldBe(5);
             probes.ShouldAllBe(probe => probe.Endpoint == "/ready");
             using HttpListener listener = new();
-            listener.Prefixes.Add($"http://127.0.0.1:{plan.Ports.EventStoreDaprHttp}/");
+            int[] sidecarPorts = [.. builder.Resources.Where(resource => resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation"))
+                .Select(resource => resource.Annotations.OfType<DaprSidecarAnnotation>().Single().Sidecar.Annotations.OfType<DaprSidecarOptionsAnnotation>().Single().Options.DaprHttpPort!.Value),
+            ];
+            foreach (int port in sidecarPorts)
+            {
+                listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+            }
+
             listener.Start();
             List<string> invoked = [];
             Task responder = Task.Run(
                 async () =>
                 {
-                    for (int index = 0; index < probes.Count; index++)
+                    for (int index = 0; index < sidecarPorts.Length; index++)
                     {
                         HttpListenerContext context = await listener.GetContextAsync().WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
                         invoked.Add(context.Request.RawUrl!);
@@ -225,7 +232,8 @@ public sealed class WorkspaceAppHostTests
                 TestContext.Current.CancellationToken);
             (await RunReadiness.WaitForModuleInvocationAsync(plan, applicationModel, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
             await responder.ConfigureAwait(true);
-            invoked.Order(StringComparer.Ordinal).ShouldBe(probes.Select(probe => $"/v1.0/invoke/{probe.AppId}/method/ready").Order(StringComparer.Ordinal));
+            invoked.Count.ShouldBe(sidecarPorts.Length);
+            invoked.ShouldAllBe(endpoint => endpoint == "/v1.0/healthz/outbound");
         }
         finally
         {
@@ -251,10 +259,11 @@ public sealed class WorkspaceAppHostTests
             });
             _ = builder.AddDapr(options => options.DaprPath = Path.Combine(root, "dapr"));
             _ = builder.AddExecutable("eventstore", "unused", root)
-                .WithAnnotation(new PlatformServerAnnotation(new { ReadinessEndpoint = "/ready" }));
+                .WithAnnotation(new PlatformServerAnnotation(new { ReadinessEndpoint = "/ready" }))
+                .WithDaprSidecar(sidecar => sidecar.WithOptions(new DaprSidecarOptions { AppId = "eventstore", DaprHttpPort = plan.Ports.EventStoreDaprHttp }));
             _ = builder.AddExecutable("selected", "unused", root)
                 .WithAnnotation(new PlatformServerAnnotation(new { ReadinessEndpoint = "/declared-ready" }))
-                .WithDaprSidecar(sidecar => sidecar.WithOptions(new DaprSidecarOptions { AppId = "selected-app" }));
+                .WithDaprSidecar(sidecar => sidecar.WithOptions(new DaprSidecarOptions { AppId = "selected-app", DaprHttpPort = plan.Ports.EventStoreDaprHttp }));
             _ = builder.AddExecutable("unrelated", "unused", root);
             DistributedApplicationModel model = new(builder.Resources);
             RunReadiness.InvocationProbes(plan, model).ShouldBe([("selected", "selected-app", "/declared-ready")]);
@@ -264,16 +273,73 @@ public sealed class WorkspaceAppHostTests
             Task responder = Task.Run(
                 async () =>
                 {
-                    HttpListenerContext request = await listener.GetContextAsync().WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
-                    request.Request.RawUrl.ShouldBe("/v1.0/invoke/selected-app/method/declared-ready");
-                    request.Response.StatusCode = 200;
-                    request.Response.Close();
+                    for (int index = 0; index < 2; index++)
+                    {
+                        HttpListenerContext request = await listener.GetContextAsync().WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+                        request.Request.RawUrl.ShouldBe("/v1.0/healthz/outbound");
+                        request.Response.StatusCode = 204;
+                        request.Response.Close();
+                    }
                 },
                 TestContext.Current.CancellationToken);
             (await RunReadiness.WaitForModuleInvocationAsync(plan, model, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
             await responder.ConfigureAwait(true);
             builder.Resources.Single(resource => resource.Name == "eventstore").Annotations.Clear();
             Should.Throw<InvalidDataException>(() => RunReadiness.InvocationProbes(plan, model)).Message.ShouldContain("no annotated eventstore gateway");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies sidecar refusal retains resource, app identity and the last HTTP or connection reason.</summary>
+    /// <param name="status">The last sidecar failure reason.</param>
+    /// <returns>The structured failure assertions.</returns>
+    [Theory]
+    [InlineData("HTTP 503")]
+    [InlineData("connection-unavailable")]
+    [InlineData("request-timeout")]
+    public async Task PlatformSidecarTimeoutWritesStructuredFailureAsync(string status)
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { PlatformDeclarationPaths = ["module-v2.json"] };
+            IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder();
+            _ = builder.AddExecutable("selected", "unused", root)
+                .WithAnnotation(new PlatformServerAnnotation(new { Environment = new Dictionary<string, string>() }))
+                .WithDaprSidecar(sidecar => sidecar.WithOptions(new DaprSidecarOptions { AppId = "selected-app", DaprHttpPort = plan.Ports.EventStoreDaprHttp }));
+            using HttpListener listener = new();
+            Task response = Task.CompletedTask;
+            if (status != "connection-unavailable")
+            {
+                listener.Prefixes.Add($"http://127.0.0.1:{plan.Ports.EventStoreDaprHttp}/");
+                listener.Start();
+                response = Task.Run(
+                    async () =>
+                    {
+                        HttpListenerContext request = await listener.GetContextAsync().WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+                        if (status == "HTTP 503")
+                        {
+                            request.Response.StatusCode = 503;
+                            request.Response.Close();
+                        }
+                    },
+                    TestContext.Current.CancellationToken);
+            }
+
+            (await RunReadiness.WaitForPlatformSidecarsAsync(
+                plan,
+                new DistributedApplicationModel(builder.Resources),
+                TestContext.Current.CancellationToken,
+                TimeSpan.FromMilliseconds(500)).ConfigureAwait(true)).ShouldBeFalse();
+            await response.ConfigureAwait(true);
+            CompositionStartupFailure failure = (await CompositionDocumentStore.TryReadAsync<CompositionStartupFailure>(CompositionStartupFailure.PathFor(plan.Workspace), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            failure.RuleId.ShouldBe("HXR026");
+            failure.Resource.ShouldBe("selected");
+            failure.AppId.ShouldBe("selected-app");
+            failure.Status.ShouldBe(status + ";probe-timeout");
         }
         finally
         {
