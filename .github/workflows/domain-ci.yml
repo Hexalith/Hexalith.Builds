@@ -469,7 +469,7 @@ jobs:
           runtime-version: ${{ inputs.dapr-runtime-version }}
       - name: Install and initialize Dapr
         if: ${{ inputs.integration-test-projects != '' && !inputs.governed-ci }}
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@f717a87c26a8266bdde95d18f998ef2ab366d43a # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
@@ -691,7 +691,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@f717a87c26a8266bdde95d18f998ef2ab366d43a # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
@@ -766,7 +766,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@f717a87c26a8266bdde95d18f998ef2ab366d43a # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
