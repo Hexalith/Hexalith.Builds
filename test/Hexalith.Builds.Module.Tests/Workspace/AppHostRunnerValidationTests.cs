@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
+using System.Diagnostics;
 using System.Text.Json;
 
 using Aspire.Hosting;
@@ -122,6 +123,73 @@ public sealed class AppHostRunnerValidationTests
             Environment.SetEnvironmentVariable(CompositionEnvironment.PersistAfterParentExit, previous);
             CompositionTestFiles.Delete(root);
         }
+    }
+
+    /// <summary>Verifies an expired deadline returns even when the release runner keeps standard input open.</summary>
+    /// <returns>The redirected-input assertion.</returns>
+    [Fact]
+    public async Task ElapsedStartupDeadlineReturnsWithStandardInputOpenAsync()
+    {
+        const string childVariable = "HEXALITH_TEST_ELAPSED_DEADLINE_CHILD";
+        if (Environment.GetEnvironmentVariable(childVariable) == "1")
+        {
+            string root = CompositionTestFiles.CreateDirectory();
+            try
+            {
+                CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { StartupDeadlineUtc = DateTimeOffset.UtcNow.AddSeconds(-1) };
+                int exit = await AppHostRunner.RunAsync([], plan, CompositionSigningKey.Create(), (_, _, _) => { }).ConfigureAwait(true);
+                exit.ShouldBe(3);
+                string failure = await File.ReadAllTextAsync(CompositionStartupFailure.PathFor(plan.Workspace), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                failure.ShouldContain("HXR021");
+            }
+            finally
+            {
+                CompositionTestFiles.Delete(root);
+            }
+
+            return;
+        }
+
+        ProcessStartInfo start = new("dotnet")
+        {
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        foreach (string argument in new[]
+        {
+            typeof(AppHostRunnerValidationTests).Assembly.Location,
+            "-method",
+            $"{typeof(AppHostRunnerValidationTests).FullName}.{nameof(ElapsedStartupDeadlineReturnsWithStandardInputOpenAsync)}",
+            "-noLogo",
+        })
+        {
+            start.ArgumentList.Add(argument);
+        }
+
+        start.Environment[childVariable] = "1";
+        using Process process = new() { StartInfo = start };
+        process.Start().ShouldBeTrue();
+        Task<string> output = process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
+        Task<string> error = process.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
+        try
+        {
+            await process.WaitForExitAsync(TestContext.Current.CancellationToken)
+                .WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(true);
+            }
+
+            _ = await Task.WhenAll(output, error).ConfigureAwait(true);
+        }
+
+        process.ExitCode.ShouldBe(0, await output.ConfigureAwait(true) + await error.ConfigureAwait(true));
     }
 
     /// <summary>Verifies readiness progress and a stall document carry the unready resource and its process id.</summary>

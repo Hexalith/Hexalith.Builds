@@ -81,6 +81,15 @@ internal static class AppHostRunner
         }
 
         DistributedApplication app = builder.Build();
+        if (CompositionStartupClock.Remaining(plan.StartupDeadlineUtc, DateTimeOffset.UtcNow) == TimeSpan.Zero)
+        {
+            await using (app.ConfigureAwait(false))
+            {
+                await RunReadiness.ReportStartupStallAsync(app, plan).ConfigureAwait(false);
+                return 3;
+            }
+        }
+
         StopSignal stop = StopSignal.Listen(plan, standardInput);
         await using (stop.ConfigureAwait(false))
         await using (app.ConfigureAwait(false))
