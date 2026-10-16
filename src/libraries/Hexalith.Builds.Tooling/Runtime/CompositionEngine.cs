@@ -669,7 +669,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                         deadline).ConfigureAwait(false);
                 }
 
-                string? failingTask = await CompositionStartupTasks.RunAsync(plan.StartupTasks, deadlineUtc, cancellationToken).ConfigureAwait(false);
+                (string? failingTask, bool deadlineElapsed) = await CompositionStartupTasks.RunAsync(plan.StartupTasks, deadlineUtc, cancellationToken).ConfigureAwait(false);
+                if (deadlineElapsed)
+                {
+                    break;
+                }
+
                 if (failingTask is not null)
                 {
                     return await FailAndTearDownAsync(
@@ -683,6 +688,19 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                         deadline,
                         readiness.Resources,
                         failingTask).ConfigureAwait(false);
+                }
+
+                if (appHost.HasExited)
+                {
+                    return await FailAndTearDownAsync(
+                        plan.RunId,
+                        appHost,
+                        manifestHash,
+                        CompositionRunStatus.Failed,
+                        Diagnostic("HXR020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The Builds-owned AppHost exited before every resource was healthy.", "apphost", "Inspect the run prerequisites and retry."),
+                        ToolExitCode.TopologyOrLifecycle,
+                        requestedAt,
+                        deadline).ConfigureAwait(false);
                 }
 
                 double duration = (DateTimeOffset.UtcNow - requestedAt).TotalSeconds;
@@ -797,7 +815,16 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             resources = await ReadObservedResourcesAsync(runId, bound.Token).ConfigureAwait(false);
         }
 
-        string diagnosticsPath = await PreserveDiagnosticsAsync(runId, diagnostics[0].RuleId, requestedAt, deadline, resources, failingTask, bound.Token).ConfigureAwait(false);
+        string diagnosticsPath;
+        try
+        {
+            diagnosticsPath = await PreserveDiagnosticsAsync(runId, diagnostics[0].RuleId, requestedAt, deadline, resources, failingTask, bound.Token).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            diagnosticsPath = DiagnosticsDirectory(runId);
+        }
+
         IReadOnlyList<ToolDiagnostic> located = WithDiagnosticsLocation(diagnostics, deadline, diagnosticsPath);
         (CompositionRunResources remaining, bool workspaceRemoved) = await TearDownAsync(runId, appHost, bound.Token).ConfigureAwait(false);
         bool clean = remaining.IsEmpty && workspaceRemoved;
@@ -1022,7 +1049,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         CancellationToken cancellationToken)
     {
         string directory = runId is null
-            ? Path.Combine(StateStore.Directory, "diagnostics", "before-run")
+            ? Path.Combine(StateStore.Directory, "diagnostics", "before-run", Guid.NewGuid().ToString("N"))
             : DiagnosticsDirectory(runId);
         CompositionWorkspace.CreatePrivateDirectory(StateStore.Directory);
         CompositionWorkspace.CreatePrivateDirectory(directory);

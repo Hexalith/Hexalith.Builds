@@ -80,23 +80,34 @@ public static class CompositionStartupTasks
     /// <param name="tasks">The selected tasks.</param>
     /// <param name="deadlineUtc">The absolute startup deadline.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>The failing task name, or null when every task succeeded.</returns>
-    public static async Task<string?> RunAsync(IReadOnlyList<CompositionStartupTask> tasks, DateTimeOffset deadlineUtc, CancellationToken cancellationToken)
+    /// <returns>The failing module task when one started and failed, whether the deadline elapsed before the next task started, or neither when every task succeeded.</returns>
+    public static async Task<(string? FailingTask, bool DeadlineElapsed)> RunAsync(IReadOnlyList<CompositionStartupTask> tasks, DateTimeOffset deadlineUtc, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tasks);
         foreach (CompositionStartupTask task in tasks)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow) <= TimeSpan.Zero || !await SucceededAsync(task, deadlineUtc, cancellationToken).ConfigureAwait(false))
+            if (CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow) <= TimeSpan.Zero)
             {
-                return task.Name;
+                return (null, true);
+            }
+
+            bool? succeeded = await SucceededAsync(task, deadlineUtc, cancellationToken).ConfigureAwait(false);
+            if (succeeded is null)
+            {
+                return (null, true);
+            }
+
+            if (succeeded is false)
+            {
+                return (task.ModuleId + "/" + task.Name, false);
             }
         }
 
-        return null;
+        return (null, false);
     }
 
-    private static async Task<bool> SucceededAsync(CompositionStartupTask task, DateTimeOffset deadlineUtc, CancellationToken cancellationToken)
+    private static async Task<bool?> SucceededAsync(CompositionStartupTask task, DateTimeOffset deadlineUtc, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(task.ExecutablePath) || !File.Exists(task.ExecutablePath))
         {
@@ -106,7 +117,7 @@ public static class CompositionStartupTasks
         TimeSpan remaining = CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow);
         if (remaining <= TimeSpan.Zero)
         {
-            return false;
+            return null;
         }
 
         using Process process = new()
@@ -149,6 +160,7 @@ public static class CompositionStartupTasks
         catch (OperationCanceledException)
         {
             CompositionProcess.Kill(process);
+            cancellationToken.ThrowIfCancellationRequested();
             return false;
         }
 

@@ -49,10 +49,14 @@ public sealed class StartupReadinessTests
         PlatformModuleDeclaration unbounded = Declaration("""
             {"identity":{"moduleId":"events"},"lifecycle":{"startup":{"override":{"timeoutSeconds":1e309,"justification":"unbounded"}}}}
             """);
+        PlatformModuleDeclaration unrepresentable = Declaration("""
+            {"identity":{"moduleId":"huge"},"lifecycle":{"startup":{"override":{"timeoutSeconds":1e308,"justification":"overflow"}}}}
+            """);
 
-        CompositionEffectiveDeadline selected = CompositionStartupDeadlineResolver.Resolve([billing, orders, unbounded], TimeSpan.FromSeconds(600));
+        CompositionEffectiveDeadline selected = CompositionStartupDeadlineResolver.Resolve([billing, orders, unbounded, unrepresentable], TimeSpan.FromSeconds(600));
 
         selected.TimeoutSeconds.ShouldBe(1200);
+        _ = selected.Timeout;
         selected.IsOverride.ShouldBeTrue();
         selected.ModuleId.ShouldBe("orders");
         selected.Justification.ShouldBe("orders replay");
@@ -216,6 +220,9 @@ public sealed class StartupReadinessTests
             CompositionRunState? state = await engine.StateStore.TryReadAsync(result.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
             _ = state.ShouldNotBeNull();
             _ = state.DiagnosticsPath.ShouldNotBeNull();
+            string observed = await File.ReadAllTextAsync(Path.Combine(state.DiagnosticsPath, "observed.txt"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            observed.ShouldBe("apphost.stdout.observed" + Environment.NewLine);
+            observed.ShouldNotContain("HTTP 503");
             Directory.Exists(state.DiagnosticsPath).ShouldBeTrue();
             File.Exists(Path.Combine(state.DiagnosticsPath, "summary.json")).ShouldBeTrue();
             state.EffectiveDeadlineSeconds.ShouldBe(8);
@@ -260,7 +267,126 @@ public sealed class StartupReadinessTests
         _ = state.DiagnosticsPath.ShouldNotBeNull();
         File.Exists(Path.Combine(state.DiagnosticsPath, "summary.json")).ShouldBeTrue();
         using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(state.DiagnosticsPath, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
-        summary.RootElement.GetProperty("failingTask").GetString().ShouldBe("verify");
+        summary.RootElement.GetProperty("failingTask").GetString().ShouldBe("sample/verify");
+    }
+
+    /// <summary>Verifies a per-start task becomes ready only when its arguments are supplied.</summary>
+    /// <returns>The zero-exit assertion.</returns>
+    [Fact]
+    public async Task StartupTaskReadyRequiresItsArgumentsAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost toolchain uses POSIX scripts.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        CompositionTestFiles.WriteScript(Path.Combine(workspace.Root, "check.sh"), "[ \"$1\" = \"expected\" ] || exit 1\nexit 0\n");
+        workspace.Change("modules.0.lifecycle.tasks.0.executable", "\"check.sh\"");
+        workspace.Change("modules.0.lifecycle.tasks.0.arguments", "[\"expected\"]");
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionEngine engine = new(Options(workspace.Root, appHost) with
+        {
+            SourceMapping = Mapping(workspace.Root),
+            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+        });
+
+        CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        try
+        {
+            string? failure = result.Result.Diagnostics.Count == 0 ? null : result.Result.Diagnostics[0].Message;
+            result.IsReady.ShouldBeTrue(failure);
+        }
+        finally
+        {
+            if (result.Session is not null)
+            {
+                _ = await engine.DownAsync(result.Session, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            }
+        }
+    }
+
+    /// <summary>Verifies a startup task that outlives the deadline is named and does not run to completion.</summary>
+    /// <returns>The bounded-task assertion.</returns>
+    [Fact]
+    public async Task StartupTaskIsStoppedAtTheDeadlineAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost toolchain uses POSIX scripts.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        CompositionTestFiles.WriteScript(Path.Combine(workspace.Root, "slow.sh"), "sleep 60\n");
+        workspace.Change("modules.0.lifecycle.tasks.0.executable", "\"slow.sh\"");
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionEngine engine = new(Options(workspace.Root, appHost) with
+        {
+            ReadinessTimeout = TimeSpan.FromSeconds(8),
+            SourceMapping = Mapping(workspace.Root),
+            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+        });
+
+        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        stopwatch.Stop();
+
+        result.Session.ShouldBeNull();
+        result.Result.Outcome.RuleId.ShouldBe("HXR021");
+        result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("sample/verify", StringComparison.Ordinal));
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(20));
+    }
+
+    /// <summary>Verifies a deadline that elapsed before a task starts is not reported as that task.</summary>
+    /// <returns>The deadline assertion.</returns>
+    [Fact]
+    public async Task DeadlineBeforeTaskStartIsNotNamedAsync()
+    {
+        (string? failingTask, bool deadlineElapsed) = await CompositionStartupTasks.RunAsync(
+            [new CompositionStartupTask("sample", "verify", "/missing", [])],
+            DateTimeOffset.UtcNow.AddSeconds(-1),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        failingTask.ShouldBeNull();
+        deadlineElapsed.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies caller cancellation is not stored as a failed startup task.</summary>
+    /// <returns>The cancellation assertion.</returns>
+    [Fact]
+    public async Task CallerCancellationIsNotAFailedStartupTaskAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The startup task double uses a POSIX script.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string script = Path.Combine(root, "sleep.sh");
+            CompositionTestFiles.WriteScript(script, "sleep 30\n");
+            using CancellationTokenSource source = new();
+            Task<(string? FailingTask, bool DeadlineElapsed)> running = CompositionStartupTasks.RunAsync(
+                [new CompositionStartupTask("sample", "verify", script, [])],
+                DateTimeOffset.UtcNow.AddMinutes(1),
+                source.Token);
+            await Task.Delay(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await source.CancelAsync().ConfigureAwait(true);
+            try
+            {
+                _ = await running.ConfigureAwait(true);
+                Assert.Fail("Caller cancellation was reported as a task result.");
+            }
+            catch (OperationCanceledException)
+            {
+                // The caller token is rethrown after the process is killed.
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
     }
 
     /// <summary>Verifies time spent before the AppHost counts against the startup deadline.</summary>
@@ -296,6 +422,136 @@ public sealed class StartupReadinessTests
             result.Result.Diagnostics.Single().Message.ShouldContain("diagnostics='");
             result.RunId.ShouldBeNull();
             Directory.Exists(Path.Combine(root, "workspaces")).ShouldBeFalse();
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies a preserved stream mirror keeps tokens and drops the payload when no log path is set.</summary>
+    /// <returns>The mirror assertion.</returns>
+    [Fact]
+    public async Task PreservedStreamMirrorKeepsOnlyTokensAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The stream double uses a POSIX shell.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string preserved = Path.Combine(root, "preserved");
+            _ = Directory.CreateDirectory(preserved);
+            ProcessStartInfo start = new("/bin/sh")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add("printf '%s\\n' 'secret-token-value'");
+            using Process process = new() { StartInfo = start };
+            TaskCompletionSource<bool> completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            process.OutputDataReceived += (_, args) =>
+            {
+                if (args.Data is null && !completed.TrySetResult(true))
+                {
+                    // The stream already completed.
+                }
+            };
+            CompositionDiagnosticMirror.Attach(process, null, preserved);
+            process.Start().ShouldBeTrue();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            await process.WaitForExitAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+            _ = await completed.Task.WaitAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string retained = await File.ReadAllTextAsync(Path.Combine(preserved, "observed.txt"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            retained.ShouldBe("apphost.stdout.observed" + Environment.NewLine);
+            retained.ShouldNotContain("secret-token-value");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies public debug reaches a ready AppHost for a v1 manifest and a v2 manifest, then down finds the run.</summary>
+    /// <param name="kind">The manifest kind.</param>
+    /// <returns>The debug assertion.</returns>
+    [Theory]
+    [InlineData("v1")]
+    [InlineData("v2")]
+    public async Task PublicDebugReachesReadyAndDownClearsStateAsync(string kind)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost toolchain uses POSIX scripts.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string manifest;
+            CompositionEngineOptions options;
+            if (kind == "v1")
+            {
+                manifest = CompositionTestFiles.CopyExecutableManifest(ExecutableManifest(), root);
+                string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
+                options = Options(root, appHost);
+            }
+            else
+            {
+                File.Copy(Path.Combine(RepositoryRoot(), "Hexalith.Builds.slnx"), Path.Combine(root, "Hexalith.Builds.slnx"));
+                await File.WriteAllTextAsync(Path.Combine(root, "README.md"), "not executed", TestContext.Current.CancellationToken).ConfigureAwait(true);
+                string declaration = await File.ReadAllTextAsync(Path.Combine(RepositoryRoot(), "test", "fixtures", "module", "platform", "valid.json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                declaration = declaration.Replace("\"scope\": \"per-start-verify\"", "\"scope\": \"recovery\"", StringComparison.Ordinal);
+                manifest = Path.Combine(root, "manifest.json");
+                await File.WriteAllTextAsync(manifest, declaration, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
+                options = Options(root, appHost) with
+                {
+                    SourceMapping = Mapping(root),
+                    PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+                };
+            }
+
+            StringWriter output = new();
+            await using (output.ConfigureAwait(true))
+            {
+                int exitCode = await ModuleCommandApplication.InvokeAsync(
+                    ["debug", "--manifest", manifest, "--output", "json"],
+                    output,
+                    TextWriter.Null,
+                    TestContext.Current.CancellationToken,
+                    typeof(ModuleCommandApplication).Assembly.Location,
+                    options).ConfigureAwait(true);
+                exitCode.ShouldBe((int)ToolExitCode.Success, output.ToString());
+                using JsonDocument document = JsonDocument.Parse(output.ToString());
+                document.RootElement.GetProperty("diagnostics").EnumerateArray().ShouldContain(diagnostic =>
+                    diagnostic.GetProperty("message").GetString()!.Contains("process id '4242'", StringComparison.Ordinal));
+                string runId = document.RootElement.GetProperty("runId").GetString()!;
+                CompositionEngine engine = new(options);
+                CompositionRunState? state = await engine.StateStore.TryReadAsync(runId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                _ = state.ShouldNotBeNull();
+                state.Status.ShouldBe(CompositionRunStatus.Ready);
+
+                StringWriter downOutput = new();
+                await using (downOutput.ConfigureAwait(true))
+                {
+                    int down = await ModuleCommandApplication.InvokeAsync(
+                        ["down", "--manifest", manifest, "--run-id", runId, "--output", "json"],
+                        downOutput,
+                        TextWriter.Null,
+                        TestContext.Current.CancellationToken,
+                        typeof(ModuleCommandApplication).Assembly.Location,
+                        options).ConfigureAwait(true);
+                    down.ShouldBe((int)ToolExitCode.Success, downOutput.ToString());
+                }
+
+                (await engine.StateStore.TryReadAsync(runId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeNull();
+            }
         }
         finally
         {

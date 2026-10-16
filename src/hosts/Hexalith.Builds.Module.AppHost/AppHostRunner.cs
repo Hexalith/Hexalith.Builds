@@ -146,7 +146,7 @@ internal static class AppHostRunner
                     && exception.Message.StartsWith("cutover-", StringComparison.Ordinal)
                     ? exception.Message
                     : "fault-" + exception.GetType().Name;
-                await RunReadiness.ReportFailureAsync(plan, "HXR027", RunTopology.EventStoreName, RunTopology.EventStoreName, status).ConfigureAwait(false);
+                await RunReadiness.ReportFailureAsync(plan, "HXR027", RunTopology.EventStoreName, RunTopology.EventStoreName, status, RunReadiness.CurrentUnready(app), null).ConfigureAwait(false);
                 exitCode = 3;
             }
             catch (Exception exception) when (!stop.IsStopRequested && exception is not OutOfMemoryException)

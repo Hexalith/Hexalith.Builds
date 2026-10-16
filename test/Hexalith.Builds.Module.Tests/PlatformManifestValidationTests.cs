@@ -345,13 +345,23 @@ public sealed class PlatformManifestValidationTests
     /// <param name="seconds">The positive finite declared duration.</param>
     [Theory]
     [InlineData(700.5)]
-    [InlineData(1e308)]
     [InlineData(1e-300)]
     public void PositiveFiniteStartupOverridesPass(double seconds)
     {
         using PlatformManifestTestWorkspace workspace = new();
         workspace.Change("modules.0.lifecycle.startup.override", JsonSerializer.Serialize(new { timeoutSeconds = seconds, justification = "Declared local budget" }));
         PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies a positive finite duration that cannot become a time span is refused.</summary>
+    [Fact]
+    public void UnrepresentableStartupOverrideFails()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.startup.override", JsonSerializer.Serialize(new { timeoutSeconds = 1e308, justification = "too large" }));
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.IsValid.ShouldBeFalse();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP021" && diagnostic.Field == "modules[0].lifecycle.startup.override.timeoutSeconds");
     }
 
     /// <summary>Verifies every MCP exposure is rejected by AD-11.</summary>

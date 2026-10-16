@@ -75,7 +75,7 @@ internal static class RunReadiness
 
         // Resource health does not prove the Dapr invocation boundary: a module sidecar reports Running before it
         // is registered in the run's name resolution. Probe EventStore-to-module invocation through the sidecars.
-        if (!await WaitForModuleInvocationAsync(plan, model, cancellationToken).ConfigureAwait(false))
+        if (!await WaitForModuleInvocationAsync(plan, model, cancellationToken, notifications).ConfigureAwait(false))
         {
             return false;
         }
@@ -162,12 +162,13 @@ internal static class RunReadiness
     /// <param name="plan">The signed run plan.</param>
     /// <param name="model">The actual selected resource model.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="notifications">The resource notifications used to name every unready resource, when available.</param>
     /// <returns>True when every selected server can be invoked.</returns>
-    internal static async Task<bool> WaitForModuleInvocationAsync(CompositionRunPlan plan, DistributedApplicationModel model, CancellationToken cancellationToken)
+    internal static async Task<bool> WaitForModuleInvocationAsync(CompositionRunPlan plan, DistributedApplicationModel model, CancellationToken cancellationToken, ResourceNotificationService? notifications = null)
     {
         if (plan.IsPlatformComposition)
         {
-            return await WaitForPlatformSidecarsAsync(plan, model, cancellationToken).ConfigureAwait(false);
+            return await WaitForPlatformSidecarsAsync(plan, model, cancellationToken, notifications: notifications).ConfigureAwait(false);
         }
 
         using HttpClient sidecar = new()
@@ -224,7 +225,7 @@ internal static class RunReadiness
 
             if (probe.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
             {
-                await ReportFailureAsync(plan, "HXR026", resource, appId, status + ";probe-timeout").ConfigureAwait(false);
+                await ReportFailureAsync(plan, "HXR026", resource, appId, status + ";probe-timeout", CurrentUnready(model, notifications), null).ConfigureAwait(false);
                 return false;
             }
         }
@@ -273,9 +274,10 @@ internal static class RunReadiness
     /// <param name="model">The selected resource model.</param>
     /// <param name="cancellationToken">The caller cancellation token.</param>
     /// <param name="probeBound">An optional bounded probe duration for focused verification.</param>
+    /// <param name="notifications">The resource notifications used to name every unready resource, when available.</param>
     /// <returns>Whether every selected sidecar became ready.</returns>
     /// <exception cref="InvalidDataException">A selected sidecar has no HTTP listener.</exception>
-    internal static async Task<bool> WaitForPlatformSidecarsAsync(CompositionRunPlan plan, DistributedApplicationModel model, CancellationToken cancellationToken, TimeSpan? probeBound = null)
+    internal static async Task<bool> WaitForPlatformSidecarsAsync(CompositionRunPlan plan, DistributedApplicationModel model, CancellationToken cancellationToken, TimeSpan? probeBound = null, ResourceNotificationService? notifications = null)
     {
         foreach (IResource resource in model.Resources.Where(resource => resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation")))
         {
@@ -330,13 +332,29 @@ internal static class RunReadiness
             cancellationToken.ThrowIfCancellationRequested();
             if (timeout.IsCancellationRequested)
             {
-                await ReportFailureAsync(plan, "HXR026", resource.Name, options.AppId!, status + ";probe-timeout").ConfigureAwait(false);
+                await ReportFailureAsync(plan, "HXR026", resource.Name, options.AppId!, status + ";probe-timeout", CurrentUnready(model, notifications), null).ConfigureAwait(false);
                 return false;
             }
         }
 
         return true;
     }
+
+    /// <summary>Reads every runnable resource that is not currently healthy.</summary>
+    /// <param name="app">The distributed application.</param>
+    /// <returns>The unready resources, or an empty list when every runnable resource is healthy.</returns>
+    internal static IReadOnlyList<CompositionResourceReadiness> CurrentUnready(DistributedApplication app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        return CurrentUnready(
+            app.Services.GetRequiredService<DistributedApplicationModel>(),
+            app.Services.GetRequiredService<ResourceNotificationService>()) ?? [];
+    }
+
+    private static IReadOnlyList<CompositionResourceReadiness>? CurrentUnready(DistributedApplicationModel model, ResourceNotificationService? notifications) =>
+        notifications is null
+            ? null
+            : [.. Observe(RunnableResources(model), notifications).Where(resource => !string.Equals(resource.State, "Healthy", StringComparison.Ordinal))];
 
     private static Task ReportObservedFailureAsync(
         CompositionRunPlan plan,
@@ -352,8 +370,7 @@ internal static class RunReadiness
             ?? TerminalFailure(runnable, notifications)?.Name
             ?? (unready.Count == 0 ? null : unready[0].Name)
             ?? "apphost-start";
-        IReadOnlyList<CompositionResourceReadiness> reported = unready.Count > 0 ? unready : observed;
-        return ReportFailureAsync(plan, ruleId, name, AppId(plan, model, name), Status(notifications, name), reported, null);
+        return ReportFailureAsync(plan, ruleId, name, AppId(plan, model, name), Status(notifications, name), unready.Count > 0 ? unready : null, null);
     }
 
     private static async Task WriteProgressAsync(CompositionRunPlan plan, IReadOnlyList<CompositionResourceReadiness> resources)

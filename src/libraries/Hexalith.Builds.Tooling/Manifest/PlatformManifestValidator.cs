@@ -12,6 +12,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Runtime;
 
 using Json.Schema;
 
@@ -556,7 +557,7 @@ public static partial class PlatformManifestValidator
         if (startupOverride.ValueKind == JsonValueKind.Object)
         {
             JsonElement timeout = ObjectValue(startupOverride, "timeoutSeconds");
-            if (timeout.ValueKind != JsonValueKind.Number || !timeout.TryGetDouble(out double seconds) || !double.IsFinite(seconds) || seconds <= 0)
+            if (timeout.ValueKind != JsonValueKind.Number || !timeout.TryGetDouble(out double seconds) || !CompositionStartupDeadlineResolver.IsRepresentableTimeout(seconds))
             {
                 Add(diagnostics, "HXP021", source, $"{prefix}.lifecycle.startup.override.timeoutSeconds", "Use a positive finite startup override in seconds.");
             }

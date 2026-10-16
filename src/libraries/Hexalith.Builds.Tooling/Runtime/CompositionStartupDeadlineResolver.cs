@@ -70,6 +70,27 @@ public static class CompositionStartupDeadlineResolver
         return text;
     }
 
+    /// <summary>Reports whether a declared duration is positive, finite, and convertible to a <see cref="TimeSpan"/>.</summary>
+    /// <param name="seconds">The declared duration in seconds.</param>
+    /// <returns>True when <see cref="TimeSpan.FromSeconds(double)"/> accepts the value.</returns>
+    internal static bool IsRepresentableTimeout(double seconds)
+    {
+        if (!double.IsFinite(seconds) || seconds <= 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            _ = TimeSpan.FromSeconds(seconds);
+            return true;
+        }
+        catch (OverflowException)
+        {
+            return false;
+        }
+    }
+
     private static bool TryReadOverride(JsonElement module, out double seconds, out string moduleId, out string justification)
     {
         seconds = 0;
@@ -85,8 +106,7 @@ public static class CompositionStartupDeadlineResolver
             || !startupOverride.TryGetProperty("timeoutSeconds", out JsonElement timeout)
             || timeout.ValueKind != JsonValueKind.Number
             || !timeout.TryGetDouble(out seconds)
-            || !double.IsFinite(seconds)
-            || seconds <= 0
+            || !IsRepresentableTimeout(seconds)
             || !module.TryGetProperty("identity", out JsonElement identity)
             || identity.ValueKind != JsonValueKind.Object
             || !identity.TryGetProperty("moduleId", out JsonElement moduleElement)

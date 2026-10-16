@@ -314,6 +314,7 @@ internal static class CompositionTestFiles
             + "File.WriteAllText(Path.Combine(Path.GetDirectoryName(plan)!, \"startup-failure.json\"), "
             + "System.Text.Json.JsonSerializer.Serialize(new { schema = \"hexalith.g4-startup-failure.v1\", runId, "
             + "ruleId = \"HXR027\", resource = \"eventstore\", appId = \"eventstore\", status = \"cutover-activation-HTTP-403\" })); }\n"
+            + "Console.WriteLine(\"observed\");\n"
             + "Console.In.ReadLine();\n"
             + "return 0;\n";
         await File.WriteAllTextAsync(Path.Combine(project, "Program.cs"), program, cancellationToken).ConfigureAwait(false);
