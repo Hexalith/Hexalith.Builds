@@ -1,0 +1,13 @@
+{
+  "command": [
+    "git",
+    "diff",
+    "--check"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:47:45.771608+00:00",
+  "finishedAtUtc": "2026-10-16T12:47:45.855523+00:00",
+  "exitCode": 0,
+  "log": "builds-diff-final.log",
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

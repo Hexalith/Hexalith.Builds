@@ -691,6 +691,7 @@ function Assert-UniqueQualificationEvidenceNames {
         'packaged-unavailable-output.json'
         'packaged-unavailable-evidence.json'
         'packaged-readiness-output.json'
+        'packaged-seed-subscriptions.json'
         'qualification.log'
         $ModuleNegatives | ForEach-Object { "module-negative-$($_.BaseName)-output.json" }
         $EvidenceNegatives | ForEach-Object { "evidence-negative-$($_.BaseName)-output.json" }
@@ -699,6 +700,37 @@ function Assert-UniqueQualificationEvidenceNames {
     if ($duplicates.Count -gt 0) {
         throw "Qualification evidence output names must be unique; duplicate names: $($duplicates -join ', ')."
     }
+}
+
+function Invoke-PackagedSeedProbe {
+    # This package-artifact gate also runs when source validation or metadata
+    # controls are skipped. No source-host result can substitute for it.
+    # Restore the caller's caches only while building the test adapter; the seed
+    # itself is loaded exclusively from the exact module-tool archive.
+    $consumerPackageCache = $env:NUGET_PACKAGES
+    $consumerCliHome = $env:DOTNET_CLI_HOME
+    try {
+        if ($hadNuGetPackages) { $env:NUGET_PACKAGES = $previousNuGetPackages }
+        else { Remove-Item -LiteralPath Env:NUGET_PACKAGES -ErrorAction SilentlyContinue }
+        if ($hadDotNetCliHome) { $env:DOTNET_CLI_HOME = $previousDotNetCliHome }
+        else { Remove-Item -LiteralPath Env:DOTNET_CLI_HOME -ErrorAction SilentlyContinue }
+        $seedProofPath = Join-Path $qualificationEvidenceRoot 'packaged-seed-subscriptions.json'
+        $seedProbe = Join-Path $PSScriptRoot 'test-g4-packaged-seed-subscriptions.ps1'
+        $qualificationLog.Add("$ pwsh $seedProbe -PackagePath $modulePackage -Version $Version -OutputPath $seedProofPath")
+        $seedOutput = @(& pwsh -NoProfile -File $seedProbe -PackagePath $modulePackage -Version $Version -OutputPath $seedProofPath 2>&1)
+        $seedExitCode = $LASTEXITCODE
+        foreach ($line in $seedOutput) {
+            $qualificationLog.Add([string]$line)
+            Write-Host ([string]$line)
+        }
+        if ($seedExitCode -ne 0) { throw "Packaged seed subscription gate failed with exit code $seedExitCode." }
+        $null = Assert-PackagedSeedSubscriptionEvidence -FilePath $seedProofPath -PackagePath $modulePackage -Version $Version
+    }
+    finally {
+        $env:NUGET_PACKAGES = $consumerPackageCache
+        $env:DOTNET_CLI_HOME = $consumerCliHome
+    }
+
 }
 
 function Complete-QualificationInventory {
@@ -1307,6 +1339,8 @@ try {
             $qualificationEvidenceEntries.Add((Save-QualificationEvidence -EvidenceDirectory $qualificationEvidenceRoot -Name "evidence-negative-$($fixture.BaseName)-output" -Content $negativeResult.Output))
         }
 
+        Invoke-PackagedSeedProbe
+
         # The P0 acceptance validator runs its synthetic contract corpus through the same
         # installed command. These controls block the gate; their outputs stay out of the
         # package inventory because the publisher's evidence-name contract predates them.
@@ -1363,6 +1397,8 @@ try {
             }
         }
     }
+
+    if (-not $RequireControls) { Invoke-PackagedSeedProbe }
 
     $qualificationLogText = [string]::Join("`n", $qualificationLog)
     if ($qualificationLogText.Contains('packaged-redaction-control', [StringComparison]::Ordinal) -or

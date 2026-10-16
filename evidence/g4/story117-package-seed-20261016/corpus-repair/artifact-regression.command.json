@@ -1,0 +1,14 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-g4-tool-package-artifact-validator.ps1"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:05:55.368661+00:00",
+  "finishedAtUtc": "2026-10-16T13:05:58.861274+00:00",
+  "exitCode": 0,
+  "log": "artifact-regression.log",
+  "sha256": "bdbba351f9d377ff0fc3d6c6c07d520cdfd1e5017871dba9492c4640f1c7114d"
+}

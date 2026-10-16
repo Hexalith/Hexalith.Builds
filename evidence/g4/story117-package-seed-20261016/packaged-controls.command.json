@@ -1,0 +1,21 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-g4-tool-package-contracts.ps1",
+    "-Version",
+    "4.31.2",
+    "-PackageDirectory",
+    "artifacts/story117-seed-20261016-controls",
+    "-SkipSourceValidation",
+    "-RequireControls",
+    "-RetainPackageDirectory"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:33:03.556302+00:00",
+  "finishedAtUtc": "2026-10-16T12:35:30.085224+00:00",
+  "exitCode": 1,
+  "log": "packaged-controls.log",
+  "sha256": "d830261c62325a8e4cbb6359abdc39f2ce45a3e1c49231ea62157f7cd2ab1784"
+}

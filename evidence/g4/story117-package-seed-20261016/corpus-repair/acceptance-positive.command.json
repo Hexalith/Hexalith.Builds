@@ -1,0 +1,16 @@
+{
+  "command": [
+    "dotnet",
+    "src/libraries/Hexalith.Builds.Evidence.Cli/bin/Release/net10.0/Hexalith.Builds.Evidence.Cli.dll",
+    "validate",
+    "test/fixtures/evidence/acceptance/positive/p0-acceptance.json",
+    "--output",
+    "json"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:06:47.281552+00:00",
+  "finishedAtUtc": "2026-10-16T13:06:47.468734+00:00",
+  "exitCode": 0,
+  "log": "acceptance-positive.log",
+  "sha256": "af74d4d7ea8737cfd42f79111201dbf54e9b3be6d2452824a3f9dd6fae7b192a"
+}

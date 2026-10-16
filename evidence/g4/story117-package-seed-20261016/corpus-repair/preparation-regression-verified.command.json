@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "Tools/test-prepare-g4-synthetic-acceptance.py"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:11:22.222676+00:00",
+  "finishedAtUtc": "2026-10-16T13:11:22.319834+00:00",
+  "exitCode": 0,
+  "log": "preparation-regression-verified.log",
+  "sha256": "c8904f75939074499eaa0d8a5add9f1fd5007a4e4e5e75cc9b1ce324d8f4b69c"
+}

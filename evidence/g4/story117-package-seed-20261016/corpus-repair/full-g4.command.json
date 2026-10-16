@@ -1,0 +1,20 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-g4-tool-package-contracts.ps1",
+    "-Version",
+    "4.31.2",
+    "-PackageDirectory",
+    "artifacts/story117-seed-20261016-corpus-repaired",
+    "-RequireControls",
+    "-RetainPackageDirectory"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:05:36.670891+00:00",
+  "finishedAtUtc": "2026-10-16T13:07:24.581852+00:00",
+  "exitCode": 1,
+  "log": "full-g4.log",
+  "sha256": "db21443c4ce68a7e1e55504a1c97cca5d0f7de9bc10e0dc6da89bc5c0d5d9b22"
+}

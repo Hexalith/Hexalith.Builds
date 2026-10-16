@@ -33,6 +33,26 @@ and empty, every retained evidence filename must be unique, and the final
 inventory is written only after source validation and all controls pass. Failed
 or reused runs expose no complete inventory.
 
+The gate also extracts the EventStore seed from the actual module-tool `.nupkg`
+and runs configured and declarative HTTP subscription checks through MVC Testing.
+It requires configured discovery HTTP 200 with exactly one projection-change
+subscription using `configured-seed-events` and matching receiver topic metadata.
+Declarative discovery must return HTTP 404 while the projection receiver remains
+present without topic metadata. Only the startup index writer's asserted hosted
+alias is removed for this metadata fixture, matching Platform's existing tests;
+no sidecar or live topology qualification is inferred. The probe has no source-host
+reference or fallback. It binds the loaded seed's hash to the archive entry and
+retains `qualification-evidence/packaged-seed-subscriptions.json`. Publication
+independently validates its typed results and exact package/seed hashes; older
+inventories missing this proof are rejected. Source validation bypasses and dirty
+or uncommitted preparation retain their existing release-ineligibility reasons.
+
+`test-g4-packaged-seed-subscriptions.ps1 -PackagePath <actual.nupkg> -Version
+<actual-version> -OutputPath <new-proof.json>` runs this focused probe separately.
+For local diagnostics an observed published version can identify freshly packed
+bytes in the isolated local feed. Such bytes are local diagnostic artifacts,
+not a new release or a replacement for the published archive with that version.
+
 ```powershell
 .\Tools\test-g4-tool-package-contracts.ps1 -Version 0.0.0-ci.1 -RequireControls
 ```

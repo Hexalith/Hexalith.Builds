@@ -1,0 +1,14 @@
+{
+  "command": [
+    "python3",
+    "evidence/g4/story117-package-seed-20261016/verify-evidence.py",
+    "--workspace",
+    "../.."
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:18:55.580110+00:00",
+  "finishedAtUtc": "2026-10-16T13:18:55.987613+00:00",
+  "exitCode": 0,
+  "log": "evidence-verification.log",
+  "sha256": "55788bde983fb0b5765efeecc5a287f4b9cba04d738ce753c02b0bac52d1843d"
+}

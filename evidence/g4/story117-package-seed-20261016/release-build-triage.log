@@ -1,0 +1,22 @@
+  Hexalith.Builds.Module.EventStoreHost -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net10.0/Hexalith.Builds.Module.EventStoreHost.dll
+  Hexalith.Builds.Module.UiHost -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/bin/Release/net10.0/Hexalith.Builds.Module.UiHost.dll
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.122.0, CommunityToolkit.Aspire.Hosting.Dapr/13.6.0-preview.1.261001-0243, required range 13.6.0-preview.1.261001-0243 for net10.0.
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin/Release/net10.0/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Module.AppHost -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/Hexalith.Builds.Module.AppHost.dll
+  Hexalith.Builds.Evidence.Cli -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Evidence.Cli/bin/Release/net10.0/Hexalith.Builds.Evidence.Cli.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Release/net10.0/Hexalith.Builds.Module.Cli.dll
+  P0Fixture.Inventory.Descriptor -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll
+  P0Fixture.Inventory -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.dll
+  P0Fixture.Orders.Descriptor -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll
+  P0Fixture.Orders -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders/P0Fixture.Orders.dll
+  P0Fixture.Ui.Descriptor -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll
+  P0Fixture.Ui -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll
+  Hexalith.Builds.Evidence.Tests -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll
+  Hexalith.Builds.Module.Tests -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll
+  Hexalith.Builds.Tooling.IntegrationTests -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:09.03

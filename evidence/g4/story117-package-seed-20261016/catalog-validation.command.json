@@ -1,0 +1,14 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/validate-central-package-versions.ps1"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:35:34.746239+00:00",
+  "finishedAtUtc": "2026-10-16T12:35:36.853942+00:00",
+  "exitCode": 0,
+  "log": "catalog-validation.log",
+  "sha256": "5dced535c8bbc92eaf6439cd7e6d310236039677bbc9af528dc60d50930a96e2"
+}

@@ -1,0 +1,13 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.EventStore/git/ref/tags/v3.122.0"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:31:02.287506+00:00",
+  "finishedAtUtc": "2026-10-16T12:31:02.725958+00:00",
+  "exitCode": 0,
+  "log": "eventstore-tag.log",
+  "sha256": "276ab68ae37c05474b2f85fdaad01bf41bd7fbaa25ba4767a28b859682f5ca79"
+}

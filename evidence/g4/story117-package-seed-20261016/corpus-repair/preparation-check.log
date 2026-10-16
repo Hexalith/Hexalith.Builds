@@ -1,0 +1,2 @@
+Platform version catalog validated: Hexalith.EventStore.Aspire/3.122.0, CommunityToolkit.Aspire.Hosting.Dapr/13.6.0-preview.1.261001-0243, required range 13.6.0-preview.1.261001-0243 for net10.0.
+{"changedFiles": 0, "pins": {"daprRuntimeVersion": "1.18.2", "daprSdkVersion": "1.18.10", "eventStoreVersion": "3.122.0", "frontComposerVersion": "4.6.0"}, "synthetic": true, "write": false}

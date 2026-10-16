@@ -1,0 +1,14 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "evidence/g4/story117-package-seed-20261016/corpus-repair/reject-diagnostic.ps1"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:15:37.075165+00:00",
+  "finishedAtUtc": "2026-10-16T13:15:38.687437+00:00",
+  "exitCode": 0,
+  "log": "diagnostic-release-refusal.log",
+  "sha256": "226b96db44a6aa67e601b992a47221972096157aca780b15f550cf5f56fe7a32"
+}

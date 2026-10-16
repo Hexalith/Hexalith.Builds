@@ -182,6 +182,7 @@ function Get-RequiredQualificationEvidenceNames {
             'packaged-unavailable-output.json',
             'packaged-unavailable-evidence.json',
             'packaged-readiness-output.json',
+            'packaged-seed-subscriptions.json',
             'qualification.log'
         )) {
         $names.Add("qualification-evidence/$name")
@@ -477,6 +478,10 @@ $artifactDifference = @(Compare-Object -ReferenceObject @($expectedArtifactNames
 if ($artifactDifference.Count -gt 0 -or $actualArtifactNames.Count -ne 4) {
     throw 'The package directory contains unexpected, missing, or stale NuGet artifacts.'
 }
+
+$null = Assert-PackagedSeedSubscriptionEvidence `
+    -FilePath $evidencePathsByName['qualification-evidence/packaged-seed-subscriptions.json'] `
+    -PackagePath (Join-Path $packageDirectoryPath "Hexalith.Builds.Module.Cli.$Version.nupkg") -Version $Version
 
 if ($Version.Contains('-', [System.StringComparison]::Ordinal)) {
     $source = 'https://nuget.pkg.github.com/Hexalith/index.json'

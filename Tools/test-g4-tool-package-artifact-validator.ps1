@@ -371,6 +371,54 @@ try {
             -FixtureDirectory $boundCopyDirectory -RepositoryRelativeRoot 'test/fixtures/eol/bound'
     }
 
+    # Synthetic proof parser controls only: these bytes never qualify a runtime.
+    $seedEntry = 'tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll'
+    $seedPackage = Join-Path $temporaryRoot 'synthetic-seed.nupkg'
+    New-ZipArchive -Path $seedPackage -Entries @{ $seedEntry = 'synthetic-seed' }
+    $seedHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes('synthetic-seed')))
+    $seedProof = [ordered]@{
+        schema = 'hexalith.g4-packaged-seed-subscriptions.v1'; status = 'passed'
+        package = @{ id = 'Hexalith.Builds.Module.Cli'; version = '0.0.0-contract'; sha256 = (Get-FileHash $seedPackage -Algorithm SHA256).Hash }
+        seed = @{ entry = $seedEntry; sha256 = $seedHash; loadedSha256 = $seedHash }
+        checks = @(
+            @{ declarative = $false; discoveryStatusCode = 200; projectionSubscriptionCount = 1; subscriptionPubsubName = 'configured-seed-events'; receiverPresent = $true; receiverTopicMetadataCount = 1; receiverPubsubName = 'configured-seed-events'; startupIndexWriterAliasRemoved = $true },
+            @{ declarative = $true; discoveryStatusCode = 404; projectionSubscriptionCount = 0; subscriptionPubsubName = $null; receiverPresent = $true; receiverTopicMetadataCount = 0; receiverPubsubName = $null; startupIndexWriterAliasRemoved = $true }
+        )
+    }
+    $seedProofText = $seedProof | ConvertTo-Json -Depth 8
+    $seedProofPath = Join-Path $temporaryRoot 'synthetic-seed-proof.json'
+    [IO.File]::WriteAllText($seedProofPath, $seedProofText)
+    Test-Succeeds -Name 'Exact typed packaged seed proof parser control' -ScriptBlock {
+        $null = Assert-PackagedSeedSubscriptionEvidence -FilePath $seedProofPath -PackagePath $seedPackage -Version '0.0.0-contract'
+    }
+    foreach ($field in @('schema', 'status', 'package.id', 'package.version', 'package.sha256', 'seed.entry', 'seed.sha256', 'seed.loadedSha256')) {
+        foreach ($arraySize in @(0, 1, 2)) {
+            $mutated = $seedProofText | ConvertFrom-Json
+            $segments = $field.Split('.')
+            $target = if ($segments.Count -eq 1) { $mutated } else { $mutated.($segments[0]) }
+            $name = $segments[-1]
+            $value = $target.$name
+            $target.$name = @(for ($index = 0; $index -lt $arraySize; $index++) { $value })
+            [IO.File]::WriteAllText($seedProofPath, (ConvertTo-Json -InputObject $mutated -Depth 8))
+            Test-Throws -Name "$field rejects $arraySize-element array" -ExpectedMessageFragment 'scalar string identities' -ScriptBlock {
+                $null = Assert-PackagedSeedSubscriptionEvidence -FilePath $seedProofPath -PackagePath $seedPackage -Version '0.0.0-contract'
+            }
+        }
+    }
+    foreach ($wrapper in @('root', 'package', 'seed', 'checks')) {
+        $mutated = $seedProofText | ConvertFrom-Json
+        switch ($wrapper) {
+            'root' { $mutated = @($mutated) }
+            'package' { $mutated.package = @($mutated.package) }
+            'seed' { $mutated.seed = @($mutated.seed) }
+            'checks' { $mutated.checks = @(@($mutated.checks[0]), @($mutated.checks[1])) }
+        }
+        [IO.File]::WriteAllText($seedProofPath, (ConvertTo-Json -InputObject $mutated -Depth 8))
+        Test-Throws -Name "Reject array-wrapped $wrapper" -ExpectedMessageFragment 'object identities' -ScriptBlock {
+            $null = Assert-PackagedSeedSubscriptionEvidence -FilePath $seedProofPath -PackagePath $seedPackage -Version '0.0.0-contract'
+        }
+    }
+
     $inventoryPath = Join-Path $temporaryRoot 'release-inventory.json'
     $inventory = [ordered] @{
         schema = 'hexalith.g4-tool-package-inventory.v1'

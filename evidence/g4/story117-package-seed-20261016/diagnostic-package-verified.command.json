@@ -1,0 +1,20 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-g4-tool-package-contracts.ps1",
+    "-Version",
+    "4.31.2",
+    "-PackageDirectory",
+    "artifacts/story117-seed-20261016-verified",
+    "-SkipSourceValidation",
+    "-RetainPackageDirectory"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:32:05.165699+00:00",
+  "finishedAtUtc": "2026-10-16T12:32:37.635402+00:00",
+  "exitCode": 0,
+  "log": "diagnostic-package-verified.log",
+  "sha256": "80868548dd5e139f40b32c557578f39b4728b24a18d5597b73466d80f44aa9ea"
+}

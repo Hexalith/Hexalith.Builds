@@ -1,0 +1,1803 @@
+{
+  "schema": "hexalith.story117.builds-package-seed-preparation.v1",
+  "recordedAtUtc": "2026-10-16T12:49:42.916553+00:00",
+  "authorization": {
+    "firstInstallPreparation": true,
+    "reversibleLocalChanges": true,
+    "readOnlyGithubAndRegistryQueries": true,
+    "owningRepositoryGitWrites": false,
+    "publication": false,
+    "deployment": false,
+    "productionActivation": false
+  },
+  "scope": "Builds-owned configured/declarative HTTP and receiver-metadata checks on the seed extracted from the actual distributable module-tool package. Local diagnostic only; full release qualification remains held.",
+  "source": {
+    "sourceRevision": "728174f506d56204657e0c52e98a4453aef79f6a",
+    "dirty": true,
+    "workingTree": [
+      " M Tools/G4PackageQualification.functions.ps1",
+      " M Tools/README.md",
+      " M Tools/package-version-audit.json",
+      " M Tools/publish-g4-tool-packages.ps1",
+      " M Tools/test-g4-tool-package-artifact-validator.ps1",
+      " M Tools/test-g4-tool-package-contracts.ps1",
+      " M Tools/test-publish-g4-tool-packages.ps1",
+      " M src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs",
+      "?? Tools/PackagedSeedProbe/",
+      "?? Tools/test-g4-packaged-seed-subscriptions.ps1",
+      "?? evidence/g4/story117-package-seed-20261016/"
+    ],
+    "sourceFilesSha256": {
+      "Tools/G4PackageQualification.functions.ps1": "38fe4ee066187595219ec10d35aec4acbae4d0065ae7ed92b810dce58ce148ed",
+      "Tools/publish-g4-tool-packages.ps1": "9802b155c61b3c6352f5abaf66fb8947968e6552ebd8e1ddfadead8b7cb908b3",
+      "Tools/test-g4-tool-package-contracts.ps1": "91e42adc495c54619283fd2beab8b733d79f3ce6e586db0db7c1f6b2999fe832",
+      "Tools/test-publish-g4-tool-packages.ps1": "25b6e58c58ec8dd6436ac761328a84656704a42c912534967fa3c5f94a219f8f",
+      "Tools/test-g4-tool-package-artifact-validator.ps1": "584102ee619652a018fb70030f4619beabf44062c2457948b9d5b24fd5435e8b",
+      "Tools/test-g4-packaged-seed-subscriptions.ps1": "aaf81d01b946c6c4ee3e0f50d1074feba3e5832c0a9fe09c5450df7523ee7aea",
+      "Tools/PackagedSeedProbe/PackagedSeedProbe.cs": "90d1862c1dfe05cfec407c75c6595a5532664c52cc89915541544ccf9df4c401",
+      "Tools/PackagedSeedProbe/PackagedSeedProbe.csproj": "f41d07743e15a6136784fbbe1f6882f2b59d3593a3294e249671565994a0e916",
+      "Tools/README.md": "5649bb35ccf6a06910a9d36bbd27a4fd3c72dca857f45c343dac02b9d5fb60f5",
+      "Tools/package-version-audit.json": "48a5374d6d1db7dc120187bebf57057e50365436f9c476136d252f0ef15d0c61",
+      "src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs": "3000aea0569f734c39953e9bcc93536e3afea693e271f44887a853710d3ff8d7",
+      "Props/Directory.Packages.props": "c0d2e3a0433543483f844e9feccf08e40e2c431a422fb4d7cf52656cd0728a48"
+    },
+    "preparedPatchSha256": "3df7df5d39b1f3f6da8101f64587eff6203cca3835593174a71549299a635ded",
+    "provenanceLimit": "HEAD identifies the baseline, not the uncommitted preparation. Patch plus added source bytes bind the preparation; no release or clean source provenance is claimed."
+  },
+  "initialInputsPath": "evidence/g4/story117-package-seed-20261016/initial-inputs.json",
+  "localDiagnostic": {
+    "observedVersionUsedOnlyInIsolatedLocalFeed": "4.31.2",
+    "representsPublishedBytes": false,
+    "packages": [
+      {
+        "path": "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Evidence.Cli.4.31.2.nupkg",
+        "sha256": "3cfd2532d14c7e26a8a936725217af47a0687b4d22ab8711e45637997fcb1d31",
+        "sizeBytes": 2461025
+      },
+      {
+        "path": "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+        "sha256": "cc805c77901e3c03dc636d7de87da19f793364cf3905ae9933594f6f8ccfd4c9",
+        "sizeBytes": 36022607
+      },
+      {
+        "path": "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Evidence.Cli.4.31.2.snupkg",
+        "sha256": "3c3ad60ee2ed7e8ffe3c98ab575cbc8d6f4470bf18aca132475f5396bbd9256f",
+        "sizeBytes": 110068
+      },
+      {
+        "path": "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Module.Cli.4.31.2.snupkg",
+        "sha256": "81ce4f8b47c9ed8357661ab05e2e895fda69886918199b246202c31bab8ffdb8",
+        "sizeBytes": 271858
+      }
+    ],
+    "inventoryPath": "artifacts/story117-seed-20261016-verified/g4-tool-package-inventory.json",
+    "inventorySha256": "31ba926b4722d061b4f96b4de2d9abfdcea9fb84e7b82a14bc9ba6df11904450",
+    "qualification": {
+      "packageBuild": {
+        "mode": "official",
+        "result": "passed"
+      },
+      "sourceValidation": {
+        "mode": "skipped",
+        "result": "not-run"
+      },
+      "controls": {
+        "mode": "skipped",
+        "result": "not-run"
+      },
+      "fixtures": {
+        "mode": "not-used",
+        "root": null,
+        "sha256": null,
+        "files": []
+      },
+      "sourceTree": {
+        "clean": false,
+        "revision": "728174f506d56204657e0c52e98a4453aef79f6a"
+      },
+      "releaseEligible": false,
+      "ineligibilityReasons": [
+        "source validation was skipped (-SkipSourceValidation).",
+        "qualification controls were not required (-RequireControls not set).",
+        "fixture provenance was 'not-used', not repository-tracked.",
+        "source tree was not clean:  M Tools/G4PackageQualification.functions.ps1;  M Tools/README.md;  M Tools/package-version-audit.json;  M Tools/publish-g4-tool-packages.ps1;  M Tools/test-g4-tool-package-contracts.ps1;  M Tools/test-publish-g4-tool-packages.ps1;  M src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs; ?? Tools/PackagedSeedProbe/; ?? Tools/test-g4-packaged-seed-subscriptions.ps1; ?? evidence/g4/story117-package-seed-20261016/"
+      ]
+    },
+    "packagedSeedSha256": "e92cb38eaf10a84e14b5e04ccc818b05e417f3a66193b9e926bff5ad71bb893b",
+    "proof": {
+      "schema": "hexalith.g4-packaged-seed-subscriptions.v1",
+      "status": "passed",
+      "package": {
+        "id": "Hexalith.Builds.Module.Cli",
+        "version": "4.31.2",
+        "sha256": "CC805C77901E3C03DC636D7DE87DA19F793364CF3905AE9933594F6F8CCFD4C9"
+      },
+      "seed": {
+        "entry": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll",
+        "sha256": "E92CB38EAF10A84E14B5E04CCC818B05E417F3A66193B9E926BFF5AD71BB893B",
+        "loadedSha256": "E92CB38EAF10A84E14B5E04CCC818B05E417F3A66193B9E926BFF5AD71BB893B"
+      },
+      "checks": [
+        {
+          "declarative": false,
+          "discoveryStatusCode": 200,
+          "projectionSubscriptionCount": 1,
+          "subscriptionPubsubName": "configured-seed-events",
+          "receiverPresent": true,
+          "receiverTopicMetadataCount": 1,
+          "receiverPubsubName": "configured-seed-events",
+          "startupIndexWriterAliasRemoved": true
+        },
+        {
+          "declarative": true,
+          "discoveryStatusCode": 404,
+          "projectionSubscriptionCount": 0,
+          "subscriptionPubsubName": null,
+          "receiverPresent": true,
+          "receiverTopicMetadataCount": 0,
+          "receiverPubsubName": null,
+          "startupIndexWriterAliasRemoved": true
+        }
+      ]
+    }
+  },
+  "finalProofPath": "evidence/g4/story117-package-seed-20261016/final-proof.json",
+  "publishedAvailableTuple": {
+    "toolVersion": "4.31.2",
+    "tag": "v4.31.2",
+    "commit": "9b44fedd0017d42ee1b3e887730ab667046bda4d",
+    "packageSha256": "cc89eea1ae8ec9ded0dd304e94f7658082ae7614d339abb881de146b0471ffae",
+    "seedSha256": "64ed9c74a24de1b526cb61112d49ed58f6ee3bdfd0994e354e9a594f080a7a71",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Hexalith/Hexalith.Builds",
+      "branch": "refs/heads/main",
+      "commit": "9b44fedd0017d42ee1b3e887730ab667046bda4d"
+    },
+    "signatureVerificationExitCode": 0,
+    "releaseInventorySha256": "88a3f39dfe4b9e93074bf37b2c2cfce649022143e87141ae16ae5ddb40c1fb13",
+    "prepublicationPackageSha256": "d821ab56e5c2c49be2a0a8be29654da881d7dd25014791b1b1b850e03a10b9be",
+    "signedAndPrepublicationHashesAreDistinct": true,
+    "negativeControl": {
+      "schema": "hexalith.g4-packaged-seed-subscriptions.v1",
+      "status": "failed",
+      "package": {
+        "id": "Hexalith.Builds.Module.Cli",
+        "version": "4.31.2",
+        "sha256": "CC89EEA1AE8EC9DED0DD304E94F7658082AE7614D339ABB881DE146B0471FFAE"
+      },
+      "seed": {
+        "entry": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll",
+        "sha256": "64ED9C74A24DE1B526CB61112D49ED58F6EE3BDFD0994E354E9A594F080A7A71",
+        "loadedSha256": "64ED9C74A24DE1B526CB61112D49ED58F6EE3BDFD0994E354E9A594F080A7A71"
+      },
+      "checks": [
+        {
+          "declarative": false,
+          "discoveryStatusCode": 200,
+          "projectionSubscriptionCount": 1,
+          "subscriptionPubsubName": "pubsub",
+          "receiverPresent": true,
+          "receiverTopicMetadataCount": 1,
+          "receiverPubsubName": "pubsub",
+          "startupIndexWriterAliasRemoved": true
+        },
+        {
+          "declarative": true,
+          "discoveryStatusCode": 200,
+          "projectionSubscriptionCount": 0,
+          "subscriptionPubsubName": null,
+          "receiverPresent": true,
+          "receiverTopicMetadataCount": 1,
+          "receiverPubsubName": "pubsub",
+          "startupIndexWriterAliasRemoved": true
+        }
+      ]
+    },
+    "qualifiedForCurrentSeedCorrection": false,
+    "nextVersion": null,
+    "nextCommit": null,
+    "acceptanceDecision": null
+  },
+  "refreshedRemoteSource": {
+    "buildsMain": {
+      "date": "2026-10-16T12:15:24Z",
+      "sha": "d84d30f5a95135f534feecd33ae6b7173d40260c"
+    },
+    "buildsMainCi": {
+      "runs": [
+        {
+          "conclusion": "failure",
+          "event": "push",
+          "head_sha": "d84d30f5a95135f534feecd33ae6b7173d40260c",
+          "id": 38899278384,
+          "status": "completed"
+        }
+      ],
+      "total_count": 1
+    },
+    "buildsLocalBaselineCi": {
+      "runs": [
+        {
+          "conclusion": "failure",
+          "event": "push",
+          "head_sha": "728174f506d56204657e0c52e98a4453aef79f6a",
+          "id": 38867997389,
+          "status": "completed"
+        }
+      ],
+      "total_count": 1
+    },
+    "platformMain": {
+      "date": "2026-10-16T12:16:16Z",
+      "sha": "5690e82c9a5246ea17f328524427846a6b657535"
+    },
+    "platformRemoteBuildsGitlink": "d84d30f5a95135f534feecd33ae6b7173d40260c",
+    "platformLocalBuildsGitlink": "5636b7f36e28e2731111b049f974b1fa951d1c36",
+    "platformLocalPinnedCommitNowAvailable": true,
+    "platformReleaseCount": 0,
+    "platformTagCount": 0,
+    "platformWorkflowCount": 0,
+    "acceptedToolVersion": null,
+    "acceptedToolRange": null,
+    "platformReleaseCommit": null,
+    "platformReleaseTag": null,
+    "signedReleaseRecord": null,
+    "note": "The earlier pinned-commit 404 is superseded by a current successful query. Remote main/gitlinks advanced; no local refs, gitlinks or dependency bytes were updated."
+  },
+  "ownerCandidates": [
+    {
+      "module": "eventstore",
+      "catalogVersion": "3.122.0",
+      "releaseCommit": "1dac529c4690910c89d4090784a7d46cb9433a9d",
+      "releaseTag": "v3.122.0",
+      "declarationSha256": "c76853a3fd0d03f345929927f94cafcdf71714fdc20192bc2717a5fda8501a09",
+      "declarationHttpStatus": 200,
+      "imageReference": "registry.hexalith.com/eventstore:3.122.0",
+      "imageDigest": "sha256:bdd242bf5d54010d2a8340023c5164a6112c8e23bd5d7d390f33c50fecc8bf43",
+      "imageReferrers": 0,
+      "imageAttestationVerified": false,
+      "admitted": false
+    },
+    {
+      "module": "tenants",
+      "catalogVersion": "5.8.0",
+      "releaseCommit": "032573384d3df4bc7a5bc0e69945ecca4e00967f",
+      "releaseTag": "v5.8.0",
+      "declarationSha256": null,
+      "declarationHttpStatus": 404,
+      "imageReference": "registry.hexalith.com/tenants:5.8.0",
+      "imageDigest": "sha256:c0e017e029053dfa9b095b6431058a7603b371da1f56a89d336001070fc5ffae",
+      "imageReferrers": 0,
+      "imageAttestationVerified": false,
+      "admitted": false
+    },
+    {
+      "module": "memories",
+      "catalogVersion": "2.27.1",
+      "releaseCommit": "d54dba5be30a3626e871b4fc56dd78e76a7acf71",
+      "releaseTag": "v2.27.1",
+      "declarationSha256": null,
+      "declarationHttpStatus": 404,
+      "imageReference": "registry.hexalith.com/memories:2.27.1",
+      "imageDigest": "sha256:2417d95d5e1e6b37ed60b7aa45765c4a09bbd82677213ef27cab825113330733",
+      "imageReferrers": 0,
+      "imageAttestationVerified": false,
+      "admitted": false
+    }
+  ],
+  "registryObservations": [
+    {
+      "method": "GET",
+      "url": "https://registry.hexalith.com/v2/eventstore/manifests/3.122.0",
+      "credentialSource": "existing Docker credential helper; no credential retained",
+      "startedAtUtc": "2026-10-16T12:32:29.904514+00:00",
+      "finishedAtUtc": "2026-10-16T12:32:29.934382+00:00",
+      "status": 200,
+      "digest": "sha256:bdd242bf5d54010d2a8340023c5164a6112c8e23bd5d7d390f33c50fecc8bf43",
+      "bodySha256": "bdd242bf5d54010d2a8340023c5164a6112c8e23bd5d7d390f33c50fecc8bf43",
+      "body": "authenticated-registry-eventstore-manifests.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://registry.hexalith.com/v2/eventstore/referrers/sha256:bdd242bf5d54010d2a8340023c5164a6112c8e23bd5d7d390f33c50fecc8bf43",
+      "credentialSource": "existing Docker credential helper; no credential retained",
+      "startedAtUtc": "2026-10-16T12:32:29.934417+00:00",
+      "finishedAtUtc": "2026-10-16T12:32:29.960727+00:00",
+      "status": 200,
+      "digest": null,
+      "bodySha256": "dff9de10919148711140d349bf03f1a99eb06f94b03e51715ccebfa7cdc518e2",
+      "body": "authenticated-registry-eventstore-referrers.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://registry.hexalith.com/v2/tenants/manifests/5.8.0",
+      "credentialSource": "existing Docker credential helper; no credential retained",
+      "startedAtUtc": "2026-10-16T12:32:29.960766+00:00",
+      "finishedAtUtc": "2026-10-16T12:32:29.975842+00:00",
+      "status": 200,
+      "digest": "sha256:c0e017e029053dfa9b095b6431058a7603b371da1f56a89d336001070fc5ffae",
+      "bodySha256": "c0e017e029053dfa9b095b6431058a7603b371da1f56a89d336001070fc5ffae",
+      "body": "authenticated-registry-tenants-manifests.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://registry.hexalith.com/v2/tenants/referrers/sha256:c0e017e029053dfa9b095b6431058a7603b371da1f56a89d336001070fc5ffae",
+      "credentialSource": "existing Docker credential helper; no credential retained",
+      "startedAtUtc": "2026-10-16T12:32:29.975879+00:00",
+      "finishedAtUtc": "2026-10-16T12:32:29.991178+00:00",
+      "status": 200,
+      "digest": null,
+      "bodySha256": "dff9de10919148711140d349bf03f1a99eb06f94b03e51715ccebfa7cdc518e2",
+      "body": "authenticated-registry-tenants-referrers.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://registry.hexalith.com/v2/memories/manifests/2.27.1",
+      "credentialSource": "existing Docker credential helper; no credential retained",
+      "startedAtUtc": "2026-10-16T12:32:29.991214+00:00",
+      "finishedAtUtc": "2026-10-16T12:32:30.006738+00:00",
+      "status": 200,
+      "digest": "sha256:2417d95d5e1e6b37ed60b7aa45765c4a09bbd82677213ef27cab825113330733",
+      "bodySha256": "2417d95d5e1e6b37ed60b7aa45765c4a09bbd82677213ef27cab825113330733",
+      "body": "authenticated-registry-memories-manifests.json"
+    },
+    {
+      "method": "GET",
+      "url": "https://registry.hexalith.com/v2/memories/referrers/sha256:2417d95d5e1e6b37ed60b7aa45765c4a09bbd82677213ef27cab825113330733",
+      "credentialSource": "existing Docker credential helper; no credential retained",
+      "startedAtUtc": "2026-10-16T12:32:30.006774+00:00",
+      "finishedAtUtc": "2026-10-16T12:32:30.023996+00:00",
+      "status": 200,
+      "digest": null,
+      "bodySha256": "dff9de10919148711140d349bf03f1a99eb06f94b03e51715ccebfa7cdc518e2",
+      "body": "authenticated-registry-memories-referrers.json"
+    }
+  ],
+  "selectedChecks": {
+    "packageDiagnostic": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contracts.ps1",
+        "-Version",
+        "4.31.2",
+        "-PackageDirectory",
+        "artifacts/story117-seed-20261016-verified",
+        "-SkipSourceValidation",
+        "-RetainPackageDirectory"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:32:05.165699+00:00",
+      "finishedAtUtc": "2026-10-16T12:32:37.635402+00:00",
+      "exitCode": 0,
+      "log": "diagnostic-package-verified.log",
+      "sha256": "80868548dd5e139f40b32c557578f39b4728b24a18d5597b73466d80f44aa9ea"
+    },
+    "finalExactPackageProbe": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-packaged-seed-subscriptions.ps1",
+        "-PackagePath",
+        "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+        "-Version",
+        "4.31.2",
+        "-OutputPath",
+        "evidence/g4/story117-package-seed-20261016/final-proof.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:44:58.527052+00:00",
+      "finishedAtUtc": "2026-10-16T12:45:02.896865+00:00",
+      "exitCode": 0,
+      "log": "final-proof.log",
+      "sha256": "44979f9c4d755e0ffe291016ec315c454cdc410588eb5877c904b4b9143608f9"
+    },
+    "publishedArchiveNegative": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-packaged-seed-subscriptions.ps1",
+        "-PackagePath",
+        "artifacts/story117-published-observation/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+        "-Version",
+        "4.31.2",
+        "-OutputPath",
+        "evidence/g4/story117-package-seed-20261016/published-seed-reviewed-negative.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:38:40.465363+00:00",
+      "finishedAtUtc": "2026-10-16T12:38:43.880730+00:00",
+      "exitCode": 1,
+      "log": "published-seed-reviewed-negative.log",
+      "sha256": "0b3eac3b512bc5a32dbb93cbe55bf33f4d670cc900b9ddef2c5c92db65a2ecda"
+    },
+    "artifactValidator": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-artifact-validator.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:44:20.299808+00:00",
+      "finishedAtUtc": "2026-10-16T12:44:23.714861+00:00",
+      "exitCode": 0,
+      "log": "artifact-validator-final.log",
+      "sha256": "bdbba351f9d377ff0fc3d6c6c07d520cdfd1e5017871dba9492c4640f1c7114d"
+    },
+    "publisherContracts": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-publish-g4-tool-packages.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:44:23.780985+00:00",
+      "finishedAtUtc": "2026-10-16T12:49:26.494277+00:00",
+      "exitCode": 0,
+      "log": "publisher-contracts-final-verified.log",
+      "sha256": "8cbddbf3cf38923b481a472a2cd8e143c4a26e57e1941580a350ae405d7df15c"
+    },
+    "packageGateContracts": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contract-gate.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:47:15.357947+00:00",
+      "finishedAtUtc": "2026-10-16T12:47:45.705197+00:00",
+      "exitCode": 0,
+      "log": "package-gate-contracts-final-verified.log",
+      "sha256": "989692c3db208cb9b894a44d1eb16235c10c79d2075e7c16051683cfeb7befc5"
+    },
+    "sourceGuardContracts": {
+      "command": [
+        "bash",
+        "Tools/test-g4-release-source.sh"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:33:04.697563+00:00",
+      "finishedAtUtc": "2026-10-16T12:33:04.775210+00:00",
+      "exitCode": 0,
+      "log": "release-guards.log",
+      "sha256": "1c171431ca21615e4f3507c84de691c009f6dad67822abbbdfc3701ec1e440f5"
+    },
+    "releaseLifecycleContracts": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-release-contract.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:33:04.881592+00:00",
+      "finishedAtUtc": "2026-10-16T12:33:06.930664+00:00",
+      "exitCode": 0,
+      "log": "release-contracts.log",
+      "sha256": "5f5b33b89af45f74f8747c75894d5082846041561a0c3edf39f7859379bf1b75"
+    },
+    "catalog": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/validate-central-package-versions.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:35:34.746239+00:00",
+      "finishedAtUtc": "2026-10-16T12:35:36.853942+00:00",
+      "exitCode": 0,
+      "log": "catalog-validation.log",
+      "sha256": "5dced535c8bbc92eaf6439cd7e6d310236039677bbc9af528dc60d50930a96e2"
+    },
+    "catalogAuthority": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-authoritative-package-catalog.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:35:36.919068+00:00",
+      "finishedAtUtc": "2026-10-16T12:35:40.819392+00:00",
+      "exitCode": 0,
+      "log": "catalog-authority.log",
+      "sha256": "a43f6ca3c93e7087ae20e004c9e72f545e8c19f760f01ebacda2f66476defa07"
+    },
+    "platformPins": {
+      "command": [
+        "python3",
+        "eng/test_verify_platform_pins.py"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Platform",
+      "startedAtUtc": "2026-10-16T12:33:31.535179+00:00",
+      "finishedAtUtc": "2026-10-16T12:33:32.286880+00:00",
+      "exitCode": 0,
+      "log": "platform-pin-guards.log",
+      "sha256": "ec6bc2cc460f09d040f90f84f5ffe82274fcc83d8f14dfbad674e74f1b2d6e99"
+    },
+    "platformBuildsResolution": {
+      "command": [
+        "python3",
+        "eng/test_host_builds_resolution.py"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Platform",
+      "startedAtUtc": "2026-10-16T12:33:32.353267+00:00",
+      "finishedAtUtc": "2026-10-16T12:33:38.961841+00:00",
+      "exitCode": 0,
+      "log": "platform-builds-resolution.log",
+      "sha256": "9a41c1f93daf94c2b55873ea7126e436797b77cf6511135ff11e49e7f87f3031"
+    },
+    "releaseBuild": {
+      "command": [
+        "dotnet",
+        "build",
+        "Hexalith.Builds.slnx",
+        "--configuration",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "-p:GeneratePackageOnBuild=false"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:35.223105+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:44.528051+00:00",
+      "exitCode": 0,
+      "log": "release-build-triage.log",
+      "sha256": "51c10082084d092c29c7e743d62fa15b8e8cce25df0cfb312c323f5199fb87a6"
+    },
+    "fullSourceGate": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contracts.ps1",
+        "-Version",
+        "4.31.2",
+        "-PackageDirectory",
+        "artifacts/story117-seed-20261016-diagnostic",
+        "-RequireControls",
+        "-RetainPackageDirectory"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:27:16.361427+00:00",
+      "finishedAtUtc": "2026-10-16T12:27:39.903611+00:00",
+      "exitCode": 1,
+      "log": "diagnostic-g4.log",
+      "sha256": "ca0ae6ce3aa26d496622b628b3c5ac26c9542c02fc27a010e2ff2f127b08d022"
+    },
+    "fullPackagedControls": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contracts.ps1",
+        "-Version",
+        "4.31.2",
+        "-PackageDirectory",
+        "artifacts/story117-seed-20261016-controls",
+        "-SkipSourceValidation",
+        "-RequireControls",
+        "-RetainPackageDirectory"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:33:03.556302+00:00",
+      "finishedAtUtc": "2026-10-16T12:35:30.085224+00:00",
+      "exitCode": 1,
+      "log": "packaged-controls.log",
+      "sha256": "d830261c62325a8e4cbb6359abdc39f2ce45a3e1c49231ea62157f7cd2ab1784"
+    },
+    "directAcceptanceRefusal": {
+      "command": [
+        "dotnet",
+        "src/libraries/Hexalith.Builds.Evidence.Cli/bin/Release/net10.0/Hexalith.Builds.Evidence.Cli.dll",
+        "validate",
+        "test/fixtures/evidence/acceptance/positive/p0-acceptance.json",
+        "--output",
+        "json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:35:34.084085+00:00",
+      "finishedAtUtc": "2026-10-16T12:35:34.216516+00:00",
+      "exitCode": 6,
+      "log": "acceptance-corpus-blocker.log",
+      "sha256": "b835b023aece7c0c691f8f88d9e34144c2f35549776983d992dfa02db2b883ab"
+    },
+    "nugetSignature": {
+      "command": [
+        "dotnet",
+        "nuget",
+        "verify",
+        "--all",
+        "artifacts/story117-published-observation/Hexalith.Builds.Module.Cli.4.31.2.nupkg"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:29:33.316640+00:00",
+      "finishedAtUtc": "2026-10-16T12:29:33.784504+00:00",
+      "exitCode": 0,
+      "log": "nuget-signature.log",
+      "sha256": "739185cb235474c223dd0504b1f976438b7797fcf65a76221a95bd7b7330739d"
+    }
+  },
+  "allAttempts": {
+    "acceptance-corpus-blocker": {
+      "command": [
+        "dotnet",
+        "src/libraries/Hexalith.Builds.Evidence.Cli/bin/Release/net10.0/Hexalith.Builds.Evidence.Cli.dll",
+        "validate",
+        "test/fixtures/evidence/acceptance/positive/p0-acceptance.json",
+        "--output",
+        "json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:35:34.084085+00:00",
+      "finishedAtUtc": "2026-10-16T12:35:34.216516+00:00",
+      "exitCode": 6,
+      "log": "acceptance-corpus-blocker.log",
+      "sha256": "b835b023aece7c0c691f8f88d9e34144c2f35549776983d992dfa02db2b883ab"
+    },
+    "artifact-validator-final": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-artifact-validator.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:44:20.299808+00:00",
+      "finishedAtUtc": "2026-10-16T12:44:23.714861+00:00",
+      "exitCode": 0,
+      "log": "artifact-validator-final.log",
+      "sha256": "bdbba351f9d377ff0fc3d6c6c07d520cdfd1e5017871dba9492c4640f1c7114d"
+    },
+    "builds-ci": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/actions/workflows/ci.yml/runs?head_sha=728174f506d56204657e0c52e98a4453aef79f6a&event=push&per_page=100",
+        "--jq",
+        "{total_count,runs:[.workflow_runs[]|{id,head_sha,event,status,conclusion}]}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders",
+      "startedAtUtc": "2026-10-16T12:22:42.883687+00:00",
+      "finishedAtUtc": "2026-10-16T12:22:43.413784+00:00",
+      "exitCode": 0,
+      "log": "builds-ci.log",
+      "sha256": "860d9113c89df7836ee0410a425d540374cfd9bb25ae02bc037347b0271cfd9e"
+    },
+    "builds-current-main-ci": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/actions/workflows/ci.yml/runs?head_sha=d84d30f5a95135f534feecd33ae6b7173d40260c&event=push&per_page=100",
+        "--jq",
+        "{total_count,runs:[.workflow_runs[]|{id,head_sha,event,status,conclusion}]}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:02.285383+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:02.700098+00:00",
+      "exitCode": 0,
+      "log": "builds-current-main-ci.log",
+      "sha256": "387e8cb3b82932087515e7d6114d01d8f3e8054408764f240c39b281b5201107"
+    },
+    "builds-diff-check": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:38:39.755696+00:00",
+      "finishedAtUtc": "2026-10-16T12:38:39.825715+00:00",
+      "exitCode": 0,
+      "log": "builds-diff-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "builds-diff-final": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:47:45.771608+00:00",
+      "finishedAtUtc": "2026-10-16T12:47:45.855523+00:00",
+      "exitCode": 0,
+      "log": "builds-diff-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "builds-latest-release": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/releases/latest"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders",
+      "startedAtUtc": "2026-10-16T12:22:42.564301+00:00",
+      "finishedAtUtc": "2026-10-16T12:22:42.983725+00:00",
+      "exitCode": 0,
+      "log": "builds-latest-release.log",
+      "sha256": "f1eec7c12dfdf617217241e6b11dce682042c512ea69135134e3947c65cd6149"
+    },
+    "builds-main": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/commits/main",
+        "--jq",
+        "{sha,date:.commit.committer.date}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders",
+      "startedAtUtc": "2026-10-16T12:22:42.564794+00:00",
+      "finishedAtUtc": "2026-10-16T12:22:43.106278+00:00",
+      "exitCode": 0,
+      "log": "builds-main.log",
+      "sha256": "81aa48978af582bf6e6c43214f5e54e7178b3ac86800a76ef99bfa07598fba24"
+    },
+    "builds-release-tag": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/git/ref/tags/v4.31.2"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:29:32.730513+00:00",
+      "finishedAtUtc": "2026-10-16T12:29:33.103486+00:00",
+      "exitCode": 0,
+      "log": "builds-release-tag.log",
+      "sha256": "7e14a00f448b9e091e397d3081521a7b8ace140d7ec0de03c1a594e468f8dd21"
+    },
+    "builds-remote-delta": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/compare/728174f506d56204657e0c52e98a4453aef79f6a...d84d30f5a95135f534feecd33ae6b7173d40260c",
+        "--jq",
+        "{status,ahead_by,behind_by,commits:[.commits[]|{sha,message:.commit.message}],files:[.files[]|{filename,status}]}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:29:31.734367+00:00",
+      "finishedAtUtc": "2026-10-16T12:29:32.556399+00:00",
+      "exitCode": 0,
+      "log": "builds-remote-delta.log",
+      "sha256": "683f2582d7a3ceb16961c829c35e9d6eabe676b9225eacb24390778115f8c7b7"
+    },
+    "catalog-authority": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-authoritative-package-catalog.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:35:36.919068+00:00",
+      "finishedAtUtc": "2026-10-16T12:35:40.819392+00:00",
+      "exitCode": 0,
+      "log": "catalog-authority.log",
+      "sha256": "a43f6ca3c93e7087ae20e004c9e72f545e8c19f760f01ebacda2f66476defa07"
+    },
+    "catalog-validation": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/validate-central-package-versions.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:35:34.746239+00:00",
+      "finishedAtUtc": "2026-10-16T12:35:36.853942+00:00",
+      "exitCode": 0,
+      "log": "catalog-validation.log",
+      "sha256": "5dced535c8bbc92eaf6439cd7e6d310236039677bbc9af528dc60d50930a96e2"
+    },
+    "diagnostic-g4": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contracts.ps1",
+        "-Version",
+        "4.31.2",
+        "-PackageDirectory",
+        "artifacts/story117-seed-20261016-diagnostic",
+        "-RequireControls",
+        "-RetainPackageDirectory"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:27:16.361427+00:00",
+      "finishedAtUtc": "2026-10-16T12:27:39.903611+00:00",
+      "exitCode": 1,
+      "log": "diagnostic-g4.log",
+      "sha256": "ca0ae6ce3aa26d496622b628b3c5ac26c9542c02fc27a010e2ff2f127b08d022"
+    },
+    "diagnostic-package-final": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contracts.ps1",
+        "-Version",
+        "4.31.2",
+        "-PackageDirectory",
+        "artifacts/story117-seed-20261016-final",
+        "-SkipSourceValidation",
+        "-RetainPackageDirectory"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:30:40.070174+00:00",
+      "finishedAtUtc": "2026-10-16T12:30:52.369689+00:00",
+      "exitCode": 1,
+      "log": "diagnostic-package-final.log",
+      "sha256": "f8dbbd36c526870f9822aaa32ec22ebfd74a83fe20705dc2ee73503b56ea5c5f"
+    },
+    "diagnostic-package-verified": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contracts.ps1",
+        "-Version",
+        "4.31.2",
+        "-PackageDirectory",
+        "artifacts/story117-seed-20261016-verified",
+        "-SkipSourceValidation",
+        "-RetainPackageDirectory"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:32:05.165699+00:00",
+      "finishedAtUtc": "2026-10-16T12:32:37.635402+00:00",
+      "exitCode": 0,
+      "log": "diagnostic-package-verified.log",
+      "sha256": "80868548dd5e139f40b32c557578f39b4728b24a18d5597b73466d80f44aa9ea"
+    },
+    "diagnostic-package": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contracts.ps1",
+        "-Version",
+        "4.31.2",
+        "-PackageDirectory",
+        "artifacts/story117-seed-20261016-package",
+        "-SkipSourceValidation",
+        "-RetainPackageDirectory"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:29:30.502614+00:00",
+      "finishedAtUtc": "2026-10-16T12:30:03.193313+00:00",
+      "exitCode": 1,
+      "log": "diagnostic-package.log",
+      "sha256": "b936ef5b71d456ea56097a9515a2251feb9abadd311ef203c8874b427e8b07e3"
+    },
+    "eventstore-declaration": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.EventStore/contents/module/hexalith.module-manifest.v2.json?ref=v3.122.0",
+        "--jq",
+        "{sha,encoding,content}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:02.618371+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:03.030807+00:00",
+      "exitCode": 0,
+      "log": "eventstore-declaration.log",
+      "sha256": "881324ab3912896b3fb3bdceceeb52077e4a601d4a57977360092eac86e23bd9"
+    },
+    "eventstore-tag": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.EventStore/git/ref/tags/v3.122.0"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:02.287506+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:02.725958+00:00",
+      "exitCode": 0,
+      "log": "eventstore-tag.log",
+      "sha256": "276ab68ae37c05474b2f85fdaad01bf41bd7fbaa25ba4767a28b859682f5ca79"
+    },
+    "exact-package-recheck": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-packaged-seed-subscriptions.ps1",
+        "-PackagePath",
+        "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+        "-Version",
+        "4.31.2",
+        "-OutputPath",
+        "evidence/g4/story117-package-seed-20261016/exact-package-recheck.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:36:07.025630+00:00",
+      "finishedAtUtc": "2026-10-16T12:36:11.094977+00:00",
+      "exitCode": 0,
+      "log": "exact-package-recheck.log",
+      "sha256": "402cb270aa588df8bdd0d21021bf1b26678e4f41aa6f93bb33f1c73a092dd86f"
+    },
+    "final-proof": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-packaged-seed-subscriptions.ps1",
+        "-PackagePath",
+        "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+        "-Version",
+        "4.31.2",
+        "-OutputPath",
+        "evidence/g4/story117-package-seed-20261016/final-proof.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:44:58.527052+00:00",
+      "finishedAtUtc": "2026-10-16T12:45:02.896865+00:00",
+      "exitCode": 0,
+      "log": "final-proof.log",
+      "sha256": "44979f9c4d755e0ffe291016ec315c454cdc410588eb5877c904b4b9143608f9"
+    },
+    "latest-release-final-observation": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/releases/latest",
+        "--jq",
+        "{tag_name,target_commitish,published_at,assets:[.assets[]|{name,digest}]}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:49:05.705292+00:00",
+      "finishedAtUtc": "2026-10-16T12:49:06.046535+00:00",
+      "exitCode": 0,
+      "log": "latest-release-final-observation.log",
+      "sha256": "5e532a43471706ef2ec044b45cb616568b2ad84403520fac95702efcc799c035"
+    },
+    "main-final-observation": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/commits/main",
+        "--jq",
+        "{sha,date:.commit.committer.date}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:49:06.117889+00:00",
+      "finishedAtUtc": "2026-10-16T12:49:06.550221+00:00",
+      "exitCode": 0,
+      "log": "main-final-observation.log",
+      "sha256": "81aa48978af582bf6e6c43214f5e54e7178b3ac86800a76ef99bfa07598fba24"
+    },
+    "memories-declaration": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Memories/contents/module/hexalith.module-manifest.v2.json?ref=v2.27.1",
+        "--jq",
+        "{sha,encoding,content}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:02.789054+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:03.093717+00:00",
+      "exitCode": 1,
+      "log": "memories-declaration.log",
+      "sha256": "e74b878486db1fc673f35c8fe02a4df2515e2e288dffea9bbd1d8404bc1b2630"
+    },
+    "memories-tag": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Memories/git/ref/tags/v2.27.1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:02.726207+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:03.108560+00:00",
+      "exitCode": 0,
+      "log": "memories-tag.log",
+      "sha256": "b31cf7b096443a080df7746cb64059b262cd45c3b35b92963d84b1b15cd8d352"
+    },
+    "nuget-index-final-observation": {
+      "command": [
+        "curl",
+        "--fail",
+        "--silent",
+        "--show-error",
+        "https://api.nuget.org/v3-flatcontainer/hexalith.builds.module.cli/index.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:49:06.617373+00:00",
+      "finishedAtUtc": "2026-10-16T12:49:07.174612+00:00",
+      "exitCode": 0,
+      "log": "nuget-index-final-observation.log",
+      "sha256": "c7eda3adcf1916d32a3de4cd9d864fd5e18769f433aeac4e62b4273a41e48b9d"
+    },
+    "nuget-signature": {
+      "command": [
+        "dotnet",
+        "nuget",
+        "verify",
+        "--all",
+        "artifacts/story117-published-observation/Hexalith.Builds.Module.Cli.4.31.2.nupkg"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:29:33.316640+00:00",
+      "finishedAtUtc": "2026-10-16T12:29:33.784504+00:00",
+      "exitCode": 0,
+      "log": "nuget-signature.log",
+      "sha256": "739185cb235474c223dd0504b1f976438b7797fcf65a76221a95bd7b7330739d"
+    },
+    "nuget-tool-versions": {
+      "command": [
+        "curl",
+        "--fail",
+        "--silent",
+        "--show-error",
+        "https://api.nuget.org/v3-flatcontainer/hexalith.builds.module.cli/index.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders",
+      "startedAtUtc": "2026-10-16T12:22:42.984007+00:00",
+      "finishedAtUtc": "2026-10-16T12:22:43.214693+00:00",
+      "exitCode": 0,
+      "log": "nuget-tool-versions.log",
+      "sha256": "c7eda3adcf1916d32a3de4cd9d864fd5e18769f433aeac4e62b4273a41e48b9d"
+    },
+    "package-gate-contracts-complete": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contract-gate.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:38:10.922668+00:00",
+      "finishedAtUtc": "2026-10-16T12:38:41.511524+00:00",
+      "exitCode": 0,
+      "log": "package-gate-contracts-complete.log",
+      "sha256": "d9250c34aa1d89c964739b72fa60bf5e92cc47e137b035f83ac4b030d854c686"
+    },
+    "package-gate-contracts-final-verified": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contract-gate.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:47:15.357947+00:00",
+      "finishedAtUtc": "2026-10-16T12:47:45.705197+00:00",
+      "exitCode": 0,
+      "log": "package-gate-contracts-final-verified.log",
+      "sha256": "989692c3db208cb9b894a44d1eb16235c10c79d2075e7c16051683cfeb7befc5"
+    },
+    "package-gate-contracts": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contract-gate.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:27:33.898961+00:00",
+      "finishedAtUtc": "2026-10-16T12:28:06.921405+00:00",
+      "exitCode": 0,
+      "log": "package-gate-contracts.log",
+      "sha256": "d9250c34aa1d89c964739b72fa60bf5e92cc47e137b035f83ac4b030d854c686"
+    },
+    "packaged-controls": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-tool-package-contracts.ps1",
+        "-Version",
+        "4.31.2",
+        "-PackageDirectory",
+        "artifacts/story117-seed-20261016-controls",
+        "-SkipSourceValidation",
+        "-RequireControls",
+        "-RetainPackageDirectory"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:33:03.556302+00:00",
+      "finishedAtUtc": "2026-10-16T12:35:30.085224+00:00",
+      "exitCode": 1,
+      "log": "packaged-controls.log",
+      "sha256": "d830261c62325a8e4cbb6359abdc39f2ce45a3e1c49231ea62157f7cd2ab1784"
+    },
+    "platform-builds-resolution": {
+      "command": [
+        "python3",
+        "eng/test_host_builds_resolution.py"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Platform",
+      "startedAtUtc": "2026-10-16T12:33:32.353267+00:00",
+      "finishedAtUtc": "2026-10-16T12:33:38.961841+00:00",
+      "exitCode": 0,
+      "log": "platform-builds-resolution.log",
+      "sha256": "9a41c1f93daf94c2b55873ea7126e436797b77cf6511135ff11e49e7f87f3031"
+    },
+    "platform-current-builds-pin": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Platform/contents/references/Hexalith.Builds?ref=5690e82c9a5246ea17f328524427846a6b657535",
+        "--jq",
+        "{sha,type,submodule_git_url}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:34:13.822720+00:00",
+      "finishedAtUtc": "2026-10-16T12:34:14.179008+00:00",
+      "exitCode": 0,
+      "log": "platform-current-builds-pin.log",
+      "sha256": "9e1c6af1cbd18ea71e6f637931e0c1e40ca4a47c35fb0e1cd963e86fc3a51209"
+    },
+    "platform-current-identity": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Platform/contents/hexalith-platform.json?ref=5690e82c9a5246ea17f328524427846a6b657535",
+        "--jq",
+        "{sha,encoding,content}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:34:13.405075+00:00",
+      "finishedAtUtc": "2026-10-16T12:34:13.746340+00:00",
+      "exitCode": 0,
+      "log": "platform-current-identity.log",
+      "sha256": "57e49a7ea8a448d13416b634adfa14ee08fd1fe7d5e9c085489dd50cc8af638c"
+    },
+    "platform-main": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Platform/commits/main",
+        "--jq",
+        "{sha,date:.commit.committer.date}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders",
+      "startedAtUtc": "2026-10-16T12:22:42.565261+00:00",
+      "finishedAtUtc": "2026-10-16T12:22:43.045116+00:00",
+      "exitCode": 0,
+      "log": "platform-main.log",
+      "sha256": "751ff7e21a166207b4bb00eccb0536a08f0aec19c95c9a02db8134892885196b"
+    },
+    "platform-pin-guards": {
+      "command": [
+        "python3",
+        "eng/test_verify_platform_pins.py"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Platform",
+      "startedAtUtc": "2026-10-16T12:33:31.535179+00:00",
+      "finishedAtUtc": "2026-10-16T12:33:32.286880+00:00",
+      "exitCode": 0,
+      "log": "platform-pin-guards.log",
+      "sha256": "ec6bc2cc460f09d040f90f84f5ffe82274fcc83d8f14dfbad674e74f1b2d6e99"
+    },
+    "platform-pin-now": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/commits/5636b7f36e28e2731111b049f974b1fa951d1c36",
+        "--jq",
+        "{sha,date:.commit.committer.date}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:02.285889+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:02.788720+00:00",
+      "exitCode": 0,
+      "log": "platform-pin-now.log",
+      "sha256": "9351cd5232a520354692a1f3a55560e92f776c71d4facb39757f7c83dfec6f4a"
+    },
+    "platform-pinned-catalog": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/contents/Props/Directory.Packages.props?ref=5636b7f36e28e2731111b049f974b1fa951d1c36",
+        "--jq",
+        "{sha,encoding,content}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:34:14.242229+00:00",
+      "finishedAtUtc": "2026-10-16T12:34:14.591435+00:00",
+      "exitCode": 0,
+      "log": "platform-pinned-catalog.log",
+      "sha256": "02d9c15ad9bd896ca0667595b80a599e728b04f638fdd28a05f4f24a3e2cb200"
+    },
+    "platform-releases": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Platform/releases?per_page=100",
+        "--jq",
+        "[.[]|{tag_name,draft,prerelease}]"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders",
+      "startedAtUtc": "2026-10-16T12:22:42.565752+00:00",
+      "finishedAtUtc": "2026-10-16T12:22:43.006957+00:00",
+      "exitCode": 0,
+      "log": "platform-releases.log",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    "platform-remote-identity": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Platform/contents/hexalith-platform.json?ref=114e08830da2d8cca0e77cd870b8867506b4c68b",
+        "--jq",
+        "{sha,encoding,content}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:02.286384+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:02.618095+00:00",
+      "exitCode": 0,
+      "log": "platform-remote-identity.log",
+      "sha256": "57e49a7ea8a448d13416b634adfa14ee08fd1fe7d5e9c085489dd50cc8af638c"
+    },
+    "platform-tags": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Platform/tags?per_page=100"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:02.286133+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:02.671567+00:00",
+      "exitCode": 0,
+      "log": "platform-tags.log",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "platform-workflows": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Platform/actions/workflows",
+        "--jq",
+        "{total_count,workflows:[.workflows[]|{path,state}]}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders",
+      "startedAtUtc": "2026-10-16T12:22:42.566593+00:00",
+      "finishedAtUtc": "2026-10-16T12:22:42.883401+00:00",
+      "exitCode": 0,
+      "log": "platform-workflows.log",
+      "sha256": "a251d32568a7a08232ca3304ee97a5e6548146464133182aabeb86f463b3230b"
+    },
+    "published-seed-negative-final": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-packaged-seed-subscriptions.ps1",
+        "-PackagePath",
+        "artifacts/story117-published-observation/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+        "-Version",
+        "4.31.2",
+        "-OutputPath",
+        "artifacts/story117-published-observation/subscription-proof-final.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:01.060074+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:05.066089+00:00",
+      "exitCode": 1,
+      "log": "published-seed-negative-final.log",
+      "sha256": "1ede8642c955960872864e73110753271959429193e752ef32ca48a194f186e9"
+    },
+    "published-seed-negative": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-packaged-seed-subscriptions.ps1",
+        "-PackagePath",
+        "artifacts/story117-published-observation/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+        "-Version",
+        "4.31.2",
+        "-OutputPath",
+        "artifacts/story117-published-observation/subscription-proof.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:27:33.543815+00:00",
+      "finishedAtUtc": "2026-10-16T12:27:38.444586+00:00",
+      "exitCode": 1,
+      "log": "published-seed-negative.log",
+      "sha256": "a39fc101995c79f570ede497f32e926e465fb0c3a36f3830f37fc835aaac9c67"
+    },
+    "published-seed-reviewed-negative": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-packaged-seed-subscriptions.ps1",
+        "-PackagePath",
+        "artifacts/story117-published-observation/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+        "-Version",
+        "4.31.2",
+        "-OutputPath",
+        "evidence/g4/story117-package-seed-20261016/published-seed-reviewed-negative.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:38:40.465363+00:00",
+      "finishedAtUtc": "2026-10-16T12:38:43.880730+00:00",
+      "exitCode": 1,
+      "log": "published-seed-reviewed-negative.log",
+      "sha256": "0b3eac3b512bc5a32dbb93cbe55bf33f4d670cc900b9ddef2c5c92db65a2ecda"
+    },
+    "publisher-contracts-complete": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-publish-g4-tool-packages.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:38:09.792401+00:00",
+      "finishedAtUtc": "2026-10-16T12:42:33.622025+00:00",
+      "exitCode": 1,
+      "log": "publisher-contracts-complete.log",
+      "sha256": "daad5fbf78fb08a3f0907fcb10e587e1a4efec43906e49be3885210520793455"
+    },
+    "publisher-contracts-final-verified": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-publish-g4-tool-packages.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:44:23.780985+00:00",
+      "finishedAtUtc": "2026-10-16T12:49:26.494277+00:00",
+      "exitCode": 0,
+      "log": "publisher-contracts-final-verified.log",
+      "sha256": "8cbddbf3cf38923b481a472a2cd8e143c4a26e57e1941580a350ae405d7df15c"
+    },
+    "publisher-contracts-final": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-publish-g4-tool-packages.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:30:01.128736+00:00",
+      "finishedAtUtc": "2026-10-16T12:34:11.514061+00:00",
+      "exitCode": 0,
+      "log": "publisher-contracts-final.log",
+      "sha256": "41b61c20b63d07eef2555e65d1b0e18f7f7e7242634b1ffdd176156cb203e40d"
+    },
+    "publisher-contracts-reviewed": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-publish-g4-tool-packages.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:35:03.458059+00:00",
+      "finishedAtUtc": "2026-10-16T12:39:42.419691+00:00",
+      "exitCode": 0,
+      "log": "publisher-contracts-reviewed.log",
+      "sha256": "4e266a4c80ed256769929954e6f3e20cc444a7d694d29c9887814c9f396bd08a"
+    },
+    "publisher-contracts": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-publish-g4-tool-packages.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:26:50.585140+00:00",
+      "finishedAtUtc": "2026-10-16T12:29:26.708759+00:00",
+      "exitCode": 0,
+      "log": "publisher-contracts.log",
+      "sha256": "972ed95c42b0882aa674073b16991f42fb0481603228179406a2e9e26bd827f8"
+    },
+    "release-build-triage": {
+      "command": [
+        "dotnet",
+        "build",
+        "Hexalith.Builds.slnx",
+        "--configuration",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "-p:GeneratePackageOnBuild=false"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:35.223105+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:44.528051+00:00",
+      "exitCode": 0,
+      "log": "release-build-triage.log",
+      "sha256": "51c10082084d092c29c7e743d62fa15b8e8cce25df0cfb312c323f5199fb87a6"
+    },
+    "release-contracts": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-release-contract.ps1"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:33:04.881592+00:00",
+      "finishedAtUtc": "2026-10-16T12:33:06.930664+00:00",
+      "exitCode": 0,
+      "log": "release-contracts.log",
+      "sha256": "5f5b33b89af45f74f8747c75894d5082846041561a0c3edf39f7859379bf1b75"
+    },
+    "release-guards": {
+      "command": [
+        "bash",
+        "Tools/test-g4-release-source.sh"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:33:04.697563+00:00",
+      "finishedAtUtc": "2026-10-16T12:33:04.775210+00:00",
+      "exitCode": 0,
+      "log": "release-guards.log",
+      "sha256": "1c171431ca21615e4f3507c84de691c009f6dad67822abbbdfc3701ec1e440f5"
+    },
+    "reviewed-package-recheck": {
+      "command": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "Tools/test-g4-packaged-seed-subscriptions.ps1",
+        "-PackagePath",
+        "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+        "-Version",
+        "4.31.2",
+        "-OutputPath",
+        "evidence/g4/story117-package-seed-20261016/reviewed-package-recheck.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:37:58.381949+00:00",
+      "finishedAtUtc": "2026-10-16T12:38:02.549921+00:00",
+      "exitCode": 0,
+      "log": "reviewed-package-recheck.log",
+      "sha256": "a2d48dce2401d06e4629cd1e2ed51427e0c5aefa28d8c90b00576458310f618f"
+    },
+    "tenants-declaration": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Tenants/contents/module/hexalith.module-manifest.v2.json?ref=v5.8.0",
+        "--jq",
+        "{sha,encoding,content}"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:02.700481+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:03.013104+00:00",
+      "exitCode": 1,
+      "log": "tenants-declaration.log",
+      "sha256": "e74b878486db1fc673f35c8fe02a4df2515e2e288dffea9bbd1d8404bc1b2630"
+    },
+    "tenants-tag": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Tenants/git/ref/tags/v5.8.0"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:31:02.671860+00:00",
+      "finishedAtUtc": "2026-10-16T12:31:03.538179+00:00",
+      "exitCode": 0,
+      "log": "tenants-tag.log",
+      "sha256": "2e971e635edb80e458fdb5750b3feaabee538f95a833329c932282d6f6bd3663"
+    }
+  },
+  "verificationSummary": {
+    "configuredAndDeclarativePackagedSeedModesPassed": 2,
+    "artifactValidatorScenariosPassed": 63,
+    "newPublisherSeedProofRejectionControls": 25,
+    "platformPinGuardsPassed": 10,
+    "platformBuildsResolutionCasesPassed": 12,
+    "centralCatalogEntriesValidated": 306,
+    "catalogAuthorityPackageIdentities": 50,
+    "releaseBuildWarnings": 0,
+    "releaseBuildErrors": 0,
+    "sourceGateEvidenceTests": {
+      "passed": 76,
+      "failed": 31,
+      "skipped": 0,
+      "blocker": "HXE202: unchanged synthetic corpus EventStore 3.120.0 versus unchanged selected catalog 3.122.0"
+    },
+    "packagedControls": "New seed checks pass before existing P0 positive acceptance fixture refuses with exit 6/HXE202; no complete inventory is emitted."
+  },
+  "review": {
+    "layers": [
+      "blind-hunter"
+    ],
+    "otherLayers": "No additional layers configured by the one-shot workflow",
+    "findings": [
+      {
+        "verdict": "high",
+        "resolution": "patched",
+        "finding": "Array-valued scalar identities/pubsub names"
+      },
+      {
+        "verdict": "high",
+        "resolution": "patched",
+        "finding": "Array-wrapped proof and identity/check objects; underlying runtime type is checked, not the PSObject accelerator"
+      },
+      {
+        "verdict": "low",
+        "resolution": "patched",
+        "finding": "Timeout extraction cleanup"
+      },
+      {
+        "verdict": "medium",
+        "resolution": "patched",
+        "finding": "Discovery redirects must not mask the direct response"
+      },
+      {
+        "verdict": "low",
+        "resolution": "patched",
+        "finding": "Atomic new evidence file creation"
+      },
+      {
+        "verdict": "low",
+        "resolution": "patched",
+        "finding": "Retain safe structural failures and attempt both modes"
+      }
+    ],
+    "newReviewDeferrals": 0
+  },
+  "preservation": {
+    "platformTrackedInputsUnchanged": 4651,
+    "packagedSourceAndCatalogAuditInputsUnchanged": 174,
+    "protectedHistoricalAndCandidateFilesUnchanged": 38,
+    "priorAdmissionReceiptUnchanged": true,
+    "catalogSha256": "c0d2e3a0433543483f844e9feccf08e40e2c431a422fb4d7cf52656cd0728a48",
+    "auditSha256": "48a5374d6d1db7dc120187bebf57057e50365436f9c476136d252f0ef15d0c61",
+    "platformAssertionsAndBehaviorChanged": false
+  },
+  "evidenceReuse": "Retained exact diagnostic package bytes: all packaged source, catalog and dependency-selection inputs match the initial snapshot. Final reviewed adapter and semantic validator were rerun against those bytes. Prior Platform behavior/source evidence is retained only for unchanged inputs; pin and resolver suites were rerun. Release-signature and original inventory evidence bind the same signed archive/release-asset hashes. Earlier failed attempts remain separate. No broad Folders/Projects or staging result is inferred.",
+  "remainingBlocker": "Full G-4 qualification is blocked by stale synthetic P0 acceptance corpus pins (31 source tests; packaged positive exits 6/HXE202). Correct and requalify on reviewed clean committed source reconciled with current main, obtain successful exact-head CI, then separately authorize a real semantic-release publication and Platform acceptance. This dirty diagnostic is never release eligible.",
+  "nextCommandsPath": "evidence/g4/story117-package-seed-20261016/NEXT.md",
+  "decision": {
+    "entry": "HOLD",
+    "productionMode": "V1Only",
+    "t0Utc": null,
+    "storyTracker": "backlog",
+    "historicalApprovalsChanged": false,
+    "stagingChecksExecuted": 0,
+    "stagingChecksRemaining": 14,
+    "stagingQualification": false,
+    "storyClosure": false,
+    "releaseAdmission": false,
+    "firstInstallPreparationCompleteForThisBoundedCheck": true
+  },
+  "repositoryFilesSha256": {
+    "Tools/G4PackageQualification.functions.ps1": "38fe4ee066187595219ec10d35aec4acbae4d0065ae7ed92b810dce58ce148ed",
+    "Tools/publish-g4-tool-packages.ps1": "9802b155c61b3c6352f5abaf66fb8947968e6552ebd8e1ddfadead8b7cb908b3",
+    "Tools/test-g4-tool-package-contracts.ps1": "91e42adc495c54619283fd2beab8b733d79f3ce6e586db0db7c1f6b2999fe832",
+    "Tools/test-publish-g4-tool-packages.ps1": "25b6e58c58ec8dd6436ac761328a84656704a42c912534967fa3c5f94a219f8f",
+    "Tools/test-g4-tool-package-artifact-validator.ps1": "584102ee619652a018fb70030f4619beabf44062c2457948b9d5b24fd5435e8b",
+    "Tools/test-g4-packaged-seed-subscriptions.ps1": "aaf81d01b946c6c4ee3e0f50d1074feba3e5832c0a9fe09c5450df7523ee7aea",
+    "Tools/PackagedSeedProbe/PackagedSeedProbe.cs": "90d1862c1dfe05cfec407c75c6595a5532664c52cc89915541544ccf9df4c401",
+    "Tools/PackagedSeedProbe/PackagedSeedProbe.csproj": "f41d07743e15a6136784fbbe1f6882f2b59d3593a3294e249671565994a0e916",
+    "Tools/README.md": "5649bb35ccf6a06910a9d36bbd27a4fd3c72dca857f45c343dac02b9d5fb60f5",
+    "Tools/package-version-audit.json": "48a5374d6d1db7dc120187bebf57057e50365436f9c476136d252f0ef15d0c61",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs": "3000aea0569f734c39953e9bcc93536e3afea693e271f44887a853710d3ff8d7",
+    "Props/Directory.Packages.props": "c0d2e3a0433543483f844e9feccf08e40e2c431a422fb4d7cf52656cd0728a48",
+    "evidence/g4/story117-package-seed-20261016/source-binding.json": "22ba93baac4da81a0115bbaf9aedfe1f0d548de816cb1aa642146d15daa88907",
+    "evidence/g4/story117-package-seed-20261016/platform-tags.log": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "evidence/g4/story117-package-seed-20261016/diagnostic-package.command.json": "202369fc42be092d43ae92b6bd0daeb53e2e5912fc784a277ef1d4722741767e",
+    "evidence/g4/story117-package-seed-20261016/platform-pinned-catalog.command.json": "4163351b35456fb3954563f63e365b907e5a7f2f6c20b3bb0977b9d460e46875",
+    "evidence/g4/story117-package-seed-20261016/published-seed-negative-final.command.json": "6006727264a90e92c8a76bb82f101204135c11b8f6a13f86957ca0827b341d4c",
+    "evidence/g4/story117-package-seed-20261016/authenticated-registry-tenants-manifests.json": "c0e017e029053dfa9b095b6431058a7603b371da1f56a89d336001070fc5ffae",
+    "evidence/g4/story117-package-seed-20261016/memories-declaration.log": "e74b878486db1fc673f35c8fe02a4df2515e2e288dffea9bbd1d8404bc1b2630",
+    "evidence/g4/story117-package-seed-20261016/publisher-contracts-complete.command.json": "304b8dfe41c6bace72ed6c519b11a10d554616cd4226ffedea849142112c5fb0",
+    "evidence/g4/story117-package-seed-20261016/package-gate-contracts.log": "d9250c34aa1d89c964739b72fa60bf5e92cc47e137b035f83ac4b030d854c686",
+    "evidence/g4/story117-package-seed-20261016/main-final-observation.command.json": "1776cbcd077010d1f93d165400fb6df4f8d788e033c8b527d868795811a7ea07",
+    "evidence/g4/story117-package-seed-20261016/acceptance-corpus-blocker.log": "b835b023aece7c0c691f8f88d9e34144c2f35549776983d992dfa02db2b883ab",
+    "evidence/g4/story117-package-seed-20261016/builds-release-tag.log": "7e14a00f448b9e091e397d3081521a7b8ace140d7ec0de03c1a594e468f8dd21",
+    "evidence/g4/story117-package-seed-20261016/latest-release-final-observation.command.json": "dac9d3b0b551e5c5f68c890455091d885357a3e4c9fbe4cece9165860ea95d00",
+    "evidence/g4/story117-package-seed-20261016/package-gate-contracts.command.json": "8e8c49e53b7036a54436fe0d1f1b13e19c0cd4f817b036ae9dc6501f68a19bcd",
+    "evidence/g4/story117-package-seed-20261016/authenticated-registry-tenants-referrers.json": "dff9de10919148711140d349bf03f1a99eb06f94b03e51715ccebfa7cdc518e2",
+    "evidence/g4/story117-package-seed-20261016/exact-package-recheck.command.json": "69fb4beb1f27f5f7b8286fb4c16cb8f2d5e0dd8755304d62207148dd5fd97481",
+    "evidence/g4/story117-package-seed-20261016/registry-tenants-referrers.json": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "evidence/g4/story117-package-seed-20261016/eventstore-tag.command.json": "4c438f0e6dea487ff937bfb1f393631c288d8ae99647bb1d71ca50fe1ee7cd1f",
+    "evidence/g4/story117-package-seed-20261016/builds-remote-delta.command.json": "a8fb3419aef3f50770e6b34b54bd6877dbf8c61c0f88491ff7be108941f9edc8",
+    "evidence/g4/story117-package-seed-20261016/published-seed-reviewed-negative.json": "6c115b569329f00d465e9fd5e190f7a649d179d13c2be09bf8dddffa071d0223",
+    "evidence/g4/story117-package-seed-20261016/diagnostic-package-final.command.json": "bda24404fb62cd1666c12eb83819832c17a52661a9cce5c8c1cffb0e799af07f",
+    "evidence/g4/story117-package-seed-20261016/tenants-tag.command.json": "0f1a315223174ab5a724f48f04cdcd6da9e6ecceae5698d83ac32c028ac03af4",
+    "evidence/g4/story117-package-seed-20261016/platform-releases.log": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "evidence/g4/story117-package-seed-20261016/platform-current-identity.log": "57e49a7ea8a448d13416b634adfa14ee08fd1fe7d5e9c085489dd50cc8af638c",
+    "evidence/g4/story117-package-seed-20261016/builds-main.command.json": "21d7eae5a14f1b717d0f5257cf447ec690e44d0263450401b85fb1bda0cc80b8",
+    "evidence/g4/story117-package-seed-20261016/release-guards.command.json": "c5630e4bbf9c3b08d8c76112d4c2e666f04d6f40267e98671c51fb954a85fd44",
+    "evidence/g4/story117-package-seed-20261016/nuget-index-final-observation.command.json": "fac0d96e2dfb9f893928dab94bf7a945cfaa50aa81a20d10f5346c642cbc31d0",
+    "evidence/g4/story117-package-seed-20261016/platform-main.log": "751ff7e21a166207b4bb00eccb0536a08f0aec19c95c9a02db8134892885196b",
+    "evidence/g4/story117-package-seed-20261016/builds-ci.log": "860d9113c89df7836ee0410a425d540374cfd9bb25ae02bc037347b0271cfd9e",
+    "evidence/g4/story117-package-seed-20261016/release-build-triage.log": "51c10082084d092c29c7e743d62fa15b8e8cce25df0cfb312c323f5199fb87a6",
+    "evidence/g4/story117-package-seed-20261016/tenants-declaration.log": "e74b878486db1fc673f35c8fe02a4df2515e2e288dffea9bbd1d8404bc1b2630",
+    "evidence/g4/story117-package-seed-20261016/nuget-signature.log": "739185cb235474c223dd0504b1f976438b7797fcf65a76221a95bd7b7330739d",
+    "evidence/g4/story117-package-seed-20261016/memories-tag.command.json": "b332b8287b85e23538d5fad1916faa9f5cedb5d90db041f488d8994e2004f40a",
+    "evidence/g4/story117-package-seed-20261016/verify-evidence.py": "0baf49d79fb03364a4128774d4a887235dad0dd9a391313c96b5e6397525d7d9",
+    "evidence/g4/story117-package-seed-20261016/catalog-authority.command.json": "2d764422485e74b723fd6765e46b47691a8fb35b44bd024d7cfcf835dd51c2e4",
+    "evidence/g4/story117-package-seed-20261016/publisher-contracts-final.command.json": "76afbb8fd4527965077d215984ef34068a6a6d599658c6714054ae4c69eff11a",
+    "evidence/g4/story117-package-seed-20261016/catalog-validation.log": "5dced535c8bbc92eaf6439cd7e6d310236039677bbc9af528dc60d50930a96e2",
+    "evidence/g4/story117-package-seed-20261016/builds-latest-release.log": "f1eec7c12dfdf617217241e6b11dce682042c512ea69135134e3947c65cd6149",
+    "evidence/g4/story117-package-seed-20261016/registry-eventstore-manifests.json": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "evidence/g4/story117-package-seed-20261016/final-proof.command.json": "b69441a77afac0257d92828d19898fee230788eef8b0ef798b998ba2e5558cb0",
+    "evidence/g4/story117-package-seed-20261016/publisher-contracts-complete.log": "daad5fbf78fb08a3f0907fcb10e587e1a4efec43906e49be3885210520793455",
+    "evidence/g4/story117-package-seed-20261016/publisher-contracts-reviewed.log": "4e266a4c80ed256769929954e6f3e20cc444a7d694d29c9887814c9f396bd08a",
+    "evidence/g4/story117-package-seed-20261016/published-seed-negative.command.json": "6d814ee209f2a33a488784d9aa41b13335ebf9912935e27029e4b923f8cc478b",
+    "evidence/g4/story117-package-seed-20261016/platform-builds-resolution.log": "9a41c1f93daf94c2b55873ea7126e436797b77cf6511135ff11e49e7f87f3031",
+    "evidence/g4/story117-package-seed-20261016/platform-remote-identity.log": "57e49a7ea8a448d13416b634adfa14ee08fd1fe7d5e9c085489dd50cc8af638c",
+    "evidence/g4/story117-package-seed-20261016/authenticated-registry-memories-manifests.json": "2417d95d5e1e6b37ed60b7aa45765c4a09bbd82677213ef27cab825113330733",
+    "evidence/g4/story117-package-seed-20261016/acceptance-corpus-blocker.command.json": "2afbb01aed84722a04366f79d42ff473e03071ff3cb27728ce89df2bbab192cc",
+    "evidence/g4/story117-package-seed-20261016/platform-current-builds-pin.command.json": "eeb3f6b559480117b4777d555137db0b69d1b34e4bceb61efd5dfe8be0cfc477",
+    "evidence/g4/story117-package-seed-20261016/platform-pinned-catalog.log": "02d9c15ad9bd896ca0667595b80a599e728b04f638fdd28a05f4f24a3e2cb200",
+    "evidence/g4/story117-package-seed-20261016/builds-current-main-ci.log": "387e8cb3b82932087515e7d6114d01d8f3e8054408764f240c39b281b5201107",
+    "evidence/g4/story117-package-seed-20261016/builds-diff-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/g4/story117-package-seed-20261016/package-gate-contracts-complete.log": "d9250c34aa1d89c964739b72fa60bf5e92cc47e137b035f83ac4b030d854c686",
+    "evidence/g4/story117-package-seed-20261016/publisher-contracts.log": "972ed95c42b0882aa674073b16991f42fb0481603228179406a2e9e26bd827f8",
+    "evidence/g4/story117-package-seed-20261016/platform-releases.command.json": "b1137bc0a471e6a2447e70c4949e58b5044fbb242e6727032d53714e69790be4",
+    "evidence/g4/story117-package-seed-20261016/exact-package-recheck.log": "402cb270aa588df8bdd0d21021bf1b26678e4f41aa6f93bb33f1c73a092dd86f",
+    "evidence/g4/story117-package-seed-20261016/builds-ci.command.json": "8ece4d09b0acf204194a5510e66e2780e9a0b206e2b199d2cacac04352c36e6e",
+    "evidence/g4/story117-package-seed-20261016/builds-diff-check.command.json": "d8a9ad3a78d442488c04f8d673d446fa8134c7f9d8fc5dbfc1ebfab2657f6cf8",
+    "evidence/g4/story117-package-seed-20261016/memories-declaration.command.json": "d453327a0618374a5573f50f3e7cd02f249bb0481083014fbedaec4b7b3ba16e",
+    "evidence/g4/story117-package-seed-20261016/platform-main.command.json": "97b14cdd04fcd41b6a0a9161585e8fbbb3a435d76c06cf71e3aef55c6c96c708",
+    "evidence/g4/story117-package-seed-20261016/platform-workflows.log": "a251d32568a7a08232ca3304ee97a5e6548146464133182aabeb86f463b3230b",
+    "evidence/g4/story117-package-seed-20261016/artifact-validator-final.command.json": "d1fd84333043c4ed5da822411619e4ee0f8582f08dbfcb658da973825e4ea819",
+    "evidence/g4/story117-package-seed-20261016/builds-latest-release.command.json": "012fb8e5572c9e359d3e2bc69dc438d6c1202ddae5e30bdb9c104ba80e095a73",
+    "evidence/g4/story117-package-seed-20261016/release-contracts.command.json": "bb6de98bec784690112f9c9370ed5f3d22c7001776882b8b4e38d622cafe7601",
+    "evidence/g4/story117-package-seed-20261016/release-guards.log": "1c171431ca21615e4f3507c84de691c009f6dad67822abbbdfc3701ec1e440f5",
+    "evidence/g4/story117-package-seed-20261016/catalog-validation.command.json": "77eef707ba8d03c01617a61453382b74bfbe42072faacc390e60d040f6ea5cb0",
+    "evidence/g4/story117-package-seed-20261016/registry-eventstore-referrers.json": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "evidence/g4/story117-package-seed-20261016/artifact-validator-final.log": "bdbba351f9d377ff0fc3d6c6c07d520cdfd1e5017871dba9492c4640f1c7114d",
+    "evidence/g4/story117-package-seed-20261016/authenticated-registry-memories-referrers.json": "dff9de10919148711140d349bf03f1a99eb06f94b03e51715ccebfa7cdc518e2",
+    "evidence/g4/story117-package-seed-20261016/nuget-tool-versions.log": "c7eda3adcf1916d32a3de4cd9d864fd5e18769f433aeac4e62b4273a41e48b9d",
+    "evidence/g4/story117-package-seed-20261016/reviewed-package-recheck.log": "a2d48dce2401d06e4629cd1e2ed51427e0c5aefa28d8c90b00576458310f618f",
+    "evidence/g4/story117-package-seed-20261016/diagnostic-package-final.log": "f8dbbd36c526870f9822aaa32ec22ebfd74a83fe20705dc2ee73503b56ea5c5f",
+    "evidence/g4/story117-package-seed-20261016/registry-observations.json": "5eb3e326714b156665a122c5c4f54283b107cd00d90ae21a352bf5f5f05b1c13",
+    "evidence/g4/story117-package-seed-20261016/packaged-controls.command.json": "7c2773bf4088f37e429ae89cf914344f729cdc416bbc21e07381dd772fe93fc9",
+    "evidence/g4/story117-package-seed-20261016/platform-pin-now.command.json": "0bcbc28cf5d880befefce10d1c101ad92225e0c6d8b1b71907b9574c1dc1c8ec",
+    "evidence/g4/story117-package-seed-20261016/publisher-contracts-reviewed.command.json": "0806fafd65d5b1b09ce0b5c5d83a6d671b8c3ca6a9f15633bae071aa44977609",
+    "evidence/g4/story117-package-seed-20261016/platform-builds-resolution.command.json": "bf1c9f699c4bbf255010557129dc10725d4d03a21587a9935f003e6a0ae60f91",
+    "evidence/g4/story117-package-seed-20261016/catalog-authority.log": "a43f6ca3c93e7087ae20e004c9e72f545e8c19f760f01ebacda2f66476defa07",
+    "evidence/g4/story117-package-seed-20261016/diagnostic-g4.log": "ca0ae6ce3aa26d496622b628b3c5ac26c9542c02fc27a010e2ff2f127b08d022",
+    "evidence/g4/story117-package-seed-20261016/main-final-observation.log": "81aa48978af582bf6e6c43214f5e54e7178b3ac86800a76ef99bfa07598fba24",
+    "evidence/g4/story117-package-seed-20261016/platform-tags.command.json": "d036ae511b25ff3cf4171b3d05b900a17646dee28408132e3e91d1db9afca385",
+    "evidence/g4/story117-package-seed-20261016/platform-pin-guards.log": "ec6bc2cc460f09d040f90f84f5ffe82274fcc83d8f14dfbad674e74f1b2d6e99",
+    "evidence/g4/story117-package-seed-20261016/Hexalith.Builds.prepared.patch": "3df7df5d39b1f3f6da8101f64587eff6203cca3835593174a71549299a635ded",
+    "evidence/g4/story117-package-seed-20261016/publisher-contracts-final-verified.command.json": "b3af9635b3e3938086b2f8d7bd362439a9d9f78aa3ecb027c031a4da1eb0cc8f",
+    "evidence/g4/story117-package-seed-20261016/diagnostic-package-verified.log": "80868548dd5e139f40b32c557578f39b4728b24a18d5597b73466d80f44aa9ea",
+    "evidence/g4/story117-package-seed-20261016/published-seed-negative-final.log": "1ede8642c955960872864e73110753271959429193e752ef32ca48a194f186e9",
+    "evidence/g4/story117-package-seed-20261016/registry-memories-manifests.json": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "evidence/g4/story117-package-seed-20261016/builds-diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/g4/story117-package-seed-20261016/reviewed-package-recheck.command.json": "465438c79f05d512dd8752d50b3637518919352469ccf9b42890ff604908ee25",
+    "evidence/g4/story117-package-seed-20261016/builds-remote-delta.log": "683f2582d7a3ceb16961c829c35e9d6eabe676b9225eacb24390778115f8c7b7",
+    "evidence/g4/story117-package-seed-20261016/final-proof.log": "44979f9c4d755e0ffe291016ec315c454cdc410588eb5877c904b4b9143608f9",
+    "evidence/g4/story117-package-seed-20261016/platform-remote-identity.command.json": "330b2239a5555c0c4afefd7a1202e30556d629b4bac7c7ab1398475b34025a45",
+    "evidence/g4/story117-package-seed-20261016/platform-current-builds-pin.log": "9e1c6af1cbd18ea71e6f637931e0c1e40ca4a47c35fb0e1cd963e86fc3a51209",
+    "evidence/g4/story117-package-seed-20261016/published-seed-reviewed-negative.command.json": "d8546275230fc2a1baa7fe6ad2f120d38dbff5575fdc7af890994019b0e65751",
+    "evidence/g4/story117-package-seed-20261016/platform-workflows.command.json": "fb8850c256fe79721f7adbe2768baa6f184218bf0a5bcf010cdb6ecfcc38e049",
+    "evidence/g4/story117-package-seed-20261016/authenticated-registry-eventstore-manifests.json": "bdd242bf5d54010d2a8340023c5164a6112c8e23bd5d7d390f33c50fecc8bf43",
+    "evidence/g4/story117-package-seed-20261016/nuget-signature.command.json": "5bf7d95a5ac1074ff72e4f6400aedb747c3aeacdb1a19e49bd3e5f983e9148a8",
+    "evidence/g4/story117-package-seed-20261016/eventstore-declaration.log": "881324ab3912896b3fb3bdceceeb52077e4a601d4a57977360092eac86e23bd9",
+    "evidence/g4/story117-package-seed-20261016/eventstore-tag.log": "276ab68ae37c05474b2f85fdaad01bf41bd7fbaa25ba4767a28b859682f5ca79",
+    "evidence/g4/story117-package-seed-20261016/latest-release-final-observation.log": "5e532a43471706ef2ec044b45cb616568b2ad84403520fac95702efcc799c035",
+    "evidence/g4/story117-package-seed-20261016/builds-release-tag.command.json": "47dc66ca5424f1a89cd04019d587e37bf3e56ef7951b690818691a38583cef4f",
+    "evidence/g4/story117-package-seed-20261016/final-proof.json": "bbc9fa7ff3b18e860de8734f4498fd8e6beb6b26c11f8784adc9a74651a35f97",
+    "evidence/g4/story117-package-seed-20261016/publisher-contracts-final-verified.log": "8cbddbf3cf38923b481a472a2cd8e143c4a26e57e1941580a350ae405d7df15c",
+    "evidence/g4/story117-package-seed-20261016/package-gate-contracts-complete.command.json": "b2c622e6464ddcbc147a10731309e8ef3931d61c5067ebb738ac444af78b7548",
+    "evidence/g4/story117-package-seed-20261016/registry-memories-referrers.json": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "evidence/g4/story117-package-seed-20261016/nuget-tool-versions.command.json": "bdc30bcdcfd306c593b2e04b999ef73097f53161983b429145da44e6e8be38e6",
+    "evidence/g4/story117-package-seed-20261016/builds-current-main-ci.command.json": "38539f501d65879496ae2f445b9b20590e8ab747f0fba301a06463c861cbb1f9",
+    "evidence/g4/story117-package-seed-20261016/package-gate-contracts-final-verified.command.json": "f748f7de34e59a2d9d95b1c6e1d22da4da4df3ffa12ba2772f8fafb11a70274c",
+    "evidence/g4/story117-package-seed-20261016/platform-pin-guards.command.json": "424cf78a27885867680f31b25a9173ce9639f333b43ac33ffb4635ef619b03ee",
+    "evidence/g4/story117-package-seed-20261016/platform-current-identity.command.json": "1e107b34b60acda4f7500d79573812f5f68ae5419953fdd4855f874969b92fb5",
+    "evidence/g4/story117-package-seed-20261016/published-seed-reviewed-negative.log": "0b3eac3b512bc5a32dbb93cbe55bf33f4d670cc900b9ddef2c5c92db65a2ecda",
+    "evidence/g4/story117-package-seed-20261016/builds-main.log": "81aa48978af582bf6e6c43214f5e54e7178b3ac86800a76ef99bfa07598fba24",
+    "evidence/g4/story117-package-seed-20261016/diagnostic-package.log": "b936ef5b71d456ea56097a9515a2251feb9abadd311ef203c8874b427e8b07e3",
+    "evidence/g4/story117-package-seed-20261016/authenticated-registry-eventstore-referrers.json": "dff9de10919148711140d349bf03f1a99eb06f94b03e51715ccebfa7cdc518e2",
+    "evidence/g4/story117-package-seed-20261016/package-gate-contracts-final-verified.log": "989692c3db208cb9b894a44d1eb16235c10c79d2075e7c16051683cfeb7befc5",
+    "evidence/g4/story117-package-seed-20261016/platform-pin-now.log": "9351cd5232a520354692a1f3a55560e92f776c71d4facb39757f7c83dfec6f4a",
+    "evidence/g4/story117-package-seed-20261016/release-build-triage.command.json": "cb5e26aec93ccc93863c4154c1a9402a21b7136688e858c5a303e9b2ceb1c970",
+    "evidence/g4/story117-package-seed-20261016/initial-inputs.json": "32319dbbca493df399f56287e7b383b81157196a00cb90b644355243dcb0ce39",
+    "evidence/g4/story117-package-seed-20261016/published-release-inventory.json": "88a3f39dfe4b9e93074bf37b2c2cfce649022143e87141ae16ae5ddb40c1fb13",
+    "evidence/g4/story117-package-seed-20261016/registry-observations-authenticated.json": "ff85e6b29aa40ce8b3c6315e4aef1e64c7df9df4ade60f0dd676de08c7a3dbda",
+    "evidence/g4/story117-package-seed-20261016/eventstore-declaration.command.json": "f30926683dec500c8b17b8d78aa5ad816b30151dcc90cc6e8506f1558856ea08",
+    "evidence/g4/story117-package-seed-20261016/nuget-index-final-observation.log": "c7eda3adcf1916d32a3de4cd9d864fd5e18769f433aeac4e62b4273a41e48b9d",
+    "evidence/g4/story117-package-seed-20261016/published-seed-negative.log": "a39fc101995c79f570ede497f32e926e465fb0c3a36f3830f37fc835aaac9c67",
+    "evidence/g4/story117-package-seed-20261016/diagnostic-package-verified.command.json": "d9ae52bdf344d63e6778c92988f2e13b73a90000d4f7970f704712a86a5d5089",
+    "evidence/g4/story117-package-seed-20261016/registry-tenants-manifests.json": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "evidence/g4/story117-package-seed-20261016/NEXT.md": "ef4aa5098c19431a302af5ecd0ffc603bb5f1e6bc02e6dc8df8f28d1fff2db1d",
+    "evidence/g4/story117-package-seed-20261016/tenants-declaration.command.json": "34ab894931444d57ccb6b892b1af0ea34104908827a428883a5da0768090da70",
+    "evidence/g4/story117-package-seed-20261016/exact-package-recheck.json": "bbc9fa7ff3b18e860de8734f4498fd8e6beb6b26c11f8784adc9a74651a35f97",
+    "evidence/g4/story117-package-seed-20261016/artifacts.manifest.json": "2c20c75f181dff19818831435cbd20109a24e517e3bba9cb43223949e4f26ec2",
+    "evidence/g4/story117-package-seed-20261016/release-contracts.log": "5f5b33b89af45f74f8747c75894d5082846041561a0c3edf39f7859379bf1b75",
+    "evidence/g4/story117-package-seed-20261016/diagnostic-g4.command.json": "024317cbc949093f63dc91a7ca349c55a0b7cc3f53f9640acabb18704143fcba",
+    "evidence/g4/story117-package-seed-20261016/publisher-contracts.command.json": "f7e41a5127bf509fde267e187642235f66001f626ca5edac757c84e9b96c7430",
+    "evidence/g4/story117-package-seed-20261016/tenants-tag.log": "2e971e635edb80e458fdb5750b3feaabee538f95a833329c932282d6f6bd3663",
+    "evidence/g4/story117-package-seed-20261016/packaged-controls.log": "d830261c62325a8e4cbb6359abdc39f2ce45a3e1c49231ea62157f7cd2ab1784",
+    "evidence/g4/story117-package-seed-20261016/builds-diff-final.command.json": "7a8cf8781bc1ab6f6ad3c69f269f47ea8d0a72ff63334ff16c908c8c474d2850",
+    "evidence/g4/story117-package-seed-20261016/reviewed-package-recheck.json": "bbc9fa7ff3b18e860de8734f4498fd8e6beb6b26c11f8784adc9a74651a35f97",
+    "evidence/g4/story117-package-seed-20261016/memories-tag.log": "b31cf7b096443a080df7746cb64059b262cd45c3b35b92963d84b1b15cd8d352",
+    "evidence/g4/story117-package-seed-20261016/publisher-contracts-final.log": "41b61c20b63d07eef2555e65d1b0e18f7f7e7242634b1ffdd176156cb203e40d"
+  },
+  "protectedWorkspaceFilesSha256": {
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A6B-OQ3-PD10.md": "2d18fe6b5622dca59fd51cfdd08237afb3b56a65502f4ba679e56676e7b71375",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A8-FREEZE-APPROVAL-2026-09-21.yaml": "471fb9d2d4ecf1dc837928787a24cb2c810334ef54920795ff10105d340ad972",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A2-PD3.md": "81322318ebc4d212f298945e1837a20c5cb85718bcab6d4f95ab74adfa1a9435",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A6-PD10.md": "0beefd843152b0c92fccfe8378fc3861b9dbba75188b6c9b7dc27c5567f8b355",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A3-PD4.md": "a618f96afdd37df285fa5349517c331f8f9a7bfe7b8e1abb9fa71f90bd34839e",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A1-PD1-OQ11.md": "a4b9e9041cc9a35c9aff5c0b4e00e404ba2abe1e89efa0fd80a2adf47c3bd2cd",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A4-PD5.md": "114f78d614943f60e6984398f041ef08485754177f5c53bada367c18e73b22ce",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A8-CORRECTIVE-RELOCK-2026-09-21.md": "6cc4f7cd02b00a15eaf5e54be5c4dc63f1bc8ace5dc41c30382a1cc1a057da57",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A6B-OQ3-PD10-CORRECTIVE-APPROVAL-2026-09-21.yaml": "e2f39055fbefb3e951e107e3bd1c5da48715e9a85caaf6e94669c78e419e0558",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A8-PROTOCOL-APPROVAL-2026-09-20.yaml": "fe803cfa6a8b4c005a229e5ed4096ffa60148964ecab0598c62e3c14b8ff3750",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A8-CORRECTIVE-RELOCK-PREPARATION-2026-09-21.yaml": "e5ee5d4f5eea4515d36fad11016dccb9a53fa5dd034e4ccf2e603b46a01dacab",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A2B-PD6.md": "0779bd12007dbdbca55428939c0420b642f53028452f0c34c031b09c6aded257",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A7-C6-PD11.md": "b63af6f9793ada826428714f9042d7f99159d626303692884d97ddb7078e6b3f",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A6B-OQ3-PD10-CORRECTIVE-PREPARATION-2026-09-21.yaml": "95d7dc0dc385cab7a5fcc8e17778e46ac8c771f554f022b448a6a2be2d2b3e40",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A8-FREEZE.md": "886a486e4abe17e8c84f3d380ad465f98ef35564387342f16f7df77cf44cbfca",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A5-C9-PD8.md": "fcf1277876d155cbf128703f289eacb7601490e504f61874be92293a141ba489",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A7B-C3.md": "1bd514dc073c728a290f94de4384534d4e9bd843b208c119f52644d6fe07bed1",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/STORY-1-17-EXECUTION-AUTHORIZATION-APPROVAL-2026-09-23.yaml": "45ad4fc46f7e74aacae3a9c90d1ec535d97fb5ff615d513c1d588aed16df52be",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/STORY-1-17-EXECUTION-AUTHORIZATION-PREPARATION-2026-09-23.yaml": "4b3cf91f1ea7b7febd66848ece317fd2e9260518773fa383f5a3ed82637c0443",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A8-CORRECTIVE-RELOCK-APPROVAL-2026-09-21.yaml": "b2ef53e1bf753da1711c19a0ceaf2a5af411dab0409e64a878068a81c7fbb08c",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A8-CORRECTIVE-RELOCK-PREPARATION-2026-09-22.yaml": "3cda21f0d87bec3d13833bc215c4306e6bf714a1a235cb021a705035e8da794d",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A8-CORRECTIVE-RELOCK-APPROVAL-2026-09-22.yaml": "57bf08ed993338f4c44e6efafb4f529cd108aa5809c73c33264cb2cb0b5a4390",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A6B-OQ3-PD10-CORRECTIVE-APPROVAL-2026-09-22.yaml": "4f2429e49056b2d8364253abf603fa7172147b27cfd8e3aa76a8953fb798640d",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A8-FREEZE-PREPARATION-2026-09-20.yaml": "05c7d590783e0507399c74fc96aa760fa994b0aa10acd9e24d2ad3addd70d973",
+    "_bmad-output/planning-artifacts/authority-relock/2026-09-17/A8-CORRECTIVE-RELOCK-SECTION9-EVIDENCE-2026-09-22.yaml": "4524ca625c9fc5fbaf3739259ad35a0a06f0f58fe0318069becaea411388b492",
+    "_bmad-output/planning-artifacts/planning-authority-relock-approval-register.yaml": "2551bdecb3b07a3920ff5f76c27fa52e5c95834fe0da6207a4227cd6a4b031ff",
+    "_bmad-output/implementation-artifacts/sprint-status.yaml": "696337702adc1e8820afb51b770619ba946f74a7aaa29eacac9a62f0086c5f60",
+    "src/Hexalith.Folders.Contracts/openapi/hexalith.folders.v1.yaml": "3c3c668071cfaad3e6318626c03051039d00771a4d1afe29ab49df28f71ae4e2",
+    "docs/contract/authorization-matrix.md": "d5daa48323c3a117cb3e700b3ef3876ef29566bd6c4fa81a3edeec4d94c4d420",
+    "_bmad-output/planning-artifacts/generated-v2-conformance-set-2026-09-17.yaml": "4b8470beda4f19c1293be1c40b4b36914e5148fa0f1a05ab2817d4fe43156cce",
+    "_bmad-output/planning-artifacts/planning-story-manifest.yaml": "cd17a66edd38eb2f14e9566e19c3702a27fe25469646460224c6e33a80b68924",
+    "eng/story117-platform-qualification/configuration.proposed.json": "0df68be75eae271b79533a59f168bc964df56b0de7982a44448b16baca3cc3b5",
+    "eng/story117-platform-qualification/staging-checks.json": "cd351aaf2c63d2493f32f4728af4776925ffefb736da442ff6b2b074bcec7339",
+    "eng/story117-platform-qualification/README.md": "4468d80d246a8b5b5968b9a5fbd2ce7ecf588af89fe6e0a3bdcba47770d7a40d",
+    "eng/story117-platform-qualification/verify.py": "b667eac8131f5c0312ed7e78c7284d756b749175d0f1faf756adbb43cd53a4db",
+    "eng/story117-platform-qualification/test_verify.py": "f42c880468a5a3e4a04a7f948a3ea6eee86e67ec34dd2c119795d7b2b422d0c5",
+    "_bmad-output/implementation-artifacts/evidence/story-1-17-platform-qualification-2026-10-16.json": "60becb00027d779bfdb76bc021f1e5e89f7e55063c8fef67f73922942866017e",
+    "_bmad-output/implementation-artifacts/story-1-17-platform-rollout-proposal-2026-10-16.md": "512db77734f6caa939cc115a28e6fa7bda6583d3864c5217d2c0d82419415354",
+    "_bmad-output/implementation-artifacts/evidence/story-1-17-platform-admission-2026-10-16.json": "0e8ae08d4a720a9a200fdfbbbab1d0c796bea356c04788ba9a169f31b5060aa4",
+    "_bmad-output/implementation-artifacts/evidence/story-1-17-platform-admission-2026-10-16.artifacts.tar.gz": "d64c7f23e3fa8f2c78c9b7604a1e100c57823b8cc491c94e9f7c8e88f83bf14b",
+    "_bmad-output/implementation-artifacts/evidence/story-1-17-platform-admission-2026-10-16.artifacts.manifest.json": "801abeb2e7bd979d4b687da140b09f601755b8a890aa200f8f2172e5c431e3a5",
+    "references/Hexalith.Platform/docs/implementation/story-1-17-admission-preparation-2026-10-16.json": "f9dcd28a12cb7d9b0cb528424e7cdad4b2927fbd1f8f376ac6304635bf5fa50d"
+  },
+  "retainedArtifactBundle": {
+    "path": "evidence/g4/story117-package-seed-20261016/artifacts.tar.gz",
+    "sha256": "e5ffda14a6839138c1d04e1d0ec82d820b0f27d8d22380b72f6acf82be5d2afc",
+    "sizeBytes": 74533678,
+    "membersSha256": {
+      "diagnostic/platform-version-catalog.json": "15a8cd5e7972b1820057d5a083bc262c8d54d3a4f5b3749722b9bcffed61a8cb",
+      "diagnostic/Hexalith.Builds.Module.Cli.4.31.2.nupkg": "cc805c77901e3c03dc636d7de87da19f793364cf3905ae9933594f6f8ccfd4c9",
+      "diagnostic/Hexalith.Builds.Evidence.Cli.4.31.2.snupkg": "3c3ad60ee2ed7e8ffe3c98ab575cbc8d6f4470bf18aca132475f5396bbd9256f",
+      "diagnostic/Hexalith.Builds.Evidence.Cli.4.31.2.nupkg": "3cfd2532d14c7e26a8a936725217af47a0687b4d22ab8711e45637997fcb1d31",
+      "diagnostic/g4-tool-package-inventory.json": "31ba926b4722d061b4f96b4de2d9abfdcea9fb84e7b82a14bc9ba6df11904450",
+      "diagnostic/Hexalith.Builds.Module.Cli.4.31.2.snupkg": "81ce4f8b47c9ed8357661ab05e2e895fda69886918199b246202c31bab8ffdb8",
+      "diagnostic/qualification-evidence/qualification.log": "278a4499759c9676e9a8ae3df1cb90ba11376f7a181b9e8ab4dd11004c5bbcbe",
+      "diagnostic/qualification-evidence/packaged-seed-subscriptions.json": "bbc9fa7ff3b18e860de8734f4498fd8e6beb6b26c11f8784adc9a74651a35f97",
+      "published/Hexalith.Builds.Module.Cli.4.31.2.nupkg": "cc89eea1ae8ec9ded0dd304e94f7658082ae7614d339abb881de146b0471ffae",
+      "published/subscription-proof.json": "6c115b569329f00d465e9fd5e190f7a649d179d13c2be09bf8dddffa071d0223",
+      "reviewed/subscription-proof.json": "bbc9fa7ff3b18e860de8734f4498fd8e6beb6b26c11f8784adc9a74651a35f97",
+      "source/Hexalith.Builds.prepared.patch": "3df7df5d39b1f3f6da8101f64587eff6203cca3835593174a71549299a635ded",
+      "source/source-binding.json": "22ba93baac4da81a0115bbaf9aedfe1f0d548de816cb1aa642146d15daa88907",
+      "source/Tools/G4PackageQualification.functions.ps1": "38fe4ee066187595219ec10d35aec4acbae4d0065ae7ed92b810dce58ce148ed",
+      "source/Tools/publish-g4-tool-packages.ps1": "9802b155c61b3c6352f5abaf66fb8947968e6552ebd8e1ddfadead8b7cb908b3",
+      "source/Tools/test-g4-tool-package-contracts.ps1": "91e42adc495c54619283fd2beab8b733d79f3ce6e586db0db7c1f6b2999fe832",
+      "source/Tools/test-publish-g4-tool-packages.ps1": "25b6e58c58ec8dd6436ac761328a84656704a42c912534967fa3c5f94a219f8f",
+      "source/Tools/test-g4-tool-package-artifact-validator.ps1": "584102ee619652a018fb70030f4619beabf44062c2457948b9d5b24fd5435e8b",
+      "source/Tools/test-g4-packaged-seed-subscriptions.ps1": "aaf81d01b946c6c4ee3e0f50d1074feba3e5832c0a9fe09c5450df7523ee7aea",
+      "source/Tools/PackagedSeedProbe/PackagedSeedProbe.cs": "90d1862c1dfe05cfec407c75c6595a5532664c52cc89915541544ccf9df4c401",
+      "source/Tools/PackagedSeedProbe/PackagedSeedProbe.csproj": "f41d07743e15a6136784fbbe1f6882f2b59d3593a3294e249671565994a0e916",
+      "source/Tools/README.md": "5649bb35ccf6a06910a9d36bbd27a4fd3c72dca857f45c343dac02b9d5fb60f5",
+      "source/Tools/package-version-audit.json": "48a5374d6d1db7dc120187bebf57057e50365436f9c476136d252f0ef15d0c61",
+      "source/src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs": "3000aea0569f734c39953e9bcc93536e3afea693e271f44887a853710d3ff8d7",
+      "source/Props/Directory.Packages.props": "c0d2e3a0433543483f844e9feccf08e40e2c431a422fb4d7cf52656cd0728a48"
+    }
+  }
+}

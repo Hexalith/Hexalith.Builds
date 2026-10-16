@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "eng/test_host_builds_resolution.py"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Platform",
+  "startedAtUtc": "2026-10-16T12:33:32.353267+00:00",
+  "finishedAtUtc": "2026-10-16T12:33:38.961841+00:00",
+  "exitCode": 0,
+  "log": "platform-builds-resolution.log",
+  "sha256": "9a41c1f93daf94c2b55873ea7126e436797b77cf6511135ff11e49e7f87f3031"
+}

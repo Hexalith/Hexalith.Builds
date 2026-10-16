@@ -1,0 +1,14 @@
+....F..
+======================================================================
+FAIL: test_preserves_expectations_approvals_and_negative_mutations (__main__.PreparationTests.test_preserves_expectations_approvals_and_negative_mutations)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds/Tools/test-prepare-g4-synthetic-acceptance.py", line 37, in test_preserves_expectations_approvals_and_negative_mutations
+    self.assertEqual(self.stale['negative/duplicate-key.json'].count(b'"schema"'),2)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.055s
+
+FAILED (failures=1)

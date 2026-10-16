@@ -1,0 +1,15 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/contents/Props/Directory.Packages.props?ref=5636b7f36e28e2731111b049f974b1fa951d1c36",
+    "--jq",
+    "{sha,encoding,content}"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:34:14.242229+00:00",
+  "finishedAtUtc": "2026-10-16T12:34:14.591435+00:00",
+  "exitCode": 0,
+  "log": "platform-pinned-catalog.log",
+  "sha256": "02d9c15ad9bd896ca0667595b80a599e728b04f638fdd28a05f4f24a3e2cb200"
+}

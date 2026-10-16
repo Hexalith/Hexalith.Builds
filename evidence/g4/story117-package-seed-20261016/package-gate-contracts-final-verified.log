@@ -1,0 +1,5 @@
+Platform version catalog validated: Hexalith.EventStore.Aspire/3.122.0, CommunityToolkit.Aspire.Hosting.Dapr/13.6.0-preview.1.261001-0243, required range 13.6.0-preview.1.261001-0243 for net10.0.
+Platform version catalog validated: Hexalith.EventStore.Aspire/3.122.0, CommunityToolkit.Aspire.Hosting.Dapr/13.6.0-preview.1.261001-0243, required range 13.6.0-preview.1.261001-0243 for net10.0.
+warning: in the working copy of 'test/fixtures/eol/Sample.cs', LF will be replaced by CRLF the next time Git touches it
+G-4 tool package artifact validator tests passed: 63 scenarios.
+G-4 tool package qualification gate checks passed: reused, pre-package, post-package, and duplicate-output failures expose no inventory.

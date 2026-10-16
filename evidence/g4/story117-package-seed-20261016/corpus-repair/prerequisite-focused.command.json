@@ -1,0 +1,14 @@
+{
+  "command": [
+    "dotnet",
+    "test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll",
+    "-class",
+    "Hexalith.Builds.ModuleTool.Tests.CompositionPrerequisiteProbeTests"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:08:14.912941+00:00",
+  "finishedAtUtc": "2026-10-16T13:08:16.939335+00:00",
+  "exitCode": 0,
+  "log": "prerequisite-focused.log",
+  "sha256": "a4f1cfe7b81a25e16a0b9effdf611ad086d49e78d8bcbdb3082795353dd6b5a2"
+}

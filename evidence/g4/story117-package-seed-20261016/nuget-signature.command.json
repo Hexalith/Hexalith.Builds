@@ -1,0 +1,15 @@
+{
+  "command": [
+    "dotnet",
+    "nuget",
+    "verify",
+    "--all",
+    "artifacts/story117-published-observation/Hexalith.Builds.Module.Cli.4.31.2.nupkg"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:29:33.316640+00:00",
+  "finishedAtUtc": "2026-10-16T12:29:33.784504+00:00",
+  "exitCode": 0,
+  "log": "nuget-signature.log",
+  "sha256": "739185cb235474c223dd0504b1f976438b7797fcf65a76221a95bd7b7330739d"
+}

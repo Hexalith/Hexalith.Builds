@@ -1,0 +1,14 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-g4-release-contract.ps1"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:33:04.881592+00:00",
+  "finishedAtUtc": "2026-10-16T12:33:06.930664+00:00",
+  "exitCode": 0,
+  "log": "release-contracts.log",
+  "sha256": "5f5b33b89af45f74f8747c75894d5082846041561a0c3edf39f7859379bf1b75"
+}

@@ -303,6 +303,77 @@ function Assert-QualificationLogContent {
     return $content
 }
 
+function Assert-PackagedSeedSubscriptionEvidence {
+    # Recheck observed semantics AND bind them to the exact archive/entry that will
+    # be published. A source-host result or a renamed generic passing JSON fails.
+    param(
+        [Parameter(Mandatory = $true)][string] $FilePath,
+        [Parameter(Mandatory = $true)][string] $PackagePath,
+        [Parameter(Mandatory = $true)][string] $Version
+    )
+
+    $proof = Get-Content -LiteralPath $FilePath -Raw | ConvertFrom-Json -NoEnumerate
+    # The [pscustomobject] accelerator also matches some wrapped arrays. Compare
+    # the underlying runtime type so -NoEnumerate cannot disguise a root array.
+    if ($null -eq $proof -or $proof.GetType() -ne [System.Management.Automation.PSCustomObject] -or
+        $proof.package.GetType() -ne [System.Management.Automation.PSCustomObject] -or
+        $proof.seed.GetType() -ne [System.Management.Automation.PSCustomObject] -or $proof.checks -isnot [object[]]) {
+        throw 'Packaged seed subscription proof requires object identities and an array of object checks.'
+    }
+    foreach ($check in $proof.checks) {
+        if ($null -eq $check -or $check.GetType() -ne [System.Management.Automation.PSCustomObject]) {
+            throw 'Packaged seed subscription proof requires object identities and an array of object checks.'
+        }
+    }
+    foreach ($value in @($proof.schema, $proof.status, $proof.package.id, $proof.package.version,
+            $proof.package.sha256, $proof.seed.entry, $proof.seed.sha256, $proof.seed.loadedSha256)) {
+        if ($value -isnot [string]) { throw 'Packaged seed subscription proof requires scalar string identities.' }
+    }
+    $seedEntry = 'tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll'
+    $archive = [IO.Compression.ZipFile]::OpenRead($PackagePath)
+    try {
+        $entries = @($archive.Entries | Where-Object FullName -CEQ $seedEntry)
+        if ($entries.Count -ne 1) { throw 'Packaged seed subscription proof requires exactly one seed archive entry.' }
+        $stream = $entries[0].Open()
+        try { $seedHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($stream)) }
+        finally { $stream.Dispose() }
+    }
+    finally { $archive.Dispose() }
+
+    if ($proof.schema -cne 'hexalith.g4-packaged-seed-subscriptions.v1' -or $proof.status -cne 'passed' -or
+        $proof.package.id -cne 'Hexalith.Builds.Module.Cli' -or $proof.package.version -cne $Version -or
+        $proof.package.sha256 -cne (Get-FileHash -LiteralPath $PackagePath -Algorithm SHA256).Hash -or
+        $proof.seed.entry -cne $seedEntry -or $proof.seed.sha256 -cne $seedHash -or
+        $proof.seed.loadedSha256 -cne $seedHash) {
+        throw 'Packaged seed subscription proof does not bind the exact package and loaded seed.'
+    }
+
+    $checks = @($proof.checks)
+    if ($checks.Count -ne 2) { throw 'Packaged seed subscription proof must cover both modes exactly once.' }
+    foreach ($declarative in @($false, $true)) {
+        $cases = @($checks | Where-Object { $_.declarative -is [bool] -and $_.declarative -eq $declarative })
+        if ($cases.Count -ne 1) { throw 'Packaged seed subscription proof must cover both modes exactly once.' }
+        $case = $cases[0]
+        $status = if ($declarative) { 404 } else { 200 }
+        $count = if ($declarative) { 0 } else { 1 }
+        $pubsub = if ($declarative) { $null } else { 'configured-seed-events' }
+        if (($declarative -and ($null -ne $case.subscriptionPubsubName -or $null -ne $case.receiverPubsubName)) -or
+            (-not $declarative -and ($case.subscriptionPubsubName -isnot [string] -or $case.receiverPubsubName -isnot [string]))) {
+            throw 'Packaged seed subscription proof requires exact scalar or null pubsub names.'
+        }
+        if ($case.discoveryStatusCode -isnot [long] -or $case.discoveryStatusCode -ne $status -or
+            $case.projectionSubscriptionCount -isnot [long] -or $case.projectionSubscriptionCount -ne $count -or
+            $case.subscriptionPubsubName -cne $pubsub -or
+            $case.receiverPresent -isnot [bool] -or $case.receiverPresent -ne $true -or
+            $case.receiverTopicMetadataCount -isnot [long] -or $case.receiverTopicMetadataCount -ne $count -or
+            $case.receiverPubsubName -cne $pubsub -or
+            $case.startupIndexWriterAliasRemoved -isnot [bool] -or $case.startupIndexWriterAliasRemoved -ne $true) {
+            throw 'Packaged seed subscription proof does not satisfy the exact typed HTTP and receiver metadata assertions.'
+        }
+    }
+    return $proof
+}
+
 function Get-SourceTreeState {
     # Reports whether the qualified source tree is clean and binds the exact
     # revision the candidate was qualified against. A dirty tree does not abort the

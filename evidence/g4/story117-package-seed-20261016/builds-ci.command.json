@@ -1,0 +1,15 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/actions/workflows/ci.yml/runs?head_sha=728174f506d56204657e0c52e98a4453aef79f6a&event=push&per_page=100",
+    "--jq",
+    "{total_count,runs:[.workflow_runs[]|{id,head_sha,event,status,conclusion}]}"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders",
+  "startedAtUtc": "2026-10-16T12:22:42.883687+00:00",
+  "finishedAtUtc": "2026-10-16T12:22:43.413784+00:00",
+  "exitCode": 0,
+  "log": "builds-ci.log",
+  "sha256": "860d9113c89df7836ee0410a425d540374cfd9bb25ae02bc037347b0271cfd9e"
+}

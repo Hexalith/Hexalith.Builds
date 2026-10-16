@@ -1,0 +1,33 @@
+{
+  "sourceRevision": "728174f506d56204657e0c52e98a4453aef79f6a",
+  "dirty": true,
+  "workingTree": [
+    " M Tools/G4PackageQualification.functions.ps1",
+    " M Tools/README.md",
+    " M Tools/package-version-audit.json",
+    " M Tools/publish-g4-tool-packages.ps1",
+    " M Tools/test-g4-tool-package-artifact-validator.ps1",
+    " M Tools/test-g4-tool-package-contracts.ps1",
+    " M Tools/test-publish-g4-tool-packages.ps1",
+    " M src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs",
+    "?? Tools/PackagedSeedProbe/",
+    "?? Tools/test-g4-packaged-seed-subscriptions.ps1",
+    "?? evidence/g4/story117-package-seed-20261016/"
+  ],
+  "sourceFilesSha256": {
+    "Tools/G4PackageQualification.functions.ps1": "38fe4ee066187595219ec10d35aec4acbae4d0065ae7ed92b810dce58ce148ed",
+    "Tools/publish-g4-tool-packages.ps1": "9802b155c61b3c6352f5abaf66fb8947968e6552ebd8e1ddfadead8b7cb908b3",
+    "Tools/test-g4-tool-package-contracts.ps1": "91e42adc495c54619283fd2beab8b733d79f3ce6e586db0db7c1f6b2999fe832",
+    "Tools/test-publish-g4-tool-packages.ps1": "25b6e58c58ec8dd6436ac761328a84656704a42c912534967fa3c5f94a219f8f",
+    "Tools/test-g4-tool-package-artifact-validator.ps1": "584102ee619652a018fb70030f4619beabf44062c2457948b9d5b24fd5435e8b",
+    "Tools/test-g4-packaged-seed-subscriptions.ps1": "aaf81d01b946c6c4ee3e0f50d1074feba3e5832c0a9fe09c5450df7523ee7aea",
+    "Tools/PackagedSeedProbe/PackagedSeedProbe.cs": "90d1862c1dfe05cfec407c75c6595a5532664c52cc89915541544ccf9df4c401",
+    "Tools/PackagedSeedProbe/PackagedSeedProbe.csproj": "f41d07743e15a6136784fbbe1f6882f2b59d3593a3294e249671565994a0e916",
+    "Tools/README.md": "5649bb35ccf6a06910a9d36bbd27a4fd3c72dca857f45c343dac02b9d5fb60f5",
+    "Tools/package-version-audit.json": "48a5374d6d1db7dc120187bebf57057e50365436f9c476136d252f0ef15d0c61",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs": "3000aea0569f734c39953e9bcc93536e3afea693e271f44887a853710d3ff8d7",
+    "Props/Directory.Packages.props": "c0d2e3a0433543483f844e9feccf08e40e2c431a422fb4d7cf52656cd0728a48"
+  },
+  "preparedPatchSha256": "3df7df5d39b1f3f6da8101f64587eff6203cca3835593174a71549299a635ded",
+  "provenanceLimit": "HEAD identifies the baseline, not the uncommitted preparation. Patch plus added source bytes bind the preparation; no release or clean source provenance is claimed."
+}

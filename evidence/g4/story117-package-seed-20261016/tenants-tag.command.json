@@ -1,0 +1,13 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Tenants/git/ref/tags/v5.8.0"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:31:02.671860+00:00",
+  "finishedAtUtc": "2026-10-16T12:31:03.538179+00:00",
+  "exitCode": 0,
+  "log": "tenants-tag.log",
+  "sha256": "2e971e635edb80e458fdb5750b3feaabee538f95a833329c932282d6f6bd3663"
+}

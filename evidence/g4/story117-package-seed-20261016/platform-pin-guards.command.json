@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "eng/test_verify_platform_pins.py"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Platform",
+  "startedAtUtc": "2026-10-16T12:33:31.535179+00:00",
+  "finishedAtUtc": "2026-10-16T12:33:32.286880+00:00",
+  "exitCode": 0,
+  "log": "platform-pin-guards.log",
+  "sha256": "ec6bc2cc460f09d040f90f84f5ffe82274fcc83d8f14dfbad674e74f1b2d6e99"
+}

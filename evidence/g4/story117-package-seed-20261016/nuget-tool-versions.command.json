@@ -1,0 +1,15 @@
+{
+  "command": [
+    "curl",
+    "--fail",
+    "--silent",
+    "--show-error",
+    "https://api.nuget.org/v3-flatcontainer/hexalith.builds.module.cli/index.json"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders",
+  "startedAtUtc": "2026-10-16T12:22:42.984007+00:00",
+  "finishedAtUtc": "2026-10-16T12:22:43.214693+00:00",
+  "exitCode": 0,
+  "log": "nuget-tool-versions.log",
+  "sha256": "c7eda3adcf1916d32a3de4cd9d864fd5e18769f433aeac4e62b4273a41e48b9d"
+}

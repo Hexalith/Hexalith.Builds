@@ -1,0 +1,22 @@
+{
+  "command": [
+    "env",
+    "DOTNET_PROCESSOR_COUNT=2",
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-g4-tool-package-contracts.ps1",
+    "-Version",
+    "4.31.2",
+    "-PackageDirectory",
+    "artifacts/story117-seed-20261016-corpus-repaired-verified",
+    "-RequireControls",
+    "-RetainPackageDirectory"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:08:37.239020+00:00",
+  "finishedAtUtc": "2026-10-16T13:15:21.755452+00:00",
+  "exitCode": 0,
+  "log": "full-g4-verified.log",
+  "sha256": "0650d68542b0dac103247ae593e2ecd30a8f953d3d5685344b056d6c130eb81a"
+}

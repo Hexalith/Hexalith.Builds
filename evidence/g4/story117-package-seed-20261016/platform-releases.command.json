@@ -1,0 +1,15 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Platform/releases?per_page=100",
+    "--jq",
+    "[.[]|{tag_name,draft,prerelease}]"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders",
+  "startedAtUtc": "2026-10-16T12:22:42.565752+00:00",
+  "finishedAtUtc": "2026-10-16T12:22:43.006957+00:00",
+  "exitCode": 0,
+  "log": "platform-releases.log",
+  "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+}

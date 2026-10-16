@@ -1,0 +1,322 @@
+{
+  "record_id": "story-1-17-builds-package-qualification-2026-10-16",
+  "recorded_at_utc": "2026-10-16T12:51:24.265902+00:00",
+  "authorization": {
+    "firstInstallPreparation": true,
+    "reversibleLocalChanges": true,
+    "readOnlyGithubAndRegistryQueries": true,
+    "owningRepositoryGitWrites": false,
+    "publication": false,
+    "deployment": false,
+    "productionActivation": false
+  },
+  "qualification_receipt": {
+    "path": "references/Hexalith.Builds/evidence/g4/story117-package-seed-20261016/qualification.json",
+    "sha256": "ef0ca16bba705d418e2e03da504a8b19698e10b21550b1c4289d388c31f457f8"
+  },
+  "verification": {
+    "configuredAndDeclarativePackagedSeedModesPassed": 2,
+    "artifactValidatorScenariosPassed": 63,
+    "newPublisherSeedProofRejectionControls": 25,
+    "platformPinGuardsPassed": 10,
+    "platformBuildsResolutionCasesPassed": 12,
+    "centralCatalogEntriesValidated": 306,
+    "catalogAuthorityPackageIdentities": 50,
+    "releaseBuildWarnings": 0,
+    "releaseBuildErrors": 0,
+    "sourceGateEvidenceTests": {
+      "passed": 76,
+      "failed": 31,
+      "skipped": 0,
+      "blocker": "HXE202: unchanged synthetic corpus EventStore 3.120.0 versus unchanged selected catalog 3.122.0"
+    },
+    "packagedControls": "New seed checks pass before existing P0 positive acceptance fixture refuses with exit 6/HXE202; no complete inventory is emitted."
+  },
+  "independent_evidence_verification": {
+    "command": [
+      "python3",
+      "evidence/g4/story117-package-seed-20261016/verify-evidence.py",
+      "--workspace",
+      "../.."
+    ],
+    "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-16T12:49:42.992994+00:00",
+    "finishedAtUtc": "2026-10-16T12:49:43.483081+00:00",
+    "exitCode": 0,
+    "log": "evidence-verification.log",
+    "sha256": "f18058e6210c9dbb9078f9f8598ff63bac2306fe1d54f1515b2178f2f969e22c"
+  },
+  "tampered_hash_negative_control": {
+    "expected_exit_code": 1,
+    "result": {
+      "command": [
+        "python3",
+        "evidence/g4/story117-package-seed-20261016/verify-evidence.py",
+        "--receipt",
+        "/tmp/story117-tampered-qualification.json",
+        "--workspace",
+        "../.."
+      ],
+      "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+      "startedAtUtc": "2026-10-16T12:50:18.661667+00:00",
+      "finishedAtUtc": "2026-10-16T12:50:18.696619+00:00",
+      "exitCode": 1,
+      "log": "evidence-negative.log",
+      "sha256": "a67b2974e33f30dc757d2af2230047067df483df56272f17efe6273143e681c0"
+    },
+    "mutation": "First bound repository file expected SHA-256 replaced with 64 zeroes."
+  },
+  "source": {
+    "folders": "9fe3fd38c0da74e804dd87c20d2ed59f93085eae",
+    "builds": "728174f506d56204657e0c52e98a4453aef79f6a",
+    "platform": "1711deba08a4e66b46acfff8d08e7f2ad7f74ba1",
+    "preparation_is_uncommitted": true,
+    "source_binding_path": "references/Hexalith.Builds/evidence/g4/story117-package-seed-20261016/source-binding.json"
+  },
+  "diagnostic_artifacts": [
+    {
+      "path": "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Evidence.Cli.4.31.2.nupkg",
+      "sha256": "3cfd2532d14c7e26a8a936725217af47a0687b4d22ab8711e45637997fcb1d31",
+      "sizeBytes": 2461025
+    },
+    {
+      "path": "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+      "sha256": "cc805c77901e3c03dc636d7de87da19f793364cf3905ae9933594f6f8ccfd4c9",
+      "sizeBytes": 36022607
+    },
+    {
+      "path": "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Evidence.Cli.4.31.2.snupkg",
+      "sha256": "3c3ad60ee2ed7e8ffe3c98ab575cbc8d6f4470bf18aca132475f5396bbd9256f",
+      "sizeBytes": 110068
+    },
+    {
+      "path": "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Module.Cli.4.31.2.snupkg",
+      "sha256": "81ce4f8b47c9ed8357661ab05e2e895fda69886918199b246202c31bab8ffdb8",
+      "sizeBytes": 271858
+    }
+  ],
+  "diagnostic_inventory_sha256": "31ba926b4722d061b4f96b4de2d9abfdcea9fb84e7b82a14bc9ba6df11904450",
+  "packaged_seed_sha256": "e92cb38eaf10a84e14b5e04ccc818b05e417f3a66193b9e926bff5ad71bb893b",
+  "retained_artifact_bundle": {
+    "path": "evidence/g4/story117-package-seed-20261016/artifacts.tar.gz",
+    "sha256": "e5ffda14a6839138c1d04e1d0ec82d820b0f27d8d22380b72f6acf82be5d2afc",
+    "sizeBytes": 74533678,
+    "membersSha256": {
+      "diagnostic/platform-version-catalog.json": "15a8cd5e7972b1820057d5a083bc262c8d54d3a4f5b3749722b9bcffed61a8cb",
+      "diagnostic/Hexalith.Builds.Module.Cli.4.31.2.nupkg": "cc805c77901e3c03dc636d7de87da19f793364cf3905ae9933594f6f8ccfd4c9",
+      "diagnostic/Hexalith.Builds.Evidence.Cli.4.31.2.snupkg": "3c3ad60ee2ed7e8ffe3c98ab575cbc8d6f4470bf18aca132475f5396bbd9256f",
+      "diagnostic/Hexalith.Builds.Evidence.Cli.4.31.2.nupkg": "3cfd2532d14c7e26a8a936725217af47a0687b4d22ab8711e45637997fcb1d31",
+      "diagnostic/g4-tool-package-inventory.json": "31ba926b4722d061b4f96b4de2d9abfdcea9fb84e7b82a14bc9ba6df11904450",
+      "diagnostic/Hexalith.Builds.Module.Cli.4.31.2.snupkg": "81ce4f8b47c9ed8357661ab05e2e895fda69886918199b246202c31bab8ffdb8",
+      "diagnostic/qualification-evidence/qualification.log": "278a4499759c9676e9a8ae3df1cb90ba11376f7a181b9e8ab4dd11004c5bbcbe",
+      "diagnostic/qualification-evidence/packaged-seed-subscriptions.json": "bbc9fa7ff3b18e860de8734f4498fd8e6beb6b26c11f8784adc9a74651a35f97",
+      "published/Hexalith.Builds.Module.Cli.4.31.2.nupkg": "cc89eea1ae8ec9ded0dd304e94f7658082ae7614d339abb881de146b0471ffae",
+      "published/subscription-proof.json": "6c115b569329f00d465e9fd5e190f7a649d179d13c2be09bf8dddffa071d0223",
+      "reviewed/subscription-proof.json": "bbc9fa7ff3b18e860de8734f4498fd8e6beb6b26c11f8784adc9a74651a35f97",
+      "source/Hexalith.Builds.prepared.patch": "3df7df5d39b1f3f6da8101f64587eff6203cca3835593174a71549299a635ded",
+      "source/source-binding.json": "22ba93baac4da81a0115bbaf9aedfe1f0d548de816cb1aa642146d15daa88907",
+      "source/Tools/G4PackageQualification.functions.ps1": "38fe4ee066187595219ec10d35aec4acbae4d0065ae7ed92b810dce58ce148ed",
+      "source/Tools/publish-g4-tool-packages.ps1": "9802b155c61b3c6352f5abaf66fb8947968e6552ebd8e1ddfadead8b7cb908b3",
+      "source/Tools/test-g4-tool-package-contracts.ps1": "91e42adc495c54619283fd2beab8b733d79f3ce6e586db0db7c1f6b2999fe832",
+      "source/Tools/test-publish-g4-tool-packages.ps1": "25b6e58c58ec8dd6436ac761328a84656704a42c912534967fa3c5f94a219f8f",
+      "source/Tools/test-g4-tool-package-artifact-validator.ps1": "584102ee619652a018fb70030f4619beabf44062c2457948b9d5b24fd5435e8b",
+      "source/Tools/test-g4-packaged-seed-subscriptions.ps1": "aaf81d01b946c6c4ee3e0f50d1074feba3e5832c0a9fe09c5450df7523ee7aea",
+      "source/Tools/PackagedSeedProbe/PackagedSeedProbe.cs": "90d1862c1dfe05cfec407c75c6595a5532664c52cc89915541544ccf9df4c401",
+      "source/Tools/PackagedSeedProbe/PackagedSeedProbe.csproj": "f41d07743e15a6136784fbbe1f6882f2b59d3593a3294e249671565994a0e916",
+      "source/Tools/README.md": "5649bb35ccf6a06910a9d36bbd27a4fd3c72dca857f45c343dac02b9d5fb60f5",
+      "source/Tools/package-version-audit.json": "48a5374d6d1db7dc120187bebf57057e50365436f9c476136d252f0ef15d0c61",
+      "source/src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs": "3000aea0569f734c39953e9bcc93536e3afea693e271f44887a853710d3ff8d7",
+      "source/Props/Directory.Packages.props": "c0d2e3a0433543483f844e9feccf08e40e2c431a422fb4d7cf52656cd0728a48"
+    }
+  },
+  "available_published_tool": {
+    "toolVersion": "4.31.2",
+    "tag": "v4.31.2",
+    "commit": "9b44fedd0017d42ee1b3e887730ab667046bda4d",
+    "packageSha256": "cc89eea1ae8ec9ded0dd304e94f7658082ae7614d339abb881de146b0471ffae",
+    "seedSha256": "64ed9c74a24de1b526cb61112d49ed58f6ee3bdfd0994e354e9a594f080a7a71",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Hexalith/Hexalith.Builds",
+      "branch": "refs/heads/main",
+      "commit": "9b44fedd0017d42ee1b3e887730ab667046bda4d"
+    },
+    "signatureVerificationExitCode": 0,
+    "releaseInventorySha256": "88a3f39dfe4b9e93074bf37b2c2cfce649022143e87141ae16ae5ddb40c1fb13",
+    "prepublicationPackageSha256": "d821ab56e5c2c49be2a0a8be29654da881d7dd25014791b1b1b850e03a10b9be",
+    "signedAndPrepublicationHashesAreDistinct": true,
+    "negativeControl": {
+      "schema": "hexalith.g4-packaged-seed-subscriptions.v1",
+      "status": "failed",
+      "package": {
+        "id": "Hexalith.Builds.Module.Cli",
+        "version": "4.31.2",
+        "sha256": "CC89EEA1AE8EC9DED0DD304E94F7658082AE7614D339ABB881DE146B0471FFAE"
+      },
+      "seed": {
+        "entry": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll",
+        "sha256": "64ED9C74A24DE1B526CB61112D49ED58F6EE3BDFD0994E354E9A594F080A7A71",
+        "loadedSha256": "64ED9C74A24DE1B526CB61112D49ED58F6EE3BDFD0994E354E9A594F080A7A71"
+      },
+      "checks": [
+        {
+          "declarative": false,
+          "discoveryStatusCode": 200,
+          "projectionSubscriptionCount": 1,
+          "subscriptionPubsubName": "pubsub",
+          "receiverPresent": true,
+          "receiverTopicMetadataCount": 1,
+          "receiverPubsubName": "pubsub",
+          "startupIndexWriterAliasRemoved": true
+        },
+        {
+          "declarative": true,
+          "discoveryStatusCode": 200,
+          "projectionSubscriptionCount": 0,
+          "subscriptionPubsubName": null,
+          "receiverPresent": true,
+          "receiverTopicMetadataCount": 1,
+          "receiverPubsubName": "pubsub",
+          "startupIndexWriterAliasRemoved": true
+        }
+      ]
+    },
+    "qualifiedForCurrentSeedCorrection": false,
+    "nextVersion": null,
+    "nextCommit": null,
+    "acceptanceDecision": null
+  },
+  "remote_observations": {
+    "buildsMain": {
+      "date": "2026-10-16T12:15:24Z",
+      "sha": "d84d30f5a95135f534feecd33ae6b7173d40260c"
+    },
+    "buildsMainCi": {
+      "runs": [
+        {
+          "conclusion": "failure",
+          "event": "push",
+          "head_sha": "d84d30f5a95135f534feecd33ae6b7173d40260c",
+          "id": 38899278384,
+          "status": "completed"
+        }
+      ],
+      "total_count": 1
+    },
+    "buildsLocalBaselineCi": {
+      "runs": [
+        {
+          "conclusion": "failure",
+          "event": "push",
+          "head_sha": "728174f506d56204657e0c52e98a4453aef79f6a",
+          "id": 38867997389,
+          "status": "completed"
+        }
+      ],
+      "total_count": 1
+    },
+    "platformMain": {
+      "date": "2026-10-16T12:16:16Z",
+      "sha": "5690e82c9a5246ea17f328524427846a6b657535"
+    },
+    "platformRemoteBuildsGitlink": "d84d30f5a95135f534feecd33ae6b7173d40260c",
+    "platformLocalBuildsGitlink": "5636b7f36e28e2731111b049f974b1fa951d1c36",
+    "platformLocalPinnedCommitNowAvailable": true,
+    "platformReleaseCount": 0,
+    "platformTagCount": 0,
+    "platformWorkflowCount": 0,
+    "acceptedToolVersion": null,
+    "acceptedToolRange": null,
+    "platformReleaseCommit": null,
+    "platformReleaseTag": null,
+    "signedReleaseRecord": null,
+    "note": "The earlier pinned-commit 404 is superseded by a current successful query. Remote main/gitlinks advanced; no local refs, gitlinks or dependency bytes were updated."
+  },
+  "owners": [
+    {
+      "module": "eventstore",
+      "catalogVersion": "3.122.0",
+      "releaseCommit": "1dac529c4690910c89d4090784a7d46cb9433a9d",
+      "releaseTag": "v3.122.0",
+      "declarationSha256": "c76853a3fd0d03f345929927f94cafcdf71714fdc20192bc2717a5fda8501a09",
+      "declarationHttpStatus": 200,
+      "imageReference": "registry.hexalith.com/eventstore:3.122.0",
+      "imageDigest": "sha256:bdd242bf5d54010d2a8340023c5164a6112c8e23bd5d7d390f33c50fecc8bf43",
+      "imageReferrers": 0,
+      "imageAttestationVerified": false,
+      "admitted": false
+    },
+    {
+      "module": "tenants",
+      "catalogVersion": "5.8.0",
+      "releaseCommit": "032573384d3df4bc7a5bc0e69945ecca4e00967f",
+      "releaseTag": "v5.8.0",
+      "declarationSha256": null,
+      "declarationHttpStatus": 404,
+      "imageReference": "registry.hexalith.com/tenants:5.8.0",
+      "imageDigest": "sha256:c0e017e029053dfa9b095b6431058a7603b371da1f56a89d336001070fc5ffae",
+      "imageReferrers": 0,
+      "imageAttestationVerified": false,
+      "admitted": false
+    },
+    {
+      "module": "memories",
+      "catalogVersion": "2.27.1",
+      "releaseCommit": "d54dba5be30a3626e871b4fc56dd78e76a7acf71",
+      "releaseTag": "v2.27.1",
+      "declarationSha256": null,
+      "declarationHttpStatus": 404,
+      "imageReference": "registry.hexalith.com/memories:2.27.1",
+      "imageDigest": "sha256:2417d95d5e1e6b37ed60b7aa45765c4a09bbd82677213ef27cab825113330733",
+      "imageReferrers": 0,
+      "imageAttestationVerified": false,
+      "admitted": false
+    }
+  ],
+  "preservation": {
+    "platformTrackedInputsUnchanged": 4651,
+    "packagedSourceAndCatalogAuditInputsUnchanged": 174,
+    "protectedHistoricalAndCandidateFilesUnchanged": 38,
+    "priorAdmissionReceiptUnchanged": true,
+    "catalogSha256": "c0d2e3a0433543483f844e9feccf08e40e2c431a422fb4d7cf52656cd0728a48",
+    "auditSha256": "48a5374d6d1db7dc120187bebf57057e50365436f9c476136d252f0ef15d0c61",
+    "platformAssertionsAndBehaviorChanged": false
+  },
+  "decision": {
+    "entry": "HOLD",
+    "productionMode": "V1Only",
+    "t0Utc": null,
+    "storyTracker": "backlog",
+    "historicalApprovalsChanged": false,
+    "stagingChecksExecuted": 0,
+    "stagingChecksRemaining": 14,
+    "stagingQualification": false,
+    "storyClosure": false,
+    "releaseAdmission": false,
+    "firstInstallPreparationCompleteForThisBoundedCheck": true
+  },
+  "remaining_blocker": "Full G-4 qualification is blocked by stale synthetic P0 acceptance corpus pins (31 source tests; packaged positive exits 6/HXE202). Correct and requalify on reviewed clean committed source reconciled with current main, obtain successful exact-head CI, then separately authorize a real semantic-release publication and Platform acceptance. This dirty diagnostic is never release eligible.",
+  "next_commands": {
+    "path": "references/Hexalith.Builds/evidence/g4/story117-package-seed-20261016/NEXT.md",
+    "sha256": "ef4aa5098c19431a302af5ecd0ffc603bb5f1e6bc02e6dc8df8f28d1fff2db1d",
+    "local_verification": "cd references/Hexalith.Builds && python3 evidence/g4/story117-package-seed-20261016/verify-evidence.py --workspace ../..",
+    "after_corpus_fix": "pwsh -NoProfile -File Tools/test-g4-tool-package-contracts.ps1 -Version 4.31.2 -PackageDirectory artifacts/story117-seed-20261016-after-corpus-fix -RequireControls -RetainPackageDirectory",
+    "publication_only_after_separate_authorization_and_clean_exact_head_ci": "gh workflow run build-release.yml --repo Hexalith/Hexalith.Builds --ref main",
+    "next_release_version": null,
+    "next_release_commit": null,
+    "platform_publication_command": null
+  },
+  "updated_document_sha256": {
+    "_bmad-output/implementation-artifacts/story-1-17-current-candidate-technical-readiness-2026-09-24.md": "e496c11f0c7dcef9c1dde00b265087612bf3af89b95627300ceefc7bbc2bdb74",
+    "_bmad-output/implementation-artifacts/deferred-work.md": "cdb9382d32b88c915abc0a7c9bb36b796095fa1a1af7d129f61fcb73deec2af1",
+    ".gitattributes": "dc57a6c8cf4b1ce6bcccb98edf9f07f2ae7d01f3539136099d7129a93d03fc5e",
+    "_bmad-output/implementation-artifacts/spec-1-17-builds-packaged-seed-qualification.md": "ff8412a848bc6553145b5b5ba2e16e2a14b4ec955292d62664cce7f078caf844"
+  },
+  "limits": [
+    "The current diagnostic is release-ineligible; the full G-4 gate has not passed.",
+    "No staging qualification, Story 1.17 closure or tracker transition is claimed.",
+    "The new release pin/range and acceptance decision remain absent. No future version, tag, provenance or approval is fabricated.",
+    "Publisher tests use isolated synthetic fixtures and mocked transports; no real package publication occurs."
+  ],
+  "artifact_paths_relative_to": "references/Hexalith.Builds"
+}

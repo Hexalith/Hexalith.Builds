@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "evidence/g4/story117-package-seed-20261016/corpus-repair/check-preparation.py"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:13:03.670704+00:00",
+  "finishedAtUtc": "2026-10-16T13:13:03.763167+00:00",
+  "exitCode": 0,
+  "log": "fixture-determinism.log",
+  "sha256": "1e2a067c19d2c3a0c96d687ecad6e587030f83cf23e65abe6eb7c9dcc95f274e"
+}

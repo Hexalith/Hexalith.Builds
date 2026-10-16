@@ -1,0 +1,15 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/compare/d84d30f5a95135f534feecd33ae6b7173d40260c...86b9f351db87b00504cc98e125b0951ef2f4fa67",
+    "--jq",
+    "{status,ahead_by,behind_by,commits:[.commits[]|{sha,message:.commit.message}]}"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:21:30.271379+00:00",
+  "finishedAtUtc": "2026-10-16T13:21:30.782452+00:00",
+  "exitCode": 1,
+  "log": "platform-pin-comparison-final.log",
+  "sha256": "b002e6978462904d2b4653f9cf5dcfeeef6cf98e6aeb708387a95fa7dc006c4a"
+}

@@ -1,0 +1,16 @@
+{
+  "command": [
+    "env",
+    "DOTNET_PROCESSOR_COUNT=2",
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-g4-tool-package-contract-gate.ps1"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:15:37.079737+00:00",
+  "finishedAtUtc": "2026-10-16T13:16:12.834001+00:00",
+  "exitCode": 0,
+  "log": "gate-regression.log",
+  "sha256": "989692c3db208cb9b894a44d1eb16235c10c79d2075e7c16051683cfeb7befc5"
+}

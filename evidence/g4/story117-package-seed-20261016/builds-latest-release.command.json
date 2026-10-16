@@ -1,0 +1,13 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/releases/latest"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders",
+  "startedAtUtc": "2026-10-16T12:22:42.564301+00:00",
+  "finishedAtUtc": "2026-10-16T12:22:42.983725+00:00",
+  "exitCode": 0,
+  "log": "builds-latest-release.log",
+  "sha256": "f1eec7c12dfdf617217241e6b11dce682042c512ea69135134e3947c65cd6149"
+}

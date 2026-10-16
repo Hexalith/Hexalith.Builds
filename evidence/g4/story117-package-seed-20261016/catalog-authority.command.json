@@ -1,0 +1,14 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-authoritative-package-catalog.ps1"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:35:36.919068+00:00",
+  "finishedAtUtc": "2026-10-16T12:35:40.819392+00:00",
+  "exitCode": 0,
+  "log": "catalog-authority.log",
+  "sha256": "a43f6ca3c93e7087ae20e004c9e72f545e8c19f760f01ebacda2f66476defa07"
+}

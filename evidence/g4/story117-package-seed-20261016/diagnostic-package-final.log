@@ -1,0 +1,6 @@
+Exception: /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/Tools/build-g4-tool-packages.ps1:40
+Line |
+  40 |          throw "dotnet $($Arguments -join ' ') failed with exit code $ …
+     |          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | dotnet build
+     | /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/Hexalith.Builds.slnx --configuration Release --no-restore failed with exit code 1.

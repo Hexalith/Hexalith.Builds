@@ -1,0 +1,68 @@
+[
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/eventstore/manifests/3.122.0",
+    "credentialSource": "existing Docker credential helper; no credential retained",
+    "startedAtUtc": "2026-10-16T12:32:29.904514+00:00",
+    "finishedAtUtc": "2026-10-16T12:32:29.934382+00:00",
+    "status": 200,
+    "digest": "sha256:bdd242bf5d54010d2a8340023c5164a6112c8e23bd5d7d390f33c50fecc8bf43",
+    "bodySha256": "bdd242bf5d54010d2a8340023c5164a6112c8e23bd5d7d390f33c50fecc8bf43",
+    "body": "authenticated-registry-eventstore-manifests.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/eventstore/referrers/sha256:bdd242bf5d54010d2a8340023c5164a6112c8e23bd5d7d390f33c50fecc8bf43",
+    "credentialSource": "existing Docker credential helper; no credential retained",
+    "startedAtUtc": "2026-10-16T12:32:29.934417+00:00",
+    "finishedAtUtc": "2026-10-16T12:32:29.960727+00:00",
+    "status": 200,
+    "digest": null,
+    "bodySha256": "dff9de10919148711140d349bf03f1a99eb06f94b03e51715ccebfa7cdc518e2",
+    "body": "authenticated-registry-eventstore-referrers.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/tenants/manifests/5.8.0",
+    "credentialSource": "existing Docker credential helper; no credential retained",
+    "startedAtUtc": "2026-10-16T12:32:29.960766+00:00",
+    "finishedAtUtc": "2026-10-16T12:32:29.975842+00:00",
+    "status": 200,
+    "digest": "sha256:c0e017e029053dfa9b095b6431058a7603b371da1f56a89d336001070fc5ffae",
+    "bodySha256": "c0e017e029053dfa9b095b6431058a7603b371da1f56a89d336001070fc5ffae",
+    "body": "authenticated-registry-tenants-manifests.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/tenants/referrers/sha256:c0e017e029053dfa9b095b6431058a7603b371da1f56a89d336001070fc5ffae",
+    "credentialSource": "existing Docker credential helper; no credential retained",
+    "startedAtUtc": "2026-10-16T12:32:29.975879+00:00",
+    "finishedAtUtc": "2026-10-16T12:32:29.991178+00:00",
+    "status": 200,
+    "digest": null,
+    "bodySha256": "dff9de10919148711140d349bf03f1a99eb06f94b03e51715ccebfa7cdc518e2",
+    "body": "authenticated-registry-tenants-referrers.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/memories/manifests/2.27.1",
+    "credentialSource": "existing Docker credential helper; no credential retained",
+    "startedAtUtc": "2026-10-16T12:32:29.991214+00:00",
+    "finishedAtUtc": "2026-10-16T12:32:30.006738+00:00",
+    "status": 200,
+    "digest": "sha256:2417d95d5e1e6b37ed60b7aa45765c4a09bbd82677213ef27cab825113330733",
+    "bodySha256": "2417d95d5e1e6b37ed60b7aa45765c4a09bbd82677213ef27cab825113330733",
+    "body": "authenticated-registry-memories-manifests.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/memories/referrers/sha256:2417d95d5e1e6b37ed60b7aa45765c4a09bbd82677213ef27cab825113330733",
+    "credentialSource": "existing Docker credential helper; no credential retained",
+    "startedAtUtc": "2026-10-16T12:32:30.006774+00:00",
+    "finishedAtUtc": "2026-10-16T12:32:30.023996+00:00",
+    "status": 200,
+    "digest": null,
+    "bodySha256": "dff9de10919148711140d349bf03f1a99eb06f94b03e51715ccebfa7cdc518e2",
+    "body": "authenticated-registry-memories-referrers.json"
+  }
+]

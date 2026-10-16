@@ -1,0 +1,13 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Memories/git/ref/tags/v2.27.1"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:31:02.726207+00:00",
+  "finishedAtUtc": "2026-10-16T12:31:03.108560+00:00",
+  "exitCode": 0,
+  "log": "memories-tag.log",
+  "sha256": "b31cf7b096443a080df7746cb64059b262cd45c3b35b92963d84b1b15cd8d352"
+}

@@ -1,0 +1,16 @@
+{
+  "command": [
+    "python3",
+    "evidence/g4/story117-package-seed-20261016/verify-evidence.py",
+    "--receipt",
+    "/tmp/story117-final-negative-5tj67nmf/tampered.json",
+    "--workspace",
+    "../.."
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:25:03.241699+00:00",
+  "finishedAtUtc": "2026-10-16T13:25:03.281565+00:00",
+  "exitCode": 1,
+  "log": "evidence-negative-complete.log",
+  "sha256": "a67b2974e33f30dc757d2af2230047067df483df56272f17efe6273143e681c0"
+}

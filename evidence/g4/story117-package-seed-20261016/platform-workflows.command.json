@@ -1,0 +1,15 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Platform/actions/workflows",
+    "--jq",
+    "{total_count,workflows:[.workflows[]|{path,state}]}"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders",
+  "startedAtUtc": "2026-10-16T12:22:42.566593+00:00",
+  "finishedAtUtc": "2026-10-16T12:22:42.883401+00:00",
+  "exitCode": 0,
+  "log": "platform-workflows.log",
+  "sha256": "a251d32568a7a08232ca3304ee97a5e6548146464133182aabeb86f463b3230b"
+}

@@ -122,6 +122,12 @@ function Write-TestPackage {
     try {
         $archive = [IO.Compression.ZipArchive]::new($stream, [IO.Compression.ZipArchiveMode]::Create, $true)
         try {
+            if ($PackageId -ceq 'Hexalith.Builds.Module.Cli' -and -not $AsSymbolsPackage) {
+                # Synthetic publisher-contract payload; never runtime qualification evidence.
+                $entry = $archive.CreateEntry('tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll')
+                $writer = [IO.StreamWriter]::new($entry.Open())
+                try { $writer.Write('synthetic-publisher-seed') } finally { $writer.Dispose() }
+            }
             if ($NuspecCount -eq 0) {
                 $null = $archive.CreateEntry('tools/net10.0/any/fixture.dll')
             }
@@ -244,6 +250,7 @@ function Get-RequiredEvidenceNames {
             'packaged-unavailable-output.json',
             'packaged-unavailable-evidence.json',
             'packaged-readiness-output.json',
+            'packaged-seed-subscriptions.json',
             'qualification.log'
         )) {
         $names.Add("qualification-evidence/$name")
@@ -386,6 +393,19 @@ function New-PackageInventory {
                     -Phase 'Prerequisite' -Category 'PrerequisiteUnavailable' `
                     -Command 'hexalith-module run --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json' `
                     -ToolVersion $packagedToolVersion -ManifestHash $manifestHash
+            }
+            'qualification-evidence/packaged-seed-subscriptions.json' {
+                $seedHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes('synthetic-publisher-seed')))
+                [ordered]@{
+                    schema = 'hexalith.g4-packaged-seed-subscriptions.v1'
+                    status = 'passed'
+                    package = @{ id = 'Hexalith.Builds.Module.Cli'; version = $PublishedVersion; sha256 = (Get-FileHash -LiteralPath (Join-Path $packageDirectory "Hexalith.Builds.Module.Cli.$PublishedVersion.nupkg") -Algorithm SHA256).Hash }
+                    seed = @{ entry = 'tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll'; sha256 = $seedHash; loadedSha256 = $seedHash }
+                    checks = @(
+                        @{ declarative = $false; discoveryStatusCode = 200; projectionSubscriptionCount = 1; subscriptionPubsubName = 'configured-seed-events'; receiverPresent = $true; receiverTopicMetadataCount = 1; receiverPubsubName = 'configured-seed-events'; startupIndexWriterAliasRemoved = $true },
+                        @{ declarative = $true; discoveryStatusCode = 404; projectionSubscriptionCount = 0; subscriptionPubsubName = $null; receiverPresent = $true; receiverTopicMetadataCount = 0; receiverPubsubName = $null; startupIndexWriterAliasRemoved = $true }
+                    )
+                } | ConvertTo-Json -Depth 8
             }
             'qualification-evidence/qualification.log' {
                 @(
@@ -705,6 +725,58 @@ try {
         ) -join "`n"
         Set-EvidenceContentAndRefreshInventory -Inventory $Inventory -PackageDirectory $PackageDirectory `
             -RelativePath $relativePath -Content $content
+    }
+    # Jointly refresh inventory hashes so these controls exercise proof semantics,
+    # rather than succeeding merely because the outer evidence hash went stale.
+    $seedMutations = @(
+        @{ Change = { param($proof) $proof.package.sha256 = '0' * 64 }; Message = 'does not bind the exact package' },
+        @{ Change = { param($proof) $proof.seed.loadedSha256 = '0' * 64 }; Message = 'does not bind the exact package' },
+        @{ Change = { param($proof) $proof.seed.sha256 = '0' * 64 }; Message = 'does not bind the exact package' },
+        @{ Change = { param($proof) $proof.seed.entry = 'source/Program.dll' }; Message = 'does not bind the exact package' },
+        @{ Change = { param($proof) $proof.package.version = '0.0.0' }; Message = 'does not bind the exact package' },
+        @{ Change = { param($proof) $proof.checks = @($proof.checks[0], $proof.checks[0]) }; Message = 'both modes exactly once' },
+        @{ Change = { param($proof) $proof.checks = @($proof.checks[0]) }; Message = 'both modes exactly once' },
+        @{ Change = { param($proof) $proof.checks[1].declarative = 'true' }; Message = 'both modes exactly once' },
+        @{ Change = { param($proof) $proof.checks[0].discoveryStatusCode = '200' }; Message = 'exact typed HTTP' },
+        @{ Change = { param($proof) $proof.checks[1].discoveryStatusCode = 200 }; Message = 'exact typed HTTP' },
+        @{ Change = { param($proof) $proof.checks[0].projectionSubscriptionCount = 2 }; Message = 'exact typed HTTP' },
+        @{ Change = { param($proof) $proof.checks[0].subscriptionPubsubName = 'pubsub' }; Message = 'exact typed HTTP' },
+        @{ Change = { param($proof) $proof.checks[0].receiverPubsubName = 'pubsub' }; Message = 'exact typed HTTP' },
+        @{ Change = { param($proof) $proof.checks[1].receiverTopicMetadataCount = 1 }; Message = 'exact typed HTTP' },
+        @{ Change = { param($proof) $proof.checks[1].receiverPresent = $false }; Message = 'exact typed HTTP' },
+        @{ Change = { param($proof) $proof.checks[0].startupIndexWriterAliasRemoved = $false }; Message = 'exact typed HTTP' },
+        @{ Change = { param($proof) $proof.package.sha256 = @($proof.package.sha256, $proof.package.sha256) }; Message = 'scalar string identities' },
+        @{ Change = { param($proof) $proof.seed.loadedSha256 = @($proof.seed.loadedSha256, $proof.seed.loadedSha256) }; Message = 'scalar string identities' },
+        @{ Change = { param($proof) $proof.checks[0].subscriptionPubsubName = @('configured-seed-events', 'configured-seed-events') }; Message = 'exact scalar or null pubsub' },
+        @{ Change = { param($proof) $proof.checks[1].receiverPubsubName = @() }; Message = 'exact scalar or null pubsub' },
+        @{ Change = { param($proof) $proof.package = @($proof.package) }; Message = 'object identities' },
+        @{ Change = { param($proof) $proof.seed = @($proof.seed) }; Message = 'object identities' },
+        @{ Change = { param($proof) $proof.checks = @(@($proof.checks[0]), @($proof.checks[1])) }; Message = 'object identities' }
+    )
+    $seedMutationIndex = 0
+    foreach ($mutation in $seedMutations) {
+        $seedMutationIndex++
+        Invoke-RejectionCase -PublishedVersion "9.8.100-seed.$seedMutationIndex" -ExpectedMessage $mutation.Message -Mutate {
+            param($Inventory, $PackageDirectory)
+            $relativePath = 'qualification-evidence/packaged-seed-subscriptions.json'
+            $proof = Get-Content -LiteralPath (Join-Path $PackageDirectory $relativePath) -Raw | ConvertFrom-Json
+            & $mutation.Change $proof
+            Set-EvidenceContentAndRefreshInventory -Inventory $Inventory -PackageDirectory $PackageDirectory `
+                -RelativePath $relativePath -Content ($proof | ConvertTo-Json -Depth 8)
+        }
+    }
+    Invoke-RejectionCase -PublishedVersion '9.8.100-seed.root-array' -ExpectedMessage 'object identities' -Mutate {
+        param($Inventory, $PackageDirectory)
+        $relativePath = 'qualification-evidence/packaged-seed-subscriptions.json'
+        $content = '[' + (Get-Content -LiteralPath (Join-Path $PackageDirectory $relativePath) -Raw) + ']'
+        Set-EvidenceContentAndRefreshInventory -Inventory $Inventory -PackageDirectory $PackageDirectory `
+            -RelativePath $relativePath -Content $content
+    }
+    Invoke-RejectionCase -PublishedVersion '9.8.100-seed.missing' -ExpectedMessage 'does not cover every required' -Mutate {
+        param($Inventory, $PackageDirectory)
+        $relativePath = 'qualification-evidence/packaged-seed-subscriptions.json'
+        $Inventory.qualificationEvidence = @($Inventory.qualificationEvidence | Where-Object file -CNE $relativePath)
+        Remove-Item -LiteralPath (Join-Path $PackageDirectory $relativePath)
     }
     Invoke-RejectionCase -PublishedVersion '9.8.23' -ExpectedMessage 'does not match qualified revision' -Mutate {
         param($Inventory)

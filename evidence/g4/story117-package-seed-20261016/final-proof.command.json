@@ -1,0 +1,20 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-g4-packaged-seed-subscriptions.ps1",
+    "-PackagePath",
+    "artifacts/story117-seed-20261016-verified/Hexalith.Builds.Module.Cli.4.31.2.nupkg",
+    "-Version",
+    "4.31.2",
+    "-OutputPath",
+    "evidence/g4/story117-package-seed-20261016/final-proof.json"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:44:58.527052+00:00",
+  "finishedAtUtc": "2026-10-16T12:45:02.896865+00:00",
+  "exitCode": 0,
+  "log": "final-proof.log",
+  "sha256": "44979f9c4d755e0ffe291016ec315c454cdc410588eb5877c904b4b9143608f9"
+}

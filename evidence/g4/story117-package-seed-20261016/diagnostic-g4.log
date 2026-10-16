@@ -1,0 +1,815 @@
+  Determining projects to restore...
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj (in 309 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj (in 308 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Evidence.Cli/Hexalith.Builds.Evidence.Cli.csproj (in 309 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj (in 327 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj (in 327 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj (in 351 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj (in 351 ms).
+  8 of 15 projects are up-to-date for restore.
+  Hexalith.Builds.Module.UiHost -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/bin/Release/net10.0/Hexalith.Builds.Module.UiHost.dll
+  P0Fixture.Ui.Descriptor -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll
+  P0Fixture.Inventory.Descriptor -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll
+  P0Fixture.Orders.Descriptor -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll
+  P0Fixture.Ui -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll
+  Hexalith.Builds.Module.EventStoreHost -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net10.0/Hexalith.Builds.Module.EventStoreHost.dll
+  P0Fixture.Inventory -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.dll
+  P0Fixture.Orders -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders/P0Fixture.Orders.dll
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.122.0, CommunityToolkit.Aspire.Hosting.Dapr/13.6.0-preview.1.261001-0243, required range 13.6.0-preview.1.261001-0243 for net10.0.
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin/Release/net10.0/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Module.AppHost -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/Hexalith.Builds.Module.AppHost.dll
+  Hexalith.Builds.Evidence.Cli -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Evidence.Cli/bin/Release/net10.0/Hexalith.Builds.Evidence.Cli.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Release/net10.0/Hexalith.Builds.Module.Cli.dll
+  Hexalith.Builds.Evidence.Tests -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll
+  Hexalith.Builds.Tooling.IntegrationTests -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll
+  Hexalith.Builds.Module.Tests -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:10.86
+Running tests from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "missing-rollback.json") (101ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE207"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    7    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   55   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/missing-rollback.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "dirty-evidence.json") (1ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/dirty-evidence.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "cancelled-without-profile.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/cancelled-without-profile.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "prerequisite-is-passing-run.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/prerequisite-is-passing-run.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "approval-in-future.json") (2ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE208"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    8    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   56   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/approval-in-future.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "evidence-other-revision.json") (1ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/evidence-other-revision.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "approval-before-runs.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE208"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    8    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   56   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/approval-before-runs.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "missing-package.json") (1ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE204"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    4    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   52   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/missing-package.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "package-version-not-lockstep.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE204"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    4    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   52   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/package-version-not-lockstep.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "control-run-with-report.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE206"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    6    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   54   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/control-run-with-report.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "cleanup-not-down-evidence.json") (1ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE207"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    7    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   55   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/cleanup-not-down-evidence.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "unsupported-profile-as-unavailable.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/unsupported-profile-as-unavailable.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "approval-revision-mismatch.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE208"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    8    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   56   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/approval-revision-mismatch.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "report-not-bound.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE206"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    6    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   54   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/report-not-bound.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "report-platform-mismatch.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE206"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    6    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   54   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/report-platform-mismatch.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "failed-native-report.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE206"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    6    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   54   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/failed-native-report.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "mtp-run-cites-vstest-evidence.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE206"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    6    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   54   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/mtp-run-cites-vstest-evidence.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "all-skipped-report.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/all-skipped-report.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "manifest-hash-mismatch.json") (1ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE203"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    3    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   51   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/manifest-hash-mismatch.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "duplicate-run-key.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/duplicate-run-key.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "report-count-mismatch.json") (2ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE206"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    6    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   54   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/report-count-mismatch.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "wrong-feed.json") (3ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE204"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    4    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   52   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/wrong-feed.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "missing-mtp-run.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/missing-mtp-run.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "partial-persisted-assertions.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/partial-persisted-assertions.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "cleanup-foreign-run.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE207"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    7    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   55   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/cleanup-foreign-run.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "tampered-evidence-hash.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/tampered-evidence-hash.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "unavailable-claimed-passing.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/unavailable-claimed-passing.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "package-identity-mismatch.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE204"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    4    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   52   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/package-identity-mismatch.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "missing-approval.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE208"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    8    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   56   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/missing-approval.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.NegativeControlMatchesItsExpectationAsync(control: "command-mismatch.json") (0ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "HXE202"
+      should be
+  "HXE205"
+      but was not
+      difference
+  Difference     |                           |   
+                 |                          \|/  
+  Index          | 0    1    2    3    4    5    
+  Expected Value | H    X    E    2    0    5    
+  Actual Value   | H    X    E    2    0    2    
+  Expected Code  | 72   88   69   50   48   53   
+  Actual Code    | 72   88   69   50   48   50   
+  
+  Additional Info:
+      acceptance/negative/command-mismatch.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:100
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.PositiveRecordMatchesItsExpectationAsync (5ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : 6
+      should be
+  0
+      but was not
+  
+  Additional Info:
+      acceptance/positive/p0-acceptance.json
+    at Hexalith.Builds.Evidence.Tests.G4P0AcceptanceValidatorTests.AssertMatchesExpectationAsync(String relativePath) in /_/test/Hexalith.Builds.Evidence.Tests/G4P0AcceptanceValidatorTests.cs:94
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+/home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64) failed with 31 error(s) (812ms)
+Exit code: 2
+
+Test run summary: Failed!
+  total: 107
+  failed: 31
+  succeeded: 76
+  skipped: 0
+  duration: 962ms
+Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)
+Exception: /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/Tools/test-g4-tool-package-contracts.ps1:103
+Line |
+ 103 |              throw "dotnet $($Arguments -join ' ') failed with exit co …
+     |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | dotnet test
+     | /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj --configuration Release --no-restore failed with exit code 2.

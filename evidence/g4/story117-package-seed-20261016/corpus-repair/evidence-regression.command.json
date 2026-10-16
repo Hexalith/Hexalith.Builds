@@ -1,0 +1,17 @@
+{
+  "command": [
+    "dotnet",
+    "test",
+    "test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj",
+    "--configuration",
+    "Release",
+    "--no-restore",
+    "--no-build"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:05:25.211198+00:00",
+  "finishedAtUtc": "2026-10-16T13:05:26.783465+00:00",
+  "exitCode": 0,
+  "log": "evidence-regression.log",
+  "sha256": "24ed182a058a0fb5d2d013bd931509ec64cf6d4fda59573624d4e85db6e5fc5f"
+}

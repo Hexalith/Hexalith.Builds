@@ -1,0 +1,15 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Platform/contents/hexalith-platform.json?ref=5690e82c9a5246ea17f328524427846a6b657535",
+    "--jq",
+    "{sha,encoding,content}"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:34:13.405075+00:00",
+  "finishedAtUtc": "2026-10-16T12:34:13.746340+00:00",
+  "exitCode": 0,
+  "log": "platform-current-identity.log",
+  "sha256": "57e49a7ea8a448d13416b634adfa14ee08fd1fe7d5e9c085489dd50cc8af638c"
+}

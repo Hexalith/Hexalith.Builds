@@ -1,0 +1,9 @@
+Running tests from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+/home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64) passed (941ms)
+
+Test run summary: Passed!
+  total: 107
+  failed: 0
+  succeeded: 107
+  skipped: 0
+  duration: 1s 116ms

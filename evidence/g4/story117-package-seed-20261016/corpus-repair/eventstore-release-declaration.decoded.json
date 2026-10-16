@@ -1,0 +1,459 @@
+{
+  "schema": "hexalith.module-manifest.v2",
+  "modules": [
+    {
+      "identity": {
+        "moduleId": "eventstore",
+        "servers": [
+          {
+            "id": "gateway",
+            "appId": "eventstore",
+            "resourceId": "eventstore",
+            "enabled": true,
+            "required": true
+          }
+        ],
+        "dependencies": []
+      },
+      "runtime": {
+        "dapr": [
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "Dapr:StateStoreComponent"
+          },
+          {
+            "role": "events",
+            "capability": "pubsub",
+            "recoveryClass": "rebuild-only",
+            "configurationKey": "Dapr:PubSubComponent"
+          },
+          {
+            "role": "rate-limit-configuration",
+            "capability": "configuration",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "Dapr:ConfigurationStoreComponent"
+          }
+        ],
+        "extensions": [
+          {
+            "packageId": "Hexalith.EventStore.Aspire",
+            "configurationInputs": [
+              {
+                "key": "EventStore:DaprConfigPath",
+                "source": "configuration",
+                "reference": "daprconfigpath"
+              },
+              {
+                "key": "EventStore:StateStoreComponentPath",
+                "source": "configuration",
+                "reference": "statestorecomponentpath"
+              },
+              {
+                "key": "EventStore:PubSubComponentPath",
+                "source": "configuration",
+                "reference": "pubsubcomponentpath"
+              },
+              {
+                "key": "Authentication:JwtBearer:Authority",
+                "source": "configuration",
+                "reference": "authority"
+              },
+              {
+                "key": "Authentication:JwtBearer:Issuer",
+                "source": "configuration",
+                "reference": "issuer"
+              },
+              {
+                "key": "Authentication:JwtBearer:Audience",
+                "source": "configuration",
+                "reference": "audience"
+              },
+              {
+                "key": "Authentication:JwtBearer:ValidAudiences",
+                "source": "configuration",
+                "reference": "validaudiences"
+              },
+              {
+                "key": "Authentication:JwtBearer:AllowedAlgorithms",
+                "source": "configuration",
+                "reference": "allowedalgorithms"
+              },
+              {
+                "key": "Authentication:JwtBearer:RequireHttpsMetadata",
+                "source": "configuration",
+                "reference": "requirehttpsmetadata"
+              },
+              {
+                "key": "Authentication:JwtBearer:AllowInsecureSymmetricKey",
+                "source": "configuration",
+                "reference": "allowinsecuresymmetrickey"
+              },
+              {
+                "key": "Authentication:JwtBearer:SigningKey",
+                "source": "secret",
+                "reference": "gateway-jwt-signing-key"
+              },
+              {
+                "key": "EventStore:AppChannelToken",
+                "source": "secret",
+                "reference": "app-channel-token"
+              },
+              {
+                "key": "Authentication:DaprInternal",
+                "source": "configuration",
+                "reference": "daprinternal"
+              },
+              {
+                "key": "Authentication:DaprInternal:Audience",
+                "source": "configuration",
+                "reference": "daprinternalaudience"
+              },
+              {
+                "key": "Authentication:DaprInternal:AllowedCallers",
+                "source": "configuration",
+                "reference": "daprinternalallowedcallers"
+              },
+              {
+                "key": "Authentication:DaprInternal:MaximumLifetimeSeconds",
+                "source": "configuration",
+                "reference": "daprinternalmaximumlifetimeseconds"
+              },
+              {
+                "key": "EventStore:Projections",
+                "source": "configuration",
+                "reference": "projections"
+              },
+              {
+                "key": "EventStore:Projections:WorkersEnabled",
+                "source": "configuration",
+                "reference": "workersenabled"
+              },
+              {
+                "key": "EventStore:Projections:CheckpointStateStoreName",
+                "source": "configuration",
+                "reference": "checkpointstatestorename"
+              },
+              {
+                "key": "EventStore:Projections:ReadModelStateStoreName",
+                "source": "configuration",
+                "reference": "readmodelstatestorename"
+              },
+              {
+                "key": "EventStore:Projections:DefaultRefreshIntervalMs",
+                "source": "configuration",
+                "reference": "defaultrefreshintervalms"
+              },
+              {
+                "key": "EventStore:Projections:Domains",
+                "source": "configuration",
+                "reference": "domains"
+              },
+              {
+                "key": "EventStore:Projections:RebuildIndexCleanupCadenceSeconds",
+                "source": "configuration",
+                "reference": "rebuildindexcleanupcadenceseconds"
+              },
+              {
+                "key": "EventStore:Projections:RebuildPageSize",
+                "source": "configuration",
+                "reference": "rebuildpagesize"
+              },
+              {
+                "key": "EventStore:Projections:RebuildMaxPrefixEventCount",
+                "source": "configuration",
+                "reference": "rebuildmaxprefixeventcount"
+              },
+              {
+                "key": "EventStore:Projections:RebuildMaxPrefixBytes",
+                "source": "configuration",
+                "reference": "rebuildmaxprefixbytes"
+              },
+              {
+                "key": "EventStore:ProjectionDispatch",
+                "source": "configuration",
+                "reference": "projectiondispatch"
+              },
+              {
+                "key": "EventStore:ProjectionDispatch:MaxRetryAttempts",
+                "source": "configuration",
+                "reference": "maxretryattempts"
+              },
+              {
+                "key": "EventStore:ProjectionDispatch:RetryScanBatchSize",
+                "source": "configuration",
+                "reference": "retryscanbatchsize"
+              },
+              {
+                "key": "EventStore:ProjectionDispatch:RetryBaseDelay",
+                "source": "configuration",
+                "reference": "retrybasedelay"
+              },
+              {
+                "key": "EventStore:ProjectionDispatch:RetryMaxDelay",
+                "source": "configuration",
+                "reference": "retrymaxdelay"
+              },
+              {
+                "key": "EventStore:ProjectionDispatch:RetryWorkerInterval",
+                "source": "configuration",
+                "reference": "retryworkerinterval"
+              },
+              {
+                "key": "EventStore:ProjectionDispatch:RetryLeaseDuration",
+                "source": "configuration",
+                "reference": "retryleaseduration"
+              },
+              {
+                "key": "EventStore:ProjectionDeliveryIdempotency",
+                "source": "configuration",
+                "reference": "projectiondeliveryidempotency"
+              },
+              {
+                "key": "EventStore:ProjectionDeliveryIdempotency:CompletedReceiptLimit",
+                "source": "configuration",
+                "reference": "completedreceiptlimit"
+              },
+              {
+                "key": "EventStore:ProjectionDeliveryIdempotency:ReservationLease",
+                "source": "configuration",
+                "reference": "reservationlease"
+              },
+              {
+                "key": "EventStore:ProjectionDeliveryIdempotency:MaxStateTransitionAttempts",
+                "source": "configuration",
+                "reference": "maxstatetransitionattempts"
+              },
+              {
+                "key": "Authentication:WorkloadIssuer",
+                "source": "configuration",
+                "reference": "workloadissuer"
+              },
+              {
+                "key": "Authentication:WorkloadIssuer:Workload",
+                "source": "configuration",
+                "reference": "workloadissuerworkload"
+              },
+              {
+                "key": "Authentication:WorkloadIssuer:LifetimeSeconds",
+                "source": "configuration",
+                "reference": "workloadissuerlifetimeseconds"
+              },
+              {
+                "key": "Authentication:WorkloadIssuer:AudienceScopePrefix",
+                "source": "configuration",
+                "reference": "workloadissueraudiencescopeprefix"
+              },
+              {
+                "key": "Authentication:WorkloadIssuer:OperationScopePrefix",
+                "source": "configuration",
+                "reference": "workloadissueroperationscopeprefix"
+              },
+              {
+                "key": "Authentication:WorkloadIssuer:ClientId",
+                "source": "configuration",
+                "reference": "workloadissuerclientid"
+              },
+              {
+                "key": "Authentication:WorkloadIssuer:ClientSecret",
+                "source": "secret",
+                "reference": "workload-issuer-client-secret"
+              },
+              {
+                "key": "Authentication:WorkloadIssuer:TokenEndpoint",
+                "source": "configuration",
+                "reference": "workloadissuertokenendpoint"
+              },
+              {
+                "key": "EventStore:DomainServices:ConfigStoreName",
+                "source": "configuration",
+                "reference": "domainservicesconfigstorename"
+              }
+            ]
+          }
+        ],
+        "resources": [
+          {
+            "server": "gateway",
+            "requests": {},
+            "limits": {},
+            "volumes": []
+          }
+        ]
+      },
+      "surfaces": {
+        "interfaces": [
+          {
+            "name": "eventstore-gateway",
+            "server": "gateway",
+            "protocol": "http",
+            "routePrefix": "/api/v1",
+            "exposure": "public",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "authenticated",
+              "permissions": []
+            },
+            "callers": [],
+            "operations": [
+              {
+                "name": "submit-command",
+                "kind": "command",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "query",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "command-status",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "stream",
+                "kind": "query",
+                "authorizationPolicy": "authenticated"
+              },
+              {
+                "name": "replay",
+                "kind": "administration",
+                "authorizationPolicy": "authenticated"
+              }
+            ]
+          }
+        ]
+      },
+      "integration": {
+        "topics": [
+          {
+            "name": "eventstore-events",
+            "role": "events",
+            "deadLetter": {
+              "strategy": "none"
+            }
+          }
+        ],
+        "secrets": [
+          {
+            "name": "app-channel-token",
+            "configurationKey": "EventStore:AppChannelToken"
+          },
+          {
+            "name": "gateway-jwt-signing-key",
+            "configurationKey": "Authentication:JwtBearer:SigningKey"
+          },
+          {
+            "name": "workload-issuer-client-secret",
+            "configurationKey": "Authentication:WorkloadIssuer:ClientSecret"
+          }
+        ],
+        "dynamicSecretNamespaces": [],
+        "identityNeeds": [
+          {
+            "name": "gateway-workload",
+            "audience": "domain-services",
+            "roles": [
+              "invoker"
+            ],
+            "claims": [
+              "eventstore:operation"
+            ],
+            "applicationPrincipal": true
+          }
+        ],
+        "egress": [
+          {
+            "name": "gateway-oidc-metadata",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority/.well-known/openid-configuration"
+          },
+          {
+            "name": "gateway-oidc-jwks",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority -> metadata.jwks_uri"
+          },
+          {
+            "name": "workload-issuer-explicit-token",
+            "protocol": "https",
+            "destination": "Authentication:WorkloadIssuer:TokenEndpoint (when configured)"
+          },
+          {
+            "name": "workload-issuer-discovered-token",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority -> metadata.token_endpoint (when TokenEndpoint omitted)"
+          }
+        ],
+        "providers": [],
+        "workers": [
+          {
+            "name": "projection-delivery-retry",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "EventStore:Projections:WorkersEnabled",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "projection-activation",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "EventStore:Projections:WorkersEnabled",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "projection-polling",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "EventStore:Projections:WorkersEnabled",
+              "disabledValue": false
+            }
+          },
+          {
+            "name": "projection-active-index-cleanup",
+            "kind": "external-effect",
+            "disableControl": {
+              "configurationKey": "EventStore:Projections:WorkersEnabled",
+              "disabledValue": false
+            }
+          }
+        ]
+      },
+      "lifecycle": {
+        "readiness": [
+          {
+            "server": "gateway",
+            "kind": "http",
+            "endpoint": "/ready"
+          }
+        ],
+        "tasks": [],
+        "recoveryHooks": [],
+        "fenceHooks": [],
+        "replay": {
+          "reopenBeforeReplay": false
+        },
+        "startup": {},
+        "criticalFlows": [
+          {
+            "name": "submit-command",
+            "surface": "eventstore-gateway",
+            "operations": [
+              "submit-command",
+              "command-status"
+            ]
+          }
+        ],
+        "smokeSurfaces": [],
+        "classification": {
+          "changeClass": "additive",
+          "reason": "Declare the existing gateway minimum; admin hosts remain optional."
+        },
+        "recoveryInventory": []
+      }
+    }
+  ]
+}

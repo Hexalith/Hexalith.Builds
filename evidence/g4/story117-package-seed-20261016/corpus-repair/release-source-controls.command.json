@@ -1,0 +1,12 @@
+{
+  "command": [
+    "bash",
+    "Tools/test-g4-release-source.sh"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:11:59.440692+00:00",
+  "finishedAtUtc": "2026-10-16T13:11:59.519424+00:00",
+  "exitCode": 0,
+  "log": "release-source-controls.log",
+  "sha256": "1c171431ca21615e4f3507c84de691c009f6dad67822abbbdfc3701ec1e440f5"
+}

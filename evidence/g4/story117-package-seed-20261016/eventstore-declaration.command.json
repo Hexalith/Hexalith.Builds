@@ -1,0 +1,15 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.EventStore/contents/module/hexalith.module-manifest.v2.json?ref=v3.122.0",
+    "--jq",
+    "{sha,encoding,content}"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:31:02.618371+00:00",
+  "finishedAtUtc": "2026-10-16T12:31:03.030807+00:00",
+  "exitCode": 0,
+  "log": "eventstore-declaration.log",
+  "sha256": "881324ab3912896b3fb3bdceceeb52077e4a601d4a57977360092eac86e23bd9"
+}

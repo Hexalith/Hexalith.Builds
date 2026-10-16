@@ -1,0 +1,14 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-publish-g4-tool-packages.ps1"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:30:01.128736+00:00",
+  "finishedAtUtc": "2026-10-16T12:34:11.514061+00:00",
+  "exitCode": 0,
+  "log": "publisher-contracts-final.log",
+  "sha256": "41b61c20b63d07eef2555e65d1b0e18f7f7e7242634b1ffdd176156cb203e40d"
+}

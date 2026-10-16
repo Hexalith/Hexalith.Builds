@@ -1,0 +1,15 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/compare/728174f506d56204657e0c52e98a4453aef79f6a...d84d30f5a95135f534feecd33ae6b7173d40260c",
+    "--jq",
+    "{status,ahead_by,behind_by,commits:[.commits[]|{sha,message:.commit.message}],files:[.files[]|{filename,status}]}"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:29:31.734367+00:00",
+  "finishedAtUtc": "2026-10-16T12:29:32.556399+00:00",
+  "exitCode": 0,
+  "log": "builds-remote-delta.log",
+  "sha256": "683f2582d7a3ceb16961c829c35e9d6eabe676b9225eacb24390778115f8c7b7"
+}

@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "evidence/g4/story117-package-seed-20261016/corpus-repair/refresh-observations.py"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:08:38.429203+00:00",
+  "finishedAtUtc": "2026-10-16T13:08:40.779388+00:00",
+  "exitCode": 0,
+  "log": "remote-refresh-correct-path.log",
+  "sha256": "a78ff396dec24ad3b4140ebf3dce2aff15d9ca940f7d3fbf5f1de7f7695326db"
+}

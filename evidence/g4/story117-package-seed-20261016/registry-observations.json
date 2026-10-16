@@ -1,0 +1,62 @@
+[
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/eventstore/manifests/3.122.0",
+    "startedAtUtc": "2026-10-16T12:31:03.538944+00:00",
+    "finishedAtUtc": "2026-10-16T12:31:03.553760+00:00",
+    "status": 401,
+    "digest": null,
+    "bodySha256": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "body": "registry-eventstore-manifests.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/eventstore/referrers/None",
+    "startedAtUtc": "2026-10-16T12:31:03.553788+00:00",
+    "finishedAtUtc": "2026-10-16T12:31:03.561648+00:00",
+    "status": 401,
+    "digest": null,
+    "bodySha256": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "body": "registry-eventstore-referrers.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/tenants/manifests/5.8.0",
+    "startedAtUtc": "2026-10-16T12:31:03.561683+00:00",
+    "finishedAtUtc": "2026-10-16T12:31:03.569438+00:00",
+    "status": 401,
+    "digest": null,
+    "bodySha256": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "body": "registry-tenants-manifests.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/tenants/referrers/None",
+    "startedAtUtc": "2026-10-16T12:31:03.569477+00:00",
+    "finishedAtUtc": "2026-10-16T12:31:03.577468+00:00",
+    "status": 401,
+    "digest": null,
+    "bodySha256": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "body": "registry-tenants-referrers.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/memories/manifests/2.27.1",
+    "startedAtUtc": "2026-10-16T12:31:03.577522+00:00",
+    "finishedAtUtc": "2026-10-16T12:31:03.585477+00:00",
+    "status": 401,
+    "digest": null,
+    "bodySha256": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "body": "registry-memories-manifests.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://registry.hexalith.com/v2/memories/referrers/None",
+    "startedAtUtc": "2026-10-16T12:31:03.585509+00:00",
+    "finishedAtUtc": "2026-10-16T12:31:03.592814+00:00",
+    "status": 401,
+    "digest": null,
+    "bodySha256": "0e481f7e6815732df3a6ad1fde3a5927b020c2dc7325b9dd0cc18c7f18b76b54",
+    "body": "registry-memories-referrers.json"
+  }
+]

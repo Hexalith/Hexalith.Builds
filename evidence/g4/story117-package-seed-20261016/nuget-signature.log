@@ -1,0 +1,8 @@
+
+Verifying Hexalith.Builds.Module.Cli.4.31.2
+Content hash: ueVFmgssHMlsjHnVV35pMiFUS1LxW1uNg/ZjBQS2iM7UIW9/xF26ADHZK2l8B6KVwY9RuMGDw5W3IqjG60j7zQ==
+
+Signature type: Repository
+  Subject Name: CN=NuGet.org Repository by Microsoft, O=NuGet.org Repository by Microsoft, L=Redmond, S=Washington, C=US
+  SHA256 hash: 1F4B311D9ACC115C8DC8018B5A49E00FCE6DA8E2855F9F014CA6F34570BC482D
+  Valid from: 02/23/2024 01:00:00 to 05/19/2027 01:59:59

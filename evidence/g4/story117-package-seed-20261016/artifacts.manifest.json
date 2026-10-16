@@ -1,0 +1,32 @@
+{
+  "path": "evidence/g4/story117-package-seed-20261016/artifacts.tar.gz",
+  "sha256": "e5ffda14a6839138c1d04e1d0ec82d820b0f27d8d22380b72f6acf82be5d2afc",
+  "sizeBytes": 74533678,
+  "membersSha256": {
+    "diagnostic/platform-version-catalog.json": "15a8cd5e7972b1820057d5a083bc262c8d54d3a4f5b3749722b9bcffed61a8cb",
+    "diagnostic/Hexalith.Builds.Module.Cli.4.31.2.nupkg": "cc805c77901e3c03dc636d7de87da19f793364cf3905ae9933594f6f8ccfd4c9",
+    "diagnostic/Hexalith.Builds.Evidence.Cli.4.31.2.snupkg": "3c3ad60ee2ed7e8ffe3c98ab575cbc8d6f4470bf18aca132475f5396bbd9256f",
+    "diagnostic/Hexalith.Builds.Evidence.Cli.4.31.2.nupkg": "3cfd2532d14c7e26a8a936725217af47a0687b4d22ab8711e45637997fcb1d31",
+    "diagnostic/g4-tool-package-inventory.json": "31ba926b4722d061b4f96b4de2d9abfdcea9fb84e7b82a14bc9ba6df11904450",
+    "diagnostic/Hexalith.Builds.Module.Cli.4.31.2.snupkg": "81ce4f8b47c9ed8357661ab05e2e895fda69886918199b246202c31bab8ffdb8",
+    "diagnostic/qualification-evidence/qualification.log": "278a4499759c9676e9a8ae3df1cb90ba11376f7a181b9e8ab4dd11004c5bbcbe",
+    "diagnostic/qualification-evidence/packaged-seed-subscriptions.json": "bbc9fa7ff3b18e860de8734f4498fd8e6beb6b26c11f8784adc9a74651a35f97",
+    "published/Hexalith.Builds.Module.Cli.4.31.2.nupkg": "cc89eea1ae8ec9ded0dd304e94f7658082ae7614d339abb881de146b0471ffae",
+    "published/subscription-proof.json": "6c115b569329f00d465e9fd5e190f7a649d179d13c2be09bf8dddffa071d0223",
+    "reviewed/subscription-proof.json": "bbc9fa7ff3b18e860de8734f4498fd8e6beb6b26c11f8784adc9a74651a35f97",
+    "source/Hexalith.Builds.prepared.patch": "3df7df5d39b1f3f6da8101f64587eff6203cca3835593174a71549299a635ded",
+    "source/source-binding.json": "22ba93baac4da81a0115bbaf9aedfe1f0d548de816cb1aa642146d15daa88907",
+    "source/Tools/G4PackageQualification.functions.ps1": "38fe4ee066187595219ec10d35aec4acbae4d0065ae7ed92b810dce58ce148ed",
+    "source/Tools/publish-g4-tool-packages.ps1": "9802b155c61b3c6352f5abaf66fb8947968e6552ebd8e1ddfadead8b7cb908b3",
+    "source/Tools/test-g4-tool-package-contracts.ps1": "91e42adc495c54619283fd2beab8b733d79f3ce6e586db0db7c1f6b2999fe832",
+    "source/Tools/test-publish-g4-tool-packages.ps1": "25b6e58c58ec8dd6436ac761328a84656704a42c912534967fa3c5f94a219f8f",
+    "source/Tools/test-g4-tool-package-artifact-validator.ps1": "584102ee619652a018fb70030f4619beabf44062c2457948b9d5b24fd5435e8b",
+    "source/Tools/test-g4-packaged-seed-subscriptions.ps1": "aaf81d01b946c6c4ee3e0f50d1074feba3e5832c0a9fe09c5450df7523ee7aea",
+    "source/Tools/PackagedSeedProbe/PackagedSeedProbe.cs": "90d1862c1dfe05cfec407c75c6595a5532664c52cc89915541544ccf9df4c401",
+    "source/Tools/PackagedSeedProbe/PackagedSeedProbe.csproj": "f41d07743e15a6136784fbbe1f6882f2b59d3593a3294e249671565994a0e916",
+    "source/Tools/README.md": "5649bb35ccf6a06910a9d36bbd27a4fd3c72dca857f45c343dac02b9d5fb60f5",
+    "source/Tools/package-version-audit.json": "48a5374d6d1db7dc120187bebf57057e50365436f9c476136d252f0ef15d0c61",
+    "source/src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs": "3000aea0569f734c39953e9bcc93536e3afea693e271f44887a853710d3ff8d7",
+    "source/Props/Directory.Packages.props": "c0d2e3a0433543483f844e9feccf08e40e2c431a422fb4d7cf52656cd0728a48"
+  }
+}

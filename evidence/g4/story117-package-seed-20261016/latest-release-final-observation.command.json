@@ -1,0 +1,15 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/releases/latest",
+    "--jq",
+    "{tag_name,target_commitish,published_at,assets:[.assets[]|{name,digest}]}"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:49:05.705292+00:00",
+  "finishedAtUtc": "2026-10-16T12:49:06.046535+00:00",
+  "exitCode": 0,
+  "log": "latest-release-final-observation.log",
+  "sha256": "5e532a43471706ef2ec044b45cb616568b2ad84403520fac95702efcc799c035"
+}

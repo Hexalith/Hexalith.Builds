@@ -1,0 +1,14 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "Tools/test-g4-tool-package-contract-gate.ps1"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:27:33.898961+00:00",
+  "finishedAtUtc": "2026-10-16T12:28:06.921405+00:00",
+  "exitCode": 0,
+  "log": "package-gate-contracts.log",
+  "sha256": "d9250c34aa1d89c964739b72fa60bf5e92cc47e137b035f83ac4b030d854c686"
+}

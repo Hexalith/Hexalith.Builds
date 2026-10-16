@@ -1,0 +1,18 @@
+{
+  "command": [
+    "dotnet",
+    "build",
+    "Hexalith.Builds.slnx",
+    "--configuration",
+    "Release",
+    "--no-restore",
+    "-m:1",
+    "-p:GeneratePackageOnBuild=false"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:31:35.223105+00:00",
+  "finishedAtUtc": "2026-10-16T12:31:44.528051+00:00",
+  "exitCode": 0,
+  "log": "release-build-triage.log",
+  "sha256": "51c10082084d092c29c7e743d62fa15b8e8cce25df0cfb312c323f5199fb87a6"
+}

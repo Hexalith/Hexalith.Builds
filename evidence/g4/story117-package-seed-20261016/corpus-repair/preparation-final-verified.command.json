@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "Tools/prepare-g4-synthetic-acceptance.py"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T13:11:08.763480+00:00",
+  "finishedAtUtc": "2026-10-16T13:11:11.817134+00:00",
+  "exitCode": 0,
+  "log": "preparation-final-verified.log",
+  "sha256": "f1643132f82e35cf3f4b1b20127ec3ed66e7cbf5c6305f81fa74602ca9cb24b9"
+}

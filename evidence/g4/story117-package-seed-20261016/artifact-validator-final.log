@@ -1,0 +1,2 @@
+warning: in the working copy of 'test/fixtures/eol/Sample.cs', LF will be replaced by CRLF the next time Git touches it
+G-4 tool package artifact validator tests passed: 63 scenarios.

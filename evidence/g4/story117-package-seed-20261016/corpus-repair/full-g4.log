@@ -1,0 +1,91 @@
+  Determining projects to restore...
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj (in 228 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj (in 235 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj (in 254 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj (in 254 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Evidence.Cli/Hexalith.Builds.Evidence.Cli.csproj (in 238 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj (in 238 ms).
+  Restored /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj (in 238 ms).
+  8 of 15 projects are up-to-date for restore.
+  Hexalith.Builds.Module.EventStoreHost -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net10.0/Hexalith.Builds.Module.EventStoreHost.dll
+  P0Fixture.Ui -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll
+  P0Fixture.Orders.Descriptor -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll
+  P0Fixture.Inventory.Descriptor -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll
+  P0Fixture.Ui.Descriptor -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll
+  P0Fixture.Inventory -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.dll
+  P0Fixture.Orders -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders/P0Fixture.Orders.dll
+  Hexalith.Builds.Module.UiHost -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/bin/Release/net10.0/Hexalith.Builds.Module.UiHost.dll
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.122.0, CommunityToolkit.Aspire.Hosting.Dapr/13.6.0-preview.1.261001-0243, required range 13.6.0-preview.1.261001-0243 for net10.0.
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin/Release/net10.0/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Evidence.Cli -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Evidence.Cli/bin/Release/net10.0/Hexalith.Builds.Evidence.Cli.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Release/net10.0/Hexalith.Builds.Module.Cli.dll
+  Hexalith.Builds.Module.AppHost -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/Hexalith.Builds.Module.AppHost.dll
+  Hexalith.Builds.Evidence.Tests -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll
+  Hexalith.Builds.Tooling.IntegrationTests -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll
+  Hexalith.Builds.Module.Tests -> /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:15.56
+Running tests from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64)
+/home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll (net10.0|x64) passed (820ms)
+
+Test run summary: Passed!
+  total: 107
+  failed: 0
+  succeeded: 107
+  skipped: 0
+  duration: 972ms
+Running tests from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+skipped Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceAppHostTests.PlatformPlanDelegatesToThePinnedModelAsync
+  This integration assertion requires the enclosing Platform checkout.
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+failed Hexalith.Builds.ModuleTool.Tests.CompositionPrerequisiteProbeTests.AspireUnavailableObservationsFailClosedAsync(mode: "failed") (8ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : "Aspire CLI observed 'missing'; expected Aspire.AppHost.Sdk/13.6.1."
+      should contain (case insensitive comparison)
+  "(exit "
+      but did not
+    at Hexalith.Builds.ModuleTool.Tests.CompositionPrerequisiteProbeTests.AspireUnavailableObservationsFailClosedAsync(String mode) in /_/test/Hexalith.Builds.Module.Tests/CompositionPrerequisiteProbeTests.cs:218
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+failed Hexalith.Builds.ModuleTool.Tests.CompositionPrerequisiteProbeTests.WrongRuntimeBinaryVersionIsUnavailableAsync (422ms)
+  from /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+  Shouldly.ShouldAssertException : ["HXR010", "HXR013"]
+      should be
+  ["HXR013"]
+      but was not (case sensitive comparison)
+      difference
+  [*"HXR010"*, *"HXR013"*]
+    at Hexalith.Builds.ModuleTool.Tests.CompositionPrerequisiteProbeTests.WrongRuntimeBinaryVersionIsUnavailableAsync() in /_/test/Hexalith.Builds.Module.Tests/CompositionPrerequisiteProbeTests.cs:112
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    --- End of stack trace from previous location ---
+    at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+    at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+    at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+/home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64) failed with 2 error(s) (1m 16s 461ms)
+Exit code: 2
+  Standard output: g4: waiting for Dapr invocation of 'selected-app'.
+
+Test run summary: Failed!
+  total: 812
+  failed: 2
+  succeeded: 809
+  skipped: 1
+  duration: 1m 16s 621ms
+Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)
+Exception: /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/Tools/test-g4-tool-package-contracts.ps1:103
+Line |
+ 103 |              throw "dotnet $($Arguments -join ' ') failed with exit co …
+     |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | dotnet test
+     | /home/administrator/projects/hexalith/folders/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj --configuration Release --no-restore failed with exit code 2.

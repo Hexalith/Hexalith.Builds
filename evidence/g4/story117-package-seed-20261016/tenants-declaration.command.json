@@ -1,0 +1,15 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Tenants/contents/module/hexalith.module-manifest.v2.json?ref=v5.8.0",
+    "--jq",
+    "{sha,encoding,content}"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/folders/references/Hexalith.Builds",
+  "startedAtUtc": "2026-10-16T12:31:02.700481+00:00",
+  "finishedAtUtc": "2026-10-16T12:31:03.013104+00:00",
+  "exitCode": 1,
+  "log": "tenants-declaration.log",
+  "sha256": "e74b878486db1fc673f35c8fe02a4df2515e2e288dffea9bbd1d8404bc1b2630"
+}
