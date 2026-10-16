@@ -287,6 +287,7 @@ internal static class CompositionTestFiles
             + "\"eventStoreEndpoint\":\"http://localhost:1\",\"uiEndpoint\":\"http://localhost:2\","
             + "\"resources\":[{\"name\":\"eventstore\",\"kind\":\"project\",\"state\":\"Healthy\"}]}";
         string program = "string mode = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, \"mode.txt\")).Trim();\n"
+            + "if (mode == \"slow-descriptor\" && args.Contains(\"--descriptor-child\")) { await Task.Delay(30000); return 0; }\n"
             + "if (mode == \"exit\") { return 7; }\n"
             + "if (mode == \"preflight-refusal\") { Console.Error.WriteLine(\"owner/source.json: gateway: required binding is unavailable\"); return 7; }\n"
             + "if (args.Contains(\"--validate-platform\")) { if (mode == \"slow-preflight\") await Task.Delay(30000); return 0; }\n"

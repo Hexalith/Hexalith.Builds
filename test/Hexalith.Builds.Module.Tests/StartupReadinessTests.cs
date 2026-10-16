@@ -716,6 +716,37 @@ public sealed class StartupReadinessTests
         result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("sample/verify", StringComparison.Ordinal) && diagnostic.Message.Contains(rule, StringComparison.Ordinal));
     }
 
+    /// <summary>Verifies v1 descriptor child execution shares the original startup deadline.</summary>
+    /// <returns>The descriptor deadline assertions.</returns>
+    [Fact]
+    public async Task DescriptorLoadingUsesRemainingDeadlineAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost uses POSIX tools.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(root, "slow-descriptor", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionEngine engine = new(Options(root, appHost) with
+            {
+                DescriptorChildEntryAssemblyPath = appHost,
+                ReadinessTimeout = TimeSpan.FromSeconds(2),
+            });
+            Stopwatch elapsed = Stopwatch.StartNew();
+            CompositionStartResult result = await engine.StartAsync(ExecutableManifest(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(8));
+            result.Result.Outcome.RuleId.ShouldBe("HXR021");
+            result.RunId.ShouldBeNull();
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     private static PlatformModuleDeclaration Declaration(string json) =>
         new("fixture.json", JsonSerializer.Deserialize<JsonElement>(json));
 
