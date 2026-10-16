@@ -7,6 +7,8 @@ namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
 using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
 using System.Text.Json;
 
 using Aspire.Hosting;
@@ -299,7 +301,9 @@ public sealed class AppHostRunnerValidationTests
             ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
             await PublishAsync(notifications, resource, HealthStatus.Healthy, processId).ConfigureAwait(true);
 
-            (await RunReadiness.WaitAndWriteAsync(app, plan, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
+            using CancellationTokenSource readyBound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            readyBound.CancelAfter(TimeSpan.FromSeconds(5));
+            (await RunReadiness.WaitAndWriteAsync(app, plan, readyBound.Token).ConfigureAwait(true)).ShouldBeTrue();
 
             CompositionReadiness readiness = (await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(plan.ReadinessPath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
             CompositionResourceReadiness ready = readiness.Resources.Single();
@@ -312,6 +316,97 @@ public sealed class AppHostRunnerValidationTests
             CompositionReadinessProgress progress = (await CompositionDocumentStore.TryReadAsync<CompositionReadinessProgress>(CompositionReadinessProgress.PathFor(plan.Workspace), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
             progress.Resources.Single().State.ShouldBe("Healthy");
             progress.Resources.Single().ProcessId.ShouldBe(4242);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies initial readiness waits when an earlier resource regresses while a later module initializes.</summary>
+    /// <returns>The simultaneous health and recovery assertions.</returns>
+    [Fact]
+    public async Task InitialReadinessRechecksEarlierHealthBeforePublishingAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with
+            {
+                Modules = [new CompositionRunModule("worker", "worker", "worker-app", Path.Combine(root, "worker.csproj"))],
+                UiMarkers = [],
+                Ports = CompositionPortAllocator.Allocate(1),
+                StartupDeadlineUtc = DateTimeOffset.UtcNow.AddSeconds(10),
+            };
+            IDistributedApplicationBuilder builder = CreateBuilder();
+            ExecutableResource first = builder.AddExecutable("eventstore", "unused", root).WithHttpEndpoint(port: 32123).Resource;
+            EndpointAnnotation endpoint = first.Annotations.OfType<EndpointAnnotation>().Single();
+            endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, "127.0.0.1", 32123);
+            ExecutableResource last = builder.AddExecutable("worker", "unused", root).Resource;
+            await using DistributedApplication app = builder.Build();
+            ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
+            await PublishAsync(notifications, first, HealthStatus.Healthy, 123).ConfigureAwait(true);
+            await PublishAsync(notifications, last, HealthStatus.Healthy, 456).ConfigureAwait(true);
+            using HttpListener listener = new();
+            listener.Prefixes.Add($"http://127.0.0.1:{plan.Ports.EventStoreDaprHttp}/");
+            listener.Start();
+            using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            bound.CancelAfter(TimeSpan.FromSeconds(8));
+#pragma warning disable CA2025 // The pending readiness task is cancelled and drained before the bound and application are disposed.
+            Task<bool> waiting = RunReadiness.WaitAndWriteAsync(app, plan, bound.Token);
+#pragma warning restore CA2025
+            try
+            {
+                // The later module's invocation handshake proves the earlier resource already passed its wait.
+                HttpListenerContext invocation = await listener.GetContextAsync().WaitAsync(bound.Token).ConfigureAwait(true);
+                try
+                {
+                    await PublishAsync(notifications, first, HealthStatus.Unhealthy, 123).ConfigureAwait(true);
+                }
+                finally
+                {
+                    invocation.Response.StatusCode = 200;
+                    invocation.Response.Close();
+                }
+
+                string progressPath = CompositionReadinessProgress.PathFor(plan.Workspace);
+                CompositionReadinessProgress? progress;
+                do
+                {
+                    progress = await CompositionDocumentStore.TryReadAsync<CompositionReadinessProgress>(progressPath, bound.Token).ConfigureAwait(true);
+                    if (progress?.Resources.Any(resource => resource.Name == "eventstore" && resource.State == "Unhealthy") == true)
+                    {
+                        break;
+                    }
+
+                    await Task.Delay(10, bound.Token).ConfigureAwait(true);
+                }
+                while (true);
+                Task winner = await Task.WhenAny(waiting, Task.Delay(TimeSpan.FromMilliseconds(300), bound.Token)).ConfigureAwait(true);
+                winner.ShouldNotBe(waiting);
+                File.Exists(plan.ReadinessPath).ShouldBeFalse();
+
+                await PublishAsync(notifications, first, HealthStatus.Healthy, 789).ConfigureAwait(true);
+                HttpListenerContext retry = await listener.GetContextAsync().WaitAsync(bound.Token).ConfigureAwait(true);
+                retry.Response.StatusCode = 200;
+                retry.Response.Close();
+                (await waiting.ConfigureAwait(true)).ShouldBeTrue();
+                CompositionReadiness ready = (await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(plan.ReadinessPath, bound.Token).ConfigureAwait(true)).ShouldNotBeNull();
+                ready.Resources.ShouldAllBe(resource => resource.State == "Healthy");
+                ready.Resources.Single(resource => resource.Name == "eventstore").ProcessId.ShouldBe(789);
+            }
+            finally
+            {
+                await bound.CancelAsync().ConfigureAwait(true);
+                try
+                {
+                    _ = await waiting.ConfigureAwait(true);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Assertion failures still drain the bounded startup before disposing the application.
+                }
+            }
         }
         finally
         {
@@ -465,6 +560,200 @@ public sealed class AppHostRunnerValidationTests
         }
     }
 
+    /// <summary>Verifies a post-task refresh evaluates module health even when Aspire's cached snapshot is healthy.</summary>
+    /// <returns>The fresh health and nonce-correlation assertions.</returns>
+    [Fact]
+    public async Task ReadinessRefreshRechecksModuleHealthBeforeAcknowledgingAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with
+            {
+                Modules = [],
+                UiMarkers = [],
+                StartupDeadlineUtc = DateTimeOffset.UtcNow.AddSeconds(10),
+            };
+            IDistributedApplicationBuilder builder = CreateBuilder();
+            int healthy = 0;
+            TaskCompletionSource evaluated = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            _ = builder.Services.AddHealthChecks().AddCheck("module-defined", () =>
+            {
+                _ = evaluated.TrySetResult();
+                return Volatile.Read(ref healthy) == 1 ? HealthCheckResult.Healthy() : HealthCheckResult.Unhealthy();
+            });
+            ExecutableResource resource = builder.AddExecutable("eventstore", "unused", root).WithHttpEndpoint(port: 32123).WithHealthCheck("module-defined").Resource;
+            EndpointAnnotation endpoint = resource.Annotations.OfType<EndpointAnnotation>().Single();
+            endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, "127.0.0.1", 32123);
+            await using DistributedApplication app = builder.Build();
+            ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
+            await PublishAsync(notifications, resource, HealthStatus.Healthy, 123).ConfigureAwait(true);
+            using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            bound.CancelAfter(TimeSpan.FromSeconds(8));
+#pragma warning disable CA2025 // The pending refresh is cancelled and drained in finally before the bound and app are disposed.
+            Task<bool> refresh = RunReadiness.RefreshAsync(app, plan, CompositionTestFiles.RunId, bound.Token);
+#pragma warning restore CA2025
+            try
+            {
+                await evaluated.Task.WaitAsync(bound.Token).ConfigureAwait(true);
+                refresh.IsCompleted.ShouldBeFalse();
+                while (!File.Exists(CompositionReadinessProgress.PathFor(plan.Workspace)))
+                {
+                    await Task.Delay(10, bound.Token).ConfigureAwait(true);
+                }
+
+                CompositionReadinessProgress progress = (await CompositionDocumentStore.TryReadAsync<CompositionReadinessProgress>(CompositionReadinessProgress.PathFor(plan.Workspace), bound.Token).ConfigureAwait(true)).ShouldNotBeNull();
+                progress.Resources.Single().State.ShouldBe("Unhealthy");
+                File.Exists(plan.ReadinessPath).ShouldBeFalse();
+                await PublishAsync(notifications, resource, HealthStatus.Healthy, 456).ConfigureAwait(true);
+                _ = Interlocked.Exchange(ref healthy, 1);
+                (await refresh.ConfigureAwait(true)).ShouldBeTrue();
+                CompositionReadiness ready = (await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(plan.ReadinessPath, bound.Token).ConfigureAwait(true)).ShouldNotBeNull();
+                ready.RefreshId.ShouldBe(CompositionTestFiles.RunId);
+                ready.Resources.Single().ProcessId.ShouldBe(456);
+                ready.Resources.Single().Detail.ShouldBe("module-ready");
+            }
+            finally
+            {
+                await bound.CancelAsync().ConfigureAwait(true);
+                try
+                {
+                    _ = await refresh.ConfigureAwait(true);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Assertion failures still drain the bounded refresh before disposing the application.
+                }
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies running state alone cannot satisfy a refresh when the module has no health check.</summary>
+    /// <param name="name">The unannotated resource name, including a sidecar-like name.</param>
+    /// <returns>The missing-health assertions.</returns>
+    [Theory]
+    [InlineData("module")]
+    [InlineData("module-dapr-cli")]
+    public async Task ReadinessRefreshRefusesMissingModuleHealthAsync(string name)
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root);
+            IDistributedApplicationBuilder builder = CreateBuilder();
+            ExecutableResource resource = builder.AddExecutable(name, "unused", root).Resource;
+            await using DistributedApplication app = builder.Build();
+            await PublishAsync(app.Services.GetRequiredService<ResourceNotificationService>(), resource, HealthStatus.Healthy, 123).ConfigureAwait(true);
+            using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            bound.CancelAfter(TimeSpan.FromMilliseconds(400));
+            _ = await Should.ThrowAsync<OperationCanceledException>(() => RunReadinessHealth.WaitAsync(app, plan, [resource], bound.Token)).ConfigureAwait(true);
+            CompositionReadinessProgress progress = (await CompositionDocumentStore.TryReadAsync<CompositionReadinessProgress>(CompositionReadinessProgress.PathFor(plan.Workspace), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            progress.Resources.Single().Detail.ShouldBe("module-health-unavailable");
+            File.Exists(plan.ReadinessPath).ShouldBeFalse();
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies a post-task refresh requires an actual infrastructure protocol response alongside module health.</summary>
+    /// <param name="infrastructureHealthy">Whether Redis answers PING successfully.</param>
+    /// <returns>The fresh composed readiness assertions.</returns>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReadinessRefreshRequiresInfrastructureProtocolHealthAsync(bool infrastructureHealthy)
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            using TcpListener listener = new(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with
+            {
+                Modules = [],
+                UiMarkers = [],
+                StartupDeadlineUtc = DateTimeOffset.UtcNow.AddSeconds(10),
+            };
+            IDistributedApplicationBuilder builder = CreateBuilder();
+            _ = builder.Services.AddHealthChecks()
+                .AddCheck("module-defined", () => HealthCheckResult.Healthy())
+                .AddCheck("infrastructure-redis", new RedisPingHealthCheck(port));
+            ExecutableResource module = builder.AddExecutable("eventstore", "unused", root).WithHttpEndpoint(port: 32123).WithHealthCheck("module-defined").Resource;
+            EndpointAnnotation endpoint = module.Annotations.OfType<EndpointAnnotation>().Single();
+            endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, "127.0.0.1", 32123);
+            ContainerResource infrastructure = builder.AddContainer("redis", "unused").WithHealthCheck("infrastructure-redis").Resource;
+            await using DistributedApplication app = builder.Build();
+            ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
+            await PublishAsync(notifications, module, HealthStatus.Healthy, 123).ConfigureAwait(true);
+            await PublishAsync(notifications, infrastructure, HealthStatus.Healthy, null).ConfigureAwait(true);
+            (string? failure, bool elapsed) = await CompositionStartupTasks.RunAsync(
+                [new CompositionStartupTask("sample", "verify", OperatingSystem.IsWindows() ? Path.Combine(Environment.SystemDirectory, "cmd.exe") : "/bin/sh", OperatingSystem.IsWindows() ? ["/c", "exit 0"] : ["-c", "exit 0"])],
+                plan.StartupDeadlineUtc.Value,
+                TestContext.Current.CancellationToken).ConfigureAwait(true);
+            failure.ShouldBeNull();
+            elapsed.ShouldBeFalse();
+            using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            bound.CancelAfter(TimeSpan.FromSeconds(5));
+#pragma warning disable CA2025 // The refresh is cancelled and drained before the listener, token source and app are disposed.
+            Task<bool> refresh = RunReadiness.RefreshAsync(app, plan, CompositionTestFiles.RunId, bound.Token);
+#pragma warning restore CA2025
+            try
+            {
+                using TcpClient client = await listener.AcceptTcpClientAsync(bound.Token).ConfigureAwait(true);
+                NetworkStream stream = client.GetStream();
+                byte[] request = new byte[6];
+                await stream.ReadExactlyAsync(request, bound.Token).ConfigureAwait(true);
+                request.ShouldBe("PING\r\n"u8.ToArray());
+                await stream.WriteAsync(infrastructureHealthy ? "+PONG\r\n"u8.ToArray() : "-ERR unavailable\r\n"u8.ToArray(), bound.Token).ConfigureAwait(true);
+                if (infrastructureHealthy)
+                {
+                    (await refresh.ConfigureAwait(true)).ShouldBeTrue();
+                    CompositionReadiness ready = (await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(plan.ReadinessPath, bound.Token).ConfigureAwait(true)).ShouldNotBeNull();
+                    ready.RefreshId.ShouldBe(CompositionTestFiles.RunId);
+                    ready.Resources.Select(resource => resource.Name).ShouldBe(["eventstore", "redis"]);
+                    ready.Resources.ShouldAllBe(resource => resource.State == "Healthy");
+                }
+                else
+                {
+                    string path = CompositionReadinessProgress.PathFor(plan.Workspace);
+                    while (!File.Exists(path))
+                    {
+                        await Task.Delay(10, bound.Token).ConfigureAwait(true);
+                    }
+
+                    CompositionReadinessProgress progress = (await CompositionDocumentStore.TryReadAsync<CompositionReadinessProgress>(path, bound.Token).ConfigureAwait(true)).ShouldNotBeNull();
+                    progress.Resources.Single().Name.ShouldBe("redis");
+                    progress.Resources.Single().Detail.ShouldBe("module-health-unhealthy");
+                    refresh.IsCompleted.ShouldBeFalse();
+                    File.Exists(plan.ReadinessPath).ShouldBeFalse();
+                }
+            }
+            finally
+            {
+                await bound.CancelAsync().ConfigureAwait(true);
+                try
+                {
+                    _ = await refresh.ConfigureAwait(true);
+                }
+                catch (OperationCanceledException)
+                {
+                    // A failed infrastructure check remains unready until the original bound cancels it.
+                }
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     private static IDistributedApplicationBuilder CreateBuilder() => DistributedApplication.CreateBuilder(new DistributedApplicationOptions
     {
         Args = [],
@@ -474,9 +763,20 @@ public sealed class AppHostRunnerValidationTests
     });
 
     private static Task PublishAsync(ResourceNotificationService notifications, IResource resource, HealthStatus health, object? processId) =>
-        notifications.PublishUpdateAsync(resource, snapshot => (snapshot with
+        notifications.PublishUpdateAsync(resource, snapshot =>
         {
-            State = new ResourceStateSnapshot(KnownResourceStates.Running, string.Empty),
-            Properties = processId is null ? [] : [new ResourcePropertySnapshot("executable.pid", processId)],
-        }).WithHealthReports([new HealthReportSnapshot("ready", health, "module-ready", string.Empty)]));
+            CustomResourceSnapshot observed = (snapshot with
+            {
+                State = new ResourceStateSnapshot(KnownResourceStates.Running, string.Empty),
+                Properties = processId is null ? [] : [new ResourcePropertySnapshot("executable.pid", processId)],
+            }).WithHealthReports([new HealthReportSnapshot("ready", health, "module-ready", string.Empty)]);
+            if (health == HealthStatus.Healthy)
+            {
+                // Aspire also waits for its internal resource-ready event after the module health check succeeds.
+                PropertyInfo ready = typeof(CustomResourceSnapshot).GetProperty("ResourceReadyEvent", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                ready.SetValue(observed, Activator.CreateInstance(ready.PropertyType, Task.CompletedTask));
+            }
+
+            return observed;
+        });
 }

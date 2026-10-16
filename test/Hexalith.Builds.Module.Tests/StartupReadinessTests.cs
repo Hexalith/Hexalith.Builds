@@ -268,6 +268,8 @@ public sealed class StartupReadinessTests
         File.Exists(Path.Combine(state.DiagnosticsPath, "summary.json")).ShouldBeTrue();
         using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(state.DiagnosticsPath, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
         summary.RootElement.GetProperty("failingTask").GetString().ShouldBe("sample/verify");
+        result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("failed before", StringComparison.Ordinal));
+        result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Message.Contains("deadline elapsed", StringComparison.Ordinal));
     }
 
     /// <summary>Verifies a per-start task becomes ready only when its arguments are supplied.</summary>
@@ -306,7 +308,7 @@ public sealed class StartupReadinessTests
         }
     }
 
-    /// <summary>Verifies a startup task that outlives the deadline is named and does not run to completion.</summary>
+    /// <summary>Verifies a startup task that outlives the deadline reports expiry and does not run to completion.</summary>
     /// <returns>The bounded-task assertion.</returns>
     [Fact]
     public async Task StartupTaskIsStoppedAtTheDeadlineAsync()
@@ -333,8 +335,36 @@ public sealed class StartupReadinessTests
 
         result.Session.ShouldBeNull();
         result.Result.Outcome.RuleId.ShouldBe("HXR021");
-        result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("sample/verify", StringComparison.Ordinal));
+        result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("within the readiness bound", StringComparison.Ordinal));
+        result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Message.Contains("failed before", StringComparison.Ordinal));
+        CompositionRunState state = (await engine.StateStore.TryReadAsync(result.RunId!, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(state.DiagnosticsPath!, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        summary.RootElement.GetProperty("failingTask").ValueKind.ShouldBe(JsonValueKind.Null);
         stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(20));
+    }
+
+    /// <summary>Verifies the task's local deadline returns expiry rather than a nonzero-exit failure.</summary>
+    /// <returns>The direct local-deadline assertions.</returns>
+    [Fact]
+    public async Task RunningTaskDeadlineReturnsElapsedWithoutFailureAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The startup task double uses a POSIX script.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        string executable = Path.Combine(workspace.Root, "slow.sh");
+        string started = Path.Combine(workspace.Root, "task-started");
+        CompositionTestFiles.WriteScript(executable, "touch task-started\nsleep 60\n");
+        (string? failingTask, bool deadlineElapsed) = await CompositionStartupTasks.RunAsync(
+            [new CompositionStartupTask("sample", "verify", executable, [])],
+            DateTimeOffset.UtcNow.AddMilliseconds(500),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        File.Exists(started).ShouldBeTrue();
+        failingTask.ShouldBeNull();
+        deadlineElapsed.ShouldBeTrue();
     }
 
     /// <summary>Verifies a deadline that elapsed before a task starts is not reported as that task.</summary>
@@ -688,32 +718,33 @@ public sealed class StartupReadinessTests
         Directory.Exists(Path.Combine(workspace.Root, "workspaces", result.RunId!)).ShouldBeFalse();
     }
 
-    /// <summary>Verifies unresolved task executables keep their path-validation cause in failure output.</summary>
+    /// <summary>Verifies task selection retains executable validation causes if a path cannot be resolved.</summary>
     /// <param name="executable">The invalid executable declaration.</param>
     /// <param name="rule">The expected executable-path rule.</param>
-    /// <returns>The startup task failure assertions.</returns>
+    /// <returns>The selected task assertions.</returns>
     [Theory]
     [InlineData("tools/missing.sh", "HXM005")]
     [InlineData("../invalid.sh", "HXM004")]
-    public async Task StartupTaskExecutableCauseIsReportedAsync(string executable, string rule)
+    public async Task StartupTaskExecutableCauseIsPreservedAsync(string executable, string rule)
     {
-        if (OperatingSystem.IsWindows())
+        string root = CompositionTestFiles.CreateDirectory();
+        try
         {
-            Assert.Skip("The fake AppHost uses POSIX tools.");
+            PlatformModuleDeclaration declaration = Declaration(JsonSerializer.Serialize(new
+            {
+                identity = new { moduleId = "sample" },
+                lifecycle = new { tasks = new[] { new { name = "verify", scope = "per-start-verify", executable } } },
+            }));
+            CompositionStartupTask selected = CompositionStartupTasks.Select(Path.Combine(root, "module.json"), [declaration]).Single();
+            selected.ExecutableError.ShouldNotBeNull().ShouldContain(rule);
+            (string? failingTask, bool deadlineElapsed) = await CompositionStartupTasks.RunAsync([selected], DateTimeOffset.UtcNow.AddSeconds(5), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            failingTask.ShouldBe("sample/verify");
+            deadlineElapsed.ShouldBeFalse();
         }
-
-        using PlatformManifestTestWorkspace workspace = new();
-        workspace.Change("modules.0.lifecycle.tasks.0.executable", JsonSerializer.Serialize(executable));
-        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
-        CompositionEngine engine = new(Options(workspace.Root, appHost) with
+        finally
         {
-            SourceMapping = Mapping(workspace.Root),
-            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
-        });
-        CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        result.IsReady.ShouldBeFalse();
-        result.Result.Outcome.RuleId.ShouldBe("HXR021");
-        result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("sample/verify", StringComparison.Ordinal) && diagnostic.Message.Contains(rule, StringComparison.Ordinal));
+            CompositionTestFiles.Delete(root);
+        }
     }
 
     /// <summary>Verifies v1 descriptor child execution shares the original startup deadline.</summary>
@@ -763,7 +794,7 @@ public sealed class StartupReadinessTests
         };
 
     private static SourceMapping Mapping(string root) =>
-        new(WorkspaceMode.Source, root, "Hexalith.Platform", [new SourceMappingEntry("Hexalith.Platform", "source", root)], false);
+        CompositionTestFiles.CreatePlatformMapping(root);
 
     private static Process StartTagged(string runId)
     {

@@ -92,7 +92,15 @@ public static class ModuleCommandExecutionService
             }
         }
 
-        CancellationToken setupToken = testBudget?.Token ?? cancellationToken;
+        using CompositionStartupRequest? startupRequest = PersistsAfterExit(command)
+            ? new CompositionStartupRequest(startedUtc, compositionOptions?.ReadinessTimeout ?? TimeSpan.FromSeconds(SupportedPlatformManifestSchemas.DefaultStartupTimeoutSeconds), cancellationToken)
+            : null;
+        if (startupRequest is not null && (compositionOptions is not null || descriptorChildEntryAssemblyPath is not null))
+        {
+            compositionOptions = (compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath!)) with { StartupRequestedAtUtc = startedUtc };
+        }
+
+        CancellationToken setupToken = startupRequest?.Token ?? testBudget?.Token ?? cancellationToken;
         if (command == ModuleInvocationCommand.Debug)
         {
             mode = WorkspaceMode.Source;
@@ -116,17 +124,28 @@ public static class ModuleCommandExecutionService
             // A direct reference may contain a stale or absent working-tree manifest.
             // Resolve its recorded gitlink before parsing any of its bytes.
             SourceMapping? preResolvedMapping = null;
-            if (command != ModuleInvocationCommand.Down
-                && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath)
-                && !await (compositionOptions?.RootManifestCheckOverride?.Invoke(manifestPath, setupToken) ?? WorkspaceRootResolver.IsRootManifestAsync(manifestPath, setupToken)).ConfigureAwait(false))
+            if (command != ModuleInvocationCommand.Down && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath))
             {
-                preResolvedMapping = await (compositionOptions?.MappingResolverOverride?.Invoke(manifestPath, mode, setupToken) ?? WorkspaceRootResolver.ResolveAsync(manifestPath, mode, setupToken)).ConfigureAwait(false);
-                _identityWarnings.Value = PlatformIdentityResolver.Diagnostics(preResolvedMapping.IdentityFindings, warning: true);
+                bool rootManifest = await (compositionOptions?.RootManifestCheckOverride?.Invoke(manifestPath, setupToken) ?? WorkspaceRootResolver.IsRootManifestAsync(manifestPath, setupToken)).ConfigureAwait(false);
+                if (rootManifest && startupRequest is not null)
+                {
+                    await startupRequest.ConfigureAsync(manifestPath, mode, compositionOptions?.SourceMapping).ConfigureAwait(false);
+                }
+
+                if (!rootManifest)
+                {
+                    preResolvedMapping = await (compositionOptions?.MappingResolverOverride?.Invoke(manifestPath, mode, setupToken) ?? WorkspaceRootResolver.ResolveAsync(manifestPath, mode, setupToken)).ConfigureAwait(false);
+                    _identityWarnings.Value = PlatformIdentityResolver.Diagnostics(preResolvedMapping.IdentityFindings, warning: true);
+                    if (startupRequest is not null)
+                    {
+                        await startupRequest.ConfigureAsync(manifestPath, mode, preResolvedMapping).ConfigureAwait(false);
+                    }
+                }
             }
 
             if (PlatformManifestCommand.IsV2(manifestPath))
             {
-                return await ExecutePlatformAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, testBudget, cancellationToken).ConfigureAwait(false);
+                return await ExecutePlatformAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, testBudget, startupRequest?.Token, cancellationToken).ConfigureAwait(false);
             }
 
             ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
@@ -322,7 +341,7 @@ public static class ModuleCommandExecutionService
             {
                 CompositionEngineOptions earlyOptions = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
                 preResolutionAspire = await CompositionPrerequisiteProbe.ProbeAspireAsync(
-                    earlyOptions.AspireCommand, earlyOptions.AspireProbeTimeout, cancellationToken).ConfigureAwait(false);
+                    earlyOptions.AspireCommand, earlyOptions.AspireProbeTimeout, setupToken).ConfigureAwait(false);
                 if (preResolutionAspire is not null)
                 {
                     return await WriteResultAsync(
@@ -347,7 +366,8 @@ public static class ModuleCommandExecutionService
                 CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
                 loadedManifest = null;
                 SourceMapping mapping = preResolvedMapping
-                    ?? await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
+                    ?? options.SourceMapping
+                    ?? await (options.MappingResolverOverride?.Invoke(manifestPath, mode, setupToken) ?? WorkspaceRootResolver.ResolveAsync(manifestPath, mode, setupToken)).ConfigureAwait(false);
                 _identityWarnings.Value = PlatformIdentityResolver.Diagnostics(mapping.IdentityFindings, warning: true);
                 options = options with { SourceMapping = mapping };
 
@@ -434,7 +454,7 @@ public static class ModuleCommandExecutionService
                 }
 
                 ToolDiagnostic? aspire = preResolvedMapping is null ? preResolutionAspire : await CompositionPrerequisiteProbe.ProbeAspireAsync(
-                    options.AspireCommand, options.AspireProbeTimeout, cancellationToken).ConfigureAwait(false);
+                    options.AspireCommand, options.AspireProbeTimeout, setupToken).ConfigureAwait(false);
                 if (aspire is not null)
                 {
                     return await WriteResultAsync(
@@ -454,7 +474,7 @@ public static class ModuleCommandExecutionService
                 }
 
                 // A rejected pinned catalog must not run descriptor child code.
-                IReadOnlyList<ToolDiagnostic>? catalogRefusal = await PreflightPinnedCatalogAsync(mapping, options.WorkspaceRoot, cancellationToken).ConfigureAwait(false);
+                IReadOnlyList<ToolDiagnostic>? catalogRefusal = await PreflightPinnedCatalogAsync(mapping, options.WorkspaceRoot, setupToken).ConfigureAwait(false);
                 if (catalogRefusal is not null)
                 {
                     return await WriteResultAsync(
@@ -477,7 +497,7 @@ public static class ModuleCommandExecutionService
                     manifest,
                     manifestPath,
                     descriptorChildEntryAssemblyPath,
-                    cancellationToken,
+                    setupToken,
                     mapping).ConfigureAwait(false);
                 if (!descriptorResult.IsValid)
                 {
@@ -727,6 +747,12 @@ public static class ModuleCommandExecutionService
                 evidencePath,
                 startedUtc,
                 cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && startupRequest?.Token.IsCancellationRequested == true)
+        {
+            CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath!);
+            CompositionStartResult expired = await new CompositionEngine(options).ReportSetupTimeoutAsync(startedUtc, startupRequest.Deadline).ConfigureAwait(false);
+            return await WriteResultAsync(expired.Result.Status, expired.Result.Outcome, expired.Result.Diagnostics, format, writer, command, manifestPath, loadedManifest, profile, filter, evidencePath, startedUtc, CancellationToken.None, expired.RunId).ConfigureAwait(false);
         }
         catch (WorkspaceMappingException exception)
         {
@@ -987,11 +1013,12 @@ public static class ModuleCommandExecutionService
         WorkspaceMode mode,
         SourceMapping? preResolvedMapping,
         ModuleTestExecutionBudget? testBudget,
+        CancellationToken? startupToken,
         CancellationToken cancellationToken)
     {
         if (command != ModuleInvocationCommand.Test)
         {
-            return await ExecutePlatformLifecycleAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, cancellationToken).ConfigureAwait(false);
+            return await ExecutePlatformLifecycleAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, startupToken ?? cancellationToken, cancellationToken).ConfigureAwait(false);
         }
 
         PlatformManifestValidationResult validation = PlatformManifestValidator.Validate([manifestPath], cancellationToken);
@@ -1198,6 +1225,7 @@ public static class ModuleCommandExecutionService
         CompositionEngineOptions? compositionOptions,
         WorkspaceMode mode,
         SourceMapping? preResolvedMapping,
+        CancellationToken startupToken,
         CancellationToken cancellationToken)
     {
         CompositionEngine? engine = null;
@@ -1230,7 +1258,12 @@ public static class ModuleCommandExecutionService
             else
             {
                 CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
-                SourceMapping? mapping = command == ModuleInvocationCommand.Down ? null : preResolvedMapping ?? options.SourceMapping ?? await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
+                SourceMapping? mapping = null;
+                if (command != ModuleInvocationCommand.Down)
+                {
+                    mapping = preResolvedMapping ?? await (options.MappingResolverOverride?.Invoke(manifestPath, mode, startupToken) ?? (options.SourceMapping is not null ? Task.FromResult(options.SourceMapping) : WorkspaceRootResolver.ResolveAsync(manifestPath, mode, startupToken))).ConfigureAwait(false);
+                }
+
                 if (command == ModuleInvocationCommand.Debug && mapping is { Mode: not WorkspaceMode.Source })
                 {
                     mapping = mapping with { Mode = WorkspaceMode.Source };

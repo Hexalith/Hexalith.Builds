@@ -6,8 +6,10 @@
 namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Diagnostics;
+using System.Text.Json.Nodes;
 
 using Hexalith.Builds.Tooling.Runtime;
+using Hexalith.Builds.Tooling.Workspace;
 
 using Shouldly;
 
@@ -20,6 +22,29 @@ internal static class CompositionTestFiles
     /// A fixed, well-formed run identity.
     /// </summary>
     public const string RunId = "0123456789abcdef0123456789abcdef";
+
+    /// <summary>Creates real source-owner declarations for a fake Platform model boundary.</summary>
+    /// <param name="root">The test workspace.</param>
+    /// <returns>The source mapping including every authoritative reference owner.</returns>
+    public static SourceMapping CreatePlatformMapping(string root)
+    {
+        List<SourceMappingEntry> entries = [new("Hexalith.Platform", "source", root)];
+        string fixture = File.ReadAllText(Path.Combine(RepositoryRoot(), "test", "fixtures", "module", "platform", "valid.json"));
+        foreach (string owner in new[] { "eventstore", "tenants", "memories" })
+        {
+            string identity = CompositionDeclarationClosure.Repository(owner);
+            string directory = Path.Combine(root, "references", identity);
+            _ = Directory.CreateDirectory(Path.Combine(directory, "module"));
+            File.WriteAllText(Path.Combine(directory, "Hexalith.Builds.slnx"), "<Solution />");
+            File.WriteAllText(Path.Combine(directory, "README.md"), "fixture");
+            JsonNode document = JsonNode.Parse(fixture.Replace("sample", owner, StringComparison.Ordinal).Replace("Sample", owner, StringComparison.Ordinal))!;
+            document["modules"]![0]!["lifecycle"]!["tasks"] = new JsonArray();
+            File.WriteAllText(Path.Combine(directory, "module", "hexalith.module-manifest.v2.json"), document.ToJsonString());
+            entries.Add(new SourceMappingEntry(identity, "source", directory));
+        }
+
+        return new SourceMapping(WorkspaceMode.Source, root, "Hexalith.Platform", entries, false);
+    }
 
     /// <summary>
     /// Creates a unique temporary directory.
@@ -297,7 +322,7 @@ internal static class CompositionTestFiles
             + "if (File.Exists(mappingPath)) { File.Copy(mappingPath, Path.Combine(AppContext.BaseDirectory, \"captured-mapping.json\")); "
             + "File.WriteAllText(Path.Combine(AppContext.BaseDirectory, \"captured-mapping-hash.txt\"), "
             + "Environment.GetEnvironmentVariable(\"HEXALITH_SOURCE_MAPPING_HASH\") ?? \"\"); } if (mode == \"capture\") return 0; }\n"
-            + "if (mode == \"ready\" || mode == \"unready\") { using var readyPlan = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan)); "
+            + "if (mode == \"ready\" || mode == \"post-task-regression\" || mode == \"unready\") { using var readyPlan = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan)); "
             + "var root = readyPlan.RootElement; bool debugAttach = root.TryGetProperty(\"debugAttach\", out var debugFlag) && debugFlag.ValueKind == System.Text.Json.JsonValueKind.True; "
             + "string runId = root.GetProperty(\"runId\").GetString()!; string workspace = root.GetProperty(\"workspace\").GetString()!; "
             + "if (mode == \"unready\") { File.WriteAllText(System.IO.Path.Combine(workspace, \"readiness-progress.json\"), "
@@ -317,7 +342,8 @@ internal static class CompositionTestFiles
             + "System.Text.Json.JsonSerializer.Serialize(new { schema = \"hexalith.g4-startup-failure.v1\", runId, "
             + "ruleId = \"HXR027\", resource = \"eventstore\", appId = \"eventstore\", status = \"cutover-activation-HTTP-403\" })); }\n"
             + "Console.WriteLine(\"observed\");\n"
-            + "Console.In.ReadLine();\n"
+            + "var stopping = Task.Run(() => Console.In.ReadLine());\n"
+            + "while (!stopping.IsCompleted) { using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan)); var run = doc.RootElement; string workspace = run.GetProperty(\"workspace\").GetString()!; string requestPath = Path.Combine(workspace, \"resource-control-request.json\"); if (File.Exists(requestPath)) { var request = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(requestPath))!; if (request[\"command\"]!.GetValue<string>() == \"refresh-readiness\") { File.Delete(requestPath); string readyPath = run.GetProperty(\"readinessPath\").GetString()!; if (mode == \"post-task-regression\" && File.Exists(Path.Combine(AppContext.BaseDirectory, \"regressed\"))) { File.WriteAllText(Path.Combine(workspace, \"readiness-progress.json\"), System.Text.Json.JsonSerializer.Serialize(new { schema = \"hexalith.g4-readiness-progress.v1\", runId = run.GetProperty(\"runId\").GetString(), resources = new[] { new { name = \"eventstore\", kind = \"project\", state = \"Unhealthy\", detail = \"module-health-unhealthy\" } } })); } else { var fresh = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(readyPath))!; fresh[\"refreshId\"] = request[\"nonce\"]!.GetValue<string>(); File.WriteAllText(readyPath, fresh.ToJsonString()); } } } await Task.Delay(25); }\n"
             + "return 0;\n";
         await File.WriteAllTextAsync(Path.Combine(project, "Program.cs"), program, cancellationToken).ConfigureAwait(false);
         ProcessStartInfo start = new("dotnet")

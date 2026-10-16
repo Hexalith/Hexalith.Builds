@@ -27,91 +27,8 @@ internal static class RunReadiness
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>True when readiness was written; false when a resource reached a terminal state.</returns>
     /// <exception cref="InvalidOperationException">A required endpoint was not allocated.</exception>
-    public static async Task<bool> WaitAndWriteAsync(DistributedApplication app, CompositionRunPlan plan, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(app);
-        ArgumentNullException.ThrowIfNull(plan);
-
-        ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
-        DistributedApplicationModel model = app.Services.GetRequiredService<DistributedApplicationModel>();
-
-        // Resources that start only on explicit request (such as Aspire project rebuilders) are not part of the run.
-        IResource[] runnable = RunnableResources(model);
-        List<CompositionResourceReadiness> resources = [];
-        foreach (IResource resource in runnable)
-        {
-            await WriteProgressAsync(plan, Observe(runnable, notifications)).ConfigureAwait(false);
-            Console.WriteLine($"g4: waiting for resource '{resource.Name}' to become healthy.");
-            using CancellationTokenSource probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            probe.CancelAfter(CompositionStartupClock.Remaining(plan.StartupDeadlineUtc, DateTimeOffset.UtcNow));
-            try
-            {
-                _ = await notifications.WaitForResourceHealthyAsync(
-                    resource.Name,
-                    WaitBehavior.StopOnResourceUnavailable,
-                    probe.Token).ConfigureAwait(false);
-            }
-            catch (DistributedApplicationException)
-            {
-                await ReportObservedFailureAsync(plan, model, runnable, notifications, resource, "HXR025").ConfigureAwait(false);
-                return false;
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-                await ReportObservedFailureAsync(plan, model, runnable, notifications, resource, "HXR025").ConfigureAwait(false);
-                return false;
-            }
-
-            resources.Add(new CompositionResourceReadiness(resource.Name, Kind(resource), "Healthy")
-            {
-                Detail = "module-ready",
-                ProcessId = TryProcessId(notifications, resource.Name),
-            });
-        }
-
-        await WriteProgressAsync(plan, Observe(runnable, notifications)).ConfigureAwait(false);
-
-        // Resource health does not prove the Dapr invocation boundary: a module sidecar reports Running before it
-        // is registered in the run's name resolution. Probe EventStore-to-module invocation through the sidecars.
-        if (!await WaitForModuleInvocationAsync(plan, model, cancellationToken, notifications).ConfigureAwait(false))
-        {
-            return false;
-        }
-
-        await WriteProgressAsync(plan, Observe(runnable, notifications)).ConfigureAwait(false);
-
-        CompositionTestObservation? testObservation = null;
-        if (app.Services.GetService<ICompositionTestObservationProvider>() is { } observer)
-        {
-            testObservation = await observer.ObserveAsync(app.Services, cancellationToken).ConfigureAwait(false);
-            if (!testObservation.IsComplete || testObservation.RunId != plan.RunId || testObservation.ModuleId != plan.SelectedTest?.ModuleId)
-            {
-                await ReportFailureAsync(plan, "HXR026", "selected-test-observations", "memories", "identity-or-access-unavailable", resources, null).ConfigureAwait(false);
-                return false;
-            }
-        }
-
-        Console.WriteLine("g4: every resource is healthy.");
-
-        Uri eventStore = RunEndpoints.TryGet(app, RunTopology.EventStoreName)
-            ?? throw new InvalidOperationException("The EventStore endpoint was not allocated.");
-        Uri? ui = plan.UiMarkers.Count > 0
-            ? RunEndpoints.TryGet(app, RunTopology.UiName) ?? throw new InvalidOperationException("The UI endpoint was not allocated.")
-            : null;
-        await CompositionDocumentStore.WriteAsync(
-            plan.ReadinessPath,
-            new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, eventStore, ui, [.. resources.OrderBy(resource => resource.Name, StringComparer.Ordinal)])
-            {
-                SelectedTest = plan.SelectedTest,
-                TestObservation = testObservation,
-                EffectiveDeadlineSeconds = plan.EffectiveDeadline?.TimeoutSeconds,
-                EffectiveDeadlineIsOverride = plan.EffectiveDeadline?.IsOverride ?? false,
-                EffectiveDeadlineJustification = plan.EffectiveDeadline?.Justification,
-                EffectiveDeadlineModuleId = plan.EffectiveDeadline?.ModuleId,
-            },
-            cancellationToken).ConfigureAwait(false);
-        return true;
-    }
+    public static Task<bool> WaitAndWriteAsync(DistributedApplication app, CompositionRunPlan plan, CancellationToken cancellationToken) =>
+        WaitAndWriteCoreAsync(app, plan, null, cancellationToken);
 
     /// <summary>
     /// Reports every stalled resource when the AppHost startup bound expires.
@@ -363,6 +280,119 @@ internal static class RunReadiness
         return CurrentUnready(
             app.Services.GetRequiredService<DistributedApplicationModel>(),
             app.Services.GetRequiredService<ResourceNotificationService>()) ?? [];
+    }
+
+    /// <summary>Evaluates module-defined health again after successful startup tasks.</summary>
+    /// <param name="app">The composed application.</param>
+    /// <param name="plan">The owning run plan.</param>
+    /// <param name="refreshId">The owning refresh request.</param>
+    /// <param name="cancellationToken">The original startup deadline token.</param>
+    /// <returns>Whether a fresh readiness document was written.</returns>
+    internal static Task<bool> RefreshAsync(DistributedApplication app, CompositionRunPlan plan, string refreshId, CancellationToken cancellationToken) =>
+        WaitAndWriteCoreAsync(app, plan, refreshId, cancellationToken);
+
+    private static async Task<bool> WaitAndWriteCoreAsync(DistributedApplication app, CompositionRunPlan plan, string? refreshId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        ArgumentNullException.ThrowIfNull(plan);
+
+        ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
+        DistributedApplicationModel model = app.Services.GetRequiredService<DistributedApplicationModel>();
+
+        // Resources that start only on explicit request (such as Aspire project rebuilders) are not part of the run.
+        IResource[] runnable = RunnableResources(model);
+        while (true)
+        {
+            if (refreshId is not null)
+            {
+                await RunReadinessHealth.WaitAsync(app, plan, runnable, cancellationToken).ConfigureAwait(false);
+            }
+
+            List<CompositionResourceReadiness> resources = [];
+            foreach (IResource resource in runnable)
+            {
+                await WriteProgressAsync(plan, Observe(runnable, notifications)).ConfigureAwait(false);
+                Console.WriteLine($"g4: waiting for resource '{resource.Name}' to become healthy.");
+                using CancellationTokenSource probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                probe.CancelAfter(CompositionStartupClock.Remaining(plan.StartupDeadlineUtc, DateTimeOffset.UtcNow));
+                try
+                {
+                    _ = await notifications.WaitForResourceHealthyAsync(
+                        resource.Name,
+                        WaitBehavior.StopOnResourceUnavailable,
+                        probe.Token).ConfigureAwait(false);
+                }
+                catch (DistributedApplicationException)
+                {
+                    await ReportObservedFailureAsync(plan, model, runnable, notifications, resource, "HXR025").ConfigureAwait(false);
+                    return false;
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    await ReportObservedFailureAsync(plan, model, runnable, notifications, resource, "HXR025").ConfigureAwait(false);
+                    return false;
+                }
+
+                resources.Add(new CompositionResourceReadiness(resource.Name, Kind(resource), "Healthy")
+                {
+                    Detail = "module-ready",
+                    ProcessId = TryProcessId(notifications, resource.Name),
+                });
+            }
+
+            await WriteProgressAsync(plan, Observe(runnable, notifications)).ConfigureAwait(false);
+
+            // Resource health does not prove the Dapr invocation boundary: a module sidecar reports Running before it
+            // is registered in the run's name resolution. Probe EventStore-to-module invocation through the sidecars.
+            if (!await WaitForModuleInvocationAsync(plan, model, cancellationToken, notifications).ConfigureAwait(false))
+            {
+                return false;
+            }
+
+            await WriteProgressAsync(plan, Observe(runnable, notifications)).ConfigureAwait(false);
+
+            CompositionTestObservation? testObservation = null;
+            if (app.Services.GetService<ICompositionTestObservationProvider>() is { } observer)
+            {
+                testObservation = await observer.ObserveAsync(app.Services, cancellationToken).ConfigureAwait(false);
+                if (!testObservation.IsComplete || testObservation.RunId != plan.RunId || testObservation.ModuleId != plan.SelectedTest?.ModuleId)
+                {
+                    await ReportFailureAsync(plan, "HXR026", "selected-test-observations", "memories", "identity-or-access-unavailable", resources, null).ConfigureAwait(false);
+                    return false;
+                }
+            }
+
+            resources = Observe(runnable, notifications);
+            if (resources.Any(resource => resource.State != "Healthy"))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(200), cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+
+            resources = [.. resources.Select(resource => resource with { Detail = "module-ready" })];
+
+            Console.WriteLine("g4: every resource is healthy.");
+
+            Uri eventStore = RunEndpoints.TryGet(app, RunTopology.EventStoreName)
+                ?? throw new InvalidOperationException("The EventStore endpoint was not allocated.");
+            Uri? ui = plan.UiMarkers.Count > 0
+                ? RunEndpoints.TryGet(app, RunTopology.UiName) ?? throw new InvalidOperationException("The UI endpoint was not allocated.")
+                : null;
+            await CompositionDocumentStore.WriteAsync(
+                plan.ReadinessPath,
+                new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, eventStore, ui, [.. resources.OrderBy(resource => resource.Name, StringComparer.Ordinal)])
+                {
+                    RefreshId = refreshId,
+                    SelectedTest = plan.SelectedTest,
+                    TestObservation = testObservation,
+                    EffectiveDeadlineSeconds = plan.EffectiveDeadline?.TimeoutSeconds,
+                    EffectiveDeadlineIsOverride = plan.EffectiveDeadline?.IsOverride ?? false,
+                    EffectiveDeadlineJustification = plan.EffectiveDeadline?.Justification,
+                    EffectiveDeadlineModuleId = plan.EffectiveDeadline?.ModuleId,
+                },
+                cancellationToken).ConfigureAwait(false);
+            return true;
+        }
     }
 
     private static IReadOnlyList<CompositionResourceReadiness>? CurrentUnready(DistributedApplicationModel model, ResourceNotificationService? notifications) =>

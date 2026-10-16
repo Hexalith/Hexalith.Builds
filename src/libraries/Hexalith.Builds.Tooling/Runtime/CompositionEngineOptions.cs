@@ -15,6 +15,9 @@ using Hexalith.Builds.Tooling.Workspace;
 /// <param name="DescriptorChildEntryAssemblyPath">The absolute path of the runner assembly hosting the descriptor child command.</param>
 public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string DescriptorChildEntryAssemblyPath)
 {
+    /// <summary>Gets the original command request time, including source mapping and other setup.</summary>
+    public DateTimeOffset? StartupRequestedAtUtc { get; init; }
+
     /// <summary>Gets the already-resolved workspace source mapping.</summary>
     public SourceMapping? SourceMapping { get; init; }
 
@@ -100,6 +103,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
 
     /// <summary>Gets a test-only CI policy override.</summary>
     internal bool? ContinuousIntegrationOverride { get; init; }
+
+    /// <summary>Gets a test-only boundary immediately before the final ready deadline check.</summary>
+    internal Func<CancellationToken, Task>? BeforeReadyCommitOverride { get; init; }
 
     /// <summary>Gets a test-only replacement for the v2 session start boundary.</summary>
     internal Func<string, CancellationToken, Task<CompositionStartResult>>? PlatformStartOverride { get; init; }

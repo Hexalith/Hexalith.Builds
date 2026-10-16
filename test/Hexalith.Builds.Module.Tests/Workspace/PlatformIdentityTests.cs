@@ -188,8 +188,11 @@ public sealed class PlatformIdentityTests
         string manifest = Path.Combine(fixture.Checkout, "references", "Hexalith.Dep", "module.json");
         _ = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string cliOutput = Path.Combine(fixture.Directory, "divergent-cli");
+        string cliIntermediate = Path.Combine(fixture.Directory, "divergent-cli-obj") + Path.DirectorySeparatorChar;
         _ = Directory.CreateDirectory(cliOutput);
         File.Copy(typeof(PlatformIdentityResolver).Assembly.Location, Path.Combine(cliOutput, "Hexalith.Builds.Tooling.dll"));
+        _ = Directory.CreateDirectory(Path.Combine(cliIntermediate, "ref"));
+        File.Copy(typeof(PlatformIdentityResolver).Assembly.Location, Path.Combine(cliIntermediate, "ref", "Hexalith.Builds.Tooling.dll"));
         string repository = CompositionTestFiles.RepositoryRoot();
         string project = Path.Combine(repository, "src", "libraries", "Hexalith.Builds.Module.Cli", "Hexalith.Builds.Module.Cli.csproj");
 #if DEBUG
@@ -198,7 +201,7 @@ public sealed class PlatformIdentityTests
         const string configuration = "Release";
 #endif
         CompositionProcessResult build = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["build", project, "-c", configuration, "--no-restore", "--no-dependencies", "-p:Version=9.9.9", "-p:OutputPath=" + cliOutput, "-v:q"], repository, null),
+            CompositionProcess.CreateStartInfo("dotnet", ["build", project, "-c", configuration, "--no-restore", "--no-dependencies", "-p:Version=9.9.9", "-p:OutputPath=" + cliOutput, "-p:IntermediateOutputPath=" + cliIntermediate, "-v:q"], repository, null),
             TimeSpan.FromMinutes(2),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
         build.ExitCode.ShouldBe(0, build.Output + build.ErrorOutput);

@@ -204,7 +204,7 @@ internal static class ModuleCommandApplication
     private static string CommandDescription(ModuleInvocationCommand command) => command switch
     {
         ModuleInvocationCommand.Run => "Starts a supported module runtime.",
-        ModuleInvocationCommand.Debug => "Starts the active module and root-declared dependencies from source in Debug and reports process ids.",
+        ModuleInvocationCommand.Debug => "Starts the active module and root-declared dependencies from source in Debug and reports launcher process ids.",
         ModuleInvocationCommand.Down => "Tears down runner-owned module resources.",
         ModuleInvocationCommand.Test => "Runs a named module qualification profile.",
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unsupported module command."),

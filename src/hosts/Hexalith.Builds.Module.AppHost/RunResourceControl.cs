@@ -17,7 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 internal static class RunResourceControl
 {
     /// <summary>
-    /// Processes only EventStore stop and start requests for the owning run.
+    /// Processes EventStore lifecycle requests and startup readiness refreshes for the owning run.
     /// </summary>
     /// <param name="app">The running Aspire application.</param>
     /// <param name="plan">The owning run plan.</param>
@@ -37,10 +37,19 @@ internal static class RunResourceControl
                 bool valid = string.Equals(request.Schema, CompositionControlRequest.SupportedSchema, StringComparison.Ordinal)
                     && string.Equals(request.RunId, plan.RunId, StringComparison.Ordinal)
                     && CompositionRunPlanFactory.IsRunId(request.Nonce)
-                    && request.Command is "stop-eventstore" or "start-eventstore";
-                string? failure = valid
-                    ? await ExecuteAsync(app, request.Command, cancellationToken).ConfigureAwait(false)
-                    : "invalid-request";
+                    && request.Command is "stop-eventstore" or "start-eventstore" or "refresh-readiness";
+                string? failure;
+                if (valid && request.Command == "refresh-readiness")
+                {
+                    using CancellationTokenSource refreshBound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    refreshBound.CancelAfter(CompositionStartupClock.Remaining(plan.StartupDeadlineUtc, DateTimeOffset.UtcNow));
+                    failure = await RunReadiness.RefreshAsync(app, plan, request.Nonce, refreshBound.Token).ConfigureAwait(false) ? null : "module-unready";
+                }
+                else
+                {
+                    failure = valid ? await ExecuteAsync(app, request.Command, cancellationToken).ConfigureAwait(false) : "invalid-request";
+                }
+
                 await CompositionDocumentStore.WriteAsync(
                     responsePath,
                     new CompositionControlResponse(CompositionControlRequest.SupportedSchema, plan.RunId, request.Nonce, request.Command, failure is null, failure),

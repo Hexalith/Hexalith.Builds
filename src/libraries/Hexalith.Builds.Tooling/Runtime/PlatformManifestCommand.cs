@@ -51,10 +51,19 @@ public static class PlatformManifestCommand
     /// <param name="mapping">The command-resolved mapping.</param>
     /// <param name="workspace">The run-owned output workspace.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <param name="startupDeadlineUtc">The absolute startup deadline, or null for the default bound.</param>
     /// <returns>The built model assembly path.</returns>
     /// <exception cref="InvalidOperationException">The model cannot be built.</exception>
-    public static async Task<string> BuildModelAsync(SourceMapping mapping, string workspace, CancellationToken cancellationToken, DateTimeOffset? startupDeadlineUtc = null)
+    public static Task<string> BuildModelAsync(SourceMapping mapping, string workspace, CancellationToken cancellationToken) =>
+        BuildModelAsync(mapping, workspace, null, cancellationToken);
+
+    /// <summary>Builds the pinned model within the remaining startup deadline.</summary>
+    /// <param name="mapping">The command-resolved mapping.</param>
+    /// <param name="workspace">The run-owned output workspace.</param>
+    /// <param name="startupDeadlineUtc">The absolute startup deadline, or null for the default bound.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The built model assembly path.</returns>
+    /// <exception cref="InvalidOperationException">The model cannot be built.</exception>
+    public static async Task<string> BuildModelAsync(SourceMapping mapping, string workspace, DateTimeOffset? startupDeadlineUtc, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(mapping);
         ArgumentException.ThrowIfNullOrWhiteSpace(workspace);

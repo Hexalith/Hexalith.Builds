@@ -25,6 +25,9 @@ public sealed record CompositionReadiness(
     /// </summary>
     public const string SupportedSchema = "hexalith.g4-run-readiness.v1";
 
+    /// <summary>Gets the internal refresh request satisfied by this fresh module-health snapshot.</summary>
+    public string? RefreshId { get; init; }
+
     /// <summary>Gets actual selected-composition test measurements and scoped access, when supported.</summary>
     public CompositionTestObservation? TestObservation { get; init; }
 

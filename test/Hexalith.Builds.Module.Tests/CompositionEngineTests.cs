@@ -21,10 +21,10 @@ using Xunit;
 /// </summary>
 public sealed class CompositionEngineTests
 {
-    /// <summary>Verifies a v2 AppHost preflight refusal leaves no run state or workspace.</summary>
+    /// <summary>Verifies a v2 AppHost preflight refusal preserves failure evidence while removing its workspace.</summary>
     /// <returns>The result assertion.</returns>
     [Fact]
-    public async Task PlatformPreflightRefusesBeforeStateOrResourcesAsync()
+    public async Task PlatformPreflightPreservesFailureStateAndDiagnosticsAsync()
     {
         if (OperatingSystem.IsWindows())
         {
@@ -32,26 +32,44 @@ public sealed class CompositionEngineTests
         }
 
         using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.startup.override", "{\"timeoutSeconds\":30,\"justification\":\"preflight diagnostics budget\"}");
         string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "preflight-refusal", TestContext.Current.CancellationToken).ConfigureAwait(true);
-        SourceMapping mapping = new(
-            WorkspaceMode.Source,
-            workspace.Root,
-            "Hexalith.Platform",
-            [new SourceMappingEntry("Hexalith.Platform", "source", workspace.Root)],
-            false);
+        SourceMapping mapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root);
         CompositionEngineOptions options = CreateOptions(workspace.Root) with
         {
             AppHostAssemblyPath = appHost,
             SourceMapping = mapping,
             DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
-            DockerCommand = CompositionTestFiles.CreateDocker(workspace.Root),
+            DockerCommand = CompositionTestFiles.CreateStubDocker(workspace.Root),
             PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+            StartupRequestedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-2),
         };
-        CompositionStartResult result = await new CompositionEngine(options).StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionEngine engine = new(options);
+        CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
         result.Session.ShouldBeNull();
         result.Result.Outcome.RuleId.ShouldBe("HXP020");
         result.Result.Diagnostics.Single().Message.ShouldContain("owner/source.json: gateway: required binding is unavailable");
-        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+        string runId = result.RunId.ShouldNotBeNull();
+        CompositionRunState state = (await engine.StateStore.TryReadAsync(runId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        state.Status.ShouldBe(CompositionRunStatus.Failed);
+        state.RuleId.ShouldBe("HXP020");
+        state.AppHostProcessId.ShouldBeNull();
+        state.StartupDurationSeconds.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(2);
+        state.EffectiveDeadlineSeconds.ShouldBe(30);
+        state.EffectiveDeadlineIsOverride.ShouldBeTrue();
+        state.EffectiveDeadlineJustification.ShouldBe("preflight diagnostics budget");
+        state.EffectiveDeadlineModuleId.ShouldBe("sample");
+        string diagnostics = state.DiagnosticsPath.ShouldNotBeNull();
+        diagnostics.ShouldStartWith(Path.Combine(options.StateDirectory, "diagnostics"));
+        result.Result.Diagnostics.Single().Message.ShouldContain(diagnostics);
+        CompositionStartupReport report = (await CompositionDocumentStore.TryReadAsync<CompositionStartupReport>(Path.Combine(diagnostics, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        report.RunId.ShouldBe(runId);
+        report.RuleId.ShouldBe("HXP020");
+        report.DurationSeconds.ShouldBeGreaterThanOrEqualTo(2);
+        report.EffectiveDeadlineSeconds.ShouldBe(30);
+        report.EffectiveDeadlineIsOverride.ShouldBeTrue();
+        report.EffectiveDeadlineModuleId.ShouldBe("sample");
+        Directory.Exists(state.Workspace).ShouldBeFalse();
         Directory.Exists(options.WorkspaceRoot).ShouldBeTrue();
         Directory.GetDirectories(options.WorkspaceRoot).ShouldBeEmpty();
     }
@@ -68,18 +86,13 @@ public sealed class CompositionEngineTests
 
         using PlatformManifestTestWorkspace workspace = new();
         string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "preflight-refusal", TestContext.Current.CancellationToken).ConfigureAwait(true);
-        SourceMapping mapping = new(
-            WorkspaceMode.Source,
-            workspace.Root,
-            "Hexalith.Platform",
-            [new SourceMappingEntry("Hexalith.Platform", "source", workspace.Root)],
-            false);
+        SourceMapping mapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root);
         CompositionEngineOptions options = CreateOptions(workspace.Root) with
         {
             AppHostAssemblyPath = appHost,
             SourceMapping = mapping,
             DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
-            DockerCommand = CompositionTestFiles.CreateDocker(workspace.Root),
+            DockerCommand = CompositionTestFiles.CreateStubDocker(workspace.Root),
             PlatformModelBuildOverride = (_, _, _) => throw new InvalidOperationException("model.csproj: package restore failed"),
         };
         CompositionStartResult result = await new CompositionEngine(options).StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -87,7 +100,13 @@ public sealed class CompositionEngineTests
         result.Result.Outcome.RuleId.ShouldBe("HXR020");
         result.Result.Diagnostics.Single().Message.ShouldContain("package restore failed");
         result.Result.Diagnostics.Single().Field!.ShouldContain("Hexalith.Platform.Composition.csproj");
-        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+        _ = result.RunId.ShouldNotBeNull();
+        CompositionRunState? state = await new CompositionEngine(options).StateStore.TryReadAsync(result.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = state.ShouldNotBeNull();
+        state.Status.ShouldBe(CompositionRunStatus.Failed);
+        _ = state.StartupDurationSeconds.ShouldNotBeNull();
+        _ = state.EffectiveDeadlineSeconds.ShouldNotBeNull();
+        File.Exists(Path.Combine(state.DiagnosticsPath!, "summary.json")).ShouldBeTrue();
         Directory.Exists(options.WorkspaceRoot).ShouldBeTrue();
         Directory.GetDirectories(options.WorkspaceRoot).ShouldBeEmpty();
     }

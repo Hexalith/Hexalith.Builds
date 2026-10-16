@@ -18,6 +18,9 @@ public sealed record CompositionStartupTask(
     string ExecutablePath,
     IReadOnlyList<string> Arguments)
 {
+    /// <summary>Gets the declaring repository used as the task working directory.</summary>
+    public string? WorkingDirectory { get; init; }
+
     /// <summary>Gets the safe executable-path validation cause when resolution failed.</summary>
     public string? ExecutableError { get; init; }
 }
