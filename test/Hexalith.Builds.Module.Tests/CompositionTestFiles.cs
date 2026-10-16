@@ -268,7 +268,9 @@ internal static class CompositionTestFiles
 
     /// <summary>
     /// Builds a fake AppHost console assembly. It reads <c>mode.txt</c> next to itself: <c>exit</c> exits at once,
-    /// <c>foreign</c> writes readiness for another run, and any other mode never writes readiness; all wait for stop.
+    /// <c>capture</c> copies the plan and source mapping, <c>ready</c> writes a healthy readiness document,
+    /// <c>foreign</c> writes readiness for another run, <c>unready</c> records two unready resources, and any other
+    /// mode never writes readiness; modes that do not return wait for stop.
     /// </summary>
     /// <param name="root">The root directory.</param>
     /// <param name="mode">The behavior mode.</param>
@@ -287,17 +289,24 @@ internal static class CompositionTestFiles
         string program = "string mode = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, \"mode.txt\")).Trim();\n"
             + "if (mode == \"exit\") { return 7; }\n"
             + "if (mode == \"preflight-refusal\") { Console.Error.WriteLine(\"owner/source.json: gateway: required binding is unavailable\"); return 7; }\n"
+            + "if (args.Contains(\"--validate-platform\")) { return 0; }\n"
             + "string plan = Environment.GetEnvironmentVariable(\"HEXALITH_G4_PLAN\")!;\n"
             + "if (mode == \"capture\" || mode == \"ready\") { File.Copy(plan, Path.Combine(AppContext.BaseDirectory, \"captured-plan.json\")); "
-            + "File.Copy(Path.Combine(Path.GetDirectoryName(plan)!, \"source-mapping\", \"mapping.json\"), "
-            + "Path.Combine(AppContext.BaseDirectory, \"captured-mapping.json\")); "
+            + "string mappingPath = Path.Combine(Path.GetDirectoryName(plan)!, \"source-mapping\", \"mapping.json\"); "
+            + "if (File.Exists(mappingPath)) { File.Copy(mappingPath, Path.Combine(AppContext.BaseDirectory, \"captured-mapping.json\")); "
             + "File.WriteAllText(Path.Combine(AppContext.BaseDirectory, \"captured-mapping-hash.txt\"), "
-            + "Environment.GetEnvironmentVariable(\"HEXALITH_SOURCE_MAPPING_HASH\") ?? \"\"); if (mode == \"capture\") return 0; }\n"
-            + "if (mode == \"ready\") { using var readyPlan = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan)); "
-            + "var root = readyPlan.RootElement; File.WriteAllText(root.GetProperty(\"readinessPath\").GetString()!, "
+            + "Environment.GetEnvironmentVariable(\"HEXALITH_SOURCE_MAPPING_HASH\") ?? \"\"); } if (mode == \"capture\") return 0; }\n"
+            + "if (mode == \"ready\" || mode == \"unready\") { using var readyPlan = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan)); "
+            + "var root = readyPlan.RootElement; bool debugAttach = root.TryGetProperty(\"debugAttach\", out var debugFlag) && debugFlag.ValueKind == System.Text.Json.JsonValueKind.True; "
+            + "string runId = root.GetProperty(\"runId\").GetString()!; string workspace = root.GetProperty(\"workspace\").GetString()!; "
+            + "if (mode == \"unready\") { File.WriteAllText(System.IO.Path.Combine(workspace, \"readiness-progress.json\"), "
+            + "System.Text.Json.JsonSerializer.Serialize(new { schema = \"hexalith.g4-readiness-progress.v1\", runId, resources = new[] { "
+            + "new { name = \"orders\", kind = \"project\", state = \"Unhealthy\", detail = \"HTTP 503\" }, "
+            + "new { name = \"billing\", kind = \"project\", state = \"Unhealthy\", detail = \"connection-unavailable\" } } })); } "
+            + "else { File.WriteAllText(root.GetProperty(\"readinessPath\").GetString()!, "
             + "System.Text.Json.JsonSerializer.Serialize(new { schema = \"hexalith.g4-run-readiness.v1\", "
-            + "runId = root.GetProperty(\"runId\").GetString(), eventStoreEndpoint = \"http://127.0.0.1:1\", "
-            + "uiEndpoint = \"http://127.0.0.1:2\", resources = new[] { new { name = \"eventstore\", kind = \"project\", state = \"Healthy\" } } })); }\n"
+            + "runId, eventStoreEndpoint = \"http://127.0.0.1:1\", "
+            + "uiEndpoint = \"http://127.0.0.1:2\", resources = new[] { new { name = \"eventstore\", kind = \"project\", state = \"Healthy\", processId = debugAttach ? 4242 : (int?)null, detail = \"module-ready\" } } })); } }\n"
             + "if (mode == \"foreign\") { File.WriteAllText(Path.Combine(Path.GetDirectoryName(plan)!, \"readiness.json\"), "
             + System.Text.Json.JsonSerializer.Serialize(readiness) + "); }\n"
             + "if (mode == \"cause\") { using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan)); "

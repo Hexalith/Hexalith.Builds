@@ -18,4 +18,7 @@ public enum ModuleInvocationCommand
 
     /// <summary>Runs a named qualification profile.</summary>
     Test = 2,
+
+    /// <summary>Starts the same composition as <see cref="Run"/> from source in Debug and reports process ids.</summary>
+    Debug = 3,
 }

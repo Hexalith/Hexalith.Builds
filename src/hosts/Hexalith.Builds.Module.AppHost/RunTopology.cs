@@ -186,7 +186,7 @@ internal static class RunTopology
                         Command = "dotnet",
                         WorkingDirectory = Path.GetDirectoryName(module.ProjectPath)!,
                     })
-                    .WithArgs("run", "--project", module.ProjectPath, "--configuration", plan.SourceMapping.Mode == WorkspaceMode.Source ? "Debug" : "Release", "--no-launch-profile");
+                    .WithArgs("run", "--project", module.ProjectPath, "--configuration", CompositionLaunchConfiguration.ProjectConfiguration(plan.SourceMapping.Mode, plan.DebugAttach), "--no-launch-profile");
                 foreach (KeyValuePair<string, string> pair in Hexalith.Builds.Tooling.Workspace.SourceMappingMaterializer.Environment(plan.SourceMapping, plan.Workspace))
                 {
                     _ = moduleProject.WithEnvironment(pair.Key, pair.Value);

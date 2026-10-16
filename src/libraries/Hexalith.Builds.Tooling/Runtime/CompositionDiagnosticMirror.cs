@@ -17,16 +17,29 @@ public static class CompositionDiagnosticMirror
     /// </summary>
     /// <param name="process">The process whose redirected streams are observed.</param>
     /// <param name="logPath">The optional diagnostic log path.</param>
-    public static void Attach(Process process, string? logPath)
+    /// <param name="preservedDirectory">The optional directory outside the run workspace that keeps the same tokens after teardown.</param>
+    public static void Attach(Process process, string? logPath, string? preservedDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(process);
-        if (string.IsNullOrWhiteSpace(logPath))
+        if (string.IsNullOrWhiteSpace(logPath) && string.IsNullOrWhiteSpace(preservedDirectory))
         {
             return;
         }
 
-        string path = Path.GetFullPath(logPath);
-        _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        string? path = string.IsNullOrWhiteSpace(logPath) ? null : Path.GetFullPath(logPath);
+        string? preserved = string.IsNullOrWhiteSpace(preservedDirectory)
+            ? null
+            : Path.Combine(Path.GetFullPath(preservedDirectory), "observed.txt");
+        if (path is not null)
+        {
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        }
+
+        if (preserved is not null)
+        {
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(preserved)!);
+        }
+
         object gate = new();
 
         void Record(string stream, DataReceivedEventArgs args)
@@ -40,7 +53,16 @@ public static class CompositionDiagnosticMirror
             {
                 try
                 {
-                    File.AppendAllText(path, "apphost." + stream + ".observed" + Environment.NewLine);
+                    string token = "apphost." + stream + ".observed" + Environment.NewLine;
+                    if (path is not null)
+                    {
+                        File.AppendAllText(path, token);
+                    }
+
+                    if (preserved is not null)
+                    {
+                        File.AppendAllText(preserved, token);
+                    }
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
                 {

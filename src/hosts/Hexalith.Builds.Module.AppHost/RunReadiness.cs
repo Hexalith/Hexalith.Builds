@@ -44,6 +44,7 @@ internal static class RunReadiness
         List<CompositionResourceReadiness> resources = [];
         foreach (IResource resource in runnable)
         {
+            await WriteProgressAsync(plan, Observe(runnable, notifications)).ConfigureAwait(false);
             Console.WriteLine($"g4: waiting for resource '{resource.Name}' to become healthy.");
             using CancellationTokenSource probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             probe.CancelAfter(_resourceBound);
@@ -56,18 +57,20 @@ internal static class RunReadiness
             }
             catch (DistributedApplicationException)
             {
-                IResource stalled = TerminalFailure(runnable, notifications) ?? resource;
-                await ReportFailureAsync(plan, "HXR025", stalled.Name, AppId(plan, model, stalled.Name), Status(notifications, stalled.Name)).ConfigureAwait(false);
+                await ReportObservedFailureAsync(plan, model, runnable, notifications, resource, "HXR025").ConfigureAwait(false);
                 return false;
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                IResource stalled = TerminalFailure(runnable, notifications) ?? resource;
-                await ReportFailureAsync(plan, "HXR025", stalled.Name, AppId(plan, model, stalled.Name), Status(notifications, stalled.Name)).ConfigureAwait(false);
+                await ReportObservedFailureAsync(plan, model, runnable, notifications, resource, "HXR025").ConfigureAwait(false);
                 return false;
             }
 
-            resources.Add(new CompositionResourceReadiness(resource.Name, Kind(resource), "Healthy"));
+            resources.Add(new CompositionResourceReadiness(resource.Name, Kind(resource), "Healthy")
+            {
+                Detail = "module-ready",
+                ProcessId = TryProcessId(notifications, resource.Name),
+            });
         }
 
         // Resource health does not prove the Dapr invocation boundary: a module sidecar reports Running before it
@@ -86,7 +89,13 @@ internal static class RunReadiness
             : null;
         await CompositionDocumentStore.WriteAsync(
             plan.ReadinessPath,
-            new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, eventStore, ui, [.. resources.OrderBy(resource => resource.Name, StringComparer.Ordinal)]),
+            new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, eventStore, ui, [.. resources.OrderBy(resource => resource.Name, StringComparer.Ordinal)])
+            {
+                EffectiveDeadlineSeconds = plan.EffectiveDeadline?.TimeoutSeconds,
+                EffectiveDeadlineIsOverride = plan.EffectiveDeadline?.IsOverride ?? false,
+                EffectiveDeadlineJustification = plan.EffectiveDeadline?.Justification,
+                EffectiveDeadlineModuleId = plan.EffectiveDeadline?.ModuleId,
+            },
             cancellationToken).ConfigureAwait(false);
         return true;
     }
@@ -102,11 +111,7 @@ internal static class RunReadiness
         ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
         DistributedApplicationModel model = app.Services.GetRequiredService<DistributedApplicationModel>();
         IResource[] runnable = RunnableResources(model);
-        IResource? stalled = TerminalFailure(runnable, notifications) ?? runnable.FirstOrDefault(resource =>
-            !notifications.TryGetCurrentState(resource.Name, out ResourceEvent? current)
-            || current.Snapshot.HealthStatus != HealthStatus.Healthy);
-        string name = stalled?.Name ?? "apphost-start";
-        return ReportFailureAsync(plan, "HXR025", name, AppId(plan, model, name), Status(notifications, name));
+        return ReportObservedFailureAsync(plan, model, runnable, notifications, null, "HXR021");
     }
 
     /// <summary>
@@ -118,13 +123,38 @@ internal static class RunReadiness
     /// <param name="appId">The relevant Dapr app ID, or a dash.</param>
     /// <param name="status">The bounded probe status.</param>
     /// <returns>A task that completes after the failure document is written.</returns>
-    public static async Task ReportFailureAsync(CompositionRunPlan plan, string ruleId, string resource, string appId, string status)
+    public static Task ReportFailureAsync(CompositionRunPlan plan, string ruleId, string resource, string appId, string status) =>
+        ReportFailureAsync(plan, ruleId, resource, appId, status, null, null);
+
+    /// <summary>
+    /// Writes a startup failure that names every unready resource and, when present, the failing startup task.
+    /// </summary>
+    /// <param name="plan">The run plan.</param>
+    /// <param name="ruleId">The stable rule identity.</param>
+    /// <param name="resource">The stalled resource or probe.</param>
+    /// <param name="appId">The relevant Dapr app ID, or a dash.</param>
+    /// <param name="status">The bounded probe status.</param>
+    /// <param name="unready">Every unready resource, when more than the primary resource is known.</param>
+    /// <param name="failingTask">The startup task that failed, when one did.</param>
+    /// <returns>A task that completes after the failure document is written.</returns>
+    public static async Task ReportFailureAsync(
+        CompositionRunPlan plan,
+        string ruleId,
+        string resource,
+        string appId,
+        string status,
+        IReadOnlyList<CompositionResourceReadiness>? unready,
+        string? failingTask)
     {
         string safeStatus = SafeStatus(status);
         await Console.Error.WriteLineAsync($"g4: {ruleId} resource='{resource}' appId='{appId}' status='{safeStatus}'.").ConfigureAwait(false);
         await CompositionDocumentStore.WriteAsync(
             CompositionStartupFailure.PathFor(plan.Workspace),
-            new CompositionStartupFailure(CompositionStartupFailure.SupportedSchema, plan.RunId, ruleId, resource, appId, safeStatus),
+            new CompositionStartupFailure(CompositionStartupFailure.SupportedSchema, plan.RunId, ruleId, resource, appId, safeStatus)
+            {
+                UnreadyResources = unready ?? [],
+                FailingTask = failingTask,
+            },
             CancellationToken.None).ConfigureAwait(false);
     }
 
@@ -306,6 +336,87 @@ internal static class RunReadiness
         }
 
         return true;
+    }
+
+    private static Task ReportObservedFailureAsync(
+        CompositionRunPlan plan,
+        DistributedApplicationModel model,
+        IResource[] runnable,
+        ResourceNotificationService notifications,
+        IResource? primary,
+        string ruleId)
+    {
+        IReadOnlyList<CompositionResourceReadiness> observed = Observe(runnable, notifications);
+        IReadOnlyList<CompositionResourceReadiness> unready = [.. observed.Where(resource => !string.Equals(resource.State, "Healthy", StringComparison.Ordinal))];
+        string name = primary?.Name
+            ?? TerminalFailure(runnable, notifications)?.Name
+            ?? (unready.Count == 0 ? null : unready[0].Name)
+            ?? "apphost-start";
+        IReadOnlyList<CompositionResourceReadiness> reported = unready.Count > 0 ? unready : observed;
+        return ReportFailureAsync(plan, ruleId, name, AppId(plan, model, name), Status(notifications, name), reported, null);
+    }
+
+    private static async Task WriteProgressAsync(CompositionRunPlan plan, IReadOnlyList<CompositionResourceReadiness> resources)
+    {
+        try
+        {
+            await CompositionDocumentStore.WriteAsync(
+                CompositionReadinessProgress.PathFor(plan.Workspace),
+                new CompositionReadinessProgress(CompositionReadinessProgress.SupportedSchema, plan.RunId, resources),
+                CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // A missed progress snapshot cannot hide the later readiness or failure document.
+        }
+    }
+
+    private static List<CompositionResourceReadiness> Observe(
+        IEnumerable<IResource> runnable,
+        ResourceNotificationService notifications)
+    {
+        List<CompositionResourceReadiness> resources = [];
+        foreach (IResource resource in runnable)
+        {
+            bool healthy = notifications.TryGetCurrentState(resource.Name, out ResourceEvent? current)
+                && current.Snapshot.HealthStatus == HealthStatus.Healthy;
+            resources.Add(new CompositionResourceReadiness(resource.Name, Kind(resource), healthy ? "Healthy" : "Unhealthy")
+            {
+                Detail = SafeStatus(Status(notifications, resource.Name)),
+                ProcessId = ProcessId(current),
+            });
+        }
+
+        return resources;
+    }
+
+    private static int? TryProcessId(ResourceNotificationService notifications, string resourceName) =>
+        notifications.TryGetCurrentState(resourceName, out ResourceEvent? current) ? ProcessId(current) : null;
+
+    private static int? ProcessId(ResourceEvent? current)
+    {
+        if (current is null)
+        {
+            return null;
+        }
+
+        foreach (ResourcePropertySnapshot property in current.Snapshot.Properties)
+        {
+            if (!string.Equals(property.Name, "executable.pid", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            return property.Value switch
+            {
+                int value when value > 0 => value,
+                long value when value is > 0 and <= int.MaxValue => (int)value,
+                string value when int.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out int parsed) && parsed > 0 => parsed,
+                _ => null,
+            };
+        }
+
+        return null;
     }
 
     private static string AppId(CompositionRunPlan plan, DistributedApplicationModel model, string resourceName)

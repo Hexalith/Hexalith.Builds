@@ -81,4 +81,16 @@ public sealed record CompositionRunPlan(
     /// Gets the Redis container name, which carries the run identity.
     /// </summary>
     public string RedisContainerName => $"hexalith-g4-{RunId}-redis";
+
+    /// <summary>Gets the absolute startup deadline measured from the start request.</summary>
+    public DateTimeOffset? StartupDeadlineUtc { get; init; }
+
+    /// <summary>Gets the effective deadline recorded for this run.</summary>
+    public CompositionEffectiveDeadline? EffectiveDeadline { get; init; }
+
+    /// <summary>Gets a value indicating whether projects launch in Debug and report process ids.</summary>
+    public bool DebugAttach { get; init; }
+
+    /// <summary>Gets the per-start verification tasks that must succeed before the run is ready.</summary>
+    public IReadOnlyList<CompositionStartupTask> StartupTasks { get; init; } = [];
 }

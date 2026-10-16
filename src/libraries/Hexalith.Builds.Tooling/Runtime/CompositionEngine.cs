@@ -49,6 +49,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     public async Task<CompositionStartResult> StartAsync(string manifestPath, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
+        DateTimeOffset requestedAt = DateTimeOffset.UtcNow;
+        CompositionEffectiveDeadline deadline = CompositionStartupDeadlineResolver.Resolve(null, _options.ReadinessTimeout);
+        DateTimeOffset deadlineUtc;
 
         string? runId = null;
         string? preparedWorkspace = null;
@@ -71,6 +74,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
 
             ModuleManifest manifest = manifestResult.Manifest!;
+            deadline = CompositionStartupDeadlineResolver.Resolve(platformDeclarations?.Declarations, _options.ReadinessTimeout);
+            deadlineUtc = requestedAt + deadline.Timeout;
             ToolDiagnostic? aspire = await CompositionPrerequisiteProbe.ProbeAspireAsync(
                 _options.AspireCommand,
                 _options.AspireProbeTimeout,
@@ -80,6 +85,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, [aspire], null);
             }
 
+            if (await TimeoutIfDueAsync(deadlineUtc, requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false) is CompositionStartResult aspireDeadline)
+            {
+                return aspireDeadline;
+            }
+
             CompositionPrerequisiteResult prerequisites = await CompositionPrerequisiteProbe.ProbeAsync(
                 _options.DaprHome,
                 _options.DockerCommand,
@@ -87,6 +97,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             if (!prerequisites.IsAvailable)
             {
                 return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, prerequisites.Diagnostics, null);
+            }
+
+            if (await TimeoutIfDueAsync(deadlineUtc, requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false) is CompositionStartResult prerequisiteDeadline)
+            {
+                return prerequisiteDeadline;
             }
 
             if (!Path.IsPathFullyQualified(_options.AppHostAssemblyPath) || !File.Exists(_options.AppHostAssemblyPath))
@@ -127,6 +142,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 {
                     IReadOnlyList<ToolDiagnostic> refusal = [Diagnostic("HXR020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, PlatformManifestCommand.BoundedOutput(exception.Message, string.Empty), Path.Combine(mapping.PlatformIdentity?.PlatformPath ?? mapping.Entries.Single(entry => entry.Identity == "Hexalith.Platform").Path!, "src", "Hexalith.Platform.Composition", "Hexalith.Platform.Composition.csproj"), "Correct the named model-build input; no resources were started.")];
                     return Failed("failed", ToolExitCode.TopologyOrLifecycle, await CleanupPreparedWorkspaceAsync(preparedWorkspace, refusal).ConfigureAwait(false), null);
+                }
+
+                if (await TimeoutIfDueAsync(deadlineUtc, requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false) is CompositionStartResult modelDeadline)
+                {
+                    return modelDeadline;
                 }
 
                 modules = [];
@@ -229,10 +249,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 platformComposition ? [Path.GetFullPath(manifestPath)] : [],
                 PlatformManifestCommand.ActiveModule(platformDeclarations?.Declarations),
                 platformModel);
-            if (platformComposition)
+            plan = plan with
             {
-                plan = plan with { PlatformDeclarationHash = manifestHash };
-            }
+                EffectiveDeadline = deadline,
+                StartupDeadlineUtc = deadlineUtc,
+                DebugAttach = _options.DebugAttach,
+                StartupTasks = platformComposition ? CompositionStartupTasks.Select(manifestPath, platformDeclarations?.Declarations) : [],
+                PlatformDeclarationHash = platformComposition ? manifestHash : plan.PlatformDeclarationHash,
+            };
 
             await CompositionDaprComponentRenderer.WriteAsync(plan, cancellationToken).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");
@@ -261,6 +285,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 }
             }
 
+            if (await TimeoutIfDueAsync(deadlineUtc, requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false) is CompositionStartResult launchDeadline)
+            {
+                return launchDeadline;
+            }
+
             await WriteStateAsync(runId, CompositionRunStatus.Starting, manifestHash, null, null, cancellationToken).ConfigureAwait(false);
             appHost = StartAppHost(plan, planPath, signingKey);
             if (appHost is null)
@@ -271,18 +300,20 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     manifestHash,
                     CompositionRunStatus.Failed,
                     Diagnostic("HXR020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The Builds-owned AppHost could not be started.", "apphost", "Check the local .NET runtime and retry."),
-                    ToolExitCode.TopologyOrLifecycle).ConfigureAwait(false);
+                    ToolExitCode.TopologyOrLifecycle,
+                    requestedAt,
+                    deadline).ConfigureAwait(false);
             }
 
             await WriteStateAsync(runId, CompositionRunStatus.Starting, manifestHash, appHost.Id, StartTime(appHost), cancellationToken).ConfigureAwait(false);
-            return await WaitForReadinessAsync(plan, appHost, signingKey, manifestHash, cancellationToken).ConfigureAwait(false);
+            return await WaitForReadinessAsync(plan, appHost, signingKey, manifestHash, requestedAt, deadline, deadlineUtc, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             ToolDiagnostic cancelled = Diagnostic("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The invocation was cancelled; bounded teardown ran.", "cancellation", null);
             return runId is null
                 ? Failed("cancelled", ToolExitCode.Cancelled, [cancelled], null)
-                : await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Cancelled, cancelled, ToolExitCode.Cancelled).ConfigureAwait(false);
+                : await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Cancelled, cancelled, ToolExitCode.Cancelled, requestedAt, deadline).ConfigureAwait(false);
         }
         catch (WorkspaceMappingException exception) when (runId is not null && appHost is null)
         {
@@ -299,7 +330,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 manifestHash,
                 CompositionRunStatus.Failed,
                 Diagnostic("HXR020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run failed before every resource was healthy; bounded teardown ran.", "apphost", "Inspect the run prerequisites and retry."),
-                ToolExitCode.TopologyOrLifecycle).ConfigureAwait(false);
+                ToolExitCode.TopologyOrLifecycle,
+                requestedAt,
+                deadline).ConfigureAwait(false);
         }
     }
 
@@ -447,35 +480,102 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         && readiness.Resources.Count > 0
         && readiness.Resources.All(resource => string.Equals(resource.State, "Healthy", StringComparison.Ordinal));
 
-    private static async Task<ToolDiagnostic?> ReadStartupFailureAsync(string runId, string workspace, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<ToolDiagnostic>> ReadStartupFailuresAsync(string runId, string workspace, CancellationToken cancellationToken)
     {
         CompositionStartupFailure? failure = await CompositionDocumentStore
             .TryReadAsync<CompositionStartupFailure>(CompositionStartupFailure.PathFor(workspace), cancellationToken)
             .ConfigureAwait(false);
-        return failure switch
+        if (failure is null)
         {
-            null => null,
-            CompositionStartupFailure invalid when !string.Equals(invalid.Schema, CompositionStartupFailure.SupportedSchema, StringComparison.Ordinal)
-                || !string.Equals(invalid.RunId, runId, StringComparison.Ordinal)
-                || invalid.RuleId is not ("HXR025" or "HXR026" or "HXR027" or "HXR028")
-                || !IsSafeFailureText(invalid.Resource, 128)
-                || !IsSafeFailureText(invalid.AppId, 63)
-                || !IsSafeFailureText(invalid.Status, 120) =>
-                Diagnostic("HXR022", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The AppHost failure document does not describe this run.", "readiness", "Rebuild the Builds-owned AppHost and retry."),
-            CompositionStartupFailure valid => Diagnostic(
-                valid.RuleId,
-                ToolPhase.Topology,
-                ToolFailureCategory.TopologyOrLifecycle,
-                $"Readiness stalled at resource '{valid.Resource}' (app ID '{valid.AppId}', status '{valid.Status}').",
-                valid.Resource,
-                "Inspect the matching AppHost and resource log."),
-        };
+            return [];
+        }
+
+        if (!string.Equals(failure.Schema, CompositionStartupFailure.SupportedSchema, StringComparison.Ordinal)
+            || !string.Equals(failure.RunId, runId, StringComparison.Ordinal)
+            || failure.RuleId is not ("HXR021" or "HXR025" or "HXR026" or "HXR027" or "HXR028")
+            || !IsSafeFailureText(failure.Resource, 128)
+            || !IsSafeFailureText(failure.AppId, 63)
+            || !IsSafeFailureText(failure.Status, 120)
+            || failure.UnreadyResources.Any(resource => !IsSafeFailureText(resource.Name, 128) || !IsSafeFailureText(resource.Detail ?? resource.State, 120))
+            || (failure.FailingTask is not null && !IsSafeFailureText(failure.FailingTask, 128)))
+        {
+            return [Diagnostic("HXR022", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The AppHost failure document does not describe this run.", "readiness", "Rebuild the Builds-owned AppHost and retry.")];
+        }
+
+        if (failure.UnreadyResources.Count > 0)
+        {
+            string task = string.IsNullOrWhiteSpace(failure.FailingTask) ? string.Empty : $" task='{failure.FailingTask}'";
+            return
+            [
+                .. failure.UnreadyResources.Select(resource => Diagnostic(
+                    failure.RuleId,
+                    ToolPhase.Topology,
+                    ToolFailureCategory.TopologyOrLifecycle,
+                    $"Unready resource '{resource.Name}' last='{resource.Detail ?? resource.State}'{task}.",
+                    resource.Name,
+                    "Inspect the preserved startup diagnostics.")),
+            ];
+        }
+
+        string message = string.IsNullOrWhiteSpace(failure.FailingTask)
+            ? $"Readiness stalled at resource '{failure.Resource}' (app ID '{failure.AppId}', status '{failure.Status}')."
+            : $"Startup task '{failure.FailingTask}' failed before the deadline (resource '{failure.Resource}', status '{failure.Status}').";
+        return [Diagnostic(failure.RuleId, ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, message, failure.FailingTask ?? failure.Resource, "Inspect the preserved startup diagnostics.")];
     }
 
     private static bool IsSafeFailureText(string? value, int maximumLength) =>
         !string.IsNullOrWhiteSpace(value)
         && value.Length <= maximumLength
         && value.All(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '/' or '.' or ':' or ';' or '=' or ' ');
+
+    private static void CopyDiagnostic(string source, string destination)
+    {
+        try
+        {
+            if (File.Exists(source))
+            {
+                File.Copy(source, destination, overwrite: true);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The summary still names the diagnostics directory when a single copy fails.
+        }
+    }
+
+    private static IReadOnlyList<ToolDiagnostic> WithDiagnosticsLocation(
+        IReadOnlyList<ToolDiagnostic> diagnostics,
+        CompositionEffectiveDeadline deadline,
+        string path)
+    {
+        string suffix = " " + CompositionStartupDeadlineResolver.Describe(deadline) + " diagnostics='" + path + "'.";
+        return [.. diagnostics.Select(diagnostic => Locate(diagnostic, suffix))];
+    }
+
+    private static ToolDiagnostic Locate(ToolDiagnostic diagnostic, string suffix) =>
+        diagnostic.Message.Contains("diagnostics='", StringComparison.Ordinal)
+            ? diagnostic
+            : diagnostic with { Message = diagnostic.Message.TrimEnd() + suffix };
+
+    private static async Task<IReadOnlyList<CompositionResourceReadiness>> ReadUnreadyProgressAsync(CompositionRunPlan plan, CancellationToken cancellationToken)
+    {
+        CompositionReadinessProgress? progress = await CompositionDocumentStore
+            .TryReadAsync<CompositionReadinessProgress>(CompositionReadinessProgress.PathFor(plan.Workspace), cancellationToken)
+            .ConfigureAwait(false);
+        return progress is null
+            || !string.Equals(progress.Schema, CompositionReadinessProgress.SupportedSchema, StringComparison.Ordinal)
+            || !string.Equals(progress.RunId, plan.RunId, StringComparison.Ordinal)
+            ? []
+            : [
+                .. progress.Resources.Where(resource =>
+                    !string.Equals(resource.State, "Healthy", StringComparison.Ordinal)
+                    && IsSafeFailureText(resource.Name, 128)
+                    && IsSafeFailureText(resource.Detail ?? resource.State, 120)),
+            ];
+    }
+
+    private static IReadOnlyList<int> ProjectProcessIds(IReadOnlyList<CompositionResourceReadiness> resources) =>
+        [.. resources.Where(resource => resource.ProcessId is > 0).Select(resource => resource.ProcessId!.Value).Distinct().Order()];
 
     private async Task<CompositionDownResult> DownCoreAsync(string runId, CancellationToken bound)
     {
@@ -495,11 +595,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
         }
 
-        ToolDiagnostic? stopFailure = await ReadStartupFailureAsync(runId, WorkspaceFor(runId), bound).ConfigureAwait(false);
-        if (stopFailure?.RuleId != "HXR028")
-        {
-            stopFailure = null;
-        }
+        ToolDiagnostic? stopFailure = (await ReadStartupFailuresAsync(runId, WorkspaceFor(runId), bound).ConfigureAwait(false))
+            .FirstOrDefault(diagnostic => diagnostic.RuleId == "HXR028");
 
         (CompositionRunResources remaining, bool workspaceRemoved) = await TearDownAsync(runId, null, bound).ConfigureAwait(false);
 
@@ -530,14 +627,16 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         Process appHost,
         string signingKey,
         string manifestHash,
+        DateTimeOffset requestedAt,
+        CompositionEffectiveDeadline deadline,
+        DateTimeOffset deadlineUtc,
         CancellationToken cancellationToken)
     {
-        Stopwatch elapsed = Stopwatch.StartNew();
-        while (elapsed.Elapsed < _options.ReadinessTimeout)
+        while (CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow) > TimeSpan.Zero)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            ToolDiagnostic? startupFailure = await ReadStartupFailureAsync(plan.RunId, plan.Workspace, cancellationToken).ConfigureAwait(false);
-            if (startupFailure is not null)
+            IReadOnlyList<ToolDiagnostic> startupFailure = await ReadStartupFailuresAsync(plan.RunId, plan.Workspace, cancellationToken).ConfigureAwait(false);
+            if (startupFailure.Count > 0)
             {
                 return await FailAndTearDownAsync(
                     plan.RunId,
@@ -545,7 +644,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     manifestHash,
                     CompositionRunStatus.Failed,
                     startupFailure,
-                    ToolExitCode.TopologyOrLifecycle).ConfigureAwait(false);
+                    ToolExitCode.TopologyOrLifecycle,
+                    requestedAt,
+                    deadline,
+                    [],
+                    null).ConfigureAwait(false);
             }
 
             CompositionReadiness? readiness = await CompositionDocumentStore
@@ -561,13 +664,59 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                         manifestHash,
                         CompositionRunStatus.Failed,
                         Diagnostic("HXR022", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The AppHost readiness document does not describe this run.", "readiness", "Rebuild the Builds-owned AppHost and retry."),
-                        ToolExitCode.TopologyOrLifecycle).ConfigureAwait(false);
+                        ToolExitCode.TopologyOrLifecycle,
+                        requestedAt,
+                        deadline).ConfigureAwait(false);
                 }
 
-                await WriteStateAsync(plan.RunId, CompositionRunStatus.Ready, manifestHash, appHost.Id, StartTime(appHost), cancellationToken).ConfigureAwait(false);
-                ToolDiagnostic ready = Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, "Every run resource reported healthy.", "readiness", null);
+                string? failingTask = await CompositionStartupTasks.RunAsync(plan.StartupTasks, deadlineUtc, cancellationToken).ConfigureAwait(false);
+                if (failingTask is not null)
+                {
+                    return await FailAndTearDownAsync(
+                        plan.RunId,
+                        appHost,
+                        manifestHash,
+                        CompositionRunStatus.Failed,
+                        [Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, $"Startup task '{failingTask}' failed before the deadline.", failingTask, "Inspect the preserved startup diagnostics.")],
+                        ToolExitCode.TopologyOrLifecycle,
+                        requestedAt,
+                        deadline,
+                        readiness.Resources,
+                        failingTask).ConfigureAwait(false);
+                }
+
+                double duration = (DateTimeOffset.UtcNow - requestedAt).TotalSeconds;
+                readiness = readiness with
+                {
+                    EffectiveDeadlineSeconds = deadline.TimeoutSeconds,
+                    EffectiveDeadlineIsOverride = deadline.IsOverride,
+                    EffectiveDeadlineJustification = deadline.Justification,
+                    EffectiveDeadlineModuleId = deadline.ModuleId,
+                    StartupDurationSeconds = duration,
+                };
+                string diagnosticsPath = DiagnosticsDirectory(plan.RunId);
+                await WriteStateAsync(
+                    plan.RunId,
+                    CompositionRunStatus.Ready,
+                    manifestHash,
+                    appHost.Id,
+                    StartTime(appHost),
+                    cancellationToken,
+                    record: new CompositionRunRecord(duration, readiness.Resources, deadline, diagnosticsPath, ProjectProcessIds(readiness.Resources))).ConfigureAwait(false);
+                List<ToolDiagnostic> readyDiagnostics =
+                [
+                    Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, "Every run resource reported healthy. " + CompositionStartupDeadlineResolver.Describe(deadline) + ".", "readiness", null),
+                ];
+                if (plan.DebugAttach)
+                {
+                    foreach (CompositionResourceReadiness resource in readiness.Resources.Where(resource => resource.ProcessId is > 0).OrderBy(resource => resource.Name, StringComparer.Ordinal))
+                    {
+                        readyDiagnostics.Add(Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, $"Project '{resource.Name}' process id '{resource.ProcessId}'.", resource.Name, null));
+                    }
+                }
+
                 return new CompositionStartResult(
-                    new ToolCommandResult("ready", ToolOutcome.Passed(), [ready]),
+                    new ToolCommandResult("ready", ToolOutcome.Passed(), readyDiagnostics),
                     plan.RunId,
                     new CompositionRunSession(plan, readiness, signingKey, appHost));
             }
@@ -580,53 +729,104 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     manifestHash,
                     CompositionRunStatus.Failed,
                     Diagnostic("HXR020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The Builds-owned AppHost exited before every resource was healthy.", "apphost", "Inspect the run prerequisites and retry."),
-                    ToolExitCode.TopologyOrLifecycle).ConfigureAwait(false);
+                    ToolExitCode.TopologyOrLifecycle,
+                    requestedAt,
+                    deadline).ConfigureAwait(false);
             }
 
             await Task.Delay(_pollInterval, cancellationToken).ConfigureAwait(false);
         }
 
-        ToolDiagnostic timeoutDiagnostic = await ReadStartupFailureAsync(plan.RunId, plan.Workspace, CancellationToken.None).ConfigureAwait(false)
-            ?? Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run resources did not become healthy within the readiness bound.", "readiness", "Inspect the run prerequisites and retry.");
+        IReadOnlyList<ToolDiagnostic> recorded = await ReadStartupFailuresAsync(plan.RunId, plan.Workspace, CancellationToken.None).ConfigureAwait(false);
+        IReadOnlyList<CompositionResourceReadiness> unready = await ReadUnreadyProgressAsync(plan, CancellationToken.None).ConfigureAwait(false);
+        if (recorded.Count == 0)
+        {
+            recorded = unready.Count == 0
+                ? [Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run resources did not become healthy within the readiness bound.", "readiness", "Inspect the preserved startup diagnostics.")]
+                : [
+                    .. unready.Select(resource => Diagnostic(
+                        "HXR021",
+                        ToolPhase.Topology,
+                        ToolFailureCategory.TopologyOrLifecycle,
+                        $"Unready resource '{resource.Name}' last='{resource.Detail ?? resource.State}'.",
+                        resource.Name,
+                        "Inspect the preserved startup diagnostics.")),
+                ];
+        }
+
         return await FailAndTearDownAsync(
             plan.RunId,
             appHost,
             manifestHash,
             CompositionRunStatus.Failed,
-            timeoutDiagnostic,
-            ToolExitCode.TopologyOrLifecycle).ConfigureAwait(false);
+            recorded,
+            ToolExitCode.TopologyOrLifecycle,
+            requestedAt,
+            deadline,
+            unready,
+            null).ConfigureAwait(false);
     }
+
+    private Task<CompositionStartResult> FailAndTearDownAsync(
+        string runId,
+        Process? appHost,
+        string manifestHash,
+        CompositionRunStatus status,
+        ToolDiagnostic diagnostic,
+        ToolExitCode exitCode,
+        DateTimeOffset requestedAt,
+        CompositionEffectiveDeadline deadline) =>
+        FailAndTearDownAsync(runId, appHost, manifestHash, status, [diagnostic], exitCode, requestedAt, deadline, [], null);
 
     private async Task<CompositionStartResult> FailAndTearDownAsync(
         string runId,
         Process? appHost,
         string manifestHash,
         CompositionRunStatus status,
-        ToolDiagnostic diagnostic,
-        ToolExitCode exitCode)
+        IReadOnlyList<ToolDiagnostic> diagnostics,
+        ToolExitCode exitCode,
+        DateTimeOffset requestedAt,
+        CompositionEffectiveDeadline deadline,
+        IReadOnlyList<CompositionResourceReadiness> resources,
+        string? failingTask)
     {
         // Teardown is bounded and deliberately not cancellable by the caller's (possibly cancelled) token.
         using CancellationTokenSource bound = TeardownBound();
+        if (resources.Count == 0)
+        {
+            resources = await ReadObservedResourcesAsync(runId, bound.Token).ConfigureAwait(false);
+        }
+
+        string diagnosticsPath = await PreserveDiagnosticsAsync(runId, diagnostics[0].RuleId, requestedAt, deadline, resources, failingTask, bound.Token).ConfigureAwait(false);
+        IReadOnlyList<ToolDiagnostic> located = WithDiagnosticsLocation(diagnostics, deadline, diagnosticsPath);
         (CompositionRunResources remaining, bool workspaceRemoved) = await TearDownAsync(runId, appHost, bound.Token).ConfigureAwait(false);
         bool clean = remaining.IsEmpty && workspaceRemoved;
+        string ruleId = clean ? located[0].RuleId : "HXR023";
         try
         {
-            await WriteStateAsync(runId, status, manifestHash, null, null, bound.Token, clean ? diagnostic.RuleId : "HXR023")
-                .ConfigureAwait(false);
+            await WriteStateAsync(
+                runId,
+                status,
+                manifestHash,
+                null,
+                null,
+                bound.Token,
+                ruleId,
+                new CompositionRunRecord((DateTimeOffset.UtcNow - requestedAt).TotalSeconds, resources, deadline, diagnosticsPath, ProjectProcessIds(resources))).ConfigureAwait(false);
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
             // The failure state is best-effort metadata; the returned diagnostics still report the outcome.
         }
 
-        List<ToolDiagnostic> diagnostics = [diagnostic];
+        List<ToolDiagnostic> reported = [.. located];
         if (!clean)
         {
-            diagnostics.Add(Diagnostic("HXR023", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Run teardown left tagged resources behind.", "down", "Retry down for the same run identity."));
+            reported.Add(Diagnostic("HXR023", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Run teardown left tagged resources behind.", "down", "Retry down for the same run identity."));
         }
 
         string text = status == CompositionRunStatus.Cancelled ? "cancelled" : "failed";
-        return Failed(text, exitCode, diagnostics, runId);
+        return Failed(text, exitCode, reported, runId);
     }
 
     /// <summary>
@@ -762,7 +962,10 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             Path.GetDirectoryName(_options.AppHostAssemblyPath),
             environment);
         Process process = new() { StartInfo = start, EnableRaisingEvents = true };
-        CompositionDiagnosticMirror.Attach(process, _options.AppHostLogPath);
+        string preserved = DiagnosticsDirectory(plan.RunId);
+        CompositionWorkspace.CreatePrivateDirectory(StateStore.Directory);
+        CompositionWorkspace.CreatePrivateDirectory(preserved);
+        CompositionDiagnosticMirror.Attach(process, _options.AppHostLogPath, preserved);
         try
         {
             if (!process.Start())
@@ -784,6 +987,98 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
     private string WorkspaceFor(string runId) => Path.Combine(Path.GetFullPath(_options.WorkspaceRoot), runId);
 
+    private string DiagnosticsDirectory(string runId) => Path.Combine(StateStore.Directory, "diagnostics", runId);
+
+    private async Task<CompositionStartResult?> TimeoutIfDueAsync(
+        DateTimeOffset deadlineUtc,
+        DateTimeOffset requestedAt,
+        CompositionEffectiveDeadline deadline,
+        string? runId,
+        string manifestHash,
+        Process? appHost)
+    {
+        if (DateTimeOffset.UtcNow < deadlineUtc)
+        {
+            return null;
+        }
+
+        ToolDiagnostic timeout = Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run resources did not become healthy within the readiness bound.", "readiness", "Inspect the preserved startup diagnostics.");
+        if (runId is null)
+        {
+            string path = await PreserveDiagnosticsAsync(null, timeout.RuleId, requestedAt, deadline, [], null, CancellationToken.None).ConfigureAwait(false);
+            return Failed("failed", ToolExitCode.TopologyOrLifecycle, WithDiagnosticsLocation([timeout], deadline, path), null);
+        }
+
+        return await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Failed, timeout, ToolExitCode.TopologyOrLifecycle, requestedAt, deadline).ConfigureAwait(false);
+    }
+
+    private async Task<string> PreserveDiagnosticsAsync(
+        string? runId,
+        string ruleId,
+        DateTimeOffset requestedAt,
+        CompositionEffectiveDeadline deadline,
+        IReadOnlyList<CompositionResourceReadiness> resources,
+        string? failingTask,
+        CancellationToken cancellationToken)
+    {
+        string directory = runId is null
+            ? Path.Combine(StateStore.Directory, "diagnostics", "before-run")
+            : DiagnosticsDirectory(runId);
+        CompositionWorkspace.CreatePrivateDirectory(StateStore.Directory);
+        CompositionWorkspace.CreatePrivateDirectory(directory);
+        if (runId is not null)
+        {
+            string workspace = WorkspaceFor(runId);
+            CopyDiagnostic(CompositionStartupFailure.PathFor(workspace), Path.Combine(directory, "startup-failure.json"));
+            CopyDiagnostic(Path.Combine(workspace, "readiness.json"), Path.Combine(directory, "readiness.json"));
+            CopyDiagnostic(CompositionReadinessProgress.PathFor(workspace), Path.Combine(directory, "readiness-progress.json"));
+            if (failingTask is null)
+            {
+                CompositionStartupFailure? failure = await CompositionDocumentStore
+                    .TryReadAsync<CompositionStartupFailure>(CompositionStartupFailure.PathFor(workspace), cancellationToken)
+                    .ConfigureAwait(false);
+                failingTask = failure?.FailingTask;
+            }
+        }
+
+        await CompositionDocumentStore.WriteAsync(
+            Path.Combine(directory, "summary.json"),
+            new CompositionStartupReport(
+                CompositionStartupReport.SupportedSchema,
+                runId,
+                ruleId,
+                Math.Max(0, (DateTimeOffset.UtcNow - requestedAt).TotalSeconds),
+                deadline.TimeoutSeconds,
+                deadline.IsOverride,
+                deadline.Justification,
+                deadline.ModuleId,
+                failingTask,
+                resources),
+            cancellationToken).ConfigureAwait(false);
+        return directory;
+    }
+
+    private async Task<IReadOnlyList<CompositionResourceReadiness>> ReadObservedResourcesAsync(string runId, CancellationToken cancellationToken)
+    {
+        string workspace = WorkspaceFor(runId);
+        CompositionStartupFailure? failure = await CompositionDocumentStore
+            .TryReadAsync<CompositionStartupFailure>(CompositionStartupFailure.PathFor(workspace), cancellationToken)
+            .ConfigureAwait(false);
+        if (failure?.UnreadyResources.Count > 0)
+        {
+            return failure.UnreadyResources;
+        }
+
+        CompositionReadinessProgress? progress = await CompositionDocumentStore
+            .TryReadAsync<CompositionReadinessProgress>(CompositionReadinessProgress.PathFor(workspace), cancellationToken)
+            .ConfigureAwait(false);
+        return progress is null
+            || !string.Equals(progress.Schema, CompositionReadinessProgress.SupportedSchema, StringComparison.Ordinal)
+            || !string.Equals(progress.RunId, runId, StringComparison.Ordinal)
+            ? []
+            : [.. progress.Resources.Where(resource => !string.Equals(resource.State, "Healthy", StringComparison.Ordinal))];
+    }
+
     private Task WriteStateAsync(
         string runId,
         CompositionRunStatus status,
@@ -791,7 +1086,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         int? processId,
         DateTimeOffset? startedAt,
         CancellationToken cancellationToken,
-        string? ruleId = null) =>
+        string? ruleId = null,
+        CompositionRunRecord? record = null) =>
         StateStore.WriteAsync(
             new CompositionRunState(
                 CompositionRunState.SupportedSchema,
@@ -802,6 +1098,16 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 processId,
                 startedAt,
                 ruleId,
-                DateTimeOffset.UtcNow),
+                DateTimeOffset.UtcNow)
+            {
+                StartupDurationSeconds = record?.DurationSeconds,
+                ReadinessResults = record is null ? [] : [.. record.ReadinessResults],
+                EffectiveDeadlineSeconds = record?.Deadline.TimeoutSeconds,
+                EffectiveDeadlineIsOverride = record?.Deadline.IsOverride ?? false,
+                EffectiveDeadlineJustification = record?.Deadline.Justification,
+                EffectiveDeadlineModuleId = record?.Deadline.ModuleId,
+                DiagnosticsPath = record?.DiagnosticsPath,
+                ProjectProcessIds = record is null ? [] : [.. record.ProjectProcessIds],
+            },
             cancellationToken);
 }

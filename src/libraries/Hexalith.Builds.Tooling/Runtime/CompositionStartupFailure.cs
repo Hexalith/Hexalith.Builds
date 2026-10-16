@@ -25,6 +25,12 @@ public sealed record CompositionStartupFailure(
     /// <summary>The supported startup failure schema.</summary>
     public const string SupportedSchema = "hexalith.g4-startup-failure.v1";
 
+    /// <summary>Gets every unready resource. Empty keeps the single <see cref="Resource"/> fields.</summary>
+    public IReadOnlyList<CompositionResourceReadiness> UnreadyResources { get; init; } = [];
+
+    /// <summary>Gets the startup task that failed, when one did.</summary>
+    public string? FailingTask { get; init; }
+
     /// <summary>
     /// Gets the failure document path in a run workspace.
     /// </summary>

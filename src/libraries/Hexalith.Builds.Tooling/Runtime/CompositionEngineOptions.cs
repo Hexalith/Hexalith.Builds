@@ -5,6 +5,7 @@
 
 namespace Hexalith.Builds.Tooling.Runtime;
 
+using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>
@@ -44,9 +45,14 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     public string WorkspaceRoot { get; init; } = CompositionWorkspace.DefaultRoot();
 
     /// <summary>
-    /// Gets the bound on AppHost readiness.
+    /// Gets the startup deadline used when no module declares a finite override. The clock starts at the start request.
     /// </summary>
-    public TimeSpan ReadinessTimeout { get; init; } = TimeSpan.FromMinutes(5);
+    public TimeSpan ReadinessTimeout { get; init; } = TimeSpan.FromSeconds(SupportedPlatformManifestSchemas.DefaultStartupTimeoutSeconds);
+
+    /// <summary>
+    /// Gets a value indicating whether this start is <c>debug</c>: source projects build in Debug and process ids are reported.
+    /// </summary>
+    public bool DebugAttach { get; init; }
 
     /// <summary>
     /// Gets the bound on a graceful AppHost stop before the process tree is killed.

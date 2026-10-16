@@ -157,6 +157,7 @@ public static partial class ModuleRunEvidenceFactory
     private static string CommandName(ModuleInvocationCommand command) => command switch
     {
         ModuleInvocationCommand.Run => "run",
+        ModuleInvocationCommand.Debug => "debug",
         ModuleInvocationCommand.Down => "down",
         ModuleInvocationCommand.Test => "test",
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unsupported module command."),

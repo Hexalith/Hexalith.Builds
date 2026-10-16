@@ -85,7 +85,7 @@ internal static class AppHostRunner
         {
             int exitCode = 0;
             using CancellationTokenSource readinessBound = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
-            readinessBound.CancelAfter(TimeSpan.FromMinutes(5));
+            readinessBound.CancelAfter(CompositionStartupClock.Remaining(plan.StartupDeadlineUtc, DateTimeOffset.UtcNow));
             using CancellationTokenSource controlBound = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
             Task? cutover = null;
             Task? starting = null;

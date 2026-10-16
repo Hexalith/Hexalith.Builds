@@ -82,6 +82,11 @@ public static class ModuleCommandExecutionService
         ArgumentNullException.ThrowIfNull(writer);
 
         DateTimeOffset startedUtc = DateTimeOffset.UtcNow;
+        if (command == ModuleInvocationCommand.Debug)
+        {
+            mode = WorkspaceMode.Source;
+        }
+
         CompositionEngine? engine = null;
         CompositionRunSession? session = null;
         bool sessionHandedOff = false;
@@ -570,8 +575,8 @@ public static class ModuleCommandExecutionService
                     options = options with { EnableSecondEventStoreInstance = true };
                 }
 
-                engine = new CompositionEngine(command == ModuleInvocationCommand.Run
-                    ? options with { PersistAfterParentExit = true }
+                engine = new CompositionEngine(PersistsAfterExit(command)
+                    ? options with { PersistAfterParentExit = true, DebugAttach = command == ModuleInvocationCommand.Debug }
                     : options);
                 CompositionStartResult start = await engine.StartAsync(manifestPath, cancellationToken).ConfigureAwait(false);
                 session = start.Session;
@@ -597,7 +602,7 @@ public static class ModuleCommandExecutionService
                         start.RunId).ConfigureAwait(false);
                 }
 
-                if (command == ModuleInvocationCommand.Run)
+                if (PersistsAfterExit(command))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     int exitCode = await WriteResultAsync(
@@ -960,7 +965,17 @@ public static class ModuleCommandExecutionService
             {
                 CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
                 SourceMapping? mapping = command == ModuleInvocationCommand.Down ? null : preResolvedMapping ?? options.SourceMapping ?? await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
-                engine = new CompositionEngine(options with { SourceMapping = mapping, PersistAfterParentExit = command == ModuleInvocationCommand.Run });
+                if (command == ModuleInvocationCommand.Debug && mapping is { Mode: not WorkspaceMode.Source })
+                {
+                    mapping = mapping with { Mode = WorkspaceMode.Source };
+                }
+
+                engine = new CompositionEngine(options with
+                {
+                    SourceMapping = mapping,
+                    PersistAfterParentExit = PersistsAfterExit(command),
+                    DebugAttach = command == ModuleInvocationCommand.Debug,
+                });
                 cleanupSession = options.PlatformDownOverride ?? engine.DownAsync;
                 if (command == ModuleInvocationCommand.Down)
                 {
@@ -988,7 +1003,7 @@ public static class ModuleCommandExecutionService
             }
 
             int exit = await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, cancellationToken, result.RunId, runId).ConfigureAwait(false);
-            handedOff = command == ModuleInvocationCommand.Run && exit == (int)ToolExitCode.Success;
+            handedOff = PersistsAfterExit(command) && exit == (int)ToolExitCode.Success;
             return exit;
         }
         finally
@@ -1006,6 +1021,9 @@ public static class ModuleCommandExecutionService
             }
         }
     }
+
+    private static bool PersistsAfterExit(ModuleInvocationCommand command) =>
+        command is ModuleInvocationCommand.Run or ModuleInvocationCommand.Debug;
 
     private static ToolCommandResult MergeEvidenceFailure(ToolCommandResult result, ToolDiagnostic diagnostic)
     {

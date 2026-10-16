@@ -530,6 +530,8 @@ public sealed class CompositionEngineTests
     [Theory]
     [InlineData("run", "json")]
     [InlineData("run", "human")]
+    [InlineData("debug", "json")]
+    [InlineData("debug", "human")]
     [InlineData("test", "json")]
     [InlineData("test", "human")]
     public async Task AspireMismatchStopsPublicStartupAsync(string command, string format)

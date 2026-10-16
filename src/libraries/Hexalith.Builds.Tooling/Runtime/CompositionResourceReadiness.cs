@@ -10,5 +10,12 @@ namespace Hexalith.Builds.Tooling.Runtime;
 /// </summary>
 /// <param name="Name">The Aspire resource name.</param>
 /// <param name="Kind">The resource kind (project, container, or executable).</param>
-/// <param name="State">The observed health state.</param>
-public sealed record CompositionResourceReadiness(string Name, string Kind, string State);
+/// <param name="State">The observed health state. A process, port, or sidecar state alone is never <c>Healthy</c>.</param>
+public sealed record CompositionResourceReadiness(string Name, string Kind, string State)
+{
+    /// <summary>Gets the last short readiness result or error.</summary>
+    public string? Detail { get; init; }
+
+    /// <summary>Gets the project process id exposed for debugger attach. It is not a readiness signal.</summary>
+    public int? ProcessId { get; init; }
+}

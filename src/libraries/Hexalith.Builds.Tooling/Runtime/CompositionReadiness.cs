@@ -24,4 +24,19 @@ public sealed record CompositionReadiness(
     /// The supported readiness schema identity.
     /// </summary>
     public const string SupportedSchema = "hexalith.g4-run-readiness.v1";
+
+    /// <summary>Gets the effective deadline in seconds.</summary>
+    public double? EffectiveDeadlineSeconds { get; init; }
+
+    /// <summary>Gets a value indicating whether a module declared the deadline.</summary>
+    public bool EffectiveDeadlineIsOverride { get; init; }
+
+    /// <summary>Gets the override justification, when one was declared.</summary>
+    public string? EffectiveDeadlineJustification { get; init; }
+
+    /// <summary>Gets the module that declared the override.</summary>
+    public string? EffectiveDeadlineModuleId { get; init; }
+
+    /// <summary>Gets the elapsed seconds since the start request, when the runner has measured them.</summary>
+    public double? StartupDurationSeconds { get; init; }
 }

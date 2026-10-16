@@ -5,6 +5,9 @@
 
 namespace Hexalith.Builds.Tooling.Runtime;
 
+using System.Collections.Immutable;
+using System.Text.Json.Serialization;
+
 /// <summary>
 /// Metadata-only, runner-owned state for one run, keyed by its run identity.
 /// </summary>
@@ -32,4 +35,30 @@ public sealed record CompositionRunState(
     /// The supported state schema identity.
     /// </summary>
     public const string SupportedSchema = "hexalith.g4-run-state.v1";
+
+    /// <summary>Gets the elapsed seconds from the start request until this state was recorded.</summary>
+    public double? StartupDurationSeconds { get; init; }
+
+    /// <summary>Gets the per-resource readiness results observed for this run.</summary>
+    [JsonConverter(typeof(ImmutableArrayJsonConverter<CompositionResourceReadiness>))]
+    public ImmutableArray<CompositionResourceReadiness> ReadinessResults { get; init; } = [];
+
+    /// <summary>Gets the effective startup deadline in seconds.</summary>
+    public double? EffectiveDeadlineSeconds { get; init; }
+
+    /// <summary>Gets a value indicating whether a module declared the deadline.</summary>
+    public bool EffectiveDeadlineIsOverride { get; init; }
+
+    /// <summary>Gets the override justification, when one was declared.</summary>
+    public string? EffectiveDeadlineJustification { get; init; }
+
+    /// <summary>Gets the module that declared the selected override.</summary>
+    public string? EffectiveDeadlineModuleId { get; init; }
+
+    /// <summary>Gets the diagnostics directory preserved outside the run workspace.</summary>
+    public string? DiagnosticsPath { get; init; }
+
+    /// <summary>Gets project process ids reported for debugger attach.</summary>
+    [JsonConverter(typeof(ImmutableArrayJsonConverter<int>))]
+    public ImmutableArray<int> ProjectProcessIds { get; init; } = [];
 }

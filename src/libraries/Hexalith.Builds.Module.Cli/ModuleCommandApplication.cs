@@ -67,6 +67,7 @@ internal static class ModuleCommandApplication
     {
         RootCommand rootCommand = new("Runs supported Hexalith module qualifications.");
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Run, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
+        rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Debug, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Down, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Test, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput, operationStarted));
@@ -155,7 +156,7 @@ internal static class ModuleCommandApplication
         };
         _ = outputOption.AcceptOnlyFromAmong("human", "json");
         Option<string> modeOption = new("--mode") { DefaultValueFactory = _ => "source" };
-        _ = modeOption.AcceptOnlyFromAmong("source", "package");
+        _ = modeOption.AcceptOnlyFromAmong(command == ModuleInvocationCommand.Debug ? ["source"] : ["source", "package"]);
 
         commandDefinition.Options.Add(manifestOption);
         commandDefinition.Options.Add(profileOption);
@@ -174,9 +175,13 @@ internal static class ModuleCommandApplication
 
         commandDefinition.SetAction((parseResult, cancellationToken) =>
         {
-            WorkspaceMode mode = command != ModuleInvocationCommand.Down && string.Equals(parseResult.GetValue(modeOption), "package", StringComparison.Ordinal)
-                ? WorkspaceMode.Package
-                : WorkspaceMode.Source;
+            WorkspaceMode mode = WorkspaceMode.Source;
+            if (command is not ModuleInvocationCommand.Debug and not ModuleInvocationCommand.Down
+                && string.Equals(parseResult.GetValue(modeOption), "package", StringComparison.Ordinal))
+            {
+                mode = WorkspaceMode.Package;
+            }
+
             Task<int> execution = ModuleCommandExecutionService.ExecuteAsync(
                 command,
                 parseResult.GetValue(manifestOption)!,
@@ -199,6 +204,7 @@ internal static class ModuleCommandApplication
     private static string CommandDescription(ModuleInvocationCommand command) => command switch
     {
         ModuleInvocationCommand.Run => "Starts a supported module runtime.",
+        ModuleInvocationCommand.Debug => "Starts the active module and root-declared dependencies from source in Debug and reports process ids.",
         ModuleInvocationCommand.Down => "Tears down runner-owned module resources.",
         ModuleInvocationCommand.Test => "Runs a named module qualification profile.",
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unsupported module command."),
@@ -207,6 +213,7 @@ internal static class ModuleCommandApplication
     private static string CommandName(ModuleInvocationCommand command) => command switch
     {
         ModuleInvocationCommand.Run => "run",
+        ModuleInvocationCommand.Debug => "debug",
         ModuleInvocationCommand.Down => "down",
         ModuleInvocationCommand.Test => "test",
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unsupported module command."),
