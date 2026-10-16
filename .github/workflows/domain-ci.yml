@@ -320,7 +320,7 @@ jobs:
         uses: ./.hexalith/builds-execution/Github/initialize-build
       - name: Initialize root-declared submodules
         if: ${{ !inputs.governed-ci }}
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@f717a87c26a8266bdde95d18f998ef2ab366d43a # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -469,7 +469,7 @@ jobs:
           runtime-version: ${{ inputs.dapr-runtime-version }}
       - name: Install and initialize Dapr
         if: ${{ inputs.integration-test-projects != '' && !inputs.governed-ci }}
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@f717a87c26a8266bdde95d18f998ef2ab366d43a # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
@@ -653,7 +653,7 @@ jobs:
           fi
       - name: Upload test and coverage evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: blocking-test-results
           path: |
@@ -673,7 +673,7 @@ jobs:
           fetch-depth: 0
           submodules: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@f717a87c26a8266bdde95d18f998ef2ab366d43a # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -691,7 +691,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@f717a87c26a8266bdde95d18f998ef2ab366d43a # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
@@ -731,7 +731,7 @@ jobs:
           echo "Status: $JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: aspire-test-results
           path: "TestResults/**/*.trx"
@@ -748,7 +748,7 @@ jobs:
           fetch-depth: 0
           submodules: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@f717a87c26a8266bdde95d18f998ef2ab366d43a # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -766,7 +766,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@21ce044ab465ccb2adab58b3d66e394ffbecf3c2 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@f717a87c26a8266bdde95d18f998ef2ab366d43a # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
@@ -952,7 +952,7 @@ jobs:
           PY
       - name: Upload performance test results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: performance-test-results
           path: TestResults/performance

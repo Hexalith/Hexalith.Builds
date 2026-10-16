@@ -13,7 +13,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup Node.js
-      uses: actions/setup-node@v7.0.0
+      uses: actions/setup-node@v7.1.0
       with:
         # Pin the major line: 'node' (latest) would silently jump majors on a
         # publication path. 24 is Active LTS, satisfies semantic-release 25's
