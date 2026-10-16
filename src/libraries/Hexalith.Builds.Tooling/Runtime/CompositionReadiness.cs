@@ -25,6 +25,9 @@ public sealed record CompositionReadiness(
     /// </summary>
     public const string SupportedSchema = "hexalith.g4-run-readiness.v1";
 
+    /// <summary>Gets actual selected-composition test measurements and scoped access, when supported.</summary>
+    public CompositionTestObservation? TestObservation { get; init; }
+
     /// <summary>Gets the effective deadline in seconds.</summary>
     public double? EffectiveDeadlineSeconds { get; init; }
 

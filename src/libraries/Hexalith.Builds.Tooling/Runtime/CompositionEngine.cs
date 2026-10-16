@@ -98,7 +98,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             CompositionPrerequisiteResult prerequisites = await CompositionPrerequisiteProbe.ProbeAsync(
                 _options.DaprHome,
                 _options.DockerCommand,
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken,
+                _options.SelectedTest?.DaprRuntimeVersion).ConfigureAwait(false);
             if (!prerequisites.IsAvailable)
             {
                 return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, prerequisites.Diagnostics, null);
@@ -462,7 +463,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 result = new ToolCommandResult("withdrawn", ToolOutcome.Passed().Fail(withdrawn.Phase, withdrawn.Category, withdrawn.RuleId, ToolExitCode.Cancelled), [withdrawn]);
             }
 
-            ModuleTestRunRecord record = prior ?? new ModuleTestRunRecord(runId, runId, selection, _options.SourceMapping?.ContentHash, _options.SourceMapping?.PlatformIdentity?.Commit, _options.SourceMapping?.PlatformIdentity?.CheckoutCommit, null, null, false, resources, result.Status, result.Outcome, DateTimeOffset.UtcNow, disposition, remaining);
+            CompositionReadiness? observed = await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(Path.Combine(WorkspaceFor(runId), "readiness.json"), cancellationToken).ConfigureAwait(false);
+            CompositionTestObservation? identity = observed?.RunId == runId && observed.TestObservation?.RunId == runId ? observed.TestObservation : null;
+            ModuleTestRunRecord record = prior ?? new ModuleTestRunRecord(runId, runId, selection, _options.SourceMapping?.ContentHash, _options.SourceMapping?.PlatformIdentity?.Commit, _options.SourceMapping?.PlatformIdentity?.CheckoutCommit, identity?.ObservedCandidateHash, identity?.ObservedBackendIdentity, false, resources, result.Status, result.Outcome, DateTimeOffset.UtcNow, disposition, remaining);
             record = record with { ResourceDisposition = disposition, RemainingResources = remaining, Resources = resources.Count > 0 ? resources : record.Resources };
             await CompositionDocumentStore.WriteAsync(path, record, cancellationToken).ConfigureAwait(false);
             CompositionWorkspace.CreatePrivateDirectory(directory);

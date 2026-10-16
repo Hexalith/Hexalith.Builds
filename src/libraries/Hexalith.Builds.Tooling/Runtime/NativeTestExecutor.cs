@@ -223,6 +223,7 @@ internal static class NativeTestExecutor
         if (tests.Project != selection.Entry || tests.Platform != selection.Executor || !selection.MatchesSource(manifestPath)
             || session.Plan.SelectedTest != selection || session.Readiness.RunId != session.Plan.RunId
             || session.Readiness.Resources.Count == 0 || session.Readiness.Resources.Any(resource => resource.State != "Healthy")
+            || (selection.DaprRuntimeVersion is not null && (session.Readiness.TestObservation is not { IsComplete: true } observed || observed.RunId != session.Plan.RunId))
             || DateTimeOffset.UtcNow >= selection.ExecutionDeadlineUtc)
         {
             return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
@@ -240,6 +241,18 @@ internal static class NativeTestExecutor
 
         DateTimeOffset issued = DateTimeOffset.UtcNow;
         string token = CompositionTokenFactory.Create(session.SigningKey, new CompositionTokenRequest("g4-native-tests", [session.Plan.TenantNamespace], [selection.ModuleId], ["command:submit", "query:read"], false, selection.CredentialExpiryUtc - issued), issued);
+        List<string> handoffSecrets = [token, session.SigningKey];
+        if (session.Readiness.TestObservation?.AccessPath is { } accessPath)
+        {
+            IReadOnlyList<string>? accessSecrets = await SelectedNativeTestReport.ReadAccessSecretsAsync(accessPath, session.Plan.Workspace, cancellationToken).ConfigureAwait(false);
+            if (accessSecrets is null)
+            {
+                return Failed("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, ToolExitCode.EvidenceSchemaOrPolicy);
+            }
+
+            handoffSecrets.AddRange(accessSecrets);
+        }
+
         Dictionary<string, string> environment = new(NativeTestHandoff.Create(session.Plan, session.Readiness, token), StringComparer.Ordinal)
         {
             ["HEXALITH_G4_TEST_REPORT_PATH"] = reportPath,
@@ -252,13 +265,16 @@ internal static class NativeTestExecutor
             }
         }
 
+        CompositionSelectedTestGate gate = new(session, cancellationToken);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable gateScope = gate.ConfigureAwait(false);
+        gate.Start();
         CompositionProcessResult process;
         bool cancelled = false;
         long firstStop = 0;
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            process = await CompositionProcess.RunSelectedAsync(CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), Path.GetDirectoryName(project), environment), selection.ExecutionDeadlineUtc - issued, TimeSpan.FromSeconds(selection.StopTimeoutSeconds), timestamp => Interlocked.CompareExchange(ref firstStop, timestamp, 0), cancellationToken).ConfigureAwait(false);
+            process = await CompositionProcess.RunSelectedAsync(CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), Path.GetDirectoryName(project), environment), selection.ExecutionDeadlineUtc - issued, TimeSpan.FromSeconds(selection.StopTimeoutSeconds), timestamp => Interlocked.CompareExchange(ref firstStop, timestamp, 0), gate.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -282,7 +298,7 @@ internal static class NativeTestExecutor
             await processing.CancelAsync().ConfigureAwait(false);
         }
 
-        (NativeTestReportLoadResult report, byte[]? bytes) = await SelectedNativeTestReport.ReadAsync(reportPath, session.Plan.Workspace, [token, session.SigningKey], processing.Token).ConfigureAwait(false);
+        (NativeTestReportLoadResult report, byte[]? bytes) = await SelectedNativeTestReport.ReadAsync(reportPath, session.Plan.Workspace, handoffSecrets, processing.Token).ConfigureAwait(false);
         NativeTestExecutionResult evaluated;
         if (report.Diagnostic?.RuleId == "HXT008")
         {
@@ -295,7 +311,7 @@ internal static class NativeTestExecutor
         }
         else
         {
-            evaluated = Evaluate(process, report, bytes, [token, session.SigningKey]);
+            evaluated = Evaluate(process, report, bytes, handoffSecrets);
             if (evaluated.Result.Outcome.ExitCode == ToolExitCode.Success && report.Report?.Skipped > 0)
             {
                 evaluated = Failed("HXT004", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);

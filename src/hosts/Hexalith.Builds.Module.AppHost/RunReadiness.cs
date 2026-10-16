@@ -80,6 +80,17 @@ internal static class RunReadiness
             return false;
         }
 
+        CompositionTestObservation? testObservation = null;
+        if (app.Services.GetService<ICompositionTestObservationProvider>() is { } observer)
+        {
+            testObservation = await observer.ObserveAsync(app.Services, cancellationToken).ConfigureAwait(false);
+            if (!testObservation.IsComplete || testObservation.RunId != plan.RunId || testObservation.ModuleId != plan.SelectedTest?.ModuleId)
+            {
+                await ReportFailureAsync(plan, "HXR026", "selected-test-observations", "memories", "identity-or-access-unavailable", resources, null).ConfigureAwait(false);
+                return false;
+            }
+        }
+
         Console.WriteLine("g4: every resource is healthy.");
 
         Uri eventStore = RunEndpoints.TryGet(app, RunTopology.EventStoreName)
@@ -92,6 +103,7 @@ internal static class RunReadiness
             new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, eventStore, ui, [.. resources.OrderBy(resource => resource.Name, StringComparer.Ordinal)])
             {
                 SelectedTest = plan.SelectedTest,
+                TestObservation = testObservation,
                 EffectiveDeadlineSeconds = plan.EffectiveDeadline?.TimeoutSeconds,
                 EffectiveDeadlineIsOverride = plan.EffectiveDeadline?.IsOverride ?? false,
                 EffectiveDeadlineJustification = plan.EffectiveDeadline?.Justification,

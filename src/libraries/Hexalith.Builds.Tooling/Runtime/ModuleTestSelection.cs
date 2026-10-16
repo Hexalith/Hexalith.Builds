@@ -37,6 +37,10 @@ public sealed record ModuleTestSelection(
     DateTimeOffset CredentialExpiryUtc,
     string Mode)
 {
+    /// <summary>Gets the optional exact runtime selected by an owner-declared local experiment; defaults remain catalog-owned.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? DaprRuntimeVersion { get; init; }
+
     /// <summary>Selects exactly one test from a validated declaration, before startup.</summary>
     /// <param name="declarations">The validated declarations.</param>
     /// <param name="name">The explicit profile.</param>
@@ -82,7 +86,10 @@ public sealed record ModuleTestSelection(
                     requestedAt,
                     expiry,
                     credentialExpiry,
-                    test.GetProperty("mode").GetString()!));
+                    test.GetProperty("mode").GetString()!)
+                {
+                    DaprRuntimeVersion = test.TryGetProperty("daprRuntimeVersion", out JsonElement runtime) ? runtime.GetString() : null,
+                });
             }
         }
 

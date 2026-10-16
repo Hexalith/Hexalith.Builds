@@ -19,32 +19,66 @@
     "volatileFields"
   ],
   "properties": {
-    "schema": { "const": "hexalith.module-run-evidence.v1" },
-    "runId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
-    "timestamps": { "$ref": "#/$defs/timestamps" },
-    "environment": { "$ref": "#/$defs/environment" },
-    "invocation": { "$ref": "#/$defs/invocation" },
-    "topology": { "$ref": "#/$defs/topology" },
+    "schema": {
+      "const": "hexalith.module-run-evidence.v1"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$"
+    },
+    "timestamps": {
+      "$ref": "#/$defs/timestamps"
+    },
+    "environment": {
+      "$ref": "#/$defs/environment"
+    },
+    "invocation": {
+      "$ref": "#/$defs/invocation"
+    },
+    "topology": {
+      "$ref": "#/$defs/topology"
+    },
     "phaseOutcomes": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/phaseOutcome" }
+      "items": {
+        "$ref": "#/$defs/phaseOutcome"
+      }
     },
-    "testCounts": { "$ref": "#/$defs/testCounts" },
+    "testCounts": {
+      "$ref": "#/$defs/testCounts"
+    },
     "artifactHashes": {
       "type": "object",
-      "additionalProperties": { "type": "string", "pattern": "^[A-F0-9]{64}$" }
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[A-F0-9]{64}$"
+      }
     },
-    "finalStatus": { "enum": ["completed", "failed", "unavailable", "cancelled", "withdrawn"] },
-    "outcome": { "$ref": "#/$defs/outcome" },
+    "finalStatus": {
+      "enum": [
+        "completed",
+        "failed",
+        "unavailable",
+        "cancelled",
+        "withdrawn"
+      ]
+    },
+    "outcome": {
+      "$ref": "#/$defs/outcome"
+    },
     "volatileFields": {
       "type": "array",
       "uniqueItems": true,
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "persistedAssertions": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "selectedTestRun": {
       "type": "object",
@@ -146,6 +180,10 @@
                 "source",
                 "package"
               ]
+            },
+            "daprRuntimeVersion": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
             }
           }
         },
@@ -168,10 +206,17 @@
           ]
         },
         "observedCandidateHash": {
-          "type": "null"
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{64}$"
         },
         "observedBackendIdentity": {
-          "type": "null"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "qualificationCredit": {
           "const": false
@@ -322,72 +367,173 @@
     },
     "expectedSequences": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     }
   },
   "$defs": {
     "timestamps": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["startedUtc", "completedUtc"],
+      "required": [
+        "startedUtc",
+        "completedUtc"
+      ],
       "properties": {
-        "startedUtc": { "type": "string", "format": "date-time" },
-        "completedUtc": { "type": "string", "format": "date-time" }
+        "startedUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completedUtc": {
+          "type": "string",
+          "format": "date-time"
+        }
       }
     },
     "environment": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["repositoryRevision", "repositoryDirtyMarker", "sdkVersion", "operatingSystem", "toolVersion"],
+      "required": [
+        "repositoryRevision",
+        "repositoryDirtyMarker",
+        "sdkVersion",
+        "operatingSystem",
+        "toolVersion"
+      ],
       "properties": {
-        "repositoryRevision": { "type": "string" },
-        "repositoryDirtyMarker": { "enum": ["clean", "dirty", "unknown"] },
-        "sdkVersion": { "type": "string" },
-        "operatingSystem": { "type": "string" },
-        "toolVersion": { "type": "string" }
+        "repositoryRevision": {
+          "type": "string"
+        },
+        "repositoryDirtyMarker": {
+          "enum": [
+            "clean",
+            "dirty",
+            "unknown"
+          ]
+        },
+        "sdkVersion": {
+          "type": "string"
+        },
+        "operatingSystem": {
+          "type": "string"
+        },
+        "toolVersion": {
+          "type": "string"
+        }
       }
     },
     "invocation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["command", "manifestPath", "manifestHash", "profile", "fixturePath", "fixtureHash", "filterHash"],
+      "required": [
+        "command",
+        "manifestPath",
+        "manifestHash",
+        "profile",
+        "fixturePath",
+        "fixtureHash",
+        "filterHash"
+      ],
       "properties": {
-        "command": { "type": "string" },
-        "manifestPath": { "type": ["string", "null"] },
-        "manifestHash": { "type": ["string", "null"] },
-        "profile": { "type": ["string", "null"] },
-        "fixturePath": { "type": ["string", "null"] },
-        "fixtureHash": { "type": ["string", "null"] },
-        "filterHash": { "type": ["string", "null"] }
+        "command": {
+          "type": "string"
+        },
+        "manifestPath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "manifestHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "profile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fixturePath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fixtureHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "filterHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "topology": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["modules", "platform"],
+      "required": [
+        "modules",
+        "platform"
+      ],
       "properties": {
         "modules": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "domain", "applicationId", "resourceId", "descriptorAssembly"],
+            "required": [
+              "id",
+              "domain",
+              "applicationId",
+              "resourceId",
+              "descriptorAssembly"
+            ],
             "properties": {
-              "id": { "type": "string" },
-              "domain": { "type": "string" },
-              "applicationId": { "type": "string" },
-              "resourceId": { "type": "string" },
-              "descriptorAssembly": { "type": "string" }
+              "id": {
+                "type": "string"
+              },
+              "domain": {
+                "type": "string"
+              },
+              "applicationId": {
+                "type": "string"
+              },
+              "resourceId": {
+                "type": "string"
+              },
+              "descriptorAssembly": {
+                "type": "string"
+              }
             }
           }
         },
         "platform": {
-          "type": ["object", "null"],
+          "type": [
+            "object",
+            "null"
+          ],
           "properties": {
-            "eventStoreVersion": { "type": "string" },
-            "daprRuntimeVersion": { "type": "string" },
-            "daprSdkVersion": { "type": "string" },
-            "frontComposerVersion": { "type": "string" }
+            "eventStoreVersion": {
+              "type": "string"
+            },
+            "daprRuntimeVersion": {
+              "type": "string"
+            },
+            "daprSdkVersion": {
+              "type": "string"
+            },
+            "frontComposerVersion": {
+              "type": "string"
+            }
           }
         }
       }
@@ -395,34 +541,92 @@
     "phaseOutcome": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["phase", "category", "ruleId"],
+      "required": [
+        "phase",
+        "category",
+        "ruleId"
+      ],
       "properties": {
-        "phase": { "type": "string" },
-        "category": { "type": "string" },
-        "ruleId": { "type": ["string", "null"] }
+        "phase": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "ruleId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "testCounts": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["reported", "total", "passed", "failed", "skipped"],
+      "required": [
+        "reported",
+        "total",
+        "passed",
+        "failed",
+        "skipped"
+      ],
       "properties": {
-        "reported": { "type": "boolean" },
-        "total": { "type": "integer", "minimum": 0 },
-        "passed": { "type": "integer", "minimum": 0 },
-        "failed": { "type": "integer", "minimum": 0 },
-        "skipped": { "type": "integer", "minimum": 0 }
+        "reported": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     "outcome": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["exitCode", "phase", "category", "ruleId"],
+      "required": [
+        "exitCode",
+        "phase",
+        "category",
+        "ruleId"
+      ],
       "properties": {
-        "exitCode": { "enum": [0, 1, 2, 3, 4, 5, 6, 130] },
-        "phase": { "type": "string" },
-        "category": { "type": "string" },
-        "ruleId": { "type": ["string", "null"] }
+        "exitCode": {
+          "enum": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            130
+          ]
+        },
+        "phase": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "ruleId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     }
   }

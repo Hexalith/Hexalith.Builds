@@ -33,13 +33,16 @@ public static partial class CompositionPrerequisiteProbe
     /// <param name="daprHome">The Dapr home, or null to read <see cref="DaprHomeVariable"/>.</param>
     /// <param name="dockerCommand">The Docker CLI command.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="expectedRuntimeVersion">The exact selected local runtime, or null for the catalog default.</param>
     /// <returns>The prerequisite decision.</returns>
     public static async Task<CompositionPrerequisiteResult> ProbeAsync(
         string? daprHome,
         string dockerCommand,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? expectedRuntimeVersion = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dockerCommand);
+        string runtime = expectedRuntimeVersion ?? CompositionToolchainPins.DaprRuntimeVersion;
 
         List<ToolDiagnostic> diagnostics = [];
         CompositionProcessResult docker = await CompositionProcess.RunAsync(
@@ -70,7 +73,7 @@ public static partial class CompositionPrerequisiteProbe
         else
         {
             verifiedHome = Path.GetFullPath(home);
-            if (!await VerifyDaprAsync(verifiedHome, diagnostics, cancellationToken).ConfigureAwait(false))
+            if (!await VerifyDaprAsync(verifiedHome, diagnostics, runtime, cancellationToken).ConfigureAwait(false))
             {
                 verifiedHome = null;
             }
@@ -152,7 +155,7 @@ public static partial class CompositionPrerequisiteProbe
         return match.Success ? match.Groups["v"].Value : null;
     }
 
-    private static async Task<bool> VerifyDaprAsync(string home, List<ToolDiagnostic> diagnostics, CancellationToken cancellationToken)
+    private static async Task<bool> VerifyDaprAsync(string home, List<ToolDiagnostic> diagnostics, string expectedRuntime, CancellationToken cancellationToken)
     {
         string cli = Path.Combine(home, "tools", OperatingSystem.IsWindows() ? "dapr.exe" : "dapr");
         Dictionary<string, string> environment = new(StringComparer.Ordinal) { [CompositionEnvironment.DaprRuntimePath] = home };
@@ -165,13 +168,13 @@ public static partial class CompositionPrerequisiteProbe
         (string? cliVersion, string? runtimeVersion) = ParseDaprVersions(cliResult.Output);
         if (!cliResult.Started || cliResult.ExitCode != 0
             || !string.Equals(cliVersion, CompositionToolchainPins.DaprCliVersion, StringComparison.Ordinal)
-            || !string.Equals(runtimeVersion, CompositionToolchainPins.DaprRuntimeVersion, StringComparison.Ordinal))
+            || !string.Equals(runtimeVersion, expectedRuntime, StringComparison.Ordinal))
         {
             diagnostics.Add(Unavailable(
                 "HXR012",
                 "The isolated Dapr CLI does not report the selected CLI and runtime versions.",
                 "tools/dapr",
-                $"Install Dapr CLI {CompositionToolchainPins.DaprCliVersion} with runtime {CompositionToolchainPins.DaprRuntimeVersion} in the isolated Dapr home."));
+                $"Install Dapr CLI {CompositionToolchainPins.DaprCliVersion} with runtime {expectedRuntime} in the isolated Dapr home."));
             return false;
         }
 
@@ -184,13 +187,14 @@ public static partial class CompositionPrerequisiteProbe
                 cancellationToken).ConfigureAwait(false)
             : new CompositionProcessResult(false, -1, string.Empty, false);
         bool verified = daprdResult.Started && daprdResult.ExitCode == 0
-            && string.Equals(daprdResult.Output.Trim(), CompositionToolchainPins.DaprRuntimeVersion, StringComparison.Ordinal);
-        verified = verified && await VerifyServiceAsync(home, bin, "placement", [], cancellationToken).ConfigureAwait(false);
+            && string.Equals(daprdResult.Output.Trim(), expectedRuntime, StringComparison.Ordinal);
+        verified = verified && await VerifyServiceAsync(home, bin, "placement", [], expectedRuntime, cancellationToken).ConfigureAwait(false);
         verified = verified && await VerifyServiceAsync(
             home,
             bin,
             "scheduler",
             ["--etcd-client-port", "0", "--etcd-data-dir", Path.Combine(Path.GetTempPath(), "hexalith-g4-probe-" + Guid.NewGuid().ToString("N"))],
+            expectedRuntime,
             cancellationToken).ConfigureAwait(false);
         if (!verified)
         {
@@ -198,7 +202,7 @@ public static partial class CompositionPrerequisiteProbe
                 "HXR013",
                 "The isolated Dapr runtime binaries do not report the selected runtime version.",
                 ".dapr/bin",
-                $"Initialize the isolated Dapr home with runtime {CompositionToolchainPins.DaprRuntimeVersion} (daprd, placement, scheduler)."));
+                $"Initialize the isolated Dapr home with runtime {expectedRuntime} (daprd, placement, scheduler)."));
         }
 
         return verified;
@@ -209,6 +213,7 @@ public static partial class CompositionPrerequisiteProbe
         string bin,
         string service,
         IReadOnlyList<string> extraArguments,
+        string expectedRuntime,
         CancellationToken cancellationToken)
     {
         string path = Path.Combine(bin, OperatingSystem.IsWindows() ? service + ".exe" : service);
@@ -230,7 +235,7 @@ public static partial class CompositionPrerequisiteProbe
                 "-- version ",
                 _probeTimeout,
                 cancellationToken).ConfigureAwait(false);
-            return string.Equals(ParseServiceVersion(line), CompositionToolchainPins.DaprRuntimeVersion, StringComparison.Ordinal);
+            return string.Equals(ParseServiceVersion(line), expectedRuntime, StringComparison.Ordinal);
         }
         finally
         {

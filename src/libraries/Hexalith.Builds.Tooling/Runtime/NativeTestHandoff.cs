@@ -80,6 +80,11 @@ public static class NativeTestHandoff
             values["HEXALITH_G4_EXECUTION_DEADLINE_UTC"] = selected.ExecutionDeadlineUtc.ToString("O", CultureInfo.InvariantCulture);
             values["HEXALITH_G4_CREDENTIAL_EXPIRY_UTC"] = selected.CredentialExpiryUtc.ToString("O", CultureInfo.InvariantCulture);
             values["HEXALITH_G4_TEST_MODE"] = selected.Mode;
+            if (selected.DaprRuntimeVersion is { } runtime)
+            {
+                values["HEXALITH_G4_DAPR_RUNTIME_VERSION"] = runtime;
+            }
+
             values["HEXALITH_G4_PLAN_PATH"] = Path.Combine(plan.Workspace, "plan.json");
             values["HEXALITH_G4_READINESS_PATH"] = plan.ReadinessPath;
             values["HEXALITH_G4_SOURCE_MAPPING_PATH"] = Path.Combine(plan.Workspace, "source-mapping", "mapping.json");

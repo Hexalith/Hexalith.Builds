@@ -78,11 +78,14 @@ public sealed class ModuleTestSelectionTests
     /// <returns>The process and evidence assertions.</returns>
     [Theory]
     [InlineData("pass", 0, 1, "removed")]
+    [InlineData("observed-identities", 0, 1, "removed")]
     [InlineData("nonzero", 4, 0, "retained")]
     [InlineData("missing", 4, 0, "retained")]
     [InlineData("failed", 4, 0, "retained")]
     [InlineData("skipped", 4, 0, "retained")]
     [InlineData("secret", 6, 0, "retained")]
+    [InlineData("app-secret", 6, 0, "retained")]
+    [InlineData("dapr-secret", 6, 0, "retained")]
     [InlineData("entry-drift", 4, 0, "retained")]
     [InlineData("manifest-drift", 4, 0, "retained")]
     [InlineData("ci-failure", 4, 1, "removed")]
@@ -121,6 +124,19 @@ public sealed class ModuleTestSelectionTests
                 }
 
                 CompositionReadiness readiness = new(CompositionReadiness.SupportedSchema, selectedPlan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned-resource", "process", "Healthy")]);
+                if (scenario is "app-secret" or "dapr-secret")
+                {
+                    string accessPath = Path.Combine(selectedPlan.Workspace, "platform-components", "retention", "access.json");
+                    CompositionWorkspace.CreatePrivateDirectory(Path.GetDirectoryName(accessPath)!);
+                    await File.WriteAllTextAsync(accessPath, JsonSerializer.Serialize(Enumerable.Range(0, 3).ToDictionary(index => "service" + index, _ => new { APP_API_TOKEN = "fixture-app-credential", DAPR_API_TOKEN = "fixture-dapr-credential" })), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                    readiness = readiness with { TestObservation = new CompositionTestObservation { RunId = selectedPlan.RunId, ModuleId = "memories", ProfileHash = "offline", ProfileJson = "offline", AccessPath = accessPath } };
+                }
+
+                if (scenario == "observed-identities")
+                {
+                    readiness = readiness with { TestObservation = new CompositionTestObservation { RunId = selectedPlan.RunId, ModuleId = "sample", ProfileHash = "offline", ProfileJson = "offline", ObservedCandidateHash = new string('a', 64), ObservedBackendIdentity = "offline fixture backend" } };
+                }
+
                 CompositionWorkspace.CreatePrivateDirectory(selectedPlan.Workspace);
                 await CompositionDocumentStore.WriteAsync(Path.Combine(selectedPlan.Workspace, "plan.json"), selectedPlan, TestContext.Current.CancellationToken).ConfigureAwait(true);
                 await CompositionDocumentStore.WriteAsync(selectedPlan.ReadinessPath, readiness, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -152,6 +168,12 @@ public sealed class ModuleTestSelectionTests
         selectedRun.GetProperty("qualificationCredit").GetBoolean().ShouldBeFalse();
         document.RootElement.GetProperty("invocation").GetProperty("command").GetString().ShouldNotBeNull().ShouldContain("--profile verify");
         System.Text.Encoding.UTF8.GetString(evidence).ShouldNotContain("private-signing-key-value");
+        if (scenario == "observed-identities")
+        {
+            selectedRun.GetProperty("observedCandidateHash").GetString().ShouldBe(new string('a', 64));
+            selectedRun.GetProperty("observedBackendIdentity").GetString().ShouldBe("offline fixture backend");
+        }
+
         if (scenario == "pass")
         {
             document.RootElement.GetProperty("testCounts").GetProperty("passed").GetInt32().ShouldBe(1);
@@ -162,7 +184,7 @@ public sealed class ModuleTestSelectionTests
             }
         }
 
-        if (scenario == "secret")
+        if (scenario is "secret" or "app-secret" or "dapr-secret")
         {
             File.Exists(Path.Combine(selectedPlan!.Workspace, "native-tests/native.trx")).ShouldBeFalse();
             File.Exists(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId, "native.trx")).ShouldBeFalse();
@@ -346,7 +368,13 @@ public sealed class ModuleTestSelectionTests
             "skipped" => "<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"2\" passed=\"1\" failed=\"0\" notExecuted=\"1\" /></ResultSummary></TestRun>",
             _ => "<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" /></ResultSummary></TestRun>",
         };
-        string secretSuffix = scenario == "secret" ? " + os.environ['HEXALITH_G4_ACCESS_TOKEN']" : string.Empty;
+        string secretSuffix = scenario switch
+        {
+            "secret" => " + os.environ['HEXALITH_G4_ACCESS_TOKEN']",
+            "app-secret" => " + 'fixture-app-credential'",
+            "dapr-secret" => " + 'fixture-dapr-credential'",
+            _ => string.Empty,
+        };
         string script = "import os, pathlib, time\n"
             + "import helper, base64, json, datetime\n"
             + "assert helper.value == 'owned-helper'\n"

@@ -7,6 +7,7 @@ namespace Hexalith.Builds.Tooling.Runtime;
 
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -85,6 +86,55 @@ internal static class SelectedNativeTestReport
             {
                 File.Delete(path);
             }
+        }
+    }
+
+    /// <summary>Captures private app and sidecar credentials before executing the selected child.</summary>
+    /// <param name="path">The readiness-owned access file.</param>
+    /// <param name="workspace">The owned workspace.</param>
+    /// <param name="cancellationToken">The execution cancellation.</param>
+    /// <returns>The exact handed-off values, or null when the file cannot be inspected safely.</returns>
+    internal static async Task<IReadOnlyList<string>?> ReadAccessSecretsAsync(string path, string workspace, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (Path.GetFullPath(path) != Path.Combine(Path.GetFullPath(workspace), "platform-components", "retention", "access.json") || !IsOwnedRegularPath(path, workspace))
+            {
+                return null;
+            }
+
+            FileStream stream = OpenWithoutBlocking(path);
+            await using (stream.ConfigureAwait(false))
+            {
+                if (!stream.CanSeek || stream.Length is <= 0 or > 65536)
+                {
+                    return null;
+                }
+
+                byte[] bytes = new byte[(int)stream.Length];
+                await stream.ReadExactlyAsync(bytes, cancellationToken).ConfigureAwait(false);
+                using JsonDocument document = JsonDocument.Parse(bytes);
+                List<string> secrets = [];
+                foreach (JsonProperty service in document.RootElement.EnumerateObject())
+                {
+                    foreach (string name in new[] { "APP_API_TOKEN", "DAPR_API_TOKEN" })
+                    {
+                        string? value = service.Value.GetProperty(name).GetString();
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            return null;
+                        }
+
+                        secrets.Add(value);
+                    }
+                }
+
+                return secrets.Count == 6 ? secrets : null;
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException or OperationCanceledException or JsonException or InvalidOperationException or KeyNotFoundException)
+        {
+            return null;
         }
     }
 
