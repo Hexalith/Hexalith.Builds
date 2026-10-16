@@ -61,4 +61,10 @@ public sealed record CompositionRunState(
     /// <summary>Gets project process ids reported for debugger attach.</summary>
     [JsonConverter(typeof(ImmutableArrayJsonConverter<int>))]
     public ImmutableArray<int> ProjectProcessIds { get; init; } = [];
+
+    /// <summary>Gets the immutable selected module-owned test binding, when present.</summary>
+    public ModuleTestSelection? SelectedTest { get; init; }
+
+    /// <summary>Gets the first terminal selected-test record, preserved through later cancellation and cleanup.</summary>
+    public ModuleTestRunRecord? TestRun { get; init; }
 }

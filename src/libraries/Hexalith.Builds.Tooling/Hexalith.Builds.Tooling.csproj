@@ -26,6 +26,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../../../schemas/hexalith.module-run-evidence.v1.json" LogicalName="Hexalith.Builds.Tooling.RunEvidence.hexalith.module-run-evidence.v1.json" />
     <EmbeddedResource Include="../../../schemas/hexalith.module-manifest.v2.json" LogicalName="Hexalith.Builds.Tooling.Manifest.hexalith.module-manifest.v2.json" />
     <EmbeddedResource Include="Workspace/SourceMapping.props" LogicalName="Hexalith.Builds.Tooling.Workspace.SourceMapping.props" />
     <EmbeddedResource Include="Workspace/SourceMapping.targets" LogicalName="Hexalith.Builds.Tooling.Workspace.SourceMapping.targets" />

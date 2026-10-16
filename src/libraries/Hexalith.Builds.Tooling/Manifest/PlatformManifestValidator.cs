@@ -194,7 +194,10 @@ public static partial class PlatformManifestValidator
                 ValidateModule(module, prefix, source, fullPath, identities, diagnostics);
                 if (module.ValueKind == JsonValueKind.Object && initialDiagnosticCount == diagnostics.Count)
                 {
-                    declarations.Add(new PlatformModuleDeclaration(source, ApplyDefaults(module)));
+                    declarations.Add(new PlatformModuleDeclaration(source, ApplyDefaults(module))
+                    {
+                        SourceHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(buffer.AsSpan(0, count))),
+                    });
                 }
             }
         }
@@ -564,6 +567,30 @@ public static partial class PlatformManifestValidator
         }
 
         ValidateExecutablePaths(lifecycle, prefix, source, fullPath, diagnostics);
+        HashSet<string> testNames = new(StringComparer.Ordinal);
+        int testIndex = 0;
+        foreach (JsonElement test in ArrayValue(module, "tests"))
+        {
+            string field = $"{prefix}.tests[{testIndex++}]";
+            string? name = StringValue(test, "name");
+            if (name is not null && !testNames.Add(name))
+            {
+                Add(diagnostics, "HXP003", source, field + ".name", "Use a unique test name within the module.");
+            }
+
+            string? entry = StringValue(test, "entry");
+            string? executor = StringValue(test, "executor");
+            if (entry is not null && (!ModuleTestSelection.IsOwnedEntry(ManifestPathValidator.FindRepositoryRoot(fullPath), entry)
+                || !entry.EndsWith(executor == "python3" ? ".py" : ".csproj", StringComparison.Ordinal)))
+            {
+                Add(diagnostics, "HXP020", source, field + ".entry", "Use an existing module-owned entry of the executor's file type, without symlinks or dependency paths.");
+            }
+
+            if (executor == "python3" && StringValue(test, "mode") != "source")
+            {
+                Add(diagnostics, "HXP020", source, field + ".mode", "Python tests currently support source mode only; packaged candidate provenance is unavailable.");
+            }
+        }
     }
 
     private static void ValidateDaprBindings(JsonElement module, string prefix, string source, HashSet<string> servers, List<ToolDiagnostic> diagnostics)

@@ -38,4 +38,8 @@ public sealed record ModuleRunEvidence(
     ToolOutcome Outcome,
     IReadOnlyList<string> VolatileFields,
     IReadOnlyList<string> PersistedAssertions,
-    IReadOnlyList<string> ExpectedSequences);
+    IReadOnlyList<string> ExpectedSequences)
+{
+    /// <summary>Gets the selected module test outcome and actual resource disposition.</summary>
+    public Runtime.ModuleTestRunRecord? SelectedTestRun { get; init; }
+}

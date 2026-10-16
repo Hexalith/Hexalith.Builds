@@ -195,3 +195,81 @@ To run a consuming module's application, use its Aspire host:
 cd AspireHost
 dotnet run
 ```
+
+## Module-owned v2 tests
+
+A v2 module may add an optional `tests` collection beside `identity`, `runtime`,
+`surfaces`, `integration`, and `lifecycle`. Select exactly one named test with
+`hexalith-module test --manifest module.json --profile retention --mode source`.
+Selection is validated before composition. For example:
+
+```json
+"tests": [
+  {
+    "name": "retention",
+    "executor": "python3",
+    "entry": "tools/verify_retention.py",
+    "reportFormat": "trx",
+    "executionTimeoutSeconds": 14400,
+    "stopTimeoutSeconds": 900,
+    "mode": "source"
+  }
+]
+```
+
+The contract is closed: executable names, arbitrary arguments, environment or
+credential inputs cannot be supplied. Executors are `python3`, `vstest`, and
+`mtp`. Entries must exist in the declaring module, end in `.py` or `.csproj`
+respectively, and cannot traverse symlinks, nested repositories or `references`.
+Python currently supports source mode only; its fixed invocation is
+`python3 -E -s -B <owned-entry>`. Adjacent helper imports work. Only the selected
+entry and declaration bytes are bound; this is not a hermetic Python dependency
+or interpreter pin. The .NET executors keep their native TRX switches. Package
+mode continues to use the existing package mapping for native .NET tests.
+Filters, attachment to existing runs and hosted environment reuse are refused.
+
+Python receives the existing `HEXALITH_G4_*` native-test handoff and writes the
+native TRX report to `HEXALITH_G4_TEST_REPORT_PATH`. No stdout protocol substitutes
+for that report. The existing TRX parser requires a `TestRun` containing one
+`ResultSummary` and complete consistent `Counters`. The process must exit zero,
+the total must be positive, every selected test must pass, and no failed,
+skipped, inconclusive or not-executed work may earn a selected-test pass.
+Reports containing handoff credentials are rejected and removed, without a
+retained copy. Safe reports, including failed reports, remain in private durable
+run diagnostics and may be retained beside `--evidence` artifacts.
+
+The execution lifetime is explicitly 1–14,400 seconds from the initial request;
+startup and setup consume it. A monotonic command cancellation timer prevents a
+wall-clock reversal from extending that lifetime. The plan, state, handoff and
+evidence bind the precise original UTC execution expiry. JWT expiry rounds up
+to the next whole second (less than one additional second) so credentials cover
+the full execution lifetime. Execution still stops at its precise deadline;
+stopping uses the runner's own process/resource
+ownership and does not require module credentials. A separate total stopping
+bound is 1–900 seconds. The independent startup default remains 600 seconds and
+legacy native tests retain their existing 900-second test limit.
+
+Local source failures retain surviving resources until explicit `down --run-id`;
+retained AppHosts ignore parent-input EOF, keep output-observation metadata, and survive startup
+failure. CI failures and successful tests clean owned resources before rendering
+results. Withdrawal never earns test completion, and a previously recorded
+failure remains the first outcome. Cleanup errors and unavailable scans disclose
+remaining or unknown resources. The durable `selected-test.json` and safe native
+report survive successful cleanup. Expected Platform and mapping identities are
+labelled as declarations; absent loaded candidate/backend observations stay null
+and these runner records grant no qualification credit.
+
+This prerequisite does not supply PostgreSQL composition, a pinned Python tool,
+backend capability and clock binding, direct packaged-candidate alignment, or a
+Memories adapter. Those integration requirements must be implemented and observed
+before accepting a PostgreSQL retention qualification. Source Debug runner
+results and offline process-double tests do not substitute for that evidence.
+
+Selected native reports are limited to 4 MiB and inspected under at most 30
+seconds of the single declared stopping allowance. Symlinks, special files,
+malformed XML and uninspectable output are discarded. XML encoding is honored
+before credential detection, including cancellation output. Retained AppHost
+output is limited to 128 fixed metadata observations per process. Offline tests
+exercise the actual retention wait and bounded stop delegates; real Aspire,
+PostgreSQL and resource orchestration remain integration checks requiring a
+separately authorized workload run.

@@ -60,14 +60,20 @@ public static class NativeTestReportLoader
             return Failed("HXT001", "report");
         }
 
+        return LoadBytes(fullPath, bytes);
+    }
+
+    /// <summary>Evaluates already inspected report bytes without reopening a mutable path.</summary>
+    /// <param name="fullPath">The report identity used for metadata.</param>
+    /// <param name="bytes">The inspected XML bytes.</param>
+    /// <returns>The existing native report result.</returns>
+    internal static NativeTestReportLoadResult LoadBytes(string fullPath, byte[] bytes)
+    {
         XDocument document;
         try
         {
-            MemoryStream stream = new(bytes, writable: false);
-            await using (stream.ConfigureAwait(false))
-            {
-                document = XDocument.Load(stream, LoadOptions.None);
-            }
+            using MemoryStream stream = new(bytes, writable: false);
+            document = XDocument.Load(stream, LoadOptions.None);
         }
         catch (XmlException)
         {
@@ -120,7 +126,7 @@ public static class NativeTestReportLoader
             (0, _, _, _) => Failed("HXT003", "total"),
             (_, _, > 0, _) => Failed("HXT005", "failed"),
             (_, 0, _, _) => Failed("HXT004", "skipped"),
-            _ when passed + skipped != total => Failed("HXT002", "counters"),
+            _ when (long)passed + skipped != total => Failed("HXT002", "counters"),
             _ => new NativeTestReportLoadResult(
                 new NativeTestReport(
                     Path.GetFileName(fullPath),
@@ -187,14 +193,20 @@ public static class NativeTestReportLoader
             return false;
         }
 
-        failed = failedCount + errors + timeouts + aborted;
-        skipped = notExecuted + inconclusive;
+        long failedTotal = (long)failedCount + errors + timeouts + aborted;
+        long skippedTotal = (long)notExecuted + inconclusive;
+        if (failedTotal > int.MaxValue || skippedTotal > int.MaxValue)
+        {
+            return false;
+        }
 
+        failed = (int)failedTotal;
+        skipped = (int)skippedTotal;
         return total >= 0
             && passed >= 0
             && failed >= 0
             && skipped >= 0
-            && passed + failed + skipped == total;
+            && (long)passed + failed + skipped == total;
     }
 
     private static bool TryReadCounter(XElement counters, string name, bool required, out int value)

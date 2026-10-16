@@ -82,6 +82,17 @@ public static class ModuleCommandExecutionService
         ArgumentNullException.ThrowIfNull(writer);
 
         DateTimeOffset startedUtc = DateTimeOffset.UtcNow;
+        using ModuleTestExecutionBudget? testBudget = command == ModuleInvocationCommand.Test ? new ModuleTestExecutionBudget(cancellationToken) : null;
+        if (testBudget is not null && PlatformManifestCommand.IsV2(manifestPath))
+        {
+            PlatformManifestValidationResult provisional = PlatformManifestValidator.Validate([manifestPath], cancellationToken);
+            if (provisional.IsValid && ModuleTestSelection.Select(provisional.Declarations!, profile, manifestPath, startedUtc) is { } provisionalTest)
+            {
+                testBudget.Restrict(provisionalTest.ExecutionTimeoutSeconds);
+            }
+        }
+
+        CancellationToken setupToken = testBudget?.Token ?? cancellationToken;
         if (command == ModuleInvocationCommand.Debug)
         {
             mode = WorkspaceMode.Source;
@@ -97,21 +108,25 @@ public static class ModuleCommandExecutionService
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (command == ModuleInvocationCommand.Down && runId is not null)
+            {
+                return await ExecuteExactDownAsync(manifestPath, runId, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, compositionOptions, cancellationToken).ConfigureAwait(false);
+            }
 
             // A direct reference may contain a stale or absent working-tree manifest.
             // Resolve its recorded gitlink before parsing any of its bytes.
             SourceMapping? preResolvedMapping = null;
             if (command != ModuleInvocationCommand.Down
                 && !string.IsNullOrWhiteSpace(descriptorChildEntryAssemblyPath)
-                && !await WorkspaceRootResolver.IsRootManifestAsync(manifestPath, cancellationToken).ConfigureAwait(false))
+                && !await (compositionOptions?.RootManifestCheckOverride?.Invoke(manifestPath, setupToken) ?? WorkspaceRootResolver.IsRootManifestAsync(manifestPath, setupToken)).ConfigureAwait(false))
             {
-                preResolvedMapping = await WorkspaceRootResolver.ResolveAsync(manifestPath, mode, cancellationToken).ConfigureAwait(false);
+                preResolvedMapping = await (compositionOptions?.MappingResolverOverride?.Invoke(manifestPath, mode, setupToken) ?? WorkspaceRootResolver.ResolveAsync(manifestPath, mode, setupToken)).ConfigureAwait(false);
                 _identityWarnings.Value = PlatformIdentityResolver.Diagnostics(preResolvedMapping.IdentityFindings, warning: true);
             }
 
             if (PlatformManifestCommand.IsV2(manifestPath))
             {
-                return await ExecutePlatformAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, cancellationToken).ConfigureAwait(false);
+                return await ExecutePlatformAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, testBudget, cancellationToken).ConfigureAwait(false);
             }
 
             ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
@@ -734,6 +749,11 @@ public static class ModuleCommandExecutionService
                 startedUtc,
                 cancellationToken).ConfigureAwait(false);
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && testBudget?.Token.IsCancellationRequested == true)
+        {
+            ToolCommandResult expired = PlatformRefusal("HXT007", "The selected execution exhausted its original finite lifetime during setup.", ToolExitCode.ProductOrTest);
+            return await WriteResultAsync(expired.Status, expired.Outcome, expired.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None).ConfigureAwait(false);
+        }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             if (session is not null && engine is not null)
@@ -855,7 +875,8 @@ public static class ModuleCommandExecutionService
         string? requestedRunId = null,
         PersistedProfileDefinition? completedPersistedProfile = null,
         NativeTestExecutionResult? nativeTests = null,
-        string? nativePlatform = null)
+        string? nativePlatform = null,
+        ModuleTestRunRecord? selectedTestRun = null)
     {
         IReadOnlyList<ToolDiagnostic> warnings = _identityWarnings.Value ?? [];
         ToolCommandResult result = new(status, outcome, [.. warnings, .. diagnostics]) { RunId = runId };
@@ -863,7 +884,7 @@ public static class ModuleCommandExecutionService
         {
             ModuleRunTestCounts? testCounts = null;
             Dictionary<string, string>? artifactHashes = null;
-            if (nativeTests is { Report: { } report, ReportBytes: { } reportBytes }
+            if (nativeTests is { ReportBytes: { } reportBytes }
                 && nativePlatform is not null
                 && evidencePath.EndsWith(".json", StringComparison.Ordinal))
             {
@@ -875,7 +896,11 @@ public static class ModuleCommandExecutionService
                     cancellationToken).ConfigureAwait(false);
                 if (reportResult.Succeeded)
                 {
-                    testCounts = new ModuleRunTestCounts(true, report.Total, report.Passed, report.Failed, report.Skipped);
+                    if (nativeTests.Report is { } report)
+                    {
+                        testCounts = new ModuleRunTestCounts(true, report.Total, report.Passed, report.Failed, report.Skipped);
+                    }
+
                     artifactHashes = new Dictionary<string, string>(StringComparer.Ordinal) { [reportPath] = Convert.ToHexString(SHA256.HashData(reportBytes)) };
                 }
                 else
@@ -898,7 +923,15 @@ public static class ModuleCommandExecutionService
                 completedPersistedProfile is null ? null : PersistedProfileEvidence.Assertions(completedPersistedProfile.Modules.Select(module => module.ModuleId)),
                 completedPersistedProfile is null ? null : PersistedProfileEvidence.Sequences(completedPersistedProfile.Modules.Select(module => module.ModuleId)),
                 testCounts,
-                artifactHashes);
+                artifactHashes) with
+            {
+                SelectedTestRun = selectedTestRun,
+            };
+            if (selectedTestRun is not null)
+            {
+                evidence = evidence with { Invocation = evidence.Invocation with { Command = evidence.Invocation.Command + " --profile " + selectedTestRun.Selection.Name, Profile = selectedTestRun.Selection.Name, ManifestHash = selectedTestRun.Selection.ManifestHash } };
+            }
+
             ModuleRunEvidenceWriteResult evidenceResult = await ModuleRunEvidenceWriter.WriteAsync(
                 evidencePath,
                 manifestPath,
@@ -918,7 +951,240 @@ public static class ModuleCommandExecutionService
         return (int)result.Outcome.ExitCode;
     }
 
+    private static async Task<int> ExecuteExactDownAsync(string manifestPath, string runId, string? evidencePath, DateTimeOffset startedUtc, ToolOutputFormat format, TextWriter writer, string? runnerAssembly, CompositionEngineOptions? options, CancellationToken cancellationToken)
+    {
+        ToolCommandResult result;
+        if (!CompositionRunPlanFactory.IsRunId(runId))
+        {
+            result = PlatformRefusal("HXR024", "The run identity is malformed.", ToolExitCode.UsageOrManifest);
+        }
+        else
+        {
+            options ??= CompositionCommandOptions.Create(runnerAssembly ?? typeof(ModuleCommandExecutionService).Assembly.Location);
+            CompositionEngine engine = new(options);
+            CompositionRunState? state = await engine.StateStore.TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
+            string expectedWorkspace = Path.GetFullPath(Path.Combine(options.WorkspaceRoot, runId));
+            result = state is not null && (state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId || Path.GetFullPath(state.Workspace) != expectedWorkspace)
+                ? PlatformRefusal("HXR024", "The recorded run does not match the requested owned identity.", ToolExitCode.UsageOrManifest)
+                : (await engine.DownAsync(runId, cancellationToken).ConfigureAwait(false)).Result with { RunId = runId };
+        }
+
+        return await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, ModuleInvocationCommand.Down, manifestPath, null, null, null, evidencePath, startedUtc, CancellationToken.None, runId, runId).ConfigureAwait(false);
+    }
+
     private static async Task<int> ExecutePlatformAsync(
+        ModuleInvocationCommand command,
+        string manifestPath,
+        string? profile,
+        string? filter,
+        string? evidencePath,
+        DateTimeOffset startedUtc,
+        ToolOutputFormat format,
+        TextWriter writer,
+        string? descriptorChildEntryAssemblyPath,
+        string? runId,
+        CompositionEngineOptions? compositionOptions,
+        WorkspaceMode mode,
+        SourceMapping? preResolvedMapping,
+        ModuleTestExecutionBudget? testBudget,
+        CancellationToken cancellationToken)
+    {
+        if (command != ModuleInvocationCommand.Test)
+        {
+            return await ExecutePlatformLifecycleAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, cancellationToken).ConfigureAwait(false);
+        }
+
+        PlatformManifestValidationResult validation = PlatformManifestValidator.Validate([manifestPath], cancellationToken);
+        ModuleTestSelection? selected = null;
+        ToolCommandResult result;
+        NativeTestExecutionResult? native = null;
+        ModuleTestRunRecord? record = null;
+        if (!validation.IsValid)
+        {
+            result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest), validation.Diagnostics);
+        }
+        else if (filter is not null || runId is not null
+                || (selected = ModuleTestSelection.Select(validation.Declarations!, profile, manifestPath, startedUtc)) is null
+                || selected.Mode != (mode == WorkspaceMode.Source ? "source" : "package"))
+        {
+            result = PlatformRefusal("HXC002", "Select one declared test using --profile and its declared mode. Filters, attachment, and hosted reuse are unsupported.", ToolExitCode.UsageOrManifest);
+        }
+        else if (descriptorChildEntryAssemblyPath is null)
+        {
+            result = PlatformRefusal("HXR014", "Platform composition requires the packaged Builds AppHost.", ToolExitCode.PrerequisiteUnavailable);
+        }
+        else
+        {
+            CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
+            testBudget!.Restrict(selected.ExecutionTimeoutSeconds);
+            CompositionEngine? engine = null;
+            bool ci = options.ContinuousIntegrationOverride ?? (string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase));
+            bool retain = selected is not null && mode == WorkspaceMode.Source && !ci;
+            options = options with
+            {
+                SelectedTest = selected,
+                SelectedExecutionOwnerToken = cancellationToken,
+                RetainOnFailure = retain,
+                PersistAfterParentExit = PersistsAfterExit(command) || retain,
+                DebugAttach = false,
+                StopTimeout = selected is null ? options.StopTimeout : TimeSpan.FromSeconds(selected.StopTimeoutSeconds),
+            };
+            CompositionRunSession? session = null;
+            string? ownedRunId = null;
+            long? startupStoppingTimestamp = null;
+            try
+            {
+                testBudget.Token.ThrowIfCancellationRequested();
+                SourceMapping mapping = preResolvedMapping ?? options.SourceMapping ?? await (options.MappingResolverOverride?.Invoke(manifestPath, mode, testBudget.Token) ?? WorkspaceRootResolver.ResolveAsync(manifestPath, mode, testBudget.Token)).ConfigureAwait(false);
+                testBudget.Token.ThrowIfCancellationRequested();
+                options = options with { SourceMapping = mapping };
+                engine = new CompositionEngine(options);
+                CompositionStartResult started = await (options.SelectedPlatformStartOverride?.Invoke(manifestPath, selected!, testBudget.Token) ?? options.PlatformStartOverride?.Invoke(manifestPath, testBudget.Token) ?? engine.StartAsync(manifestPath, testBudget.Token)).ConfigureAwait(false);
+                session = started.Session;
+                startupStoppingTimestamp = started.StoppingTimestamp;
+                ownedRunId = session?.RunId ?? started.RunId;
+                result = started.Result with { RunId = ownedRunId };
+                if (selected is not null && result.Outcome.ExitCode == ToolExitCode.Success)
+                {
+                    if (session is null)
+                    {
+                        result = PlatformRefusal("HXT009", "The selected test requires a ready owned session.", ToolExitCode.ProductOrTest);
+                    }
+                    else
+                    {
+                        native = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests(selected.Entry, selected.Executor), manifestPath, testBudget.Token, options.NativeDotnetCommand ?? "dotnet", selected).ConfigureAwait(false);
+                        result = native.Result with { RunId = ownedRunId, Diagnostics = [.. started.Result.Diagnostics, .. native.Result.Diagnostics] };
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                result = cancellationToken.IsCancellationRequested
+                    ? PlatformRefusal("HXC130", "The owner withdrew the selected execution.", ToolExitCode.Cancelled) with { Status = "withdrawn", RunId = ownedRunId }
+                    : PlatformRefusal("HXT007", "The selected execution exhausted its original finite lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                result = PlatformRefusal("HXT007", "The owned execution failed; inspect retained diagnostics.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
+            }
+
+            if (selected is not null && result.Status is "cancelled" or "withdrawn" && !cancellationToken.IsCancellationRequested)
+            {
+                result = PlatformRefusal("HXT007", "The selected execution exhausted its original finite lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
+            }
+
+            using CancellationTokenSource stopping = new();
+            TimeSpan stopRemaining = TimeSpan.FromSeconds(selected!.StopTimeoutSeconds);
+            if ((native?.StoppingTimestamp ?? startupStoppingTimestamp) is long stoppingAt)
+            {
+                stopRemaining -= System.Diagnostics.Stopwatch.GetElapsedTime(stoppingAt);
+            }
+
+            if (stopRemaining > TimeSpan.Zero)
+            {
+                stopping.CancelAfter(stopRemaining);
+            }
+            else
+            {
+                await stopping.CancelAsync().ConfigureAwait(false);
+            }
+
+            bool passed = result.Outcome.ExitCode == ToolExitCode.Success;
+            bool withdrawn = result.Status is "cancelled" or "withdrawn";
+            if (selected is not null && ownedRunId is not null)
+            {
+                try
+                {
+                    string initialDisposition = retain && !passed && !withdrawn ? "retained" : "unknown";
+                    record = session is null
+                        ? await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(options.StateDirectory, "diagnostics", ownedRunId, "selected-test.json"), stopping.Token).ConfigureAwait(false)
+                        : await engine!.RecordTestOutcomeAsync(ownedRunId, session.Readiness.Resources, result, initialDisposition, new CompositionRunResources([], [], Unverified: true), stopping.Token, native, waitForLock: false).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+                {
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "The selected run result could not be durably retained.", "evidence"));
+                    passed = false;
+                }
+            }
+
+            if (record is { TerminalOutcome.ExitCode: not ToolExitCode.Success })
+            {
+                result = result with { Status = record.TerminalStatus, Outcome = record.TerminalOutcome };
+                passed = false;
+                withdrawn = record.TerminalStatus == "withdrawn";
+            }
+
+            bool cleanup = session is not null && !(PersistsAfterExit(command) && passed)
+                && !(retain && !passed && !withdrawn);
+            if (cleanup)
+            {
+                CompositionDownResult down;
+                try
+                {
+                    down = await (options.PlatformDownOverride?.Invoke(session!, stopping.Token) ?? engine!.DownWithinBudgetAsync(session!, stopping.Token)).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (exception is not OutOfMemoryException)
+                {
+                    down = new CompositionDownResult(PlatformRefusal("HXR023", "Owned cleanup could not be verified; retry down for the same run.", ToolExitCode.TopologyOrLifecycle), new CompositionRunResources([], [], Unverified: true));
+                }
+
+                ToolCommandResult cleanupResult = down.Result;
+                if (!down.Remaining.IsEmpty && cleanupResult.Outcome.ExitCode == ToolExitCode.Success)
+                {
+                    cleanupResult = PlatformRefusal("HXR023", "Owned resources remain or their scan is unavailable.", ToolExitCode.TopologyOrLifecycle);
+                }
+
+                result = CombineTestResults(result, null, cleanupResult) with { RunId = ownedRunId };
+                if (record is not null)
+                {
+                    string disposition = down.Remaining.Unverified ? "unknown" : "remaining";
+                    if (cleanupResult.Outcome.ExitCode == ToolExitCode.Success)
+                    {
+                        disposition = "removed";
+                    }
+
+                    record = record with { ResourceDisposition = disposition, RemainingResources = down.Remaining };
+                    try
+                    {
+                        record = await engine!.RecordTestOutcomeAsync(record.RunId, record.Resources, result, disposition, down.Remaining, stopping.Token, native, waitForLock: false).ConfigureAwait(false);
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+                    {
+                        result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "The selected cleanup result could not be durably retained.", "evidence"));
+                    }
+                }
+            }
+        }
+
+        return await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None, result.RunId, runId, nativeTests: native, nativePlatform: selected?.Executor, selectedTestRun: record).ConfigureAwait(false);
+    }
+
+    private static ToolCommandResult PlatformRefusal(string ruleId, string message, ToolExitCode exit)
+    {
+        ToolPhase phase = ToolPhase.Test;
+        ToolFailureCategory category = ToolFailureCategory.ProductOrTest;
+        if (exit == ToolExitCode.UsageOrManifest)
+        {
+            phase = ToolPhase.Usage;
+            category = ToolFailureCategory.Usage;
+        }
+        else if (exit == ToolExitCode.Cancelled)
+        {
+            phase = ToolPhase.Cleanup;
+            category = ToolFailureCategory.Cancelled;
+        }
+        else if (exit == ToolExitCode.TopologyOrLifecycle)
+        {
+            phase = ToolPhase.Cleanup;
+            category = ToolFailureCategory.TopologyOrLifecycle;
+        }
+
+        ToolDiagnostic diagnostic = new(ruleId, phase, category, message, "profile");
+        return new ToolCommandResult("failed", ToolOutcome.Passed().Fail(phase, category, ruleId, exit), [diagnostic]);
+    }
+
+    private static async Task<int> ExecutePlatformLifecycleAsync(
         ModuleInvocationCommand command,
         string manifestPath,
         string? profile,
@@ -942,7 +1208,7 @@ public static class ModuleCommandExecutionService
         {
             PlatformManifestValidationResult validation = PlatformManifestValidator.Validate([manifestPath], cancellationToken);
             ToolCommandResult result;
-            if (!validation.IsValid)
+            if (!validation.IsValid && !(command == ModuleInvocationCommand.Down && runId is not null))
             {
                 result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest), validation.Diagnostics);
             }
@@ -980,7 +1246,7 @@ public static class ModuleCommandExecutionService
                 if (command == ModuleInvocationCommand.Down)
                 {
                     string hash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false)));
-                    IReadOnlyList<CompositionRunState> matches = await engine.StateStore.FindByManifestHashAsync(hash, cancellationToken).ConfigureAwait(false);
+                    IReadOnlyList<CompositionRunState> matches = runId is null ? await engine.StateStore.FindByManifestHashAsync(hash, cancellationToken).ConfigureAwait(false) : [];
                     if ((runId is not null && !CompositionRunPlanFactory.IsRunId(runId)) || (runId is null && matches.Count > 1))
                     {
                         ToolDiagnostic ambiguous = new("HXR024", ToolPhase.Usage, ToolFailureCategory.Usage, "A matching v2 run identity is required.", "runId");
@@ -988,10 +1254,20 @@ public static class ModuleCommandExecutionService
                     }
                     else
                     {
-                        CompositionRunState? target = runId is null ? matches.SingleOrDefault() : matches.FirstOrDefault(state => state.RunId == runId);
-                        result = target is null
-                            ? new ToolCommandResult("completed", ToolOutcome.Passed(), [new ToolDiagnostic("HXI001", ToolPhase.Cleanup, ToolFailureCategory.None, "Runner-owned invocation cleanup completed.", "down")]) { RunId = runId }
-                            : (await engine.DownAsync(target.RunId, cancellationToken).ConfigureAwait(false)).Result with { RunId = target.RunId };
+                        CompositionRunState? target = runId is null ? matches.SingleOrDefault() : await engine.StateStore.TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
+                        if (target is not null && (target.Schema != CompositionRunState.SupportedSchema || (runId is not null && target.RunId != runId)))
+                        {
+                            result = PlatformRefusal("HXR024", "The recorded run does not match the requested owned identity.", ToolExitCode.UsageOrManifest);
+                        }
+                        else if (target is not null || runId is not null)
+                        {
+                            string exactRunId = runId ?? target!.RunId;
+                            result = (await engine.DownAsync(exactRunId, cancellationToken).ConfigureAwait(false)).Result with { RunId = exactRunId };
+                        }
+                        else
+                        {
+                            result = new ToolCommandResult("completed", ToolOutcome.Passed(), [new ToolDiagnostic("HXI001", ToolPhase.Cleanup, ToolFailureCategory.None, "Runner-owned invocation cleanup completed.", "down")]);
+                        }
                     }
                 }
                 else

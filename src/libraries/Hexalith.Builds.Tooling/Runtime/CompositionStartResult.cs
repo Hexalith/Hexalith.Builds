@@ -19,4 +19,7 @@ public sealed record CompositionStartResult(ToolCommandResult Result, string? Ru
     /// Gets a value indicating whether the run is ready.
     /// </summary>
     public bool IsReady => Session is not null && Result.Outcome.ExitCode == ToolExitCode.Success;
+
+    /// <summary>Gets the first selected startup stopping observation; ready sessions have no stopping clock.</summary>
+    internal long? StoppingTimestamp { get; init; }
 }

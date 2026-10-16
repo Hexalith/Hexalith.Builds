@@ -7,6 +7,7 @@ namespace Hexalith.Builds.Tooling.Runtime;
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 /// <summary>
@@ -197,11 +198,23 @@ public static class CompositionProcess
     /// <param name="maximumOutputCharacters">The maximum number of captured standard-output characters.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The bounded result.</returns>
-    internal static async Task<CompositionProcessResult> RunAsync(
+    internal static Task<CompositionProcessResult> RunAsync(
         ProcessStartInfo start,
         TimeSpan timeout,
         int maximumOutputCharacters,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken) => RunCoreAsync(start, timeout, maximumOutputCharacters, null, null, cancellationToken);
+
+    /// <summary>Runs a selected native child with its own finite stop allowance and initial stop observation.</summary>
+    /// <param name="start">The owned child start information.</param>
+    /// <param name="timeout">The remaining execution lifetime.</param>
+    /// <param name="stopTimeout">The separate total stopping allowance.</param>
+    /// <param name="onStopping">Records the first deadline or owner stop signal for subsequent report and cleanup work.</param>
+    /// <param name="cancellationToken">The original execution token.</param>
+    /// <returns>The process result, preserving owner cancellation.</returns>
+    internal static Task<CompositionProcessResult> RunSelectedAsync(ProcessStartInfo start, TimeSpan timeout, TimeSpan stopTimeout, Action<long> onStopping, CancellationToken cancellationToken) =>
+        RunCoreAsync(start, timeout, _maximumOutputCharacters, stopTimeout, onStopping, cancellationToken);
+
+    private static async Task<CompositionProcessResult> RunCoreAsync(ProcessStartInfo start, TimeSpan timeout, int maximumOutputCharacters, TimeSpan? selectedStopTimeout, Action<long>? onStopping, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(start);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumOutputCharacters);
@@ -214,6 +227,16 @@ public static class CompositionProcess
         process.StandardInput.Close();
         using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         bound.CancelAfter(timeout);
+        long stoppingAt = 0;
+        CancellationTokenRegistration stopObservation = selectedStopTimeout is not null
+            ? bound.Token.Register(() =>
+            {
+                long observed = Stopwatch.GetTimestamp();
+                _ = Interlocked.CompareExchange(ref stoppingAt, observed, 0);
+                onStopping?.Invoke(stoppingAt);
+            })
+            : default;
+        await using ConfiguredAsyncDisposable stopObservationLifetime = stopObservation.ConfigureAwait(false);
         Task<(string Text, bool Truncated)> output = ReadBoundedAsync(process.StandardOutput, maximumOutputCharacters, bound.Token);
         Task<string> error = ReadTailAsync(process.StandardError, bound.Token);
         try
@@ -225,7 +248,37 @@ public static class CompositionProcess
         }
         catch (OperationCanceledException)
         {
-            Kill(process);
+            if (selectedStopTimeout is { } stopTimeout)
+            {
+                long firstStop = Interlocked.CompareExchange(ref stoppingAt, Stopwatch.GetTimestamp(), 0);
+                long observed = firstStop == 0 ? stoppingAt : firstStop;
+                onStopping?.Invoke(observed);
+                TimeSpan remaining = stopTimeout - Stopwatch.GetElapsedTime(observed);
+                using CancellationTokenSource stopping = new();
+                if (remaining > TimeSpan.Zero)
+                {
+                    stopping.CancelAfter(remaining);
+                }
+                else
+                {
+                    await stopping.CancelAsync().ConfigureAwait(false);
+                }
+
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                    await process.WaitForExitAsync(stopping.Token).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (exception is OperationCanceledException or InvalidOperationException or Win32Exception or NotSupportedException or AggregateException)
+                {
+                    // No renewed wait: exact owned cleanup and reporting share the same allowance.
+                }
+            }
+            else
+            {
+                Kill(process);
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
             return new CompositionProcessResult(true, -1, string.Empty, true);
         }

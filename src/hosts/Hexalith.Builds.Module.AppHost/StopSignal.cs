@@ -24,7 +24,7 @@ internal sealed class StopSignal : IAsyncDisposable
 
     private readonly Task _listener;
 
-    private StopSignal(CompositionRunPlan plan, Stream? input)
+    private StopSignal(CompositionRunPlan plan, Stream? input = null)
     {
         _plan = plan;
         _input = input ?? Console.OpenStandardInput();
@@ -78,6 +78,12 @@ internal sealed class StopSignal : IAsyncDisposable
 #pragma warning restore VSTHRD003
     }
 
+    /// <summary>Listens to isolated input for offline protocol tests.</summary>
+    /// <param name="plan">The run plan.</param>
+    /// <param name="input">The owned input stream.</param>
+    /// <returns>The listener.</returns>
+    internal static StopSignal Listen(CompositionRunPlan plan, Stream input) => new(plan, input);
+
     private async Task ListenAsync()
     {
         await Task.Yield();
@@ -87,10 +93,10 @@ internal sealed class StopSignal : IAsyncDisposable
             while (!_stop.IsCancellationRequested)
             {
                 string? line = await input.ReadLineAsync(_stop.Token).ConfigureAwait(false);
-                if (line is null && string.Equals(
+                if (line is null && (_plan.RetainOnFailure || string.Equals(
                     Environment.GetEnvironmentVariable(CompositionEnvironment.PersistAfterParentExit),
                     "1",
-                    StringComparison.Ordinal))
+                    StringComparison.Ordinal)))
                 {
                     return;
                 }
@@ -108,7 +114,10 @@ internal sealed class StopSignal : IAsyncDisposable
         }
         catch (IOException)
         {
-            await _stop.CancelAsync().ConfigureAwait(false);
+            if (!_plan.RetainOnFailure)
+            {
+                await _stop.CancelAsync().ConfigureAwait(false);
+            }
         }
         catch (ObjectDisposedException)
         {

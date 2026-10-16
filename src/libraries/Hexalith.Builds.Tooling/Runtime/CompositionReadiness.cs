@@ -39,4 +39,7 @@ public sealed record CompositionReadiness(
 
     /// <summary>Gets the elapsed seconds since the start request, when the runner has measured them.</summary>
     public double? StartupDurationSeconds { get; init; }
+
+    /// <summary>Gets the immutable selected module-owned test binding, when present.</summary>
+    public ModuleTestSelection? SelectedTest { get; init; }
 }

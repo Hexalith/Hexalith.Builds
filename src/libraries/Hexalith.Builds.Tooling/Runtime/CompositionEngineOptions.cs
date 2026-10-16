@@ -74,11 +74,32 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// </summary>
     public bool EnableSecondEventStoreInstance { get; init; }
 
+    /// <summary>Gets the immutable selected module-owned test binding, when present.</summary>
+    public ModuleTestSelection? SelectedTest { get; init; }
+
+    /// <summary>Gets a value indicating whether local selected-test failures retain surviving resources until explicit down.</summary>
+    public bool RetainOnFailure { get; init; }
+
+    /// <summary>Gets the owner's cancellation separately from the finite selected execution clock.</summary>
+    internal CancellationToken? SelectedExecutionOwnerToken { get; init; }
+
     /// <summary>Gets a test-only profile execution replacement for process-boundary verification.</summary>
     internal Func<CompositionRunSession, PersistedProfileDefinition, CancellationToken, Task<Diagnostics.ToolCommandResult>>? ProfileExecutorOverride { get; init; }
 
     /// <summary>Gets a test-only native dotnet command replacement.</summary>
     internal string? NativeDotnetCommand { get; init; }
+
+    /// <summary>Gets an offline replacement for the existing root-owned manifest check.</summary>
+    internal Func<string, CancellationToken, Task<bool>>? RootManifestCheckOverride { get; init; }
+
+    /// <summary>Gets an offline replacement for the existing source-mapping resolver.</summary>
+    internal Func<string, WorkspaceMode, CancellationToken, Task<SourceMapping>>? MappingResolverOverride { get; init; }
+
+    /// <summary>Gets a test-only replacement for the selected v2 session start boundary.</summary>
+    internal Func<string, ModuleTestSelection, CancellationToken, Task<CompositionStartResult>>? SelectedPlatformStartOverride { get; init; }
+
+    /// <summary>Gets a test-only CI policy override.</summary>
+    internal bool? ContinuousIntegrationOverride { get; init; }
 
     /// <summary>Gets a test-only replacement for the v2 session start boundary.</summary>
     internal Func<string, CancellationToken, Task<CompositionStartResult>>? PlatformStartOverride { get; init; }

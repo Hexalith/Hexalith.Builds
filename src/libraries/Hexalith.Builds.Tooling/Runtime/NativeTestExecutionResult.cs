@@ -14,4 +14,8 @@ using Hexalith.Builds.Tooling.TestReports;
 /// <param name="Result">The fail-closed command result.</param>
 /// <param name="Report">The passing native report summary, or null.</param>
 /// <param name="ReportBytes">The metadata-checked native report bytes to retain, or null.</param>
-internal sealed record NativeTestExecutionResult(ToolCommandResult Result, NativeTestReport? Report, byte[]? ReportBytes);
+internal sealed record NativeTestExecutionResult(ToolCommandResult Result, NativeTestReport? Report, byte[]? ReportBytes)
+{
+    /// <summary>Gets the monotonic start of the shared selected stopping and diagnostic budget.</summary>
+    internal long? StoppingTimestamp { get; init; }
+}

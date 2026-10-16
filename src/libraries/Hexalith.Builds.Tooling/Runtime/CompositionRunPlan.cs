@@ -93,4 +93,10 @@ public sealed record CompositionRunPlan(
 
     /// <summary>Gets the per-start verification tasks that must succeed before the run is ready.</summary>
     public IReadOnlyList<CompositionStartupTask> StartupTasks { get; init; } = [];
+
+    /// <summary>Gets the immutable selected module-owned test binding, when present.</summary>
+    public ModuleTestSelection? SelectedTest { get; init; }
+
+    /// <summary>Gets a value indicating whether local selected-test failures retain surviving resources until explicit down.</summary>
+    public bool RetainOnFailure { get; init; }
 }

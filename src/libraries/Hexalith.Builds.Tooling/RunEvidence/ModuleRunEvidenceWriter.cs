@@ -17,6 +17,8 @@ using Hexalith.Builds.Tooling.Manifest;
 /// </summary>
 public static class ModuleRunEvidenceWriter
 {
+    private static readonly JsonSerializerOptions _selectedTestJsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     /// <summary>
     /// Atomically writes a canonical evidence document to a repository-relative path.
     /// </summary>
@@ -219,6 +221,12 @@ public static class ModuleRunEvidenceWriter
         }
 
         writer.WriteEndObject();
+        if (evidence.SelectedTestRun is not null)
+        {
+            writer.WritePropertyName("selectedTestRun");
+            JsonSerializer.Serialize(writer, evidence.SelectedTestRun, _selectedTestJsonOptions);
+        }
+
         writer.WriteString("finalStatus", evidence.FinalStatus);
         writer.WritePropertyName("outcome");
         WriteOutcome(writer, evidence.Outcome);

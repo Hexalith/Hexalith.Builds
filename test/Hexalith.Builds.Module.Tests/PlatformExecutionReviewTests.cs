@@ -212,9 +212,9 @@ public sealed class PlatformExecutionReviewTests
         StringWriter writer = new();
         await using ConfiguredAsyncDisposable writerLifetime = writer.ConfigureAwait(true);
         int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, workspace.Save(), null, null, "artifacts/v2.json", ToolOutputFormat.Json, writer, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options).ConfigureAwait(true);
-        exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle);
+        exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
         using JsonDocument result = JsonDocument.Parse(writer.ToString());
-        result.RootElement.GetProperty("diagnostics").EnumerateArray().Select(d => d.GetProperty("ruleId").GetString()).ShouldContain("HXR028");
+        result.RootElement.GetProperty("diagnostics").EnumerateArray().Select(d => d.GetProperty("ruleId").GetString()).ShouldContain("HXC002");
         using JsonDocument evidence = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(workspace.Root, "artifacts", "v2.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
         evidence.RootElement.GetProperty("testCounts").GetProperty("reported").GetBoolean().ShouldBeFalse();
         evidence.RootElement.GetProperty("invocation").GetProperty("profile").ValueKind.ShouldBe(JsonValueKind.Null);

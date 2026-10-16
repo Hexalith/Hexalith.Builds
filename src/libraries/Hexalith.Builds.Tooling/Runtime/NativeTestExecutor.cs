@@ -32,17 +32,24 @@ internal static class NativeTestExecutor
     /// <param name="manifestPath">The manifest path that anchors repository-relative paths.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <param name="dotnetCommand">The native dotnet command; tests may supply a local process double.</param>
+    /// <param name="selection">The optional v2 binding; legacy native tests retain their existing limit.</param>
     /// <returns>A result that passes only for a zero native exit and a passing native report.</returns>
     public static async Task<NativeTestExecutionResult> ExecuteAsync(
         CompositionRunSession session,
         PersistedProfileNativeTests tests,
         string manifestPath,
         CancellationToken cancellationToken,
-        string dotnetCommand = "dotnet")
+        string dotnetCommand = "dotnet",
+        ModuleTestSelection? selection = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(tests);
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
+
+        if (selection is not null)
+        {
+            return await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, cancellationToken).ConfigureAwait(false);
+        }
 
         string root = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));
         List<ToolDiagnostic> pathDiagnostics = [];
@@ -211,6 +218,93 @@ internal static class NativeTestExecutor
                 reportBytes);
     }
 
+    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, CancellationToken cancellationToken)
+    {
+        if (tests.Project != selection.Entry || tests.Platform != selection.Executor || !selection.MatchesSource(manifestPath)
+            || session.Plan.SelectedTest != selection || session.Readiness.RunId != session.Plan.RunId
+            || session.Readiness.Resources.Count == 0 || session.Readiness.Resources.Any(resource => resource.State != "Healthy")
+            || DateTimeOffset.UtcNow >= selection.ExecutionDeadlineUtc)
+        {
+            return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
+        }
+
+        string root = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));
+        string project = Path.Combine(root, selection.Entry);
+        string results = Path.Combine(session.Plan.Workspace, "native-tests");
+        CompositionWorkspace.CreatePrivateDirectory(results);
+        string reportPath = Path.Combine(results, _reportFileName);
+        if (File.Exists(reportPath))
+        {
+            File.Delete(reportPath);
+        }
+
+        DateTimeOffset issued = DateTimeOffset.UtcNow;
+        string token = CompositionTokenFactory.Create(session.SigningKey, new CompositionTokenRequest("g4-native-tests", [session.Plan.TenantNamespace], [selection.ModuleId], ["command:submit", "query:read"], false, selection.CredentialExpiryUtc - issued), issued);
+        Dictionary<string, string> environment = new(NativeTestHandoff.Create(session.Plan, session.Readiness, token), StringComparer.Ordinal)
+        {
+            ["HEXALITH_G4_TEST_REPORT_PATH"] = reportPath,
+        };
+        if (session.Plan.SourceMapping is { } mapping)
+        {
+            foreach (KeyValuePair<string, string> pair in SourceMappingMaterializer.Environment(mapping, session.Plan.Workspace))
+            {
+                environment[pair.Key] = pair.Value;
+            }
+        }
+
+        CompositionProcessResult process;
+        bool cancelled = false;
+        long firstStop = 0;
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            process = await CompositionProcess.RunSelectedAsync(CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), Path.GetDirectoryName(project), environment), selection.ExecutionDeadlineUtc - issued, TimeSpan.FromSeconds(selection.StopTimeoutSeconds), timestamp => Interlocked.CompareExchange(ref firstStop, timestamp, 0), cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            cancelled = true;
+            process = new CompositionProcessResult(true, -1, string.Empty, true);
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            process = new CompositionProcessResult(true, -1, string.Empty, false);
+        }
+
+        long stoppingTimestamp = firstStop == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : firstStop;
+        TimeSpan processingRemaining = TimeSpan.FromSeconds(Math.Min(selection.StopTimeoutSeconds, 30)) - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp);
+        using CancellationTokenSource processing = new();
+        if (processingRemaining > TimeSpan.Zero)
+        {
+            processing.CancelAfter(processingRemaining);
+        }
+        else
+        {
+            await processing.CancelAsync().ConfigureAwait(false);
+        }
+
+        (NativeTestReportLoadResult report, byte[]? bytes) = await SelectedNativeTestReport.ReadAsync(reportPath, session.Plan.Workspace, [token, session.SigningKey], processing.Token).ConfigureAwait(false);
+        NativeTestExecutionResult evaluated;
+        if (report.Diagnostic?.RuleId == "HXT008")
+        {
+            evaluated = Failed("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, ToolExitCode.EvidenceSchemaOrPolicy);
+        }
+        else if (cancelled)
+        {
+            ToolDiagnostic withdrawn = new("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The owner or execution deadline stopped the native test.", "cancellation");
+            evaluated = new NativeTestExecutionResult(new ToolCommandResult("withdrawn", ToolOutcome.Passed().Fail(withdrawn.Phase, withdrawn.Category, withdrawn.RuleId, ToolExitCode.Cancelled), [withdrawn]), report.Report, bytes);
+        }
+        else
+        {
+            evaluated = Evaluate(process, report, bytes, [token, session.SigningKey]);
+            if (evaluated.Result.Outcome.ExitCode == ToolExitCode.Success && report.Report?.Skipped > 0)
+            {
+                evaluated = Failed("HXT004", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
+            }
+        }
+
+        return evaluated with { Report = report.Report, ReportBytes = bytes, StoppingTimestamp = stoppingTimestamp };
+    }
+
     private static bool ContainsRetainedSecret(byte[] reportBytes, IReadOnlyList<string> handoffSecrets)
     {
         string text = Encoding.UTF8.GetString(reportBytes);
@@ -254,6 +348,7 @@ internal static class NativeTestExecutor
 
     private static string MessageFor(string ruleId) => ruleId switch
     {
+        "HXT009" => "The selected test source, readiness, or execution lifetime no longer matches the owned run.",
         "HXR030" => "The native test process could not be started.",
         "HXT008" => "The native test report contains credential material and was not retained.",
         _ => "The native test process did not complete successfully.",

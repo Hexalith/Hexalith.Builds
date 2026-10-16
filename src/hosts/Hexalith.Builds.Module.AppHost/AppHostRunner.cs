@@ -42,6 +42,7 @@ internal static class AppHostRunner
     /// <param name="compose">The topology composer.</param>
     /// <param name="standardInput">The input owned by the listener for an isolated run, or actual standard input.</param>
     /// <returns>The validation or run exit code.</returns>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The retained console owns its synchronized writer for the child process lifetime, including failure retention.")]
     internal static async Task<int> RunAsync(
         string[] args,
         CompositionRunPlan plan,
@@ -49,6 +50,15 @@ internal static class AppHostRunner
         Action<IDistributedApplicationBuilder, CompositionRunPlan, string> compose,
         Stream? standardInput = null)
     {
+        if (plan.RetainOnFailure && !args.Contains("--validate-platform", StringComparer.Ordinal))
+        {
+            // A retained child must not depend on pipes owned by a parent that has exited.
+            StreamWriter retainedLog = new(Path.Combine(plan.Workspace, "apphost-retained.log"), append: true) { AutoFlush = true };
+            TextWriter synchronizedLog = TextWriter.Synchronized(new RetainedDiagnosticWriter(retainedLog));
+            Console.SetOut(synchronizedLog);
+            Console.SetError(synchronizedLog);
+        }
+
         IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
         {
             Args = [.. args.Where(argument => argument != "--validate-platform")],
@@ -180,7 +190,7 @@ internal static class AppHostRunner
                     // Startup failures are reported above; a task that ignores cancellation cannot delay teardown.
                 }
 
-                await app.StopAsync(CancellationToken.None).ConfigureAwait(false);
+                await RetainedApplicationLifecycle.StopAsync(plan, exitCode, stop.IsStopRequested, app.WaitForShutdownAsync, app.StopAsync, stop.Token).ConfigureAwait(false);
             }
 
             return exitCode;

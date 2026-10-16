@@ -91,6 +91,7 @@ internal static class RunReadiness
             plan.ReadinessPath,
             new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, eventStore, ui, [.. resources.OrderBy(resource => resource.Name, StringComparer.Ordinal)])
             {
+                SelectedTest = plan.SelectedTest,
                 EffectiveDeadlineSeconds = plan.EffectiveDeadline?.TimeoutSeconds,
                 EffectiveDeadlineIsOverride = plan.EffectiveDeadline?.IsOverride ?? false,
                 EffectiveDeadlineJustification = plan.EffectiveDeadline?.Justification,

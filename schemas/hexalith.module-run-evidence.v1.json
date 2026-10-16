@@ -35,7 +35,7 @@
       "type": "object",
       "additionalProperties": { "type": "string", "pattern": "^[A-F0-9]{64}$" }
     },
-    "finalStatus": { "enum": ["completed", "failed", "unavailable", "cancelled"] },
+    "finalStatus": { "enum": ["completed", "failed", "unavailable", "cancelled", "withdrawn"] },
     "outcome": { "$ref": "#/$defs/outcome" },
     "volatileFields": {
       "type": "array",
@@ -45,6 +45,280 @@
     "persistedAssertions": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "selectedTestRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runId",
+        "ownerId",
+        "selection",
+        "sourceMappingHash",
+        "declaredPlatformCommit",
+        "checkoutPlatformCommit",
+        "observedCandidateHash",
+        "observedBackendIdentity",
+        "qualificationCredit",
+        "resources",
+        "terminalStatus",
+        "terminalOutcome",
+        "terminalAtUtc",
+        "resourceDisposition",
+        "remainingResources",
+        "reportHash",
+        "testCounts"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "selection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "moduleId",
+            "name",
+            "executor",
+            "entry",
+            "manifestHash",
+            "entryHash",
+            "executionTimeoutSeconds",
+            "stopTimeoutSeconds",
+            "requestedAtUtc",
+            "executionDeadlineUtc",
+            "credentialExpiryUtc",
+            "mode"
+          ],
+          "properties": {
+            "moduleId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "executor": {
+              "enum": [
+                "python3",
+                "vstest",
+                "mtp"
+              ]
+            },
+            "entry": {
+              "type": "string"
+            },
+            "manifestHash": {
+              "type": "string",
+              "pattern": "^[A-F0-9]{64}$"
+            },
+            "entryHash": {
+              "type": "string",
+              "pattern": "^[A-F0-9]{64}$"
+            },
+            "executionTimeoutSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 14400
+            },
+            "stopTimeoutSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 900
+            },
+            "requestedAtUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "executionDeadlineUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "credentialExpiryUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "mode": {
+              "enum": [
+                "source",
+                "package"
+              ]
+            }
+          }
+        },
+        "sourceMappingHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "declaredPlatformCommit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "checkoutPlatformCommit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observedCandidateHash": {
+          "type": "null"
+        },
+        "observedBackendIdentity": {
+          "type": "null"
+        },
+        "qualificationCredit": {
+          "const": false
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "kind",
+              "state",
+              "detail",
+              "processId"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "detail": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "processId": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "terminalStatus": {
+          "enum": [
+            "completed",
+            "failed",
+            "unavailable",
+            "cancelled",
+            "withdrawn"
+          ]
+        },
+        "terminalOutcome": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "exitCode",
+            "phase",
+            "category",
+            "ruleId"
+          ],
+          "properties": {
+            "exitCode": {
+              "enum": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                130
+              ]
+            },
+            "phase": {
+              "type": "integer"
+            },
+            "category": {
+              "type": "integer"
+            },
+            "ruleId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "terminalAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "resourceDisposition": {
+          "enum": [
+            "retained",
+            "removed",
+            "remaining",
+            "unknown"
+          ]
+        },
+        "remainingResources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "containerIds",
+            "processIds",
+            "unverified",
+            "isEmpty"
+          ],
+          "properties": {
+            "containerIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "processIds": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "unverified": {
+              "type": "boolean"
+            },
+            "isEmpty": {
+              "type": "boolean"
+            }
+          }
+        },
+        "reportHash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-F0-9]{64}$"
+        },
+        "testCounts": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/testCounts"
+            }
+          ]
+        }
+      }
     },
     "expectedSequences": {
       "type": "array",

@@ -73,6 +73,13 @@
         },
         "lifecycle": {
           "$ref": "#/$defs/lifecycle"
+        },
+        "tests": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/moduleTest"
+          }
         }
       }
     },
@@ -1275,6 +1282,53 @@
               "OPTIONS"
             ]
           }
+        }
+      }
+    },
+    "moduleTest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "executor",
+        "entry",
+        "reportFormat",
+        "executionTimeoutSeconds",
+        "stopTimeoutSeconds",
+        "mode"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
+        "executor": {
+          "enum": [
+            "python3",
+            "vstest",
+            "mtp"
+          ]
+        },
+        "entry": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "reportFormat": {
+          "const": "trx"
+        },
+        "executionTimeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 14400
+        },
+        "stopTimeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 900
+        },
+        "mode": {
+          "enum": [
+            "source",
+            "package"
+          ]
         }
       }
     }

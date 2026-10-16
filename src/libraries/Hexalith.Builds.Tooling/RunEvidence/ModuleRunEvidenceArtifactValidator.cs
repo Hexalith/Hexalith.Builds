@@ -16,6 +16,8 @@ using Hexalith.Builds.Tooling.Manifest;
 internal static class ModuleRunEvidenceArtifactValidator
 {
     private const string _schema = "hexalith.module-run-evidence.v1";
+    private static readonly JsonSerializerOptions _selectedTestJsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly Json.Schema.JsonSchema _selectedTestSchema = ReadSelectedTestSchema();
 
     private static readonly HashSet<string> _environmentProperties = new(StringComparer.Ordinal)
     {
@@ -94,6 +96,7 @@ internal static class ModuleRunEvidenceArtifactValidator
     {
         "persistedAssertions",
         "expectedSequences",
+        "selectedTestRun",
     };
 
     private static readonly HashSet<string> _testCountProperties = new(StringComparer.Ordinal)
@@ -147,7 +150,8 @@ internal static class ModuleRunEvidenceArtifactValidator
                 || !IsPhaseOutcomes(root)
                 || !IsTestCounts(root)
                 || !IsArtifactHashes(root)
-                || !IsFinalStatus(root))
+                || !IsFinalStatus(root)
+                || !IsSelectedTestRun(root))
             {
                 return false;
             }
@@ -245,7 +249,7 @@ internal static class ModuleRunEvidenceArtifactValidator
     }
 
     private static bool IsFinalStatus(JsonElement root) =>
-        IsOneOf(root, "finalStatus", "completed", "failed", "unavailable", "cancelled");
+        IsOneOf(root, "finalStatus", "completed", "failed", "unavailable", "cancelled", "withdrawn");
 
     private static bool IsInvocation(JsonElement root)
     {
@@ -433,4 +437,92 @@ internal static class ModuleRunEvidenceArtifactValidator
             && property.TryGetInt32(out value)
             && value >= 0;
     }
+
+    private static Json.Schema.JsonSchema ReadSelectedTestSchema()
+    {
+        using Stream schemaStream = typeof(ModuleRunEvidenceArtifactValidator).Assembly.GetManifestResourceStream("Hexalith.Builds.Tooling.RunEvidence.hexalith.module-run-evidence.v1.json")!;
+        using StreamReader reader = new(schemaStream);
+        return Json.Schema.JsonSchema.FromText(reader.ReadToEnd(), new Json.Schema.BuildOptions
+        {
+            SchemaRegistry = new Json.Schema.SchemaRegistry
+            {
+                Fetch = (_, _) => throw new InvalidOperationException("Run evidence validation cannot fetch remote schemas."),
+            },
+        });
+    }
+
+    private static bool IsSelectedTestRun(JsonElement root)
+    {
+        if (!root.TryGetProperty("selectedTestRun", out JsonElement selected))
+        {
+            return true;
+        }
+
+        if (!_selectedTestSchema.Evaluate(root).IsValid || !SafeValues(selected))
+        {
+            return false;
+        }
+
+        Runtime.ModuleTestRunRecord? record = selected.Deserialize<Runtime.ModuleTestRunRecord>(_selectedTestJsonOptions);
+        bool invalid = record is null || record.RunId != root.GetProperty("runId").GetString() || record.OwnerId != record.RunId
+            || record.Selection.ExecutionDeadlineUtc <= record.Selection.RequestedAtUtc
+            || record.Selection.ExecutionDeadlineUtc - record.Selection.RequestedAtUtc != TimeSpan.FromSeconds(record.Selection.ExecutionTimeoutSeconds)
+            || record.Selection.CredentialExpiryUtc < record.Selection.ExecutionDeadlineUtc
+            || record.Selection.CredentialExpiryUtc - record.Selection.ExecutionDeadlineUtc >= TimeSpan.FromSeconds(1)
+            || record.Selection.CredentialExpiryUtc.Ticks % TimeSpan.TicksPerSecond != 0
+            || (record.Selection.Executor == "python3" && record.Selection.Mode != "source")
+            || (record.ResourceDisposition == "removed" && !record.RemainingResources.IsEmpty)
+            || selected.GetProperty("remainingResources").GetProperty("isEmpty").GetBoolean() != record.RemainingResources.IsEmpty;
+        return !invalid && IsSelectedBindingCoherent(root, record!) && (root.GetProperty("finalStatus").GetString() != "completed"
+            || (record!.TerminalStatus == "completed" && record.TerminalOutcome.ExitCode == Diagnostics.ToolExitCode.Success
+                && record.ResourceDisposition == "removed" && record.RemainingResources.IsEmpty
+                && record.ReportHash is not null && record.TestCounts is { Total: > 0, Failed: 0, Skipped: 0 } counts
+                && counts.Passed == counts.Total));
+    }
+
+    private static bool IsSelectedBindingCoherent(JsonElement root, Runtime.ModuleTestRunRecord record)
+    {
+        JsonElement invocation = root.GetProperty("invocation");
+        JsonElement counts = root.GetProperty("testCounts");
+        if (invocation.GetProperty("profile").GetString() != record.Selection.Name
+            || invocation.GetProperty("manifestHash").GetString() != record.Selection.ManifestHash)
+        {
+            return false;
+        }
+
+        if (record.ReportHash is not null)
+        {
+            if (!root.GetProperty("artifactHashes").EnumerateObject().Any(artifact => artifact.Value.GetString() == record.ReportHash))
+            {
+                return false;
+            }
+        }
+        else if (root.GetProperty("artifactHashes").EnumerateObject().Any())
+        {
+            return false;
+        }
+
+        bool countsMatch = record.TestCounts is { } reported
+            ? counts.GetProperty("reported").GetBoolean() == reported.Reported
+                && counts.GetProperty("total").GetInt32() == reported.Total
+                && counts.GetProperty("passed").GetInt32() == reported.Passed
+                && counts.GetProperty("failed").GetInt32() == reported.Failed
+                && counts.GetProperty("skipped").GetInt32() == reported.Skipped
+            : !counts.GetProperty("reported").GetBoolean();
+        string? finalStatus = root.GetProperty("finalStatus").GetString();
+        int finalExit = root.GetProperty("outcome").GetProperty("exitCode").GetInt32();
+        bool terminalMatches = record.TerminalOutcome.ExitCode == Diagnostics.ToolExitCode.Success
+            ? record.TerminalStatus == "completed" && ((finalStatus == "completed" && finalExit == 0) || (finalStatus == "failed" && finalExit != 0))
+            : record.TerminalStatus == finalStatus && (int)record.TerminalOutcome.ExitCode == finalExit;
+        return countsMatch && terminalMatches;
+    }
+
+    private static bool SafeValues(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.String => !ManifestSecretDetector.ContainsSecret(value.GetString()!),
+        JsonValueKind.Array => value.EnumerateArray().All(SafeValues),
+        JsonValueKind.Object => value.EnumerateObject().All(property => !ManifestSecretDetector.ContainsSecret(property.Name) && SafeValues(property.Value)),
+        JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null or JsonValueKind.Undefined => true,
+        _ => false,
+    };
 }

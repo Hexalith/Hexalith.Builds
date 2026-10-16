@@ -12,4 +12,8 @@ using System.Text.Json;
 /// </summary>
 /// <param name="Source">The source file.</param>
 /// <param name="Declaration">The complete module declaration.</param>
-public sealed record PlatformModuleDeclaration(string Source, JsonElement Declaration);
+public sealed record PlatformModuleDeclaration(string Source, JsonElement Declaration)
+{
+    /// <summary>Gets the fingerprint of the exact bytes parsed and validated for this declaration.</summary>
+    internal string? SourceHash { get; init; }
+}

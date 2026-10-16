@@ -68,6 +68,23 @@ public static class NativeTestHandoff
             values[UiUrl] = ui.AbsoluteUri;
         }
 
+        if (plan.SelectedTest is { } selected)
+        {
+            values[Domains] = selected.ModuleId;
+            values["HEXALITH_G4_TEST_NAME"] = selected.Name;
+            values["HEXALITH_G4_TEST_OWNER"] = selected.ModuleId;
+            values["HEXALITH_G4_TEST_MANIFEST_HASH"] = selected.ManifestHash;
+            values["HEXALITH_G4_TEST_ENTRY_HASH"] = selected.EntryHash;
+            values["HEXALITH_G4_TEST_LIFETIME_SECONDS"] = selected.ExecutionTimeoutSeconds.ToString(CultureInfo.InvariantCulture);
+            values["HEXALITH_G4_TEST_STOP_SECONDS"] = selected.StopTimeoutSeconds.ToString(CultureInfo.InvariantCulture);
+            values["HEXALITH_G4_EXECUTION_DEADLINE_UTC"] = selected.ExecutionDeadlineUtc.ToString("O", CultureInfo.InvariantCulture);
+            values["HEXALITH_G4_CREDENTIAL_EXPIRY_UTC"] = selected.CredentialExpiryUtc.ToString("O", CultureInfo.InvariantCulture);
+            values["HEXALITH_G4_TEST_MODE"] = selected.Mode;
+            values["HEXALITH_G4_PLAN_PATH"] = Path.Combine(plan.Workspace, "plan.json");
+            values["HEXALITH_G4_READINESS_PATH"] = plan.ReadinessPath;
+            values["HEXALITH_G4_SOURCE_MAPPING_PATH"] = Path.Combine(plan.Workspace, "source-mapping", "mapping.json");
+        }
+
         return values;
     }
 }
