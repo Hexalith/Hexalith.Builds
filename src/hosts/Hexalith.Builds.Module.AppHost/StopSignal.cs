@@ -78,12 +78,6 @@ internal sealed class StopSignal : IAsyncDisposable
 #pragma warning restore VSTHRD003
     }
 
-    /// <summary>Listens to isolated input for offline protocol tests.</summary>
-    /// <param name="plan">The run plan.</param>
-    /// <param name="input">The owned input stream.</param>
-    /// <returns>The listener.</returns>
-    internal static StopSignal Listen(CompositionRunPlan plan, Stream input) => new(plan, input);
-
     private async Task ListenAsync()
     {
         await Task.Yield();

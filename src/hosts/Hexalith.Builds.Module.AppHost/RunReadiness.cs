@@ -19,10 +19,6 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 /// </summary>
 internal static class RunReadiness
 {
-    private static readonly TimeSpan _resourceBound = TimeSpan.FromSeconds(90);
-
-    private static readonly TimeSpan _invocationBound = TimeSpan.FromSeconds(45);
-
     /// <summary>
     /// Waits for every runnable resource and writes readiness, or reports a resource that cannot become healthy.
     /// </summary>
@@ -47,7 +43,7 @@ internal static class RunReadiness
             await WriteProgressAsync(plan, Observe(runnable, notifications)).ConfigureAwait(false);
             Console.WriteLine($"g4: waiting for resource '{resource.Name}' to become healthy.");
             using CancellationTokenSource probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            probe.CancelAfter(_resourceBound);
+            probe.CancelAfter(CompositionStartupClock.Remaining(plan.StartupDeadlineUtc, DateTimeOffset.UtcNow));
             try
             {
                 _ = await notifications.WaitForResourceHealthyAsync(
@@ -73,12 +69,16 @@ internal static class RunReadiness
             });
         }
 
+        await WriteProgressAsync(plan, Observe(runnable, notifications)).ConfigureAwait(false);
+
         // Resource health does not prove the Dapr invocation boundary: a module sidecar reports Running before it
         // is registered in the run's name resolution. Probe EventStore-to-module invocation through the sidecars.
         if (!await WaitForModuleInvocationAsync(plan, model, cancellationToken, notifications).ConfigureAwait(false))
         {
             return false;
         }
+
+        await WriteProgressAsync(plan, Observe(runnable, notifications)).ConfigureAwait(false);
 
         CompositionTestObservation? testObservation = null;
         if (app.Services.GetService<ICompositionTestObservationProvider>() is { } observer)
@@ -114,7 +114,7 @@ internal static class RunReadiness
     }
 
     /// <summary>
-    /// Reports the first stalled resource when the AppHost startup bound expires.
+    /// Reports every stalled resource when the AppHost startup bound expires.
     /// </summary>
     /// <param name="app">The distributed application.</param>
     /// <param name="plan">The run plan.</param>
@@ -193,7 +193,7 @@ internal static class RunReadiness
         {
             Console.WriteLine($"g4: waiting for Dapr invocation of '{appId}'.");
             using CancellationTokenSource probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            probe.CancelAfter(_invocationBound);
+            probe.CancelAfter(CompositionStartupClock.Remaining(plan.StartupDeadlineUtc, DateTimeOffset.UtcNow));
             string status = "unreported";
             while (!probe.IsCancellationRequested)
             {
@@ -307,7 +307,8 @@ internal static class RunReadiness
             }
 
             using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(probeBound ?? _invocationBound);
+            TimeSpan remaining = CompositionStartupClock.Remaining(plan.StartupDeadlineUtc, DateTimeOffset.UtcNow);
+            timeout.CancelAfter(probeBound is { } bound && bound < remaining ? bound : remaining);
             string status = "unreported";
             while (!timeout.IsCancellationRequested)
             {

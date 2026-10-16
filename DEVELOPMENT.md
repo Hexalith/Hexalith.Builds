@@ -17,6 +17,19 @@ a reviewed full commit SHA and pass that same literal as
 `builds-execution-sha`. Do not use a branch, tag, expression, or repository
 variable for release-tool identity.
 
+## Running and debugging modules
+
+`hexalith-module debug --manifest <declaration>` runs the active module and
+root-declared source dependencies in Debug. It reports each project's launcher
+process id (`dotnet run`); select the child application process in your debugger
+to attach. A missing launcher id is reported by project name.
+
+Startup uses one 600-second deadline from the request, including prerequisites
+and the Platform model build. A justified module override must be from 0.001
+through 3600 seconds; the largest declared override is used. Failed startup
+reports each unready resource and a preserved diagnostics directory.
+`hexalith-module down` stops only resources tagged for the selected run.
+
 ## Technology Stack
 
 - .NET 10 or later and C# 14 or later

@@ -70,20 +70,19 @@ public static class CompositionStartupDeadlineResolver
         return text;
     }
 
-    /// <summary>Reports whether a declared duration is positive, finite, and convertible to a <see cref="TimeSpan"/>.</summary>
+    /// <summary>Reports whether a declared duration is positive, finite, nonzero at timer precision, and at most one hour.</summary>
     /// <param name="seconds">The declared duration in seconds.</param>
-    /// <returns>True when <see cref="TimeSpan.FromSeconds(double)"/> accepts the value.</returns>
+    /// <returns>True when the override can be used safely by startup clocks and cancellation timers.</returns>
     internal static bool IsRepresentableTimeout(double seconds)
     {
-        if (!double.IsFinite(seconds) || seconds <= 0)
+        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > 3600)
         {
             return false;
         }
 
         try
         {
-            _ = TimeSpan.FromSeconds(seconds);
-            return true;
+            return TimeSpan.FromSeconds(seconds) >= TimeSpan.FromMilliseconds(1);
         }
         catch (OverflowException)
         {

@@ -130,7 +130,7 @@ public sealed class StartupReadinessTests
                 state.EffectiveDeadlineIsOverride.ShouldBeFalse();
                 state.ReadinessResults.ShouldContain(resource => resource.Name == "eventstore" && resource.State == "Healthy");
                 state.ProjectProcessIds.ShouldBe([4242]);
-                result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("process id '4242'", StringComparison.Ordinal));
+                result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("launcher process id '4242'", StringComparison.Ordinal));
             }
             finally
             {
@@ -405,7 +405,7 @@ public sealed class StartupReadinessTests
             string aspire = Path.Combine(root, "slow-aspire");
             CompositionTestFiles.WriteScript(
                 aspire,
-                "[ \"$#\" -eq 1 ] && [ \"$1\" = '--version' ] || exit 64\nsleep 2\necho '" + CompositionToolchainPins.AspireAppHostSdkVersion.Split('+')[0] + "+test-build'");
+                "[ \"$#\" -eq 1 ] && [ \"$1\" = '--version' ] || exit 64\nsleep 20\necho '" + CompositionToolchainPins.AspireAppHostSdkVersion.Split('+')[0] + "+test-build'");
             CompositionEngine engine = new(Options(root, Path.Combine(root, "missing.dll")) with
             {
                 AspireCommand = aspire,
@@ -415,8 +415,10 @@ public sealed class StartupReadinessTests
                 DaprHome = Path.Combine(root, "missing-dapr"),
             });
 
+            Stopwatch elapsed = Stopwatch.StartNew();
             CompositionStartResult result = await engine.StartAsync(PositiveManifest(), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
+            elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(5));
             result.Result.Outcome.RuleId.ShouldBe("HXR021");
             result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.RuleId == "HXR010");
             result.Result.Diagnostics.Single().Message.ShouldContain("diagnostics='");
@@ -604,6 +606,114 @@ public sealed class StartupReadinessTests
             Kill(tagged);
             CompositionTestFiles.Delete(root);
         }
+    }
+
+    /// <summary>Verifies partial debug metadata names each project missing its launcher id.</summary>
+    /// <param name="mode">The missing or partial metadata fixture.</param>
+    /// <returns>The debug diagnostics assertions.</returns>
+    [Theory]
+    [InlineData("ready-no-pid")]
+    [InlineData("ready-partial-pid")]
+    public async Task DebugNamesProjectsWithoutLauncherIdsAsync(string mode)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost uses POSIX tools.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(root, mode, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionEngine engine = new(Options(root, appHost) with { DebugAttach = true });
+            CompositionStartResult result = await engine.StartAsync(ExecutableManifest(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            try
+            {
+                result.IsReady.ShouldBeTrue();
+                result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "worker" && diagnostic.Message.Contains("launcher process id is unavailable", StringComparison.Ordinal));
+                if (mode == "ready-partial-pid")
+                {
+                    result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Field == "eventstore" && diagnostic.Message.Contains("launcher process id '4242'", StringComparison.Ordinal));
+                }
+            }
+            finally
+            {
+                if (result.Session is not null)
+                {
+                    _ = await engine.DownAsync(result.Session, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                }
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies model building and preflight are stopped by the original startup deadline.</summary>
+    /// <param name="stage">The delayed startup stage.</param>
+    /// <returns>The deadline assertions.</returns>
+    [Theory]
+    [InlineData("model")]
+    [InlineData("preflight")]
+    public async Task PlatformPreparationUsesRemainingDeadlineAsync(string stage)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost uses POSIX tools.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "slow-preflight", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionEngine engine = new(Options(workspace.Root, appHost) with
+        {
+            SourceMapping = Mapping(workspace.Root),
+            ReadinessTimeout = TimeSpan.FromSeconds(2),
+            PlatformModelBuildOverride = async (_, _, token) =>
+            {
+                if (stage == "model")
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(30), token).ConfigureAwait(false);
+                }
+
+                return appHost;
+            },
+        });
+        Stopwatch elapsed = Stopwatch.StartNew();
+        CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(8));
+        result.IsReady.ShouldBeFalse();
+        result.Result.Outcome.RuleId.ShouldBe("HXR021");
+        result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("diagnostics='", StringComparison.Ordinal));
+        Directory.Exists(Path.Combine(workspace.Root, "workspaces", result.RunId!)).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies unresolved task executables keep their path-validation cause in failure output.</summary>
+    /// <param name="executable">The invalid executable declaration.</param>
+    /// <param name="rule">The expected executable-path rule.</param>
+    /// <returns>The startup task failure assertions.</returns>
+    [Theory]
+    [InlineData("tools/missing.sh", "HXM005")]
+    [InlineData("../invalid.sh", "HXM004")]
+    public async Task StartupTaskExecutableCauseIsReportedAsync(string executable, string rule)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost uses POSIX tools.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.tasks.0.executable", JsonSerializer.Serialize(executable));
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionEngine engine = new(Options(workspace.Root, appHost) with
+        {
+            SourceMapping = Mapping(workspace.Root),
+            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+        });
+        CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.IsReady.ShouldBeFalse();
+        result.Result.Outcome.RuleId.ShouldBe("HXR021");
+        result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("sample/verify", StringComparison.Ordinal) && diagnostic.Message.Contains(rule, StringComparison.Ordinal));
     }
 
     private static PlatformModuleDeclaration Declaration(string json) =>

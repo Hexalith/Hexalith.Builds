@@ -1131,7 +1131,8 @@
       "properties": {
         "timeoutSeconds": {
           "type": "number",
-          "exclusiveMinimum": 0
+          "minimum": 0.001,
+          "maximum": 3600
         },
         "justification": {
           "$ref": "#/$defs/text"

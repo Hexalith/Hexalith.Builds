@@ -51,9 +51,10 @@ public static class PlatformManifestCommand
     /// <param name="mapping">The command-resolved mapping.</param>
     /// <param name="workspace">The run-owned output workspace.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="startupDeadlineUtc">The absolute startup deadline, or null for the default bound.</param>
     /// <returns>The built model assembly path.</returns>
     /// <exception cref="InvalidOperationException">The model cannot be built.</exception>
-    public static async Task<string> BuildModelAsync(SourceMapping mapping, string workspace, CancellationToken cancellationToken)
+    public static async Task<string> BuildModelAsync(SourceMapping mapping, string workspace, CancellationToken cancellationToken, DateTimeOffset? startupDeadlineUtc = null)
     {
         ArgumentNullException.ThrowIfNull(mapping);
         ArgumentException.ThrowIfNullOrWhiteSpace(workspace);
@@ -83,7 +84,7 @@ public static class PlatformManifestCommand
 
         CompositionProcessResult result = await CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo("dotnet", arguments, root, null),
-            TimeSpan.FromMinutes(5),
+            CompositionStartupClock.Remaining(startupDeadlineUtc, DateTimeOffset.UtcNow),
             cancellationToken).ConfigureAwait(false);
         string assembly = Path.Combine(output, "Hexalith.Platform.Composition.dll");
         return result.ExitCode == 0 && File.Exists(assembly)

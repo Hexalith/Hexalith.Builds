@@ -67,7 +67,10 @@ public static class CompositionStartupTasks
                     }
                 }
 
-                tasks.Add(new CompositionStartupTask(moduleId, name, resolved, arguments));
+                tasks.Add(new CompositionStartupTask(moduleId, name, resolved, arguments)
+                {
+                    ExecutableError = pathDiagnostics.Count == 0 ? null : pathDiagnostics[0].RuleId + ": " + pathDiagnostics[0].Message,
+                });
             }
         }
 

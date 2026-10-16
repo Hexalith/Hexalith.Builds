@@ -19,6 +19,7 @@ using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Shouldly;
@@ -310,6 +311,9 @@ public sealed class WorkspaceAppHostTests
             _ = builder.AddExecutable("selected", "unused", root)
                 .WithAnnotation(new PlatformServerAnnotation(new { Environment = new Dictionary<string, string>() }))
                 .WithDaprSidecar(sidecar => sidecar.WithOptions(new DaprSidecarOptions { AppId = "selected-app", DaprHttpPort = plan.Ports.EventStoreDaprHttp }));
+            _ = builder.AddExecutable("other-unready", "unused", root);
+            await using DistributedApplication app = builder.Build();
+            ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
             using HttpListener listener = new();
             Task response = Task.CompletedTask;
             if (status != "connection-unavailable")
@@ -333,13 +337,15 @@ public sealed class WorkspaceAppHostTests
                 plan,
                 new DistributedApplicationModel(builder.Resources),
                 TestContext.Current.CancellationToken,
-                TimeSpan.FromMilliseconds(500)).ConfigureAwait(true)).ShouldBeFalse();
+                TimeSpan.FromMilliseconds(500),
+                notifications).ConfigureAwait(true)).ShouldBeFalse();
             await response.ConfigureAwait(true);
             CompositionStartupFailure failure = (await CompositionDocumentStore.TryReadAsync<CompositionStartupFailure>(CompositionStartupFailure.PathFor(plan.Workspace), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
             failure.RuleId.ShouldBe("HXR026");
             failure.Resource.ShouldBe("selected");
             failure.AppId.ShouldBe("selected-app");
             failure.Status.ShouldBe(status + ";probe-timeout");
+            failure.UnreadyResources.Select(resource => resource.Name).ShouldBe(["other-unready", "selected"]);
         }
         finally
         {

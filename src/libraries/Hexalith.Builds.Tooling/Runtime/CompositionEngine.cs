@@ -51,7 +51,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         DateTimeOffset requestedAt = _options.SelectedTest?.RequestedAtUtc ?? DateTimeOffset.UtcNow;
         CompositionEffectiveDeadline deadline = CompositionStartupDeadlineResolver.Resolve(null, _options.ReadinessTimeout);
-        DateTimeOffset deadlineUtc;
+        using CancellationTokenSource startupBound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         string? runId = null;
         string? preparedWorkspace = null;
@@ -80,34 +80,35 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
             ModuleManifest manifest = manifestResult.Manifest!;
             deadline = CompositionStartupDeadlineResolver.Resolve(platformDeclarations?.Declarations, _options.ReadinessTimeout);
-            deadlineUtc = requestedAt + deadline.Timeout;
+            DateTimeOffset deadlineUtc = requestedAt + deadline.Timeout;
+            startupBound.CancelAfter(CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow));
             ToolDiagnostic? aspire = await CompositionPrerequisiteProbe.ProbeAspireAsync(
                 _options.AspireCommand,
-                _options.AspireProbeTimeout,
-                cancellationToken).ConfigureAwait(false);
+                TimeSpan.FromTicks(Math.Min(_options.AspireProbeTimeout.Ticks, Math.Max(1, CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow).Ticks))),
+                startupBound.Token).ConfigureAwait(false);
+            if (DateTimeOffset.UtcNow >= deadlineUtc)
+            {
+                return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
+            }
+
             if (aspire is not null)
             {
                 return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, [aspire], null);
             }
 
-            if (await TimeoutIfDueAsync(deadlineUtc, requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false) is CompositionStartResult aspireDeadline)
-            {
-                return aspireDeadline;
-            }
-
             CompositionPrerequisiteResult prerequisites = await CompositionPrerequisiteProbe.ProbeAsync(
                 _options.DaprHome,
                 _options.DockerCommand,
-                cancellationToken,
+                startupBound.Token,
                 _options.SelectedTest?.DaprRuntimeVersion).ConfigureAwait(false);
             if (!prerequisites.IsAvailable)
             {
                 return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, prerequisites.Diagnostics, null);
             }
 
-            if (await TimeoutIfDueAsync(deadlineUtc, requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false) is CompositionStartResult prerequisiteDeadline)
+            if (DateTimeOffset.UtcNow >= deadlineUtc)
             {
-                return prerequisiteDeadline;
+                return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
             }
 
             if (!Path.IsPathFullyQualified(_options.AppHostAssemblyPath) || !File.Exists(_options.AppHostAssemblyPath))
@@ -126,7 +127,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 preparedWorkspace = WorkspaceFor(runId);
                 CompositionWorkspace.CreatePrivateDirectory(Path.GetFullPath(_options.WorkspaceRoot));
                 CompositionWorkspace.CreatePrivateDirectory(preparedWorkspace);
-                await SourceMappingMaterializer.WriteAsync(packageMapping, preparedWorkspace, cancellationToken).ConfigureAwait(false);
+                await SourceMappingMaterializer.WriteAsync(packageMapping, preparedWorkspace, startupBound.Token).ConfigureAwait(false);
             }
 
             IReadOnlyList<CompositionRunModule> modules;
@@ -138,11 +139,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 runId ??= CompositionRunPlanFactory.NewRunId();
                 preparedWorkspace ??= WorkspaceFor(runId);
                 CompositionWorkspace.CreatePrivateDirectory(preparedWorkspace);
-                await SourceMappingMaterializer.WriteAsync(mapping, preparedWorkspace, cancellationToken).ConfigureAwait(false);
+                await SourceMappingMaterializer.WriteAsync(mapping, preparedWorkspace, startupBound.Token).ConfigureAwait(false);
                 try
                 {
-                    platformModel = await (_options.PlatformModelBuildOverride?.Invoke(mapping, preparedWorkspace, cancellationToken)
-                        ?? PlatformManifestCommand.BuildModelAsync(mapping, preparedWorkspace, cancellationToken)).ConfigureAwait(false);
+                    platformModel = await (_options.PlatformModelBuildOverride?.Invoke(mapping, preparedWorkspace, startupBound.Token)
+                        ?? PlatformManifestCommand.BuildModelAsync(mapping, preparedWorkspace, startupBound.Token, deadlineUtc)).ConfigureAwait(false);
                 }
                 catch (InvalidOperationException exception)
                 {
@@ -150,9 +151,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     return Failed("failed", ToolExitCode.TopologyOrLifecycle, await CleanupPreparedWorkspaceAsync(preparedWorkspace, refusal).ConfigureAwait(false), null);
                 }
 
-                if (await TimeoutIfDueAsync(deadlineUtc, requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false) is CompositionStartResult modelDeadline)
+                if (DateTimeOffset.UtcNow >= deadlineUtc)
                 {
-                    return modelDeadline;
+                    return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
                 }
 
                 modules = [];
@@ -164,7 +165,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     manifest,
                     manifestPath,
                     _options.DescriptorChildEntryAssemblyPath,
-                    cancellationToken,
+                    startupBound.Token,
                     _options.SourceMapping).ConfigureAwait(false);
                 if (!descriptors.IsValid)
                 {
@@ -213,16 +214,16 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 }
             }
 
-            manifestHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false)));
+            manifestHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, startupBound.Token).ConfigureAwait(false)));
             if (platformComposition)
             {
-                PlatformManifestValidationResult current = PlatformManifestValidator.Validate([manifestPath], cancellationToken);
+                PlatformManifestValidationResult current = PlatformManifestValidator.Validate([manifestPath], startupBound.Token);
                 if (!current.IsValid)
                 {
                     return Failed("failed", ToolExitCode.UsageOrManifest, await CleanupPreparedWorkspaceAsync(preparedWorkspace, current.Diagnostics).ConfigureAwait(false), null);
                 }
 
-                string checkedHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false)));
+                string checkedHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, startupBound.Token).ConfigureAwait(false)));
                 if (!string.Equals(manifestHash, checkedHash, StringComparison.Ordinal))
                 {
                     IReadOnlyList<ToolDiagnostic> changed = [Diagnostic("HXP020", ToolPhase.Manifest, ToolFailureCategory.Manifest, $"Platform declaration '{manifestPath}' changed while the run plan was being prepared.", manifestPath, "Retry with a stable declaration file.")];
@@ -240,7 +241,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 CompositionWorkspace.CreatePrivateDirectory(workspace);
                 if (_options.SourceMapping is not null)
                 {
-                    await SourceMappingMaterializer.WriteAsync(_options.SourceMapping, workspace, cancellationToken).ConfigureAwait(false);
+                    await SourceMappingMaterializer.WriteAsync(_options.SourceMapping, workspace, startupBound.Token).ConfigureAwait(false);
                 }
             }
 
@@ -266,9 +267,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 PlatformDeclarationHash = platformComposition ? manifestHash : plan.PlatformDeclarationHash,
             };
 
-            await CompositionDaprComponentRenderer.WriteAsync(plan, cancellationToken).ConfigureAwait(false);
+            await CompositionDaprComponentRenderer.WriteAsync(plan, startupBound.Token).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");
-            await CompositionDocumentStore.WriteAsync(planPath, plan, cancellationToken).ConfigureAwait(false);
+            await CompositionDocumentStore.WriteAsync(planPath, plan, startupBound.Token).ConfigureAwait(false);
             string signingKey = CompositionSigningKey.Create();
             if (platformComposition)
             {
@@ -284,8 +285,13 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                             [CompositionEnvironment.RunId] = plan.RunId,
                             [CompositionEnvironment.DaprRuntimePath] = plan.DaprHome,
                         }),
-                    TimeSpan.FromMinutes(5),
-                    cancellationToken).ConfigureAwait(false);
+                    CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow),
+                    startupBound.Token).ConfigureAwait(false);
+                if (preflight.TimedOut)
+                {
+                    return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
+                }
+
                 if (preflight.ExitCode != 0)
                 {
                     IReadOnlyList<ToolDiagnostic> refusal = [Diagnostic("HXP020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, PlatformManifestCommand.BoundedOutput(preflight.Output, preflight.ErrorOutput), "platform", "Supply the named owner input; no resources were started.")];
@@ -293,12 +299,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 }
             }
 
-            if (await TimeoutIfDueAsync(deadlineUtc, requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false) is CompositionStartResult launchDeadline)
+            if (DateTimeOffset.UtcNow >= deadlineUtc)
             {
-                return launchDeadline;
+                return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
             }
 
-            await WriteStateAsync(runId, CompositionRunStatus.Starting, manifestHash, null, null, cancellationToken).ConfigureAwait(false);
+            await WriteStateAsync(runId, CompositionRunStatus.Starting, manifestHash, null, null, startupBound.Token).ConfigureAwait(false);
             appHost = StartAppHost(plan, planPath, signingKey);
             if (appHost is null)
             {
@@ -313,7 +319,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     deadline).ConfigureAwait(false);
             }
 
-            await WriteStateAsync(runId, CompositionRunStatus.Starting, manifestHash, appHost.Id, StartTime(appHost), cancellationToken).ConfigureAwait(false);
+            await WriteStateAsync(runId, CompositionRunStatus.Starting, manifestHash, appHost.Id, StartTime(appHost), startupBound.Token).ConfigureAwait(false);
             return await WaitForReadinessAsync(plan, appHost, signingKey, manifestHash, requestedAt, deadline, deadlineUtc, null, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -329,6 +335,10 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             return runId is null
                 ? Failed("cancelled", ToolExitCode.Cancelled, [cancelled], null)
                 : await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Cancelled, cancelled, ToolExitCode.Cancelled, requestedAt, deadline).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (startupBound.IsCancellationRequested)
+        {
+            return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
         }
         catch (WorkspaceMappingException exception) when (runId is not null && appHost is null)
         {
@@ -924,12 +934,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
                 if (failingTask is not null)
                 {
+                    string? executableError = plan.StartupTasks.FirstOrDefault(task => task.ModuleId + "/" + task.Name == failingTask)?.ExecutableError;
+                    string cause = executableError is null ? string.Empty : " Executable: " + executableError;
                     return await FailAndTearDownAsync(
                         plan.RunId,
                         appHost,
                         manifestHash,
                         CompositionRunStatus.Failed,
-                        [Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, $"Startup task '{failingTask}' failed before the deadline.", failingTask, "Inspect the preserved startup diagnostics.")],
+                        [Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, $"Startup task '{failingTask}' failed before the deadline.{cause}", failingTask, "Inspect the preserved startup diagnostics.")],
                         ToolExitCode.TopologyOrLifecycle,
                         requestedAt,
                         deadline,
@@ -975,9 +987,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 ];
                 if (plan.DebugAttach)
                 {
-                    foreach (CompositionResourceReadiness resource in readiness.Resources.Where(resource => resource.ProcessId is > 0).OrderBy(resource => resource.Name, StringComparer.Ordinal))
+                    foreach (CompositionResourceReadiness resource in readiness.Resources.Where(resource => resource.Kind == "project").OrderBy(resource => resource.Name, StringComparer.Ordinal))
                     {
-                        readyDiagnostics.Add(Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, $"Project '{resource.Name}' process id '{resource.ProcessId}'.", resource.Name, null));
+                        string message = resource.ProcessId is > 0
+                            ? $"Project '{resource.Name}' launcher process id '{resource.ProcessId}'."
+                            : $"Project '{resource.Name}' launcher process id is unavailable; attach information is incomplete.";
+                        readyDiagnostics.Add(Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, message, resource.Name, null));
                     }
                 }
 
@@ -1343,19 +1358,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
     private string DiagnosticsDirectory(string runId) => Path.Combine(StateStore.Directory, "diagnostics", runId);
 
-    private async Task<CompositionStartResult?> TimeoutIfDueAsync(
-        DateTimeOffset deadlineUtc,
+#pragma warning disable VSTHRD202, IDE0046 // Method conditionally awaits the timeout reporter.
+    private async Task<CompositionStartResult> ReportStartupTimeoutAsync(
         DateTimeOffset requestedAt,
         CompositionEffectiveDeadline deadline,
         string? runId,
         string manifestHash,
         Process? appHost)
     {
-        if (DateTimeOffset.UtcNow < deadlineUtc)
-        {
-            return null;
-        }
-
         ToolDiagnostic timeout = Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run resources did not become healthy within the readiness bound.", "readiness", "Inspect the preserved startup diagnostics.");
         if (runId is null)
         {

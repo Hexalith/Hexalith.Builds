@@ -342,7 +342,9 @@ public static partial class PlatformManifestValidator
                         "minItems" or "maxItems" => "Use the collection size declared by the schema.",
                         _ => "The field violates the Platform declaration schema.",
                     };
-                    Add(diagnostics, "HXP002", source, path, reason);
+                    string rule = path.EndsWith(".lifecycle.startup.override.timeoutSeconds", StringComparison.Ordinal)
+                        && keyword is "minimum" or "exclusiveMinimum" or "maximum" ? "HXP021" : "HXP002";
+                    Add(diagnostics, rule, source, path, reason);
                 }
             }
         }
@@ -562,7 +564,7 @@ public static partial class PlatformManifestValidator
             JsonElement timeout = ObjectValue(startupOverride, "timeoutSeconds");
             if (timeout.ValueKind != JsonValueKind.Number || !timeout.TryGetDouble(out double seconds) || !CompositionStartupDeadlineResolver.IsRepresentableTimeout(seconds))
             {
-                Add(diagnostics, "HXP021", source, $"{prefix}.lifecycle.startup.override.timeoutSeconds", "Use a positive finite startup override in seconds.");
+                Add(diagnostics, "HXP021", source, $"{prefix}.lifecycle.startup.override.timeoutSeconds", "Use a finite startup override from 0.001 through 3600 seconds.");
             }
         }
 

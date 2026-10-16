@@ -345,7 +345,8 @@ public sealed class PlatformManifestValidationTests
     /// <param name="seconds">The positive finite declared duration.</param>
     [Theory]
     [InlineData(700.5)]
-    [InlineData(1e-300)]
+    [InlineData(3600)]
+    [InlineData(0.001)]
     public void PositiveFiniteStartupOverridesPass(double seconds)
     {
         using PlatformManifestTestWorkspace workspace = new();
@@ -353,14 +354,21 @@ public sealed class PlatformManifestValidationTests
         PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
     }
 
-    /// <summary>Verifies a positive finite duration that cannot become a time span is refused.</summary>
-    [Fact]
-    public void UnrepresentableStartupOverrideFails()
+    /// <summary>Verifies durations outside the usable timer range are refused.</summary>
+    /// <param name="seconds">The unusable timeout.</param>
+    [Theory]
+    [InlineData(1e308)]
+    [InlineData(3600.001)]
+    [InlineData(2147484)]
+    [InlineData(1e-300)]
+    [InlineData(0.0001)]
+    public void UnrepresentableStartupOverrideFails(double seconds)
     {
         using PlatformManifestTestWorkspace workspace = new();
-        workspace.Change("modules.0.lifecycle.startup.override", JsonSerializer.Serialize(new { timeoutSeconds = 1e308, justification = "too large" }));
+        workspace.Change("modules.0.lifecycle.startup.override", JsonSerializer.Serialize(new { timeoutSeconds = seconds, justification = "outside usable startup budget" }));
         PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
         result.IsValid.ShouldBeFalse();
+        result.Diagnostics[0].RuleId.ShouldBe("HXP021");
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXP021" && diagnostic.Field == "modules[0].lifecycle.startup.override.timeoutSeconds");
     }
 

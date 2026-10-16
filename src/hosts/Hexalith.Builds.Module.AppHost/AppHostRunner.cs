@@ -41,6 +41,7 @@ internal static class AppHostRunner
     /// <param name="signingKey">The per-run signing key.</param>
     /// <param name="compose">The topology composer.</param>
     /// <param name="standardInput">The input owned by the listener for an isolated run, or actual standard input.</param>
+    /// <param name="activate">The writer cutover operation, or null for the normal cutover.</param>
     /// <returns>The validation or run exit code.</returns>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The retained console owns its synchronized writer for the child process lifetime, including failure retention.")]
     internal static async Task<int> RunAsync(
@@ -48,7 +49,8 @@ internal static class AppHostRunner
         CompositionRunPlan plan,
         string signingKey,
         Action<IDistributedApplicationBuilder, CompositionRunPlan, string> compose,
-        Stream? standardInput = null)
+        Stream? standardInput = null,
+        Func<DistributedApplication, CompositionRunPlan, string, CancellationToken, Task>? activate = null)
     {
         if (plan.RetainOnFailure && !args.Contains("--validate-platform", StringComparer.Ordinal))
         {
@@ -117,7 +119,7 @@ internal static class AppHostRunner
                 // Start blocks while dependents wait for a healthy EventStore, and EventStore becomes healthy
                 // only after the runner-owned writer-protocol cutover, so the cutover runs concurrently.
 #pragma warning disable CA2025 // The cutover task is awaited below, before the application is disposed.
-                cutover = WriterProtocolCutover.ActivateAsync(app, plan, signingKey, readinessBound.Token);
+                cutover = (activate ?? WriterProtocolCutover.ActivateAsync)(app, plan, signingKey, readinessBound.Token);
 #pragma warning restore CA2025
                 starting = app.StartAsync(readinessBound.Token);
 #pragma warning disable CA2025 // The readiness task is cancelled and drained below before the application is disposed.

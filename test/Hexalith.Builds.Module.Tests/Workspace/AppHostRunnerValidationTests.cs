@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
 using System.Diagnostics;
+using System.Net;
 using System.Text.Json;
 
 using Aspire.Hosting;
@@ -271,4 +272,211 @@ public sealed class AppHostRunnerValidationTests
             CompositionTestFiles.Delete(root);
         }
     }
+
+    /// <summary>Verifies successful real readiness records launcher ids, results, deadline and the final progress snapshot.</summary>
+    /// <param name="processId">The Aspire process property representation.</param>
+    /// <returns>The readiness document assertions.</returns>
+    [Theory]
+    [InlineData(4242)]
+    [InlineData("4242")]
+    public async Task HealthyReadinessWritesMetadataAndFinalProgressAsync(object processId)
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with
+            {
+                Modules = [],
+                UiMarkers = [],
+                EffectiveDeadline = new CompositionEffectiveDeadline(1200, true, "replay required", "sample"),
+                StartupDeadlineUtc = DateTimeOffset.UtcNow.AddSeconds(1200),
+            };
+            IDistributedApplicationBuilder builder = CreateBuilder();
+            ExecutableResource resource = builder.AddExecutable("eventstore", "unused", root).WithHttpEndpoint(port: 32123).Resource;
+            EndpointAnnotation endpoint = resource.Annotations.OfType<EndpointAnnotation>().Single();
+            endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, "127.0.0.1", 32123);
+            await using DistributedApplication app = builder.Build();
+            ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
+            await PublishAsync(notifications, resource, HealthStatus.Healthy, processId).ConfigureAwait(true);
+
+            (await RunReadiness.WaitAndWriteAsync(app, plan, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
+
+            CompositionReadiness readiness = (await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(plan.ReadinessPath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            CompositionResourceReadiness ready = readiness.Resources.Single();
+            ready.ProcessId.ShouldBe(4242);
+            ready.Detail.ShouldBe("module-ready");
+            readiness.EffectiveDeadlineSeconds.ShouldBe(1200);
+            readiness.EffectiveDeadlineIsOverride.ShouldBeTrue();
+            readiness.EffectiveDeadlineJustification.ShouldBe("replay required");
+            readiness.EffectiveDeadlineModuleId.ShouldBe("sample");
+            CompositionReadinessProgress progress = (await CompositionDocumentStore.TryReadAsync<CompositionReadinessProgress>(CompositionReadinessProgress.PathFor(plan.Workspace), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            progress.Resources.Single().State.ShouldBe("Healthy");
+            progress.Resources.Single().ProcessId.ShouldBe(4242);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies real resource-probe expiry uses the remaining deadline and includes every unready resource.</summary>
+    /// <returns>The timeout document assertions.</returns>
+    [Fact]
+    public async Task ResourceProbeUsesDeadlineAndWritesEveryUnreadyResourceAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { Modules = [], UiMarkers = [], StartupDeadlineUtc = DateTimeOffset.UtcNow.AddMilliseconds(250) };
+            IDistributedApplicationBuilder builder = CreateBuilder();
+            ExecutableResource first = builder.AddExecutable("first", "unused", root).Resource;
+            ExecutableResource second = builder.AddExecutable("second", "unused", root).Resource;
+            await using DistributedApplication app = builder.Build();
+            ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
+            await PublishAsync(notifications, first, HealthStatus.Unhealthy, 123).ConfigureAwait(true);
+            await PublishAsync(notifications, second, HealthStatus.Unhealthy, null).ConfigureAwait(true);
+            using CancellationTokenSource caller = new(TimeSpan.FromSeconds(5));
+            (await RunReadiness.WaitAndWriteAsync(app, plan, caller.Token).ConfigureAwait(true)).ShouldBeFalse();
+            CompositionStartupFailure failure = (await CompositionDocumentStore.TryReadAsync<CompositionStartupFailure>(CompositionStartupFailure.PathFor(plan.Workspace), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            failure.RuleId.ShouldBe("HXR025");
+            failure.UnreadyResources.Select(resource => resource.Name).ShouldBe(["first", "second"]);
+            failure.UnreadyResources.ShouldAllBe(resource => resource.State == "Unhealthy");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies a real runner cutover failure reports the current unready list.</summary>
+    /// <returns>The HXR027 document assertions.</returns>
+    [Fact]
+    public async Task CutoverFailureWritesEveryUnreadyResourceAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        string? previous = Environment.GetEnvironmentVariable(CompositionEnvironment.PersistAfterParentExit);
+        Environment.SetEnvironmentVariable(CompositionEnvironment.PersistAfterParentExit, "1");
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { Modules = [], UiMarkers = [], StartupDeadlineUtc = DateTimeOffset.UtcNow.AddSeconds(10) };
+            int exit = await AppHostRunner.RunAsync(
+                [],
+                plan,
+                CompositionSigningKey.Create(),
+                (builder, _, _) =>
+                {
+                    _ = builder.AddExecutable("first", "unused", root);
+                    _ = builder.AddExecutable("second", "unused", root);
+                },
+                standardInput: Stream.Null,
+                activate: (app, _, _, _) =>
+                {
+                    RunReadiness.CurrentUnready(app).Count.ShouldBe(2);
+                    return Task.FromException(new InvalidOperationException("cutover-activation-HTTP-403"));
+                }).ConfigureAwait(true);
+            exit.ShouldBe(3);
+            CompositionStartupFailure failure = (await CompositionDocumentStore.TryReadAsync<CompositionStartupFailure>(CompositionStartupFailure.PathFor(plan.Workspace), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            failure.RuleId.ShouldBe("HXR027");
+            failure.UnreadyResources.Select(resource => resource.Name).ShouldBe(["first", "second"]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(CompositionEnvironment.PersistAfterParentExit, previous);
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies the last resource's new health is persisted before an invocation probe can stall.</summary>
+    /// <returns>The progress assertions.</returns>
+    [Fact]
+    public async Task ReadinessRefreshesProgressBeforeInvocationAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with
+            {
+                Modules = [new CompositionRunModule("worker", "worker", "worker-app", Path.Combine(root, "worker.csproj"))],
+                UiMarkers = [],
+                Ports = CompositionPortAllocator.Allocate(1),
+                StartupDeadlineUtc = DateTimeOffset.UtcNow.AddSeconds(10),
+            };
+            IDistributedApplicationBuilder builder = CreateBuilder();
+            ExecutableResource first = builder.AddExecutable("eventstore", "unused", root).Resource;
+            ExecutableResource last = builder.AddExecutable("worker", "unused", root).Resource;
+            await using DistributedApplication app = builder.Build();
+            ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
+            await PublishAsync(notifications, first, HealthStatus.Healthy, 123).ConfigureAwait(true);
+            await PublishAsync(notifications, last, HealthStatus.Unhealthy, 456).ConfigureAwait(true);
+            using HttpListener listener = new();
+            listener.Prefixes.Add($"http://127.0.0.1:{plan.Ports.EventStoreDaprHttp}/");
+            listener.Start();
+            using CancellationTokenSource caller = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+#pragma warning disable CA2025 // The readiness task is cancelled and drained before the source and app are disposed.
+            Task<bool> waiting = RunReadiness.WaitAndWriteAsync(app, plan, caller.Token);
+#pragma warning restore CA2025
+            try
+            {
+                string path = CompositionReadinessProgress.PathFor(plan.Workspace);
+                DateTimeOffset until = DateTimeOffset.UtcNow.AddSeconds(5);
+                CompositionReadinessProgress? progress;
+                do
+                {
+                    progress = await CompositionDocumentStore.TryReadAsync<CompositionReadinessProgress>(path, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                    if (progress?.Resources.Any(resource => resource.Name == "worker" && resource.State == "Unhealthy") == true)
+                    {
+                        break;
+                    }
+
+                    await Task.Delay(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                }
+                while (DateTimeOffset.UtcNow < until);
+                _ = progress.ShouldNotBeNull();
+                progress.Resources.ShouldContain(resource => resource.Name == "worker" && resource.State == "Unhealthy");
+                await PublishAsync(notifications, last, HealthStatus.Healthy, 456).ConfigureAwait(true);
+                HttpListenerContext invocation = await listener.GetContextAsync().WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                try
+                {
+                    progress = await CompositionDocumentStore.TryReadAsync<CompositionReadinessProgress>(path, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                    progress.ShouldNotBeNull().Resources.ShouldAllBe(resource => resource.State == "Healthy");
+                }
+                finally
+                {
+                    invocation.Response.StatusCode = 503;
+                    invocation.Response.Close();
+                }
+            }
+            finally
+            {
+                await caller.CancelAsync().ConfigureAwait(true);
+                try
+                {
+                    _ = await waiting.ConfigureAwait(true);
+                }
+                catch (OperationCanceledException)
+                {
+                    // End the pending invocation after checking its progress snapshot.
+                }
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    private static IDistributedApplicationBuilder CreateBuilder() => DistributedApplication.CreateBuilder(new DistributedApplicationOptions
+    {
+        Args = [],
+        AssemblyName = typeof(RunTopology).Assembly.GetName().Name,
+        DisableDashboard = true,
+        AllowUnsecuredTransport = true,
+    });
+
+    private static Task PublishAsync(ResourceNotificationService notifications, IResource resource, HealthStatus health, object? processId) =>
+        notifications.PublishUpdateAsync(resource, snapshot => (snapshot with
+        {
+            State = new ResourceStateSnapshot(KnownResourceStates.Running, string.Empty),
+            Properties = processId is null ? [] : [new ResourcePropertySnapshot("executable.pid", processId)],
+        }).WithHealthReports([new HealthReportSnapshot("ready", health, "module-ready", string.Empty)]));
 }
