@@ -20,13 +20,14 @@ internal sealed class StopSignal : IAsyncDisposable
         "Usage",
         "CA2213:Disposable fields should be disposed",
         Justification = "The stream is disposed on a bounded worker during DisposeAsync so a blocked close cannot hang shutdown.")]
-    private readonly Stream _input = Console.OpenStandardInput();
+    private readonly Stream _input;
 
     private readonly Task _listener;
 
-    private StopSignal(CompositionRunPlan plan)
+    private StopSignal(CompositionRunPlan plan, Stream? input)
     {
         _plan = plan;
+        _input = input ?? Console.OpenStandardInput();
         _listener = ListenAsync();
     }
 
@@ -44,8 +45,9 @@ internal sealed class StopSignal : IAsyncDisposable
     /// Starts listening on standard input.
     /// </summary>
     /// <param name="plan">The run plan used for a metadata-only listener failure.</param>
+    /// <param name="input">The owned input stream, or standard input when omitted.</param>
     /// <returns>The signal.</returns>
-    public static StopSignal Listen(CompositionRunPlan plan) => new(plan);
+    public static StopSignal Listen(CompositionRunPlan plan, Stream? input = null) => new(plan, input);
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()

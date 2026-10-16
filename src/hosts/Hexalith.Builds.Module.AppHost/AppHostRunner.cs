@@ -40,12 +40,14 @@ internal static class AppHostRunner
     /// <param name="plan">The selected run plan.</param>
     /// <param name="signingKey">The per-run signing key.</param>
     /// <param name="compose">The topology composer.</param>
+    /// <param name="standardInput">The input owned by the listener for an isolated run, or actual standard input.</param>
     /// <returns>The validation or run exit code.</returns>
     internal static async Task<int> RunAsync(
         string[] args,
         CompositionRunPlan plan,
         string signingKey,
-        Action<IDistributedApplicationBuilder, CompositionRunPlan, string> compose)
+        Action<IDistributedApplicationBuilder, CompositionRunPlan, string> compose,
+        Stream? standardInput = null)
     {
         IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
         {
@@ -79,7 +81,7 @@ internal static class AppHostRunner
         }
 
         DistributedApplication app = builder.Build();
-        StopSignal stop = StopSignal.Listen(plan);
+        StopSignal stop = StopSignal.Listen(plan, standardInput);
         await using (stop.ConfigureAwait(false))
         await using (app.ConfigureAwait(false))
         {

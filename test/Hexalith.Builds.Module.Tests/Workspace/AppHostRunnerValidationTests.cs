@@ -110,7 +110,7 @@ public sealed class AppHostRunnerValidationTests
         {
             CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { StartupDeadlineUtc = DateTimeOffset.UtcNow.AddSeconds(-1) };
             System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            int exit = await AppHostRunner.RunAsync([], plan, CompositionSigningKey.Create(), (_, _, _) => { }).ConfigureAwait(true);
+            int exit = await AppHostRunner.RunAsync([], plan, CompositionSigningKey.Create(), (_, _, _) => { }, standardInput: Stream.Null).ConfigureAwait(true);
             stopwatch.Stop();
             exit.ShouldBe(3);
             stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(30));
