@@ -447,6 +447,48 @@ public sealed class CompositionEngineTests
     }
 
     /// <summary>
+    /// Verifies a readiness failure whose teardown leaves a tagged container behind reports <c>HXR023</c> and persists
+    /// it as the failed run's rule so a retried <c>down</c> can see the unclean teardown.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task UncleanTeardownAfterReadinessFailureReportsAndPersistsHxr023Async()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake Dapr toolchain uses POSIX shell scripts.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(root, "never", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string docker = Path.Combine(root, "leaky-docker");
+            CompositionTestFiles.WriteScript(docker, "case \"$1\" in\n  version) echo '29.0.0' ;;\n  ps) echo leaked0123456789 ;;\n  *) exit 0 ;;\nesac");
+            CompositionEngine engine = new(CreateOptions(root) with
+            {
+                AppHostAssemblyPath = appHost,
+                DaprHome = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+                DockerCommand = docker,
+                ReadinessTimeout = TimeSpan.FromSeconds(3),
+            });
+
+            CompositionStartResult result = await engine.StartAsync(ExecutableManifest(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            result.Result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(["HXR021", "HXR023"]);
+            _ = result.RunId.ShouldNotBeNull();
+            CompositionRunState? state = await engine.StateStore.TryReadAsync(result.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            _ = state.ShouldNotBeNull();
+            state.Status.ShouldBe(CompositionRunStatus.Failed);
+            state.RuleId.ShouldBe("HXR023");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>
     /// Verifies <c>down</c> never signals a process whose identity was reused (different start time) and does stop
     /// the recorded process when its start time matches.
     /// </summary>

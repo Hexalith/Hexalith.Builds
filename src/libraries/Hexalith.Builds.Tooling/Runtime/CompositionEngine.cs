@@ -780,7 +780,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             ? diagnostic
             : diagnostic with { Message = diagnostic.Message.TrimEnd() + suffix };
 
-    private static async Task<IReadOnlyList<CompositionResourceReadiness>> ReadUnreadyProgressAsync(CompositionRunPlan plan, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<CompositionResourceReadiness>> ReadProgressResourcesAsync(CompositionRunPlan plan, CancellationToken cancellationToken)
     {
         CompositionReadinessProgress? progress = await CompositionDocumentStore
             .TryReadAsync<CompositionReadinessProgress>(CompositionReadinessProgress.PathFor(plan.Workspace), cancellationToken)
@@ -790,10 +790,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             || !string.Equals(progress.RunId, plan.RunId, StringComparison.Ordinal)
             ? []
             : [
-                .. progress.Resources.Where(resource =>
-                    !string.Equals(resource.State, "Healthy", StringComparison.Ordinal)
-                    && IsSafeFailureText(resource.Name, 128)
-                    && IsSafeFailureText(resource.Detail ?? resource.State, 120)),
+                .. progress.Resources.Select((resource, index) => resource with
+                {
+                    Name = IsSafeFailureText(resource.Name, 128) ? resource.Name : $"resource-{index + 1}",
+                    Detail = IsSafeFailureText(resource.Detail ?? resource.State, 120) ? resource.Detail : "detail withheld: unsafe or oversized text",
+                }),
             ];
     }
 
@@ -929,6 +930,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         CancellationToken cancellationToken)
     {
         bool tasksCompleted = false;
+        string? expiredTask = null;
         string? refreshId = null;
         while (CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow) > TimeSpan.Zero)
         {
@@ -969,9 +971,10 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
                 if (!tasksCompleted)
                 {
-                    (string? failingTask, bool deadlineElapsed) = await CompositionStartupTasks.RunOwnedAsync(plan.StartupTasks, deadlineUtc, plan.RunId, cancellationToken).ConfigureAwait(false);
+                    (string? failingTask, bool deadlineElapsed, string? expired) = await CompositionStartupTasks.RunOwnedDetailedAsync(plan.StartupTasks, deadlineUtc, plan.RunId, cancellationToken).ConfigureAwait(false);
                     if (deadlineElapsed)
                     {
+                        expiredTask = expired;
                         break;
                     }
 
@@ -1098,6 +1101,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         using CancellationTokenSource? observationBound = stoppingTimestamp is null ? null : TeardownBound();
         CancellationToken observationToken = observationBound?.Token ?? CancellationToken.None;
         IReadOnlyList<ToolDiagnostic> recorded;
+        IReadOnlyList<CompositionResourceReadiness> observed = [];
         IReadOnlyList<CompositionResourceReadiness> unready = [];
         try
         {
@@ -1107,7 +1111,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
 
             recorded = await ReadStartupFailuresAsync(plan.RunId, plan.Workspace, observationToken).ConfigureAwait(false);
-            unready = await ReadUnreadyProgressAsync(plan, observationToken).ConfigureAwait(false);
+            observed = await ReadProgressResourcesAsync(plan, observationToken).ConfigureAwait(false);
+            unready = [.. observed.Where(resource => !string.Equals(resource.State, "Healthy", StringComparison.Ordinal))];
         }
         catch (Exception exception) when (_options.SelectedTest is not null && IsTeardownFailure(exception))
         {
@@ -1120,9 +1125,10 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
         if (recorded.Count == 0)
         {
-            recorded = unready.Count == 0
-                ? [Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run resources did not become healthy within the readiness bound.", "readiness", "Inspect the preserved startup diagnostics.")]
-                : [
+            if (unready.Count > 0)
+            {
+                recorded =
+                [
                     .. unready.Select(resource => Diagnostic(
                         "HXR021",
                         ToolPhase.Topology,
@@ -1131,6 +1137,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                         resource.Name,
                         "Inspect the preserved startup diagnostics.")),
                 ];
+            }
+            else
+            {
+                string message = expiredTask is null
+                    ? "The run resources did not become healthy within the readiness bound."
+                    : $"The run resources did not become healthy within the readiness bound; startup task '{expiredTask}' had not finished.";
+                recorded = [Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, message, expiredTask ?? "readiness", "Inspect the preserved startup diagnostics.")];
+            }
         }
 
         return await FailAndTearDownAsync(
@@ -1142,7 +1156,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             ToolExitCode.TopologyOrLifecycle,
             requestedAt,
             deadline,
-            unready,
+            observed,
             null,
             stoppingTimestamp,
             observationBound).ConfigureAwait(false);
@@ -1221,7 +1235,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             ? (new CompositionRunResources([], [], Unverified: true), false)
             : await TearDownAsync(runId, appHost, boundToken).ConfigureAwait(false);
         bool clean = remaining.IsEmpty && workspaceRemoved;
-        string ruleId = located[0].RuleId;
+        string ruleId = clean || retained ? located[0].RuleId : "HXR023";
         try
         {
             await WriteStateAsync(

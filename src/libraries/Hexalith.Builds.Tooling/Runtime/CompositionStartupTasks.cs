@@ -116,28 +116,41 @@ public static class CompositionStartupTasks
     /// <returns>The failing task or an elapsed deadline.</returns>
     internal static async Task<(string? FailingTask, bool DeadlineElapsed)> RunOwnedAsync(IReadOnlyList<CompositionStartupTask> tasks, DateTimeOffset deadlineUtc, string? runId, CancellationToken cancellationToken)
     {
+        (string? failingTask, bool deadlineElapsed, _) = await RunOwnedDetailedAsync(tasks, deadlineUtc, runId, cancellationToken).ConfigureAwait(false);
+        return (failingTask, deadlineElapsed);
+    }
+
+    /// <summary>Runs tasks like <see cref="RunOwnedAsync"/> and also names the task that had not finished when the deadline passed.</summary>
+    /// <param name="tasks">The selected tasks.</param>
+    /// <param name="deadlineUtc">The absolute startup deadline.</param>
+    /// <param name="runId">The owning run identity, when one exists.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The failing task, whether the deadline elapsed, and the module task that was running or next in line when it did.</returns>
+    internal static async Task<(string? FailingTask, bool DeadlineElapsed, string? ExpiredTask)> RunOwnedDetailedAsync(IReadOnlyList<CompositionStartupTask> tasks, DateTimeOffset deadlineUtc, string? runId, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(tasks);
         foreach (CompositionStartupTask task in tasks)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            string name = task.ModuleId + "/" + task.Name;
             if (CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow) <= TimeSpan.Zero)
             {
-                return (null, true);
+                return (null, true, name);
             }
 
             bool? succeeded = await SucceededAsync(task, deadlineUtc, runId, cancellationToken).ConfigureAwait(false);
             if (succeeded is null)
             {
-                return (null, true);
+                return (null, true, name);
             }
 
             if (succeeded is false)
             {
-                return (task.ModuleId + "/" + task.Name, false);
+                return (name, false, null);
             }
         }
 
-        return (null, false);
+        return (null, false, null);
     }
 
     private static async Task<bool?> SucceededAsync(CompositionStartupTask task, DateTimeOffset deadlineUtc, string? runId, CancellationToken cancellationToken)

@@ -346,6 +346,7 @@ public sealed class StartupReadinessTests
         result.Session.ShouldBeNull();
         result.Result.Outcome.RuleId.ShouldBe("HXR021");
         result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("within the readiness bound", StringComparison.Ordinal));
+        result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("startup task '", StringComparison.Ordinal) && diagnostic.Message.Contains("had not finished", StringComparison.Ordinal), string.Join(" | ", result.Result.Diagnostics.Select(diagnostic => diagnostic.Message)));
         result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Message.Contains("failed before", StringComparison.Ordinal));
         CompositionRunState state = (await engine.StateStore.TryReadAsync(result.RunId!, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
         using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(state.DiagnosticsPath!, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
