@@ -40,6 +40,9 @@ public sealed record ModuleTestRunRecord(
     string ResourceDisposition,
     CompositionRunResources RemainingResources)
 {
+    /// <summary>Gets the content hash of bounded inspected detailed native observations, when present.</summary>
+    public string? ObservationHash { get; init; }
+
     /// <summary>Gets the hash of a safe retained native report, when produced.</summary>
     public string? ReportHash { get; init; }
 

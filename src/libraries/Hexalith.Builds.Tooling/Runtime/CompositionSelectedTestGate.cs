@@ -13,17 +13,30 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
     private readonly CancellationTokenSource _stop;
     private readonly CompositionRunPlan _plan;
     private readonly CompositionTestObservation? _observation;
+    private readonly Lock _sync = new();
+    private readonly TimeProvider _clock;
+    private readonly Func<CancellationToken, Task> _delay;
+    private readonly CancellationTokenRegistration _withdrawal;
     private Task? _renewal;
+    private bool _opened;
 
     /// <summary>Initializes a new instance of the <see cref="CompositionSelectedTestGate"/> class from the actual runner session.</summary>
     /// <param name="session">The owning ready session.</param>
     /// <param name="cancellationToken">The owner withdrawal token.</param>
-    internal CompositionSelectedTestGate(CompositionRunSession session, CancellationToken cancellationToken)
+    /// <param name="clock">The clock; tests may advance UTC without sleeping.</param>
+    /// <param name="delay">The owned renewal wait; tests may release a controlled tick.</param>
+    internal CompositionSelectedTestGate(CompositionRunSession session, CancellationToken cancellationToken, TimeProvider? clock = null, Func<CancellationToken, Task>? delay = null)
     {
         _plan = session.Plan;
         _observation = session.Readiness.TestObservation;
+        _clock = clock ?? TimeProvider.System;
+        _delay = delay ?? (token => Task.Delay(TimeSpan.FromMinutes(5), token));
         _stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _withdrawal = _stop.Token.Register(Close);
     }
+
+    /// <summary>Gets a value indicating whether renewal or closure failed without replacing a prior execution outcome.</summary>
+    internal bool Failed { get; private set; }
 
     /// <summary>Gets the owner/renewal cancellation boundary used by the selected test.</summary>
     internal CancellationToken Token => _stop.Token;
@@ -38,11 +51,8 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
             await _renewal.ConfigureAwait(false);
         }
 
-        if (_observation?.GatePath is not null)
-        {
-            Write(enabled: false);
-        }
-
+        Close();
+        await _withdrawal.DisposeAsync().ConfigureAwait(false);
         _stop.Dispose();
     }
 
@@ -60,8 +70,26 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
             throw new InvalidDataException("The selected observation is incomplete or foreign.");
         }
 
-        Write(enabled: true);
+        lock (_sync)
+        {
+            Write(enabled: true);
+            _opened = true;
+        }
+
         _renewal = RenewAsync();
+    }
+
+    private static byte[] ReadGate(string path)
+    {
+        using FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(path);
+        if (!stream.CanSeek || stream.Length is <= 0 or > 4096)
+        {
+            throw new InvalidDataException("The selected gate is not a positive bounded regular file.");
+        }
+
+        byte[] bytes = new byte[(int)stream.Length];
+        stream.ReadExactly(bytes);
+        return bytes;
     }
 
     private async Task RenewAsync()
@@ -70,13 +98,42 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
         {
             while (!_stop.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromMinutes(5), _stop.Token).ConfigureAwait(false);
-                Write(enabled: true);
+                await _delay(_stop.Token).ConfigureAwait(false);
+                lock (_sync)
+                {
+                    Write(enabled: true);
+                }
             }
         }
-        catch (Exception error) when (error is OperationCanceledException or IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
+        catch (Exception error) when (error is OperationCanceledException or IOException or UnauthorizedAccessException or JsonException or InvalidDataException or InvalidOperationException or KeyNotFoundException or NotSupportedException)
         {
+            if (error is not OperationCanceledException)
+            {
+                Failed = true;
+            }
+
             await _stop.CancelAsync().ConfigureAwait(false);
+        }
+    }
+
+    private void Close()
+    {
+        lock (_sync)
+        {
+            if (!_opened)
+            {
+                return;
+            }
+
+            try
+            {
+                Write(enabled: false);
+                _opened = false;
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidDataException or InvalidOperationException or KeyNotFoundException or NotSupportedException)
+            {
+                Failed = true;
+            }
         }
     }
 
@@ -104,7 +161,7 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
             throw new InvalidDataException("The selected gate workspace is unavailable.");
         }
 
-        DateTimeOffset now = DateTimeOffset.UtcNow;
+        DateTimeOffset now = _clock.GetUtcNow();
         if (enabled)
         {
             _stop.Token.ThrowIfCancellationRequested();
@@ -114,13 +171,36 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
             }
         }
 
-        using JsonDocument current = JsonDocument.Parse(File.ReadAllBytes(expected));
+        byte[] original = ReadGate(expected);
+        using JsonDocument current = JsonDocument.Parse(original);
         JsonElement root = current.RootElement;
-        string? state = root.GetProperty("state").GetString();
-        if (root.EnumerateObject().Count() != 4 || root.GetProperty("schemaVersion").GetInt32() != 1
-            || state is not ("disabled" or "enabled") || (state == "enabled" && root.GetProperty("profileSha256").GetString() != _observation.ProfileHash))
+        if (root.ValueKind != JsonValueKind.Object || root.EnumerateObject().Count() != 4
+            || !root.TryGetProperty("schemaVersion", out JsonElement schema) || schema.ValueKind != JsonValueKind.Number || !schema.TryGetInt32(out int version) || version != 1
+            || !root.TryGetProperty("state", out JsonElement stateValue) || stateValue.ValueKind != JsonValueKind.String
+            || !root.TryGetProperty("profileSha256", out JsonElement profile) || profile.ValueKind != JsonValueKind.String
+            || !root.TryGetProperty("expiresUtcMs", out JsonElement expires) || expires.ValueKind != JsonValueKind.Number || !expires.TryGetInt64(out long currentExpiry))
         {
-            throw new InvalidDataException("The selected gate ownership changed.");
+            throw new InvalidDataException("The selected gate authority is malformed.");
+        }
+
+        string? state = stateValue.GetString();
+        if (state == "disabled" && profile.GetString()!.Length == 0 && currentExpiry == 0)
+        {
+            if (enabled && _opened)
+            {
+                throw new InvalidDataException("The selected gate was withdrawn.");
+            }
+
+            if (!enabled)
+            {
+                return;
+            }
+        }
+        else if (state != "enabled" || profile.GetString() != _observation.ProfileHash || currentExpiry <= 0
+            || _plan.SelectedTest is null || currentExpiry > _plan.SelectedTest.ExecutionDeadlineUtc.ToUnixTimeMilliseconds()
+            || (enabled && (currentExpiry <= now.ToUnixTimeMilliseconds() || currentExpiry > now.AddMinutes(15).AddSeconds(5).ToUnixTimeMilliseconds())))
+        {
+            throw new InvalidDataException("The selected gate ownership or expiry changed.");
         }
 
         DateTimeOffset expiry = now.AddMinutes(10);
@@ -139,6 +219,16 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
         if (!OperatingSystem.IsWindows())
         {
             File.SetUnixFileMode(temporary, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+
+        if (enabled)
+        {
+            _stop.Token.ThrowIfCancellationRequested();
+        }
+
+        if (!ReadGate(expected).SequenceEqual(original))
+        {
+            throw new InvalidDataException("The selected gate changed during renewal or closure.");
         }
 
         File.Move(temporary, expected, overwrite: true);

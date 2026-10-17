@@ -138,14 +138,68 @@ internal static class SelectedNativeTestReport
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "SYSLIB1054:Use LibraryImportAttribute instead of DllImportAttribute", Justification = "This small nonblocking Unix open does not require enabling unsafe generated code.")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2101:Specify marshaling for P/Invoke string arguments", Justification = "Unix open requires UTF-8 bytes, explicitly marshaled as LPUTF8Str.")]
-    [DllImport("libc", EntryPoint = "open", SetLastError = true, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-    private static extern int Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, int flags);
+    /// <summary>Reads detailed native observations using the same bounded safe custody and secret policy as TRX.</summary>
+    /// <param name="path">The fixed native observation path.</param>
+    /// <param name="workspace">The owning workspace.</param>
+    /// <param name="runId">The required selected run.</param>
+    /// <param name="secrets">The complete handoff credential set.</param>
+    /// <param name="cancellationToken">The shared stopping bound.</param>
+    /// <returns>Inspectable native details, or null on every refusal.</returns>
+    internal static async Task<byte[]?> ReadObservationsAsync(string path, string workspace, string runId, IReadOnlyList<string> secrets, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!IsOwnedRegularPath(path, workspace))
+            {
+                return null;
+            }
 
+            FileStream stream = OpenWithoutBlocking(path);
+            await using (stream.ConfigureAwait(false))
+            {
+                if (!stream.CanSeek || stream.Length is <= 0 or > 1048576)
+                {
+                    return null;
+                }
+
+                byte[] bytes = new byte[(int)stream.Length];
+                await stream.ReadExactlyAsync(bytes, cancellationToken).ConfigureAwait(false);
+                using JsonDocument document = JsonDocument.Parse(bytes);
+                JsonElement root = document.RootElement;
+                return root.ValueKind != JsonValueKind.Object || root.GetProperty("runId").GetString() != runId
+                    || root.GetProperty("status").GetString() != "functional-observations-passed"
+                    || root.GetProperty("qualificationCredit").ValueKind != JsonValueKind.False || Unsafe(root) ? null : bytes;
+            }
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or OperationCanceledException or JsonException or InvalidOperationException or KeyNotFoundException)
+        {
+            return null;
+        }
+        finally
+        {
+            if (IsOwnedParent(path, workspace) && File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+
+        bool Unsafe(JsonElement value) => value.ValueKind switch
+        {
+            JsonValueKind.Object => value.EnumerateObject().Any(property => ManifestSecretDetector.ContainsSecret(property.Name)
+                || secrets.Any(secret => !string.IsNullOrEmpty(secret) && property.Name.Contains(secret, StringComparison.Ordinal)) || Unsafe(property.Value)),
+            JsonValueKind.Array => value.EnumerateArray().Any(Unsafe),
+            JsonValueKind.String => ManifestSecretDetector.ContainsSecret(value.GetString()!) || secrets.Any(secret => !string.IsNullOrEmpty(secret) && value.GetString()!.Contains(secret, StringComparison.Ordinal)),
+            JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null or JsonValueKind.Undefined => false,
+            _ => true,
+        };
+    }
+
+    /// <summary>Opens a held read handle without following links or blocking on a replaced Unix FIFO.</summary>
+    /// <param name="path">The caller-validated owned path.</param>
+    /// <returns>The held stream, whose seekability and positive length the caller must check.</returns>
+    /// <exception cref="IOException">The path could not be opened safely.</exception>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The returned FileStream owns the SafeFileHandle; constructor failure disposes it explicitly.")]
-    private static FileStream OpenWithoutBlocking(string path)
+    internal static FileStream OpenWithoutBlocking(string path)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -170,6 +224,12 @@ internal static class SelectedNativeTestReport
             throw;
         }
     }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "SYSLIB1054:Use LibraryImportAttribute instead of DllImportAttribute", Justification = "This small nonblocking Unix open does not require enabling unsafe generated code.")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2101:Specify marshaling for P/Invoke string arguments", Justification = "Unix open requires UTF-8 bytes, explicitly marshaled as LPUTF8Str.")]
+    [DllImport("libc", EntryPoint = "open", SetLastError = true, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+    private static extern int Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, int flags);
 
     private static (NativeTestReportLoadResult Report, byte[]? Bytes) Inspect(string path, byte[] bytes, IReadOnlyList<string> secrets)
     {

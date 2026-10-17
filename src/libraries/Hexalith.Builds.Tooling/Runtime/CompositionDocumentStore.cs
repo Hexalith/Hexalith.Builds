@@ -45,11 +45,22 @@ public static class CompositionDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         string directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
-        _ = Directory.CreateDirectory(directory);
+        CompositionWorkspace.CreatePrivateDirectory(directory);
         string temporary = Path.Combine(directory, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
         try
         {
-            await File.WriteAllTextAsync(temporary, Serialize(document), new UTF8Encoding(false), cancellationToken).ConfigureAwait(false);
+            FileStreamOptions options = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write, Options = FileOptions.Asynchronous };
+            if (!OperatingSystem.IsWindows())
+            {
+                options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            }
+
+            FileStream stream = new(temporary, options);
+            await using (stream.ConfigureAwait(false))
+            {
+                await stream.WriteAsync(new UTF8Encoding(false).GetBytes(Serialize(document)), cancellationToken).ConfigureAwait(false);
+            }
+
             File.Move(temporary, path, overwrite: true);
         }
         finally

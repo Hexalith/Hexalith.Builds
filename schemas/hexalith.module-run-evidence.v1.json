@@ -362,6 +362,13 @@
               "$ref": "#/$defs/testCounts"
             }
           ]
+        },
+        "observationHash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-F0-9]{64}$"
         }
       }
     },

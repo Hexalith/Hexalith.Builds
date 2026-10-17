@@ -490,6 +490,15 @@ internal static class ModuleRunEvidenceArtifactValidator
             return false;
         }
 
+        bool requiresObservations = record.Selection is { ModuleId: "memories", Name: "functional-retention" }
+            && record.TerminalOutcome.ExitCode == Diagnostics.ToolExitCode.Success;
+        if ((requiresObservations && record.ObservationHash is null)
+            || (record.ObservationHash is not null && !root.GetProperty("artifactHashes").EnumerateObject().Any(artifact =>
+                artifact.Name.EndsWith(".functional-observations.json", StringComparison.Ordinal) && artifact.Value.GetString() == record.ObservationHash)))
+        {
+            return false;
+        }
+
         if (record.ReportHash is not null)
         {
             if (!root.GetProperty("artifactHashes").EnumerateObject().Any(artifact => artifact.Value.GetString() == record.ReportHash))
@@ -497,7 +506,8 @@ internal static class ModuleRunEvidenceArtifactValidator
                 return false;
             }
         }
-        else if (root.GetProperty("artifactHashes").EnumerateObject().Any())
+        else if (root.GetProperty("artifactHashes").EnumerateObject().Any(artifact => record.ObservationHash is null
+            || !artifact.Name.EndsWith(".functional-observations.json", StringComparison.Ordinal) || artifact.Value.GetString() != record.ObservationHash))
         {
             return false;
         }

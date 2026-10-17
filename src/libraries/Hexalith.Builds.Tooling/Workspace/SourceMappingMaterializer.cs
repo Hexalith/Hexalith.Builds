@@ -50,11 +50,24 @@ public static class SourceMappingMaterializer
     {
         ArgumentNullException.ThrowIfNull(mapping);
         string directory = Path.Combine(workspace, "source-mapping");
-        _ = Directory.CreateDirectory(directory);
-        await File.WriteAllBytesAsync(
-            Path.Combine(directory, "mapping.json"),
-            JsonSerializer.SerializeToUtf8Bytes(mapping, _jsonOptions),
-            cancellationToken).ConfigureAwait(false);
+        Runtime.CompositionWorkspace.CreatePrivateDirectory(directory);
+        FileStreamOptions fileOptions = new() { Mode = FileMode.Create, Access = FileAccess.Write, Options = FileOptions.Asynchronous };
+        if (!OperatingSystem.IsWindows())
+        {
+            fileOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
+
+        FileStream mappingFile = new(Path.Combine(directory, "mapping.json"), fileOptions);
+        await using (mappingFile.ConfigureAwait(false))
+        {
+            await mappingFile.WriteAsync(JsonSerializer.SerializeToUtf8Bytes(mapping, _jsonOptions), cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(Path.Combine(directory, "mapping.json"), UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+
         await CatalogVersionMaterializer.WriteAsync(mapping, workspace, cancellationToken).ConfigureAwait(false);
         await WriteResourceAsync("SourceMapping.props", PropsPath(workspace), cancellationToken).ConfigureAwait(false);
         await WriteResourceAsync("SourceMapping.targets", TargetsPath(workspace), cancellationToken).ConfigureAwait(false);

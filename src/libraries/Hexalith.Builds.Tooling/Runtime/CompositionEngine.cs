@@ -517,6 +517,18 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 };
             }
 
+            if (native?.ObservationBytes is { } observationBytes)
+            {
+                string detail = Path.Combine(directory, "functional-observations.json");
+                await File.WriteAllBytesAsync(detail, observationBytes, cancellationToken).ConfigureAwait(false);
+                if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(detail, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+                }
+
+                record = record with { ObservationHash = Convert.ToHexString(SHA256.HashData(observationBytes)) };
+            }
+
             await CompositionDocumentStore.WriteAsync(path, record, cancellationToken).ConfigureAwait(false);
             if (state is not null)
             {

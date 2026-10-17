@@ -16,6 +16,9 @@ using Hexalith.Builds.Tooling.TestReports;
 /// <param name="ReportBytes">The metadata-checked native report bytes to retain, or null.</param>
 internal sealed record NativeTestExecutionResult(ToolCommandResult Result, NativeTestReport? Report, byte[]? ReportBytes)
 {
+    /// <summary>Gets the bounded inspected detailed native observations, retained beside TRX through existing artifact custody.</summary>
+    internal byte[]? ObservationBytes { get; init; }
+
     /// <summary>Gets the monotonic start of the shared selected stopping and diagnostic budget.</summary>
     internal long? StoppingTimestamp { get; init; }
 }

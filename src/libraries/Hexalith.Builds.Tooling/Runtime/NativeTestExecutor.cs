@@ -218,6 +218,20 @@ internal static class NativeTestExecutor
                 reportBytes);
     }
 
+    /// <summary>Preserves owner withdrawal separately from an internal gate renewal failure.</summary>
+    /// <param name="ownerWithdrawn">Whether the original owner/deadline token was cancelled.</param>
+    /// <returns>The first interruption outcome, before optional closure diagnostics.</returns>
+    internal static NativeTestExecutionResult SelectedInterruption(bool ownerWithdrawn)
+    {
+        if (!ownerWithdrawn)
+        {
+            return Failed("HXT009", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, ToolExitCode.TopologyOrLifecycle);
+        }
+
+        ToolDiagnostic withdrawn = new("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The owner or execution deadline stopped the native test.", "cancellation");
+        return new NativeTestExecutionResult(new ToolCommandResult("withdrawn", ToolOutcome.Passed().Fail(withdrawn.Phase, withdrawn.Category, withdrawn.RuleId, ToolExitCode.Cancelled), [withdrawn]), null, null);
+    }
+
     private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, CancellationToken cancellationToken)
     {
         if (tests.Project != selection.Entry || tests.Platform != selection.Executor || !selection.MatchesSource(manifestPath)
@@ -266,27 +280,28 @@ internal static class NativeTestExecutor
         }
 
         CompositionSelectedTestGate gate = new(session, cancellationToken);
-        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable gateScope = gate.ConfigureAwait(false);
-        gate.Start();
+
         CompositionProcessResult process;
         bool cancelled = false;
         long firstStop = 0;
         try
         {
+            gate.Start();
             cancellationToken.ThrowIfCancellationRequested();
             process = await CompositionProcess.RunSelectedAsync(CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), Path.GetDirectoryName(project), environment), selection.ExecutionDeadlineUtc - issued, TimeSpan.FromSeconds(selection.StopTimeoutSeconds), timestamp => Interlocked.CompareExchange(ref firstStop, timestamp, 0), gate.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
-            cancelled = true;
+            cancelled = cancellationToken.IsCancellationRequested;
             process = new CompositionProcessResult(true, -1, string.Empty, true);
         }
-        catch (Exception exception) when (exception is IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException or KeyNotFoundException or System.ComponentModel.Win32Exception)
         {
             process = new CompositionProcessResult(true, -1, string.Empty, false);
         }
 
         long stoppingTimestamp = firstStop == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : firstStop;
+        await gate.DisposeAsync().ConfigureAwait(false);
         TimeSpan processingRemaining = TimeSpan.FromSeconds(Math.Min(selection.StopTimeoutSeconds, 30)) - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp);
         using CancellationTokenSource processing = new();
         if (processingRemaining > TimeSpan.Zero)
@@ -299,15 +314,19 @@ internal static class NativeTestExecutor
         }
 
         (NativeTestReportLoadResult report, byte[]? bytes) = await SelectedNativeTestReport.ReadAsync(reportPath, session.Plan.Workspace, handoffSecrets, processing.Token).ConfigureAwait(false);
+        string observationPath = Path.Combine(results, "functional-observations.json");
+        bool requiresObservations = selection is { ModuleId: "memories", Name: "functional-retention" } || File.Exists(observationPath);
+        byte[]? observations = requiresObservations
+            ? await SelectedNativeTestReport.ReadObservationsAsync(observationPath, session.Plan.Workspace, session.Plan.RunId, handoffSecrets, processing.Token).ConfigureAwait(false)
+            : null;
         NativeTestExecutionResult evaluated;
         if (report.Diagnostic?.RuleId == "HXT008")
         {
             evaluated = Failed("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, ToolExitCode.EvidenceSchemaOrPolicy);
         }
-        else if (cancelled)
+        else if (cancelled || (gate.Failed && process.TimedOut))
         {
-            ToolDiagnostic withdrawn = new("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The owner or execution deadline stopped the native test.", "cancellation");
-            evaluated = new NativeTestExecutionResult(new ToolCommandResult("withdrawn", ToolOutcome.Passed().Fail(withdrawn.Phase, withdrawn.Category, withdrawn.RuleId, ToolExitCode.Cancelled), [withdrawn]), report.Report, bytes);
+            evaluated = SelectedInterruption(cancelled);
         }
         else
         {
@@ -318,7 +337,19 @@ internal static class NativeTestExecutor
             }
         }
 
-        return evaluated with { Report = report.Report, ReportBytes = bytes, StoppingTimestamp = stoppingTimestamp };
+        if (requiresObservations && observations is null && evaluated.Result.Outcome.ExitCode == ToolExitCode.Success)
+        {
+            evaluated = Failed("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, ToolExitCode.EvidenceSchemaOrPolicy);
+        }
+
+        if (gate.Failed)
+        {
+            ToolDiagnostic closure = new("HXT009", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "The selected gate could not be safely renewed or closed; its owner changed or storage was unavailable.", "selectedGate");
+            ToolCommandResult prior = evaluated.Result;
+            evaluated = evaluated with { Result = new ToolCommandResult(prior.Outcome.ExitCode == ToolExitCode.Success ? "failed" : prior.Status, prior.Outcome.Fail(closure.Phase, closure.Category, closure.RuleId, ToolExitCode.TopologyOrLifecycle), [.. prior.Diagnostics, closure]) };
+        }
+
+        return evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, StoppingTimestamp = stoppingTimestamp };
     }
 
     private static bool ContainsRetainedSecret(byte[] reportBytes, IReadOnlyList<string> handoffSecrets)
@@ -366,14 +397,14 @@ internal static class NativeTestExecutor
     {
         "HXT009" => "The selected test source, readiness, or execution lifetime no longer matches the owned run.",
         "HXR030" => "The native test process could not be started.",
-        "HXT008" => "The native test report contains credential material and was not retained.",
+        "HXT008" => "Native output was missing, malformed, unsafe, contained prohibited material, or could not be retained under the inspection policy.",
         _ => "The native test process did not complete successfully.",
     };
 
     private static string HintFor(string ruleId) => ruleId switch
     {
         "HXR030" => "Install the repository-pinned .NET SDK so dotnet test is available.",
-        "HXT008" => "Never write handoff tokens or credentials to test output.",
+        "HXT008" => "Provide bounded valid native output in the owned private paths and never include handoff credentials.",
         _ => "Inspect the native test project and its platform configuration locally.",
     };
 }

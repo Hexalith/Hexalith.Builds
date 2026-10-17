@@ -935,6 +935,21 @@ public static class ModuleCommandExecutionService
                 }
             }
 
+            if (nativeTests?.ObservationBytes is { } observationBytes && evidencePath.EndsWith(".json", StringComparison.Ordinal))
+            {
+                string detailPath = evidencePath[..^".json".Length] + ".functional-observations.json";
+                ModuleRunEvidenceWriteResult detailResult = await ModuleRunEvidenceWriter.WriteArtifactAsync(detailPath, manifestPath, observationBytes, cancellationToken).ConfigureAwait(false);
+                if (detailResult.Succeeded)
+                {
+                    artifactHashes ??= new Dictionary<string, string>(StringComparer.Ordinal);
+                    artifactHashes[detailPath] = Convert.ToHexString(SHA256.HashData(observationBytes));
+                }
+                else
+                {
+                    result = MergeEvidenceFailure(result, detailResult.Diagnostic!);
+                }
+            }
+
             ModuleRunEvidence evidence = ModuleRunEvidenceFactory.Create(
                 command,
                 manifestPath,

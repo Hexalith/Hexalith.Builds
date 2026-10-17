@@ -115,6 +115,8 @@ public sealed class SelectedObservationTests
 
             await owner.CancelAsync().ConfigureAwait(true);
             gate.Token.IsCancellationRequested.ShouldBeTrue();
+            using JsonDocument immediate = JsonDocument.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true));
+            immediate.RootElement.GetProperty("state").GetString().ShouldBe("disabled");
             await gate.DisposeAsync().ConfigureAwait(true);
             using JsonDocument disabled = JsonDocument.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true));
             disabled.RootElement.GetProperty("state").GetString().ShouldBe("disabled");
@@ -158,5 +160,224 @@ public sealed class SelectedObservationTests
         }
     }
 
+    /// <summary>Advances renewal UTC explicitly and checks foreign ownership or expiry stops renewal without overwriting it.</summary>
+    /// <param name="foreign">Whether the final tick sees foreign ownership instead of absolute expiry.</param>
+    /// <returns>The controlled renewal assertions.</returns>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RenewalAdvancesCapsAndFailsClosedAsync(bool foreign)
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            AdjustableClock clock = new();
+            DateTimeOffset start = clock.GetUtcNow();
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { SelectedTest = new("memories", "functional-retention", "python3", "entry.py", new string('a', 64), new string('b', 64), 1620, 900, start, start.AddMinutes(27), start.AddMinutes(27), "source") };
+            string path = Path.Combine(plan.Workspace, "platform-components", "retention", "gate.json");
+            CompositionWorkspace.CreatePrivateDirectory(Path.GetDirectoryName(path)!);
+            await File.WriteAllTextAsync(path, "{\"schemaVersion\":1,\"state\":\"disabled\",\"profileSha256\":\"\",\"expiresUtcMs\":0}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionTestObservation observation = new() { RunId = plan.RunId, ModuleId = "memories", ProfileHash = new string('a', 64), ProfileJson = "offline", ObservedCandidateHash = "offline", ObservedRuntimeHash = "offline", ObservedBackendIdentity = "offline", RuntimeArtifactVerified = true, LoadedArtifactHashes = new Dictionary<string, string> { ["offline"] = "offline" }, ServiceRetentionSeconds = new Dictionary<string, int> { ["a"] = 3600, ["b"] = 3600, ["c"] = 3600 }, Endpoints = Enumerable.Range(0, 6).ToDictionary(i => i.ToString(System.Globalization.CultureInfo.InvariantCulture), _ => new Uri("http://localhost:1234")), PostgresqlContainerId = new string('a', 64), GatePath = path };
+            using Process host = new();
+            CompositionReadiness readiness = new(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://localhost:1234"), null, []) { TestObservation = observation };
+            using SemaphoreSlim ticks = new(0);
+            CompositionSelectedTestGate gate = new(new CompositionRunSession(plan, readiness, "offline", host), TestContext.Current.CancellationToken, clock, ticks.WaitAsync);
+            gate.Start();
+            clock.Now = start.AddMinutes(5);
+            _ = ticks.Release();
+            await UntilAsync(() => Expiry(path) == start.AddMinutes(15).ToUnixTimeMilliseconds()).ConfigureAwait(true);
+            foreach (int minutes in new[] { 10, 15, 20 })
+            {
+                clock.Now = start.AddMinutes(minutes);
+                _ = ticks.Release();
+                long expected = Math.Min(start.AddMinutes(minutes + 10).ToUnixTimeMilliseconds(), plan.SelectedTest.ExecutionDeadlineUtc.ToUnixTimeMilliseconds());
+                await UntilAsync(() => Expiry(path) == expected).ConfigureAwait(true);
+            }
+
+            string? foreignBytes = null;
+            if (foreign)
+            {
+                foreignBytes = "{\"schemaVersion\":1,\"state\":\"enabled\",\"profileSha256\":\"foreign\",\"expiresUtcMs\":1}";
+                await File.WriteAllTextAsync(path, foreignBytes, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            }
+            else
+            {
+                clock.Now = start.AddMinutes(27);
+            }
+
+            _ = ticks.Release();
+            await UntilAsync(() => gate.Token.IsCancellationRequested).ConfigureAwait(true);
+            gate.Failed.ShouldBeTrue();
+            await gate.DisposeAsync().ConfigureAwait(true);
+            if (foreign)
+            {
+                (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(foreignBytes);
+            }
+            else
+            {
+                Expiry(path).ShouldBe(0);
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Exact handoff credentials are forbidden in JSON names as well as values.</summary>
+    /// <returns>The custody refusal assertion.</returns>
+    [Fact]
+    public async Task ObservationPropertyNamesCannotRetainRandomCredentialAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            string path = Path.Combine(root, "functional-observations.json");
+            Dictionary<string, object> details = new()
+            {
+                ["runId"] = "owned-run",
+                ["status"] = "functional-observations-passed",
+                ["qualificationCredit"] = false,
+                ["safe-prefix-" + token + "-safe-suffix"] = "ordinary-value",
+            };
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(details), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            (await SelectedNativeTestReport.ReadObservationsAsync(path, root, "owned-run", [token], TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeNull();
+            File.Exists(path).ShouldBeFalse();
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Malformed, expired, withdrawn and non-regular authority cancels at a controlled renewal tick without reopening it.</summary>
+    /// <param name="replacement">The authority replacement after opening.</param>
+    /// <returns>The cancellation and preservation assertions.</returns>
+    [Theory]
+    [InlineData("expired")]
+    [InlineData("schema-overflow")]
+    [InlineData("expiry-overflow")]
+    [InlineData("expiry-string")]
+    [InlineData("expiry-missing")]
+    [InlineData("negative")]
+    [InlineData("extended")]
+    [InlineData("disabled")]
+    [InlineData("malformed")]
+    [InlineData("fifo")]
+    public async Task RenewalRefusesReplacedAuthorityWithoutReopeningAsync(string replacement)
+    {
+        if (replacement == "fifo" && OperatingSystem.IsWindows())
+        {
+            Assert.Skip("mkfifo is POSIX-only.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            AdjustableClock clock = new();
+            DateTimeOffset start = clock.GetUtcNow();
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { SelectedTest = new("memories", "functional-retention", "python3", "entry.py", new string('a', 64), new string('b', 64), 3600, 900, start, start.AddHours(1), start.AddHours(1), "source") };
+            string path = Path.Combine(plan.Workspace, "platform-components", "retention", "gate.json");
+            CompositionWorkspace.CreatePrivateDirectory(Path.GetDirectoryName(path)!);
+            const string disabled = "{\"schemaVersion\":1,\"state\":\"disabled\",\"profileSha256\":\"\",\"expiresUtcMs\":0}";
+            await File.WriteAllTextAsync(path, disabled, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionTestObservation observation = new() { RunId = plan.RunId, ModuleId = "memories", ProfileHash = new string('a', 64), ProfileJson = "offline", ObservedCandidateHash = "offline", ObservedRuntimeHash = "offline", ObservedBackendIdentity = "offline", RuntimeArtifactVerified = true, LoadedArtifactHashes = new Dictionary<string, string> { ["offline"] = "offline" }, ServiceRetentionSeconds = new Dictionary<string, int> { ["a"] = 3600, ["b"] = 3600, ["c"] = 3600 }, Endpoints = Enumerable.Range(0, 6).ToDictionary(i => i.ToString(System.Globalization.CultureInfo.InvariantCulture), _ => new Uri("http://localhost:1234")), PostgresqlContainerId = new string('a', 64), GatePath = path };
+            using Process host = new();
+            CompositionReadiness readiness = new(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://localhost:1234"), null, []) { TestObservation = observation };
+            using SemaphoreSlim ticks = new(0);
+            CompositionSelectedTestGate gate = new(new CompositionRunSession(plan, readiness, "offline", host), TestContext.Current.CancellationToken, clock, ticks.WaitAsync);
+            gate.Start();
+            clock.Now = start.AddMinutes(5);
+            string authority = JsonSerializer.Serialize(new { schemaVersion = 1, state = "enabled", profileSha256 = observation.ProfileHash, expiresUtcMs = start.AddMinutes(10).ToUnixTimeMilliseconds() });
+            authority = replacement switch
+            {
+                "expired" => authority.Replace(start.AddMinutes(10).ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture), clock.Now.AddSeconds(-1).ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal),
+                "schema-overflow" => authority.Replace("\"schemaVersion\":1", "\"schemaVersion\":9223372036854775808", StringComparison.Ordinal),
+                "expiry-overflow" => authority.Replace(start.AddMinutes(10).ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture), "9223372036854775808", StringComparison.Ordinal),
+                "expiry-string" => authority.Replace(start.AddMinutes(10).ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture), "\"forever\"", StringComparison.Ordinal),
+                "expiry-missing" => authority.Replace(",\"expiresUtcMs\":" + start.AddMinutes(10).ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture), string.Empty, StringComparison.Ordinal),
+                "negative" => authority.Replace(start.AddMinutes(10).ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture), "-1", StringComparison.Ordinal),
+                "extended" => authority.Replace(start.AddMinutes(10).ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture), start.AddMinutes(30).ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal),
+                "disabled" => disabled,
+                "malformed" => "{",
+                _ => authority,
+            };
+            if (replacement == "fifo")
+            {
+                File.Delete(path);
+                using Process fifo = Process.Start(new ProcessStartInfo("mkfifo", [path]) { UseShellExecute = false })!;
+                await fifo.WaitForExitAsync(TestContext.Current.CancellationToken).ConfigureAwait(true);
+                fifo.ExitCode.ShouldBe(0);
+            }
+            else
+            {
+                await File.WriteAllTextAsync(path, authority, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            }
+
+            _ = ticks.Release();
+            await UntilAsync(() => gate.Token.IsCancellationRequested).ConfigureAwait(true);
+            gate.Failed.ShouldBeTrue();
+            await gate.DisposeAsync().ConfigureAwait(true);
+            if (replacement == "fifo")
+            {
+                FileStream held = SelectedNativeTestReport.OpenWithoutBlocking(path);
+                await using (held.ConfigureAwait(true))
+                {
+                    held.CanSeek.ShouldBeFalse();
+                }
+            }
+            else if (replacement is "expired" or "extended")
+            {
+                Expiry(path).ShouldBe(0);
+            }
+            else
+            {
+                (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(authority);
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Internal renewal failure retains resources; owner withdrawal retains its original cancelled cause.</summary>
+    [Fact]
+    public void NativeInterruptionDistinguishesOwnerFromGateFailure()
+    {
+        NativeTestExecutionResult internalFailure = NativeTestExecutor.SelectedInterruption(false);
+        internalFailure.Result.Status.ShouldBe("failed");
+        ((int)internalFailure.Result.Outcome.ExitCode).ShouldBe(3);
+        internalFailure.Result.Outcome.RuleId.ShouldBe("HXT009");
+        NativeTestExecutionResult withdrawn = NativeTestExecutor.SelectedInterruption(true);
+        withdrawn.Result.Status.ShouldBe("withdrawn");
+        ((int)withdrawn.Result.Outcome.ExitCode).ShouldBe(130);
+        withdrawn.Result.Outcome.RuleId.ShouldBe("HXC130");
+    }
+
+    private static long Expiry(string path)
+    {
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllBytes(path));
+        return document.RootElement.GetProperty("expiresUtcMs").GetInt64();
+    }
+
+    private static async Task UntilAsync(Func<bool> condition)
+    {
+        for (int attempt = 0; attempt < 100 && !condition(); attempt++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        condition().ShouldBeTrue();
+    }
+
     private static string Hash(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
+
+    private sealed class AdjustableClock : TimeProvider
+    {
+        internal DateTimeOffset Now { get; set; } = DateTimeOffset.UtcNow;
+
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
 }

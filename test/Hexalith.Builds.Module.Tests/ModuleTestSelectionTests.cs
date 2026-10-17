@@ -78,6 +78,14 @@ public sealed class ModuleTestSelectionTests
     /// <returns>The process and evidence assertions.</returns>
     [Theory]
     [InlineData("pass", 0, 1, "removed")]
+    [InlineData("detail-pass", 0, 1, "removed")]
+    [InlineData("memories-detail-pass", 0, 1, "removed")]
+    [InlineData("memories-missing-detail", 6, 0, "retained")]
+    [InlineData("detail-no-report", 4, 0, "retained")]
+    [InlineData("gate-failure-pass", 3, 0, "retained")]
+    [InlineData("gate-failure-nonzero", 4, 0, "retained")]
+    [InlineData("detail-secret", 6, 0, "retained")]
+    [InlineData("detail-malformed", 6, 0, "retained")]
     [InlineData("observed-identities", 0, 1, "removed")]
     [InlineData("nonzero", 4, 0, "retained")]
     [InlineData("missing", 4, 0, "retained")]
@@ -95,8 +103,10 @@ public sealed class ModuleTestSelectionTests
     [InlineData("timeout", 4, 0, "retained")]
     public async Task PythonCommandBindsRealReportAndCleanupAsync(string scenario, int expectedExit, int expectedCleanup, string disposition)
     {
+        ArgumentNullException.ThrowIfNull(scenario);
         using PlatformManifestTestWorkspace workspace = new();
         Declare(workspace, scenario);
+        string profile = scenario.StartsWith("memories-", StringComparison.Ordinal) ? "functional-retention" : "verify";
         string manifest = workspace.Save();
         using Process appHost = new();
         using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
@@ -137,6 +147,14 @@ public sealed class ModuleTestSelectionTests
                     readiness = readiness with { TestObservation = new CompositionTestObservation { RunId = selectedPlan.RunId, ModuleId = "sample", ProfileHash = "offline", ProfileJson = "offline", ObservedCandidateHash = new string('a', 64), ObservedBackendIdentity = "offline fixture backend" } };
                 }
 
+                if (scenario.StartsWith("gate-failure-", StringComparison.Ordinal))
+                {
+                    string gatePath = Path.Combine(selectedPlan.Workspace, "platform-components", "retention", "gate.json");
+                    CompositionWorkspace.CreatePrivateDirectory(Path.GetDirectoryName(gatePath)!);
+                    await File.WriteAllTextAsync(gatePath, "{\"schemaVersion\":1,\"state\":\"disabled\",\"profileSha256\":\"\",\"expiresUtcMs\":0}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+                    readiness = readiness with { TestObservation = new CompositionTestObservation { RunId = selectedPlan.RunId, ModuleId = "sample", ProfileHash = new string('a', 64), ProfileJson = "offline", ObservedCandidateHash = new string('b', 64), ObservedRuntimeHash = new string('c', 64), ObservedBackendIdentity = "offline", RuntimeArtifactVerified = true, LoadedArtifactHashes = new Dictionary<string, string> { ["offline"] = "offline" }, ServiceRetentionSeconds = new Dictionary<string, int> { ["a"] = 3600, ["b"] = 3600, ["c"] = 3600 }, Endpoints = Enumerable.Range(0, 6).ToDictionary(index => index.ToString(System.Globalization.CultureInfo.InvariantCulture), _ => new Uri("http://localhost:1234")), PostgresqlContainerId = new string('a', 64), GatePath = gatePath } };
+                }
+
                 CompositionWorkspace.CreatePrivateDirectory(selectedPlan.Workspace);
                 await CompositionDocumentStore.WriteAsync(Path.Combine(selectedPlan.Workspace, "plan.json"), selectedPlan, TestContext.Current.CancellationToken).ConfigureAwait(true);
                 await CompositionDocumentStore.WriteAsync(selectedPlan.ReadinessPath, readiness, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -157,7 +175,7 @@ public sealed class ModuleTestSelectionTests
         };
         StringWriter writer = new();
         await using ConfiguredAsyncDisposable writerLifetime = writer.ConfigureAwait(true);
-        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, manifest, "verify", null, "evidence/result.json", ToolOutputFormat.Json, writer, owner.Token, "child.dll", compositionOptions: options).ConfigureAwait(true);
+        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, manifest, profile, null, "evidence/result.json", ToolOutputFormat.Json, writer, owner.Token, "child.dll", compositionOptions: options).ConfigureAwait(true);
         exit.ShouldBe(expectedExit, writer.ToString());
         cleanups.ShouldBe(expectedCleanup);
         byte[] evidence = await File.ReadAllBytesAsync(Path.Combine(workspace.Root, "evidence/result.json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -166,8 +184,61 @@ public sealed class ModuleTestSelectionTests
         JsonElement selectedRun = document.RootElement.GetProperty("selectedTestRun");
         selectedRun.GetProperty("resourceDisposition").GetString().ShouldBe(disposition);
         selectedRun.GetProperty("qualificationCredit").GetBoolean().ShouldBeFalse();
-        document.RootElement.GetProperty("invocation").GetProperty("command").GetString().ShouldNotBeNull().ShouldContain("--profile verify");
+        document.RootElement.GetProperty("invocation").GetProperty("command").GetString().ShouldNotBeNull().ShouldContain("--profile " + profile);
         System.Text.Encoding.UTF8.GetString(evidence).ShouldNotContain("private-signing-key-value");
+        if (scenario is "detail-pass" or "memories-detail-pass")
+        {
+            string detailPath = Path.Combine(workspace.Root, "evidence/result.functional-observations.json");
+            Directory.Exists(selectedPlan!.Workspace).ShouldBeFalse();
+            byte[] details = await File.ReadAllBytesAsync(detailPath, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            selectedRun.GetProperty("observationHash").GetString().ShouldBe(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(details)));
+            File.Exists(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId, "functional-observations.json")).ShouldBeTrue();
+        }
+
+        if (scenario == "memories-missing-detail")
+        {
+            selectedRun.GetProperty("selection").GetProperty("moduleId").GetString().ShouldBe("memories");
+            selectedRun.GetProperty("selection").GetProperty("name").GetString().ShouldBe("functional-retention");
+            selectedRun.GetProperty("terminalOutcome").GetProperty("ruleId").GetString().ShouldBe("HXT008");
+            selectedRun.GetProperty("terminalStatus").GetString().ShouldBe("failed");
+        }
+
+        if (scenario == "memories-detail-pass")
+        {
+            JsonObject imported = JsonNode.Parse(evidence)!.AsObject();
+            _ = imported["selectedTestRun"]!.AsObject().Remove("observationHash");
+            ModuleRunEvidenceArtifactValidator.TryValidate(System.Text.Encoding.UTF8.GetBytes(imported.ToJsonString() + "\n"), out _).ShouldBeFalse();
+            imported = JsonNode.Parse(evidence)!.AsObject();
+            JsonObject artifacts = imported["artifactHashes"]!.AsObject();
+            string detailKey = artifacts.Select(artifact => artifact.Key).Single(key => key.EndsWith(".functional-observations.json", StringComparison.Ordinal));
+            _ = artifacts.Remove(detailKey);
+            ModuleRunEvidenceArtifactValidator.TryValidate(System.Text.Encoding.UTF8.GetBytes(imported.ToJsonString() + "\n"), out _).ShouldBeFalse();
+        }
+
+        if (scenario == "detail-no-report")
+        {
+            selectedRun.GetProperty("reportHash").ValueKind.ShouldBe(JsonValueKind.Null);
+            selectedRun.GetProperty("observationHash").GetString().ShouldNotBeNullOrWhiteSpace();
+            document.RootElement.GetProperty("testCounts").GetProperty("reported").GetBoolean().ShouldBeFalse();
+            foreach (string drift in new[] { "extra", "hash", "name", "counts", "outcome" })
+            {
+                JsonObject imported = JsonNode.Parse(evidence)!.AsObject();
+                JsonObject artifacts = imported["artifactHashes"]!.AsObject();
+                string detailKey = artifacts.Single().Key;
+                switch (drift)
+                {
+                    case "extra": artifacts["arbitrary.json"] = new string('A', 64); break;
+                    case "hash": artifacts[detailKey] = new string('F', 64); break;
+                    case "name": artifacts["arbitrary.json"] = artifacts[detailKey]!.DeepClone(); _ = artifacts.Remove(detailKey); break;
+                    case "counts": imported["testCounts"]!["reported"] = true; imported["testCounts"]!["total"] = 1; imported["testCounts"]!["passed"] = 1; break;
+                    case "outcome": imported["outcome"]!["exitCode"] = 0; break;
+                    default: Assert.Fail("Unexpected evidence fixture drift."); break;
+                }
+
+                ModuleRunEvidenceArtifactValidator.TryValidate(System.Text.Encoding.UTF8.GetBytes(imported.ToJsonString() + "\n"), out _).ShouldBeFalse(drift);
+            }
+        }
+
         if (scenario == "observed-identities")
         {
             selectedRun.GetProperty("observedCandidateHash").GetString().ShouldBe(new string('a', 64));
@@ -362,6 +433,13 @@ public sealed class ModuleTestSelectionTests
             workspace.Change("modules.0.tests.0.executionTimeoutSeconds", "2");
         }
 
+        string owner = scenario.StartsWith("memories-", StringComparison.Ordinal) ? "memories" : "sample";
+        if (owner == "memories")
+        {
+            workspace.Document["modules"]![0] = JsonNode.Parse(workspace.Document["modules"]![0]!.ToJsonString().Replace("sample", "memories", StringComparison.Ordinal));
+            workspace.Change("modules.0.tests.0.name", "\"functional-retention\"");
+        }
+
         string report = scenario switch
         {
             "failed" => "<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"0\" failed=\"1\" /></ResultSummary></TestRun>",
@@ -375,19 +453,33 @@ public sealed class ModuleTestSelectionTests
             "dapr-secret" => " + 'fixture-dapr-credential'",
             _ => string.Empty,
         };
+        string detailValue = scenario switch
+        {
+            "detail-malformed" => "'{'",
+            "detail-secret" => "json.dumps({'runId': os.environ['HEXALITH_G4_RUN_ID'], 'status': 'functional-observations-passed', 'qualificationCredit': False, 'observation': os.environ['HEXALITH_G4_ACCESS_TOKEN']})",
+            _ => "json.dumps({'runId': os.environ['HEXALITH_G4_RUN_ID'], 'status': 'functional-observations-passed', 'qualificationCredit': False, 'observation': 'offline fixture only'})",
+        };
         string script = "import os, pathlib, time\n"
-            + "import helper, base64, json, datetime\n"
+            + "import helper, base64, json, datetime, stat, hashlib\n"
+            + "assert all(stat.S_IMODE(pathlib.Path(os.environ[key]).stat().st_mode) == 0o600 for key in ['HEXALITH_G4_PLAN_PATH', 'HEXALITH_G4_READINESS_PATH', 'HEXALITH_G4_SOURCE_MAPPING_PATH'])\n"
+            + "assert stat.S_IMODE(pathlib.Path(os.environ['HEXALITH_G4_SOURCE_MAPPING_PATH']).parent.stat().st_mode) == 0o700\n"
+            + "mapping = json.loads(pathlib.Path(os.environ['HEXALITH_G4_SOURCE_MAPPING_PATH']).read_text())\n"
+            + "assert mapping['Mode'] == 'source' and 'Root' in mapping and 'Entries' in mapping\n"
+            + "payload = {key:mapping[key] for key in ['Mode','Root','ActiveModule','Entries','HasGit','PlatformIdentity','IdentityFindings']}\n"
+            + "assert hashlib.sha256(json.dumps(payload,separators=(',',':'),ensure_ascii=True).encode()).hexdigest() == os.environ['HEXALITH_SOURCE_MAPPING_HASH']\n"
             + "assert helper.value == 'owned-helper'\n"
             + "assert all(pathlib.Path(os.environ[key]).is_file() for key in ['HEXALITH_G4_PLAN_PATH', 'HEXALITH_G4_READINESS_PATH', 'HEXALITH_G4_SOURCE_MAPPING_PATH'])\n"
             + "claims = json.loads(base64.urlsafe_b64decode(os.environ['HEXALITH_G4_ACCESS_TOKEN'].split('.')[1] + '=='))\n"
             + "assert claims['exp'] == int(datetime.datetime.fromisoformat(os.environ['HEXALITH_G4_CREDENTIAL_EXPIRY_UTC']).timestamp())\n"
-            + "assert claims['domains'] == 'sample'\n"
-            + "assert os.environ['HEXALITH_G4_TEST_OWNER'] == 'sample'\n"
-            + "assert os.environ['HEXALITH_G4_DOMAINS'] == 'sample'\n"
+            + "assert claims['domains'] == '" + owner + "'\n"
+            + "assert os.environ['HEXALITH_G4_TEST_OWNER'] == '" + owner + "'\n"
+            + "assert os.environ['HEXALITH_G4_DOMAINS'] == '" + owner + "'\n"
             + "assert 0 <= (datetime.datetime.fromisoformat(os.environ['HEXALITH_G4_CREDENTIAL_EXPIRY_UTC']) - datetime.datetime.fromisoformat(os.environ['HEXALITH_G4_EXECUTION_DEADLINE_UTC'])).total_seconds() < 1\n"
             + (scenario == "timeout" ? "time.sleep(30)\n" : string.Empty)
-            + (scenario == "missing" ? string.Empty : "pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text(" + JsonSerializer.Serialize(report) + secretSuffix + ")\n")
-            + "raise SystemExit(" + (scenario is "nonzero" or "ci-failure" ? "7" : "0") + ")\n";
+            + (scenario is "missing" or "detail-no-report" ? string.Empty : "pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text(" + JsonSerializer.Serialize(report) + secretSuffix + ")\n")
+            + (scenario.StartsWith("detail-", StringComparison.Ordinal) || scenario == "memories-detail-pass" ? "pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).with_name('functional-observations.json').write_text(" + detailValue + ")\n" : string.Empty)
+            + (scenario.StartsWith("gate-failure-", StringComparison.Ordinal) ? "pathlib.Path(json.loads(pathlib.Path(os.environ['HEXALITH_G4_READINESS_PATH']).read_text())['testObservation']['gatePath']).write_text(json.dumps({'schemaVersion':1,'state':'enabled','profileSha256':'foreign','expiresUtcMs':1}))\n" : string.Empty)
+            + "raise SystemExit(" + (scenario is "nonzero" or "ci-failure" or "gate-failure-nonzero" ? "7" : "0") + ")\n";
         File.WriteAllText(Path.Combine(workspace.Root, "runner.py"), script);
         File.WriteAllText(Path.Combine(workspace.Root, "helper.py"), "value = 'owned-helper'\n");
     }

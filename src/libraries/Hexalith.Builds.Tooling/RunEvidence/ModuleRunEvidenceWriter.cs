@@ -41,11 +41,11 @@ public static class ModuleRunEvidenceWriter
     }
 
     /// <summary>
-    /// Atomically writes a metadata-checked native test report beside its evidence artifact.
+    /// Atomically writes inspected native TRX or fixed detailed observations beside the evidence artifact.
     /// </summary>
-    /// <param name="artifactPath">The requested repository-relative TRX artifact path.</param>
+    /// <param name="artifactPath">The requested repository-relative native artifact path.</param>
     /// <param name="manifestPath">The manifest path used to resolve the repository root.</param>
-    /// <param name="content">The native report bytes.</param>
+    /// <param name="content">The inspected native artifact bytes.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The metadata-only write outcome.</returns>
     public static Task<ModuleRunEvidenceWriteResult> WriteArtifactAsync(
@@ -58,7 +58,8 @@ public static class ModuleRunEvidenceWriter
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         ArgumentNullException.ThrowIfNull(content);
 
-        return WriteBytesAsync(artifactPath, manifestPath, ".trx", () => content, cancellationToken);
+        string extension = artifactPath.EndsWith(".functional-observations.json", StringComparison.Ordinal) ? ".json" : ".trx";
+        return WriteBytesAsync(artifactPath, manifestPath, extension, () => content, cancellationToken);
     }
 
     /// <summary>
@@ -117,7 +118,18 @@ public static class ModuleRunEvidenceWriter
 
             temporaryPath = $"{targetPath}.{Guid.NewGuid():N}.tmp";
             byte[] content = serialize();
-            await File.WriteAllBytesAsync(temporaryPath, content, cancellationToken).ConfigureAwait(false);
+            FileStreamOptions options = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write, Options = FileOptions.Asynchronous };
+            if (!OperatingSystem.IsWindows())
+            {
+                options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            }
+
+            FileStream stream = new(temporaryPath, options);
+            await using (stream.ConfigureAwait(false))
+            {
+                await stream.WriteAsync(content, cancellationToken).ConfigureAwait(false);
+            }
+
             File.Move(temporaryPath, targetPath, true);
             return ModuleRunEvidenceWriteResult.Passed();
         }
