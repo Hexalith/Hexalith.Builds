@@ -82,6 +82,15 @@ public static class PlatformManifestCommand
             throw new InvalidOperationException($"Platform model '{project}' cannot use the selected Builds catalog because '{pinnedCatalog}' was not materialized from the Platform identity.");
         }
 
+        try
+        {
+            _ = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
+        }
+        catch (Exception exception) when (exception is IOException or JsonException or UnauthorizedAccessException or InvalidDataException or ArgumentException)
+        {
+            throw new InvalidOperationException($"Platform model '{project}' cannot use its pinned catalog: {exception.Message}", exception);
+        }
+
         string output = Path.Combine(workspace, "hosts", "platform-model");
         List<string> arguments =
         [
@@ -89,6 +98,12 @@ public static class PlatformManifestCommand
             "-p:BuildsToolingAssemblyPath=" + typeof(PlatformManifestCommand).Assembly.Location,
             "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0", "-nodeReuse:false", "-p:UseSharedCompilation=false",
         ];
+
+        // Catalog properties are needed by owner early props. Import the pinned file first,
+        // then prevent a second SDK import while retaining NuGet central-version resolution.
+        arguments.Add("-p:CustomBeforeDirectoryBuildProps=" + pinnedCatalog);
+        arguments.Add("-p:ImportDirectoryPackagesProps=false");
+        arguments.Add("-p:CentralPackageVersionsFileImported=true");
         arguments.Add("-p:DirectoryPackagesPropsPath=" + pinnedCatalog);
 
         CompositionProcessResult result = await CompositionProcess.RunAsync(

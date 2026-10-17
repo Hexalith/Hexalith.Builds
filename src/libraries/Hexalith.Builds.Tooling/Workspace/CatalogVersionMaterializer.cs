@@ -99,6 +99,70 @@ internal static partial class CatalogVersionMaterializer
         return versions!;
     }
 
+    /// <summary>Checks the materialized catalog authority before a model build or package validation.</summary>
+    /// <param name="mapping">The command-resolved mapping.</param>
+    /// <param name="mappingHash">The expected mapping content hash.</param>
+    /// <param name="catalogFile">The retained catalog snapshot.</param>
+    /// <returns>The snapshot whose complete pinned file closure matches the command.</returns>
+    /// <exception cref="InvalidDataException">The pinned snapshot or file closure has changed.</exception>
+    internal static CatalogVersionSnapshot ReadVerifiedSnapshot(SourceMapping mapping, string mappingHash, string catalogFile)
+    {
+        CatalogVersionSnapshot snapshot = ReadSnapshot(catalogFile);
+        if (snapshot.Versions is null || snapshot.ProjectVersions is null || snapshot.PinnedFiles is null || snapshot.PinnedFiles.Count == 0
+            || string.IsNullOrWhiteSpace(snapshot.CatalogFileHash)
+            || snapshot.Versions.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+            || snapshot.PinnedFiles.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+            || snapshot.ProjectVersions.Any(project => string.IsNullOrWhiteSpace(project.Key)
+                || project.Value?.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value)) != false))
+        {
+            throw new InvalidDataException("Pinned catalog snapshot is missing required versions or file hash.");
+        }
+
+        string pinnedRoot = Path.Combine(Path.GetDirectoryName(catalogFile) ?? string.Empty, "pinned-tree");
+        string pinnedFile = Path.Combine(pinnedRoot, "Props", "Directory.Packages.props");
+        string actualFileHash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(pinnedFile)));
+        return !snapshot.PinnedFiles.TryGetValue("Props/Directory.Packages.props", out string? recordedCatalogHash)
+            || !string.Equals(recordedCatalogHash, snapshot.CatalogFileHash, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(actualFileHash, snapshot.CatalogFileHash, StringComparison.OrdinalIgnoreCase)
+            || snapshot.PinnedFiles.Any(pair => !PinnedFileMatches(pinnedRoot, pair))
+            || Directory.EnumerateFiles(pinnedRoot, "*", SearchOption.AllDirectories)
+                .Any(path => !snapshot.PinnedFiles.ContainsKey(Path.GetRelativePath(pinnedRoot, path).Replace('\\', '/')))
+            || !string.Equals(snapshot.Hash, CatalogVersionSnapshot.ComputeHash(snapshot.MappingHash, snapshot.CatalogCommit, snapshot.CatalogFileHash, snapshot.PinnedFiles, snapshot.Versions, snapshot.ProjectVersions), StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(snapshot.MappingHash, mappingHash, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(snapshot.CatalogCommit, mapping.PlatformIdentity?.CatalogCommit, StringComparison.OrdinalIgnoreCase)
+            ? throw new InvalidDataException("Pinned catalog snapshot differs from the command-resolved identity.")
+            : snapshot;
+    }
+
+    /// <summary>Checks one materialized file against its recorded pinned hash.</summary>
+    /// <param name="pinnedRoot">The materialized tree root.</param>
+    /// <param name="file">The relative file and expected hash.</param>
+    /// <returns>Whether the normalized path is lexically inside the tree and the file has the recorded bytes.</returns>
+    internal static bool PinnedFileMatches(string pinnedRoot, KeyValuePair<string, string> file)
+    {
+        if (Path.IsPathRooted(file.Key) || file.Key.Contains('\\', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        string root = Path.GetFullPath(pinnedRoot) + Path.DirectorySeparatorChar;
+        string path = Path.GetFullPath(Path.Combine(pinnedRoot, file.Key));
+        StringComparison comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        return path.StartsWith(root, comparison) && File.Exists(path)
+            && string.Equals(Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path))), file.Value, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Reads the retained catalog snapshot.</summary>
+    /// <param name="path">The snapshot path.</param>
+    /// <returns>The deserialized catalog snapshot.</returns>
+    /// <exception cref="InvalidDataException">The snapshot is empty.</exception>
+    internal static CatalogVersionSnapshot ReadSnapshot(string path)
+    {
+        using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        return JsonSerializer.Deserialize<CatalogVersionSnapshot>(stream)
+            ?? throw new InvalidDataException("Pinned catalog snapshot is empty.");
+    }
+
     private static async Task WriteCoreAsync(SourceMapping mapping, string workspace, CancellationToken cancellationToken)
     {
         string pin = mapping.PlatformIdentity?.CatalogCommit

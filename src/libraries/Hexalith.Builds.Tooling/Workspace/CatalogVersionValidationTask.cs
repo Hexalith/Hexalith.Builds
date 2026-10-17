@@ -5,7 +5,6 @@
 
 namespace Hexalith.Builds.Tooling.Workspace;
 
-using System.Security.Cryptography;
 using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -69,30 +68,7 @@ public sealed class CatalogVersionValidationTask : ITask
                 return true;
             }
 
-            CatalogVersionSnapshot snapshot = ReadSnapshot(CatalogFile);
-            if (snapshot.Versions is null || snapshot.ProjectVersions is null || snapshot.PinnedFiles is null || snapshot.PinnedFiles.Count == 0
-                || string.IsNullOrWhiteSpace(snapshot.CatalogFileHash)
-                || snapshot.Versions.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
-                || snapshot.PinnedFiles.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
-                || snapshot.ProjectVersions.Any(project => string.IsNullOrWhiteSpace(project.Key)
-                    || project.Value?.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value)) != false))
-            {
-                return Error("Pinned catalog snapshot is missing required versions or file hash.");
-            }
-
-            string pinnedRoot = Path.Combine(Path.GetDirectoryName(CatalogFile) ?? string.Empty, "pinned-tree");
-            string pinnedFile = Path.Combine(pinnedRoot, "Props", "Directory.Packages.props");
-            string actualFileHash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(pinnedFile)));
-            if (!snapshot.PinnedFiles.TryGetValue("Props/Directory.Packages.props", out string? recordedCatalogHash)
-                || !string.Equals(recordedCatalogHash, snapshot.CatalogFileHash, StringComparison.OrdinalIgnoreCase)
-                || !string.Equals(actualFileHash, snapshot.CatalogFileHash, StringComparison.OrdinalIgnoreCase)
-                || snapshot.PinnedFiles.Any(pair => !PinnedFileMatches(pinnedRoot, pair))
-                || !string.Equals(snapshot.Hash, CatalogVersionSnapshot.ComputeHash(snapshot.MappingHash, snapshot.CatalogCommit, snapshot.CatalogFileHash, snapshot.PinnedFiles, snapshot.Versions, snapshot.ProjectVersions), StringComparison.OrdinalIgnoreCase)
-                || !string.Equals(snapshot.MappingHash, MappingHash, StringComparison.OrdinalIgnoreCase)
-                || !string.Equals(snapshot.CatalogCommit, mapping.PlatformIdentity?.CatalogCommit, StringComparison.OrdinalIgnoreCase))
-            {
-                return Error("Pinned catalog snapshot differs from the command-resolved identity.");
-            }
+            CatalogVersionSnapshot snapshot = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, MappingHash, CatalogFile);
 
             IReadOnlyDictionary<string, string> selected = snapshot.ProjectVersions
                 .FirstOrDefault(pair => string.Equals(pair.Key, ProjectName, StringComparison.OrdinalIgnoreCase)).Value
@@ -229,20 +205,6 @@ public sealed class CatalogVersionValidationTask : ITask
         return !string.IsNullOrWhiteSpace(requested) && requested != "unavailable";
     }
 
-    private static bool PinnedFileMatches(string pinnedRoot, KeyValuePair<string, string> file)
-    {
-        if (Path.IsPathRooted(file.Key) || file.Key.Contains('\\', StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        string root = Path.GetFullPath(pinnedRoot) + Path.DirectorySeparatorChar;
-        string path = Path.GetFullPath(Path.Combine(pinnedRoot, file.Key));
-        StringComparison comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        return path.StartsWith(root, comparison) && File.Exists(path)
-            && string.Equals(Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path))), file.Value, StringComparison.OrdinalIgnoreCase);
-    }
-
     private static FileStream AcquireSnapshotLock(string path)
     {
         DateTime deadline = DateTime.UtcNow.AddSeconds(30);
@@ -273,13 +235,6 @@ public sealed class CatalogVersionValidationTask : ITask
                 && VersionComparer.VersionRelease.Compare(range.MinVersion, pin) == 0;
     }
 
-    private static CatalogVersionSnapshot ReadSnapshot(string path)
-    {
-        using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        return JsonSerializer.Deserialize<CatalogVersionSnapshot>(stream)
-            ?? throw new InvalidDataException("Pinned catalog snapshot is empty.");
-    }
-
     private IReadOnlyDictionary<string, string> EvaluateAndRecordProject(CatalogVersionSnapshot snapshot)
     {
 #pragma warning disable VSTHRD002 // ITask.Execute is synchronous; the isolated process evaluator never captures this context.
@@ -287,14 +242,14 @@ public sealed class CatalogVersionValidationTask : ITask
             CatalogFile, ProjectName, snapshot.CatalogCommit, CancellationToken.None).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002
         using FileStream lease = AcquireSnapshotLock(CatalogFile + ".lock");
-        CatalogVersionSnapshot latest = ReadSnapshot(CatalogFile);
+        CatalogVersionSnapshot latest = CatalogVersionMaterializer.ReadSnapshot(CatalogFile);
         if (latest.PinnedFiles is null || latest.Versions is null || latest.ProjectVersions is null
             || latest.MappingHash != snapshot.MappingHash || latest.CatalogCommit != snapshot.CatalogCommit
             || latest.CatalogFileHash != snapshot.CatalogFileHash
             || latest.PinnedFiles.Count != snapshot.PinnedFiles.Count
             || latest.PinnedFiles.Any(pair => !snapshot.PinnedFiles.TryGetValue(pair.Key, out string? hash)
                 || !string.Equals(hash, pair.Value, StringComparison.OrdinalIgnoreCase)
-                || !PinnedFileMatches(Path.Combine(Path.GetDirectoryName(CatalogFile)!, "pinned-tree"), pair))
+                || !CatalogVersionMaterializer.PinnedFileMatches(Path.Combine(Path.GetDirectoryName(CatalogFile)!, "pinned-tree"), pair))
             || latest.Versions.Count != snapshot.Versions.Count
             || latest.Versions.Any(pair => !snapshot.Versions.TryGetValue(pair.Key, out string? version) || version != pair.Value)
             || !string.Equals(latest.Hash, CatalogVersionSnapshot.ComputeHash(latest.MappingHash, latest.CatalogCommit, latest.CatalogFileHash, latest.PinnedFiles, latest.Versions, latest.ProjectVersions), StringComparison.OrdinalIgnoreCase))
