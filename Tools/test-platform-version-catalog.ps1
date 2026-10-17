@@ -191,10 +191,23 @@ try {
             $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target))
             Copy-Item -LiteralPath $file.FullName -Destination $target
         }
-        foreach ($directory in @('Tools', 'Props', 'schemas')) { $null = New-Item -ItemType Directory -Path (Join-Path $copyRoot $directory) -Force }
+        foreach ($directory in @('Tools', 'Props')) { $null = New-Item -ItemType Directory -Path (Join-Path $copyRoot $directory) -Force }
         Copy-Item -LiteralPath $writer -Destination (Join-Path $copyRoot 'Tools/write-platform-version-catalog.ps1')
         Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../Props/Directory.Packages.props') -Destination (Join-Path $copyRoot 'Props/Directory.Packages.props')
-        Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../schemas/hexalith.module-manifest.v2.json') -Destination (Join-Path $copyRoot 'schemas/hexalith.module-manifest.v2.json')
+        # The csproj owns its embedded resources; copy each one evaluated outside the tooling directory, such as schemas.
+        $sourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+        $resourceLog = @(& dotnet msbuild (Join-Path $sourceTooling 'Hexalith.Builds.Tooling.csproj') -nologo -getItem:EmbeddedResource) -join "`n"
+        if ($LASTEXITCODE -ne 0) { throw "Tooling embedded resource evaluation failed: $resourceLog" }
+        $parentPrefix = '..' + [IO.Path]::DirectorySeparatorChar
+        $externalResources = @(($resourceLog | ConvertFrom-Json).Items.EmbeddedResource | ForEach-Object FullPath | Where-Object { $inner = [IO.Path]::GetRelativePath($sourceTooling, $_); [IO.Path]::IsPathRooted($inner) -or $inner.StartsWith($parentPrefix, [StringComparison]::Ordinal) })
+        foreach ($resource in $externalResources) {
+            $relative = [IO.Path]::GetRelativePath($sourceRoot, $resource)
+            if ([IO.Path]::IsPathRooted($relative) -or $relative.StartsWith($parentPrefix, [StringComparison]::Ordinal)) { throw "Embedded resource $resource lies outside the Builds checkout." }
+            if (-not (Test-Path -LiteralPath $resource -PathType Leaf)) { throw "Embedded resource $resource does not exist." }
+            $target = Join-Path $copyRoot $relative
+            $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target))
+            Copy-Item -LiteralPath $resource -Destination $target
+        }
         [IO.File]::WriteAllText((Join-Path $copyRoot 'Directory.Packages.props'), '<Project><Import Project="Props/Directory.Packages.props" /></Project>')
         [IO.File]::WriteAllText((Join-Path $copyRoot 'Directory.Build.props'), '<Project><PropertyGroup><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies></PropertyGroup></Project>')
         $project = Join-Path $tooling 'Hexalith.Builds.Tooling.csproj'

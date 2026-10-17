@@ -324,9 +324,10 @@ evidence artifact.
 
 ### Platform version catalog and startup prerequisites
 
-The tools are published. Versions up to and including `4.27.4` are not
-Platform-accepted; publication and local contract probes grant no Platform
-acceptance. Story 1.9 owns the first Platform tool acceptance.
+The tools are published. The `toolVersionRange` in Platform's
+`hexalith-platform.json` is the authoritative record of Platform-accepted
+versions. Versions up to and including `4.32.0` are not Platform-accepted;
+publication and local contract probes grant no Platform acceptance.
 
 `Props/Directory.Packages.props` is the authority for package, AppHost SDK,
 Dapr runtime/CLI and Redis selections. Tool builds embed a deterministic
