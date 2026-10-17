@@ -280,6 +280,7 @@ public sealed class AppHostRunnerValidationTests
     /// <returns>The readiness document assertions.</returns>
     [Theory]
     [InlineData(4242)]
+    [InlineData(4242L)]
     [InlineData("4242")]
     public async Task HealthyReadinessWritesMetadataAndFinalProgressAsync(object processId)
     {
@@ -751,6 +752,101 @@ public sealed class AppHostRunnerValidationTests
         finally
         {
             CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Drives the real private refresh handler through success, refusal, and deadline expiry.</summary>
+    /// <param name="outcome">The expected refresh outcome.</param>
+    /// <returns>The correlated response and continued-service assertions.</returns>
+    [Theory]
+    [InlineData("ok")]
+    [InlineData("module-unready")]
+    [InlineData("expiry")]
+    public async Task ResourceControlRefreshReturnsCorrelatedResponseAndContinuesAsync(string outcome)
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with
+            {
+                Modules = [],
+                UiMarkers = [],
+                StartupDeadlineUtc = now.AddSeconds(outcome == "expiry" ? 1 : 10),
+                SelectedTest = new("orders", "smoke", "python3", "verify.py", "hash", "hash", 10, 5, now, now.AddSeconds(10), now.AddSeconds(10), "source"),
+            };
+            IDistributedApplicationBuilder builder = CreateBuilder();
+            _ = builder.Services.AddHealthChecks().AddCheck("module-defined", () => outcome == "expiry" ? HealthCheckResult.Unhealthy() : HealthCheckResult.Healthy());
+            if (outcome == "module-unready")
+            {
+                _ = builder.Services.AddSingleton<ICompositionTestObservationProvider>(new IncompleteTestObservationProvider(plan.RunId, "orders"));
+            }
+
+            ExecutableResource resource = builder.AddExecutable("eventstore", "unused", root).WithHttpEndpoint(port: 32123).WithHealthCheck("module-defined").Resource;
+            EndpointAnnotation endpoint = resource.Annotations.OfType<EndpointAnnotation>().Single();
+            endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, "127.0.0.1", 32123);
+            await using DistributedApplication app = builder.Build();
+            await PublishAsync(app.Services.GetRequiredService<ResourceNotificationService>(), resource, HealthStatus.Healthy, 4242).ConfigureAwait(true);
+            using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            bound.CancelAfter(TimeSpan.FromSeconds(12));
+#pragma warning disable CA2025 // The owned handler is cancelled and drained in finally before its app and token are disposed.
+            Task control = RunResourceControl.RunAsync(app, plan, bound.Token);
+#pragma warning restore CA2025
+            try
+            {
+                string nonce = CompositionRunPlanFactory.NewRunId();
+                await CompositionDocumentStore.WriteAsync(CompositionControlRequest.PathFor(plan.Workspace), new CompositionControlRequest(CompositionControlRequest.SupportedSchema, plan.RunId, nonce, "refresh-readiness"), bound.Token).ConfigureAwait(true);
+                CompositionControlResponse response = await ReadControlResponseAsync(plan, nonce, bound.Token).ConfigureAwait(true);
+                response.RunId.ShouldBe(plan.RunId);
+                response.Command.ShouldBe("refresh-readiness");
+                response.Success.ShouldBe(outcome == "ok");
+                response.FailureStep.ShouldBe(outcome == "ok" ? null : "module-unready");
+                if (outcome == "ok")
+                {
+                    CompositionReadiness readiness = (await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(plan.ReadinessPath, bound.Token).ConfigureAwait(true)).ShouldNotBeNull();
+                    readiness.RefreshId.ShouldBe(nonce);
+                }
+                else if (outcome == "module-unready")
+                {
+                    CompositionStartupFailure failure = (await CompositionDocumentStore.TryReadAsync<CompositionStartupFailure>(CompositionStartupFailure.PathFor(plan.Workspace), bound.Token).ConfigureAwait(true)).ShouldNotBeNull();
+                    failure.RuleId.ShouldBe("HXR026");
+                    failure.AppId.ShouldBe("orders");
+                }
+
+                string followingNonce = CompositionRunPlanFactory.NewRunId();
+                await CompositionDocumentStore.WriteAsync(CompositionControlRequest.PathFor(plan.Workspace), new CompositionControlRequest(CompositionControlRequest.SupportedSchema, plan.RunId, followingNonce, "unknown"), bound.Token).ConfigureAwait(true);
+                (await ReadControlResponseAsync(plan, followingNonce, bound.Token).ConfigureAwait(true)).FailureStep.ShouldBe("invalid-request");
+            }
+            finally
+            {
+                await bound.CancelAsync().ConfigureAwait(true);
+                try
+                {
+                    await control.ConfigureAwait(true);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Caller cancellation stops the handler after its final response.
+                }
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    private static async Task<CompositionControlResponse> ReadControlResponseAsync(CompositionRunPlan plan, string nonce, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            CompositionControlResponse? response = await CompositionDocumentStore.TryReadAsync<CompositionControlResponse>(CompositionControlResponse.PathFor(plan.Workspace), cancellationToken).ConfigureAwait(false);
+            if (response?.Nonce == nonce)
+            {
+                return response;
+            }
+
+            await Task.Delay(10, cancellationToken).ConfigureAwait(false);
         }
     }
 

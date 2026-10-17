@@ -45,6 +45,9 @@ internal sealed class ControlledStdinStream(bool ignoreCancellation) : Stream
     /// <summary>Releases the deliberate pending read with end of input.</summary>
     public void Complete() => _ = _pending.TrySetResult(0);
 
+    /// <summary>Fails the pending read as a disconnected standard input pipe.</summary>
+    public void Fail() => _ = _pending.TrySetException(new IOException("stdin unavailable"));
+
     /// <inheritdoc />
     public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {

@@ -790,5 +790,44 @@ public sealed class PlatformManifestValidationTests
         }
     }
 
+    /// <summary>Verifies selected-test enrollment rules retain their stable rule identity and exact field.</summary>
+    /// <param name="fault">The invalid selected-test declaration.</param>
+    /// <param name="ruleId">The expected validator rule.</param>
+    /// <param name="field">The expected declaration field.</param>
+    [Theory]
+    [InlineData("duplicate", "HXP003", "modules[0].tests[1].name")]
+    [InlineData("python-entry", "HXP020", "modules[0].tests[0].entry")]
+    [InlineData("vstest-entry", "HXP020", "modules[0].tests[0].entry")]
+    [InlineData("mtp-entry", "HXP020", "modules[0].tests[0].entry")]
+    [InlineData("python-package", "HXP020", "modules[0].tests[0].mode")]
+    public void TestDeclarationsReportStableRulesAndFields(string fault, string ruleId, string field)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        File.WriteAllText(Path.Combine(workspace.Root, "verify.py"), "pass");
+        File.WriteAllText(Path.Combine(workspace.Root, "verify.csproj"), "<Project />");
+        string executor = fault switch { "vstest-entry" => "vstest", "mtp-entry" => "mtp", _ => "python3" };
+        string entry = fault == "python-entry" ? "verify.csproj" : "verify.py";
+        JsonObject test = new()
+        {
+            ["name"] = "smoke",
+            ["executor"] = executor,
+            ["entry"] = entry,
+            ["reportFormat"] = "trx",
+            ["executionTimeoutSeconds"] = 30,
+            ["stopTimeoutSeconds"] = 5,
+            ["mode"] = fault == "python-package" ? "package" : "source",
+        };
+        workspace.Change("modules.0.tests", new JsonArray(test).ToJsonString());
+        if (fault == "duplicate")
+        {
+            workspace.Document["modules"]![0]!["tests"]!.AsArray().Add(test.DeepClone());
+        }
+
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([workspace.Save()], TestContext.Current.CancellationToken);
+        result.IsValid.ShouldBeFalse();
+        result.Declarations.ShouldBeNull();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == ruleId && diagnostic.Field == field);
+    }
+
     private static JsonSchema PublishedSchema() => JsonSchema.FromFile(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "schemas/hexalith.module-manifest.v2.json"), new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 }

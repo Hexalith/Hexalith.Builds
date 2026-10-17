@@ -392,6 +392,10 @@ public sealed class CompositionEngineTests
     [InlineData("never", "HXR021")]
     [InlineData("foreign", "HXR022")]
     [InlineData("cause", "HXR027")]
+    [InlineData("unsafe-name", "HXR022")]
+    [InlineData("unsafe-detail", "HXR022")]
+    [InlineData("unsafe-task", "HXR022")]
+    [InlineData("diagnostics-io", "HXR027")]
     public async Task ReadinessFailuresTearDownAndRetainFailedStateAsync(string mode, string expectedRuleId)
     {
         if (OperatingSystem.IsWindows())
@@ -419,7 +423,8 @@ public sealed class CompositionEngineTests
             result.Result.Status.ShouldBe("failed");
             result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
             result.Result.Outcome.RuleId.ShouldBe(expectedRuleId);
-            result.Result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe([expectedRuleId]);
+            result.Result.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldBe(mode == "diagnostics-io" ? [expectedRuleId, "HXT008"] : [expectedRuleId]);
+            result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Message.Contains("<unsafe>", StringComparison.Ordinal));
             if (mode == "cause")
             {
                 elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(30));
@@ -600,6 +605,30 @@ public sealed class CompositionEngineTests
                     Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
                 }
             }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verifies an unwritable pre-run diagnostics directory preserves the startup timeout result.</summary>
+    /// <returns>The timeout and bookkeeping assertions.</returns>
+    [Fact]
+    public async Task PreRunTimeoutSurvivesDiagnosticsIoFailureAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionEngineOptions options = CreateOptions(root) with { StartupRequestedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-30) };
+            _ = Directory.CreateDirectory(options.StateDirectory);
+            await File.WriteAllTextAsync(Path.Combine(options.StateDirectory, "diagnostics"), "blocked", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionStartResult result = await new CompositionEngine(options).StartAsync(ExecutableManifest(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            result.Result.Outcome.RuleId.ShouldBe("HXR021");
+            result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
+            result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXT008");
+            result.RunId.ShouldBeNull();
+            Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
         }
         finally
         {

@@ -247,6 +247,25 @@ public sealed class ModuleRunEvidenceSerializationTests
             + $" --filter-sha256 {evidence.Invocation.FilterHash}");
     }
 
+    /// <summary>Verifies debug evidence retains the public command name.</summary>
+    [Fact]
+    public void CreateDebugEvidenceUsesDebugCommand()
+    {
+        string manifest = Path.Combine(FindRepositoryRoot(), "test", "fixtures", "module", "positive", "hexalith.module-manifest.v1.json");
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        ModuleRunEvidence evidence = ModuleRunEvidenceFactory.Create(
+            ModuleInvocationCommand.Debug,
+            manifest,
+            ModuleManifestLoader.Load(manifest).Manifest,
+            null,
+            null,
+            new ToolCommandResult("ready", ToolOutcome.Passed(), []),
+            now,
+            now,
+            CompositionTestFiles.RunId);
+        evidence.Invocation.Command.ShouldBe($"hexalith-module debug --manifest {evidence.Invocation.ManifestPath}");
+    }
+
     private static bool SatisfiesLatestPatchRollForward(string sdkVersion, Version pinned)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sdkVersion);

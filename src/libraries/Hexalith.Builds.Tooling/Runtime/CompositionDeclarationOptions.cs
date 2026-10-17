@@ -101,8 +101,7 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
 
     private void ValidateSnapshot(CatalogVersionSnapshot snapshot, string source, string module, string snapshotPath)
     {
-        if (snapshot.PinnedFiles is null || snapshot.Versions is null || snapshot.ProjectVersions is null
-            || snapshot.ProjectVersions.Any(pair => pair.Value is null)
+        if (snapshot.PinnedFiles is null || snapshot.Versions is null || snapshot.ProjectVersions?.Any(pair => pair.Value is null) != false
             || snapshot.MappingHash != Mapping.ContentHash || snapshot.Hash != CatalogVersionSnapshot.ComputeHash(snapshot.MappingHash, snapshot.CatalogCommit, snapshot.CatalogFileHash, snapshot.PinnedFiles, snapshot.Versions, snapshot.ProjectVersions))
         {
             throw new InvalidDataException($"{source}: {module}: {snapshotPath}: catalog snapshot differs from the selected mapping.");

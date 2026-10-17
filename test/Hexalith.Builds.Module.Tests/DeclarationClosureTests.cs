@@ -93,6 +93,71 @@ public sealed class DeclarationClosureTests
         }
     }
 
+    /// <summary>Verifies malformed release inputs become diagnostics-compatible declaration refusals.</summary>
+    /// <param name="fault">The malformed input.</param>
+    [Theory]
+    [InlineData("provenance-json")]
+    [InlineData("provenance-owner")]
+    [InlineData("provenance-shape")]
+    [InlineData("snapshot-json")]
+    [InlineData("snapshot-modules")]
+    [InlineData("catalog-xml")]
+    [InlineData("catalog-json")]
+    [InlineData("catalog-null")]
+    [InlineData("catalog-shape")]
+    public void MalformedReleaseMetadataBecomesInvalidData(string fault)
+    {
+        ArgumentNullException.ThrowIfNull(fault);
+        using PlatformManifestTestWorkspace workspace = new();
+        CompositionDeclarationOptions options = PackageOptions(workspace.Root);
+        string directory = Path.Combine(workspace.Root, "src", "Hexalith.Platform.Composition", "Declarations");
+        if (fault.StartsWith("provenance", StringComparison.Ordinal))
+        {
+            string malformed = fault switch
+            {
+                "provenance-json" => "{",
+                "provenance-owner" => "{}",
+                _ => "[]",
+            };
+            File.WriteAllText(Path.Combine(directory, "provenance.json"), malformed);
+        }
+        else if (fault.StartsWith("snapshot", StringComparison.Ordinal))
+        {
+            string snapshot = Path.Combine(directory, "eventstore.json");
+            File.WriteAllText(snapshot, fault == "snapshot-json" ? "{" : "{\"modules\":[]}");
+            string hash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(snapshot)));
+            string provenancePath = Path.Combine(directory, "provenance.json");
+            JsonNode provenance = JsonNode.Parse(File.ReadAllText(provenancePath))!;
+            provenance["eventstore"]!["sha256"] = hash;
+            File.WriteAllText(provenancePath, provenance.ToJsonString());
+            options = options with { ReleaseSnapshotHashes = new Dictionary<string, string>(options.ReleaseSnapshotHashes, StringComparer.Ordinal) { ["eventstore/1.0.0"] = hash } };
+        }
+        else if (fault == "catalog-xml")
+        {
+            File.WriteAllText(Path.Combine(workspace.Root, "references", "Hexalith.Builds", "Props", "Directory.Packages.props"), "<Project>");
+        }
+        else
+        {
+            options = options with { Workspace = workspace.Root };
+            string mapping = Path.Combine(workspace.Root, "source-mapping");
+            _ = Directory.CreateDirectory(mapping);
+            string malformed = fault switch
+            {
+                "catalog-json" => "{",
+                "catalog-null" => "null",
+                _ => "{}",
+            };
+            File.WriteAllText(Path.Combine(mapping, "catalog-versions.json"), malformed);
+        }
+
+        InvalidDataException refusal = Should.Throw<InvalidDataException>(() => CompositionDeclarationClosure.Load(options));
+        refusal.Message.ShouldContain(workspace.Root);
+        if (fault.StartsWith("catalog", StringComparison.Ordinal))
+        {
+            Should.Throw<InvalidDataException>(() => options.CatalogVersion("eventstore", directory)).Message.ShouldContain("eventstore");
+        }
+    }
+
     private static CompositionDeclarationOptions PackageOptions(string root)
     {
         SourceMapping source = CompositionTestFiles.CreatePlatformMapping(root);

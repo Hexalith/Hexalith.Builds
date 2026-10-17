@@ -173,8 +173,6 @@ public static class CompositionStartupTasks
             process.StartInfo.ArgumentList.Add(argument);
         }
 
-        process.OutputDataReceived += static (_, _) => { };
-        process.ErrorDataReceived += static (_, _) => { };
         try
         {
             if (!process.Start())
@@ -187,13 +185,14 @@ public static class CompositionStartupTasks
             return false;
         }
 
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
         using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         bound.CancelAfter(remaining);
         try
         {
-            await process.WaitForExitAsync(bound.Token).ConfigureAwait(false);
+            await Task.WhenAll(
+                process.WaitForExitAsync(bound.Token),
+                DrainAsync(process.StandardOutput.BaseStream, bound.Token),
+                DrainAsync(process.StandardError.BaseStream, bound.Token)).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -203,6 +202,18 @@ public static class CompositionStartupTasks
         }
 
         return process.ExitCode == 0;
+    }
+
+    private static async Task DrainAsync(Stream stream, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await stream.CopyToAsync(Stream.Null, 8192, cancellationToken).ConfigureAwait(false);
+        }
+        catch (IOException)
+        {
+            // Discarded output cannot change the verifier's exit result.
+        }
     }
 
     private static bool TryString(JsonElement element, string objectName, string propertyName, out string value)

@@ -336,6 +336,27 @@ internal static class CompositionTestFiles
             + "if (mode == \"ready-no-pid\" || mode == \"ready-partial-pid\") { using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan)); var run = document.RootElement; File.WriteAllText(run.GetProperty(\"readinessPath\").GetString()!, System.Text.Json.JsonSerializer.Serialize(new { schema = \"hexalith.g4-run-readiness.v1\", runId = run.GetProperty(\"runId\").GetString(), eventStoreEndpoint = \"http://127.0.0.1:1\", uiEndpoint = \"http://127.0.0.1:2\", resources = new[] { new { name = \"eventstore\", kind = \"project\", state = \"Healthy\", processId = mode == \"ready-partial-pid\" ? 4242 : (int?)null }, new { name = \"worker\", kind = \"project\", state = \"Healthy\", processId = (int?)null } } })); }\n"
             + "if (mode == \"foreign\") { File.WriteAllText(Path.Combine(Path.GetDirectoryName(plan)!, \"readiness.json\"), "
             + System.Text.Json.JsonSerializer.Serialize(readiness) + "); }\n"
+            + """
+            if (mode.StartsWith("unsafe-", StringComparison.Ordinal) || mode == "diagnostics-io")
+            {
+                using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan));
+                var run = document.RootElement;
+                string workspace = run.GetProperty("workspace").GetString()!;
+                if (mode == "diagnostics-io")
+                {
+                    string diagnostics = Path.Combine(Directory.GetParent(Directory.GetParent(workspace)!.FullName)!.FullName, "state", "diagnostics", run.GetProperty("runId").GetString()!);
+                    if (Directory.Exists(diagnostics)) Directory.Delete(diagnostics, true);
+                    File.WriteAllText(diagnostics, "blocked");
+                }
+                File.WriteAllText(Path.Combine(workspace, "startup-failure.json"), System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    schema = "hexalith.g4-startup-failure.v1", runId = run.GetProperty("runId").GetString(), ruleId = "HXR027", resource = "eventstore", appId = "eventstore", status = "unhealthy",
+                    unreadyResources = new[] { new { name = mode == "unsafe-name" ? "<unsafe>" : "eventstore", kind = "project", state = "Unhealthy", detail = mode == "unsafe-detail" ? "<unsafe>" : "HTTP 503" } },
+                    failingTask = mode == "unsafe-task" ? "<unsafe>" : "verify",
+                }));
+            }
+            """
+            + "\n"
             + "if (mode == \"cause\") { using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan)); "
             + "string runId = document.RootElement.GetProperty(\"runId\").GetString()!; "
             + "File.WriteAllText(Path.Combine(Path.GetDirectoryName(plan)!, \"startup-failure.json\"), "

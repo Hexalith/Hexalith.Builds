@@ -72,14 +72,17 @@ public sealed class WorkspaceAppHostTests
         }
     }
 
-    /// <summary>Verifies every composed module project receives the same imports, hash and configuration.</summary>
+    /// <summary>Verifies every composed module project receives mapped imports and the selected launch configuration.</summary>
     /// <param name="mode">The tool-selected mode.</param>
-    /// <param name="configuration">The expected configuration.</param>
+    /// <param name="debugAttach">Whether source debugging is requested.</param>
+    /// <param name="configuration">The expected launch configuration.</param>
     /// <returns>A task for the assertion.</returns>
     [Theory]
-    [InlineData(WorkspaceMode.Source, "Debug")]
-    [InlineData(WorkspaceMode.Package, "Release")]
-    public async Task ComposedModulesReceiveMappingSettingsAsync(WorkspaceMode mode, string configuration)
+    [InlineData(WorkspaceMode.Source, false, "Debug")]
+    [InlineData(WorkspaceMode.Package, false, "Release")]
+    [InlineData(WorkspaceMode.Source, true, "Debug")]
+    [InlineData(WorkspaceMode.Package, true, "Debug")]
+    public async Task ComposedModulesReceiveMappingSettingsAsync(WorkspaceMode mode, bool debugAttach, string configuration)
     {
         string root = CompositionTestFiles.CreateDirectory();
         try
@@ -92,7 +95,7 @@ public sealed class WorkspaceAppHostTests
             }
 
             SourceMapping mapping = new(mode, root, "Hexalith.Active", [new SourceMappingEntry("Hexalith.Active", "source", root)], true);
-            CompositionRunPlan plan = CompositionRunPlanFactory.Create(sample.RunId, sample.Workspace, sample.DaprHome, sample.Ports, sample.Modules, sample.UiMarkers, mapping);
+            CompositionRunPlan plan = CompositionRunPlanFactory.Create(sample.RunId, sample.Workspace, sample.DaprHome, sample.Ports, sample.Modules, sample.UiMarkers, mapping) with { DebugAttach = debugAttach };
             await SourceMappingMaterializer.WriteAsync(mapping, plan.Workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
             await CompositionDaprComponentRenderer.WriteAsync(plan, TestContext.Current.CancellationToken).ConfigureAwait(true);
             DistributedApplicationOptions launchOptions = new()
@@ -125,7 +128,7 @@ public sealed class WorkspaceAppHostTests
                 environment["CustomAfterMicrosoftCommonProps"].ShouldBe(SourceMappingMaterializer.PropsPath(plan.Workspace));
                 environment["CustomAfterDirectoryBuildTargets"].ShouldBe(SourceMappingMaterializer.LatePropsPath(plan.Workspace));
                 environment["AfterMicrosoftNETSdkTargets"].ShouldBe(SourceMappingMaterializer.FinalTargetsPath(plan.Workspace));
-                environment["Configuration"].ShouldBe(configuration);
+                environment["Configuration"].ShouldBe(mode == WorkspaceMode.Source ? "Debug" : "Release");
                 project.TryGetLastAnnotation<ExecutableAnnotation>(out ExecutableAnnotation? executable).ShouldBeTrue();
                 executable.Command.ShouldBe("dotnet");
 #pragma warning disable CS0618 // Inspect Aspire's composed resource arguments at the public resource boundary.

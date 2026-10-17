@@ -99,8 +99,11 @@ public sealed class StartupReadinessTests
 
     /// <summary>Verifies a ready run records duration, results and the default deadline, and debug reports process ids.</summary>
     /// <returns>The ready-run assertion.</returns>
-    [Fact]
-    public async Task ReadyRunRecordsDeadlineAndDebugProcessIdsAsync()
+    /// <param name="debugAttach">Whether launcher ids are requested.</param>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReadyRunRecordsDeadlineAndDebugProcessIdsAsync(bool debugAttach)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -114,7 +117,7 @@ public sealed class StartupReadinessTests
             CompositionEngine debugEngine = new(Options(root, appHost) with
             {
                 ReadinessTimeout = TimeSpan.FromSeconds(600),
-                DebugAttach = true,
+                DebugAttach = debugAttach,
             });
 
             CompositionStartResult result = await debugEngine.StartAsync(ExecutableManifest(), TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -129,8 +132,15 @@ public sealed class StartupReadinessTests
                 state.EffectiveDeadlineSeconds.ShouldBe(600);
                 state.EffectiveDeadlineIsOverride.ShouldBeFalse();
                 state.ReadinessResults.ShouldContain(resource => resource.Name == "eventstore" && resource.State == "Healthy");
-                state.ProjectProcessIds.ShouldBe([4242]);
-                result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("launcher process id '4242'", StringComparison.Ordinal));
+                state.ProjectProcessIds.ShouldBe(debugAttach ? [4242] : []);
+                if (debugAttach)
+                {
+                    result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("launcher process id '4242'", StringComparison.Ordinal));
+                }
+                else
+                {
+                    result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Message.Contains("launcher process id", StringComparison.Ordinal));
+                }
             }
             finally
             {

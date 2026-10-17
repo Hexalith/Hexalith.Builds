@@ -32,6 +32,36 @@ public static class CompositionDeclarationClosure
         }
     }
 
+    /// <summary>Returns the declared module identity.</summary>
+    /// <param name="declaration">The validated module.</param>
+    /// <returns>The module identity.</returns>
+    public static string Id(JsonElement declaration) => declaration.GetProperty("identity").GetProperty("moduleId").GetString()!;
+
+    /// <summary>Resolves task paths against their mapped owner repository or released declaration artifacts.</summary>
+    /// <param name="mapping">The command-selected source/package mapping.</param>
+    /// <param name="declaration">The authoritative declaring module.</param>
+    /// <returns>The declaring repository or release-artifact root.</returns>
+    public static string TaskRepositoryRoot(SourceMapping mapping, PlatformModuleDeclaration declaration)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        ArgumentNullException.ThrowIfNull(declaration);
+        SourceMappingEntry? owner = mapping.Entries.SingleOrDefault(entry => entry.Identity.Equals(Repository(Id(declaration.Declaration)), StringComparison.OrdinalIgnoreCase));
+        return owner?.Path ?? (mapping.Mode == WorkspaceMode.Source
+            ? ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(declaration.Source))
+            : Path.GetDirectoryName(Path.GetFullPath(declaration.Source))!);
+    }
+
+    /// <summary>Returns the source repository identity for an owner.</summary>
+    /// <param name="module">The module identity.</param>
+    /// <returns>The repository identity.</returns>
+    public static string Repository(string module) => module switch
+    {
+        "eventstore" => "Hexalith.EventStore",
+        "tenants" => "Hexalith.Tenants",
+        "memories" => "Hexalith.Memories",
+        _ => "Hexalith." + char.ToUpperInvariant(module[0]) + module[1..],
+    };
+
     private static IReadOnlyList<PlatformModuleDeclaration> LoadDeclarations(CompositionDeclarationOptions options)
     {
         if (options.DeclarationPaths.Count > 0)
@@ -207,34 +237,4 @@ public static class CompositionDeclarationClosure
 
         return [.. result.Declarations!.Where(d => selected.Contains(Id(d.Declaration)))];
     }
-
-    /// <summary>Returns the declared module identity.</summary>
-    /// <param name="declaration">The validated module.</param>
-    /// <returns>The module identity.</returns>
-    public static string Id(JsonElement declaration) => declaration.GetProperty("identity").GetProperty("moduleId").GetString()!;
-
-    /// <summary>Resolves task paths against their mapped owner repository or released declaration artifacts.</summary>
-    /// <param name="mapping">The command-selected source/package mapping.</param>
-    /// <param name="declaration">The authoritative declaring module.</param>
-    /// <returns>The declaring repository or release-artifact root.</returns>
-    public static string TaskRepositoryRoot(SourceMapping mapping, PlatformModuleDeclaration declaration)
-    {
-        ArgumentNullException.ThrowIfNull(mapping);
-        ArgumentNullException.ThrowIfNull(declaration);
-        SourceMappingEntry? owner = mapping.Entries.SingleOrDefault(entry => entry.Identity.Equals(Repository(Id(declaration.Declaration)), StringComparison.OrdinalIgnoreCase));
-        return owner?.Path ?? (mapping.Mode == WorkspaceMode.Source
-            ? ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(declaration.Source))
-            : Path.GetDirectoryName(Path.GetFullPath(declaration.Source))!);
-    }
-
-    /// <summary>Returns the source repository identity for an owner.</summary>
-    /// <param name="module">The module identity.</param>
-    /// <returns>The repository identity.</returns>
-    public static string Repository(string module) => module switch
-    {
-        "eventstore" => "Hexalith.EventStore",
-        "tenants" => "Hexalith.Tenants",
-        "memories" => "Hexalith.Memories",
-        _ => "Hexalith." + char.ToUpperInvariant(module[0]) + module[1..],
-    };
 }

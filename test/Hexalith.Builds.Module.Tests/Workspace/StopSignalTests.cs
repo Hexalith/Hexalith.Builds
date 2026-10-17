@@ -117,6 +117,42 @@ public sealed class StopSignalTests
         }
     }
 
+    /// <summary>Verifies a broken input pipe retains only runs explicitly configured for retention.</summary>
+    /// <param name="retain">Whether failure retention is enabled.</param>
+    /// <returns>The input failure assertions.</returns>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task InputIoFailureHonorsRetentionAsync(bool retain)
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            ControlledStdinStream input = new(ignoreCancellation: false);
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable ownedInput = input.ConfigureAwait(true);
+            StopSignal signal = StopSignal.Listen(CompositionTestFiles.CreatePlan(root) with { RetainOnFailure = retain }, input);
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable ownedSignal = signal.ConfigureAwait(true);
+            await input.ReadStarted.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            input.Fail();
+            if (retain)
+            {
+                _ = await Should.ThrowAsync<TimeoutException>(() => Task.Delay(Timeout.InfiniteTimeSpan, signal.Token)
+                    .WaitAsync(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+                signal.IsStopRequested.ShouldBeFalse();
+            }
+            else
+            {
+                _ = await Should.ThrowAsync<OperationCanceledException>(() => Task.Delay(Timeout.InfiniteTimeSpan, signal.Token)
+                    .WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+                signal.IsStopRequested.ShouldBeTrue();
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     /// <summary>Verifies a noncooperative read still fails with the existing HXR028 bound.</summary>
     /// <returns>The bounded-failure assertion.</returns>
     [Fact]
