@@ -56,7 +56,7 @@ public sealed class StartupReadinessTests
         CompositionEffectiveDeadline selected = CompositionStartupDeadlineResolver.Resolve([billing, orders, unbounded, unrepresentable], TimeSpan.FromSeconds(600));
 
         selected.TimeoutSeconds.ShouldBe(1200);
-        _ = selected.Timeout;
+        selected.Timeout.ShouldBe(TimeSpan.FromSeconds(1200));
         selected.IsOverride.ShouldBeTrue();
         selected.ModuleId.ShouldBe("orders");
         selected.Justification.ShouldBe("orders replay");

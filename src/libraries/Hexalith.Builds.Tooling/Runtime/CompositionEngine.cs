@@ -593,7 +593,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
     private static bool IsTeardownFailure(Exception exception) =>
         exception is IOException or UnauthorizedAccessException or OperationCanceledException or InvalidOperationException
-            or Win32Exception or AggregateException;
+            or Win32Exception or AggregateException or System.Text.Json.JsonException;
 
     private static CompositionStartResult Failed(string status, ToolExitCode exitCode, IReadOnlyList<ToolDiagnostic> diagnostics, string? runId)
     {
@@ -1444,8 +1444,19 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         ToolDiagnostic timeout = Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run resources did not become healthy within the readiness bound.", "readiness", "Inspect the preserved startup diagnostics.");
         if (runId is null)
         {
-            string path = await PreserveDiagnosticsAsync(null, timeout.RuleId, requestedAt, deadline, [], null, CancellationToken.None).ConfigureAwait(false);
-            return Failed("failed", ToolExitCode.TopologyOrLifecycle, WithDiagnosticsLocation([timeout], deadline, path), null);
+            string path;
+            List<ToolDiagnostic> diagnostics = [timeout];
+            try
+            {
+                path = await PreserveDiagnosticsAsync(null, timeout.RuleId, requestedAt, deadline, [], null, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (IsTeardownFailure(exception))
+            {
+                path = Path.Combine(StateStore.Directory, "diagnostics", "before-run");
+                diagnostics.Add(RecordingFailure());
+            }
+
+            return Failed("failed", ToolExitCode.TopologyOrLifecycle, WithDiagnosticsLocation(diagnostics, deadline, path), null);
         }
 
         return await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Failed, timeout, ToolExitCode.TopologyOrLifecycle, requestedAt, deadline).ConfigureAwait(false);

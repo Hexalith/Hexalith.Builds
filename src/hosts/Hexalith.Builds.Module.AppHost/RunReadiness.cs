@@ -357,7 +357,7 @@ internal static class RunReadiness
                 testObservation = await observer.ObserveAsync(app.Services, cancellationToken).ConfigureAwait(false);
                 if (!testObservation.IsComplete || testObservation.RunId != plan.RunId || testObservation.ModuleId != plan.SelectedTest?.ModuleId)
                 {
-                    await ReportFailureAsync(plan, "HXR026", "selected-test-observations", "memories", "identity-or-access-unavailable", resources, null).ConfigureAwait(false);
+                    await ReportFailureAsync(plan, "HXR026", "selected-test-observations", plan.SelectedTest?.ModuleId ?? "-", "identity-or-access-unavailable", resources, null).ConfigureAwait(false);
                     return false;
                 }
             }

@@ -111,7 +111,7 @@ internal sealed class CompositionStartupRequest : IDisposable
 
         if (File.Exists(Path.Combine(root, "hexalith-platform.json")))
         {
-            _ = _ = entries.RemoveAll(entry => entry.Identity == "Hexalith.Platform");
+            _ = entries.RemoveAll(entry => entry.Identity == "Hexalith.Platform");
             entries.Add(new SourceMappingEntry("Hexalith.Platform", "source", root));
         }
 

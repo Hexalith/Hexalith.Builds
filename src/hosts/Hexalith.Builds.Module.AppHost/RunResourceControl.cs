@@ -43,7 +43,14 @@ internal static class RunResourceControl
                 {
                     using CancellationTokenSource refreshBound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     refreshBound.CancelAfter(CompositionStartupClock.Remaining(plan.StartupDeadlineUtc, DateTimeOffset.UtcNow));
-                    failure = await RunReadiness.RefreshAsync(app, plan, request.Nonce, refreshBound.Token).ConfigureAwait(false) ? null : "module-unready";
+                    try
+                    {
+                        failure = await RunReadiness.RefreshAsync(app, plan, request.Nonce, refreshBound.Token).ConfigureAwait(false) ? null : "module-unready";
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        failure = "module-unready";
+                    }
                 }
                 else
                 {

@@ -7,6 +7,7 @@ namespace Hexalith.Builds.Tooling.Runtime;
 
 using System.Collections.Frozen;
 using System.Text.Json;
+using System.Xml;
 using System.Xml.Linq;
 
 using Hexalith.Builds.Tooling.Workspace;
@@ -57,11 +58,24 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
     /// <exception cref="InvalidDataException">The catalog or selected snapshot is unavailable or inconsistent.</exception>
     public string CatalogVersion(string module, string source)
     {
+        try
+        {
+            return ReadCatalogVersion(module, source);
+        }
+        catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException or XmlException)
+        {
+            throw new InvalidDataException($"{source}: {module}: Builds catalog metadata is malformed: {exception.Message}", exception);
+        }
+    }
+
+    private string ReadCatalogVersion(string module, string source)
+    {
         string package = module switch { "tenants" => "Hexalith.Tenants.Server", "memories" => "Hexalith.Memories.Aspire", _ => CompositionDeclarationClosure.Repository(module) + ".Aspire" };
         string? snapshotPath = Workspace is null ? null : Path.Combine(Workspace, "source-mapping", "catalog-versions.json");
         if (snapshotPath is not null && File.Exists(snapshotPath))
         {
-            CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(File.ReadAllText(snapshotPath))!;
+            CatalogVersionSnapshot snapshot = JsonSerializer.Deserialize<CatalogVersionSnapshot>(File.ReadAllText(snapshotPath))
+                ?? throw new InvalidDataException($"{source}: {module}: {snapshotPath}: catalog snapshot is null.");
             ValidateSnapshot(snapshot, source, module, snapshotPath);
             return snapshot.Versions.TryGetValue(package, out string? selected)
                 ? selected
@@ -87,7 +101,9 @@ public sealed record CompositionDeclarationOptions(SourceMapping Mapping, IReadO
 
     private void ValidateSnapshot(CatalogVersionSnapshot snapshot, string source, string module, string snapshotPath)
     {
-        if (snapshot.MappingHash != Mapping.ContentHash || snapshot.Hash != CatalogVersionSnapshot.ComputeHash(snapshot.MappingHash, snapshot.CatalogCommit, snapshot.CatalogFileHash, snapshot.PinnedFiles, snapshot.Versions, snapshot.ProjectVersions))
+        if (snapshot.PinnedFiles is null || snapshot.Versions is null || snapshot.ProjectVersions is null
+            || snapshot.ProjectVersions.Any(pair => pair.Value is null)
+            || snapshot.MappingHash != Mapping.ContentHash || snapshot.Hash != CatalogVersionSnapshot.ComputeHash(snapshot.MappingHash, snapshot.CatalogCommit, snapshot.CatalogFileHash, snapshot.PinnedFiles, snapshot.Versions, snapshot.ProjectVersions))
         {
             throw new InvalidDataException($"{source}: {module}: {snapshotPath}: catalog snapshot differs from the selected mapping.");
         }

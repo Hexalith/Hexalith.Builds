@@ -7,6 +7,7 @@ namespace Hexalith.Builds.Tooling.Runtime;
 
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Xml;
 
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Workspace;
@@ -21,6 +22,18 @@ public static class CompositionDeclarationClosure
     public static IReadOnlyList<PlatformModuleDeclaration> Load(CompositionDeclarationOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+        try
+        {
+            return LoadDeclarations(options);
+        }
+        catch (Exception exception) when (exception is JsonException or KeyNotFoundException or InvalidOperationException or XmlException)
+        {
+            throw new InvalidDataException($"{options.PlatformRoot}: declaration or release provenance is malformed: {exception.Message}", exception);
+        }
+    }
+
+    private static IReadOnlyList<PlatformModuleDeclaration> LoadDeclarations(CompositionDeclarationOptions options)
+    {
         if (options.DeclarationPaths.Count > 0)
         {
             PlatformManifestValidationResult supplied = PlatformManifestValidator.Validate(options.DeclarationPaths);
