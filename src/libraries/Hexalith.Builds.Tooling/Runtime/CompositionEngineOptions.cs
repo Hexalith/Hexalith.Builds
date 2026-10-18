@@ -26,6 +26,12 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// </summary>
     public string? DaprHome { get; init; }
 
+    /// <summary>
+    /// Gets the NuGet global packages folder holding the catalog Aspire DCP and dashboard packages, or null for
+    /// <c>NUGET_PACKAGES</c> or the user default.
+    /// </summary>
+    public string? AspirePackagesRoot { get; init; }
+
     /// <summary>Gets the Aspire CLI executable used for the startup version probe.</summary>
     public string AspireCommand { get; init; } = "aspire";
 

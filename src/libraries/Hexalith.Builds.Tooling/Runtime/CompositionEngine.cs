@@ -132,6 +132,17 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     null);
             }
 
+            // The AppHost's assembly metadata names the DCP, dashboard and project paths of the machine that built it.
+            ToolDiagnostic? aspireHostUnavailable = CompositionAspireHostPaths.TryResolve(
+                _options.AspirePackagesRoot ?? CompositionAspireHostPaths.DefaultPackagesRoot(),
+                CompositionToolchainPins.AspireAppHostSdkVersion,
+                CompositionAspireHostPaths.CurrentRuntimeIdentifier(),
+                out CompositionAspireHostPaths? aspireHost);
+            if (aspireHostUnavailable is not null)
+            {
+                return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, [aspireHostUnavailable], null);
+            }
+
             manifestHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, startupBound.Token).ConfigureAwait(false)));
 
             // A rejected pinned catalog must not run descriptor child code.
@@ -283,20 +294,22 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             string planPath = Path.Combine(workspace, "plan.json");
             await CompositionDocumentStore.WriteAsync(planPath, plan, startupBound.Token).ConfigureAwait(false);
             string signingKey = CompositionSigningKey.Create();
+            IReadOnlyDictionary<string, string> aspireHostEnvironment = aspireHost!.CreateEnvironment(workspace);
             if (platformComposition)
             {
+                Dictionary<string, string> preflightEnvironment = new(aspireHostEnvironment, StringComparer.Ordinal)
+                {
+                    [CompositionEnvironment.PlanPath] = planPath,
+                    [CompositionEnvironment.SigningKey] = signingKey,
+                    [CompositionEnvironment.RunId] = plan.RunId,
+                    [CompositionEnvironment.DaprRuntimePath] = plan.DaprHome,
+                };
                 CompositionProcessResult preflight = await CompositionProcess.RunAsync(
                     CompositionProcess.CreateStartInfo(
                         DotnetHostPath(),
                         ["exec", _options.AppHostAssemblyPath, "--validate-platform"],
                         Path.GetDirectoryName(_options.AppHostAssemblyPath),
-                        new Dictionary<string, string>(StringComparer.Ordinal)
-                        {
-                            [CompositionEnvironment.PlanPath] = planPath,
-                            [CompositionEnvironment.SigningKey] = signingKey,
-                            [CompositionEnvironment.RunId] = plan.RunId,
-                            [CompositionEnvironment.DaprRuntimePath] = plan.DaprHome,
-                        }),
+                        preflightEnvironment),
                     CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow),
                     startupBound.Token).ConfigureAwait(false);
                 if (preflight.TimedOut)
@@ -317,7 +330,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
 
             await WriteStateAsync(runId, CompositionRunStatus.Starting, manifestHash, null, null, startupBound.Token).ConfigureAwait(false);
-            appHost = StartAppHost(plan, planPath, signingKey);
+            appHost = StartAppHost(plan, planPath, signingKey, aspireHostEnvironment);
             if (appHost is null)
             {
                 return await FailAndTearDownAsync(
@@ -1386,9 +1399,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         }
     }
 
-    private Process? StartAppHost(CompositionRunPlan plan, string planPath, string signingKey)
+    private Process? StartAppHost(CompositionRunPlan plan, string planPath, string signingKey, IReadOnlyDictionary<string, string> aspireHostEnvironment)
     {
-        Dictionary<string, string> environment = new(StringComparer.Ordinal)
+        Dictionary<string, string> environment = new(aspireHostEnvironment, StringComparer.Ordinal)
         {
             [CompositionEnvironment.PlanPath] = planPath,
             [CompositionEnvironment.SigningKey] = signingKey,

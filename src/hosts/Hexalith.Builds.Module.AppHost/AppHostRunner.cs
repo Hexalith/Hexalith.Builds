@@ -14,6 +14,9 @@ using Microsoft.Extensions.Hosting;
 /// </summary>
 internal static class AppHostRunner
 {
+    /// <summary>The Aspire configuration key for the local store root.</summary>
+    private const string _aspireStorePathKey = "Aspire:Store:Path";
+
     /// <summary>
     /// Composes, starts, reports readiness for, and gracefully stops one run.
     /// </summary>
@@ -61,16 +64,7 @@ internal static class AppHostRunner
             Console.SetError(synchronizedLog);
         }
 
-        IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(new DistributedApplicationOptions
-        {
-            Args = [.. args.Where(argument => argument != "--validate-platform")],
-            DisableDashboard = true,
-            AllowUnsecuredTransport = true,
-            EnableResourceLogging = string.Equals(
-                Environment.GetEnvironmentVariable(CompositionEnvironment.ResourceLogs),
-                "1",
-                StringComparison.Ordinal),
-        });
+        IDistributedApplicationBuilder builder = CreateBuilder(args, Environment.GetEnvironmentVariable);
         _ = builder.AddDapr(options =>
         {
             options.DaprPath = RunPlanSource.DaprCliPath(plan);
@@ -197,5 +191,44 @@ internal static class AppHostRunner
 
             return exitCode;
         }
+    }
+
+    /// <summary>
+    /// Creates the distributed application builder, replacing the AppHost directory and Aspire store path baked
+    /// into this assembly's metadata with the run-private directories named by the runner.
+    /// </summary>
+    /// <param name="args">The AppHost arguments.</param>
+    /// <param name="environment">The environment lookup.</param>
+    /// <returns>The builder.</returns>
+    /// <remarks>
+    /// Aspire adds <c>AppHost:Directory</c> and <c>Aspire:Store:Path</c> after the environment configuration source,
+    /// so the runner's values are applied here rather than through Aspire configuration keys. The DCP and dashboard
+    /// paths are ordinary <c>DcpPublisher</c> configuration that Aspire reads from the environment.
+    /// </remarks>
+    internal static IDistributedApplicationBuilder CreateBuilder(string[] args, Func<string, string?> environment)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(environment);
+        DistributedApplicationOptions options = new()
+        {
+            Args = [.. args.Where(argument => argument != "--validate-platform")],
+            DisableDashboard = true,
+            AllowUnsecuredTransport = true,
+            EnableResourceLogging = string.Equals(environment(CompositionEnvironment.ResourceLogs), "1", StringComparison.Ordinal),
+        };
+        string? appHostDirectory = environment(CompositionEnvironment.AppHostDirectory);
+        if (!string.IsNullOrWhiteSpace(appHostDirectory))
+        {
+            options.ProjectDirectory = appHostDirectory;
+        }
+
+        IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(options);
+        string? storePath = environment(CompositionEnvironment.AspireStorePath);
+        if (!string.IsNullOrWhiteSpace(storePath))
+        {
+            builder.Configuration[_aspireStorePathKey] = storePath;
+        }
+
+        return builder;
     }
 }

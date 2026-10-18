@@ -185,6 +185,105 @@ public sealed class CompositionEngineTests
     }
 
     /// <summary>
+    /// Verifies missing catalog Aspire DCP or dashboard packages are an unavailable prerequisite reported before any
+    /// resource starts, without using the paths baked into the AppHost.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task MissingAspireOrchestrationIsUnavailableBeforeAnyResourceAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake Dapr toolchain uses POSIX shell scripts.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string appHost = Path.Combine(root, "apphost", "Hexalith.Builds.Module.AppHost.dll");
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(appHost)!);
+            await File.WriteAllTextAsync(appHost, string.Empty, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string packages = Path.Combine(root, "empty-nuget-packages");
+            _ = Directory.CreateDirectory(packages);
+            CompositionEngine engine = new(CreateOptions(root) with
+            {
+                AppHostAssemblyPath = appHost,
+                AspirePackagesRoot = packages,
+                DaprHome = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+                DockerCommand = CompositionTestFiles.CreateDocker(root),
+            });
+
+            CompositionStartResult result = await engine.StartAsync(PositiveManifest(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            result.Session.ShouldBeNull();
+            result.RunId.ShouldBeNull();
+            result.Result.Status.ShouldBe("unavailable");
+            result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.PrerequisiteUnavailable);
+            ToolDiagnostic diagnostic = result.Result.Diagnostics.Single();
+            diagnostic.RuleId.ShouldBe("HXR016");
+            diagnostic.Message.ShouldContain(packages);
+            Directory.Exists(Path.Combine(root, "state")).ShouldBeFalse();
+            Directory.Exists(Path.Combine(root, "workspaces")).ShouldBeFalse();
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>
+    /// Verifies the AppHost process receives this machine's catalog DCP and dashboard and run-private AppHost and
+    /// store directories that exist before it starts.
+    /// </summary>
+    /// <returns>A task that completes after the assertion.</returns>
+    [Fact]
+    public async Task AppHostReceivesLocalAspireOrchestrationAndRunPrivateDirectoriesAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake toolchain uses POSIX scripts.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            (string packages, string dcp, string dashboard) = CompositionTestFiles.CreateAspirePackages(root);
+            string repository = RepositoryRoot();
+            SourceMapping mapping = new(WorkspaceMode.Source, repository, "Hexalith.Builds", [new SourceMappingEntry("Hexalith.Builds", "source", repository)], false);
+            string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(root, "capture", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionEngineOptions options = CreateOptions(root) with
+            {
+                AppHostAssemblyPath = appHost,
+                AspirePackagesRoot = packages,
+                SourceMapping = mapping,
+                DaprHome = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+                DockerCommand = CompositionTestFiles.CreateStubDocker(root),
+            };
+
+            _ = await new CompositionEngine(options).StartAsync(ExecutableManifest(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            string output = Path.GetDirectoryName(appHost)!;
+            using System.Text.Json.JsonDocument captured = System.Text.Json.JsonDocument.Parse(
+                await File.ReadAllTextAsync(Path.Combine(output, "captured-environment.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+            using System.Text.Json.JsonDocument plan = System.Text.Json.JsonDocument.Parse(
+                await File.ReadAllTextAsync(Path.Combine(output, "captured-plan.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+            string workspace = plan.RootElement.GetProperty("workspace").GetString()!;
+            System.Text.Json.JsonElement environment = captured.RootElement;
+            environment.GetProperty("DcpPublisher__CliPath").GetString().ShouldBe(dcp);
+            environment.GetProperty("DcpPublisher__DashboardPath").GetString().ShouldBe(dashboard);
+            environment.GetProperty("HEXALITH_G4_APPHOST_DIRECTORY").GetString().ShouldBe(Path.Combine(workspace, "apphost"));
+            environment.GetProperty("HEXALITH_G4_ASPIRE_STORE_PATH").GetString().ShouldBe(Path.Combine(workspace, "aspire-store"));
+            environment.GetProperty("HEXALITH_G4_APPHOST_DIRECTORY:exists").GetString().ShouldBe(bool.TrueString);
+            environment.GetProperty("HEXALITH_G4_ASPIRE_STORE_PATH:exists").GetString().ShouldBe(bool.TrueString);
+            workspace.ShouldStartWith(options.WorkspaceRoot);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>
     /// Verifies an invalid manifest returns the manifest exit code before prerequisites are probed.
     /// </summary>
     /// <returns>A task that completes after the assertion.</returns>

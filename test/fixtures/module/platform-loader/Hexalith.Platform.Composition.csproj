@@ -6,6 +6,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Microsoft.Extensions configuration types used by Aspire.Hosting come from the AppHost's shared framework. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <Reference Include="Hexalith.Builds.Tooling" HintPath="$(ToolPayload)/Hexalith.Builds.Tooling.dll" />
     <Reference Include="Aspire.Hosting" HintPath="$(ToolPayload)/g4-host/Aspire.Hosting.dll" />
   </ItemGroup>

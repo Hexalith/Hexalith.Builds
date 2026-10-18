@@ -372,6 +372,16 @@ the selected AppHost SDK, including its prerelease identity; build metadata is i
 diagnostics. Install the version named by the diagnostic and retry. Declaration
 and evidence validation, help and `down` do not require Aspire.
 
+The packaged AppHost's assembly metadata names the DCP, dashboard, project and
+intermediate-output paths of the machine that built it. Before starting it,
+`run`, `debug` and `test` resolve DCP and the dashboard from this machine's NuGet
+global packages folder (`NUGET_PACKAGES`, otherwise `~/.nuget/packages`) at the
+catalog Aspire version, and give the AppHost directory and the Aspire store
+run-private directories under the run workspace. `HXR016` names a missing
+`aspire.hosting.orchestration.<rid>` or `aspire.dashboard.sdk.<rid>` package;
+no other location is tried. Restoring any AppHost that uses the catalog
+`Aspire.AppHost.Sdk` version caches both packages.
+
 ### Platform Declaration v2 Enrollment
 
 Validate local Platform declarations together before composition:

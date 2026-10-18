@@ -64,54 +64,84 @@ $plan = @{
 }
 $plan | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $planPath -Encoding utf8
 
-$start = [Diagnostics.ProcessStartInfo]::new('dotnet')
-$start.WorkingDirectory = $hostDirectory
-$start.UseShellExecute = $false
-$start.RedirectStandardOutput = $true
-$start.RedirectStandardError = $true
-foreach ($argument in @('exec', $hostAssembly, '--validate-platform')) { $start.ArgumentList.Add($argument) }
-$start.Environment['HEXALITH_G4_PLAN'] = $planPath
-$start.Environment['HEXALITH_G4_RUN_ID'] = $runId
-$start.Environment['HEXALITH_G4_SIGNING_KEY'] = 'synthetic-loader-fixture-only'
-$start.Environment['DOTNET_HOST_TRACE'] = '1'
-$start.Environment['DOTNET_HOST_TRACEFILE'] = Join-Path $OutputDirectory 'host-trace.log'
-$process = [Diagnostics.Process]::new()
-$process.StartInfo = $start
+function Invoke-PackagedHostChild {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Name,
+        [Parameter(Mandatory = $true)] [AllowEmptyCollection()] [string[]] $Arguments,
+        [Parameter(Mandatory = $true)] [Collections.IDictionary] $Environment
+    )
+
+    $childStart = [Diagnostics.ProcessStartInfo]::new('dotnet')
+    $childStart.WorkingDirectory = $hostDirectory
+    $childStart.UseShellExecute = $false
+    $childStart.RedirectStandardOutput = $true
+    $childStart.RedirectStandardError = $true
+    # An open, unwritten stdin keeps the AppHost stop listener from treating end-of-input as a stop request.
+    $childStart.RedirectStandardInput = $true
+    foreach ($argument in @('exec', $hostAssembly) + $Arguments) { $childStart.ArgumentList.Add($argument) }
+    foreach ($key in $Environment.Keys) { $childStart.Environment[[string]$key] = [string]$Environment[$key] }
+    $childStart.Environment['HEXALITH_G4_PLAN'] = $planPath
+    $childStart.Environment['HEXALITH_G4_RUN_ID'] = $runId
+    $childStart.Environment['HEXALITH_G4_SIGNING_KEY'] = 'synthetic-loader-fixture-only'
+    $childStart.Environment['DOTNET_HOST_TRACE'] = '1'
+    $childStart.Environment['DOTNET_HOST_TRACEFILE'] = Join-Path $OutputDirectory "$Name.host-trace.log"
+    $child = [ordered]@{
+        argv = @('dotnet', 'exec', $hostAssembly) + $Arguments; exitCode = $null
+        timedOut = $false; diagnosticsComplete = $false; operationBoundSeconds = $ChildTimeoutSeconds
+        stdout = Join-Path $OutputDirectory "$Name.stdout.log"; stderr = Join-Path $OutputDirectory "$Name.stderr.log"
+    }
+    $childProcess = [Diagnostics.Process]::new()
+    $childProcess.StartInfo = $childStart
+    $stdoutFile = [IO.File]::Open($child.stdout, 'CreateNew', 'Write', 'Read')
+    $stderrFile = [IO.File]::Open($child.stderr, 'CreateNew', 'Write', 'Read')
+    $bound = [Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds($ChildTimeoutSeconds))
+    $childClock = [Diagnostics.Stopwatch]::StartNew()
+    $milliseconds = $ChildTimeoutSeconds * 1000
+    try {
+        if (-not $childProcess.Start()) { throw "Could not start the packaged $Name child." }
+        $stdout = $childProcess.StandardOutput.BaseStream.CopyToAsync($stdoutFile, $bound.Token)
+        $stderr = $childProcess.StandardError.BaseStream.CopyToAsync($stderrFile, $bound.Token)
+        if (-not $childProcess.WaitForExit([int]($milliseconds * 0.9))) {
+            $child.timedOut = $true
+            $childProcess.Kill($true)
+            $null = $childProcess.WaitForExit([Math]::Max(0, $milliseconds - [int]$childClock.ElapsedMilliseconds))
+        }
+        $drain = [Threading.Tasks.Task]::WhenAll([Threading.Tasks.Task[]]@($stdout, $stderr))
+        try {
+            $child.diagnosticsComplete = $drain.Wait([Math]::Max(0, $milliseconds - [int]$childClock.ElapsedMilliseconds))
+        }
+        catch [AggregateException] {
+            if (-not $bound.IsCancellationRequested) { throw }
+            $child.timedOut = $true
+        }
+        if (-not $child.diagnosticsComplete) { $child.timedOut = $true }
+        if ($childProcess.HasExited) { $child.exitCode = $childProcess.ExitCode }
+        $stdoutFile.Flush()
+        $stderrFile.Flush()
+    }
+    finally {
+        $bound.Cancel()
+        $stdoutFile.Dispose()
+        $stderrFile.Dispose()
+        $childProcess.Dispose()
+        $bound.Dispose()
+        $child['durationMilliseconds'] = $childClock.ElapsedMilliseconds
+    }
+
+    if ($child.timedOut) { throw "Packaged $Name child timed out within its $ChildTimeoutSeconds-second execution/collection ceiling; partial logs retained." }
+    if ($child.exitCode -ne 0) { throw "Packaged $Name child exited $($child.exitCode): $(Get-Content -LiteralPath $child.stderr -Raw)" }
+    return $child
+}
+
 $receipt = [ordered]@{
     package = $PackagePath; packageSha256 = (Get-FileHash -LiteralPath $PackagePath -Algorithm SHA256).Hash
-    argv = @('dotnet', 'exec', $hostAssembly, '--validate-platform'); exitCode = $null
-    result = 'failed'; timedOut = $false; diagnosticsComplete = $false; operationBoundSeconds = $ChildTimeoutSeconds
+    result = 'failed'; validation = $null; runtime = $null
     rootTooling = @{ path = $rootTooling; identity = [Reflection.AssemblyName]::GetAssemblyName($rootTooling).FullName; sha256 = (Get-FileHash -LiteralPath $rootTooling -Algorithm SHA256).Hash }
     hostTooling = @{ path = $hostTooling; identity = [Reflection.AssemblyName]::GetAssemblyName($hostTooling).FullName; sha256 = (Get-FileHash -LiteralPath $hostTooling -Algorithm SHA256).Hash }
 }
-$stdoutFile = [IO.File]::Open((Join-Path $OutputDirectory 'child.stdout.log'), 'CreateNew', 'Write', 'Read')
-$stderrFile = [IO.File]::Open((Join-Path $OutputDirectory 'child.stderr.log'), 'CreateNew', 'Write', 'Read')
-$bound = [Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds($ChildTimeoutSeconds))
 $clock = [Diagnostics.Stopwatch]::StartNew()
-$milliseconds = $ChildTimeoutSeconds * 1000
 try {
-    if (-not $process.Start()) { throw 'Could not start the packaged validation child.' }
-    $stdout = $process.StandardOutput.BaseStream.CopyToAsync($stdoutFile, $bound.Token)
-    $stderr = $process.StandardError.BaseStream.CopyToAsync($stderrFile, $bound.Token)
-    if (-not $process.WaitForExit([int]($milliseconds * 0.9))) {
-        $receipt.timedOut = $true
-        $process.Kill($true)
-        $null = $process.WaitForExit([Math]::Max(0, $milliseconds - [int]$clock.ElapsedMilliseconds))
-    }
-    $drain = [Threading.Tasks.Task]::WhenAll([Threading.Tasks.Task[]]@($stdout, $stderr))
-    try {
-        $receipt.diagnosticsComplete = $drain.Wait([Math]::Max(0, $milliseconds - [int]$clock.ElapsedMilliseconds))
-    }
-    catch [AggregateException] {
-        if (-not $bound.IsCancellationRequested) { throw }
-        $receipt.timedOut = $true
-    }
-    if (-not $receipt.diagnosticsComplete) { $receipt.timedOut = $true }
-    if ($process.HasExited) { $receipt.exitCode = $process.ExitCode }
-    $stdoutFile.Flush()
-    $stderrFile.Flush()
-    if ($receipt.timedOut) { throw "Packaged validation child timed out within its $ChildTimeoutSeconds-second execution/collection ceiling; partial logs retained." }
-    if ($process.ExitCode -ne 0) { throw "Packaged validation child exited $($process.ExitCode): $(Get-Content -LiteralPath (Join-Path $OutputDirectory 'child.stderr.log') -Raw)" }
+    $receipt.validation = Invoke-PackagedHostChild -Name 'validation' -Arguments @('--validate-platform') -Environment @{}
     $loaded = Get-Content -LiteralPath (Join-Path $workspace 'loaded-contract.json') -Raw | ConvertFrom-Json
     if ($loaded.identity -cne $receipt.rootTooling.identity -or $loaded.path -cne $hostTooling -or
         $receipt.rootTooling.sha256 -cne $receipt.hostTooling.sha256) {
@@ -119,15 +149,41 @@ try {
     }
     if (Test-Path -LiteralPath $plan.readinessPath) { throw 'Validation unexpectedly wrote runtime readiness.' }
     if (Test-Path -LiteralPath (Join-Path $workspace 'startup-attempted')) { throw 'Validation unexpectedly attempted runtime startup.' }
+
+    # Runtime start: the packaged AppHost carries the build machine's AppHost, DCP and dashboard paths. Resolve this
+    # machine's paths exactly as the runner does, with the packaged Tooling, and require the host to use them.
+    $null = [Reflection.Assembly]::LoadFrom((Join-Path $payload 'NuGet.Versioning.dll'))
+    $tooling = [Reflection.Assembly]::LoadFrom($rootTooling)
+    $pathsType = $tooling.GetType('Hexalith.Builds.Tooling.Runtime.CompositionAspireHostPaths', $true)
+    $pinsType = $tooling.GetType('Hexalith.Builds.Tooling.Runtime.CompositionToolchainPins', $true)
+    $resolved = $null
+    $unavailable = $pathsType::TryResolve($pathsType::DefaultPackagesRoot(), $pinsType::AspireAppHostSdkVersion, $pathsType::CurrentRuntimeIdentifier(), [ref]$resolved)
+    if ($null -ne $unavailable) { throw "Packaged runtime start cannot resolve local Aspire orchestration: $($unavailable.RuleId) $($unavailable.Message)" }
+    $created = $resolved.CreateEnvironment($workspace)
+    $aspireEnvironment = @{}
+    foreach ($key in $created.Keys) { $aspireEnvironment[$key] = $created[$key] }
+    $receipt.runtime = Invoke-PackagedHostChild -Name 'runtime' -Arguments @() -Environment $aspireEnvironment
+    $runtimePathsFile = Join-Path $workspace 'runtime-paths.json'
+    if (-not (Test-Path -LiteralPath $runtimePathsFile -PathType Leaf)) {
+        throw "Packaged runtime start did not reach Aspire store creation: $(Get-Content -LiteralPath $receipt.runtime.stderr -Raw)"
+    }
+    $observed = Get-Content -LiteralPath $runtimePathsFile -Raw | ConvertFrom-Json
+    $receipt.runtime['observed'] = $observed
+    $expectedStore = Join-Path $aspireEnvironment['HEXALITH_G4_ASPIRE_STORE_PATH'] '.aspire'
+    if ($observed.storeBasePath -cne $expectedStore -or -not $observed.storeExists) {
+        throw "Packaged runtime used Aspire store '$($observed.storeBasePath)' instead of the run-private '$expectedStore'."
+    }
+    if ($observed.appHostDirectory -cne $aspireEnvironment['HEXALITH_G4_APPHOST_DIRECTORY']) {
+        throw "Packaged runtime used AppHost directory '$($observed.appHostDirectory)' instead of '$($aspireEnvironment['HEXALITH_G4_APPHOST_DIRECTORY'])'."
+    }
+    if ($observed.dcpCliPath -cne $aspireEnvironment['DcpPublisher__CliPath'] -or $observed.dashboardPath -cne $aspireEnvironment['DcpPublisher__DashboardPath']) {
+        throw "Packaged runtime did not receive this machine's DCP '$($aspireEnvironment['DcpPublisher__CliPath'])' and dashboard '$($aspireEnvironment['DcpPublisher__DashboardPath'])'."
+    }
+    if (Test-Path -LiteralPath $plan.readinessPath) { throw 'The runtime start unexpectedly wrote readiness; resources may have started.' }
     $receipt.result = 'passed'
-    Write-Host "Packaged Platform loader passed offline; contract $($loaded.identity); no resources started. Receipt: $OutputDirectory"
+    Write-Host "Packaged Platform loader passed offline; contract $($loaded.identity); runtime start reached the run-private Aspire store '$expectedStore'; no resources started. Receipt: $OutputDirectory"
 }
 finally {
-    $bound.Cancel()
-    $stdoutFile.Dispose()
-    $stderrFile.Dispose()
-    $process.Dispose()
-    $bound.Dispose()
     $receipt['durationMilliseconds'] = $clock.ElapsedMilliseconds
-    $receipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'loader-result.json') -Encoding utf8
+    $receipt | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'loader-result.json') -Encoding utf8
 }

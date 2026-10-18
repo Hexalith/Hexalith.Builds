@@ -39,4 +39,10 @@ public static class CompositionEnvironment
 
     /// <summary>The AppHost stop command read from standard input.</summary>
     public const string StopCommand = "stop";
+
+    /// <summary>The AppHost environment variable naming the run-private directory used as the Aspire AppHost directory.</summary>
+    public const string AppHostDirectory = "HEXALITH_G4_APPHOST_DIRECTORY";
+
+    /// <summary>The AppHost environment variable naming the run-private Aspire store root.</summary>
+    public const string AspireStorePath = "HEXALITH_G4_ASPIRE_STORE_PATH";
 }

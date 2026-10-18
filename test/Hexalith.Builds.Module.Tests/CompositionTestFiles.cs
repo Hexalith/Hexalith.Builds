@@ -142,6 +142,29 @@ internal static class CompositionTestFiles
         return home;
     }
 
+    /// <summary>Creates a NuGet packages folder holding fake catalog-version Aspire DCP and dashboard executables.</summary>
+    /// <param name="root">The temporary root.</param>
+    /// <returns>The packages folder, the DCP path and the dashboard path.</returns>
+    /// <exception cref="InvalidOperationException">Aspire ships no orchestration package for the test platform.</exception>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "NuGet global packages folder names are lowercase.")]
+    public static (string Root, string Dcp, string Dashboard) CreateAspirePackages(string root)
+    {
+        string packages = Path.Combine(root, "nuget-packages");
+        string runtime = CompositionAspireHostPaths.CurrentRuntimeIdentifier()
+            ?? throw new InvalidOperationException("Aspire ships no orchestration package for this test platform.");
+        string version = NuGet.Versioning.NuGetVersion.Parse(CompositionToolchainPins.AspireAppHostSdkVersion).ToNormalizedString().ToLowerInvariant();
+        bool windows = OperatingSystem.IsWindows();
+        string dcp = Path.Combine(packages, "aspire.hosting.orchestration." + runtime, version, "tools", windows ? "dcp.exe" : "dcp");
+        string dashboard = Path.Combine(packages, "aspire.dashboard.sdk." + runtime, version, "tools", windows ? "Aspire.Dashboard.exe" : "Aspire.Dashboard");
+        foreach (string file in new[] { dcp, dashboard })
+        {
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllText(file, string.Empty);
+        }
+
+        return (packages, dcp, dashboard);
+    }
+
     /// <summary>Creates a fake Aspire CLI reporting the embedded catalog selection.</summary>
     /// <param name="root">The temporary root.</param>
     /// <returns>The executable path.</returns>
@@ -317,6 +340,8 @@ internal static class CompositionTestFiles
             + "if (mode == \"preflight-refusal\") { Console.Error.WriteLine(\"owner/source.json: gateway: required binding is unavailable\"); return 7; }\n"
             + "if (args.Contains(\"--validate-platform\")) { if (mode == \"slow-preflight\") await Task.Delay(30000); return 0; }\n"
             + "string plan = Environment.GetEnvironmentVariable(\"HEXALITH_G4_PLAN\")!;\n"
+            + "if (mode == \"capture\") { var captured = new Dictionary<string, string?>(); foreach (string name in new[] { \"DcpPublisher__CliPath\", \"DcpPublisher__DashboardPath\", \"HEXALITH_G4_APPHOST_DIRECTORY\", \"HEXALITH_G4_ASPIRE_STORE_PATH\" }) { string? value = Environment.GetEnvironmentVariable(name); captured[name] = value; captured[name + \":exists\"] = value is null ? null : (File.Exists(value) || Directory.Exists(value)).ToString(); } "
+            + "File.WriteAllText(Path.Combine(AppContext.BaseDirectory, \"captured-environment.json\"), System.Text.Json.JsonSerializer.Serialize(captured)); }\n"
             + "if (mode == \"capture\" || mode == \"ready\") { File.Copy(plan, Path.Combine(AppContext.BaseDirectory, \"captured-plan.json\")); "
             + "string mappingPath = Path.Combine(Path.GetDirectoryName(plan)!, \"source-mapping\", \"mapping.json\"); "
             + "if (File.Exists(mappingPath)) { File.Copy(mappingPath, Path.Combine(AppContext.BaseDirectory, \"captured-mapping.json\")); "
