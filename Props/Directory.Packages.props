@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
-    <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.30.1</HexalithCommonsVersion>
+    <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.30.3</HexalithCommonsVersion>
     <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.1.0</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.3</HexalithPolymorphicSerializationsVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.125.1</HexalithEventStoreVersion>
