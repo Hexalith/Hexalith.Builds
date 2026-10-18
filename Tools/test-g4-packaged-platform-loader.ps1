@@ -153,17 +153,36 @@ try {
     if (Test-Path -LiteralPath (Join-Path $workspace 'startup-attempted')) { throw 'Validation unexpectedly attempted runtime startup.' }
 
     # Runtime start: the packaged AppHost carries the build machine's AppHost, DCP and dashboard paths. Resolve this
-    # machine's paths exactly as the runner does, with the packaged Tooling, and require the host to use them.
-    $null = [Reflection.Assembly]::LoadFrom((Join-Path $payload 'NuGet.Versioning.dll'))
-    $tooling = [Reflection.Assembly]::LoadFrom($rootTooling)
-    $pathsType = $tooling.GetType('Hexalith.Builds.Tooling.Runtime.CompositionAspireHostPaths', $true)
-    $pinsType = $tooling.GetType('Hexalith.Builds.Tooling.Runtime.CompositionToolchainPins', $true)
-    $resolved = $null
-    $unavailable = $pathsType::TryResolve($pathsType::DefaultPackagesRoot(), $pinsType::AspireAppHostSdkVersion, $pathsType::CurrentRuntimeIdentifier(), [ref]$resolved)
-    if ($null -ne $unavailable) { throw "Packaged runtime start cannot resolve local Aspire orchestration: $($unavailable.RuleId) $($unavailable.Message)" }
-    $created = $resolved.CreateEnvironment($workspace)
-    $aspireEnvironment = @{}
-    foreach ($key in $created.Keys) { $aspireEnvironment[$key] = $created[$key] }
+    # machine's paths exactly as the runner does, with the packaged Tooling, and require the host to use them. The
+    # resolution runs in a child pwsh: callers run this gate in their own process and later load the SDK's
+    # NuGet.Versioning, which must not collide with the payload's copy.
+    $resolver = Join-Path $OutputDirectory 'resolve-aspire-paths.ps1'
+    [IO.File]::WriteAllText($resolver, @'
+param([Parameter(Mandatory = $true)] [string] $Payload, [Parameter(Mandatory = $true)] [string] $Workspace)
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$null = [Reflection.Assembly]::LoadFrom((Join-Path $Payload 'NuGet.Versioning.dll'))
+$tooling = [Reflection.Assembly]::LoadFrom((Join-Path $Payload 'Hexalith.Builds.Tooling.dll'))
+$pathsType = $tooling.GetType('Hexalith.Builds.Tooling.Runtime.CompositionAspireHostPaths', $true)
+$pinsType = $tooling.GetType('Hexalith.Builds.Tooling.Runtime.CompositionToolchainPins', $true)
+$resolved = $null
+$unavailable = $pathsType::TryResolve($pathsType::DefaultPackagesRoot(), $pinsType::AspireAppHostSdkVersion, $pathsType::CurrentRuntimeIdentifier(), [ref]$resolved)
+if ($null -ne $unavailable) {
+    [Console]::Error.WriteLine("$($unavailable.RuleId) $($unavailable.Message)")
+    exit 3
+}
+$created = $resolved.CreateEnvironment($Workspace)
+$environment = [ordered]@{}
+foreach ($key in $created.Keys) { $environment[$key] = $created[$key] }
+$environment | ConvertTo-Json -Compress
+'@)
+    $resolverErrors = Join-Path $OutputDirectory 'resolve-aspire-paths.stderr.log'
+    $pwshExecutable = @(Get-Command pwsh -CommandType Application -ErrorAction Stop)[0].Source
+    $resolverOutput = @(& $pwshExecutable -NoProfile -File $resolver -Payload $payload -Workspace $workspace 2> $resolverErrors)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Packaged runtime start cannot resolve local Aspire orchestration (exit $LASTEXITCODE): $(Get-Content -LiteralPath $resolverErrors -Raw)"
+    }
+    $aspireEnvironment = ($resolverOutput -join "`n") | ConvertFrom-Json -AsHashtable
     $receipt.runtime = Invoke-PackagedHostChild -Name 'runtime' -Arguments @() -Environment $aspireEnvironment
     $runtimePathsFile = Join-Path $workspace 'runtime-paths.json'
     if (-not (Test-Path -LiteralPath $runtimePathsFile -PathType Leaf)) {
