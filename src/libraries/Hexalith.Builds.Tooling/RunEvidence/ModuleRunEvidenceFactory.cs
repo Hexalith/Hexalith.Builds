@@ -78,10 +78,7 @@ public static partial class ModuleRunEvidenceFactory
         string? manifestHash = HashFile(fullManifestPath);
         ModuleProfile? selectedProfile = GetProfile(manifest, profile);
         string? profileIdentity = selectedProfile is null ? null : profile;
-        string? resolvedFixturePath = selectedProfile is not null
-            && RepositoryPathResolver.TryResolveExistingFile(repositoryRoot, selectedProfile.Fixture, out string physicalFixturePath)
-                ? physicalFixturePath
-                : null;
+        string? resolvedFixturePath = selectedProfile is not null && RepositoryPathResolver.TryResolveExistingFile(repositoryRoot, selectedProfile.Fixture, out string physicalFixturePath) ? physicalFixturePath : null;
         string? fixturePath = ToRepositoryRelativePath(resolvedFixturePath, repositoryRoot);
         string? fixtureHash = resolvedFixturePath is null ? null : HashFile(resolvedFixturePath);
         string? filterHash = string.IsNullOrWhiteSpace(filter) ? null : HashString(filter);
@@ -179,11 +176,7 @@ public static partial class ModuleRunEvidenceFactory
     }
 
     private static ModuleProfile? GetProfile(ModuleManifest? manifest, string? profile) =>
-        manifest is not null &&
-        !string.IsNullOrWhiteSpace(profile) &&
-        manifest.Profiles.TryGetValue(profile, out ModuleProfile? selectedProfile)
-            ? selectedProfile
-            : null;
+        manifest is not null && !string.IsNullOrWhiteSpace(profile) && manifest.Profiles.TryGetValue(profile, out ModuleProfile? selectedProfile) ? selectedProfile : null;
 
     private static string HashFile(string? path)
     {

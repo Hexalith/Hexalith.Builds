@@ -88,8 +88,7 @@ internal static partial class SubmoduleInitializer
     /// <exception cref="WorkspaceMappingException">A declaration has no matching stage-zero gitlink.</exception>
     internal static async Task<IReadOnlyDictionary<string, string>> ValidateRecordedGitlinksAsync(string root, IReadOnlyList<string> references, CancellationToken cancellationToken, bool collectMissingBuilds = false)
     {
-        Dictionary<string, string> recorded = new(FilesystemPathRules.Comparison(root) == StringComparison.OrdinalIgnoreCase
-            ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        Dictionary<string, string> recorded = new(FilesystemPathRules.Comparison(root) == StringComparison.OrdinalIgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         foreach (string reference in references)
         {
             string identity = Path.GetFileName(reference);

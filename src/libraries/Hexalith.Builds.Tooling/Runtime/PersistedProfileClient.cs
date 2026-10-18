@@ -165,10 +165,7 @@ internal sealed class PersistedProfileClient : IDisposable
 
         using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
         JsonElement root = document.RootElement;
-        return root.TryGetProperty("success", out JsonElement success) && success.ValueKind == JsonValueKind.True
-            && root.TryGetProperty("payload", out JsonElement payload)
-                ? (response.StatusCode, payload.Clone())
-                : (response.StatusCode, default);
+        return root.TryGetProperty("success", out JsonElement success) && success.ValueKind == JsonValueKind.True && root.TryGetProperty("payload", out JsonElement payload) ? (response.StatusCode, payload.Clone()) : (response.StatusCode, default);
     }
 
     /// <summary>Checks that the primary host stopped serving.</summary>

@@ -386,14 +386,7 @@ internal static class ReadinessEvidenceValidator
         IsCanonicalIdentifier(GetScalar(row, "key")) ? GetScalar(row, "key") : null;
 
     private static IReadOnlyList<string> ReadSequence(YamlMappingNode mapping, string field) =>
-        TryGetNode(mapping, field, out YamlNode? node) && node is YamlSequenceNode sequence
-            ? [.. sequence.Children
-                .OfType<YamlScalarNode>()
-                .Select(value => value.Value)
-                .Where(value => !string.IsNullOrWhiteSpace(value))
-                .Select(value => value!),
-            ]
-            : [];
+        TryGetNode(mapping, field, out YamlNode? node) && node is YamlSequenceNode sequence ? [.. sequence.Children.OfType<YamlScalarNode>().Select(value => value.Value).Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value!),] : [];
 
     private static bool TryGetNode(YamlMappingNode mapping, string key, out YamlNode? value)
     {
@@ -1127,11 +1120,7 @@ internal static class ReadinessEvidenceValidator
     }
 
     private static string? CreateCanonicalArtifactCommand(ModuleRunEvidenceArtifactSummary summary) =>
-        string.IsNullOrWhiteSpace(summary.ManifestPath)
-        || string.IsNullOrWhiteSpace(summary.Profile)
-        || string.IsNullOrWhiteSpace(summary.FilterHash)
-            ? null
-            : $"hexalith-module test --manifest {summary.ManifestPath} --profile {summary.Profile} --filter-sha256 {summary.FilterHash}";
+        string.IsNullOrWhiteSpace(summary.ManifestPath) || string.IsNullOrWhiteSpace(summary.Profile) || string.IsNullOrWhiteSpace(summary.FilterHash) ? null : $"hexalith-module test --manifest {summary.ManifestPath} --profile {summary.Profile} --filter-sha256 {summary.FilterHash}";
 
     private static string HashString(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));

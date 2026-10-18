@@ -50,10 +50,7 @@ public sealed record SourceMapping(
     {
         SourceMapping mapping = JsonSerializer.Deserialize<SourceMapping>(File.ReadAllText(path))
             ?? throw new InvalidDataException($"Source mapping '{path}' is empty.");
-        return !string.IsNullOrWhiteSpace(expectedHash)
-            && string.Equals(mapping.ContentHash, expectedHash, StringComparison.OrdinalIgnoreCase)
-                ? mapping
-                : throw new InvalidDataException($"Source mapping '{path}' has hash '{mapping.ContentHash}' and differs from the command-resolved hash '{expectedHash}'.");
+        return !string.IsNullOrWhiteSpace(expectedHash) && string.Equals(mapping.ContentHash, expectedHash, StringComparison.OrdinalIgnoreCase) ? mapping : throw new InvalidDataException($"Source mapping '{path}' has hash '{mapping.ContentHash}' and differs from the command-resolved hash '{expectedHash}'.");
     }
 
     /// <summary>Tests whether a project is inside the active module or a source identity.</summary>

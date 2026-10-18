@@ -146,8 +146,7 @@ public sealed class SourceMappingReconciliationTask : ITask
             {
                 string[] absent = [.. Projects.Select(project => project.GetMetadata("FullPath"))
                     .Where(path => IsInPackageRoot(packagePath, path) && (!File.Exists(path) || !HasGitMarker(packagePath)))
-                    .Distinct(FilesystemPathRules.Comparison(packagePath) == StringComparison.OrdinalIgnoreCase
-                        ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal),
+                    .Distinct(FilesystemPathRules.Comparison(packagePath) == StringComparison.OrdinalIgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal),
                     ];
                 string[] catalogIds = [.. PackageVersions.Select(version => version.ItemSpec)
                     .Where(id => MatchesIdentity(id, identity)),

@@ -223,8 +223,7 @@ public sealed class CatalogVersionValidationTask : ITask
 
     private static bool EquivalentVersion(string candidate, string pinned)
     {
-        NuGetVersion pin = NuGetVersion.TryParse(pinned, out NuGetVersion? parsedPin)
-            ? parsedPin : throw new InvalidDataException($"Pinned catalog version '{pinned}' is invalid.");
+        NuGetVersion pin = NuGetVersion.TryParse(pinned, out NuGetVersion? parsedPin) ? parsedPin : throw new InvalidDataException($"Pinned catalog version '{pinned}' is invalid.");
 
         return NuGetVersion.TryParse(candidate, out NuGetVersion? version)
             ? VersionComparer.VersionRelease.Compare(version, pin) == 0

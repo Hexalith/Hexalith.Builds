@@ -352,8 +352,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             if (_options.SelectedTest is not null && _options.SelectedExecutionOwnerToken is { IsCancellationRequested: false })
             {
                 ToolDiagnostic expired = Diagnostic("HXT007", ToolPhase.Test, ToolFailureCategory.ProductOrTest, "The selected execution exhausted its original finite lifetime.", "execution", null);
-                return runId is null ? Failed("failed", ToolExitCode.ProductOrTest, [expired], null)
-                    : await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Failed, expired, ToolExitCode.ProductOrTest, requestedAt, deadline).ConfigureAwait(false);
+                return runId is null ? Failed("failed", ToolExitCode.ProductOrTest, [expired], null) : await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Failed, expired, ToolExitCode.ProductOrTest, requestedAt, deadline).ConfigureAwait(false);
             }
 
             ToolDiagnostic cancelled = Diagnostic("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The invocation was cancelled; bounded teardown ran.", "cancellation", null);
@@ -594,14 +593,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     {
         return workspace is null || await CompositionWorkspace.TryDeleteAsync(workspace, CancellationToken.None).ConfigureAwait(false)
             ? diagnostics
-            : [.. diagnostics, Diagnostic(
-                "HXW009",
-                ToolPhase.Prerequisite,
-                ToolFailureCategory.PrerequisiteUnavailable,
-                $"Private catalog workspace '{workspace}' could not be removed after refusal.",
-                workspace,
-                "Remove this private workspace before retrying."),
-            ];
+            : [.. diagnostics, Diagnostic("HXW009", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, $"Private catalog workspace '{workspace}' could not be removed after refusal.", workspace, "Remove this private workspace before retrying."),];
     }
 
     private static bool IsTeardownFailure(Exception exception) =>
@@ -798,17 +790,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         CompositionReadinessProgress? progress = await CompositionDocumentStore
             .TryReadAsync<CompositionReadinessProgress>(CompositionReadinessProgress.PathFor(plan.Workspace), cancellationToken)
             .ConfigureAwait(false);
-        return progress is null
-            || !string.Equals(progress.Schema, CompositionReadinessProgress.SupportedSchema, StringComparison.Ordinal)
-            || !string.Equals(progress.RunId, plan.RunId, StringComparison.Ordinal)
-            ? []
-            : [
-                .. progress.Resources.Select((resource, index) => resource with
-                {
-                    Name = IsSafeFailureText(resource.Name, 128) ? resource.Name : $"resource-{index + 1}",
-                    Detail = IsSafeFailureText(resource.Detail ?? resource.State, 120) ? resource.Detail : "detail withheld: unsafe or oversized text",
-                }),
-            ];
+        return progress is null || !string.Equals(progress.Schema, CompositionReadinessProgress.SupportedSchema, StringComparison.Ordinal) || !string.Equals(progress.RunId, plan.RunId, StringComparison.Ordinal) ? [] : [.. progress.Resources.Select((resource, index) => resource with { Name = IsSafeFailureText(resource.Name, 128) ? resource.Name : $"resource-{index + 1}", Detail = IsSafeFailureText(resource.Detail ?? resource.State, 120) ? resource.Detail : "detail withheld: unsafe or oversized text", }),];
     }
 
     private static IReadOnlyList<int> ProjectProcessIds(IReadOnlyList<CompositionResourceReadiness> resources) =>
@@ -1550,11 +1532,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         CompositionReadinessProgress? progress = await CompositionDocumentStore
             .TryReadAsync<CompositionReadinessProgress>(CompositionReadinessProgress.PathFor(workspace), cancellationToken)
             .ConfigureAwait(false);
-        return progress is null
-            || !string.Equals(progress.Schema, CompositionReadinessProgress.SupportedSchema, StringComparison.Ordinal)
-            || !string.Equals(progress.RunId, runId, StringComparison.Ordinal)
-            ? []
-            : [.. progress.Resources.Where(resource => !string.Equals(resource.State, "Healthy", StringComparison.Ordinal))];
+        return progress is null || !string.Equals(progress.Schema, CompositionReadinessProgress.SupportedSchema, StringComparison.Ordinal) || !string.Equals(progress.RunId, runId, StringComparison.Ordinal) ? [] : [.. progress.Resources.Where(resource => !string.Equals(resource.State, "Healthy", StringComparison.Ordinal))];
     }
 
     private Task WriteStateAsync(

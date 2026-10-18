@@ -166,9 +166,7 @@ internal static class SelectedNativeTestReport
                 await stream.ReadExactlyAsync(bytes, cancellationToken).ConfigureAwait(false);
                 using JsonDocument document = JsonDocument.Parse(bytes);
                 JsonElement root = document.RootElement;
-                return root.ValueKind != JsonValueKind.Object || root.GetProperty("runId").GetString() != runId
-                    || root.GetProperty("status").GetString() != "functional-observations-passed"
-                    || root.GetProperty("qualificationCredit").ValueKind != JsonValueKind.False || Unsafe(root) ? null : bytes;
+                return root.ValueKind != JsonValueKind.Object || root.GetProperty("runId").GetString() != runId || root.GetProperty("status").GetString() != "functional-observations-passed" || root.GetProperty("qualificationCredit").ValueKind != JsonValueKind.False || Unsafe(root) ? null : bytes;
             }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or OperationCanceledException or JsonException or InvalidOperationException or KeyNotFoundException)

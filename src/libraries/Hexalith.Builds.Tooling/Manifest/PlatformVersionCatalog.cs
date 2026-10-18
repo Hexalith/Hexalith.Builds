@@ -99,21 +99,7 @@ public sealed partial record PlatformVersionCatalog(
             ? parsedRange
             : throw new InvalidDataException("Malformed platform version catalog field 'eventStoreHostingDaprRange'.");
 
-        return !range.Satisfies(NuGetVersion.Parse(selections["aspireHostingDaprVersion"]))
-            ? throw new InvalidDataException($"Hexalith.EventStore.Aspire/{selections["eventStoreVersion"]} requires CommunityToolkit.Aspire.Hosting.Dapr range '{selections["eventStoreHostingDaprRange"]}'; selected CommunityToolkit.Aspire.Hosting.Dapr/{selections["aspireHostingDaprVersion"]} is incompatible.")
-            : new PlatformVersionCatalog(
-            selections["eventStoreVersion"],
-            selections["frontComposerVersion"],
-            selections["daprSdkVersion"],
-            selections["aspireHostingVersion"],
-            selections["aspireHostingDaprVersion"],
-            selections["aspireAppHostSdkVersion"],
-            selections["daprRuntimeVersion"],
-            selections["daprCliVersion"],
-            selections["redisImage"],
-            selections["redisImageTag"],
-            selections["redisImageDigest"],
-            selections["eventStoreHostingDaprRange"]);
+        return !range.Satisfies(NuGetVersion.Parse(selections["aspireHostingDaprVersion"])) ? throw new InvalidDataException($"Hexalith.EventStore.Aspire/{selections["eventStoreVersion"]} requires CommunityToolkit.Aspire.Hosting.Dapr range '{selections["eventStoreHostingDaprRange"]}'; selected CommunityToolkit.Aspire.Hosting.Dapr/{selections["aspireHostingDaprVersion"]} is incompatible.") : new PlatformVersionCatalog(selections["eventStoreVersion"], selections["frontComposerVersion"], selections["daprSdkVersion"], selections["aspireHostingVersion"], selections["aspireHostingDaprVersion"], selections["aspireAppHostSdkVersion"], selections["daprRuntimeVersion"], selections["daprCliVersion"], selections["redisImage"], selections["redisImageTag"], selections["redisImageDigest"], selections["eventStoreHostingDaprRange"]);
     }
 
     /// <summary>Compares release and prerelease identities, ignoring build metadata.</summary>

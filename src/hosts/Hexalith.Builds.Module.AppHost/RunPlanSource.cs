@@ -27,12 +27,7 @@ internal static class RunPlanSource
         }
 
         CompositionRunPlan? plan = await CompositionDocumentStore.TryReadAsync<CompositionRunPlan>(path, cancellationToken).ConfigureAwait(false);
-        return plan is not null
-            && string.Equals(plan.Schema, CompositionRunPlan.SupportedSchema, StringComparison.Ordinal)
-            && string.Equals(plan.RunId, Environment.GetEnvironmentVariable(CompositionEnvironment.RunId), StringComparison.Ordinal)
-            && CompositionRunPlanFactory.IsRunId(plan.RunId)
-            ? plan
-            : throw new InvalidOperationException("The run plan is malformed or does not describe this run.");
+        return plan is not null && string.Equals(plan.Schema, CompositionRunPlan.SupportedSchema, StringComparison.Ordinal) && string.Equals(plan.RunId, Environment.GetEnvironmentVariable(CompositionEnvironment.RunId), StringComparison.Ordinal) && CompositionRunPlanFactory.IsRunId(plan.RunId) ? plan : throw new InvalidOperationException("The run plan is malformed or does not describe this run.");
     }
 
     /// <summary>

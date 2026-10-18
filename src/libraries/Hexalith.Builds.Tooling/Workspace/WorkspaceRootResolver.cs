@@ -161,27 +161,13 @@ public static class WorkspaceRootResolver
             throw Failure("HXW002", $"Identity '{emptySuffix}' generates an empty MSBuild property suffix.", root);
         }
 
-        string? reserved = entries.SelectMany(entry => GeneratedPropertyNames(entry.Identity).Select(name => (Name: name, entry.Identity)))
-            .FirstOrDefault(property => fixedNames.Contains(property.Name, StringComparer.OrdinalIgnoreCase)
-                || ((string.Equals(property.Name, "HexalithCommonsHttpFromSource", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(property.Name, "HexalithCommonsServiceDefaultsFromSource", StringComparison.OrdinalIgnoreCase))
-                    && !string.Equals(property.Identity, "Hexalith.Commons", StringComparison.OrdinalIgnoreCase))
-                || (string.Equals(property.Name, "HexalithTenantsBasePath", StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(property.Identity, "Hexalith.Tenants", StringComparison.OrdinalIgnoreCase))) is { Identity: not null } reservedProperty
-                ? reservedProperty.Identity
-                : null;
+        string? reserved = entries.SelectMany(entry => GeneratedPropertyNames(entry.Identity).Select(name => (Name: name, entry.Identity))).FirstOrDefault(property => fixedNames.Contains(property.Name, StringComparer.OrdinalIgnoreCase) || ((string.Equals(property.Name, "HexalithCommonsHttpFromSource", StringComparison.OrdinalIgnoreCase) || string.Equals(property.Name, "HexalithCommonsServiceDefaultsFromSource", StringComparison.OrdinalIgnoreCase)) && !string.Equals(property.Identity, "Hexalith.Commons", StringComparison.OrdinalIgnoreCase)) || (string.Equals(property.Name, "HexalithTenantsBasePath", StringComparison.OrdinalIgnoreCase) && !string.Equals(property.Identity, "Hexalith.Tenants", StringComparison.OrdinalIgnoreCase))) is { Identity: not null } reservedProperty ? reservedProperty.Identity : null;
         if (reserved is not null)
         {
             throw Failure("HXW002", $"Identity '{reserved}' generates a reserved MSBuild property name.", root);
         }
 
-        string? collision = entries
-            .SelectMany(entry => GeneratedPropertyNames(entry.Identity).Select(name => (Name: name, entry.Identity)))
-            .GroupBy(property => property.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.Select(property => property.Identity).Distinct(StringComparer.OrdinalIgnoreCase).ToArray())
-            .FirstOrDefault(identities => identities.Length > 1) is { } collidingIdentities
-                ? string.Join(" and ", collidingIdentities.Select(identity => $"'{identity}'"))
-                : null;
+        string? collision = entries.SelectMany(entry => GeneratedPropertyNames(entry.Identity).Select(name => (Name: name, entry.Identity))).GroupBy(property => property.Name, StringComparer.OrdinalIgnoreCase).Select(group => group.Select(property => property.Identity).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()).FirstOrDefault(identities => identities.Length > 1) is { } collidingIdentities ? string.Join(" and ", collidingIdentities.Select(identity => $"'{identity}'")) : null;
         if (collision is not null)
         {
             throw Failure("HXW002", $"Generated MSBuild property names collide for identities {collision}.", root);

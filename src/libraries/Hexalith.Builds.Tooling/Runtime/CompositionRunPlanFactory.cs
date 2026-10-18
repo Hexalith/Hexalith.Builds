@@ -56,12 +56,7 @@ public static class CompositionRunPlanFactory
             modules.Add(new CompositionRunModule(module.Id, module.Domain, module.ApplicationId, descriptor.DomainServiceProject));
         }
 
-        IReadOnlyList<CompositionRunUiMarker> markers = descriptors.Ui is null
-            ? []
-            : [.. descriptors.Ui.ModuleUiMarkers
-                .OrderBy(marker => marker.ModuleId, StringComparer.Ordinal)
-                .Select(marker => new CompositionRunUiMarker(marker.ModuleId, marker.UiAssembly, marker.UiMarkerType)),
-            ];
+        IReadOnlyList<CompositionRunUiMarker> markers = descriptors.Ui is null ? [] : [.. descriptors.Ui.ModuleUiMarkers.OrderBy(marker => marker.ModuleId, StringComparer.Ordinal).Select(marker => new CompositionRunUiMarker(marker.ModuleId, marker.UiAssembly, marker.UiMarkerType)),];
         return (modules, markers);
     }
 

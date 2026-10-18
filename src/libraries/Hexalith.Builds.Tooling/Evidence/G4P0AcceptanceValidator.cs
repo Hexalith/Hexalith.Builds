@@ -275,24 +275,14 @@ internal static class G4P0AcceptanceValidator
 
         NativeTestReportLoadResult native = await NativeTestReportLoader.LoadAsync(resolvedReport, cancellationToken).ConfigureAwait(false);
         JsonElement counts = artifact.GetProperty("testCounts");
-        return native.Report is { } report
-            && counts.GetProperty("total").GetInt32() == report.Total
-            && counts.GetProperty("passed").GetInt32() == report.Passed
-            && counts.GetProperty("failed").GetInt32() == report.Failed
-            && counts.GetProperty("skipped").GetInt32() == report.Skipped
-                ? null
-                : Fail("HXE206", field + ".report");
+        return native.Report is { } report && counts.GetProperty("total").GetInt32() == report.Total && counts.GetProperty("passed").GetInt32() == report.Passed && counts.GetProperty("failed").GetInt32() == report.Failed && counts.GetProperty("skipped").GetInt32() == report.Skipped ? null : Fail("HXE206", field + ".report");
     }
 
     private static ToolCommandResult? ValidateControlRun(JsonElement run, string field, bool expectedOutcome) =>
         expectedOutcome ? ValidateNoReport(run, field) : Fail("HXE205", field);
 
     private static ToolCommandResult? ValidateNoReport(JsonElement run, string field) =>
-        run.GetProperty("reportPath").ValueKind == JsonValueKind.Null
-        && run.GetProperty("reportSha256").ValueKind == JsonValueKind.Null
-        && run.GetProperty("reportPlatform").ValueKind == JsonValueKind.Null
-            ? null
-            : Fail("HXE206", field + ".report");
+        run.GetProperty("reportPath").ValueKind == JsonValueKind.Null && run.GetProperty("reportSha256").ValueKind == JsonValueKind.Null && run.GetProperty("reportPlatform").ValueKind == JsonValueKind.Null ? null : Fail("HXE206", field + ".report");
 
     private static async Task<bool> CompletedCleanupAsync(
         string root,
@@ -334,12 +324,7 @@ internal static class G4P0AcceptanceValidator
         }
 
         using JsonDocument fixture = JsonDocument.Parse(File.ReadAllBytes(fixturePath));
-        return fixture.RootElement.ValueKind == JsonValueKind.Object
-            && fixture.RootElement.TryGetProperty("nativeTests", out JsonElement nativeTests)
-            && TryString(nativeTests, "platform", out string platform)
-            && platform is PersistedProfileNativeTests.VsTest or PersistedProfileNativeTests.MicrosoftTestingPlatform
-                ? platform
-                : null;
+        return fixture.RootElement.ValueKind == JsonValueKind.Object && fixture.RootElement.TryGetProperty("nativeTests", out JsonElement nativeTests) && TryString(nativeTests, "platform", out string platform) && platform is PersistedProfileNativeTests.VsTest or PersistedProfileNativeTests.MicrosoftTestingPlatform ? platform : null;
     }
 
     private static bool PackageIdentityMatches(string path, string id, string version)

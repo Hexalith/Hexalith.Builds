@@ -28,8 +28,7 @@ internal static partial class PlatformIdentityResolver
         get
         {
             Assembly? entry = Assembly.GetEntryAssembly();
-            Assembly tool = string.Equals(entry?.GetName().Name, "Hexalith.Builds.Module.Cli", StringComparison.Ordinal)
-                ? entry! : typeof(PlatformIdentityResolver).Assembly;
+            Assembly tool = string.Equals(entry?.GetName().Name, "Hexalith.Builds.Module.Cli", StringComparison.Ordinal) ? entry! : typeof(PlatformIdentityResolver).Assembly;
             return (tool.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
                 ?? tool.GetName().Version?.ToString()
                 ?? "unavailable").Split('+', 2)[0];
@@ -321,9 +320,7 @@ internal static partial class PlatformIdentityResolver
 
         int separator = records[0].IndexOf('\t', StringComparison.Ordinal);
         string[] fields = separator < 0 ? [] : records[0][..separator].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return fields.Length == 3 && fields[0] == "160000" && fields[1] == "commit"
-            && fields[2].Length is 40 or 64 && fields[2].All(Uri.IsHexDigit)
-            && records[0][(separator + 1)..] == path ? fields[2] : null;
+        return fields.Length == 3 && fields[0] == "160000" && fields[1] == "commit" && fields[2].Length is 40 or 64 && fields[2].All(Uri.IsHexDigit) && records[0][(separator + 1)..] == path ? fields[2] : null;
     }
 
     private static async Task<string?> CheckoutHeadAsync(string path, CancellationToken cancellationToken)

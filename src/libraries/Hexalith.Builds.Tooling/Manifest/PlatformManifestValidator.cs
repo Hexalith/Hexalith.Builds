@@ -342,8 +342,7 @@ public static partial class PlatformManifestValidator
                         "minItems" or "maxItems" => "Use the collection size declared by the schema.",
                         _ => "The field violates the Platform declaration schema.",
                     };
-                    string rule = path.EndsWith(".lifecycle.startup.override.timeoutSeconds", StringComparison.Ordinal)
-                        && keyword is "minimum" or "exclusiveMinimum" or "maximum" ? "HXP021" : "HXP002";
+                    string rule = path.EndsWith(".lifecycle.startup.override.timeoutSeconds", StringComparison.Ordinal) && keyword is "minimum" or "exclusiveMinimum" or "maximum" ? "HXP021" : "HXP002";
                     Add(diagnostics, rule, source, path, reason);
                 }
             }
@@ -618,7 +617,8 @@ public static partial class PlatformManifestValidator
 
             roles[role] = binding;
             string[] selected = ObjectValue(capability, "servers").ValueKind == JsonValueKind.Array
-                ? [.. ArrayValue(capability, "servers").Where(value => value.ValueKind == JsonValueKind.String).Select(value => value.GetString()!)] : [.. servers];
+                ? [.. ArrayValue(capability, "servers").Where(value => value.ValueKind == JsonValueKind.String).Select(value => value.GetString()!)]
+                : [.. servers];
             foreach (string server in selected)
             {
                 if (!servers.Contains(server))

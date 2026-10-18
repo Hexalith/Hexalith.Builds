@@ -121,17 +121,7 @@ internal static partial class CatalogVersionMaterializer
         string pinnedRoot = Path.Combine(Path.GetDirectoryName(catalogFile) ?? string.Empty, "pinned-tree");
         string pinnedFile = Path.Combine(pinnedRoot, "Props", "Directory.Packages.props");
         string actualFileHash = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(pinnedFile)));
-        return !snapshot.PinnedFiles.TryGetValue("Props/Directory.Packages.props", out string? recordedCatalogHash)
-            || !string.Equals(recordedCatalogHash, snapshot.CatalogFileHash, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(actualFileHash, snapshot.CatalogFileHash, StringComparison.OrdinalIgnoreCase)
-            || snapshot.PinnedFiles.Any(pair => !PinnedFileMatches(pinnedRoot, pair))
-            || Directory.EnumerateFiles(pinnedRoot, "*", SearchOption.AllDirectories)
-                .Any(path => !snapshot.PinnedFiles.ContainsKey(Path.GetRelativePath(pinnedRoot, path).Replace('\\', '/')))
-            || !string.Equals(snapshot.Hash, CatalogVersionSnapshot.ComputeHash(snapshot.MappingHash, snapshot.CatalogCommit, snapshot.CatalogFileHash, snapshot.PinnedFiles, snapshot.Versions, snapshot.ProjectVersions), StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(snapshot.MappingHash, mappingHash, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(snapshot.CatalogCommit, mapping.PlatformIdentity?.CatalogCommit, StringComparison.OrdinalIgnoreCase)
-            ? throw new InvalidDataException("Pinned catalog snapshot differs from the command-resolved identity.")
-            : snapshot;
+        return !snapshot.PinnedFiles.TryGetValue("Props/Directory.Packages.props", out string? recordedCatalogHash) || !string.Equals(recordedCatalogHash, snapshot.CatalogFileHash, StringComparison.OrdinalIgnoreCase) || !string.Equals(actualFileHash, snapshot.CatalogFileHash, StringComparison.OrdinalIgnoreCase) || snapshot.PinnedFiles.Any(pair => !PinnedFileMatches(pinnedRoot, pair)) || Directory.EnumerateFiles(pinnedRoot, "*", SearchOption.AllDirectories).Any(path => !snapshot.PinnedFiles.ContainsKey(Path.GetRelativePath(pinnedRoot, path).Replace('\\', '/'))) || !string.Equals(snapshot.Hash, CatalogVersionSnapshot.ComputeHash(snapshot.MappingHash, snapshot.CatalogCommit, snapshot.CatalogFileHash, snapshot.PinnedFiles, snapshot.Versions, snapshot.ProjectVersions), StringComparison.OrdinalIgnoreCase) || !string.Equals(snapshot.MappingHash, mappingHash, StringComparison.OrdinalIgnoreCase) || !string.Equals(snapshot.CatalogCommit, mapping.PlatformIdentity?.CatalogCommit, StringComparison.OrdinalIgnoreCase) ? throw new InvalidDataException("Pinned catalog snapshot differs from the command-resolved identity.") : snapshot;
     }
 
     /// <summary>Checks one materialized file against its recorded pinned hash.</summary>

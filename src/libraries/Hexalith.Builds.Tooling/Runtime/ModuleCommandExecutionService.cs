@@ -453,8 +453,7 @@ public static class ModuleCommandExecutionService
                         cancellationToken).ConfigureAwait(false);
                 }
 
-                ToolDiagnostic? aspire = preResolvedMapping is null ? preResolutionAspire : await CompositionPrerequisiteProbe.ProbeAspireAsync(
-                    options.AspireCommand, options.AspireProbeTimeout, setupToken).ConfigureAwait(false);
+                ToolDiagnostic? aspire = preResolvedMapping is null ? preResolutionAspire : await CompositionPrerequisiteProbe.ProbeAspireAsync(options.AspireCommand, options.AspireProbeTimeout, setupToken).ConfigureAwait(false);
                 if (aspire is not null)
                 {
                     return await WriteResultAsync(
@@ -672,10 +671,7 @@ public static class ModuleCommandExecutionService
                     ? null
                     : await (options.ProfileExecutorOverride?.Invoke(session!, persistedProfile, cancellationToken)
                         ?? PersistedProfileExecutor.ExecuteAsync(session!, persistedProfile, cancellationToken)).ConfigureAwait(false);
-                NativeTestExecutionResult? nativeResult = profileResult?.Outcome.ExitCode == ToolExitCode.Success
-                    && persistedProfile!.NativeTests is PersistedProfileNativeTests nativeTests
-                        ? await NativeTestExecutor.ExecuteAsync(session!, nativeTests, manifestPath, cancellationToken, options.NativeDotnetCommand ?? "dotnet").ConfigureAwait(false)
-                        : null;
+                NativeTestExecutionResult? nativeResult = profileResult?.Outcome.ExitCode == ToolExitCode.Success && persistedProfile!.NativeTests is PersistedProfileNativeTests nativeTests ? await NativeTestExecutor.ExecuteAsync(session!, nativeTests, manifestPath, cancellationToken, options.NativeDotnetCommand ?? "dotnet").ConfigureAwait(false) : null;
                 CompositionDownResult cleanup = await engine.DownAsync(session!, CancellationToken.None).ConfigureAwait(false);
                 session = null;
                 if (profileResult is not null)
