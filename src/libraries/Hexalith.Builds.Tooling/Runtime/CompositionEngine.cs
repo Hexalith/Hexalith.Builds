@@ -303,6 +303,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     [CompositionEnvironment.SigningKey] = signingKey,
                     [CompositionEnvironment.RunId] = plan.RunId,
                     [CompositionEnvironment.DaprRuntimePath] = plan.DaprHome,
+                    ["DOTNET_ENVIRONMENT"] = "Development",
                 };
                 CompositionProcessResult preflight = await CompositionProcess.RunAsync(
                     CompositionProcess.CreateStartInfo(

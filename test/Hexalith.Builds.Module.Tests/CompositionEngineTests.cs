@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Diagnostics;
+using System.Text.Json;
 
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -19,8 +20,63 @@ using Xunit;
 /// <summary>
 /// Verifies the composition engine fails closed before any resource starts and tears down idempotently.
 /// </summary>
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class CompositionEngineTests
 {
+    /// <summary>Verifies the owning preflight supplies Development through the environment scrubber before runtime startup.</summary>
+    /// <returns>The result assertion.</returns>
+    [Fact]
+    public async Task PlatformPreflightPassesDevelopmentAndScrubsAmbientEnvironmentAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake toolchain uses POSIX scripts.");
+        }
+
+        const string sentinel = "HEXALITH_G4_PREFLIGHT_SENTINEL";
+        string? previous = Environment.GetEnvironmentVariable(sentinel);
+        string? previousDotnetEnvironment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+        string? previousAspnetcoreEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        Environment.SetEnvironmentVariable(sentinel, "runner-secret-must-not-leak");
+        Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Production");
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Production");
+        try
+        {
+            using PlatformManifestTestWorkspace workspace = new();
+            string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "preflight-environment", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionEngineOptions options = CreateOptions(workspace.Root) with
+            {
+                AppHostAssemblyPath = appHost,
+                SourceMapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root),
+                DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+                DockerCommand = CompositionTestFiles.CreateStubDocker(workspace.Root),
+                PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+            };
+            CompositionEngine engine = new(options);
+            CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            result.Session.ShouldBeNull();
+            result.Result.Outcome.RuleId.ShouldBe("HXP020");
+            result.Result.Diagnostics.Single().Message.ShouldContain("preflight environment observed; no runtime start");
+            using JsonDocument captured = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(Path.GetDirectoryName(appHost)!, "preflight-environment.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+            captured.RootElement.GetProperty("DOTNET_ENVIRONMENT").GetString().ShouldBe("Development");
+            captured.RootElement.GetProperty("ASPNETCORE_ENVIRONMENT").ValueKind.ShouldBe(JsonValueKind.Null);
+            captured.RootElement.GetProperty(sentinel).ValueKind.ShouldBe(JsonValueKind.Null);
+            captured.RootElement.GetProperty("HEXALITH_G4_RUN_ID").GetString().ShouldBe(result.RunId);
+            captured.RootElement.GetProperty("HEXALITH_G4_PLAN").GetString().ShouldEndWith("plan.json");
+            captured.RootElement.GetProperty("HEXALITH_G4_SIGNING_KEY").GetString().ShouldNotBeNullOrWhiteSpace();
+            CompositionRunState state = (await engine.StateStore.TryReadAsync(result.RunId!, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            state.AppHostProcessId.ShouldBeNull();
+            Directory.Exists(state.Workspace).ShouldBeFalse();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(sentinel, previous);
+            Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", previousDotnetEnvironment);
+            Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", previousAspnetcoreEnvironment);
+        }
+    }
+
     /// <summary>Verifies a v2 AppHost preflight refusal preserves failure evidence while removing its workspace.</summary>
     /// <returns>The result assertion.</returns>
     [Fact]
