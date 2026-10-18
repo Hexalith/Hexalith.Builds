@@ -46,7 +46,10 @@ public sealed record CompositionAspireHostPaths(string DcpCliPath, string Dashbo
         Environment.GetEnvironmentVariable,
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
 
-    /// <summary>Gets the Aspire package runtime identifier of this machine, or null when Aspire ships no orchestration for it.</summary>
+    /// <summary>
+    /// Gets the Aspire package runtime identifier of this process, or null when Aspire ships no orchestration for it. The process
+    /// architecture matches the SDK that restored the packages, including x64 .NET emulated on an arm64 OS.
+    /// </summary>
     /// <returns>The runtime identifier, such as <c>linux-x64</c>.</returns>
     public static string? CurrentRuntimeIdentifier()
     {
@@ -64,7 +67,7 @@ public sealed record CompositionAspireHostPaths(string DcpCliPath, string Dashbo
             platform = OSPlatform.Linux;
         }
 
-        return RuntimeIdentifier(platform, RuntimeInformation.OSArchitecture);
+        return RuntimeIdentifier(platform, RuntimeInformation.ProcessArchitecture);
     }
 
     /// <summary>Resolves the DCP and dashboard executables of this machine at an Aspire version.</summary>
@@ -82,7 +85,7 @@ public sealed record CompositionAspireHostPaths(string DcpCliPath, string Dashbo
         if (runtimeIdentifier is null)
         {
             return Unavailable(
-                $"Aspire {aspireVersion} ships no DCP or dashboard package for {RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture}.",
+                $"Aspire {aspireVersion} ships no DCP or dashboard package for {RuntimeInformation.OSDescription} {RuntimeInformation.ProcessArchitecture}.",
                 "runtimeIdentifier",
                 "Run the composition on a platform with Aspire orchestration packages (Linux, macOS or Windows on x64 or arm64).");
         }
@@ -146,7 +149,7 @@ public sealed record CompositionAspireHostPaths(string DcpCliPath, string Dashbo
 
     /// <summary>Maps an operating system and architecture to an Aspire package runtime identifier.</summary>
     /// <param name="platform">The operating system, or null when unsupported.</param>
-    /// <param name="architecture">The operating-system architecture.</param>
+    /// <param name="architecture">The process architecture.</param>
     /// <returns>The runtime identifier, or null when Aspire ships no orchestration for it.</returns>
     internal static string? RuntimeIdentifier(OSPlatform? platform, Architecture architecture)
     {

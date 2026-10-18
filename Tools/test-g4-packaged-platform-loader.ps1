@@ -90,6 +90,8 @@ function Invoke-PackagedHostChild {
         timedOut = $false; diagnosticsComplete = $false; operationBoundSeconds = $ChildTimeoutSeconds
         stdout = Join-Path $OutputDirectory "$Name.stdout.log"; stderr = Join-Path $OutputDirectory "$Name.stderr.log"
     }
+    # Record the child before any start, timeout or exit failure can throw, so the receipt keeps its facts.
+    $receipt[$Name] = $child
     $childProcess = [Diagnostics.Process]::new()
     $childProcess.StartInfo = $childStart
     $stdoutFile = [IO.File]::Open($child.stdout, 'CreateNew', 'Write', 'Read')
