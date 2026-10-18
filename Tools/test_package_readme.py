@@ -99,10 +99,10 @@ class PackageReadmeTests(unittest.TestCase):
             self.assertIn(directory / "docs/README.md", identities)
             self.assertIn(directory / "unpacked/README.md", identities)
             self.assertIn(directory / "inherited/README.txt", identities)
-            built = self.invoke(directory, "build", str(project), "--configuration", "Debug", "--no-incremental", "-m:1", "-v:minimal")
-            self.assertEqual(0, built.returncode, built.stdout + built.stderr)
+            packed = self.invoke(directory, "pack", str(project), "--configuration", "Debug", "-m:1", "-v:minimal")
+            self.assertEqual(0, packed.returncode, packed.stdout + packed.stderr)
             packages = list((directory / "bin/Debug").glob("*.nupkg"))
-            self.assertEqual(1, len(packages), built.stdout + built.stderr)
+            self.assertEqual(1, len(packages), packed.stdout + packed.stderr)
             with zipfile.ZipFile(packages[0]) as archive:
                 self.assertEqual(1, archive.namelist().count("README.md"))
                 self.assertEqual((directory / "module/README.md").read_bytes(), archive.read("README.md"))
@@ -118,6 +118,30 @@ class PackageReadmeTests(unittest.TestCase):
                     self.assertEqual(source.read_bytes(), archive.read(implicit_content[0]))
                     preserved = [name for name in archive.namelist() if archive.read(name) == source.read_bytes()]
                     print(f"README-DEFAULT-CONTENT: omitted PackagePath: {', '.join(preserved)}", flush=True)
+
+    def test_repeated_builds_do_not_create_package_archives(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="hexalith-build-no-pack-") as temporary:
+            directory = Path(temporary)
+            project = self.project(directory, None)
+            for configuration in ("Debug", "Release"):
+                for suffix in ("first", "second"):
+                    with self.subTest(configuration=configuration, suffix=suffix):
+                        built = self.invoke(directory, "build", str(project), "--configuration", configuration,
+                                            f"-p:VersionSuffix={suffix}", "-m:1", "-v:minimal")
+                        self.assertEqual(0, built.returncode, built.stdout + built.stderr)
+                        self.assertTrue((directory / f"bin/{configuration}/net10.0/fixture.dll").is_file())
+                        for pattern in ("*.nupkg", "*.snupkg"):
+                            self.assertFalse(list(directory.rglob(pattern)), built.stdout + built.stderr)
+
+    def test_build_can_explicitly_opt_into_packaging(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="hexalith-build-opt-in-pack-") as temporary:
+            directory = Path(temporary)
+            project = self.project(directory, None)
+            result = self.invoke(directory, "build", str(project), "--configuration", "Debug",
+                                 "-p:GeneratePackageOnBuild=true", "-m:1", "-v:minimal")
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual(1, len(list((directory / "bin/Debug").glob("*.nupkg"))),
+                             result.stdout + result.stderr)
 
     def test_forward_slash_root_package_path_is_replaced(self) -> None:
         self.check_package("/")
@@ -140,7 +164,7 @@ class PackageReadmeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="hexalith-readme-missing-") as temporary:
             directory = Path(temporary)
             project = self.project(directory, "/", missing=True)
-            result = self.invoke(directory, "build", str(project), "--configuration", "Debug", "-m:1", "-v:minimal")
+            result = self.invoke(directory, "pack", str(project), "--configuration", "Debug", "-m:1", "-v:minimal")
             self.assertNotEqual(0, result.returncode)
             self.assertIn("NU5019", result.stdout + result.stderr)
             self.assertIn("README.md", result.stdout + result.stderr)

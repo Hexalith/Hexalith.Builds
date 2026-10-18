@@ -16,7 +16,8 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- Pack explicitly so timestamped local packages do not accumulate on every build. -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IsPackable Condition="'$(IDEBuild)' != 'true'">true</IsPackable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' != 'Release'">

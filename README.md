@@ -47,7 +47,7 @@ This repository:
 - `Github/package-release/release.config.json`: Shared semantic-release config
   for package-producing repositories (legacy — domain modules use
   `domain-release.yml` with a module `.releaserc.json`).
-- `Github/scripts/build-packages.ps1`: Builds library projects during
+- `Github/scripts/build-packages.ps1`: Builds and packs library projects during
   semantic-release.
 - `Github/scripts/publish-packages.ps1`: Publishes each primary NuGet package
   once during semantic-release; `dotnet` publishes its adjacent symbols package.
@@ -176,6 +176,13 @@ For library projects that should produce NuGet packages, import
           Condition="Exists('../references/Hexalith.Builds/Hexalith.Package.props')" />
 </Project>
 ```
+
+Ordinary builds do not create `.nupkg` or `.snupkg` archives. This prevents
+timestamped local packages from accumulating under `bin` on every build.
+Create a local package explicitly with
+`dotnet pack <project.csproj> --configuration Debug`; release scripts explicitly
+pack in Release configuration. Projects remain packable, and
+`-p:GeneratePackageOnBuild=true` can opt a build into automatic packaging.
 
 ### Import Central Package Versions
 
