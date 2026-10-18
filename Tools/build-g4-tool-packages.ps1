@@ -86,12 +86,14 @@ if (-not (Test-Path -LiteralPath $solutionPath -PathType Leaf)) {
     throw "Solution '$solutionPath' does not exist."
 }
 
-Invoke-DotNet -Arguments @('restore', $solutionPath)
-Invoke-DotNet -Arguments @('build', $solutionPath, '--configuration', 'Release', '--no-restore')
+# Hosts are packed from prebuilt output, so they must share the CLI's contract identity.
+$versionProperties = @("-p:Version=$Version", "-p:PackageVersion=$Version")
+Invoke-DotNet -Arguments (@('restore', $solutionPath) + $versionProperties)
+Invoke-DotNet -Arguments (@('build', $solutionPath, '--configuration', 'Release', '--no-restore') + $versionProperties)
 
 foreach ($tool in $tools) {
     Write-Host "Packing $($tool.Id) at $Version in Release configuration."
-    Invoke-DotNet -Arguments @(
+    Invoke-DotNet -Arguments (@(
         'pack',
         $tool.Project,
         '--configuration',
@@ -100,10 +102,8 @@ foreach ($tool in $tools) {
         '--output',
         $packageDirectory,
         '-p:GeneratePackageOnBuild=false',
-        '-p:IDEBuild=false',
-        "-p:Version=$Version",
-        "-p:PackageVersion=$Version"
-    )
+        '-p:IDEBuild=false'
+    ) + $versionProperties)
 }
 
 $expectedNames = Get-ExpectedPackageNames -Tools $tools -PackageVersion $Version
@@ -119,6 +119,10 @@ if ($difference.Count -gt 0 -or $actualPackages.Count -ne 4) {
     $actualDisplay = if ($actualNames.Count -eq 0) { '<none>' } else { $actualNames -join ', ' }
     throw "Expected exactly the two approved G-4 tool packages with .nupkg and .snupkg artifacts at version '$Version'. Actual artifacts: $actualDisplay."
 }
+
+& (Join-Path $PSScriptRoot 'test-g4-packaged-platform-loader.ps1') `
+    -PackagePath (Join-Path $packageDirectory "Hexalith.Builds.Module.Cli.$Version.nupkg") `
+    -OutputDirectory (Join-Path $packageDirectory 'platform-loader')
 
 if (-not $DeferInventory) {
     $inventoryPackages = foreach ($tool in $tools) {

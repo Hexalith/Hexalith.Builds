@@ -24,6 +24,20 @@ function global:dotnet {
         [object[]] $ForwardedArguments
     )
 
+    if ($global:HexalithG4GateDotNetMode -ceq 'build-control') {
+        $arguments = @($ForwardedArguments | ForEach-Object { [string]$_ })
+        $global:HexalithG4BuildCalls.Add($arguments)
+        if ($arguments[0] -ceq 'pack') {
+            $output = $arguments[[Array]::IndexOf($arguments, '--output') + 1]
+            $id = [IO.Path]::GetFileNameWithoutExtension($arguments[1])
+            foreach ($extension in @('nupkg', 'snupkg')) {
+                [IO.File]::WriteAllText((Join-Path $output "$id.4.31.2.$extension"), 'synthetic package')
+            }
+        }
+        $global:LASTEXITCODE = 0
+        return
+    }
+
     if ($global:HexalithG4GateDotNetMode -ceq 'fail') {
         $global:LASTEXITCODE = 97
         return
@@ -70,6 +84,46 @@ function global:dotnet {
 
 try {
     $null = New-Item -ItemType Directory -Path $testRoot
+
+    # Exercise the real official wrapper through its post-pack loader refusal boundary.
+    $buildControl = Join-Path $testRoot 'build-control'
+    $null = New-Item -ItemType Directory -Path (Join-Path $buildControl 'Tools') -Force
+    Copy-Item -LiteralPath $buildPath -Destination (Join-Path $buildControl 'Tools/build-g4-tool-packages.ps1')
+    [IO.File]::WriteAllText((Join-Path $buildControl 'Hexalith.Builds.slnx'), '<Solution />')
+    foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli')) {
+        $project = Join-Path $buildControl "src/libraries/$id"
+        $null = New-Item -ItemType Directory -Path $project -Force
+        [IO.File]::WriteAllText((Join-Path $project "$id.csproj"), '<Project />')
+    }
+    [IO.File]::WriteAllText((Join-Path $buildControl 'Tools/test-g4-packaged-platform-loader.ps1'),
+        'param($PackagePath, $OutputDirectory); throw "Synthetic loader refusal."')
+    $global:HexalithG4BuildCalls = [Collections.Generic.List[string[]]]::new()
+    $global:HexalithG4GateDotNetMode = 'build-control'
+    $loaderRefusalOutput = Join-Path $buildControl 'packages'
+    try {
+        & (Join-Path $buildControl 'Tools/build-g4-tool-packages.ps1') -Version '4.31.2' -OutputDirectory $loaderRefusalOutput
+        throw 'A loader refusal exposed successful package inventory.'
+    }
+    catch {
+        if (-not $_.Exception.Message.Contains('Synthetic loader refusal.', [StringComparison]::Ordinal)) { throw }
+    }
+    finally {
+        $global:HexalithG4GateDotNetMode = 'fail'
+    }
+    if ($global:HexalithG4BuildCalls.Count -ne 4 -or
+        ($global:HexalithG4BuildCalls | ForEach-Object { $_[0] }) -join ',' -cne 'restore,build,pack,pack') {
+        throw 'The official package wrapper skipped a build phase.'
+    }
+    foreach ($call in $global:HexalithG4BuildCalls) {
+        if ($call -cnotcontains '-p:Version=4.31.2' -or $call -cnotcontains '-p:PackageVersion=4.31.2') {
+            throw 'Restore, build and pack must receive identical selected version properties.'
+        }
+    }
+    if (@(Get-ChildItem -LiteralPath $loaderRefusalOutput -File).Count -ne 4 -or
+        (Test-Path -LiteralPath (Join-Path $loaderRefusalOutput 'g4-tool-package-inventory.json'))) {
+        throw 'A loader refusal must retain all four packages without successful inventory.'
+    }
+    Write-Host 'Official package wrapper controls passed: version propagation and post-pack loader refusal.'
 
     $reusedDirectory = Join-Path $testRoot 'reused'
     $null = New-Item -ItemType Directory -Path $reusedDirectory
