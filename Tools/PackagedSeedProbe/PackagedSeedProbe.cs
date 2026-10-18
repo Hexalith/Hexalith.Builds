@@ -128,7 +128,8 @@ internal static class PackagedSeedProbe
             JsonElement[] projections = [.. subscriptions.RootElement.EnumerateArray().Where(subscription => subscription.GetProperty("topic").GetString() == "*.*.projection-changed")];
             subscriptionCount = projections.Length;
             subscriptionPubsub = projections.Length == 1
-                ? projections[0].EnumerateObject().Single(property => property.Name.Equals("pubsubname", StringComparison.OrdinalIgnoreCase)).Value.GetString() : null;
+                ? projections[0].EnumerateObject().Single(property => property.Name.Equals("pubsubname", StringComparison.OrdinalIgnoreCase)).Value.GetString()
+                : null;
         }
 
         bool passed = declarative
@@ -169,7 +170,8 @@ internal static class PackagedSeedProbe
         string seedPath = Path.Combine(scratch, _seedEntry);
         AssemblyDependencyResolver resolver = new(seedPath);
         AssemblyLoadContext.Default.Resolving += (_, name) => resolver.ResolveAssemblyToPath(name) is string path
-            ? AssemblyLoadContext.Default.LoadFromAssemblyPath(path) : null;
+            ? AssemblyLoadContext.Default.LoadFromAssemblyPath(path)
+            : null;
         Assembly seed = AssemblyLoadContext.Default.LoadFromAssemblyPath(seedPath);
         Require(Path.GetFullPath(seed.Location) == seedPath, "The loaded seed is outside the extracted package.");
         string loadedHash = HashFile(seed.Location);
