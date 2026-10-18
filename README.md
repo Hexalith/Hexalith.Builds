@@ -280,9 +280,8 @@ tag and clean-tree requirements do not apply. Source mode reports all identity
 conditions as warnings and continues. A Git workspace missing the direct
 Platform reference fails in both modes, while its other identity conditions
 stay warnings in source mode; a standalone workspace warns in source mode and
-refuses package mode. The Platform record added in this story has no tool range, so package
-mode remains unavailable for the live Platform identity until that range is
-ratified.
+refuses package mode. The `toolVersionRange` in Platform's
+`hexalith-platform.json` is the record of which tool versions Platform accepts.
 
 Mapping values override optional `Directory.Build.props` source probes and
 reconcile references selected by consumer targets before restore. Builds fail
