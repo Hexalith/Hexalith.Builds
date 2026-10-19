@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "0244fc50b4000b41337816ccee5d9d49fa2f83ab",
+  "generatedFromRevision": "4aaeed8ba8a0901086ff77b3ce21f120b2a8c8df",
   "catalogPath": "Props/Directory.Packages.props",
   "catalogSha256": "0439d2f595339f278f31d7f05628e9c0912b0caad85d78cff3a59c004ecd1eb3",
   "catalogRawSha256": "76d74e651646ecd18ce0155deede53080569ceb387f93a1c59f1442f615bc431",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-10-18T21:46:57.4529120+00:00",
+    "auditedAtUtc": "2026-10-19T05:22:31.3077905+00:00",
     "refreshedFamilies": [
       "hexalith-commons",
       "hexalith-folders"
@@ -173,7 +173,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "0244fc50b4000b41337816ccee5d9d49fa2f83ab",
+    "repositoryRevision": "4aaeed8ba8a0901086ff77b3ce21f120b2a8c8df",
     "sha256": "950bc4865ef0c50c8675ba4f3499b45f78d4794a8d957c53d0cfc7c87bdba16b",
     "entries": [
       {
@@ -5688,8 +5688,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-10-18T21:46:57.4529120+00:00",
-        "generatedFromRevision": "0244fc50b4000b41337816ccee5d9d49fa2f83ab",
+        "auditedAtUtc": "2026-10-19T05:22:31.3077905+00:00",
+        "generatedFromRevision": "4aaeed8ba8a0901086ff77b3ce21f120b2a8c8df",
         "familySelectionSha256": "7f7d6ab4057c82085eebd5afa4fd9365ab4f44a85909a24fe5e486b202445dae",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "5ddacf87966190c710f7aedfa0b98eeacc0d7ae63a82eebb79efaed74a8a54cc",
@@ -8723,8 +8723,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-10-18T21:46:57.4529120+00:00",
-        "generatedFromRevision": "0244fc50b4000b41337816ccee5d9d49fa2f83ab",
+        "auditedAtUtc": "2026-10-19T05:22:31.3077905+00:00",
+        "generatedFromRevision": "4aaeed8ba8a0901086ff77b3ce21f120b2a8c8df",
         "familySelectionSha256": "16fb562cd094d983e3c3e648d71feb8530bb602f97c4609f35ee5ce3d6653ca4",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "c950331bca739563865ddacc00e6bcff7afc37d8d71899f8f5d450b682a48d4d",
