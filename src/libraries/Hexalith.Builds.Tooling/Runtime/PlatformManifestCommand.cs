@@ -7,12 +7,19 @@ namespace Hexalith.Builds.Tooling.Runtime;
 
 using System.Text.Json;
 
+using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Filesystem;
 using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>Identifies declaration commands and builds their pinned Platform model.</summary>
 public static class PlatformManifestCommand
 {
+    /// <summary>The v2 module identity whose source runs build the run-scoped McpCli tool.</summary>
+    public const string McpCliModule = "mcpcli";
+
     private const int _maximumManifestBytes = 1_048_576;
+
+    private const string _mcpCliRepository = "Hexalith.McpCli";
 
     /// <summary>Tests the document schema without converting v2 into a legacy manifest.</summary>
     /// <param name="path">The declaration path.</param>
@@ -76,35 +83,15 @@ public static class PlatformManifestCommand
             throw new InvalidOperationException($"Platform model project '{project}' is unavailable.");
         }
 
-        string pinnedCatalog = Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props");
-        if (!File.Exists(pinnedCatalog))
-        {
-            throw new InvalidOperationException($"Platform model '{project}' cannot use the selected Builds catalog because '{pinnedCatalog}' was not materialized from the Platform identity.");
-        }
-
-        try
-        {
-            _ = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
-        }
-        catch (Exception exception) when (exception is IOException or JsonException or UnauthorizedAccessException or InvalidDataException or ArgumentException)
-        {
-            throw new InvalidOperationException($"Platform model '{project}' cannot use its pinned catalog: {exception.Message}", exception);
-        }
-
+        string pinnedCatalog = VerifiedPinnedCatalog(mapping, workspace, $"Platform model '{project}'");
         string output = Path.Combine(workspace, "hosts", "platform-model");
         List<string> arguments =
         [
             "build", project, "--configuration", mapping.Mode == WorkspaceMode.Source ? "Debug" : "Release", "--output", output,
             "-p:BuildsToolingAssemblyPath=" + typeof(PlatformManifestCommand).Assembly.Location,
             "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0", "-nodeReuse:false", "-p:UseSharedCompilation=false",
+            .. PinnedCatalogArguments(pinnedCatalog),
         ];
-
-        // Catalog properties are needed by owner early props. Import the pinned file first,
-        // then prevent a second SDK import while retaining NuGet central-version resolution.
-        arguments.Add("-p:CustomBeforeDirectoryBuildProps=" + pinnedCatalog);
-        arguments.Add("-p:ImportDirectoryPackagesProps=false");
-        arguments.Add("-p:CentralPackageVersionsFileImported=true");
-        arguments.Add("-p:DirectoryPackagesPropsPath=" + pinnedCatalog);
 
         CompositionProcessResult result = await CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo("dotnet", arguments, root, null),
@@ -114,6 +101,59 @@ public static class PlatformManifestCommand
         return result.ExitCode == 0 && File.Exists(assembly)
             ? assembly
             : throw new InvalidOperationException($"Platform model '{project}' could not build: {BoundedOutput(result.Output, result.ErrorOutput)}");
+    }
+
+    /// <summary>Tests whether a v2 run builds the run-scoped McpCli tool.</summary>
+    /// <param name="activeModule">The selected v2 module identity.</param>
+    /// <param name="mapping">The command-resolved mapping.</param>
+    /// <returns>True for an McpCli run in source mode; package-mode McpCli is not built here.</returns>
+    public static bool BuildsMcpCli(string? activeModule, SourceMapping mapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        return string.Equals(activeModule, McpCliModule, StringComparison.Ordinal) && mapping.Mode == WorkspaceMode.Source;
+    }
+
+    /// <summary>Gets the McpCli tool project selected by the mapping's <c>HexalithMcpCliRoot</c>, whether or not it exists.</summary>
+    /// <param name="mapping">The command-resolved mapping.</param>
+    /// <returns>The mapped project path, or its expected direct-reference path when McpCli is not mapped.</returns>
+    public static string McpCliProjectPath(SourceMapping mapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        string root = McpCliEntry(mapping)?.Path ?? Path.Combine(mapping.Root, "references", _mcpCliRepository);
+        return Path.Combine(root, "src", "Hexalith.McpCli", "Hexalith.McpCli.csproj");
+    }
+
+    /// <summary>Gets the run-scoped McpCli tool assembly built into a run workspace.</summary>
+    /// <param name="workspace">The run-owned output workspace.</param>
+    /// <returns>The Debug tool assembly path.</returns>
+    public static string McpCliToolPath(string workspace)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(workspace);
+        return Path.Combine(McpCliArtifactsPath(workspace), "bin", "Hexalith.McpCli", "debug", "Hexalith.McpCli.dll");
+    }
+
+    /// <summary>Builds the mapped McpCli checkout in Debug into the run workspace; it is never packed or published.</summary>
+    /// <param name="mapping">The command-resolved mapping.</param>
+    /// <param name="workspace">The run-owned output workspace.</param>
+    /// <param name="startupDeadlineUtc">The absolute startup deadline, or null for the default bound.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The run-scoped tool assembly path.</returns>
+    /// <exception cref="WorkspaceMappingException">The mapped McpCli checkout or tool project is unavailable.</exception>
+    /// <exception cref="InvalidOperationException">The pinned catalog is unusable or the tool cannot build.</exception>
+    public static async Task<string> BuildMcpCliAsync(SourceMapping mapping, string workspace, DateTimeOffset? startupDeadlineUtc, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        ArgumentException.ThrowIfNullOrWhiteSpace(workspace);
+        (string root, string project) = ResolveMcpCliProject(mapping);
+        string pinnedCatalog = VerifiedPinnedCatalog(mapping, workspace, $"McpCli '{project}'");
+        CompositionProcessResult result = await CompositionProcess.RunAsync(
+            CompositionProcess.CreateStartInfo("dotnet", McpCliBuildArguments(project, workspace, pinnedCatalog), root, null),
+            CompositionStartupClock.Remaining(startupDeadlineUtc, DateTimeOffset.UtcNow),
+            cancellationToken).ConfigureAwait(false);
+        string tool = McpCliToolPath(workspace);
+        return result.ExitCode == 0 && File.Exists(tool)
+            ? tool
+            : throw new InvalidOperationException($"McpCli '{project}' could not build: {BoundedOutput(result.Output, result.ErrorOutput)}");
     }
 
     /// <summary>Formats process diagnostics without passing log dumps to command output.</summary>
@@ -137,4 +177,94 @@ public static class PlatformManifestCommand
     /// <returns>The unique active identity, or the reference default.</returns>
     internal static string? ActiveModule(IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformModuleDeclaration>? declarations) =>
         declarations is { Count: 1 } ? declarations[0].Declaration.GetProperty("identity").GetProperty("moduleId").GetString() : null;
+
+    /// <summary>Gets the McpCli build arguments: Debug, run-workspace artifacts, the pinned catalog, no pack or publish.</summary>
+    /// <remarks>
+    /// The pinned-catalog arguments skip McpCli's own Directory.Packages.props, so its transitive pinning is restored explicitly:
+    /// the catalog's security pins for transitive packages apply only with it.
+    /// </remarks>
+    /// <param name="project">The mapped McpCli tool project.</param>
+    /// <param name="workspace">The run-owned output workspace.</param>
+    /// <param name="pinnedCatalog">The verified pinned catalog.</param>
+    /// <returns>The <c>dotnet</c> arguments.</returns>
+    internal static IReadOnlyList<string> McpCliBuildArguments(string project, string workspace, string pinnedCatalog) =>
+    [
+        "build", project, "--configuration", "Debug", "--artifacts-path", McpCliArtifactsPath(workspace),
+        "-p:GeneratePackageOnBuild=false", "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0", "-nodeReuse:false", "-p:UseSharedCompilation=false",
+        "-p:CentralPackageTransitivePinningEnabled=true",
+        .. PinnedCatalogArguments(pinnedCatalog),
+    ];
+
+    /// <summary>Resolves the McpCli tool project only through the mapping, never through a sibling or nested copy.</summary>
+    /// <param name="mapping">The command-resolved mapping.</param>
+    /// <returns>The mapped checkout root and its tool project.</returns>
+    /// <exception cref="WorkspaceMappingException">The mapping selects no initialized McpCli checkout with a tool project.</exception>
+    internal static (string Root, string Project) ResolveMcpCliProject(SourceMapping mapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        string project = McpCliProjectPath(mapping);
+        SourceMappingEntry? entry = McpCliEntry(mapping);
+        string reason;
+        if (entry is not { Origin: "source", Path: not null })
+        {
+            reason = "the source mapping selects no direct 'references/Hexalith.McpCli' checkout";
+        }
+        else if (!RepositoryPathResolver.TryResolveExistingFile(entry.Path, Path.GetRelativePath(entry.Path, project), out _))
+        {
+            reason = "the mapped checkout is uninitialized or has no McpCli tool project";
+        }
+        else
+        {
+            return (entry.Path, project);
+        }
+
+        throw new WorkspaceMappingException(new ToolDiagnostic(
+            "HXW004",
+            ToolPhase.Prerequisite,
+            ToolFailureCategory.PrerequisiteUnavailable,
+            $"Required source '{_mcpCliRepository}' at '{project}' is unavailable: {reason}. No other McpCli checkout is used.",
+            project,
+            "Initialize the direct references/Hexalith.McpCli checkout without --recursive, then retry; no resources were started."));
+    }
+
+    private static string McpCliArtifactsPath(string workspace) => Path.Combine(workspace, "tools", McpCliModule);
+
+    private static SourceMappingEntry? McpCliEntry(SourceMapping mapping)
+    {
+        // HexalithMcpCliRoot is generated from the identity's property suffix; the resolver rejects suffix collisions.
+        string suffix = SourceMapping.PropertySuffix(_mcpCliRepository);
+        SourceMappingEntry[] entries = [.. mapping.Entries.Where(entry => string.Equals(SourceMapping.PropertySuffix(entry.Identity), suffix, StringComparison.OrdinalIgnoreCase))];
+        return entries.Length == 1 ? entries[0] : null;
+    }
+
+    /// <summary>Imports the pinned catalog first, because owner early props need its properties, then prevents a second SDK import while retaining NuGet central-version resolution.</summary>
+    /// <param name="pinnedCatalog">The verified pinned catalog.</param>
+    /// <returns>The MSBuild catalog arguments.</returns>
+    private static IEnumerable<string> PinnedCatalogArguments(string pinnedCatalog) =>
+    [
+        "-p:CustomBeforeDirectoryBuildProps=" + pinnedCatalog,
+        "-p:ImportDirectoryPackagesProps=false",
+        "-p:CentralPackageVersionsFileImported=true",
+        "-p:DirectoryPackagesPropsPath=" + pinnedCatalog,
+    ];
+
+    private static string VerifiedPinnedCatalog(SourceMapping mapping, string workspace, string consumer)
+    {
+        string pinnedCatalog = Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props");
+        if (!File.Exists(pinnedCatalog))
+        {
+            throw new InvalidOperationException($"{consumer} cannot use the selected Builds catalog because '{pinnedCatalog}' was not materialized from the Platform identity.");
+        }
+
+        try
+        {
+            _ = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(workspace, "source-mapping", "catalog-versions.json"));
+        }
+        catch (Exception exception) when (exception is IOException or JsonException or UnauthorizedAccessException or InvalidDataException or ArgumentException)
+        {
+            throw new InvalidOperationException($"{consumer} cannot use its pinned catalog: {exception.Message}", exception);
+        }
+
+        return pinnedCatalog;
+    }
 }

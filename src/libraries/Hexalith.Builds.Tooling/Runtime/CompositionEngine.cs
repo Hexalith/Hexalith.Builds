@@ -158,6 +158,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             IReadOnlyList<CompositionRunModule> modules;
             IReadOnlyList<CompositionRunUiMarker> markers;
             string? platformModel = null;
+            string? mcpCliTool = null;
             if (platformComposition)
             {
                 SourceMapping mapping = _options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping.");
@@ -165,6 +166,27 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 preparedWorkspace ??= WorkspaceFor(runId);
                 CompositionWorkspace.CreatePrivateDirectory(preparedWorkspace);
                 await SourceMappingMaterializer.WriteAsync(mapping, preparedWorkspace, startupBound.Token).ConfigureAwait(false);
+                if (PlatformManifestCommand.BuildsMcpCli(activeModule, mapping))
+                {
+                    // McpCli is a run-scoped tool, not a server. A missing checkout or project raises
+                    // WorkspaceMappingException (HXW004), which refuses the run before any resource starts.
+                    try
+                    {
+                        mcpCliTool = await (_options.McpCliBuildOverride?.Invoke(mapping, preparedWorkspace, startupBound.Token)
+                            ?? PlatformManifestCommand.BuildMcpCliAsync(mapping, preparedWorkspace, deadlineUtc, startupBound.Token)).ConfigureAwait(false);
+                    }
+                    catch (InvalidOperationException exception)
+                    {
+                        IReadOnlyList<ToolDiagnostic> refusal = [Diagnostic("HXR020", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "McpCli run-scoped build failed: " + exception.Message, PlatformManifestCommand.McpCliProjectPath(mapping), "Correct the named McpCli build input; no resources were started.")];
+                        return await FailAndTearDownAsync(runId, null, manifestHash, CompositionRunStatus.Failed, refusal, ToolExitCode.TopologyOrLifecycle, requestedAt, deadline, [], null).ConfigureAwait(false);
+                    }
+
+                    if (DateTimeOffset.UtcNow >= deadlineUtc)
+                    {
+                        return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
+                    }
+                }
+
                 try
                 {
                     platformModel = await (_options.PlatformModelBuildOverride?.Invoke(mapping, preparedWorkspace, startupBound.Token)
@@ -288,6 +310,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 DebugAttach = _options.DebugAttach,
                 StartupTasks = platformComposition ? CompositionStartupTasks.Select(manifestPath, closure, _options.SourceMapping) : [],
                 PlatformDeclarationHash = platformComposition ? manifestHash : plan.PlatformDeclarationHash,
+                McpCliToolPath = mcpCliTool,
             };
 
             await CompositionDaprComponentRenderer.WriteAsync(plan, startupBound.Token).ConfigureAwait(false);
@@ -1069,6 +1092,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                             : $"Project '{resource.Name}' launcher process id is unavailable; attach information is incomplete.";
                         readyDiagnostics.Add(Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, message, resource.Name, null));
                     }
+                }
+
+                if (plan.McpCliToolPath is { } mcpCliTool)
+                {
+                    string mcpCliProject = plan.SourceMapping is { } mcpCliMapping ? PlatformManifestCommand.McpCliProjectPath(mcpCliMapping) : "unavailable";
+                    readyDiagnostics.Add(Diagnostic("HXI010", ToolPhase.Topology, ToolFailureCategory.None, $"Run-scoped McpCli Debug build '{mcpCliTool}' of '{mcpCliProject}'; launch it under a debugger, and down deletes it.", PlatformManifestCommand.McpCliModule, null));
                 }
 
                 return new CompositionStartResult(

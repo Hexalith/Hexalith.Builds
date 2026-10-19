@@ -68,6 +68,9 @@ public sealed record CompositionRunPlan(
     /// <summary>Gets the built model from the pinned Platform checkout.</summary>
     public string? PlatformModelAssemblyPath { get; init; }
 
+    /// <summary>Gets the run-scoped Debug McpCli tool built from the mapped checkout for an McpCli source run.</summary>
+    public string? McpCliToolPath { get; init; }
+
     /// <summary>Gets a value indicating whether this is a declaration-driven Platform composition.</summary>
     public bool IsPlatformComposition => PlatformDeclarationPaths.Count > 0;
 

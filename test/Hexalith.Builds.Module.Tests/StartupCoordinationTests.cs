@@ -168,6 +168,7 @@ public sealed class StartupCoordinationTests
                 return mapping;
             },
             PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+            McpCliBuildOverride = (_, run, _) => Task.FromResult(PlatformManifestCommand.McpCliToolPath(run)),
         };
         StringWriter output = new();
         await using (output.ConfigureAwait(true))
@@ -206,7 +207,12 @@ public sealed class StartupCoordinationTests
         CompositionTestFiles.WriteScript(Path.Combine(owner, "tools", "verify.sh"), "pwd > task-directory\nprintf x >> task-count\nsleep 120 >/dev/null 2>&1 &\necho $! > descendant\n");
         SetDependencyStartup(mapping, 30, "tools/verify.sh");
         string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
-        CompositionEngine engine = new(Options(workspace.Root, appHost) with { SourceMapping = mapping, PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost) });
+        CompositionEngine engine = new(Options(workspace.Root, appHost) with
+        {
+            SourceMapping = mapping,
+            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+            McpCliBuildOverride = (_, run, _) => Task.FromResult(PlatformManifestCommand.McpCliToolPath(run)),
+        });
         using Process foreign = Process.Start(new ProcessStartInfo("sleep", "120") { UseShellExecute = false })!;
         CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
         Process? descendant = null;

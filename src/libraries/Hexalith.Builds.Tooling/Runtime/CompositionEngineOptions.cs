@@ -119,6 +119,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// <summary>Gets a test-only replacement for compiling the Platform model.</summary>
     internal Func<SourceMapping, string, CancellationToken, Task<string>>? PlatformModelBuildOverride { get; init; }
 
+    /// <summary>Gets a test-only replacement for building the run-scoped McpCli tool.</summary>
+    internal Func<SourceMapping, string, CancellationToken, Task<string>>? McpCliBuildOverride { get; init; }
+
     /// <summary>Gets a test-only replacement for bounded v2 session cleanup.</summary>
     internal Func<CompositionRunSession, CancellationToken, Task<CompositionDownResult>>? PlatformDownOverride { get; init; }
 }

@@ -269,6 +269,21 @@ The catalog is evaluated for the consumer project name, so conditional pins
 apply to that project. Equivalent exact NuGet ranges are accepted before
 restore; the guard checks the resolved package version after restore.
 
+McpCli is a short-lived tool, not a server, so its v2 declaration lists no
+server. When the active v2 module is `mcpcli`, source-mode `run`, `debug` and
+`test` build `src/Hexalith.McpCli/Hexalith.McpCli.csproj` under the mapped
+`HexalithMcpCliRoot` before the Platform model and before any resource starts.
+The build uses Debug, the run's pinned catalog with transitive pinning and
+`--artifacts-path <run workspace>/tools/mcpcli`. It never packs or publishes,
+and it writes no `bin` or `obj` into the checkout. A ready run reports
+`HXI010` with field `mcpcli`, naming
+`tools/mcpcli/bin/Hexalith.McpCli/debug/Hexalith.McpCli.dll` under the run
+workspace and the mapped project it was built from, and `down` deletes it with
+that workspace. A checkout that is unmapped, uninitialized or has no tool
+project physically inside it fails with `HXW004`, and a failed build
+with `HXR020`. Both name McpCli and the expected project path. A sibling or
+nested copy is never used. Package mode does not build McpCli.
+
 The Platform identity is the committed `references/Hexalith.Platform` gitlink
 in a module workspace, or HEAD when `hexalith-platform.json` is tracked at
 HEAD in the Platform repository. The record has `schemaVersion: 1` and an

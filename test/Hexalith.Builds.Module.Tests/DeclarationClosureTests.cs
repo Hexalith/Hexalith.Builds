@@ -29,6 +29,7 @@ public sealed class DeclarationClosureTests
         SourceMapping mapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root);
         IReadOnlyList<PlatformModuleDeclaration> declarations = CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(mapping, [workspace.Save()]) { ActiveModule = "mcpcli" });
         declarations.Select(declaration => CompositionDeclarationClosure.Id(declaration.Declaration)).Order(StringComparer.Ordinal).ShouldBe(["mcpcli", "memories"]);
+        CompositionDeclarationClosure.Repository("mcpcli").ShouldBe("Hexalith.McpCli");
         Path.GetFullPath(declarations.Single(declaration => CompositionDeclarationClosure.Id(declaration.Declaration) == "memories").Source).ShouldBe(Path.Combine(workspace.Root, "references", "Hexalith.Memories", "module", "hexalith.module-manifest.v2.json"));
     }
 
