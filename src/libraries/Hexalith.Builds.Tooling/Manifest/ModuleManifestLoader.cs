@@ -32,6 +32,9 @@ public static partial class ModuleManifestLoader
     /// <summary>Gets the unchanged EventStore pin for v1 module manifests.</summary>
     internal static string ModuleManifestEventStoreVersion => "3.120.0";
 
+    /// <summary>Gets the unchanged FrontComposer pin for v1 module manifests.</summary>
+    internal static string ModuleManifestFrontComposerVersion => "4.6.0";
+
     /// <summary>
     /// Loads a manifest and returns deterministic, metadata-only diagnostics.
     /// </summary>
@@ -327,7 +330,7 @@ public static partial class ModuleManifestLoader
         ValidatePlatformPin(platform.EventStoreVersion, ModuleManifestEventStoreVersion, "platform.eventStoreVersion", diagnostics);
         ValidatePlatformPin(platform.DaprRuntimeVersion, SupportedPlatformPins.DaprRuntimeVersion, "platform.daprRuntimeVersion", diagnostics);
         ValidatePlatformPin(platform.DaprSdkVersion, SupportedPlatformPins.DaprSdkVersion, "platform.daprSdkVersion", diagnostics);
-        ValidatePlatformPin(platform.FrontComposerVersion, SupportedPlatformPins.FrontComposerVersion, "platform.frontComposerVersion", diagnostics);
+        ValidatePlatformPin(platform.FrontComposerVersion, ModuleManifestFrontComposerVersion, "platform.frontComposerVersion", diagnostics);
     }
 
     private static void ValidatePlatformPin(

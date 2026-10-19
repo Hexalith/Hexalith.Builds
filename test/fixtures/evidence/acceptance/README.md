@@ -31,7 +31,8 @@ Malformed/duplicate-key controls retain their original formatting. Sample approv
 identities, times and revisions remain fabricated validator inputs.
 
 This acceptance contract uses all four current `SupportedPlatformPins`. The v1
-module-manifest contract separately retains EventStore `3.120.0` by design; its
+module-manifest contract separately retains EventStore `3.120.0` and
+FrontComposer `4.6.0` by design; its
 schema, loader, generic module/readiness fixtures and package evidence assertions
 must not be advanced by this preparation command. The bound acceptance manifest
 is an explicitly non-runnable synthetic identity artifact.

@@ -222,7 +222,7 @@ public sealed class ManifestValidationTests
         properties.GetProperty("daprSdkVersion").GetProperty("const").GetString()
             .ShouldBe(SupportedPlatformPins.DaprSdkVersion);
         properties.GetProperty("frontComposerVersion").GetProperty("const").GetString()
-            .ShouldBe(SupportedPlatformPins.FrontComposerVersion);
+            .ShouldBe(ModuleManifestLoader.ModuleManifestFrontComposerVersion);
     }
 
     /// <summary>
