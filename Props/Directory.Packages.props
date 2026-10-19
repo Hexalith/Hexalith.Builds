@@ -4,15 +4,15 @@
     <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.30.3</HexalithCommonsVersion>
-    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.1.0</HexalithConversationsVersion>
-    <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.3</HexalithPolymorphicSerializationsVersion>
-    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.125.1</HexalithEventStoreVersion>
-    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.6.0</HexalithFrontComposerVersion>
+    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.2.0</HexalithConversationsVersion>
+    <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.5</HexalithPolymorphicSerializationsVersion>
+    <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.126.0</HexalithEventStoreVersion>
+    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.7.0</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.3.0</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">1.0.0</HexalithMcpCliVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.27.1</HexalithMemoriesVersion>
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.8.0</HexalithTenantsVersion>
-    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.2.1</HexalithPartiesVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.9.0</HexalithTenantsVersion>
+    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.5.0</HexalithPartiesVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.0.0</HexalithProjectsVersion>
     <!-- Folders.Aspire is a stable public package; all other consumers retain the preview integration. -->
     <HexalithAspireHostingDaprVersion>13.6.1-beta.935</HexalithAspireHostingDaprVersion>
