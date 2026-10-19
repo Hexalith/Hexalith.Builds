@@ -3,8 +3,10 @@ work_package_id: 6.1-P1R
 artifact_kind: qualification-record
 created: 2026-08-01
 status: pending-acceptance
-candidate_baseline: 3.88.0
-candidate_builds_revision: 4351d7cba7545a96661ca2ee2ca2629df6d0a118
+candidate_baseline: 3.106.0
+candidate_builds_revision: ad52f350a2f0bc47849179ae17b4594dafff5363
+accepted_predecision_sha256: none
+invalidated_predecision_sha256: 477949fc59d0cdd3a00d0c46de7aada46164074675c16c253b2015db369c0bab
 rollback_baseline: 3.70.1
 approved_change_proposal: "Hexalith.Projects working tree based on 3fe3c7eea4de1056f69438d8ed94147872506384:_bmad-output/planning-artifacts/sprint-change-proposal-2026-08-01-p1r-baseline-revalidation.md"
 projects_post_change_revision: pending
@@ -1586,3 +1588,1194 @@ qualified, no gate closed, no gitlink moved, no submodule initialized, nothing
 pushed or published, and no owner acceptance inferred. The Architecture Spine
 remains bound to EventStore `3.70.1`. §10's four-owner table stands with all four
 rows pending.
+
+## Stopped `3.106.0` supersession attempt — 2026-09-21
+
+This append-only section preserves every earlier candidate and correction. It
+records a stopped, non-qualifying execution of the contract adopted by
+`spec-6-1-p1r.md`; it does not accept a coordinate, change Architecture or
+planning state, initialize a nested submodule, move a gitlink, push, publish,
+or release anything.
+
+### Selected coordinates and Builds alignment
+
+| Field | Exact value | Disposition |
+| --- | --- | --- |
+| `eventstore_source_revision` | `76051c70cbf868c40edc00ca0344fa5bd8879b69` | Selected immutable tag commit |
+| `eventstore_source_describe` | `v3.106.0` | Exact and clean |
+| `eventstore_package_version` / tag | `3.106.0` / `v3.106.0` | Selected published coordinate |
+| `eventstore_package_source_revision` | `76051c70cbf868c40edc00ca0344fa5bd8879b69` | Same commit as source |
+| `source_package_equivalent` | `true` | Source/package diff is empty |
+| `eventstore_release_manifest_sha256` | `6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae` | Same exact 14-ID inventory retained in the attempt-3 bundle |
+| `builds_catalog_introducing_revision` | `dae84d5f96911517eb1e6f97e75eb88e759e6d8a` | Introduces catalog `3.106.0`; child `000abf867abc3a99cfa74d39b6e73af05c78a602` records its audit |
+| `builds_qualifying_revision` | `5730f5a60c0e106131498126cbee323e24db5f4e` | Immutable local candidate; alignment passed, qualification did not complete |
+| `architecture_pre_acceptance_revision` | `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb` | Projects revision before this run; Architecture remains at accepted `3.70.1` |
+| `rollback_eventstore_revision` | `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` | Contract-fixed rollback coordinate |
+| `rollback_builds_revision` | pending | Phase 5 was forbidden after the Phase-3 failure |
+
+The Builds candidate is one commit on local branch
+`fix/p1r-3106-candidate`, based on
+`2fba3497043fe5ffcfe4dc44c51a09eae9b950ab`. Its exact commit message,
+`fix(runner): align EventStore pin to 3.106.0`, passed repository-pinned
+commitlint before and after commit. It aligns 61 active runner, schema, test,
+fixture, serialized-evidence, package-control, and coupled-hash files. It
+preserves the `3.88.0` and `3.70.1` exact-pin negatives and the historical
+`3.102.0` bundle documentation.
+
+Static parity passed all 13 catalog rows at `3.106.0`, the authoritative
+catalog passed, and the complete package audit passed at the same candidate.
+
+### Source comparison and seven APIs
+
+Selected source and package source are the same commit. Current unselected
+EventStore HEAD `ffb6901a5b840af7be030ff246435b4bad00b79c` remains
+`v3.106.0-29-gffb6901a` and changes 18 `src/` paths after the selected tag:
+
+- `src/Hexalith.EventStore.Client/Gateway/EventStoreGatewayClient.cs`
+- `src/Hexalith.EventStore.Client/Gateway/IEventStoreGatewayClient.cs`
+- `src/Hexalith.EventStore.Contracts/Commands/CommandStatusQueryResponse.cs`
+- `src/Hexalith.EventStore.Gateway/Hexalith.EventStore.Gateway.csproj`
+- `src/Hexalith.EventStore.PayloadProtection/Base64UrlCodec.cs`
+- `src/Hexalith.EventStore.PayloadProtection/BoundedJsonDocument.cs`
+- `src/Hexalith.EventStore.PayloadProtection/CoreProtectionResult.cs`
+- `src/Hexalith.EventStore.PayloadProtection/CoreUnprotectionResult.cs`
+- `src/Hexalith.EventStore.PayloadProtection/EnvelopeCodec.cs`
+- `src/Hexalith.EventStore.PayloadProtection/PayloadCryptography.cs`
+- `src/Hexalith.EventStore.PayloadProtection/PayloadProtectionCore.cs`
+- `src/Hexalith.EventStore.PayloadProtection/PayloadProtectionDiagnostics.cs`
+- `src/Hexalith.EventStore.PayloadProtection/PayloadProtectionWireFormat.cs`
+- `src/Hexalith.EventStore.Server/Commands/ArchivedCommandExtensions.cs`
+- `src/Hexalith.EventStore/Authorization/ITrustedCommandExtensionPolicy.cs`
+- `src/Hexalith.EventStore/Controllers/CommandsController.cs`
+- `src/Hexalith.EventStore/Queries/DaprDomainQueryInvoker.cs`
+- `src/Hexalith.EventStore/Validation/ExtensionMetadataSanitizer.cs`
+
+Untagged HEAD remains unselected. The seven-API comparison passed: selected
+source and package blobs are identical; the first six APIs also match rollback
+and `v3.88.0`; `QueryCursorScope` retains only the previously accepted additive
+`AddProjectionWatermark(long?)` difference over rollback. Exact blob IDs are
+retained in `seven-api-blobs.tsv`.
+
+### Exact dependency materialization
+
+The disposable selected EventStore worktree materialized all seven declared
+dependencies as separate detached worktrees at the tag's exact gitlink SHAs:
+
+| Dependency | Exact revision |
+| --- | --- |
+| `Hexalith.AI.Tools` | `5f93d2ec8239494852c97032c819cb1689939e36` |
+| `Hexalith.Builds` | `aee01323579adeda952bf41b2f3e0e61785075c6` |
+| `Hexalith.Commons` | `19d7d4d6b21160557b7449f55a0ad0f55e6d7dc6` |
+| `Hexalith.FrontComposer` | `0122c53afb5ac2993ca2e4d6a6e828600c960687` |
+| `Hexalith.Memories` | `5829db422522b79c0d164df85adde53a996ba114` |
+| `Hexalith.PolymorphicSerializations` | `8aeed1d27c9a050bc4bec6d89051aa00de306a69` |
+| `Hexalith.Tenants` | `c150d5b1af4f911ff3b2a7ab7901d94838be09d7` |
+
+No `git submodule update --init` ran. The post-failure state row verified the
+EventStore worktree and every dependency worktree remained clean at those
+revisions.
+
+### Attempt ledger and first failure
+
+Two earlier bundles preserve harness-only stops. Attempt 1 stopped because its
+static row asserted an incorrect abbreviated `git describe`; attempt 2 stopped
+because its catalog regex lost the literal-dollar escape. Neither advanced
+past static alignment.
+
+Attempt 3 passed coordinate capture, commitlint, static parity, authoritative
+catalog, complete audit, seven-API comparison, the exact Debug source restore,
+and the exact serialized Debug source build. The first test row then stopped
+the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `es-source-003-contracts-test` | exit `5`; zero tests ran | **FAIL** |
+
+The exact mandated command ends in `-m:1`. With the repository's `global.json`
+opting into Microsoft.Testing.Platform under SDK `10.0.401`, `dotnet test`
+does not expose `-m`/`-m:1`; it completed with the platform's zero-tests exit
+instead of executing the assembly. This is the same command-shape blocker
+recorded by the 2026-09-05 candidate, now reproduced at the selected
+`v3.106.0` coordinate. It cannot be relabeled or offset by a fallback because
+the contract requires every named row itself to be `PASS`.
+
+Per the stop-first rule, the remaining source tests, package-source lane,
+14-package remote restore, Builds restore/build/test/package lane, reciprocal
+rollback commits and execution, finite completion record, and owner acceptance
+did not start.
+
+### Durable evidence and owner state
+
+| Bundle | Manifest entries | Manifest SHA-256 | Verification SHA-256 |
+| --- | ---: | --- | --- |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt1/` | 10 | `f34a5da060e6448befa626c251156ad7c31a73d39fe7af1706246e0d606f0474` | `90cce12c8e59a601a6f8b210d1558b71b6ee87f9dc7645f549d659989426555f` |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt2/` | 10 | `d7c040f908364356fa72e8ca471c6f73ce4f536a58db45f0fbfff8b68cc5c8c7` | `90cce12c8e59a601a6f8b210d1558b71b6ee87f9dc7645f549d659989426555f` |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt3/` | 25 | `ece7ece87821f651a6d7ee96abad114aea1132d0ef531284092c3e37f9765495` | `8161bdefd516ae29b238ea11320069d78d1afa16eb8d95f50d314418a843719e` |
+
+Each `sha256sum -c artifact-manifest.sha256` verification reports every entry
+`OK`. The manifests exclude themselves and their verification transcript; the
+table above attests both exact hashes.
+
+| Role | Named approver | Decision | UTC date | Required next action |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | pending | pending | Approve a corrected contract command only through explicit contract renegotiation; then require a fresh run from coordinate capture |
+| Builds Owner | Jérôme Piquot | pending | pending | Retain candidate `5730f5a60c0e106131498126cbee323e24db5f4e`; do not call it qualified |
+| Solution Architect | Jérôme Piquot | pending | pending | Keep Architecture at `3.70.1` until all phases pass |
+| Test Architect | Jérôme Piquot | pending | pending | Reject acceptance while the required test row is `FAIL` and later phases are absent |
+
+P1R, P0, P2, P3, P4, Story 6.1, readiness, and the transitive Epic 7/8 gates
+retain their existing blockers. No acceptance is inferred from the named-role
+authorization in the spec because the finite record is incomplete.
+
+### Evidence tracking correction — 2026-09-21
+
+The three bundle-local `.gitignore` files were added after the table above was
+written so the umbrella's `[Ll]ogs/` rule cannot leave retained first-result
+logs untracked. The manifests were regenerated and re-verified after that
+addition. This append supersedes only the three manifest rows above:
+
+| Bundle | Total files | Manifest entries | Manifest SHA-256 | Verification SHA-256 |
+| --- | ---: | ---: | --- | --- |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt1/` | 13 | 11 | `8b24457fa83c6df7b3399388034a29f09a4463ac1a4987e420fc97b6e18b18b7` | `01f22f30664ac7946ef37329248b1a14d5256de12e74c948bbf9f3d7d883dbb8` |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt2/` | 13 | 11 | `55a519d8592a17827fe249b164141f88814d58c040783cc7d6f0a4fa016f3a69` | `01f22f30664ac7946ef37329248b1a14d5256de12e74c948bbf9f3d7d883dbb8` |
+| `qualification-evidence/6-1-p1r-3106-20260921-attempt3/` | 28 | 26 | `bb67de53f3d4a6bf13e7abb8a01f917b220d9ddf5184b22b9538f05c828603a2` | `7d84c753edd2002f34c1ead20289da65f9a77b804ee5a9732604a320e109048e` |
+
+All 16 retained `.log` files are now visible to `git status
+--untracked-files=all`; each manifest verification reports every covered entry
+`OK`. No command was rerun and no disposition changed.
+
+## Renegotiated `3.106.0` attempt 4 — 2026-09-21
+
+The human explicitly renegotiated only the qualification contract's
+`dotnet test` serialization option from `-m:1` to
+`--max-parallel-test-modules 1`. Every `dotnet build -m:1` row and the
+approved intent, boundaries, decisions, and I/O matrix remained unchanged.
+Attempts 1–3 and their manifests were verified before attempt 4 restarted from
+coordinate capture.
+
+Attempt 4 used fresh detached worktrees and fresh caches. It reproduced the
+selected `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`
+coordinate, exact 14-package release manifest, Builds candidate
+`5730f5a60c0e106131498126cbee323e24db5f4e`, seven API result, and all seven
+dependency revisions recorded above. Coordinate capture, prior-manifest
+verification, candidate commitlint/static/catalog/audit, the seven-API
+comparison, source restore, source build, and the renegotiated Contracts test
+all passed.
+
+The next required row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `es-source-004-client-test` | exit `1`; compiler `CS1704` | **FAIL** |
+
+The compiler found two assemblies named `Hexalith.Commons.UniqueIds`: remote
+package `2.30.0` from the restored assets and version `1.0.0` from the exact
+dependency project. Diagnostic evaluation after the retained failure showed
+`HexalithCommonsFromSource=true` and the exact Commons project path during
+build, while
+`src/Hexalith.EventStore.Contracts/obj/project.assets.json` retained
+`Hexalith.Commons.UniqueIds/2.30.0` as a package and contained no project
+reference. This is a distinct source-mode restore/build graph inconsistency;
+the renegotiated test option itself was accepted by the runner and the
+Contracts test executed successfully.
+
+The post-failure state assertion passed: the EventStore worktree and all seven
+exact dependency worktrees remained clean at their recorded revisions. Per
+the stop-first rule, no package-source, remote-package, Builds serialized/G-4,
+reciprocal rollback, or acceptance phase ran.
+
+Attempt 4 retains 32 files. Its 30-entry
+`artifact-manifest.sha256` has SHA-256
+`a1b6750f82e0e6f767898d19160c0d1a3339c09d6257cfcba83e3a252721563a`;
+`manifest-verification.txt` has SHA-256
+`18028f3306becee10dcdec767d52d6f34b8de8a585192050e3ff310cf6465eac`.
+Every manifest entry verifies `OK`.
+
+All four owner decisions remain `pending`. Architecture remains bound to
+EventStore `3.70.1`; P1R and every downstream gate remain open with their
+prior blockers. A qualifying continuation requires new authority to change
+the source-mode graph/contract or a new immutable EventStore package release;
+this stopped run cannot be accepted as the finite record.
+
+## Renegotiated `3.106.0` attempt 5 — 2026-09-21
+
+The human next authorized a contract-only change adding `--no-build` to all
+ten `dotnet test` rows while retaining `--no-restore` and
+`--max-parallel-test-modules 1`. All three `dotnet build -m:1` rows,
+production source, the approved frozen intent, and attempts 1–4 remained
+unchanged. Attempt 5 used new detached worktrees and caches and restarted from
+coordinate capture.
+
+Preservation of all four earlier manifests, selected-coordinate capture,
+candidate commitlint/static/catalog/audit, the seven-API comparison, source
+restore, and the serialized source build passed. The first test row stopped
+the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `es-source-003-contracts-test` | exit `2`; 2,022 passed and 1 failed of 2,023 | **FAIL** |
+
+The exact renegotiated command used `--no-build --no-restore
+-p:UseHexalithProjectReferences=true --max-parallel-test-modules 1`. The
+failing test was
+`ContainerPublishingGovernanceTests.ReleaseSourcePreflightFailsClosedAndEmitsSelectedSuccessfulPushProof(bypassValidation: "true", expectedSourceWorkflow: "commitlint.yml")`.
+Its source-preflight process returned exit `126` instead of the required `0`.
+The retained log has SHA-256
+`4f692254c9b8f9923daed3fdd482508990612e82f47da17f03451b6a5c6ff4c8`.
+
+The post-failure state assertion passed for EventStore and all seven exact
+dependency worktrees. Per the explicit stop-first instruction, no later
+source, package-source, remote-restore, Builds runner/G-4, reciprocal rollback,
+or acceptance row ran.
+
+Attempt 5 retains 30 files. Its 28-entry manifest has SHA-256
+`091678120a13c0ecb8e19ad1c7e4ab28e00886978aa161c862db5cdd52c7831e`;
+the verification transcript has SHA-256
+`d41f9a94e7e6bc41947a8b53d78c8328ada443844aabaf2aa51d21ea440cb348`.
+Every covered file verifies `OK`. All four owner decisions remain pending,
+Architecture remains bound to `3.70.1`, and P1R plus every downstream gate
+remain open.
+
+## Clean serialized attempt 6 — 2026-09-21
+
+Attempt 6 preserved attempt 5's first failure and used the contract's clean
+serialized contention-rerun allowance. The attempt-5 contract was unchanged;
+no production source changed. New detached source, package-source, exact
+dependency, and Builds candidate worktrees used unique caches and no
+overlapping qualification work.
+
+Preservation of attempts 1–5, coordinate capture, candidate
+commitlint/static/catalog/audit, and seven-API comparison passed. The complete
+source lane passed, including the clean rerun of all 2,023 Contracts tests and
+the Client, DomainService, and Server tests. That result supersedes only the
+retained attempt-5 contention result. The complete package-source
+restore/build/four-test lane also passed, including 2,023/2,023 Contracts
+tests.
+
+The next row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `remote-001-restore` | exit `1`; `NU1008` before package resolution | **FAIL** |
+
+The retained consumer project declared exact `3.106.0` versions for thirteen
+library `PackageReference` items and an exact `[3.106.0]` `PackageDownload`
+for the DotnetTool package. Because that project was retained below the
+umbrella repository tree, it inherited root central package management, which
+forbids inline `PackageReference` versions. The first restore therefore failed
+before consuming the remote packages. Per the explicit stop-first instruction,
+the consumer was not corrected or rerun.
+
+The post-failure assertion passed for both EventStore worktrees, all fourteen
+exact dependency worktrees, and candidate Builds revision
+`5730f5a60c0e106131498126cbee323e24db5f4e`. No Builds serialized/G-4,
+reciprocal rollback, owner-acceptance, or propagation row ran.
+
+Attempt 6 retains 57 files. Its 55-entry manifest has SHA-256
+`609416be33bc297f3d6c077d90a4851fdf35151ccff60a032ae45d8ee5411e6a`;
+the verification transcript has SHA-256
+`abb4ff4667349ac667ffa18a61bbc71a33c5542cdc6f014165d976fea61e6bc9`.
+Every covered file verifies `OK`. All four owner decisions remain pending,
+Architecture remains bound to `3.70.1`, and P1R plus downstream gates remain
+open.
+
+## External-consumer attempt 7 — 2026-09-21
+
+Attempt 7 preserved attempts 1–6 and corrected only the execution-harness
+location: the remote consumer and NuGet configuration were created under the
+qualification `/tmp` tree, outside repositories and ancestor build
+configuration. Contract, source, and candidate bytes were unchanged.
+
+Coordinate/static/API rows and both complete EventStore source and
+package-source lanes passed. Before remote restore, a new effective-property
+proof row was intended to attest that central package management was not
+inherited. Its generated shell command contained an unmatched quote and
+exited `2` before invoking MSBuild. The exact command and log are retained;
+under the explicit stop-first rule it was not repaired or rerun. Remote
+restore, Builds runner/G-4, rollback, acceptance, and propagation did not run.
+
+The external consumer and NuGet configuration bytes were copied into the
+bundle. Post-failure state passed for both EventStore lanes, all fourteen
+dependency worktrees, and the Builds candidate. Attempt 7 retains 52 files;
+its 50-entry manifest SHA-256 is
+`7c3a978c1b2e9e84e5d0ae2aeeddd2022490112a699986195d2b50d352b2d0d1`
+and its verification SHA-256 is
+`d7fa8ee5ed016ab22345e4f6409fce1bfb9060895b9deb09848417a08e9dd5f0`.
+Every covered file verifies `OK`. Owner decisions remain pending and no
+planning state changed.
+
+## Disk-exhausted attempt 8 — 2026-09-21
+
+Attempt 8 preserved attempts 1–7 and restarted unchanged to correct only the
+attempt-7 isolation-proof harness. Preservation, coordinate, candidate,
+catalog/audit, API, and source restore rows passed. The serialized source build
+then exited `1` after `/tmp` filled. Its log retains 93 build errors including
+`MSB3021`, `MSB3027`, and `MSB3491`, each reporting `No space left on device`.
+
+No test, package-source, remote-consumer, Builds runner/G-4, rollback,
+acceptance, or propagation row ran. No preserved attempt directory/cache was
+deleted and no rerun occurred. Disk state and clean checkout assertions passed
+and are retained.
+
+Attempt 8 retains 29 files. Its 27-entry manifest SHA-256 is
+`b941f549ecb37380ddb5cb99e7362800cb889a0926c69be1f7ee14878c445a82`;
+verification SHA-256 is
+`178beb4c67a8a0a4d1733324f205087769e4cde546ad5fe4878aa6fcdbf60dfd`.
+Every covered file verifies `OK`; owner decisions remain pending.
+
+## Clean external-consumer and candidate attempt 9 — 2026-09-21
+
+After the task-created attempt-8 worktrees and caches were safely removed,
+attempt 9 restarted from coordinate capture under a new unique temporary root.
+It preserved the eight sealed earlier bundles and used the unchanged contract,
+EventStore tag, exact dependency revisions, and Builds candidate. Qualification
+ran serially with no overlapping work.
+
+Preservation, coordinates, candidate commitlint/static/catalog/audit, and the
+seven-API comparison passed. The complete EventStore source and package-source
+lanes passed, including both 2,023-test Contracts runs and all six other test
+projects. The corrected direct-command CPM proof passed outside all repository
+and ancestor build configuration, showing
+`ManagePackageVersionsCentrally != true` and the exact external project path.
+Official-only restore from an empty qualification cache then passed. The
+retained assets and inventory verify all fourteen release-manifest package IDs
+at `3.106.0`.
+
+The Builds candidate restore, serialized build, and Module tests passed. The
+next required row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `bld-candidate-004-evidence-test` | exit `2`; 59 passed and 9 failed of 68 | **FAIL** |
+
+The nine failures consistently introduced `HXE152` evidence-binding
+diagnostics. Both positive-readiness assertions failed; multiple negative
+snapshots gained an unexpected `HXE152`; and the no-executed-tests assertions
+observed `HXE152` where `HXE153` was required. The retained first-result log
+has SHA-256
+`98864eca855cf1aa4142d696a563540f12b16e9feadf0cc4289f8e2132d97061`.
+No later catalog, audit, packaged-command, reciprocal rollback, acceptance, or
+propagation row ran.
+
+The post-failure state assertion passed for candidate Builds, both EventStore
+worktrees, and all fourteen exact dependency worktrees. Attempt 9 contains 76
+files. Its 74-entry manifest has SHA-256
+`048e3a6df48f509c3c8cb2e0719db683a03a60dfc3ab165511396e9306a2499a`;
+the verification transcript has SHA-256
+`2fa1bf3d6e860b6e71cbe77f84b3abb5eedb605ae31c3766953fe47e1f299dac`.
+All 74 covered entries verify `OK`; the separate eight-file external-consumer
+hash list also verifies `OK`. The ledger contains 27 rows: 26 `PASS`, one
+`FAIL`, and no `INCONCLUSIVE` result.
+
+All four owner decisions remain pending. Architecture remains bound to
+EventStore `3.70.1`; sprint status, deferred work, P1R, and every downstream
+gate remain unchanged and open.
+
+### Attempt 9 retention correction
+
+Before final handoff and disposal of the temporary root, the exact executed
+seven-API comparison script referenced by `es-002-api-blobs` was copied into
+the bundle as `proofs/api-compare.sh`. `cmp` and SHA-256 both prove it is
+byte-identical to the executed script; its SHA-256 is
+`be0e53798afb90b621d9fb155cd1e6e7b1414d829e4ad2c01fa76028753d9fb3`.
+The bundle was then resealed and fully reverified. This supersedes only the
+attempt-9 file-count and seal values above: 77 total files, 75 manifest
+entries, manifest SHA-256
+`96a19ee04ff27c9ab235eb3e460a92f328d8644e71585d0eca9cb98b0f44e321`,
+and verification-transcript SHA-256
+`359de629afc63c852387479d5b353d389150c013ecda6e21eb906c84ac969205`.
+No command was rerun and no disposition, owner state, or planning state
+changed.
+
+## Corrected-candidate and G-4 attempt 10 — 2026-09-21
+
+Attempt 10 preserved attempts 1–9 and restarted from coordinate capture with
+corrected Builds candidate
+`ad52f350a2f0bc47849179ae17b4594dafff5363`. Candidate
+`5730f5a60c0e106131498126cbee323e24db5f4e` is superseded only by the second
+commit's fixture-binding correction: otherwise-valid retained module-run
+artifacts now embed the SHA-256 of the aligned positive manifest, and their
+referencing YAML hashes were refreshed. Contract, selected EventStore
+coordinate, production source, and package coordinate were unchanged.
+
+Preservation, coordinate capture, candidate commitlint/static/catalog/audit,
+and seven-API comparison passed. Both complete EventStore matrices passed,
+including 2,023/2,023 Contracts tests in source mode and package-source mode
+plus every Client, DomainService, and Server row. The corrected direct-command
+external-consumer CPM proof, official-only restore from an empty cache, and
+all-fourteen-package inventory also passed.
+
+Candidate restore, serialized Release build, Module tests (117/117), and
+Evidence tests (68/68) passed. The official packaged G-4 row ran without
+`-SkipSourceValidation`, executed required controls, and passed. Its retained
+inventory uses unique disposable version `0.0.0-p1r3106-attempt10.1`, records
+`releaseEligible=true` for the clean disposable candidate worktree, and
+contains both CLI packages, both symbol packages, and 53 qualification-
+evidence artifacts. The inventory SHA-256 is
+`1a4b4942f3e730bee67f84879635d170d8357a7f81e8cc106a7cdbd5d47c46f0`.
+
+The reciprocal rollback was then constructed from the corrected candidate as
+the required two local commits:
+
+| Role | Revision | Result before qualification |
+| --- | --- | --- |
+| Rebind catalog/runner/schema/fixtures/evidence/hashes to `3.70.1`; retain `3.88.0` and reject selected `3.106.0` | `44bd5ebcb1cac36f25b67ce5ba1a54a2772ca73b` | committed |
+| Incrementally refresh the EventStore audit family against the committed rollback catalog | `caf49c58bc18f5226733e7879b4f71e99213fffd` | audit generation and deterministic validation passed (299 packages, 145 families, one source) |
+
+The first rollback qualification row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `rollback-bld-000-commitlint` | exit `1`; both commit bodies violate `body-max-line-length` because each was authored as one line longer than 200 characters | **FAIL** |
+
+The retained failure log SHA-256 is
+`fa78f36b9ee860d97ebb99c9c564d8c7d2db976f0923a203f8eac9b663735642`.
+The commits were not amended or rewritten. Under the stop-first rule, no
+rollback static/catalog/audit qualification, restore/build/test/G-4, reciprocal
+`HXM016` execution, or EventStore `v3.70.1` compatibility row ran. The clean
+post-failure assertion passed for both Builds worktrees, both EventStore
+worktrees, all fourteen exact dependency worktrees, and both live repositories.
+
+Attempt 10 retains 142 files. Its 140-entry manifest has SHA-256
+`f8fdf2c215c8a759596472dd5a5f0b0e6156bb139769fd1b44fa44ba91e50cb5`;
+the verification transcript has SHA-256
+`5d964ef6dd60d89d95bd444d46ac726a9d14ad75c9107da3b0f2a2e067988e80`.
+Every covered file verifies `OK`. The ledger contains 30 rows: 29 `PASS`, one
+`FAIL`, and no `INCONCLUSIVE` result.
+
+All four owner decisions remain `pending`; a failed rollback commitlint row
+prevents this attempt from being the complete finite record. Architecture
+remains bound to EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and
+every downstream gate remain unchanged and open. No push, merge, publication,
+release, or live-checkout mutation occurred.
+
+## Tree-equivalent rollback attempt 11 — 2026-09-21
+
+Attempt 11 preserved the failed attempt-10 branch and created distinct branch
+`fix/p1r-3106-rollback-candidate` from corrected candidate
+`ad52f350a2f0bc47849179ae17b4594dafff5363`. The two rollback changes were
+reapplied with newly wrapped Conventional Commit messages:
+
+| Role | New revision | Exact tree equivalence |
+| --- | --- | --- |
+| Rebind catalog/runner/schema/fixtures/evidence/hashes to `3.70.1` | `38bac7906bd8aa3887bdec4dd7c31470a10dd5ed` | tree `b404b1624b239446bfbc4a99127f8a342a062e8a`, equal to `44bd5eb...^{tree}` |
+| Add the incremental EventStore-family audit | `1f46bc373d82fb266c8396759cc3a57c62e6ae7c` | tree `d53a53615774e127ebddc0688e9ad459e2de017c`, equal to `caf49c5...^{tree}` |
+
+Both new messages passed the repository-pinned commitlint command. The failed
+branch still resolves to `caf49c58bc18f5226733e7879b4f71e99213fffd`
+with the same two tree identities; it was not amended, reset, or deleted.
+
+Attempt 10's 140-entry manifest reverified, and attempt 11 adopted all 27
+immutable passing phase 1–4 rows. It separately rechecked the selected
+candidate packaged controls proving `3.88.0` and rollback `3.70.1` are each
+rejected with `HXM016`. Rollback coordinate/tree proof, static alignment,
+restore, serialized Release build, Module tests (117/117), Evidence tests
+(68/68), and the authoritative 50-identity/three-shared-version catalog check
+all passed.
+
+The next row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `rollback-bld-009-audit` | exit `1`; audit `generatedFromRevision` `44bd5ebcb1cac36f25b67ce5ba1a54a2772ca73b` is not an ancestor of new head `1f46bc373d82fb266c8396759cc3a57c62e6ae7c` | **FAIL** |
+
+This failure follows directly from the exact-tree constraint. Copying the
+attempt-10 audit bytes preserves `generatedFromRevision=44bd5eb...`; changing
+that field to the new tree-equivalent commit `38bac790...` would change the
+new head tree, so it could no longer equal `caf49c5...^{tree}`. The retained
+failure log SHA-256 is
+`378b23a299031df38bc9a5b9a35ab26438a42668de5dd05aa28767c534f013ae`.
+
+Per stop-first, no rollback G-4, packaged-command, `v3.70.1` EventStore
+source/package/API, finite-record completion, or owner-acceptance row ran.
+The post-failure state row passed for the rollback and live repositories.
+
+Attempt 11 retains 41 files. Its 39-entry manifest has SHA-256
+`8160f13b71756fbbc089f988599c20cf8225af6ce6e76ed582c323918f66c29a`;
+the verification transcript has SHA-256
+`841ae7b513ea7f9e47b339c7ace6c44e4e48822c6985eae2dcce2b3855164ad2`.
+Every covered file verifies `OK`. The ledger contains 12 rows: 11 `PASS`, one
+`FAIL`, and no `INCONCLUSIVE` result.
+
+All four owner decisions remain pending. Architecture remains bound to
+EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and every downstream
+gate remain unchanged and open. No push, merge, publication, release, or live-
+checkout mutation occurred.
+
+## Audit-provenance repair and stopped attempt 12 — 2026-09-21
+
+Attempt 12 appended, rather than amended, provenance-repair commit
+`7af20f8bafbfe561df6f7705913a0800603090b5` to
+`fix/p1r-3106-rollback-candidate`. The prior rollback commits remain
+`38bac7906bd8aa3887bdec4dd7c31470a10dd5ed` and
+`1f46bc373d82fb266c8396759cc3a57c62e6ae7c`; the failed attempt-10 branch
+still resolves to `caf49c58bc18f5226733e7879b4f71e99213fffd`.
+
+The repository-authoritative family-scoped audit generator changed only
+`Tools/package-version-audit.json`. Its top-level `generatedFromRevision` and
+current Hexalith EventStore family origin both name parent `1f46bc3...`, which
+is a proven ancestor of the new head. Pre- and post-commit audit validation
+passed for 299 packages, 145 families, and one source. The authoritative
+catalog passed 50 identities and three shared versions, and all three rollback
+commit messages passed repository-pinned commitlint.
+
+The rollback continuation itself stopped at its first row:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `adopt-001-prior-attempts` | exit `1`; after both prior bundle manifests verified, the proof compared the frozen block to stale expected SHA-256 `94a818e0...`; unchanged working/current-root-HEAD bytes hash to `d933172d...` | **FAIL** |
+
+The retained first-result log SHA-256 is
+`3770566d33b8554f05766f54ef6f55b0a697a1b0660e8df0710cd3ad2b59b88a`.
+This is a proof-harness failure and does not represent a frozen-block edit.
+
+The command wrapper's displayed output omitted that nested exit status, so one
+additional row was inadvertently launched before the stop was recognized:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `rollback-bld-001-coordinate` | exit `1`; proof expected rollback commit 1 to change 61 paths, while the immutable commit changes 63 | **FAIL** |
+
+That empty first-result log has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+No restore, build, test, catalog, audit, G-4, reciprocal-control, EventStore
+`v3.70.1`, finite-record, or acceptance row ran after the failures.
+
+Attempt 12 retains 43 files. Its 41-entry manifest has SHA-256
+`e8b857740a3d8e78c6c99fd2e84b7494245a6ae1f8889f3b62bc3d218ce2ed98`;
+the verification transcript has SHA-256
+`4a86a7ab4b1de8dfa074e203b37d46bb213e5d1263c97de6bd53d955467d26d2`.
+Every covered file verifies `OK`. The ledger contains 13 rows: 11 `PASS`, two
+`FAIL`, and no `INCONCLUSIVE` result. The post-failure clean-state assertion
+passed for the detached rollback worktree and both live repositories.
+
+All four owner decisions remain explicitly pending. Architecture remains
+bound to EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and every
+downstream gate remain unchanged and open. No push, merge, publication,
+release, or live-checkout mutation occurred.
+
+## Disk-backed rollback attempt 13 — 2026-09-21
+
+Attempt 13 preserved rollback head
+`7af20f8bafbfe561df6f7705913a0800603090b5` and corrected only the two
+attempt-12 harness proofs. It used disk-backed qualification root
+`/home/administrator/.local/state/hexalith-qualification/p1r-3106-attempt13-20260921`
+on `/dev/sdd` (`ext4`), registered cleanup before materialization, used the
+ordinary shared NuGet cache and version-keyed Playwright store, and proved the
+ledger wrapper propagated a synthetic nested exit `7` before the ledger began.
+
+Adoption dynamically captured root revision
+`6e6b03969d9d526bc1c913e25e67f14d1a9c0126`; working and root-HEAD frozen
+bytes were identical at SHA-256
+`d933172da048d272daf9154740f606567ac8858807815931e06a7306259e6a92`.
+Attempts 10–12 fully reverified and all 27 immutable passing phase 1–4 rows
+from attempt 10 were adopted.
+
+Rollback coordinate/static proof verified the three-commit chain, tree
+identities, audit provenance ancestry, clean state, all `3.70.1` bindings,
+`3.88.0` and selected `3.106.0` reciprocal `HXM016` controls, `HXM009`, and
+the deliberate evidence-hash mismatch. Commit 1's immutable name-status diff
+was retained as 63 rows without a magic-count assertion; its SHA-256 is
+`f593f4b77d94b3fa4a482e1263b1c196a4551f6175c39804cce9b4edce9ce193`.
+
+All three rollback messages passed commitlint. Builds restore, serialized
+Release build, Module tests (117/117), Evidence tests (68/68), authoritative
+catalog validation (50 identities, three shared versions), and full audit
+validation (299 packages, 145 families, one source) passed.
+
+The next required row stopped the run:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `rollback-bld-009-g4` | exit `1`; the harness had pre-created the requested retained-package directory, while the authoritative G-4 script requires each unique destination not to exist | **FAIL** |
+
+The retained first-result log SHA-256 is
+`884ab53627852da0a9b103163c3a6f49a2cab89b61801831b39678ae7143238f`.
+The directory was empty and no package was produced. The wrapper propagated
+the nonzero exit; no EventStore `v3.70.1`, finite-record, or owner-acceptance
+row ran.
+
+Attempt 13 retains 59 files. Its 57-entry manifest has SHA-256
+`813befc4102f47cf7a3f207a42f0773bf16035d39aa2992992832f1797963b64`;
+the verification transcript has SHA-256
+`3e7ea9319da68e77556fa04c7c5ef0c142276e3a3c7ee25689afa93c520f648f`.
+Every covered file verifies `OK`. The ledger contains 12 rows: 11 `PASS`, one
+`FAIL`, and no `INCONCLUSIVE` result. Post-failure state passed, and cleanup
+removed the qualification root and worktree registration. Cleanup diagnostics
+for an absent optional PolymorphicSerializations repository related only to
+never-created EventStore dependency worktrees and left no disposable state.
+
+All four owner decisions remain explicitly pending. Architecture remains
+bound to EventStore `3.70.1`; sprint status, DW-35, DW-68, P1R, and every
+downstream gate remain unchanged and open. No push, merge, publication,
+release, or live-checkout mutation occurred.
+
+## Corrected G-4 and stopped rollback attempt 14 — 2026-09-21
+
+Attempt 14 continued at unchanged rollback Builds revision
+`7af20f8bafbfe561df6f7705913a0800603090b5`. It verified attempts 10–13,
+adopted the 27 immutable passing phase-1–4 rows from attempt 10, and adopted
+the eight same-revision attempt-13 rollback rows through audit. The current
+contract SHA-256 was
+`ccb22f3c19bf98082eb37a17ea217f5193099d0145437a725bc0aff454128586`;
+working frozen bytes remained identical to root revision
+`6e6b03969d9d526bc1c913e25e67f14d1a9c0126` at SHA-256
+`d933172da048d272daf9154740f606567ac8858807815931e06a7306259e6a92`.
+
+The G-4 harness created only the retention parent and proved the unique
+`retained-objects/rollback` leaf was absent immediately before the
+authoritative command. The command created the leaf and passed without
+`-SkipSourceValidation` under unique version
+`0.0.0-p1r3106-attempt14-rollback.1`. Its inventory records the exact clean
+rollback source revision, two CLI packages, two symbol packages, 53
+qualification artifacts, passing source validation, executed required
+controls, and `releaseEligible=true`. All 58 retained files and inventory
+hashes verify. The positive `3.70.1` control passed, while `3.88.0` and
+selected `3.106.0` each failed with `HXM016`; invalid profile retained
+`HXM009`, and the deliberate evidence-hash mismatch retained `HXE147`.
+
+Fresh source and package EventStore worktrees at rollback revision
+`f13f9925fdca53efa2ab8c90d396ab106f91bb9c` were materialized with these
+exact dependency worktrees, without nested-submodule initialization:
+
+| Dependency | Revision |
+| --- | --- |
+| Hexalith.AI.Tools | `991e8ea1b39bfb8170aea9a6857c25c7c69176c1` |
+| Hexalith.Builds | `cfafcbf1e904138b435b63ba4fd79f86b8dda069` |
+| Hexalith.Commons | `05f0d9f4f6360bef9c33f14396b0c0c74cbd6864` |
+| Hexalith.FrontComposer | `0e6abe9ec33e11e8725ea764d4596169a4354269` |
+| Hexalith.Memories | `ce66d4cad9e36eaddba0708e12551863d2b57a9d` |
+| Hexalith.PolymorphicSerializations | `30312d8cc7b15adf477bf5fbab3e852393086ec0` |
+| Hexalith.Tenants | `211b4d4ae59d85cdbeb0cddf99bf3ad86b361f30` |
+
+The seven-API comparison passed. Six APIs have identical blobs at rollback,
+superseded `v3.88.0`, selected package, and selected source coordinates. The
+sole difference is the already-classified compatible additive
+`QueryCursorScope.AddProjectionWatermark(long?)` method: the selected revision
+adds 21 lines and removes zero.
+
+Rollback source restore passed using the normal shared package cache. The
+serialized Debug solution build passed with zero warnings and zero errors.
+The next row stopped the run before test discovery:
+
+| Row | Exact result | Disposition |
+| --- | --- | --- |
+| `rollback-es-source-003-contracts-test` | exit `1`; EventStore `v3.70.1` dispatches through historical VSTest/MSBuild, which rejects contract-required `--max-parallel-test-modules 1` as an unknown switch (`MSB1001`) | **FAIL** |
+
+The retained first-result log SHA-256 is
+`f7198ffb7f141986a5dc88396726e6f2753316945baeef6ffc9b4a276be7b61b`.
+Per stop-first, no Client, DomainService, Server, package-mode, finite-record,
+acceptance, or propagation row started. Post-failure capture retained 54
+resolved asset hashes and 67 Contracts dependency content-hash rows; every
+owned worktree and both live repositories were clean.
+
+Attempt 14 retains 131 files. Its 129-entry manifest has SHA-256
+`d4bcb684542a1594422bb5a7b99742da8bb007b843c3418761b6b7b91d72ff04`;
+the verification transcript has SHA-256
+`85624af19000821939216a1844a86191a7ebce6b2dfbf5a83b3f5c26a0e2f63d`.
+Every covered file verifies `OK`. The ledger contains 12 rows: 11 `PASS`, one
+`FAIL`, and no `INCONCLUSIVE` result. Final cleanup removed the qualification
+root and every attempt worktree registration.
+
+| Role | Named approver | Decision | UTC date | Evidence |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `pending` | `pending` | attempt 14 stopped before rollback completion |
+| Builds Owner | Jérôme Piquot | `pending` | `pending` | attempt 14 stopped before rollback completion |
+| Solution Architect | Jérôme Piquot | `pending` | `pending` | attempt 14 stopped before rollback completion |
+| Test Architect | Jérôme Piquot | `pending` | `pending` | attempt 14 stopped before rollback completion |
+
+Architecture remains bound to EventStore `3.70.1`; sprint status, DW-35,
+DW-68, P1R, and every downstream gate remain unchanged and open. No push,
+merge, publication, release, or live-checkout mutation occurred.
+
+## Complete technical qualification and finite record — attempt 17 — 2026-09-21
+
+Attempt 17 verified attempts 10–16 and completed the earliest-invalid rollback
+rows without changing any candidate, contract, production source, frozen
+intent, or prior evidence. Fresh EventStore package prerequisites at
+`f13f9925fdca53efa2ab8c90d396ab106f91bb9c` restored and built with zero
+warnings/errors. Semantic preflight normalized trailing whitespace and proved
+the two retained scripts had the exact approved 13-token command, correct
+worktree, task-local environment, and no extras. DomainService passed 143/143;
+Server passed 2,626 with 25 skipped.
+
+### 1. Coordinates
+
+| Coordinate | Version/reference | Revision |
+| --- | --- | --- |
+| Selected EventStore source/package | `v3.106.0` / `3.106.0` | `76051c70cbf868c40edc00ca0344fa5bd8879b69` |
+| Selected Builds | `fix/p1r-3106-candidate` | `ad52f350a2f0bc47849179ae17b4594dafff5363` |
+| Rollback EventStore source/package | `v3.70.1` / `3.70.1` | `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` |
+| Rollback Builds | `fix/p1r-3106-rollback-candidate` | `7af20f8bafbfe561df6f7705913a0800603090b5` |
+| Superseded comparison | `v3.88.0` | `4843b492dff7c16a4bc74db67509263f969c78c6` |
+
+### 2. Source/package divergence
+
+Selected source and package bind to the same tag/revision, so the selected
+tuple has no divergence. Untagged EventStore HEAD `ffb6901...` is unselected;
+its post-tag production diff spans 18 `src/` paths, +206/-52 lines.
+
+### 3. Remote package consumption
+
+The official-only empty-cache consumer restored all 14 release-manifest IDs at
+exact version `3.106.0`. Manifest SHA-256 is
+`6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae`;
+resolved inventory SHA-256 is
+`aa40e4323acb0539731fcf08fbc00277751e0c6a5c9148e5e5475f821df8f7e2`.
+
+### 4. Seven APIs
+
+Six APIs are byte-identical across rollback, superseded, selected package, and
+selected source coordinates. `QueryCursorScope.cs` differs only by the
+compatible additive 21-line `AddProjectionWatermark(long?)`; zero lines are
+removed. Table SHA-256 is
+`13c74c84aac570fee95edfd6ead73bcea16c22a23b546d6344088b159e49f5c9`.
+
+### 5. EventStore behavior
+
+Selected source and package lanes both passed restore/build and Contracts
+2,023/2,023, Client 801/801, DomainService 156/156, and Server 3,319 passed/25
+skipped. Rollback source and package lanes both passed restore/build and
+Contracts 708/708, Client 673/673, DomainService 143/143, and Server 2,626
+passed/25 skipped. The explicitly approved rollback-test `-m:1` runner spelling
+left the contract unchanged.
+
+### 6. Builds qualification
+
+Selected and rollback Builds each passed static alignment, commitlint,
+restore/build, Module 117/117, Evidence 68/68, catalog, complete audit, and the
+official required-control G-4. Candidate inventory SHA-256 is
+`1a4b4942f3e730bee67f84879635d170d8357a7f81e8cc106a7cdbd5d47c46f0`;
+rollback inventory SHA-256 is
+`bcf78ce8b1c3a0db323064e60f3b998dccec123c73d9102c53a76d094d499be5`.
+
+### 7. Reciprocal rollback
+
+The selected runner accepts `3.106.0` and rejects `3.88.0` and `3.70.1` with
+`HXM016`. The rollback runner accepts `3.70.1` and rejects `3.88.0` and
+`3.106.0` with `HXM016`. Both preserve invalid-profile `HXM009` and deliberate
+artifact-hash mismatch `HXE147`.
+
+### 8. Content-addressed evidence
+
+The finite 57-row migrated ledger contains only unique `PASS` rows and has
+SHA-256
+`0c2000dfd94923f7b1e6eeb2e0078f90f114ce4201aaa1e6f7cf5b3f4d0184a1`.
+The retained completion bundle is
+`qualification-evidence/6-1-p1r-3106-20260921-attempt17`, manifest SHA-256
+`cae83ed1d9dc5fda0c27ca411f51620b0a71ac0ca51bbefde73870de77c72355`.
+It references, without copying, the verified attempt-10, 13, 14, and 15
+manifests and retained packages/evidence.
+
+### 9. Preflight and cleanup
+
+The disk-backed ext4 root passed space, immutable-cleanup, and nested-exit
+preflight. Final cleanup removed the exact attempt root and all registrations;
+both live repositories are clean. Cleanup verification SHA-256 is
+`08f371a2bada3af97839356a7859bb4a133c2fdbbe032406dfaae548e2f91186`.
+
+### 10. Downstream non-closure
+
+Technical qualification does not authorize propagation. Architecture remains
+`3.70.1`; P1R and P0 Stage 1 remain open; DW-35/DW-68, every P0 acceptance and
+publication gate, P2/P3/P4, Story 6.1, readiness, and Epic 7/8 blockers remain
+unchanged.
+
+### 11. Owner acceptance
+
+| Role | Named approver | Decision | UTC date | Evidence |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `pending` | `not-issued—pending` | exact tuple and finite record above |
+| Builds Owner | Jérôme Piquot | `pending` | `not-issued—pending` | exact tuple and retained G-4 evidence above |
+| Solution Architect | Jérôme Piquot | `pending` | `not-issued—pending` | exact tuple; Architecture unchanged |
+| Test Architect | Jérôme Piquot | `pending` | `not-issued—pending` | manifests, ledger, controls, and cleanup proof above |
+
+Technical qualification is **PASS**; acceptance is **0/4 and pending**. No
+owner decision is inferred, and no push, merge, publication, release,
+Architecture update, or planning propagation occurred.
+
+## Four-owner acceptance and bounded propagation — 2026-09-21
+
+At `2026-09-21T10:48:17Z`, Jérôme Piquot explicitly issued `accept` against
+the exact attempt-17 finite record in all four required roles. The accepted
+pre-decision record SHA-256 is
+`900e3442c0b67910af0dd13a38545725e7e5806dbcc640931a3e250a81c386c9`.
+After recording the decisions, the 79-entry attempt-17 manifest verifies at
+SHA-256
+`e806099bddfceac0cf4a145dbc4706da1159e442e391971a6c752c2d14d3f3fe`.
+
+| Role | Named approver | Decision | UTC date | Accepted coordinates and evidence |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `accept` | `2026-09-21T10:48:17Z` | selected source/package `3.106.0` / `76051c70...`; rollback `3.70.1` / `f13f9925...`; finite record and 57-row ledger |
+| Builds Owner | Jérôme Piquot | `accept` | `2026-09-21T10:48:17Z` | selected Builds `ad52f350...`; rollback Builds `7af20f8...`; retained G-4 inventories |
+| Solution Architect | Jérôme Piquot | `accept` | `2026-09-21T10:48:17Z` | complete selected/rollback tuple; Architecture binding and G-1 non-selection wording |
+| Test Architect | Jérôme Piquot | `accept` | `2026-09-21T10:48:17Z` | finite record, manifests, ledgers, controls, and cleanup proof |
+
+Acceptance is **4/4 and satisfied**. The Architecture Spine is rebound to the
+selected multi-coordinate tuple, P1R is `done`, P0 Stage 1 is complete, and
+DW-35/DW-68 are resolved. P0 supported composition, publication, consumer pin,
+persisted qualification, acceptance record, and owner acceptance remain open;
+P2, P3, P4, Story 6.1, readiness, and transitive Epic 7/8 gates remain blocked.
+P1R does not select Durable Task or Confirmation Artifact capability. No push,
+publication, release, source dependency update, or live-checkout mutation was
+authorized or performed.
+
+## Post-acceptance review invalidation — 2026-09-21
+
+Independent review established that attempt 17 is not acceptance-grade. Its
+27 reconstructed attempt-10 binding hashes omit the contract-required
+toolchain, dependency revisions, relevant configuration, resolved assets, and
+prerequisite-build binding. Its finite ledger replaces each row's artifact
+association with a bundle-wide checksum list that has no logical IDs or byte
+sizes, and it omits the attempt-15 package build rows that produced the
+Contracts/Client `--no-build` test binaries. The exact pre-decision record
+bytes named by the four decisions were not retained as a file.
+
+The four `accept` decisions and commit `ba7592c...` remain immutable historical
+evidence, but the gate and bounded propagation are invalidated. Architecture
+remains `3.70.1`; P1R, P0 Stage 1, DW-35, and DW-68 remain open. A new run must
+start at every incompletely bound row, produce row-specific structured
+manifests with durable relative paths and prerequisite-build linkage, retain
+the exact pre-decision finite record, and obtain four fresh decisions before
+propagation.
+
+## Remediated four-owner acceptance and bounded propagation — attempt 23 — 2026-09-21
+
+Attempt 21 reran the complete phase 1–5 matrix without migrating technical
+results. All 58 rows are unique `PASS` results with complete bindings,
+row-specific structured artifact manifests, actual prerequisite-build
+bindings for every `--no-build` row, reciprocal controls, final-state proof,
+and cleanup. Attempt 23 preserves that evidence in place, corrects the
+nonexistent catalog-introducing SHA recorded by attempt 22, and proves all six
+full record revisions as commit objects in their owning repositories.
+
+The accepted pre-decision record is retained at
+`Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt23/finite-record-pre-decision.md`
+with SHA-256
+`477949fc59d0cdd3a00d0c46de7aada46164074675c16c253b2015db369c0bab`.
+The catalog-introducing revision is
+`dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; it changes the catalog from
+`3.104.0` to `3.106.0` and is an ancestor of qualifying Builds revision
+`ad52f350a2f0bc47849179ae17b4594dafff5363` and rollback Builds revision
+`7af20f8bafbfe561df6f7705913a0800603090b5`.
+
+At `2026-09-21T13:03:11Z`, Jérôme Piquot explicitly issued `accept` against
+those exact pre-decision bytes in all four required roles.
+
+| Role | Named approver | Decision | UTC date | Accepted scope |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `accept` | `2026-09-21T13:03:11Z` | EventStore source/package `3.106.0` at `76051c70...`, 14-package restore, behavior/API evidence, and EventStore rollback `f13f9925...` |
+| Builds Owner | Jérôme Piquot | `accept` | `2026-09-21T13:03:11Z` | Catalog introduction `dae84d5f...`, qualifying Builds `ad52f350...`, complete runner/G-4 evidence, and rollback Builds `7af20f8...` |
+| Solution Architect | Jérôme Piquot | `accept` | `2026-09-21T13:03:11Z` | Exact multi-coordinate binding, executable rollback, Architecture update, and G-1 non-selection wording |
+| Test Architect | Jérôme Piquot | `accept` | `2026-09-21T13:03:11Z` | Fresh 58-row ledger, complete bindings, structured artifacts, negative controls, remote restore, reciprocal rollback, and cleanup |
+
+Acceptance is **4/4 and satisfied**. The Architecture Spine is rebound to the
+accepted EventStore `3.106.0` source/package and Builds `ad52f350...` runner
+tuple, P1R is `done`, P0 Stage 1 is complete, and DW-35/DW-68 are resolved.
+P0 supported composition, publication, consumer pin, persisted qualification,
+acceptance record, and owner acceptance remain open; P2, P3, P4, Story 6.1,
+readiness, and transitive Epic 7/8 gates remain blocked. P1R does not select
+Durable Task or Confirmation Artifact capability. No push, publication,
+release, source dependency update, or live-checkout mutation was authorized or
+performed.
+
+## Attempt-23 post-acceptance review invalidation — 2026-09-21
+
+Review iteration 2 invalidates the attempt-23 acceptance and bounded
+propagation recorded above. The decisions remain immutable historical
+evidence, but the accepted record is non-qualifying for four independent
+reasons:
+
+1. attempt 21 retains a known-false catalog-introducing revision in a PASS
+   coordinate row, and that row's binding does not retain the function body
+   that produced the value;
+2. the official-remote consumer does not prove evaluated direct-ID equality
+   against all 14 manifest IDs and uses non-singleton `PackageReference`
+   ranges;
+3. attempt 23 does not retain all internal-binding, cache-root, required-row,
+   final-worktree, and dependency-registration checks it claims; and
+4. the short pre-decision document omits mandatory finite-record sections,
+   while each owner row omits its exact coordinate tuple and evidence
+   reference.
+
+Hexalith.Projects restored Architecture to the accepted `3.70.1` baseline and
+reopened P1R, P0 Stage 1, DW-35, and DW-68. Attempts 21--23 and pre-decision
+SHA-256
+`477949fc59d0cdd3a00d0c46de7aada46164074675c16c253b2015db369c0bab`
+remain preserved as invalidated history. Remediation must formally supersede
+the false coordinate row, rerun the remote proof with singleton-exact direct
+declarations and a missing-direct negative, retain complete verification, and
+render the full finite record before four fresh decisions. No push,
+publication, release, dependency update, or live-checkout mutation is
+authorized.
+
+## Review-2 remediation technical record — attempts 24–27 — 2026-09-21
+
+Attempts 24–26 retain three stop-first harness boundaries without rewriting
+prior evidence. Attempt 24 stopped before its first ledger row because the
+shared qualification cache root did not yet exist. Attempt 25 passed the
+root/cache preflight and stopped before its first worktree because a retained
+standalone command lacked the exported worktree-plan path. Attempt 26 passed
+preflight, all 18 exact-revision worktrees, formal coordinate supersession,
+the 14-declaration positive check, and the 13-declaration missing-Contracts
+negative check. Its official-only restore exited zero, then a postcondition
+stopped because NuGet records `PackageDownload` under framework
+`downloadDependencies`, not the `libraries` map. Every failed attempt cleaned
+its run root and registrations; none contributed a reused row.
+
+Attempt 27 corrected only that evidence-shape assertion. It formally
+supersedes attempt 21's known-false `coordinates-001-selected` PASS row with
+fully retained command implementation bytes and actual catalog-introducing
+revision `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`. The evaluated external
+consumer contains exactly the 14 release-manifest IDs and every declaration is
+singleton-exact `[3.106.0]`. A retained negative removes direct
+`Hexalith.EventStore.Contracts`; the exact-set checker fails as required while
+a separate official-only empty-cache restore still resolves Contracts
+transitively. The Admin CLI `PackageDownload` is verified through its evaluated
+download dependency and retained package SHA-256/SHA-512 metadata.
+
+The authoritative ledger contains 65 unique PASS rows. Its explicit phase
+contract contains 63 exact row IDs: 51 unchanged attempt-21 rows admitted only
+after all 58 original binding inputs were rehashed, plus 12 superseding or new
+proof rows. The record validates both canonical disk-backed roots, exact
+Playwright `1.62.0` browser identity, the Architecture prestate's semantic
+`3.70.1` binding, clean final status/HEAD/describe for all 18 repository and
+dependency worktrees, and absence from every owning repository's worktree
+registration list after cleanup.
+
+The complete eleven-section pre-decision record is retained at
+`Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt27/finite-record-pre-decision.md`
+with SHA-256
+`cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd`.
+This corrected pre-decision seal expands the selected EventStore, introducing
+and qualifying Builds, rollback EventStore, and rollback Builds revisions to
+their full 40-character values in every pending owner row, with an explicit
+reference to `finite-record-pre-decision.md`. Technical evidence is unchanged.
+The authoritative ledger SHA-256 is
+`e6ae33908f5b1a3df51486f09f90ad21824e7061d54b0677f0c1be9770275451`;
+the exact phase ledger SHA-256 is
+`5aee549e07bcc0299185cf76bb9c878bef55e4ed133deb2a12999ede002f45c7`;
+and the attempt-27 artifact-manifest SHA-256 is
+`21ef32c0d2e04059666fa6aa4daea3662cbcb1494dac8dfec95c5398bc4585b1`.
+
+Technical qualification is **PASS**. Four fresh owner decisions are
+**pending (0/4)** and must name the exact pre-decision SHA-256 above. Therefore
+Architecture remains on accepted EventStore `3.70.1`; P1R, P0 Stage 1,
+DW-35, and DW-68 remain open; all downstream gates retain their blockers. No
+push, publication, release, dependency update, live-checkout mutation,
+acceptance inference, or propagation occurred.
+
+## Attempt 27 four-owner acceptance and bounded propagation — 2026-09-21
+
+At `2026-09-21T14:46:38Z`, Jérôme Piquot explicitly accepted exact Attempt 27
+pre-decision SHA-256
+`cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd`
+as EventStore Owner, Builds Owner, Solution Architect, and Test Architect. The
+accepted `finite-record-pre-decision.md` bytes remain unchanged. The
+manifest-covered decision and bounded-propagation addendum is
+`Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt27/finite-record-decisions.md`, SHA-256
+`d7593bffa3edd8c8235b3394793fb4f336612e876c4c854572ef6df8f7417a92`.
+
+| Role | Approver | Decision | UTC date | Decision scope, exact accepted coordinates, and record |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `accept` | `2026-09-21T14:46:38Z` | Scope: source/package identities, 14-package release evidence, affected behavior, source/package equivalence, seven APIs, and rollback EventStore. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted record SHA-256 `cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd` |
+| Builds Owner | Jérôme Piquot | `accept` | `2026-09-21T14:46:38Z` | Scope: full catalog/audit alignment, runner/schema/fixture/evidence parity, exact qualifying revision, G-4 controls, and rollback Builds. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted record SHA-256 `cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd` |
+| Solution Architect | Jérôme Piquot | `accept` | `2026-09-21T14:46:38Z` | Scope: exact multi-coordinate binding, executable rollback, Architecture Spine update, and G-1 non-selection wording. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted record SHA-256 `cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd` |
+| Test Architect | Jérôme Piquot | `accept` | `2026-09-21T14:46:38Z` | Scope: clean execution, retained evidence, complete bindings, structured artifacts, negative controls, exact remote restore, reciprocal rollback, and cleanup. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted record SHA-256 `cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd` |
+
+Acceptance is **4/4 and satisfied** against one exact record. The accepted
+binding is EventStore `3.106.0` source/package revision
+`76051c70cbf868c40edc00ca0344fa5bd8879b69`, Builds introduction
+`dae84d5f96911517eb1e6f97e75eb88e759e6d8a`, and qualifying catalog/runner
+`ad52f350a2f0bc47849179ae17b4594dafff5363`; executable rollback is EventStore
+`3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c` with Builds
+`7af20f8bafbfe561df6f7705913a0800603090b5`. The final attempt-27 artifact
+manifest SHA-256 is
+`c3a24a8a71140819977ea5ef27af024c058e16dcffbc733f98a0d80177549d63`.
+
+Bounded propagation rebinds the Architecture Spine with G-1 explicitly
+unselected, marks P1R and only P0 Stage 1 done, and resolves DW-35/DW-68. P0
+stages 2–7, supported composition, publication, consumer pin, persisted
+qualification, acceptance record, owner acceptance, P2/P3/P4, Story 6.1,
+readiness, and transitive Epic 7/8 blockers remain open or blocked. No push,
+merge, publication, release, dependency update, or live-checkout mutation was
+authorized or performed.
+
+## Attempt 27 post-acceptance review invalidation — review iteration 3 — 2026-09-21
+
+Review iteration 3 invalidates the Attempt 27 acceptance and bounded
+propagation recorded above. The four decisions and their exact pre-decision
+SHA-256 remain immutable historical evidence, but the record is non-qualifying:
+
+1. authoritative `coordinates-002-seven-api` and
+   `reciprocal-001-controls` rows bind only symbolic helper names and omit the
+   function implementation bytes that produced their results;
+2. reuse verification hashes configuration and resolved-asset checksum-list
+   containers without recomputing every named leaf, some of which disappeared
+   with deleted worktrees;
+3. authoritative Builds rows name
+   `/home/administrator/.cache/ms-playwright/dotnet-10`, while preflight proves
+   a different revision-keyed cache identity and marks it unused; and
+4. the dependency worktree plan copies revision values without retaining a
+   derivation and equality proof against the selected and rollback EventStore
+   gitlinks. Ledger-to-binding command provenance is also not checked strictly
+   enough for a replacement record.
+
+Hexalith.Projects restored the Architecture binding to accepted EventStore
+`3.70.1` and reopened P1R, P0 Stage 1, DW-35, and DW-68. Attempts 24–27,
+historical decision timestamp `2026-09-21T14:46:38Z`, and pre-decision SHA-256
+`cd7549186cee5414b4cf6ac64bc96419ebdfd59188131d3d0d620da2bf9a93bd`
+remain preserved. A superseding run must retain self-contained helper
+implementations, recompute every binding leaf or rerun the affected row and its
+dependents, use and prove the same version-keyed Playwright cache identity,
+derive dependency plans from exact gitlinks, and obtain four fresh decisions
+before propagation. No push, publication, release, dependency update, or
+live-checkout mutation is authorized.
+
+## Review-3 remediation technical record — attempts 28–29 — 2026-09-21
+
+Attempt 28 retained a stop-first harness-only failure after the selected
+EventStore source restore succeeded. The evidence wrapper parsed a
+tab-separated command result with an empty `IFS`, constructed the wrong
+artifact path, and emitted the first authoritative `FAIL` row. No later
+qualification row ran. Its cleanup trap removed the run root and every
+temporary worktree registration. The sealed non-qualifying artifact manifest
+SHA-256 is
+`5e7b1db75396e86f72955ccb0be786a1fb752f0c4962be24f472491c81140653`.
+
+Attempt 29 corrected that wrapper defect and reran the complete qualification
+matrix without reusing an earlier result. All 60 ordered phase rows and all 63
+authoritative rows are unique `PASS` rows. The retained commands include the
+full seven-API and reciprocal-control helper implementations. Every resolved
+asset leaf and configuration input is preserved and independently
+recomputable after worktree deletion. The dependency revisions are derived
+from `git ls-tree -r` at the exact selected and rollback EventStore revisions,
+and strict ledger-to-binding command provenance verifies that derivation. The
+Builds rows use the same actual version/browser-revision-keyed Playwright
+cache proved by preflight:
+`/home/administrator/.cache/hexalith-qualification/playwright/microsoft-playwright-1.62.0-c1234-f1538-w2336-ffmpeg1011`.
+
+The fresh source/package, official-remote, selected Builds, rollback Builds,
+rollback EventStore, reciprocal-control, final-worktree, and cleanup lanes all
+pass. The official remote proof retains exactly 14 singleton-exact direct
+declarations and a missing-direct Contracts negative control. The selected
+Contracts source and package lanes each pass 2,023 tests; the historical
+Server source and package lanes each pass 2,626 tests with 25 expected skips.
+All 34 exact-revision worktrees were captured clean and removed, all eight
+owning-repository registration lists were checked, and every live-checkout
+prestate remained unchanged.
+
+The complete eleven-section pre-decision record is retained at
+`Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt29/finite-record-pre-decision.md`
+with SHA-256
+`b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e`.
+The authoritative ledger SHA-256 is
+`31f710989523a2c51fe3ca5a02dc5315818a8b8ba12b3a024e941dd6b2a236ca`;
+the exact phase ledger SHA-256 is
+`eb5ed0930d7cc4ccd99b17a4efa626f264be933fa788eb833aa202534a0758fd`;
+and the 664-entry artifact-manifest SHA-256 is
+`e586157a205fb5ee0a86ef32e4e96165058113f443d99102df96a07c92cbb740`.
+Independent post-run verification recomputed all 664 manifest entries and the
+pre-decision seal successfully.
+
+Technical qualification is **PASS**. Four fresh owner decisions are
+**pending (0/4)** and must explicitly name the exact Attempt 29 pre-decision
+SHA-256 above. The invalidated Attempt 27 decisions cannot be reused or
+inferred. Therefore Architecture remains on accepted EventStore `3.70.1`;
+P1R, P0 Stage 1, DW-35, and DW-68 remain open; and all downstream gates retain
+their blockers. No acceptance inference, propagation, push, publication,
+release, dependency update, or live-checkout mutation occurred.
+
+## Attempt 29 four-owner acceptance and bounded propagation — 2026-09-22
+
+At `2026-09-22T05:47:37Z`, Jérôme Piquot explicitly accepted exact Attempt
+29 pre-decision SHA-256
+`b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e`
+as EventStore Owner, Builds Owner, Solution Architect, and Test Architect. The
+accepted `finite-record-pre-decision.md` bytes remain unchanged. The
+manifest-covered decision and bounded-propagation addendum is
+`Hexalith.Projects:_bmad-output/implementation-artifacts/qualification-evidence/6-1-p1r-3106-20260921-attempt29/finite-record-decisions.md`, SHA-256
+`57d3c185c82ac483447136fcc66e6131d2974d97fd58ce95710e161185165a8b`.
+
+| Role | Approver | Decision | UTC date | Decision scope, exact accepted coordinates, and record |
+| --- | --- | --- | --- | --- |
+| EventStore Owner | Jérôme Piquot | `accept` | `2026-09-22T05:47:37Z` | Scope: source/package identities, 14-package release evidence, affected behavior, source/package equivalence, seven APIs, and rollback EventStore. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted `finite-record-pre-decision.md` SHA-256 `b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e` |
+| Builds Owner | Jérôme Piquot | `accept` | `2026-09-22T05:47:37Z` | Scope: full catalog/audit alignment, runner/schema/fixture/evidence parity, exact qualifying revision, G-4 controls, and rollback Builds. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted `finite-record-pre-decision.md` SHA-256 `b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e` |
+| Solution Architect | Jérôme Piquot | `accept` | `2026-09-22T05:47:37Z` | Scope: exact multi-coordinate binding, executable rollback, Architecture Spine update, and G-1 non-selection wording. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted `finite-record-pre-decision.md` SHA-256 `b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e` |
+| Test Architect | Jérôme Piquot | `accept` | `2026-09-22T05:47:37Z` | Scope: clean execution, retained evidence, complete bindings, structured artifacts, negative controls, exact remote restore, reciprocal rollback, and cleanup. Coordinates: EventStore `3.106.0` / `v3.106.0` / `76051c70cbf868c40edc00ca0344fa5bd8879b69`; Builds introduction `dae84d5f96911517eb1e6f97e75eb88e759e6d8a`; Builds qualifying `ad52f350a2f0bc47849179ae17b4594dafff5363`; Architecture prestate `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb`; rollback EventStore `3.70.1` / `v3.70.1` / `f13f9925fdca53efa2ab8c90d396ab106f91bb9c`; rollback Builds `7af20f8bafbfe561df6f7705913a0800603090b5`; accepted `finite-record-pre-decision.md` SHA-256 `b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e` |
+
+Acceptance is **4/4 and satisfied** against one exact record. The final
+Attempt 29 artifact-manifest SHA-256 after decision sealing is
+`e38d8329880ff6d51375264f8026ad4a986513a824c283dd530f0fccde79e33a`
+for 665 entries.
+
+Bounded propagation rebinds the Architecture Spine with G-1 explicitly
+unselected, marks P1R and only P0 Stage 1 done, and resolves DW-35/DW-68. P0
+stages 2–7, supported composition, publication, consumer pin, persisted
+qualification, acceptance record, owner acceptance, P2/P3/P4, Story 6.1,
+readiness, and transitive Epic 7/8 blockers remain open or blocked. No push,
+merge, publication, release, dependency update, or EventStore production
+change was authorized or performed.
+
+### Attempt 29 manifest reseal correction — 2026-09-22
+
+The first acceptance commit recorded artifact-manifest SHA-256
+`e38d8329880ff6d51375264f8026ad4a986513a824c283dd530f0fccde79e33a`
+before the final in-bundle README bytes were included. That intermediate hash
+is non-authoritative. The README contains no self-referential manifest hash;
+its SHA-256 is
+`42e2061d046faeb31f958c29bedd40ac3d73758ab0ffd2d8cee899eb3a9d2de9`.
+The final 665-entry manifest SHA-256 is
+`9e1ee20f2681b4b2d1a5fe3ee64a23bc95f32ce2ced877743f3648fe04e483e1`,
+and regenerated `manifest-verification.txt` reports all 665 entries `OK`.
+The decision addendum SHA-256
+`57d3c185c82ac483447136fcc66e6131d2974d97fd58ce95710e161185165a8b`
+and accepted pre-decision SHA-256
+`b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e`
+are unchanged. The four decisions and bounded propagation are unaffected.
+
+## Attempt 29 post-acceptance review invalidation — review iteration 4 — 2026-09-22
+
+Review iteration 4 invalidates the Attempt 29 qualification and bounded
+propagation recorded above. The sealed bundle, exact pre-decision SHA-256,
+decision addendum, final manifest, and four owner decisions remain immutable
+historical evidence, but the record is non-qualifying:
+
+1. the Architecture-prestate row proves only that supplied revision
+   `8dc7e5695aa496b4ff3ec27f0477c466f6ae45eb` is a commit object and does not
+   read that commit's Architecture Spine to establish the `3.70.1` binding;
+2. selected tag/version equality does not establish that every published
+   EventStore package was built from revision
+   `76051c70cbf868c40edc00ca0344fa5bd8879b69`, and the positive remote-assets
+   graph is not compared with all 14 release-manifest identities and versions;
+3. strict ledger-to-binding provenance covers the 60 ordered phase rows but
+   not the three additional authoritative meta rows;
+4. final-summary booleans for gitlink-derived dependencies, the Builds
+   Playwright identity, clean final worktrees, and related claims are written
+   as literal successes instead of being derived from retained passing proofs;
+5. unchanged live-prestate checks do not content-address dirty tracked and
+   untracked bytes across all eight owning repositories;
+6. commitlint uses an unbound mutable live `node_modules` toolchain; and
+7. the reciprocal-control result prints version mappings without parsing the
+   retained fixtures and inputs that establish them.
+
+Hexalith.Projects restored the Architecture binding to accepted EventStore
+`3.70.1` and reopened P1R, P0 Stage 1, DW-35, and DW-68. Attempts 28–29,
+historical decision timestamp `2026-09-22T05:47:37Z`, pre-decision SHA-256
+`b32186aeb85bb3e958a8d697c6f7586f45b54614ee94c708504580743186737e`,
+decision-addendum SHA-256
+`57d3c185c82ac483447136fcc66e6131d2974d97fd58ce95710e161185165a8b`,
+and final 665-entry manifest SHA-256
+`9e1ee20f2681b4b2d1a5fe3ee64a23bc95f32ce2ced877743f3648fe04e483e1`
+remain preserved.
+
+A superseding record must retain semantic Architecture and published-package
+source provenance; positive 14-package resolved-assets equality; strict
+binding checks for every authoritative row; proof-derived summary claims;
+content-addressed live prestates for all owning repositories; pinned commitlint
+tool bytes and dependencies; parsed reciprocal fixture mappings; and a
+machine-checkable post-acceptance boundary guard. It then requires four fresh
+decisions before propagation. The selected `3.106.0` coordinate, exact
+materialization method, rollback exception, local-only/no-push boundary, and
+all downstream blockers remain unchanged. No push, publication, release,
+dependency update, or EventStore production change is authorized.

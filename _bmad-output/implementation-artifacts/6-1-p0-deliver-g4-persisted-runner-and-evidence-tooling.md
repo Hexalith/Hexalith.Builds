@@ -156,6 +156,7 @@ This binding stage order supersedes the chronological ordering implied by the ol
 - [x] **Stage 1 — Revalidate the dependency baseline through 6.1-P1R** (AC: 1-6, 13-15)
   - [x] Consume the owner-approved EventStore source/package, Builds catalog, runner manifest/schema, and Architecture Spine tuple recorded in the 2026-09-22 P1R acceptance record.
   - [x] Preserve `3.88.0` as historical candidate evidence; use the accepted `3.106.0` selected tuple and `3.70.1` rollback tuple for subsequent P0 work.
+  - [x] Retain `3.88.0` as superseded candidate history. Attempt 17 and its four decisions, and the later attempt records through attempt 29, are review-invalidated history in the P1R revalidation record, not a replacement for the accepted tuple above.
 - [x] **Stage 2 — Reconcile release and package findings against the current Builds head** (AC: 1, 2, 11, 13, 14)
   - [x] Recheck SD1, SD2, and SP1-SP13 against the accepted 3.106.0 tuple and current Builds worktree; close the local implementation findings with the full package gate.
   - [x] Implement and locally verify exact-SHA CI, post-approval live-branch recheck, pre-tag qualification, partial-publication recovery, remote verification logic, credential scope, installed-command contracts, and source/package parity. Retain actual protected-run, remote-feed, rollback, and persisted evidence requirements in Stages 3-7.
