@@ -24,10 +24,12 @@ internal static class PlatformHostingInventory
         JsonElement inventory = document.RootElement;
         PlatformAdoptionValidator.Require(inventory.ValueKind == JsonValueKind.Object && inventory.TryGetProperty("schemaVersion", out JsonElement version) && version.ValueKind == JsonValueKind.Number && version.TryGetInt32(out int major) && major == 1, "Use hosting inventory schemaVersion 1.");
         PlatformAdoptionValidator.Require(inventory.TryGetProperty("projects", out JsonElement projects) && projects.ValueKind == JsonValueKind.Array, "Supply the hosting projects array.");
+        RequireProperties(inventory, ["schemaVersion", "projects"]);
         HashSet<string> recorded = new(StringComparer.Ordinal);
         HashSet<string> frozen = new(StringComparer.Ordinal);
         foreach (JsonElement project in projects.EnumerateArray())
         {
+            RequireProperties(project, ["path", "kind", "owner", "consumers", "state", "replacementPlan", "retirementPlan", "gates"]);
             string projectPath = Text(project, "path");
             string kind = Text(project, "kind");
             string? actualKind = Kind(projectPath);
@@ -39,6 +41,7 @@ internal static class PlatformHostingInventory
             _ = Text(project, "replacementPlan");
             _ = Text(project, "retirementPlan");
             PlatformAdoptionValidator.Require(project.TryGetProperty("gates", out JsonElement gates) && gates.ValueKind == JsonValueKind.Object, "Record pending retirement gates for " + projectPath + ".");
+            RequireProperties(gates, ["producerAdoption", "ownerReviewedSourcePackageDeployedParity", "eventStoreAd22ExactSubjectRemovalAuthority"]);
             foreach (string gate in new[] { "producerAdoption", "ownerReviewedSourcePackageDeployedParity", "eventStoreAd22ExactSubjectRemovalAuthority" })
             {
                 _ = Text(gates, gate);
@@ -55,6 +58,9 @@ internal static class PlatformHostingInventory
         PlatformAdoptionValidator.Require(missing.Length == 0, "Inventory every module-owned hosting project: " + string.Join(", ", missing) + ".");
         return frozen;
     }
+
+    private static void RequireProperties(JsonElement parent, string[] names) =>
+        PlatformAdoptionValidator.Require(parent.ValueKind == JsonValueKind.Object && parent.EnumerateObject().All(property => names.Contains(property.Name, StringComparer.Ordinal)), "Remove unknown inventory fields and arbitrary exclusions; only exact frozen hosting-project directories are permitted.");
 
     private static string Text(JsonElement parent, string name)
     {

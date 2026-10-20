@@ -59,6 +59,7 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("wrong-pin", "tool-pin")]
     [InlineData("missing-inventory", "hosting-inventory")]
     [InlineData("malformed-inventory", "hosting-inventory")]
+    [InlineData("arbitrary-exclusion", "hosting-inventory")]
     [InlineData("unlisted-host", "hosting-inventory")]
     [InlineData("selector", "dependency-selectors")]
     [InlineData("sibling", "dependency-selectors")]
@@ -84,6 +85,7 @@ public sealed class PlatformAdoptionValidationTests
             case "wrong-pin": workspace.Write(".config/dotnet-tools.json", (await File.ReadAllTextAsync(Path.Combine(workspace.Root, ".config/dotnet-tools.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).Replace("4.34.0", "4.33.1", StringComparison.Ordinal)); break;
             case "missing-inventory": File.Delete(Path.Combine(workspace.Root, "module/hosting-inventory.json")); break;
             case "malformed-inventory": workspace.Write("module/hosting-inventory.json", "[]"); break;
+            case "arbitrary-exclusion": workspace.Write("module/hosting-inventory.json", "{\"schemaVersion\":1,\"projects\":[],\"exclusions\":[\".\"]}"); break;
             case "unlisted-host": workspace.Write("src/Hexalith.Sample.AppHost/Hexalith.Sample.AppHost.csproj", "<Project />"); break;
             case "selector": workspace.Write("Directory.Build.props", "<Project><PropertyGroup><HexalithEventStoreFromSource Condition=\"Exists('local.csproj')\">true</HexalithEventStoreFromSource></PropertyGroup></Project>"); break;
             case "sibling": workspace.Write("Directory.Build.props", "<Project><PropertyGroup><HexalithEventStoreRoot>../Hexalith.EventStore</HexalithEventStoreRoot></PropertyGroup></Project>"); break;

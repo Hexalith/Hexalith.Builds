@@ -51,12 +51,13 @@ public static class PlatformAdoptionValidator
         await CheckAsync("declaration", string.Join(", ", paths.Select(path => Path.GetFileName(path))), () =>
         {
             Require(paths.Length > 0, "Supply at least one module declaration.");
-            foreach (string path in paths)
+            string[] resolvedPaths = [.. paths.Select(path => Path.GetFullPath(path, workingDirectory ?? Directory.GetCurrentDirectory()))];
+            foreach (string path in resolvedPaths)
             {
                 Require(IsLocalFile(root, path), "Every manifest must be an existing file physically inside the active workspace.");
             }
 
-            declaration = PlatformManifestValidator.Validate(paths.Select(path => Path.GetFullPath(path, workingDirectory ?? Directory.GetCurrentDirectory())), cancellationToken);
+            declaration = PlatformManifestValidator.Validate(resolvedPaths, cancellationToken);
             diagnostics.AddRange(declaration.Diagnostics);
             Require(declaration.IsValid, "Correct the declaration failures reported below.");
             foreach (PlatformModuleDeclaration module in declaration.Declarations!)
