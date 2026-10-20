@@ -18,6 +18,14 @@ public sealed record ToolCommandResult(
     ToolOutcome Outcome,
     IReadOnlyList<ToolDiagnostic> Diagnostics)
 {
+    /// <summary>Gets the optional bounded static enrollment report.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformAdoptionRow>? Adoption { get; init; }
+
+    /// <summary>Gets the static-only scope and pending human SM-2 verification.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AdoptionScope { get; init; }
+
     /// <summary>
     /// Gets the run identity returned by a public composition command, when allocated.
     /// </summary>

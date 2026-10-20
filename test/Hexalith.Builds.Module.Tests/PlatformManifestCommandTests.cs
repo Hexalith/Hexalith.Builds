@@ -786,6 +786,42 @@ public sealed class PlatformManifestCommandTests
         }
     }
 
+    /// <summary>Verifies the public candidate CLI renders all adoption rows and fails nonzero.</summary>
+    /// <param name="format">The public output format.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task AdoptionFlagReportsAllRequirementsAndFailuresAsync(string format)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        string cli = typeof(ModuleCommandApplication).Assembly.Location;
+        async Task<Hexalith.Builds.Tooling.Runtime.CompositionProcessResult> InvokeAsync() => await Hexalith.Builds.Tooling.Runtime.CompositionProcess.RunAsync(
+            Hexalith.Builds.Tooling.Runtime.CompositionProcess.CreateStartInfo("dotnet", [cli, "validate", "--manifest", workspace.Manifest, "--adoption", "--output", format], workspace.Root, null),
+            TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        Hexalith.Builds.Tooling.Runtime.CompositionProcessResult passed = await InvokeAsync().ConfigureAwait(true);
+        passed.ExitCode.ShouldBe(0, passed.Output + passed.ErrorOutput);
+        passed.Output.ShouldContain("SM-2 remains separately unverified");
+        if (format == "json")
+        {
+            using JsonDocument parsed = JsonDocument.Parse(passed.Output);
+            parsed.RootElement.GetProperty("adoption").GetArrayLength().ShouldBe(9);
+        }
+        else
+        {
+            passed.Output.ShouldContain("PASS tool-pin file=.config/dotnet-tools.json");
+        }
+
+        File.Delete(Path.Combine(workspace.Root, "module/hosting-inventory.json"));
+        Hexalith.Builds.Tooling.Runtime.CompositionProcessResult failed = await InvokeAsync().ConfigureAwait(true);
+        failed.ExitCode.ShouldBe(1, failed.Output + failed.ErrorOutput);
+        failed.Output.ShouldContain("hosting-inventory");
+        if (format == "human")
+        {
+            failed.Output.ShouldContain("FAIL hosting-inventory");
+        }
+    }
+
     private static async Task AssertMutationAsync(string path, string json, string field, string format)
     {
         using PlatformManifestTestWorkspace workspace = new();

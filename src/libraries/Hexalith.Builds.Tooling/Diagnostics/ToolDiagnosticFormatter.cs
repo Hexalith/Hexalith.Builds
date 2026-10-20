@@ -55,6 +55,21 @@ public static class ToolDiagnosticFormatter
             AppendDiagnostic(builder, diagnostic);
         }
 
+        if (result.Adoption is not null)
+        {
+            foreach (Hexalith.Builds.Tooling.Manifest.PlatformAdoptionRow row in result.Adoption)
+            {
+                _ = builder.Append('\n').Append(row.Passed ? "PASS " : "FAIL ");
+                AppendEscaped(builder, row.Requirement);
+                AppendField(builder, "file", row.File);
+                _ = builder.Append(": ");
+                AppendEscaped(builder, row.Reason);
+            }
+
+            _ = builder.Append('\n');
+            AppendEscaped(builder, result.AdoptionScope ?? string.Empty);
+        }
+
         return builder.ToString();
     }
 

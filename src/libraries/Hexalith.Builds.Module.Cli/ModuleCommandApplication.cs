@@ -88,12 +88,15 @@ internal static class ModuleCommandApplication
             DefaultValueFactory = _ => "human",
         };
         _ = outputOption.AcceptOnlyFromAmong("human", "json");
+        Option<bool> adoptionOption = new("--adoption", "Reports bounded static module enrollment requirements; SM-2 requires human verification.");
+        command.Options.Add(adoptionOption);
         command.Options.Add(manifestOption);
         command.Options.Add(outputOption);
         command.SetAction((parseResult, cancellationToken) =>
         {
             Task<int> execution = ExecuteValidationAsync(
                 parseResult.GetValue(manifestOption)!,
+                parseResult.GetValue(adoptionOption),
                 ParseOutputFormat(parseResult.GetValue(outputOption)),
                 standardOutput,
                 cancellationToken);
@@ -105,6 +108,7 @@ internal static class ModuleCommandApplication
 
     private static async Task<int> ExecuteValidationAsync(
         string[] manifestPaths,
+        bool adoption,
         ToolOutputFormat format,
         TextWriter writer,
         CancellationToken cancellationToken)
@@ -117,9 +121,22 @@ internal static class ModuleCommandApplication
         ToolCommandResult commandResult;
         try
         {
-            PlatformManifestValidationResult validation = PlatformManifestValidator.Validate(manifestPaths, cancellationToken);
-            ToolOutcome outcome = validation.IsValid ? ToolOutcome.Passed() : ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest);
-            commandResult = new ToolCommandResult(validation.IsValid ? "validated" : "failed", outcome, validation.Diagnostics);
+            if (adoption)
+            {
+                PlatformAdoptionValidationResult report = await PlatformAdoptionValidator.ValidateAsync(manifestPaths, cancellationToken: cancellationToken).ConfigureAwait(false);
+                ToolOutcome adoptionOutcome = report.IsValid ? ToolOutcome.Passed() : ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, report.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest);
+                commandResult = new ToolCommandResult(report.IsValid ? "validated" : "failed", adoptionOutcome, report.Diagnostics)
+                {
+                    Adoption = report.Rows,
+                    AdoptionScope = PlatformAdoptionValidator.Scope,
+                };
+            }
+            else
+            {
+                PlatformManifestValidationResult validation = PlatformManifestValidator.Validate(manifestPaths, cancellationToken);
+                ToolOutcome outcome = validation.IsValid ? ToolOutcome.Passed() : ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest);
+                commandResult = new ToolCommandResult(validation.IsValid ? "validated" : "failed", outcome, validation.Diagnostics);
+            }
         }
         catch (OperationCanceledException)
         {
