@@ -246,12 +246,19 @@ def controlled_field(package: str) -> str | None:
     return PACKAGE_FIELDS.get(package)
 
 
+def hosting_preview_exclusions(aspire_sdk: str) -> set[tuple[str, str]]:
+    """Retain exact dependency exceptions without qualifying their runtime behavior."""
+    versions = {
+        "13.6.0": "13.6.0-preview.1.26479.8",
+        "13.6.1": "13.6.1-preview.1.26506.6",
+    }
+    version = versions.get(aspire_sdk)
+    return {(package, version) for package in ("Aspire.Hosting.Keycloak", "Aspire.Hosting.Kubernetes")} if version else set()
+
+
 def resolved_graph(workspace: Path, policy: dict[str, Any], tuple_values: dict[str, str]) -> tuple[list[dict], list[str]]:
     graph, issues = [], []
-    exclusions = {
-        ("Aspire.Hosting.Keycloak", "13.6.0-preview.1.26479.8"),
-        ("Aspire.Hosting.Kubernetes", "13.6.0-preview.1.26479.8"),
-    }
+    exclusions = hosting_preview_exclusions(tuple_values["aspireSdk"])
     for relative in policy["resolvedProjects"]:
         project = workspace_path(workspace, relative)
         assets = project.parent / "obj/project.assets.json"
@@ -287,10 +294,7 @@ def direct_pin_issues(workspace: Path, policy: dict[str, Any], tuple_values: dic
     properties, catalog = evaluated_catalog(workspace)
     for package, version in catalog.items():
         field = controlled_field(package)
-        if field and package != "Dapr.Workflow" and (package, version) not in {
-            ("Aspire.Hosting.Keycloak", "13.6.0-preview.1.26479.8"),
-            ("Aspire.Hosting.Kubernetes", "13.6.0-preview.1.26479.8"),
-        } and version != tuple_values[field]:
+        if field and package != "Dapr.Workflow" and (package, version) not in hosting_preview_exclusions(tuple_values["aspireSdk"]) and version != tuple_values[field]:
             issues.append(f"central controlled package differs from effective {field}: {package} {version}")
     for relative in policy["resolvedProjects"]:
         project = workspace_path(workspace, relative)
@@ -309,10 +313,7 @@ def direct_pin_issues(workspace: Path, policy: dict[str, Any], tuple_values: dic
     host = (workspace / "references/Hexalith.Platform/apphost.cs").read_text(encoding="utf-8")
     for package, version in re.findall(r"(?m)^#:(?:sdk|package)\s+(\S+)@(\S+)\s*$", host):
         field = "aspireSdk" if package == "Aspire.AppHost.Sdk" else controlled_field(package)
-        if field and (package, version) not in {
-            ("Aspire.Hosting.Keycloak", "13.6.0-preview.1.26479.8"),
-            ("Aspire.Hosting.Kubernetes", "13.6.0-preview.1.26479.8"),
-        } and version != tuple_values[field]:
+        if field and (package, version) not in hosting_preview_exclusions(tuple_values["aspireSdk"]) and version != tuple_values[field]:
             issues.append(f"Platform file host pin differs from effective tuple: {package} {version}")
     return issues
 

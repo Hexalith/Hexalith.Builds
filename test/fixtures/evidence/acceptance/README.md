@@ -30,9 +30,8 @@ files, and rebinds hashes only where they matched the original artifact bytes.
 Malformed/duplicate-key controls retain their original formatting. Sample approval
 identities, times and revisions remain fabricated validator inputs.
 
-This acceptance contract uses all four current `SupportedPlatformPins`. The v1
-module-manifest contract separately retains EventStore `3.120.0` and
-FrontComposer `4.6.0` by design; its
-schema, loader, generic module/readiness fixtures and package evidence assertions
-must not be advanced by this preparation command. The bound acceptance manifest
-is an explicitly non-runnable synthetic identity artifact.
+This acceptance contract uses all four current `SupportedPlatformPins`. The approved 2026-10-20 v1 compatibility repair aligns the module-manifest
+loader, schema, executable/generic fixtures and package evidence assertions with
+the same embedded catalog. This preparation command still edits only the
+synthetic acceptance corpus. Historical qualification records remain unchanged;
+the bound acceptance manifest is synthetic and grants no runtime acceptance.
