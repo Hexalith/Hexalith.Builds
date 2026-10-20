@@ -1,0 +1,56 @@
+{
+  "artifactKind": "pending named G-6 result assessment",
+  "status": "accepted",
+  "result": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.g6-current-evidence/p0-approved-20261020-attempt2/result.json",
+  "resultFileSha256": "4660559dc8095d5257814b9d50af9aaacdefa7f3f6f4f9f84aeda53d8be1c8bb",
+  "resultArtifactSha256": "287663d2a1d5ae25acf64e27a9984780062f26aaa4b8e71a972c73ead4488a08",
+  "projectsRevision": "83c4802be3626560e53d4ef88aa78647e89df589",
+  "buildsExecutionRevision": "e40ed9c7110d56a2f38c9291627728aea2f205cb",
+  "scope": "local execution using ci validation mode; checkout-source proof; no published runtime/P0 acceptance",
+  "qualified": true,
+  "roles": [
+    {
+      "role": "Builds",
+      "owner": "Jérôme Piquot",
+      "decision": "accepted",
+      "date": "2026-10-20",
+      "reference": "conversation: Accept this G-6 result; exact artifact SHA256 287663d2a1d5ae25acf64e27a9984780062f26aaa4b8e71a972c73ead4488a08"
+    },
+    {
+      "role": "Platform",
+      "owner": "Jérôme Piquot",
+      "decision": "accepted",
+      "date": "2026-10-20",
+      "reference": "conversation: Accept this G-6 result; exact artifact SHA256 287663d2a1d5ae25acf64e27a9984780062f26aaa4b8e71a972c73ead4488a08"
+    },
+    {
+      "role": "FrontComposer/Web",
+      "owner": "Jérôme Piquot",
+      "decision": "accepted",
+      "date": "2026-10-20",
+      "reference": "conversation: Accept this G-6 result; exact artifact SHA256 287663d2a1d5ae25acf64e27a9984780062f26aaa4b8e71a972c73ead4488a08"
+    }
+  ],
+  "independentValidation": "/home/administrator/projects/hexalith/builds/evidence/g4/approved-tuple-20261020/g6-attempt2-independent-validation.log",
+  "separateGates": [
+    "usable exact P1R",
+    "P0 live/native/publication/rollback qualification",
+    "P0 acceptance before Projects adoption"
+  ],
+  "scopeLimitations": [
+    "The current G6 source policy checks passed; published runtime and P0 Redis persisted proofs remain separate.",
+    "The existing auxiliary G6 Redis launch declares redis:7.4; post-run inspection is not immutable launch-digest attestation."
+  ],
+  "acceptedAtUtc": "2026-10-20T14:40:32Z",
+  "approvalSource": {
+    "kind": "conversation response to exact result question",
+    "verbatim": "Accept this G-6 result",
+    "roles": [
+      "Builds",
+      "Platform",
+      "FrontComposer/Web"
+    ],
+    "scope": "G6 source qualification only; P1R and P0 acceptance remain separate"
+  },
+  "previousPendingReviewSha256": "547c35e448d5811e6de22d094f490db2164878950daab535d5018473b6d73817"
+}

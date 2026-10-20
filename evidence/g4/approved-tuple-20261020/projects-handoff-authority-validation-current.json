@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "python3",
+    "tools/planning/validate_production_authority.py",
+    "--validate-index"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/projects",
+  "exitCode": 0,
+  "stdout": "PASS: production-authority index is [6, 7, 8]\n",
+  "stderr": "",
+  "finishedUtc": "2026-10-20T15:44:58.657928+00:00"
+}

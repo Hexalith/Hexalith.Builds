@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1",
+  "eventStoreVersion": "3.126.0",
+  "frontComposerVersion": "4.7.0",
+  "daprSdkVersion": "1.18.10",
+  "aspireHostingVersion": "13.6.1",
+  "aspireHostingDaprVersion": "13.6.1-beta.935",
+  "aspireAppHostSdkVersion": "13.6.1",
+  "daprRuntimeVersion": "1.18.2",
+  "daprCliVersion": "1.18.0",
+  "redisImage": "docker.io/library/redis",
+  "redisImageTag": "7.4-alpine",
+  "redisImageDigest": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+  "eventStoreHostingDaprRange": "13.6.1-beta.935"
+}

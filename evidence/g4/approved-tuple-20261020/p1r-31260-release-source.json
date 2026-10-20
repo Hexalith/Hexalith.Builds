@@ -1,0 +1,20 @@
+[
+  {
+    "path": "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020",
+    "revision": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+    "cloneExitCode": 0,
+    "checkoutExitCode": 0
+  },
+  {
+    "path": "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020/references/Hexalith.AI.Tools",
+    "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d",
+    "cloneExitCode": 0,
+    "checkoutExitCode": 0
+  },
+  {
+    "path": "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020/references/Hexalith.Builds",
+    "revision": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c",
+    "cloneExitCode": 0,
+    "checkoutExitCode": 0
+  }
+]

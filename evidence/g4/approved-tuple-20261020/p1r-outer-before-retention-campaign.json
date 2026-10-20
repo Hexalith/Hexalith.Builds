@@ -1,0 +1,279 @@
+{
+  "artifactKind": "outer-host observation after private isolation setup and before application fixture",
+  "observedStartUtc": "2026-10-20T15:03:24.980378+00:00",
+  "observedFinishUtc": "2026-10-20T15:03:25.661240+00:00",
+  "snapshot": {
+    "containers": [
+      {
+        "id": "3d28055b19d0fdf5679fcd2866807c71f3b1fbd596cfd0955f257c3820ce080c",
+        "name": "hexalith-g4-b3caf6a6aff8be66a673ad539a160eed-redis",
+        "image": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+        "running": true,
+        "startedAt": "2026-10-20T15:03:15.831968024Z",
+        "restartCount": 0
+      },
+      {
+        "id": "615c9f21eee0c830449657cebbaf74e04e187afb37107e0aec6629c69e417e25",
+        "name": "dapr-sentry-jkdjdejf",
+        "image": "sha256:542ebe822d18d9ee1019d2b20960e2fbd533235bc0140e8c2a550f09fdd0a9a7",
+        "running": true,
+        "startedAt": "2026-10-20T15:02:46.560064675Z",
+        "restartCount": 0
+      },
+      {
+        "id": "7570bada97eaf00bdec6ffe922a78547495696d1bb1f5fe612456f337bd2210e",
+        "name": "dapr-scheduler-mtls-bdmryeds",
+        "image": "sha256:9ec89d30076155d2376c06f98028b6920f31fac5df0eb40e0b8b94cc88dd5b59",
+        "running": true,
+        "startedAt": "2026-10-20T15:03:17.451202723Z",
+        "restartCount": 0
+      },
+      {
+        "id": "8623af8b7bbd8ebd3d73221af72615162475f3f8a7190432e09e64e51befc826",
+        "name": "dapr_scheduler",
+        "image": "sha256:0ac4fadf0016be85065cdebab952a8350e468cf9283d26777b0307a14a10aecc",
+        "running": true,
+        "startedAt": "2026-10-19T15:22:08.450688315Z",
+        "restartCount": 0
+      },
+      {
+        "id": "8d0788f8322fdb91a51f3960cb9a0ceab4a7b892f27bacf2147e97fc4d471922",
+        "name": "dapr_redis",
+        "image": "sha256:c35b83ce044bb6d148c484d36e059ad28e02d5714ba6731fb55b6421e2ed0ccf",
+        "running": true,
+        "startedAt": "2026-10-19T15:22:08.435874046Z",
+        "restartCount": 0
+      },
+      {
+        "id": "9bb68bcc7407361a993d29d30b52b9ee03c8488e4ca01f7bc8402693cc3a5b4a",
+        "name": "dapr-scheduler-mtls-xwqzasvq",
+        "image": "sha256:9ec89d30076155d2376c06f98028b6920f31fac5df0eb40e0b8b94cc88dd5b59",
+        "running": true,
+        "startedAt": "2026-10-20T15:02:48.139256912Z",
+        "restartCount": 0
+      },
+      {
+        "id": "a05f21b7b09c68ac2051fb3a0bdbd800efda1e7d79f1710e9743d445cbdecf69",
+        "name": "dapr-placement-mtls-rwvapnwz",
+        "image": "sha256:9ec89d30076155d2376c06f98028b6920f31fac5df0eb40e0b8b94cc88dd5b59",
+        "running": true,
+        "startedAt": "2026-10-20T15:02:48.231145663Z",
+        "restartCount": 0
+      },
+      {
+        "id": "ba8170949c2d5fffb503102ecfe4ae87bcd21cebaf4dd6065a23c403abaec110",
+        "name": "dapr-placement-mtls-fftmkjmx",
+        "image": "sha256:9ec89d30076155d2376c06f98028b6920f31fac5df0eb40e0b8b94cc88dd5b59",
+        "running": true,
+        "startedAt": "2026-10-20T15:03:17.452636072Z",
+        "restartCount": 0
+      },
+      {
+        "id": "cb7c12622c180c9a16d24a67fc57115f8aeb0d038fed8793d6c9d49e11d1e488",
+        "name": "dapr_zipkin",
+        "image": "sha256:bb570eb45c2994eaf32da783cc098b3d51d1095b73ec92919863d73d0a9eaafb",
+        "running": true,
+        "startedAt": "2026-10-19T15:22:08.445118114Z",
+        "restartCount": 0
+      },
+      {
+        "id": "e4a9f474e4b540601150502eea2baefb6feedf0b480793ecb0ab91d4131649bf",
+        "name": "dapr-sentry-awnmqnnb",
+        "image": "sha256:542ebe822d18d9ee1019d2b20960e2fbd533235bc0140e8c2a550f09fdd0a9a7",
+        "running": true,
+        "startedAt": "2026-10-20T15:03:15.877440518Z",
+        "restartCount": 0
+      },
+      {
+        "id": "e84de965adb83e061e2395c80c517a12f6b37b0078fd616473380e2b63844e4a",
+        "name": "works-sdk415-4b449eeb78d54867a3a8bf9b38855fa5",
+        "image": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+        "running": true,
+        "startedAt": "2026-10-20T15:02:43.115674898Z",
+        "restartCount": 0
+      },
+      {
+        "id": "f1e0a30a3a93a1542ee5ad74856e44d483a94f7a8e5ef769f398827815cc1da6",
+        "name": "dapr_placement",
+        "image": "sha256:0ac4fadf0016be85065cdebab952a8350e468cf9283d26777b0307a14a10aecc",
+        "running": true,
+        "startedAt": "2026-10-19T15:22:08.452373149Z",
+        "restartCount": 0
+      }
+    ],
+    "binaries": [
+      {
+        "name": "dapr",
+        "sha256": "43429557ff18a7230737b945699417ec391ad41bd431244c175b79ab3c904ce5"
+      },
+      {
+        "name": "daprd",
+        "sha256": "e988a6f53abec017fc9ebcb4f89de9bed11bce005eb49bd8e85e8d3d6adbf488"
+      }
+    ]
+  },
+  "allOuterContainers": [
+    {
+      "id": "3d28055b19d0fdf5679fcd2866807c71f3b1fbd596cfd0955f257c3820ce080c",
+      "name": "hexalith-g4-b3caf6a6aff8be66a673ad539a160eed-redis",
+      "image": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+      "running": true,
+      "startedAt": "2026-10-20T15:03:15.831968024Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "5dedd99ed17d25708bdeb03d2de0e8ebd19fe39d78e79aefdac2cf6a082b259d",
+      "name": "p1r-isolation-9af7da1dffbf495d93f9bfd181fd505f-python-tools",
+      "image": "sha256:2986c55feb36e6cae00fa1fefb454283e4b33f35e75ff8bdd123b134130be301",
+      "running": false,
+      "startedAt": "0001-01-01T00:00:00Z",
+      "restartCount": 0,
+      "isolationLabel": "9af7da1dffbf495d93f9bfd181fd505f"
+    },
+    {
+      "id": "615c9f21eee0c830449657cebbaf74e04e187afb37107e0aec6629c69e417e25",
+      "name": "dapr-sentry-jkdjdejf",
+      "image": "sha256:542ebe822d18d9ee1019d2b20960e2fbd533235bc0140e8c2a550f09fdd0a9a7",
+      "running": true,
+      "startedAt": "2026-10-20T15:02:46.560064675Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "7570bada97eaf00bdec6ffe922a78547495696d1bb1f5fe612456f337bd2210e",
+      "name": "dapr-scheduler-mtls-bdmryeds",
+      "image": "sha256:9ec89d30076155d2376c06f98028b6920f31fac5df0eb40e0b8b94cc88dd5b59",
+      "running": true,
+      "startedAt": "2026-10-20T15:03:17.451202723Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "789f4b9c078bf5920d3eee570e3b10ec4fca7fe0e12af91d1670a52b65bb00fe",
+      "name": "p1r-isolation-9af7da1dffbf495d93f9bfd181fd505f-daemon",
+      "image": "sha256:6316d612722fd7fb2bd7edf9fcbb4439d08915cfb2e0e0b28bf16675fc9f3314",
+      "running": true,
+      "startedAt": "2026-10-20T15:02:18.800456557Z",
+      "restartCount": 0,
+      "isolationLabel": "9af7da1dffbf495d93f9bfd181fd505f"
+    },
+    {
+      "id": "8623af8b7bbd8ebd3d73221af72615162475f3f8a7190432e09e64e51befc826",
+      "name": "dapr_scheduler",
+      "image": "sha256:0ac4fadf0016be85065cdebab952a8350e468cf9283d26777b0307a14a10aecc",
+      "running": true,
+      "startedAt": "2026-10-19T15:22:08.450688315Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "8d0788f8322fdb91a51f3960cb9a0ceab4a7b892f27bacf2147e97fc4d471922",
+      "name": "dapr_redis",
+      "image": "sha256:c35b83ce044bb6d148c484d36e059ad28e02d5714ba6731fb55b6421e2ed0ccf",
+      "running": true,
+      "startedAt": "2026-10-19T15:22:08.435874046Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "9bb68bcc7407361a993d29d30b52b9ee03c8488e4ca01f7bc8402693cc3a5b4a",
+      "name": "dapr-scheduler-mtls-xwqzasvq",
+      "image": "sha256:9ec89d30076155d2376c06f98028b6920f31fac5df0eb40e0b8b94cc88dd5b59",
+      "running": true,
+      "startedAt": "2026-10-20T15:02:48.139256912Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "a05f21b7b09c68ac2051fb3a0bdbd800efda1e7d79f1710e9743d445cbdecf69",
+      "name": "dapr-placement-mtls-rwvapnwz",
+      "image": "sha256:9ec89d30076155d2376c06f98028b6920f31fac5df0eb40e0b8b94cc88dd5b59",
+      "running": true,
+      "startedAt": "2026-10-20T15:02:48.231145663Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "ba8170949c2d5fffb503102ecfe4ae87bcd21cebaf4dd6065a23c403abaec110",
+      "name": "dapr-placement-mtls-fftmkjmx",
+      "image": "sha256:9ec89d30076155d2376c06f98028b6920f31fac5df0eb40e0b8b94cc88dd5b59",
+      "running": true,
+      "startedAt": "2026-10-20T15:03:17.452636072Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "cb7c12622c180c9a16d24a67fc57115f8aeb0d038fed8793d6c9d49e11d1e488",
+      "name": "dapr_zipkin",
+      "image": "sha256:bb570eb45c2994eaf32da783cc098b3d51d1095b73ec92919863d73d0a9eaafb",
+      "running": true,
+      "startedAt": "2026-10-19T15:22:08.445118114Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "d2a2fef3b7ad5d6e0dd810e487ff5891e5a0f060f924425f7d192a50cbfb3b5f",
+      "name": "p1r-isolation-9af7da1dffbf495d93f9bfd181fd505f-sdk",
+      "image": "sha256:3a48280a9a7c6276c3eeaba1efa6a08820f18c84fb9e6274c187719ecfaf9fbc",
+      "running": true,
+      "startedAt": "2026-10-20T15:02:23.437431824Z",
+      "restartCount": 0,
+      "isolationLabel": "9af7da1dffbf495d93f9bfd181fd505f"
+    },
+    {
+      "id": "e4a9f474e4b540601150502eea2baefb6feedf0b480793ecb0ab91d4131649bf",
+      "name": "dapr-sentry-awnmqnnb",
+      "image": "sha256:542ebe822d18d9ee1019d2b20960e2fbd533235bc0140e8c2a550f09fdd0a9a7",
+      "running": true,
+      "startedAt": "2026-10-20T15:03:15.877440518Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "e84de965adb83e061e2395c80c517a12f6b37b0078fd616473380e2b63844e4a",
+      "name": "works-sdk415-4b449eeb78d54867a3a8bf9b38855fa5",
+      "image": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+      "running": true,
+      "startedAt": "2026-10-20T15:02:43.115674898Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    },
+    {
+      "id": "f1e0a30a3a93a1542ee5ad74856e44d483a94f7a8e5ef769f398827815cc1da6",
+      "name": "dapr_placement",
+      "image": "sha256:0ac4fadf0016be85065cdebab952a8350e468cf9283d26777b0307a14a10aecc",
+      "running": true,
+      "startedAt": "2026-10-19T15:22:08.452373149Z",
+      "restartCount": 0,
+      "isolationLabel": null
+    }
+  ],
+  "excludedOnlyVerifiedOwnedIsolationContainers": {
+    "5dedd99ed17d25708bdeb03d2de0e8ebd19fe39d78e79aefdac2cf6a082b259d": {
+      "image": "python@sha256:2986c55feb36e6cae00fa1fefb454283e4b33f35e75ff8bdd123b134130be301",
+      "role": "python-tools"
+    },
+    "789f4b9c078bf5920d3eee570e3b10ec4fca7fe0e12af91d1670a52b65bb00fe": {
+      "image": "docker@sha256:6316d612722fd7fb2bd7edf9fcbb4439d08915cfb2e0e0b28bf16675fc9f3314",
+      "role": "daemon"
+    },
+    "d2a2fef3b7ad5d6e0dd810e487ff5891e5a0f060f924425f7d192a50cbfb3b5f": {
+      "image": "mcr.microsoft.com/dotnet/sdk@sha256:3a48280a9a7c6276c3eeaba1efa6a08820f18c84fb9e6274c187719ecfaf9fbc",
+      "role": "sdk"
+    }
+  },
+  "isolationInvocation": "9af7da1dffbf495d93f9bfd181fd505f",
+  "applicationFixtureNotStartedAtObservation": true,
+  "snapshotTiming": "after outer isolation startup; not a newly captured pre-invocation snapshot",
+  "precedingG6SnapshotEqual": false,
+  "precedingBaselineReference": "p1r-whole-host-baseline-reference.json",
+  "qualifiesHistoricalP1R": false,
+  "newOwnerInputsSha256": "8702ee307d39bd357f41dfcb53d63b6c834c5dd81ff7a4f4cb55430d7c7c265d",
+  "runtimeAndBackendCoordinatesUnchanged": true,
+  "profileReferenceDifference": {
+    "before": "2026-10-20 user-approved P0 tuple; approval.json sha256:2020d5e314d211f48fa1b6ebbf9620b956edbcfa8a3334e79863d60234590ad1",
+    "after": "approved-tuple-20261020/approval.json; unchanged runtime selection; retention-fixture correction p1r-restore-fixture-diagnosis.json"
+  },
+  "preSnapshotScriptCorrection": "Initial equality check also compared the expected changed provenance reference and stopped before snapshot. This observation records its real later timing. Full campaign used the same observed runtime coordinates."
+}

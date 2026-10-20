@@ -1,0 +1,12 @@
+{
+  "fromRevision": "55432c50d4b6f1666b4bd6d4a60bfc263b2d0e0b",
+  "toRevision": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+  "productionFilesChanged": [
+    "src/Hexalith.EventStore.Aspire/HexalithEventStoreExecutableExtensions.cs",
+    "src/Hexalith.EventStore.PayloadProtection/InteractionOccurrenceProtector.cs",
+    "src/Hexalith.EventStore.Server/Actors/AggregateActor.PayloadProtection.cs",
+    "src/Hexalith.EventStore.Server/Security/GovernanceScopeGuardReducer.cs",
+    "src/Hexalith.EventStore.Server/Security/PublishedTrustDeletionConsumptionAuthority.cs"
+  ],
+  "interpretation": "source delta inventory only; live behavior is independently measured by the new campaign"
+}

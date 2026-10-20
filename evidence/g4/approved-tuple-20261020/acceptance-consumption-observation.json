@@ -1,0 +1,20 @@
+{
+  "source": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Evidence/G4P0AcceptanceValidator.cs",
+  "sourceRevision": "e40ed9c7110d56a2f38c9291627728aea2f205cb",
+  "sha256": "3b6e4f0b512195fbc87739e06dc06ada1c252dc1ae558ef4fc3eeedc6fde8704",
+  "schema": "hexalith.g4-p0-acceptance.v1",
+  "exactRootFields": [
+    "schema",
+    "status",
+    "sourceRevision",
+    "platformPins",
+    "fixture",
+    "packages",
+    "runs",
+    "cleanup",
+    "rollback",
+    "approvals"
+  ],
+  "g6Binding": "independent prerequisite validation and named assessment; no extra fields inserted into the strict P0 v1 record",
+  "p0Result": "acceptance record remains absent until actual required P0 run/publication/rollback evidence and dated three-role assessments exist"
+}

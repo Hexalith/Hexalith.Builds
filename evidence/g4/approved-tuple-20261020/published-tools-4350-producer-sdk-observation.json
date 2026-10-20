@@ -1,0 +1,35 @@
+{
+  "artifactKind": "read-only producer SDK observation",
+  "rows": [
+    {
+      "job": {
+        "conclusion": "success",
+        "html_url": "https://github.com/Hexalith/Hexalith.Builds/actions/runs/39431435493/job/118657328364",
+        "id": 118657328364,
+        "name": "Release"
+      },
+      "rawLogSha256": "13b45efe82686951ffc573e72e4541298aa61dfe5da7f4b9b4b63d9b4730fba2",
+      "selectedSdkLines": [
+        "2026-10-20T13:34:46.1992090Z   dotnet-version: 10.0.402",
+        "2026-10-20T13:34:48.3207535Z dotnet-install: Attempting to download using aka.ms link https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.402/dotnet-sdk-10.0.402-linux-x64.tar.gz",
+        "2026-10-20T13:34:51.5048170Z dotnet-install: Remote file https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.402/dotnet-sdk-10.0.402-linux-x64.tar.gz size is 240279509 bytes.",
+        "2026-10-20T13:34:51.5049325Z dotnet-install: Extracting archive from https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.402/dotnet-sdk-10.0.402-linux-x64.tar.gz",
+        "2026-10-20T13:34:54.9803394Z dotnet-install: Installed version is 10.0.402",
+        "2026-10-20T13:34:54.9964913Z ##[start-action display=Setup .NET 10.0.402;id=__self.__actions_setup-dotnet_2]",
+        "2026-10-20T13:42:50.5798371Z PASS: missing-HexalithAspireAppHostSdkVersion",
+        "2026-10-20T13:42:55.5811260Z PASS: duplicate-property-HexalithAspireAppHostSdkVersion"
+      ],
+      "totalMatchingLines": 8,
+      "sourceGlobalJson": {
+        "sdk": {
+          "version": "10.0.402",
+          "rollForward": "latestPatch"
+        },
+        "test": {
+          "runner": "Microsoft.Testing.Platform"
+        }
+      },
+      "scope": "producer observations kept distinct from approved qualification SDK/runtime"
+    }
+  ]
+}

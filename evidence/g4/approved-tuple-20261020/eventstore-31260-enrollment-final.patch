@@ -1,0 +1,386 @@
+diff --git a/tools/p1r-published-consumers/Directory.Build.props b/tools/p1r-published-consumers/Directory.Build.props
+index d1d97e86c..ffeda52b9 100644
+--- a/tools/p1r-published-consumers/Directory.Build.props
++++ b/tools/p1r-published-consumers/Directory.Build.props
+@@ -6,8 +6,8 @@
+     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+     <DefineConstants Condition="'$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_SOURCE</DefineConstants>
+-    <DefineConstants Condition="'$(EventStoreVersion)' == '3.110.0' or '$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_CAPABILITIES</DefineConstants>
+-    <DefineConstants Condition="'$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_CANDIDATE</DefineConstants>
+-    <DefineConstants Condition="'$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_FOLDED_SNAPSHOT</DefineConstants>
++    <DefineConstants Condition="'$(EventStoreVersion)' == '3.110.0' or '$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_CAPABILITIES</DefineConstants>
++    <DefineConstants Condition="'$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_CANDIDATE</DefineConstants>
++    <DefineConstants Condition="'$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_FOLDED_SNAPSHOT</DefineConstants>
+   </PropertyGroup>
+ </Project>
+diff --git a/tools/p1r-published-consumers/README.md b/tools/p1r-published-consumers/README.md
+index b14d42167..e6867b236 100644
+--- a/tools/p1r-published-consumers/README.md
++++ b/tools/p1r-published-consumers/README.md
+@@ -329,3 +329,23 @@ Both explicit source routes copy the selected tagged source’s `global.json` in
+ each fresh consumer root before the first MSBuild evaluation or restore. This
+ selects its SDK for Debug source builds and Release published-package builds,
+ even when the verifier checkout pins a newer SDK.
++
++## Exact 3.126.0 enrollment, 2026-10-20
++
++The approved P0 current-catalog preparation target additionally enrolls published
++3.126.0 for the existing finite snapshot, recovery, Reminder and evolution proof.
++Its exact tag/source is `fcf78d6cafb6c0c9f52dc350a9a09aff54ded288`; tag-construction
++Builds is `1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c`. The verifier and its actual
++execution Builds remain separate identities. Use the existing separate
++verifier/candidate-closure route with an explicit clean tagged `--source-root`.
++The optional pinned-tooling/runtime-source route remains bounded to its existing
++3.125.1 contract; this enrollment does not silently widen that route.
++
++The fixture executes genuine manual snapshot nine, tail twelve, restore floor
++five/head twelve and append thirteen, plus the existing strict Reminder and
++logical evolution additions. Exact 3.126.0 package writers and the separately
++bound Debug source writer are supported fixture inputs; 3.126.1/3.127.0 and
++cross-version writer substitution remain refused. Historical 3.125.1 identities,
++measurements and failures are preserved. Enrollment and synthetic controls grant
++no P1R support boundary, conformance, acceptance, downgrade, or consumer adoption.
++Keep comparison-only 3.70.1/3.110.0, rollback null and AD-17 forward recovery.
+diff --git a/tools/p1r-published-consumers/domain/Domain.csproj b/tools/p1r-published-consumers/domain/Domain.csproj
+index f8614a1db..c72b7c865 100644
+--- a/tools/p1r-published-consumers/domain/Domain.csproj
++++ b/tools/p1r-published-consumers/domain/Domain.csproj
+@@ -1,13 +1,13 @@
+ <Project Sdk="Microsoft.NET.Sdk.Web">
+   <PropertyGroup></PropertyGroup>
+   <ItemGroup><Content Update="fixture-evolution-manifest.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+-  <ItemGroup Condition="'$(UseCurrentSource)' != 'true' and '$(EventStoreVersion)' != '3.119.0' and '$(EventStoreVersion)' != '3.121.0' and '$(EventStoreVersion)' != '3.122.1' and '$(EventStoreVersion)' != '3.125.0' and '$(EventStoreVersion)' != '3.125.1'">
++  <ItemGroup Condition="'$(UseCurrentSource)' != 'true' and '$(EventStoreVersion)' != '3.119.0' and '$(EventStoreVersion)' != '3.121.0' and '$(EventStoreVersion)' != '3.122.1' and '$(EventStoreVersion)' != '3.125.0' and '$(EventStoreVersion)' != '3.125.1' and '$(EventStoreVersion)' != '3.126.0'">
+     <Compile Remove="FixtureEvolutionManifest.cs" />
+   </ItemGroup>
+-  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1'">
++  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0'">
+     <Compile Include="../FixtureSnapshotQualification.cs" Link="FixtureSnapshotQualification.cs" />
+   </ItemGroup>
+-  <ItemGroup Condition="'$(UseCurrentSource)' != 'true' and '$(EventStoreVersion)' != '3.121.0' and '$(EventStoreVersion)' != '3.122.1' and '$(EventStoreVersion)' != '3.125.0' and '$(EventStoreVersion)' != '3.125.1'">
++  <ItemGroup Condition="'$(UseCurrentSource)' != 'true' and '$(EventStoreVersion)' != '3.121.0' and '$(EventStoreVersion)' != '3.122.1' and '$(EventStoreVersion)' != '3.125.0' and '$(EventStoreVersion)' != '3.125.1' and '$(EventStoreVersion)' != '3.126.0'">
+     <Compile Remove="CounterSnapshotParity.cs" />
+   </ItemGroup>
+   <ItemGroup><Compile Include="../PublishedIdentity.cs" Link="PublishedIdentity.cs" /></ItemGroup>
+diff --git a/tools/p1r-published-consumers/host/Host.csproj b/tools/p1r-published-consumers/host/Host.csproj
+index 942cf20a5..2ed1c4e92 100644
+--- a/tools/p1r-published-consumers/host/Host.csproj
++++ b/tools/p1r-published-consumers/host/Host.csproj
+@@ -1,11 +1,11 @@
+ <Project Sdk="Microsoft.NET.Sdk.Web">
+   <PropertyGroup></PropertyGroup>
+   <ItemGroup><Compile Include="../PublishedIdentity.cs" Link="PublishedIdentity.cs" /></ItemGroup>
+-  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1'">
++  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0'">
+     <Compile Include="../domain/FixtureEvolutionManifest.cs" Link="FixtureEvolutionManifest.cs" />
+     <Content Include="../domain/fixture-evolution-manifest.json" Link="fixture-evolution-manifest.json" CopyToOutputDirectory="PreserveNewest" />
+   </ItemGroup>
+-  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1'">
++  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0'">
+     <Compile Include="../FixtureSnapshotQualification.cs" Link="FixtureSnapshotQualification.cs" />
+   </ItemGroup>
+   <ItemGroup Condition="'$(UseCurrentSource)' != 'true'">
+diff --git a/tools/p1r_check_witnesses.py b/tools/p1r_check_witnesses.py
+index c1a6fae03..967a13238 100644
+--- a/tools/p1r_check_witnesses.py
++++ b/tools/p1r_check_witnesses.py
+@@ -130,7 +130,7 @@ def validate_shape(node, tree):
+ 
+ def requires_qualified_snapshot(candidate_version, lane, identifier):
+     """Derive the genuine successor seed requirement without trusting optional observations."""
+-    return candidate_version in ('3.121.0','3.122.1','3.125.0','3.125.1') and (lane == 'post-upgrade-restore' or (
++    return candidate_version in ('3.121.0','3.122.1','3.125.0','3.125.1','3.126.0') and (lane == 'post-upgrade-restore' or (
+         lane in ('snapshot-tail','retained-covered','retained-uncovered','metadata-write')
+         and identifier.split('-to-',1)[0] in (candidate_version,'source')))
+ 
+@@ -184,7 +184,7 @@ def validate_qualified_snapshot(observed, prefix, checks, evidence, binding, wri
+             except (ValueError,TypeError):
+                 pass
+     role, configuration = ('source','Debug') if writer_version == 'source' else ('candidate','Release')
+-    require(writer_version in ('3.121.0','3.122.1','3.125.0','3.125.1','source'), 'qualified snapshot writer is not the selected successor')
++    require(writer_version in ('3.121.0','3.122.1','3.125.0','3.125.1','3.126.0','source'), 'qualified snapshot writer is not the selected successor')
+     def probe_command(check_prefix, operation):
+         identities = {record.get('command') for record in evidence['check_witnesses']
+                       if record.get('kind') == 'probe' and record.get('id','').startswith(prefix + check_prefix)}
+@@ -763,7 +763,7 @@ def validate_case(row, evidence, binding, lane, retained_sources, candidate_vers
+         require(not equivalent or comparison.get('delta') == [], 'equivalence carries contradictory semantic deltas')
+ 
+     if not incomplete and lane == 'reminder-recovery':
+-        if candidate_version == '3.125.1':
++        if candidate_version in ('3.125.1', '3.126.0'):
+             validate_reminder_windows(observation, successful_http, configurations, checks, row['id'])
+             validate_reminder_identity(observation, successful_http, checks, row['id'])
+         for name, identity in (('registration','initial-convergence-no-direct-submission'), ('rearmed','restart-convergence-no-direct-submission')):
+diff --git a/tools/p1r_published_executor.py b/tools/p1r_published_executor.py
+index a10dfc2cb..da3a9522d 100644
+--- a/tools/p1r_published_executor.py
++++ b/tools/p1r_published_executor.py
+@@ -210,7 +210,7 @@ def validate_execution_inputs(inputs, source_root=None, source_builds_root=None)
+     if "tooling" in inputs:
+         return
+     selected_root = ROOT if source_root is None else Path(source_root)
+-    if source_root is None and candidate["version"] == "3.125.1":
++    if source_root is None and candidate["version"] in ("3.125.1", "3.126.0"):
+         binding = preparation.source_binding(ROOT, selected_root)
+         qualification.validate_candidate_source(binding, inputs)
+     tag_commit = preparation.git(selected_root, "rev-parse", candidate["tag"] + "^{commit}").decode().strip()
+@@ -1030,7 +1030,7 @@ class Executor:
+         genuine = interval == 10 and qualification.is_successor_selection(
+             {"candidate": {"version": self.candidate if version == "source" else version}})
+         if genuine:
+-            require(self.candidate in ("3.121.0", "3.122.1", "3.125.0", "3.125.1")
++            require(self.candidate in ("3.121.0", "3.122.1", "3.125.0", "3.125.1", "3.126.0")
+                     and version in (self.candidate, "source"), "successor snapshot fixture is not explicitly enabled")
+         self.stop_nodes()
+         self.postgres_query(self.redis, "DO $$ BEGIN IF to_regclass('public.state') IS NOT NULL THEN TRUNCATE TABLE state; END IF; END $$;")
+@@ -1262,7 +1262,7 @@ class Executor:
+         evidence = {"id": identifier, "commands": self.commands[start_index:], "observations": observed,
+                     "configurations": getattr(self, "configurations", [])[start_configuration:],
+                     "check_witnesses": checks.witnesses}
+-        if self.candidate in ("3.121.0", "3.122.1", "3.125.0", "3.125.1") and getattr(self, "last_snapshot_creation", None) is not None:
++        if self.candidate in ("3.121.0", "3.122.1", "3.125.0", "3.125.1", "3.126.0") and getattr(self, "last_snapshot_creation", None) is not None:
+             path = ROOT / "tools/p1r-published-consumers/FixtureSnapshotQualification.cs"
+             data = regular(path)
+             evidence["snapshot_fixture_source"] = {"path": str(path), "sha256": digest(data), "content": data.decode()}
+@@ -1640,12 +1640,12 @@ class Executor:
+             time.sleep(max(0, (due - datetime.datetime.now(datetime.timezone.utc)).total_seconds()) + .2)
+             natural = self.natural_reminder(checks)
+         callback_url = f"http://127.0.0.1:{self.host_port}/reminder/callback/1"
+-        if self.candidate == "3.125.1":
++        if self.candidate in ("3.125.1", "3.126.0"):
+             require(registration.get("intent_due") == original_due and registration.get("intent_revision") == 1
+                     and isinstance(registration.get("reminder_name"), str), "original armed reminder identity missing")
+             callback_url += "?" + urllib.parse.urlencode({"due": original_due, "reminderName": registration["reminder_name"]})
+         repeated = self.http("POST", callback_url, {})
+-        if self.candidate == "3.125.1":
++        if self.candidate in ("3.125.1", "3.126.0"):
+             checks.check("callback-actor-request-accepted", isinstance(repeated.get("callback_status"), int)
+                          and not isinstance(repeated.get("callback_status"), bool)
+                          and 200 <= repeated["callback_status"] < 300)
+diff --git a/tools/p1r_published_qualification.py b/tools/p1r_published_qualification.py
+index b9f71edfa..47d370e38 100644
+--- a/tools/p1r_published_qualification.py
++++ b/tools/p1r_published_qualification.py
+@@ -80,8 +80,8 @@ PACKET_KEYS = ("schema", "invocation", "started_utc", "finished_utc", "source_bi
+ ROW_KEYS = ("id", "execution", "compatibility", "scope", "assertions", "receipts", "reason")
+ INPUT_KEYS = ("schema", "fixture", "authority", "candidate", "rollback", "operational_profile",
+               "assertion_instrumentation", "selected_additions")
+-FOLDED_SNAPSHOT_VERSIONS = ("3.121.0", "3.122.1", "3.125.0", "3.125.1")
+-ISOLATION_VERSIONS = ("3.122.1", "3.125.0", "3.125.1")
++FOLDED_SNAPSHOT_VERSIONS = ("3.121.0", "3.122.1", "3.125.0", "3.125.1", "3.126.0")
++ISOLATION_VERSIONS = ("3.122.1", "3.125.0", "3.125.1", "3.126.0")
+ SELECTED_SOURCE_COMMIT = "55432c50d4b6f1666b4bd6d4a60bfc263b2d0e0b"
+ SELECTED_TAG_BUILDS = "4629ff2d3bd66376b29a553663c241d3a7b87853"
+ COMPARISON_VERSIONS = ("3.70.1", "3.110.0")
+@@ -220,7 +220,7 @@ def validate_candidate_source(binding, selection):
+     if candidate.get("tag") is None or "tooling" in selection:
+         return
+     source = binding.get("candidate_source")
+-    require(source is not None or "runtime_source" in binding or candidate["version"] != "3.125.1",
++    require(source is not None or "runtime_source" in binding or candidate["version"] not in ("3.125.1", "3.126.0"),
+             "selected candidate source closure missing")
+     if source is None:
+         return
+@@ -239,6 +239,11 @@ def validate_candidate_source(binding, selection):
+         require(head == SELECTED_SOURCE_COMMIT and tree[2] == SELECTED_TAG_BUILDS
+                 and candidate["feed"] == "https://api.nuget.org/v3/index.json",
+                 "selected 3.125.1 published source substituted")
++    if candidate["version"] == "3.126.0":
++        require(head == "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
++                and tree[2] == "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c"
++                and candidate["feed"] == "https://api.nuget.org/v3/index.json",
++                "selected 3.126.0 published source substituted")
+ 
+ 
+ # Owner inputs and decisions -------------------------------------------------------------------------------------
+@@ -1421,7 +1426,7 @@ def validate_final_isolation(receipt, context):
+ 
+ def finalize_isolation_receipts(output, isolation_output, selection):
+     """Attach new successful wrapper evidence after teardown, retaining old receipt schemas."""
+-    if selection["candidate"]["version"] not in ("3.122.1", "3.125.0", "3.125.1"):
++    if selection["candidate"]["version"] not in ("3.122.1", "3.125.0", "3.125.1", "3.126.0"):
+         return
+     output, isolation_output = Path(output), Path(isolation_output)
+     reference = {}
+diff --git a/tools/tests/test_p1r_published_executor.py b/tools/tests/test_p1r_published_executor.py
+index 48f2788ff..dc7862d01 100644
+--- a/tools/tests/test_p1r_published_executor.py
++++ b/tools/tests/test_p1r_published_executor.py
+@@ -321,11 +321,11 @@ class QualifiedSnapshotWitnessTests(unittest.TestCase):
+                 with self.subTest(lane=lane,writer=writer):
+                     self.assertTrue(executor.witnesses.requires_qualified_snapshot(self.candidate_version,lane,writer+'-to-3.110.0'))
+             for writer in ('3.110.0','3.70.1','3.122.2',
+-                           *(version for version in ('3.121.0','3.122.1','3.125.0','3.125.1') if version != self.candidate_version)):
++                           *(version for version in ('3.121.0','3.122.1','3.125.0','3.125.1','3.126.0') if version != self.candidate_version)):
+                 with self.subTest(lane=lane,writer=writer):
+                     self.assertFalse(executor.witnesses.requires_qualified_snapshot(self.candidate_version,lane,writer+'-to-'+self.candidate_version))
+         self.assertTrue(executor.witnesses.requires_qualified_snapshot(self.candidate_version,'post-upgrade-restore','fresh-backup-restore-append-restart'))
+-        for version in ('3.119.0','3.122.0','3.122.2','3.125.2','3.126.0'):
++        for version in ('3.119.0','3.122.0','3.122.2','3.125.2','3.126.1','3.127.0'):
+             self.assertFalse(executor.witnesses.requires_qualified_snapshot(version,'post-upgrade-restore','fresh-backup-restore-append-restart'))
+             self.assertFalse(executor.witnesses.requires_qualified_snapshot(version,'snapshot-tail','source-to-3.110.0'))
+ 
+@@ -580,7 +580,7 @@ class QualifiedSnapshotWitnessTests(unittest.TestCase):
+                     'sha256':value} for entry in verified.values() for value in entry['dlls']]},
+             'cases':[row],'execution_evidence':executed,'output_sha256':executor.digest(executor.canonical(executed)),
+             'assertions':row['assertions'],'execution':'passed','compatibility':'compatible'}
+-        if self.candidate_version in ('3.122.1','3.125.0','3.125.1'):
++        if self.candidate_version in ('3.122.1','3.125.0','3.125.1','3.126.0'):
+             receipt = self.attach_isolation(receipt,context)
+         return receipt,context
+ 
+@@ -646,7 +646,7 @@ class QualifiedSnapshotWitnessTests(unittest.TestCase):
+     def testLaunchReadinessOwnershipAndRestartedStateStoreAreMandatory(self):
+         fixture = self.fixture()
+         for version in ('source','3.122.2',
+-                        *[candidate for candidate in ('3.121.0','3.122.1','3.125.0','3.125.1') if candidate != self.candidate_version]):
++                        *[candidate for candidate in ('3.121.0','3.122.1','3.125.0','3.125.1','3.126.0') if candidate != self.candidate_version]):
+             changed = copy.deepcopy(fixture)
+             config = changed[1]['configurations'][0]
+             config['version'] = version
+@@ -1154,6 +1154,8 @@ class ProposedQualifiedSnapshotWitnessTests(QualifiedSnapshotWitnessTests):
+ 
+ class Published31251SnapshotWitnessTests(ProposedQualifiedSnapshotWitnessTests):
+     candidate_version = '3.125.1'
++    source_commit = qualification.SELECTED_SOURCE_COMMIT
++    tag_builds_commit = qualification.SELECTED_TAG_BUILDS
+ 
+     def setUp(self):
+         super().setUp()
+@@ -1172,8 +1174,8 @@ class Published31251SnapshotWitnessTests(ProposedQualifiedSnapshotWitnessTests):
+         def git(root,*arguments):
+             if Path(root) == self.tagged_root:
+                 if arguments[0] == 'ls-tree':
+-                    return ('160000 commit '+qualification.SELECTED_TAG_BUILDS+'\treferences/Hexalith.Builds\n').encode()
+-                return qualification.SELECTED_SOURCE_COMMIT.encode()
++                    return ('160000 commit '+self.tag_builds_commit+'\treferences/Hexalith.Builds\n').encode()
++                return self.source_commit.encode()
+             return original_git(root,*arguments)
+         for patcher in (mock.patch.object(preparation,'source_binding',side_effect=bind),
+                         mock.patch.object(preparation,'self_contained_checkout'),
+@@ -1219,15 +1221,15 @@ class Published31251SnapshotWitnessTests(ProposedQualifiedSnapshotWitnessTests):
+ 
+     def attach_isolation(self,receipt,context):
+         binding = context['source_binding']
+-        production = {'head':qualification.SELECTED_SOURCE_COMMIT,'diff_sha256':preparation.digest(b''),
++        production = {'head':self.source_commit,'diff_sha256':preparation.digest(b''),
+             'files':[{'path':'src/Production.cs','sha256':'a'*64,'git_blob':'b'*40,'index_blob':'b'*40}],
+-            'gitlinks':{'references/Hexalith.Builds':qualification.SELECTED_TAG_BUILDS}}
++            'gitlinks':{'references/Hexalith.Builds':self.tag_builds_commit}}
+         binding['candidate_source'] = {'repository':str(self.tagged_root),'main':production,'retained_inputs':[],
+             'python':binding['python'],'dependencies':[{'path':'references/Hexalith.Builds','initialized':True,
+-                'binding':dict(copy.deepcopy(production),head=qualification.SELECTED_TAG_BUILDS)}]}
++                'binding':dict(copy.deepcopy(production),head=self.tag_builds_commit)}]}
+         self.test_binding = binding
+-        context['inputs']['value']['candidate'].update(tag='v3.125.1',tag_commit=qualification.SELECTED_SOURCE_COMMIT,
+-            tag_builds_commit=qualification.SELECTED_TAG_BUILDS,feed='https://api.nuget.org/v3/index.json')
++        context['inputs']['value']['candidate'].update(tag='v'+self.candidate_version,tag_commit=self.source_commit,
++            tag_builds_commit=self.tag_builds_commit,feed='https://api.nuget.org/v3/index.json')
+         source_path = Path(self.temporary.name)/'executor-source.json'
+         executor.write_json(source_path,binding)
+         execution_path = Path(self.temporary.name)/'execution.json'
+@@ -1239,6 +1241,12 @@ class Published31251SnapshotWitnessTests(ProposedQualifiedSnapshotWitnessTests):
+         return super().attach_isolation(receipt,context)
+ 
+ 
++class Published31260SnapshotWitnessTests(Published31251SnapshotWitnessTests):
++    candidate_version = '3.126.0'
++    source_commit = 'fcf78d6cafb6c0c9f52dc350a9a09aff54ded288'
++    tag_builds_commit = '1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c'
++
++
+ class IndependentRecoverySelectionTests(unittest.TestCase):
+     def setUp(self):
+         import importlib.util
+@@ -1335,7 +1343,7 @@ class MeasurementTests(unittest.TestCase):
+         worker.postgres_write.assert_not_called()
+ 
+     def testSuccessorSnapshotSeedUsesNineManualCreationAndThreeActualAppends(self):
+-        writers = [(version, version) for version in ("3.121.0", "3.122.1", "3.125.0", "3.125.1")]
++        writers = [(version, version) for version in ("3.121.0", "3.122.1", "3.125.0", "3.125.1", "3.126.0")]
+         for candidate, version in writers + [("3.125.0", "source"), ("3.125.1", "source")]:
+             with self.subTest(candidate=candidate, version=version):
+                 worker, checks = self.snapshotSeedWorker({"sequenceNumber": 9, "snapshotEnvelopeVersion": 1, "state": {"count": 9}},
+@@ -1349,7 +1357,7 @@ class MeasurementTests(unittest.TestCase):
+                 self.assertEqual(worker.last_snapshot_creation["persisted_snapshot"]["snapshotEnvelopeVersion"], 1)
+ 
+     def testUnqualifiedOrMissingSuccessorSnapshotRemainsFailedWithoutSqlSynthesis(self):
+-        writers = [(version, version) for version in ("3.121.0", "3.122.1", "3.125.0", "3.125.1")]
++        writers = [(version, version) for version in ("3.121.0", "3.122.1", "3.125.0", "3.125.1", "3.126.0")]
+         for candidate, version in writers + [("3.125.0", "source"), ("3.125.1", "source")]:
+             for snapshot in (None, {"sequenceNumber": 9, "state": {"count": 9}},
+                              {"sequenceNumber": 9, "snapshotEnvelopeVersion": 1, "state": {"count": 8}}):
+@@ -1362,8 +1370,8 @@ class MeasurementTests(unittest.TestCase):
+     def testUnenrolledSuccessorSeedRefusesBeforeManualSnapshotOrDiagnosticSynthesis(self):
+         for candidate,version in (("3.125.0","3.122.0"),("3.125.0","3.122.2"),
+                                   ("3.125.0","3.125.2"),("3.125.2","3.125.2"),
+-                                  ("3.125.2","source"),("3.126.0","3.126.0"),("3.126.0","source"),
+-                                  ("3.125.1","3.126.0"),("3.125.1","3.125.0"),
++                                  ("3.125.2","source"),("3.127.0","3.127.0"),("3.127.0","source"),
++                                  ("3.125.1","3.127.0"),("3.125.1","3.125.0"),
+                                   ("3.125.0","3.121.0")):
+             worker, checks = self.snapshotSeedWorker(None,candidate=candidate)
+             with self.subTest(candidate=candidate,version=version), self.assertRaisesRegex(executor.InvalidPacket,"not explicitly enabled"):
+@@ -1377,9 +1385,9 @@ class MeasurementTests(unittest.TestCase):
+ 
+     def testEverySeedIntervalRefusesUnenrolledCandidatesAndWrongWritersBeforeMutation(self):
+         for interval in (10, 50, 1000):
+-            for candidate, version in (("3.126.0", "source"), ("3.126.0", "3.126.0"),
+-                                       ("3.126.0", "3.110.0"), ("3.125.2", "source"),
+-                                       ("3.125.1", "3.125.0"), ("3.125.1", "3.126.0"),
++            for candidate, version in (("3.127.0", "source"), ("3.127.0", "3.127.0"),
++                                       ("3.127.0", "3.110.0"), ("3.125.2", "source"),
++                                       ("3.125.1", "3.125.0"), ("3.125.1", "3.127.0"),
+                                        ("3.125.1", "unknown")):
+                 worker, checks = self.snapshotSeedWorker(None, candidate=candidate)
+                 with self.subTest(interval=interval, candidate=candidate, version=version):
+@@ -1395,7 +1403,7 @@ class MeasurementTests(unittest.TestCase):
+         for candidate,writer in (("3.121.0","3.121.0"),("3.122.1","3.122.1"),("3.125.0","3.125.0"),("3.125.1","3.125.1"),
+                                  ("3.125.1","source"),("3.125.0","source"),
+                                  ("3.122.2","3.122.2"),("3.125.2","3.125.2"),
+-                                 ("3.126.0","source"),("3.125.0",None)):
++                                 ("3.127.0","source"),("3.125.0",None)):
+             with self.subTest(candidate=candidate,writer=writer):
+                 worker = executor.Executor.__new__(executor.Executor)
+                 worker.commands, worker.configurations, worker.errors = [], [], []
+@@ -1405,7 +1413,7 @@ class MeasurementTests(unittest.TestCase):
+                     worker.commands.append({"id":1})
+                     return {"seed_snapshot":worker.last_snapshot_creation},"effect","compatible"
+                 _,evidence = worker.case("snapshot-tail",(writer or candidate)+"-to-3.110.0",action,False)
+-                if candidate in ("3.122.2","3.125.2","3.126.0") or writer is None:
++                if candidate in ("3.122.2","3.125.2","3.127.0") or writer is None:
+                     self.assertNotIn("snapshot_fixture_source",evidence)
+                 else:
+                     path = preparation.ROOT/"tools/p1r-published-consumers/FixtureSnapshotQualification.cs"
+@@ -1446,7 +1454,7 @@ class MeasurementTests(unittest.TestCase):
+         return worker, executor.Measurements()
+ 
+     def testRestoreReceiptAttributesBackupAndDatabaseCreationToTheirCommands(self):
+-        for candidate in ("3.125.0", "3.125.1"):
++        for candidate in ("3.125.0", "3.125.1", "3.126.0"):
+             with self.subTest(candidate=candidate):
+                 with tempfile.TemporaryDirectory() as scratch, mock.patch.object(executor, "reserve_port", return_value=15432):
+                     worker = CleanupTests.worker(self, scratch)
+@@ -2905,7 +2913,7 @@ class PublishedPatchSourceTests(unittest.TestCase):
+                     with self.assertRaises(preparation.InvalidPacket):
+                         helper.validate(fixture,lane)
+         self.assertIn('3.125.1',qualification.ISOLATION_VERSIONS)
+-        self.assertFalse(executor.witnesses.requires_qualified_snapshot('3.126.0','snapshot-tail','source-to-3.110.0'))
++        self.assertFalse(executor.witnesses.requires_qualified_snapshot('3.127.0','snapshot-tail','source-to-3.110.0'))
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/tools/tests/test_p1r_snapshot_registration.py b/tools/tests/test_p1r_snapshot_registration.py
+index bed060197..055524033 100644
+--- a/tools/tests/test_p1r_snapshot_registration.py
++++ b/tools/tests/test_p1r_snapshot_registration.py
+@@ -77,7 +77,7 @@ class FixtureSnapshotRegistrationTests(unittest.TestCase):
+         }
+         all_fixture_sources = set().union(*expected_sources.values())
+         for version, enrolled in (('3.125.0', True), ('3.125.1', True),
+-                                  ('3.125.2', False), ('3.126.0', False)):
++                                  ('3.126.0', True), ('3.125.2', False), ('3.126.1', False), ('3.127.0', False)):
+             for role in ('host', 'domain', 'probe'):
+                 with self.subTest(version=version, role=role):
+                     project = FIXTURES / role / (role.title() + '.csproj')

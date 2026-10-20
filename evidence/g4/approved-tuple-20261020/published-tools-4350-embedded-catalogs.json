@@ -1,0 +1,89 @@
+{
+  "artifactKind": "static exact embedded catalog observation; not runtime acceptance",
+  "packages": [
+    {
+      "packagePath": "/var/tmp/hexalith-p0-published-observation-20261020/hexalith.builds.module.cli.4.35.0.nupkg",
+      "archiveSha256": "2b2f0689f38c8a20efa823bd3dc277b4bbe785b03c62513878b9e4c261cb2880",
+      "toolingEntries": [
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Tooling.dll",
+          "assemblySha256": "a79851e24848f06123ff467fe55be862a30bfcb356aabab5431e601c95004dcc",
+          "embeddedCatalog": {
+            "offset": 998268,
+            "bytes": 538,
+            "sha256": "fae831b7bd3706b88113783f491bd7399d0803271d7df0ba817b722187f17174",
+            "catalog": {
+              "schemaVersion": "1",
+              "eventStoreVersion": "3.126.0",
+              "frontComposerVersion": "4.7.0",
+              "daprSdkVersion": "1.18.10",
+              "aspireHostingVersion": "13.6.1",
+              "aspireHostingDaprVersion": "13.6.1-beta.935",
+              "aspireAppHostSdkVersion": "13.6.1",
+              "daprRuntimeVersion": "1.18.2",
+              "daprCliVersion": "1.18.0",
+              "redisImage": "docker.io/library/redis",
+              "redisImageTag": "7.4-alpine",
+              "redisImageDigest": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+              "eventStoreHostingDaprRange": "13.6.1-beta.935"
+            }
+          }
+        },
+        {
+          "path": "tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.dll",
+          "assemblySha256": "a79851e24848f06123ff467fe55be862a30bfcb356aabab5431e601c95004dcc",
+          "embeddedCatalog": {
+            "offset": 998268,
+            "bytes": 538,
+            "sha256": "fae831b7bd3706b88113783f491bd7399d0803271d7df0ba817b722187f17174",
+            "catalog": {
+              "schemaVersion": "1",
+              "eventStoreVersion": "3.126.0",
+              "frontComposerVersion": "4.7.0",
+              "daprSdkVersion": "1.18.10",
+              "aspireHostingVersion": "13.6.1",
+              "aspireHostingDaprVersion": "13.6.1-beta.935",
+              "aspireAppHostSdkVersion": "13.6.1",
+              "daprRuntimeVersion": "1.18.2",
+              "daprCliVersion": "1.18.0",
+              "redisImage": "docker.io/library/redis",
+              "redisImageTag": "7.4-alpine",
+              "redisImageDigest": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+              "eventStoreHostingDaprRange": "13.6.1-beta.935"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "packagePath": "/var/tmp/hexalith-p0-published-observation-20261020/hexalith.builds.evidence.cli.4.35.0.nupkg",
+      "archiveSha256": "cd860844beeaa58be034abbd198326cd1bb8abad86bdd74da03ba66a8346fa96",
+      "toolingEntries": [
+        {
+          "path": "tools/net10.0/any/Hexalith.Builds.Tooling.dll",
+          "assemblySha256": "a79851e24848f06123ff467fe55be862a30bfcb356aabab5431e601c95004dcc",
+          "embeddedCatalog": {
+            "offset": 998268,
+            "bytes": 538,
+            "sha256": "fae831b7bd3706b88113783f491bd7399d0803271d7df0ba817b722187f17174",
+            "catalog": {
+              "schemaVersion": "1",
+              "eventStoreVersion": "3.126.0",
+              "frontComposerVersion": "4.7.0",
+              "daprSdkVersion": "1.18.10",
+              "aspireHostingVersion": "13.6.1",
+              "aspireHostingDaprVersion": "13.6.1-beta.935",
+              "aspireAppHostSdkVersion": "13.6.1",
+              "daprRuntimeVersion": "1.18.2",
+              "daprCliVersion": "1.18.0",
+              "redisImage": "docker.io/library/redis",
+              "redisImageTag": "7.4-alpine",
+              "redisImageDigest": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+              "eventStoreHostingDaprRange": "13.6.1-beta.935"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

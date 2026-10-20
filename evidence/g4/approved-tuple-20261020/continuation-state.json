@@ -1,0 +1,183 @@
+{
+  "schema": "hexalith.p0.approved-continuation.v1",
+  "recordedUtc": "2026-10-20T11:29:56.778927+00:00",
+  "approval": "approval.json",
+  "approvedProposalSha256": "ecfcf399e23d79e4a4594d08feaf986273cc3c2d6e4734049b0d90a0a657c32f",
+  "toolPackages": {
+    "version": "4.33.2-p0.20261020.1",
+    "sourceRevision": "e40ed9c7110d56a2f38c9291627728aea2f205cb",
+    "inventory": "local-tool-package-inventory.json",
+    "contractGate": "passed",
+    "published": false,
+    "p0Accepted": false
+  },
+  "runtime": {
+    "eventStore": "3.126.0",
+    "sourceRevision": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+    "tagBuildsRevision": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c",
+    "frontComposer": "4.7.0",
+    "frontComposerRevision": "cf5fe8da100bd5224a0d7f597fc92e1ebb98a5f4",
+    "eventStoreProducerProvenance": {
+      "constructionBuildsRevision": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c",
+      "ciReusableWorkflowBuildsRevision": "5c04dab754e269f52306b9582cacd7cf1dc1540f",
+      "releaseActionsBuildsRevision": "22a578b576a515d2af214fe81859447fffc97981",
+      "releaseRun": 39165347868,
+      "ciRun": 39159607831,
+      "releaseArtifactSha256": "15ba6bbbcfbdb83f3b025ed40897f0712b50c3813e5af1f59402dc71cc81293e",
+      "evidence": [
+        "eventstore-31260-release-job-log-identities.json",
+        "eventstore-31260-ci-workflow-revisions.json",
+        "eventstore-31260-publication-identity-observation.json"
+      ]
+    },
+    "hostProductRevisions": {
+      "dotnetSdk": "a8dd0577c5c13f43a2f57fe33b4ff11b90f6371e",
+      "dotnetRuntime": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
+      "aspNetCoreRuntime": "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
+      "aspireCli": "3751e615ad660621f2a7aa4c390ef48e08a0eed8",
+      "evidence": [
+        "dotnet-host-product-revisions.json",
+        "g6-qualified-result.json"
+      ],
+      "scope": "host version files and observed Aspire CLI informational version; private SDK image has separate immutable byte identity"
+    }
+  },
+  "workspace": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020",
+  "sdkImage": "sdk-100402-bound-profile.json",
+  "g6": {
+    "attempt1": "failed",
+    "attempt1Result": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.g6-current-evidence/p0-approved-20261020-attempt1/result.json",
+    "livePostgresql": "1/1",
+    "fixtureControls": "33/33",
+    "supportControls": "33/33",
+    "cleanup": "all true",
+    "failures": [
+      "Folders compiled against a package missing projection endpoint helpers",
+      "Platform filehost shared one intermediate path and did not explicitly select package mode"
+    ],
+    "repairState": "attempt1 superseded by qualified and owner-accepted attempt2",
+    "accepted": true,
+    "attempt2": "qualified; independently validated",
+    "resultFileSha256": "4660559dc8095d5257814b9d50af9aaacdefa7f3f6f4f9f84aeda53d8be1c8bb",
+    "resultArtifactSha256": "287663d2a1d5ae25acf64e27a9984780062f26aaa4b8e71a972c73ead4488a08",
+    "result": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.g6-current-evidence/p0-approved-20261020-attempt2/result.json",
+    "ownerReview": "g6-result-review.json",
+    "acceptedAtUtc": "2026-10-20T14:40:32Z"
+  },
+  "p1r": {
+    "attempts1To3": "retained; no complete execution",
+    "sdkMismatch": "legacy private image 10.0.401 versus approved source global.json 10.0.402",
+    "qualified": false,
+    "usable": false,
+    "attempt4": "observation passed; fresh restores/signatures/loaded identity/cleanup",
+    "fullExecution": "attempt2 complete measured nonpass; independent audit running; retention-fixture repair isolated for fresh campaign",
+    "ownerInputsSha256": "74dff2e020cb4064800b83f8c814693d252e844ec3194e11fbccbe4710cced98",
+    "executionRoot": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2",
+    "attempt1": {
+      "status": "cancelled; public CLI exit2, controller journal exit130; not qualification",
+      "reason": "output outside verifier root would fail final ownership handoff",
+      "cleanup": "two successful complete outer absence observations",
+      "evidence": "p1r-attempt1-path-correction-cancellation.json",
+      "partialProgress": "p1r-attempt1-partial-progress.json",
+      "publicCliExitCode": 2,
+      "controllerExitCode": 130
+    },
+    "fixtureDiagnosis": "p1r-restore-fixture-diagnosis.json",
+    "fixtureRepairWorkspace": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020",
+    "measurement": "p1r-execution-attempt2-measurement.json",
+    "independentTechnicalAudit": {
+      "evidence": "p1r-attempt2-independent-technical-audit.json",
+      "technicalEvidenceValid": true,
+      "allMeasuredChecksPassed": false,
+      "strictPacket": "refused correctly: owner support-boundary disposition absent",
+      "qualified": false,
+      "usable": false
+    },
+    "retentionVerifierRevision": "51422dff60f7f1db06f5356efea2548c45c370d7",
+    "retentionWorkspaceRevision": "a107d736c5991b2753655d5afd2a90198fd6dbe0",
+    "retentionCampaign": {
+      "status": "running",
+      "output": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1",
+      "workspaceRevision": "a107d736c5991b2753655d5afd2a90198fd6dbe0",
+      "verifierRevision": "51422dff60f7f1db06f5356efea2548c45c370d7",
+      "ownerInputsSha256": "8702ee307d39bd357f41dfcb53d63b6c834c5dd81ff7a4f4cb55430d7c7c265d",
+      "runtimeAndBackendCoordinatesUnchanged": true
+    }
+  },
+  "p0Live": "not started; usable matching P1R and accepted G6 required",
+  "acceptance": "absent; unseen results were not accepted",
+  "projectsAdoption": "pending accepted P0",
+  "rollback": {
+    "acceptedToolPackage": null,
+    "capableDataDowngrade": null,
+    "greenfieldBuildsRevision": "8e0e2da5e1eff07468b41d85d97979c96c2ac975",
+    "dataRecovery": "AD-17 drain/freeze/forward"
+  },
+  "frozenSource": {
+    "projects": "83c4802be3626560e53d4ef88aa78647e89df589",
+    "eventstoreVerifier": "47def45665312410b73fa12cb047c6bbaa431cf2",
+    "buildsToolAndG6Execution": "e40ed9c7110d56a2f38c9291627728aea2f205cb",
+    "runtimeSource": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+  },
+  "validation": {
+    "projectionHostExtensionTests": {
+      "total": 92,
+      "passed": 92,
+      "skipped": 0
+    },
+    "g6RunnerTests": {
+      "total": 5,
+      "passed": 5
+    },
+    "p1rIsolationTests": {
+      "total": 40,
+      "passed": 40
+    },
+    "p1rHardeningTests": {
+      "total": 30,
+      "passed": 30
+    },
+    "p1rExecutorTests": {
+      "total": 211,
+      "passed": 211
+    },
+    "p1rQualificationTests": {
+      "total": 68,
+      "passed": 68
+    }
+  },
+  "compatibilityGaps": [
+    {
+      "scope": "published EventStore 3.126.0 versus current Folders server source",
+      "consumerRevision": "eed43a86c94b49e030b233beb37fe6128456f649",
+      "missingApis": [
+        "MapEventStoreDomainProjectionEndpoints",
+        "MapEventStoreDomainProjectionMetadataEndpoint"
+      ],
+      "reviewedOwnerSourceRevision": "5a38f36cab94e013183ed264b583da61e6eb91d4",
+      "isolatedTestedSourceRevision": "47def45665312410b73fa12cb047c6bbaa431cf2",
+      "status": "source build repaired; capable published SDK and affected package-consumer qualification still required"
+    },
+    {
+      "scope": "resolution prerequisites",
+      "status": "original published origin context, dynamic digest binding, aggregate-256, Conversations metadata, File evidence/provider and RTI feed/head gaps remain delivery work; designs already selected"
+    }
+  ],
+  "publishedToolSuccessorProposal": {
+    "status": "pending owner tool-source decision",
+    "proposal": "/home/administrator/projects/hexalith/builds/_bmad-output/implementation-artifacts/6-1-p0-published-4-35-0-tuple-addendum-20261020.md",
+    "proposalSha256": "8714ef868fa0544046e874085962c5a8b7a682ccf34c8414b4f71265e65e1d93",
+    "toolVersion": "4.35.0",
+    "toolSource": "fff4a212180d8cd1c5c0759655a9bc4fb6963c45",
+    "proposedG6Source": "3f5ab317d1d1dbfafd6102308258818a84e0a322",
+    "runtimeSelectionUnchanged": true,
+    "newLiveG6Started": false,
+    "p0LiveStarted": false
+  },
+  "historicalArchiveReconciliation": {
+    "evidence": "historical-tuple-reconciliation.json",
+    "4291ArchiveEquivalence": true,
+    "4350ArchiveEquivalence": true,
+    "p0AcceptanceInherited": false
+  }
+}

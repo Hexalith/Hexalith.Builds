@@ -1,0 +1,97 @@
+{
+  "scope": "actual isolated P1R qualifier environment; not additional consumer package selections",
+  "source": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1-isolation/isolation.json",
+  "images": {
+    "daemon": "docker@sha256:6316d612722fd7fb2bd7edf9fcbb4439d08915cfb2e0e0b28bf16675fc9f3314",
+    "python": "python@sha256:2986c55feb36e6cae00fa1fefb454283e4b33f35e75ff8bdd123b134130be301",
+    "sdk": "mcr.microsoft.com/dotnet/sdk@sha256:3a48280a9a7c6276c3eeaba1efa6a08820f18c84fb9e6274c187719ecfaf9fbc"
+  },
+  "dotnetSdk": "10.0.402",
+  "python": [
+    3,
+    12,
+    12
+  ],
+  "docker": {
+    "Client": {
+      "ApiVersion": "1.56",
+      "Arch": "amd64",
+      "BuildTime": "Wed Sep 30 19:31:45 2026",
+      "Context": "default",
+      "DefaultAPIVersion": "1.56",
+      "GitCommit": "7fc2dff",
+      "GoVersion": "go1.26.8",
+      "Os": "linux",
+      "Version": "29.8.2"
+    },
+    "Server": {
+      "ApiVersion": "1.56",
+      "Arch": "amd64",
+      "BuildTime": "2026-09-30T19:34:22.000000000+00:00",
+      "Components": [
+        {
+          "Details": {
+            "ApiVersion": "1.56",
+            "Arch": "amd64",
+            "BuildTime": "Wed Sep 30 19:34:22 2026",
+            "Experimental": "false",
+            "GitCommit": "8af9fe3",
+            "GoVersion": "go1.26.8",
+            "KernelVersion": "6.6.87.2-microsoft-standard-WSL2",
+            "MinAPIVersion": "1.40",
+            "Module": "github.com/moby/moby/v2",
+            "ModuleVersion": "v2.0.0+unknown",
+            "Os": "linux"
+          },
+          "Name": "Engine",
+          "Version": "29.8.2"
+        },
+        {
+          "Details": {
+            "GitCommit": "ee2735368117d2eb259779949d5e75cdafec9761"
+          },
+          "Name": "containerd",
+          "Version": "v2.3.6"
+        },
+        {
+          "Details": {
+            "GitCommit": "v1.5.2-0-g29dd3dc"
+          },
+          "Name": "runc",
+          "Version": "1.5.2"
+        },
+        {
+          "Details": {
+            "GitCommit": "de40ad0"
+          },
+          "Name": "docker-init",
+          "Version": "0.19.0"
+        }
+      ],
+      "GitCommit": "8af9fe3",
+      "GoVersion": "go1.26.8",
+      "KernelVersion": "6.6.87.2-microsoft-standard-WSL2",
+      "MinAPIVersion": "1.40",
+      "Os": "linux",
+      "Platform": {
+        "Name": "Docker Engine - Community"
+      },
+      "Version": "29.8.2"
+    }
+  },
+  "glibc": "glibc 2.39",
+  "executables": {
+    "docker": {
+      "path": "/usr/local/bin/docker",
+      "sha256": "6f7a95d27f98fc8c5f6b220898988bf8f61dd9b040936797917cbdc72c6cabe6"
+    },
+    "dotnet": {
+      "path": "/usr/share/dotnet/dotnet",
+      "sha256": "8b3d902364f618e31e029d4eba077d52c141dd641e375f4555715604806e44b6"
+    },
+    "python": {
+      "path": "/opt/python/bin/python3.12",
+      "sha256": "4dbf3143240288fb2170257ffaa7bd030cdda5d2703d1f5f30b627042267e2e3"
+    }
+  }
+}

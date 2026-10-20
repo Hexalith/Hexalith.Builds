@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tools/tests",
+    "-p",
+    "test_p1r_published_executor.py"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore",
+  "startedUtc": "2026-10-20T14:53:45.130364+00:00",
+  "diskFreeBefore": 11650420736,
+  "exitCode": 0,
+  "finishedUtc": "2026-10-20T14:56:52.604868+00:00",
+  "diskFreeAfter": 4605194240
+}

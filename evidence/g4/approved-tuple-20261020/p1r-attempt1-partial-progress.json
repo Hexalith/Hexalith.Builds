@@ -1,0 +1,100 @@
+{
+  "recordedUtc": "2026-10-20T12:48:46.206530+00:00",
+  "executionRoot": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1",
+  "scope": "incomplete campaign observation; not acceptance",
+  "complete": false,
+  "qualified": false,
+  "usable": false,
+  "completedReceipts": [
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1/receipts/1b9e73297fdf43f7980c11047fb96bc5.json",
+      "lane": "full-replay",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 270,
+        "failed": 0,
+        "passed": 270
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1/receipts/25cca9f9ecb34c6eb963140fa62e3ec7.json",
+      "lane": "legacy-metadata",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 20,
+        "failed": 0,
+        "passed": 20
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1/receipts/3a5235805c384e0bae7cdc21531b396b.json",
+      "lane": "missing-event",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 540,
+        "failed": 0,
+        "passed": 540
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1/receipts/4351e33a2dd24b0ca3937fc40f75fc53.json",
+      "lane": "snapshot-tail",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 298,
+        "failed": 0,
+        "passed": 298
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1/receipts/55b69bee44264902b3069ac0dab8d675.json",
+      "lane": "retained-covered",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 298,
+        "failed": 0,
+        "passed": 298
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1/receipts/5f3e6c52ad21482591feb1fc7d6ec823.json",
+      "lane": "metadata-read",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 40,
+        "failed": 0,
+        "passed": 40
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1/receipts/a23d42e073604eda9219db91d3ac94fe.json",
+      "lane": "provenance",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 33,
+        "failed": 0,
+        "passed": 33
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1/receipts/afb2b96d547e4486b889aaa8d13197b2.json",
+      "lane": "retained-uncovered",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 596,
+        "failed": 0,
+        "passed": 596
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1/receipts/bc5d12efc9064703984300eb64e08d46.json",
+      "lane": "metadata-write",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 226,
+        "failed": 0,
+        "passed": 226
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "dotnetRoot": "/home/administrator/.dotnet",
+  "versionFiles": {
+    "sdk/10.0.402/.version": [
+      "a8dd0577c5c13f43a2f57fe33b4ff11b90f6371e",
+      "10.0.402",
+      "linux-x64",
+      "10.0.402-servicing.26505.111",
+      "10.0.400"
+    ],
+    "shared/Microsoft.NETCore.App/10.0.13/.version": [
+      "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
+      "10.0.13"
+    ],
+    "shared/Microsoft.AspNetCore.App/10.0.13/.version": [
+      "4099f83977f4d29604a9aeb971fb0a7bc1d5f699",
+      "10.0.13"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "artifactKind": "read-only fixture corpus comparison; no qualification transferred",
+  "localVersion": "4.33.2-p0.20261020.1",
+  "publishedVersion": "4.35.0",
+  "localFixtureCorpusSha256": "eaddf40be6bd6cc9a0f234b6ab6a670baab12ca994b65c471d5e77bcf25668f3",
+  "publishedFixtureCorpusSha256": "eaddf40be6bd6cc9a0f234b6ab6a670baab12ca994b65c471d5e77bcf25668f3",
+  "fixtureCorpusEqual": true,
+  "constraint": "the changed 4.35.0 assemblies still require affected tool qualification and matching G6"
+}

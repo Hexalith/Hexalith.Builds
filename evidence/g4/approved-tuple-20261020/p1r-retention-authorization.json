@@ -1,0 +1,21 @@
+{
+  "artifactKind": "authorization continuity for qualification-only fixture correction",
+  "approval": {
+    "path": "/home/administrator/projects/hexalith/builds/evidence/g4/approved-tuple-20261020/approval.json",
+    "sha256": "2020d5e314d211f48fa1b6ebbf9620b956edbcfa8a3334e79863d60234590ad1"
+  },
+  "proposalSha256": "ecfcf399e23d79e4a4594d08feaf986273cc3c2d6e4734049b0d90a0a657c32f",
+  "scope": "repeat already approved prerequisite qualification with corrected retained-floor fixture; no runtime or tool version selection",
+  "g6Acceptance": {
+    "review": "/home/administrator/projects/hexalith/builds/evidence/g4/approved-tuple-20261020/g6-result-review.json",
+    "reviewSha256": "1d4202feed29df974a96fe8393a131853d1878505b2852126c2e865c1cb03cb9",
+    "artifactSha256": "287663d2a1d5ae25acf64e27a9984780062f26aaa4b8e71a972c73ead4488a08"
+  },
+  "verifierRevision": "51422dff60f7f1db06f5356efea2548c45c370d7",
+  "runtimeSourceRevision": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+  "constructionBuildsRevision": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c",
+  "executionBuildsRevision": "e40ed9c7110d56a2f38c9291627728aea2f205cb",
+  "productionDeltaFromAcceptedG6Verifier": [],
+  "p1rResultAccepted": false,
+  "p0LiveAuthorizedByPassingPrerequisites": false
+}

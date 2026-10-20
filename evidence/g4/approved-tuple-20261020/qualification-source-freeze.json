@@ -1,0 +1,100 @@
+{
+  "observedUtc": "2026-10-20T11:01:37.100532+00:00",
+  "workspace": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020",
+  "sourceWorkspace": "/home/administrator/projects/hexalith/projects",
+  "heads": {
+    ".": "1be617abe38773ca665cb3e44bf8f6d812f574a1",
+    "references/Hexalith.AI.Tools": "3f194e17174994d308ec84af9ee2b5aa68674d0d",
+    "references/Hexalith.EventStore": "6c56c27bc1a8d63c83f9631f7162cf79fdde0a1e",
+    "references/Hexalith.Tenants": "1f0f4edb6be91dd07028c0303a3f308841c3b414",
+    "references/Hexalith.FrontComposer": "8ad2b54e5d878479471a97211ae3a6bef864ad12",
+    "references/Hexalith.Conversations": "beacc095f40e1cb254d3258bccab34659691cbaa",
+    "references/Hexalith.Folders": "eed43a86c94b49e030b233beb37fe6128456f649",
+    "references/Hexalith.Parties": "3e4e6449fcafe511727913a390c411ba292576a5",
+    "references/Hexalith.Commons": "5c23c818f639c5bb3175f964c5549440bd5b876d",
+    "references/Hexalith.Builds": "e40ed9c7110d56a2f38c9291627728aea2f205cb",
+    "references/Hexalith.Memories": "c082f8151328b1ac91939cda8733ab78ae68e1c4",
+    "references/Hexalith.Platform": "11893ca9fd85644cab8a0414b2076bf346f108f6",
+    "references/Hexalith.McpCli": "040fd406d71723772fb14cb3a3bac9434003b6a4"
+  },
+  "clones": [
+    {
+      "path": ".",
+      "revision": "1be617abe38773ca665cb3e44bf8f6d812f574a1",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.AI.Tools",
+      "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.EventStore",
+      "revision": "6c56c27bc1a8d63c83f9631f7162cf79fdde0a1e",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.Tenants",
+      "revision": "1f0f4edb6be91dd07028c0303a3f308841c3b414",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.FrontComposer",
+      "revision": "8ad2b54e5d878479471a97211ae3a6bef864ad12",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.Conversations",
+      "revision": "beacc095f40e1cb254d3258bccab34659691cbaa",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.Folders",
+      "revision": "eed43a86c94b49e030b233beb37fe6128456f649",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.Parties",
+      "revision": "3e4e6449fcafe511727913a390c411ba292576a5",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.Commons",
+      "revision": "5c23c818f639c5bb3175f964c5549440bd5b876d",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.Builds",
+      "revision": "e40ed9c7110d56a2f38c9291627728aea2f205cb",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.Memories",
+      "revision": "c082f8151328b1ac91939cda8733ab78ae68e1c4",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.Platform",
+      "revision": "11893ca9fd85644cab8a0414b2076bf346f108f6",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    },
+    {
+      "path": "references/Hexalith.McpCli",
+      "revision": "040fd406d71723772fb14cb3a3bac9434003b6a4",
+      "gitCloneExitCode": 0,
+      "checkoutExitCode": 0
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "artifactKind": "read-only owner-source handoff assessment",
+  "sharedHead": "a07265f00994a3ad093184cec0f329d11184c3e9",
+  "files": [
+    {
+      "path": "tools/p1r-published-consumers/Directory.Build.props",
+      "sharedMatchesOriginal": false,
+      "sharedAlreadyMatchesRepair": true,
+      "originalSha256": "72312901a22cc5c8fdddc062a37af3670c895e10a2fd806abe9e3ebceb91bfdf",
+      "sharedSha256": "a9675de8a4f4c87e5439909af823388abd8a9c53dee9d74b1205dac563615be4",
+      "isolatedRepairSha256": "a9675de8a4f4c87e5439909af823388abd8a9c53dee9d74b1205dac563615be4"
+    },
+    {
+      "path": "tools/p1r-published-consumers/README.md",
+      "sharedMatchesOriginal": false,
+      "sharedAlreadyMatchesRepair": false,
+      "originalSha256": "c0963f5edd7528b9a90f10b316cdc6563606cb905bcfd14297a62f37d5bfe063",
+      "sharedSha256": "7f846bbb024a907f9a0a1fa8f17895bff38a8bad578bbc295e51f8ca1cae4c67",
+      "isolatedRepairSha256": "9776a6e4172bbe5a26fe24639fd5f1c2b3713b74e27242448220d48f6d5fc48c"
+    },
+    {
+      "path": "tools/p1r-published-consumers/domain/Domain.csproj",
+      "sharedMatchesOriginal": false,
+      "sharedAlreadyMatchesRepair": true,
+      "originalSha256": "4f73ad75948dac648d8bd5c551e7a2f7a21e7bebb5a7956301b3b6afa7c02913",
+      "sharedSha256": "73e786489328d39c79934d6ad0cd893dc079e02bf1a8c3bfe3774d3d41e2cdd7",
+      "isolatedRepairSha256": "73e786489328d39c79934d6ad0cd893dc079e02bf1a8c3bfe3774d3d41e2cdd7"
+    },
+    {
+      "path": "tools/p1r-published-consumers/host/Host.csproj",
+      "sharedMatchesOriginal": false,
+      "sharedAlreadyMatchesRepair": true,
+      "originalSha256": "afeb1b31ab660ec2c7bba45e90dbc4a29cd169b13fd17996d8c064f0a413bdf7",
+      "sharedSha256": "446244faee291ac2466341a78461a1cdde56219de2218aab54d278b585810867",
+      "isolatedRepairSha256": "446244faee291ac2466341a78461a1cdde56219de2218aab54d278b585810867"
+    },
+    {
+      "path": "tools/p1r_check_witnesses.py",
+      "sharedMatchesOriginal": false,
+      "sharedAlreadyMatchesRepair": false,
+      "originalSha256": "586c6bfd4dddf84ba7d4aa698dd960440508f0827a28df47af2f7a7be38a1a02",
+      "sharedSha256": "94bb5994a015848e4d27b27e358eaf1f9a9ba7c9c233e0f5fd991509baaa14a5",
+      "isolatedRepairSha256": "02fed994ad7abc81f234341a98c546fdbec26d071133a42f54823b3540908367"
+    },
+    {
+      "path": "tools/p1r_isolation.py",
+      "sharedMatchesOriginal": true,
+      "sharedAlreadyMatchesRepair": false,
+      "originalSha256": "fcbf80c17726328ba60db1a50552c1a7b1495c15c0e1be8c3782e787595b787c",
+      "sharedSha256": "fcbf80c17726328ba60db1a50552c1a7b1495c15c0e1be8c3782e787595b787c",
+      "isolatedRepairSha256": "b07120656efd3477d93237619599d2b474924b6d389ab8d4a49831e2e28b038e"
+    },
+    {
+      "path": "tools/p1r_isolation_evidence.py",
+      "sharedMatchesOriginal": true,
+      "sharedAlreadyMatchesRepair": false,
+      "originalSha256": "d69e5ade06b14ed9f34a7fa3c75840eee9d13adb61ec06ff6ad976b5182a7d4f",
+      "sharedSha256": "d69e5ade06b14ed9f34a7fa3c75840eee9d13adb61ec06ff6ad976b5182a7d4f",
+      "isolatedRepairSha256": "6fbfa614890cb5e68856253f6fa51eb4b9b37fab7cb7993e14dc3db7d1ae30ab"
+    },
+    {
+      "path": "tools/p1r_published_executor.py",
+      "sharedMatchesOriginal": false,
+      "sharedAlreadyMatchesRepair": false,
+      "originalSha256": "f4084a5ae94eb8bd8e86666bb918121b289c342f0417e85ac4d9ec942cf3484e",
+      "sharedSha256": "1d5a1e4c4374694c02464d82e234aa99e6c028abd566c4db11799da9ada405a2",
+      "isolatedRepairSha256": "36fd48b931290aedb9b7007e7ad8f7496f8db9de6eb218aa719fdd67be17b4d2"
+    },
+    {
+      "path": "tools/p1r_published_qualification.py",
+      "sharedMatchesOriginal": false,
+      "sharedAlreadyMatchesRepair": false,
+      "originalSha256": "7ac31ff38612f2dd56357003c59c03cfc541559857c588ed27e45ac41226ada7",
+      "sharedSha256": "3abb2dabb8427a5fc06180f4075311a33a53b52cbddb9e9738349b0889f8ab2d",
+      "isolatedRepairSha256": "699f7d494da444471ace3d79d2d8b69d4173b7e8ef7f34e2cff1e03556cbd56e"
+    },
+    {
+      "path": "tools/tests/p1r_isolation_fixture.py",
+      "sharedMatchesOriginal": true,
+      "sharedAlreadyMatchesRepair": false,
+      "originalSha256": "ad57e1ef4e6e7586d4110b34a86828dce6c179839a396e7a87cd13f90232c85a",
+      "sharedSha256": "ad57e1ef4e6e7586d4110b34a86828dce6c179839a396e7a87cd13f90232c85a",
+      "isolatedRepairSha256": "ee9650f98d47a24cf48597e6277aa7e4789dcb609548293f9a229d98e6cc8408"
+    },
+    {
+      "path": "tools/tests/test_p1r_isolation_hardening.py",
+      "sharedMatchesOriginal": true,
+      "sharedAlreadyMatchesRepair": false,
+      "originalSha256": "d92404221b06b83225da2756663ec83719477fc92f8a33950c0aae67ffcec8f7",
+      "sharedSha256": "d92404221b06b83225da2756663ec83719477fc92f8a33950c0aae67ffcec8f7",
+      "isolatedRepairSha256": "e04b6f607b36584151db27c66e226d55fa99efbb5d4ca2e9801b8946deb356c6"
+    },
+    {
+      "path": "tools/tests/test_p1r_published_executor.py",
+      "sharedMatchesOriginal": false,
+      "sharedAlreadyMatchesRepair": false,
+      "originalSha256": "4238f9d2ab56edb4f0b4a3f008fca64948fdc7403040ec6b93a2be9dba905b3c",
+      "sharedSha256": "7e3736296512b1817ceb3cf924c67470b8356699fdc82b310d1bd54b1cd1438f",
+      "isolatedRepairSha256": "ca042c661898ed3fe59e98ac730a191bbc9a0160e60b5771a82e3f49d075451c"
+    },
+    {
+      "path": "tools/tests/test_p1r_qualification.py",
+      "sharedMatchesOriginal": false,
+      "sharedAlreadyMatchesRepair": true,
+      "originalSha256": "385b14908b035d695e0ec65aef83de16503205968e7c52ec585c3515adffb29f",
+      "sharedSha256": "03171754f2e5b2ac7ba82b7ea2717ef818b5d417f1954e16c2d895ede606ab4f",
+      "isolatedRepairSha256": "03171754f2e5b2ac7ba82b7ea2717ef818b5d417f1954e16c2d895ede606ab4f"
+    },
+    {
+      "path": "tools/tests/test_p1r_snapshot_registration.py",
+      "sharedMatchesOriginal": false,
+      "sharedAlreadyMatchesRepair": true,
+      "originalSha256": "ed31709bb7c3a3e728a1ac123effceb7f8745db60eafe449d4fa90f3d5577ffa",
+      "sharedSha256": "817cea6361080be922a43f80f215d0febf09ec1ac795fddf24a9dfa1d4f6f997",
+      "isolatedRepairSha256": "817cea6361080be922a43f80f215d0febf09ec1ac795fddf24a9dfa1d4f6f997"
+    }
+  ],
+  "applied": false,
+  "constraint": "retain running frozen source; preserve concurrent owner changes; apply only reconciled reviewed repair after qualification"
+}

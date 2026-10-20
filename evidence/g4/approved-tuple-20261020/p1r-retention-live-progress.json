@@ -1,0 +1,100 @@
+{
+  "recordedUtc": "2026-10-20T15:59:02.460892+00:00",
+  "executionRoot": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1",
+  "scope": "incomplete campaign observation; not acceptance",
+  "complete": false,
+  "qualified": false,
+  "usable": false,
+  "completedReceipts": [
+    {
+      "path": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1/receipts/01419aba84f6460d819d98b459315778.json",
+      "lane": "provenance",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 33,
+        "failed": 0,
+        "passed": 33
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1/receipts/58e2784c29ca4443a3035fecb7979ea2.json",
+      "lane": "retained-uncovered",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 596,
+        "failed": 0,
+        "passed": 596
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1/receipts/6fa4202341bd4835b866014710af0c51.json",
+      "lane": "metadata-read",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 40,
+        "failed": 0,
+        "passed": 40
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1/receipts/7d817337f75d48fbaf01ccc1e220f1e5.json",
+      "lane": "full-replay",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 270,
+        "failed": 0,
+        "passed": 270
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1/receipts/8f672643b3db4e0a9a7f3405a202980d.json",
+      "lane": "retained-covered",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 298,
+        "failed": 0,
+        "passed": 298
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1/receipts/990f24a9a1bd411594f49a2bbbc97773.json",
+      "lane": "snapshot-tail",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 298,
+        "failed": 0,
+        "passed": 298
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1/receipts/b393c99c88834ac0bf3e21374b06ea8d.json",
+      "lane": "missing-event",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 540,
+        "failed": 0,
+        "passed": 540
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1/receipts/c880dd62202b43b3a95295f10de009d6.json",
+      "lane": "legacy-metadata",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 20,
+        "failed": 0,
+        "passed": 20
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1/receipts/e12a4576679a485094d67c2eb83df5fc.json",
+      "lane": "metadata-write",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 226,
+        "failed": 0,
+        "passed": 226
+      }
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "artifactId": 12151085743,
+  "exitCode": 0,
+  "byteCount": 14833,
+  "downloadSha256": "15ba6bbbcfbdb83f3b025ed40897f0712b50c3813e5af1f59402dc71cc81293e",
+  "files": [
+    {
+      "name": "3.126.0/eventstore/child-linux-amd64.config.raw",
+      "size": 4149
+    },
+    {
+      "name": "3.126.0/eventstore/child-linux-amd64.manifest.raw",
+      "size": 1399
+    },
+    {
+      "name": "3.126.0/eventstore/child-linux-arm64.config.raw",
+      "size": 4150
+    },
+    {
+      "name": "3.126.0/eventstore/child-linux-arm64.manifest.raw",
+      "size": 1399
+    },
+    {
+      "name": "3.126.0/eventstore/index.raw",
+      "size": 493
+    },
+    {
+      "name": "3.126.0/eventstore/oci-validation.json",
+      "size": 2999
+    },
+    {
+      "name": "3.126.0/eventstore/smoke-linux-amd64.log",
+      "size": 638
+    },
+    {
+      "name": "3.126.0/eventstore/smoke-linux-arm64.log",
+      "size": 2172
+    },
+    {
+      "name": "3.126.0/eventstore/smoke-preflight.log",
+      "size": 161
+    },
+    {
+      "name": "3.126.0/eventstore/smoke-results.json",
+      "size": 558
+    },
+    {
+      "name": "3.126.0/eventstore/smoke-sha256.txt",
+      "size": 347
+    },
+    {
+      "name": "3.126.0/preflight/publication-identity.json",
+      "size": 3149
+    },
+    {
+      "name": "3.126.0/preflight/publication-preflight.container.json",
+      "size": 3816
+    },
+    {
+      "name": "3.126.0/preflight/publication-preflight.publish.json",
+      "size": 9206
+    },
+    {
+      "name": "3.126.0/preflight/publication-preflight.verify.json",
+      "size": 8889
+    }
+  ],
+  "jsonKeys": {
+    "3.126.0/eventstore/oci-validation.json": [
+      "children",
+      "image",
+      "index_digest",
+      "index_size",
+      "media_type",
+      "platforms",
+      "raw_index_file",
+      "raw_index_sha256",
+      "result"
+    ],
+    "3.126.0/eventstore/smoke-results.json": [
+      "endpoint",
+      "environment",
+      "image_repository",
+      "platforms",
+      "result",
+      "timeout_seconds"
+    ],
+    "3.126.0/preflight/publication-identity.json": [
+      "builds",
+      "container_repositories",
+      "container_repository",
+      "environment",
+      "packages",
+      "platforms",
+      "repository",
+      "run",
+      "schema",
+      "source",
+      "source_sha",
+      "version"
+    ],
+    "3.126.0/preflight/publication-preflight.container.json": [
+      "checked_at",
+      "destinations",
+      "identity",
+      "identity_sha256",
+      "phase",
+      "result",
+      "schema"
+    ],
+    "3.126.0/preflight/publication-preflight.publish.json": [
+      "checked_at",
+      "destinations",
+      "identity",
+      "identity_sha256",
+      "phase",
+      "result",
+      "schema"
+    ],
+    "3.126.0/preflight/publication-preflight.verify.json": [
+      "checked_at",
+      "destinations",
+      "identity",
+      "identity_sha256",
+      "phase",
+      "result",
+      "schema"
+    ]
+  }
+}

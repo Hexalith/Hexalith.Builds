@@ -1,0 +1,54 @@
+[
+  {
+    "argv": [
+      "git",
+      "clone",
+      "--no-hardlinks",
+      "--no-recurse-submodules",
+      "/home/administrator/projects/hexalith/p0-approved-qualification-20261020",
+      "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020"
+    ],
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": "Cloning into '/home/administrator/projects/hexalith/p1r-retention-qualification-20261020'...\ndone.\nNote: switching to '83c4802be3626560e53d4ef88aa78647e89df589'.\n\nYou are in 'detached HEAD' state. You can look around, make experimental\nchanges and commit them, and you can discard any commits you make in this\nstate without impacting any branches by switching back to a branch.\n\nIf you want to create a new branch to retain commits you create, you may\ndo so (now or later) by using -c with the switch command. Example:\n\n  git switch -c <new-branch-name>\n\nOr undo this operation with:\n\n  git switch -\n\nTurn off this advice by setting config variable advice.detachedHead to false\n\n"
+  },
+  {
+    "argv": [
+      "git",
+      "clone",
+      "--no-hardlinks",
+      "--no-recurse-submodules",
+      "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.AI.Tools",
+      "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.AI.Tools"
+    ],
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": "Cloning into '/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.AI.Tools'...\ndone.\n"
+  },
+  {
+    "argv": [
+      "git",
+      "clone",
+      "--no-hardlinks",
+      "--no-recurse-submodules",
+      "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Builds",
+      "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.Builds"
+    ],
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": "Cloning into '/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.Builds'...\ndone.\n"
+  },
+  {
+    "argv": [
+      "git",
+      "clone",
+      "--no-hardlinks",
+      "--no-recurse-submodules",
+      "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore",
+      "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore"
+    ],
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": "Cloning into '/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore'...\ndone.\nNote: switching to '47def45665312410b73fa12cb047c6bbaa431cf2'.\n\nYou are in 'detached HEAD' state. You can look around, make experimental\nchanges and commit them, and you can discard any commits you make in this\nstate without impacting any branches by switching back to a branch.\n\nIf you want to create a new branch to retain commits you create, you may\ndo so (now or later) by using -c with the switch command. Example:\n\n  git switch -c <new-branch-name>\n\nOr undo this operation with:\n\n  git switch -\n\nTurn off this advice by setting config variable advice.detachedHead to false\n\nUpdating files:  20% (5769/28757)\nUpdating files:  21% (6039/28757)\nUpdating files:  22% (6327/28757)\nUpdating files:  22% (6546/28757)\nUpdating files:  23% (6615/28757)\nUpdating files:  24% (6902/28757)\nUpdating files:  24% (7014/28757)\nUpdating files:  25% (7190/28757)\nUpdating files:  26% (7477/28757)\nUpdating files:  26% (7513/28757)\nUpdating files:  27% (7765/28757)\nUpdating files:  28% (8052/28757)\nUpdating files:  29% (8340/28757)\nUpdating files:  30% (8628/28757)\nUpdating files:  30% (8667/28757)\nUpdating files:  31% (8915/28757)\nUpdating files:  32% (9203/28757)\nUpdating files:  33% (9490/28757)\nUpdating files:  34% (9778/28757)\nUpdating files:  35% (10065/28757)\nUpdating files:  36% (10353/28757)\nUpdating files:  36% (10534/28757)\nUpdating files:  37% (10641/28757)\nUpdating files:  38% (10928/28757)\nUpdating files:  39% (11216/28757)\nUpdating files:  39% (11350/28757)\nUpdating files:  40% (11503/28757)\nUpdating files:  41% (11791/28757)\nUpdating files:  42% (12078/28757)\nUpdating files:  43% (12366/28757)\nUpdating files:  44% (12654/28757)\nUpdating files:  45% (12941/28757)\nUpdating files:  45% (13075/28757)\nUpdating files:  46% (13229/28757)\nUpdating files:  47% (13516/28757)\nUpdating files:  48% (13804/28757)\nUpdating files:  49% (14091/28757)\nUpdating files:  50% (14379/28757)\nUpdating files:  50% (14508/28757)\nUpdating files:  51% (14667/28757)\nUpdating files:  52% (14954/28757)\nUpdating files:  52% (15067/28757)\nUpdating files:  53% (15242/28757)\nUpdating files:  54% (15529/28757)\nUpdating files:  55% (15817/28757)\nUpdating files:  56% (16104/28757)\nUpdating files:  56% (16114/28757)\nUpdating files:  57% (16392/28757)\nUpdating files:  58% (16680/28757)\nUpdating files:  58% (16832/28757)\nUpdating files:  59% (16967/28757)\nUpdating files:  59% (17124/28757)\nUpdating files:  60% (17255/28757)\nUpdating files:  61% (17542/28757)\nUpdating files:  62% (17830/28757)\nUpdating files:  62% (17973/28757)\nUpdating files:  63% (18117/28757)\nUpdating files:  64% (18405/28757)\nUpdating files:  65% (18693/28757)\nUpdating files:  66% (18980/28757)\nUpdating files:  67% (19268/28757)\nUpdating files:  68% (19555/28757)\nUpdating files:  68% (19747/28757)\nUpdating files:  69% (19843/28757)\nUpdating files:  70% (20130/28757)\nUpdating files:  71% (20418/28757)\nUpdating files:  72% (20706/28757)\nUpdating files:  73% (20993/28757)\nUpdating files:  74% (21281/28757)\nUpdating files:  75% (21568/28757)\nUpdating files:  76% (21856/28757)\nUpdating files:  77% (22143/28757)\nUpdating files:  77% (22313/28757)\nUpdating files:  78% (22431/28757)\nUpdating files:  79% (22719/28757)\nUpdating files:  79% (22880/28757)\nUpdating files:  80% (23006/28757)\nUpdating files:  81% (23294/28757)\nUpdating files:  81% (23375/28757)\nUpdating files:  82% (23581/28757)\nUpdating files:  83% (23869/28757)\nUpdating files:  84% (24156/28757)\nUpdating files:  85% (24444/28757)\nUpdating files:  85% (24601/28757)\nUpdating files:  86% (24732/28757)\nUpdating files:  87% (25019/28757)\nUpdating files:  88% (25307/28757)\nUpdating files:  89% (25594/28757)\nUpdating files:  90% (25882/28757)\nUpdating files:  91% (26169/28757)\nUpdating files:  92% (26457/28757)\nUpdating files:  93% (26745/28757)\nUpdating files:  94% (27032/28757)\nUpdating files:  95% (27320/28757)\nUpdating files:  96% (27607/28757)\nUpdating files:  97% (27895/28757)\nUpdating files:  98% (28182/28757)\nUpdating files:  99% (28470/28757)\nUpdating files: 100% (28757/28757)\nUpdating files: 100% (28757/28757), done.\n"
+  }
+]

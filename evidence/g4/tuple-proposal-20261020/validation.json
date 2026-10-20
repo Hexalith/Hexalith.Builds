@@ -1,0 +1,108 @@
+{
+  "observedUtc": "2026-10-20T09:18:38.051955+00:00",
+  "scope": "static proposal consistency and preservation only; no application tests or runtime qualification",
+  "checks": [
+    {
+      "check": "all retained JSON parses",
+      "result": "passed"
+    },
+    {
+      "check": "all thirteen NuGet metadata requests succeeded",
+      "result": "passed"
+    },
+    {
+      "check": "all nine published API inspections succeeded",
+      "result": "passed"
+    },
+    {
+      "check": "both published 4.33.1 tools embed the historical 3.125.1/4.6.0 tuple",
+      "result": "passed"
+    },
+    {
+      "check": "proposed runtime pins match the exact repair-base catalog",
+      "result": "passed"
+    },
+    {
+      "check": "v1 pin mismatch is retained as a source gap",
+      "result": "passed"
+    },
+    {
+      "check": "read-only G-6 audit is explicitly nonpassing",
+      "result": "passed"
+    },
+    {
+      "check": "future final delivery and all acceptance/live/adoption claims remain unissued",
+      "result": "passed"
+    },
+    {
+      "check": "retained exact Dapr index bytes reproduce registry digest",
+      "result": "passed"
+    },
+    {
+      "check": "seven proposed runtime archive identities are retained without execution claims",
+      "result": "passed"
+    },
+    {
+      "check": "all 13 proposal links resolve",
+      "result": "passed"
+    },
+    {
+      "check": "proposal has no trailing whitespace",
+      "result": "passed"
+    },
+    {
+      "check": "prerequisite bytes preserved: projects/_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+      "result": "passed"
+    },
+    {
+      "check": "prerequisite bytes preserved: projects/_bmad-output/implementation-artifacts/6-4-prerequisite-decisions-2026-10-20.md",
+      "result": "passed"
+    },
+    {
+      "check": "prerequisite bytes preserved: projects/_bmad-output/implementation-artifacts/6-4-resolution-evidence-contracts.md",
+      "result": "passed"
+    },
+    {
+      "check": "prerequisite bytes preserved: eventstore/_bmad-output/implementation-artifacts/evidence/6-1-p1r-31251-published-run/final-attempt/canonical-v4-index.json",
+      "result": "passed"
+    },
+    {
+      "check": "prerequisite bytes preserved: eventstore/_bmad-output/implementation-artifacts/evidence/6-1-p1r-31251-published-run/reconciliation/selected-final-parent-audit-9895165b155e48f2852f55b91c9bea35.json",
+      "result": "passed"
+    },
+    {
+      "check": "prerequisite bytes preserved: eventstore/_bmad-output/implementation-artifacts/evidence/6-1-p1r-31251-published-run/final-attempt/outer-shared-after-canonical-v4.json",
+      "result": "passed"
+    },
+    {
+      "check": "prerequisite bytes preserved: projects/references/Hexalith.Builds/Tools/g6-current-policy.json",
+      "result": "passed"
+    },
+    {
+      "check": "prerequisite bytes preserved: projects/src/Hexalith.Projects.AppHost/Hexalith.Projects.AppHost.csproj",
+      "result": "passed"
+    },
+    {
+      "check": "prerequisite bytes preserved: projects/references/Hexalith.Platform/hexalith-platform.json",
+      "result": "passed"
+    },
+    {
+      "check": "git diff --check",
+      "result": "passed"
+    },
+    {
+      "check": "only intended existing story changed",
+      "result": "passed"
+    }
+  ],
+  "commandResult": {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+}

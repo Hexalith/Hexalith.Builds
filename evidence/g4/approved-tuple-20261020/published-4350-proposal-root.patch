@@ -1,0 +1,91 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index e88b9ab..a3a25bb 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -104,7 +104,7 @@ jobs:
+ 
+   ci:
+     needs: workflow-gates
+-    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@e40ed9c7110d56a2f38c9291627728aea2f205cb
++    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@fff4a212180d8cd1c5c0759655a9bc4fb6963c45
+     with:
+       # Bare solution path only. The callee runs `dotnet restore "$SOLUTION"`, so an
+       # embedded `-p:` switch is parsed as part of the project path (MSB1009), and
+@@ -142,10 +142,10 @@ jobs:
+           submodules: false
+ 
+       - name: Initialize root-declared submodules
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e40ed9c7110d56a2f38c9291627728aea2f205cb
++        uses: Hexalith/Hexalith.Builds/Github/initialize-build@fff4a212180d8cd1c5c0759655a9bc4fb6963c45
+ 
+       - name: Initialize .NET
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@e40ed9c7110d56a2f38c9291627728aea2f205cb
++        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@fff4a212180d8cd1c5c0759655a9bc4fb6963c45
+         with:
+           global-json-file: global.json
+ 
+@@ -178,10 +178,10 @@ jobs:
+           submodules: false
+ 
+       - name: Initialize root-declared submodules
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e40ed9c7110d56a2f38c9291627728aea2f205cb
++        uses: Hexalith/Hexalith.Builds/Github/initialize-build@fff4a212180d8cd1c5c0759655a9bc4fb6963c45
+ 
+       - name: Initialize .NET
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@e40ed9c7110d56a2f38c9291627728aea2f205cb
++        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@fff4a212180d8cd1c5c0759655a9bc4fb6963c45
+         with:
+           global-json-file: global.json
+ 
+@@ -237,7 +237,7 @@ jobs:
+           submodules: false
+ 
+       - name: Initialize root-declared submodules
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e40ed9c7110d56a2f38c9291627728aea2f205cb
++        uses: Hexalith/Hexalith.Builds/Github/initialize-build@fff4a212180d8cd1c5c0759655a9bc4fb6963c45
+ 
+       - name: Fetch EventStore tags read by the P1R evidence replay
+         run: >-
+@@ -268,10 +268,10 @@ jobs:
+           submodules: false
+ 
+       - name: Initialize root-declared submodules
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e40ed9c7110d56a2f38c9291627728aea2f205cb
++        uses: Hexalith/Hexalith.Builds/Github/initialize-build@fff4a212180d8cd1c5c0759655a9bc4fb6963c45
+ 
+       - name: Initialize .NET
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@e40ed9c7110d56a2f38c9291627728aea2f205cb
++        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@fff4a212180d8cd1c5c0759655a9bc4fb6963c45
+         with:
+           global-json-file: global.json
+ 
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+index aa428d8..ca30ba2 100644
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -93,13 +93,13 @@ jobs:
+         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+         with:
+           repository: Hexalith/Hexalith.Builds
+-          ref: e40ed9c7110d56a2f38c9291627728aea2f205cb
++          ref: fff4a212180d8cd1c5c0759655a9bc4fb6963c45
+           path: .hexalith/builds-execution
+           persist-credentials: false
+       - name: Validate approved Builds actions identity
+         shell: bash
+         env:
+-          BUILDS_EXECUTION_SHA: e40ed9c7110d56a2f38c9291627728aea2f205cb
++          BUILDS_EXECUTION_SHA: fff4a212180d8cd1c5c0759655a9bc4fb6963c45
+         run: |
+           set -euo pipefail
+           checked_out_builds_sha="$(git -C .hexalith/builds-execution rev-parse HEAD)"
+Submodule references/Hexalith.Builds e40ed9c..fff4a21:
+  > test(tool): cover generic enrollment component defaults
+  > feat(tool): publish domain module enrollment validation
+  > build: sync local changes via /pushall
+  > build: merge test/1-11-review-pass5 into main via /pushall
+  > build: merge origin/main into main via /pushall
+  > build: sync local changes via /pushall
+  > build: sync local changes via /pushall
+Submodule references/Hexalith.EventStore 47def45..51422df:
+  > fix(qualification): preserve source proof during retention fixtures

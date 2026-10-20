@@ -1,0 +1,14 @@
+{
+  "schema": "hexalith.p0.sdk-profile-observation.v1",
+  "runtimeSource": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+  "sdkVersion": "10.0.402",
+  "image": "mcr.microsoft.com/dotnet/sdk@sha256:3a48280a9a7c6276c3eeaba1efa6a08820f18c84fb9e6274c187719ecfaf9fbc",
+  "platform": "linux/amd64",
+  "glibc": "2.39",
+  "dotnetExecutable": {
+    "path": "/usr/share/dotnet/dotnet",
+    "sha256": "8b3d902364f618e31e029d4eba077d52c141dd641e375f4555715604806e44b6"
+  },
+  "selection": "approved SDK 10.0.402; independently measured immutable execution image",
+  "historicalProfilePreserved": true
+}

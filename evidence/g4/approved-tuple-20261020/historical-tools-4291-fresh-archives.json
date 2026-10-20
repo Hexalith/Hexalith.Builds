@@ -1,0 +1,19 @@
+{
+  "artifactKind": "fresh historical archive observations; no target selection or acceptance",
+  "packages": [
+    {
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.module.cli/4.29.1/hexalith.builds.module.cli.4.29.1.nupkg",
+      "path": "/var/tmp/hexalith-p0-published-observation-20261020/hexalith.builds.module.cli.4.29.1.nupkg",
+      "archiveSha256": "e0405045ba53a23b891bafe523a9cfad3d8b86c4e8b9d4495dbcefea964c1e9f",
+      "bytes": 34238607,
+      "fetchedUtc": "2026-10-20T15:33:23.781273+00:00"
+    },
+    {
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.evidence.cli/4.29.1/hexalith.builds.evidence.cli.4.29.1.nupkg",
+      "path": "/var/tmp/hexalith-p0-published-observation-20261020/hexalith.builds.evidence.cli.4.29.1.nupkg",
+      "archiveSha256": "739ae9b3da7233510a1588c2629940b835c29b3d9c940a843f139d7b55d1eddb",
+      "bytes": 1757941,
+      "fetchedUtc": "2026-10-20T15:33:24.225043+00:00"
+    }
+  ]
+}

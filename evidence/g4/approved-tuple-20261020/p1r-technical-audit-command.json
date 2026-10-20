@@ -1,0 +1,18 @@
+{
+  "cwd": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore",
+  "argv": [
+    "python3",
+    "tools/p1r-isolated-runner.py",
+    "--out",
+    "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-technical-audit-isolation-attempt1",
+    "--workspace",
+    "/home/administrator/projects/hexalith/p0-approved-qualification-20261020",
+    "--source-root",
+    "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020",
+    "--",
+    "python3",
+    "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/inputs/p1r-technical-audit.py"
+  ],
+  "procedureSha256": "4d5b78ccbecdcdac6e123e6c3e364bb1793a7500bbaacb5f9835c3e904bb7021",
+  "execution": "only after full run2 completion and cleanup; same private Python/SDK image profile as original execution"
+}

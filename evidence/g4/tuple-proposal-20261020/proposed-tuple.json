@@ -1,0 +1,77 @@
+{
+  "artifactKind": "6.1-P0 proposed preparation tuple, not an acceptance record",
+  "decision": "pending",
+  "liveQualificationAuthorized": false,
+  "qualified": false,
+  "accepted": false,
+  "consumerAdoptionStarted": false,
+  "tools": {
+    "packageIds": [
+      "Hexalith.Builds.Module.Cli",
+      "Hexalith.Builds.Evidence.Cli"
+    ],
+    "proposedLocalVersion": "4.33.2-p0.20261020.1",
+    "published": false,
+    "built": false,
+    "repairBaseRevision": "5d03f1db9c38db34ecac7fe6048937478ffb82cc",
+    "finalDeliveryRevision": null,
+    "finalDeliveryRevisionReason": "v1 contract/catalog compatibility and qualifier alignment repairs must be completed, frozen and reviewed before live execution"
+  },
+  "runtimePackages": {
+    "eventStore": {
+      "version": "3.126.0",
+      "sourceRevision": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+      "tag": "v3.126.0",
+      "tagConstructionBuildsRevision": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c",
+      "p1rUsable": false
+    },
+    "frontComposer": {
+      "version": "4.7.0",
+      "sourceRevision": "cf5fe8da100bd5224a0d7f597fc92e1ebb98a5f4"
+    }
+  },
+  "g6Tuple": {
+    "dotnetSdk": "10.0.402",
+    "aspireSdk": "13.6.1",
+    "aspireCli": "13.6.1",
+    "communityToolkitAspireDapr": "13.6.1-beta.935",
+    "daprCli": "1.18.0",
+    "daprRuntime": "1.18.2",
+    "daprDotnetPackages": "1.18.10",
+    "fluentUi": "5.0.1",
+    "nSubstitute": "6.2.0",
+    "fluxor": "6.11.0"
+  },
+  "managedRuntimes": {
+    "Microsoft.NETCore.App": "10.0.13",
+    "Microsoft.AspNetCore.App": "10.0.13",
+    "rid": "linux-x64"
+  },
+  "images": {
+    "daprControlPlane": "daprio/dapr@sha256:1146cf75f6a900f098489f995bcb2145bf9b040f87ab70eb0de2db21000d01bb",
+    "p0Redis": "docker.io/library/redis:7.4-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+    "g6P1rPostgreSql": "postgres@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636"
+  },
+  "p0Contracts": {
+    "moduleManifest": "hexalith.module-manifest.v1",
+    "moduleRunEvidence": "hexalith.module-run-evidence.v1",
+    "readinessEvidence": "hexalith.readiness-evidence.v1",
+    "acceptance": "hexalith.g4-p0-acceptance.v1"
+  },
+  "resolutionCapabilityComplete": false,
+  "sourceOnlyEventStoreRepairsRevision": "6c56c27bc1a8d63c83f9631f7162cf79fdde0a1e",
+  "rollback": {
+    "acceptedToolPackage": null,
+    "capableDataDowngrade": null,
+    "greenfieldBuildsTag": "v4.19.2",
+    "greenfieldBuildsRevision": "8e0e2da5e1eff07468b41d85d97979c96c2ac975",
+    "dataRecovery": "AD-17 drain/freeze/forward; historical 3.70.1 and 3.110.0 are comparison coordinates"
+  },
+  "executionGates": [
+    "owner target/timing and G-6 exception disposition",
+    "complete compatibility repairs and freeze full final delivery/verifier/execution revisions",
+    "usable exact published-coordinate P1R",
+    "accepted matching G-6 before P0 live execution",
+    "actual P0 qualification and three-role acceptance before Projects consumer adoption"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "cwd": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore",
+  "argv": [
+    "python3",
+    "tools/p1r-isolated-runner.py",
+    "--out",
+    "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/.p0-qualification/p1r-31260-retention-technical-audit-isolation-attempt1",
+    "--workspace",
+    "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020",
+    "--source-root",
+    "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020",
+    "--",
+    "python3",
+    "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/.p0-qualification/inputs/p1r-retention-technical-audit.py"
+  ],
+  "procedureSha256": "cc1bf820e60699fdc48ee337d2247e1ac35ea9663ad05b7f2d13d3f37a0f4899",
+  "execution": "only after corrected full campaign and cleanup; same SDK/Python profile; structural audit never fabricates owner disposition or conformance"
+}

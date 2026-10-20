@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "node",
+    "/var/tmp/hexalith-p0-commitlint-21.1.0/node_modules/@commitlint/cli/cli.js",
+    "--config",
+    "/var/tmp/hexalith-p0-commitlint-21.1.0/commitlint.config.mjs",
+    "--edit",
+    "/home/administrator/projects/hexalith/builds/evidence/g4/approved-tuple-20261020/p1r-retention-eventstore-message.txt",
+    "--verbose"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore",
+  "pinnedVersion": "21.1.0",
+  "configSha256": "796a04abdd8c35e645f654c9d8d571556f34ccf4ab3611c9327697a452add38d",
+  "exactMessage": "fix(qualification): preserve source proof during retention fixtures\n",
+  "messageSha256": "4d0ac1732a1766fd614c0f1cb40c5887e2695df790b177e349aa8c283784c007",
+  "exitCode": 0,
+  "stdout": "\u29d7   --- input ---\nfix(qualification): preserve source proof during retention fixtures\n\u2714   found 0 problems, 0 warnings\n",
+  "stderr": ""
+}

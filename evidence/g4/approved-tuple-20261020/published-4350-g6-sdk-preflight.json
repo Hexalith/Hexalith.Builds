@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "dotnet",
+    "--version"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/p0-4350-proposal-20261020",
+  "exitCode": 0,
+  "stdout": "10.0.402\n",
+  "stderr": "",
+  "observedUtc": "2026-10-20T15:46:14.603389+00:00",
+  "approvedSdk": "10.0.402"
+}

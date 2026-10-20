@@ -1,0 +1,31 @@
+[
+  {
+    "command": [
+      "dotnet",
+      "--info"
+    ],
+    "exitCode": 0,
+    "stdout": ".NET SDK:\n Version:           10.0.402\n Commit:            a8dd0577c5\n Workload version:  10.0.400-manifests.da132f47\n MSBuild version:   18.9.15+a8dd0577c\n\nRuntime Environment:\n OS Name:     ubuntu\n OS Version:  26.04\n OS Platform: Linux\n RID:         linux-x64\n Base Path:   /home/administrator/.dotnet/sdk/10.0.402/\n\n.NET workloads installed:\nThere are no installed workloads to display.\nConfigured to use workload sets when installing new manifests.\nNo workload sets are installed. Run \"dotnet workload restore\" to install a workload set.\n\nHost:\n  Version:      10.0.13\n  Architecture: x64\n  Commit:       4099f83977\n\n.NET SDKs installed:\n  10.0.302 [/home/administrator/.dotnet/sdk]\n  10.0.400 [/home/administrator/.dotnet/sdk]\n  10.0.401 [/home/administrator/.dotnet/sdk]\n  10.0.402 [/home/administrator/.dotnet/sdk]\n\n.NET runtimes installed:\n  Microsoft.AspNetCore.App 10.0.10 [/home/administrator/.dotnet/shared/Microsoft.AspNetCore.App]\n  Microsoft.AspNetCore.App 10.0.11 [/home/administrator/.dotnet/shared/Microsoft.AspNetCore.App]\n  Microsoft.AspNetCore.App 10.0.12 [/home/administrator/.dotnet/shared/Microsoft.AspNetCore.App]\n  Microsoft.AspNetCore.App 10.0.13 [/home/administrator/.dotnet/shared/Microsoft.AspNetCore.App]\n  Microsoft.NETCore.App 10.0.10 [/home/administrator/.dotnet/shared/Microsoft.NETCore.App]\n  Microsoft.NETCore.App 10.0.11 [/home/administrator/.dotnet/shared/Microsoft.NETCore.App]\n  Microsoft.NETCore.App 10.0.12 [/home/administrator/.dotnet/shared/Microsoft.NETCore.App]\n  Microsoft.NETCore.App 10.0.13 [/home/administrator/.dotnet/shared/Microsoft.NETCore.App]\n\nOther architectures found:\n  None\n\nEnvironment variables:\n  DOTNET_BUNDLE_EXTRACT_BASE_DIR           [/home/administrator/.cache/dotnet_bundle_extract]\n  DOTNET_ROOT                              [/home/administrator/.dotnet]\n\nglobal.json file:\n  /home/administrator/projects/hexalith/builds/global.json\n\nLearn more:\n  https://aka.ms/dotnet/info\n\nDownload .NET:\n  https://aka.ms/dotnet/download\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "dotnet",
+      "--list-runtimes"
+    ],
+    "exitCode": 0,
+    "stdout": "Microsoft.AspNetCore.App 10.0.10 [/home/administrator/.dotnet/shared/Microsoft.AspNetCore.App]\nMicrosoft.AspNetCore.App 10.0.11 [/home/administrator/.dotnet/shared/Microsoft.AspNetCore.App]\nMicrosoft.AspNetCore.App 10.0.12 [/home/administrator/.dotnet/shared/Microsoft.AspNetCore.App]\nMicrosoft.AspNetCore.App 10.0.13 [/home/administrator/.dotnet/shared/Microsoft.AspNetCore.App]\nMicrosoft.NETCore.App 10.0.10 [/home/administrator/.dotnet/shared/Microsoft.NETCore.App]\nMicrosoft.NETCore.App 10.0.11 [/home/administrator/.dotnet/shared/Microsoft.NETCore.App]\nMicrosoft.NETCore.App 10.0.12 [/home/administrator/.dotnet/shared/Microsoft.NETCore.App]\nMicrosoft.NETCore.App 10.0.13 [/home/administrator/.dotnet/shared/Microsoft.NETCore.App]\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "dotnet",
+      "tool",
+      "list",
+      "--global"
+    ],
+    "exitCode": 0,
+    "stdout": "Package Id                                   Version          Commands        \n------------------------------------------------------------------------------\naspire.cli                                   13.5.3           aspire          \ncyclonedx                                    5.5.0            dotnet-CycloneDX\ndotnet-coverage                              18.11.2          dotnet-coverage \ndotnet-dump                                  9.0.661903       dotnet-dump     \ndotnet-outdated-tool                         4.8.1            dotnet-outdated \nilspycmd                                     10.1.0.8386      ilspycmd        \nmicrosoft.fluentui.aspnetcore.mcpserver      5.0.0            fluentui-mcp    \npowershell                                   7.6.2            pwsh            \n",
+    "stderr": ""
+  }
+]

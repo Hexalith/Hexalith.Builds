@@ -1,0 +1,14 @@
+{
+  "conclusion": "success",
+  "event": "push",
+  "head_sha": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+  "html_url": "https://github.com/Hexalith/Hexalith.EventStore/actions/runs/39159607831",
+  "id": 39159607831,
+  "referenced_workflows": [
+    {
+      "path": "Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@main",
+      "ref": "refs/heads/main",
+      "sha": "5c04dab754e269f52306b9582cacd7cf1dc1540f"
+    }
+  ]
+}

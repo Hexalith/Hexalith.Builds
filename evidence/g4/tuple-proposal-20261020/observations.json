@@ -1,0 +1,1513 @@
+{
+  "observedUtc": "2026-10-20T09:11:10.983470+00:00",
+  "scope": "proposal-only; static source/package inspection; no live qualification, restoration of consumer dependencies, approval or adoption",
+  "repositories": {
+    "Builds-owner-checkout": {
+      "head": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/builds",
+          "rev-parse",
+          "HEAD"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "b435f2e3b3892e03f69322d24de6003b0baf7a7d\n",
+        "stderr": ""
+      },
+      "status": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/builds",
+          "status",
+          "--porcelain",
+          "--untracked-files=normal"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "Projects": {
+      "head": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects",
+          "rev-parse",
+          "HEAD"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "76844f4eb38c6e3d2938ba025fab7d94080db871\n",
+        "stderr": ""
+      },
+      "status": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects",
+          "status",
+          "--porcelain",
+          "--untracked-files=normal"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": " M tests/tools/test_production_authority_guard.py\n M tools/planning/validate_production_authority.py\n?? _bmad-output/implementation-artifacts/spec-6-1-p0-production-authority-handoff-validation.md\n",
+        "stderr": ""
+      }
+    },
+    "Builds-Projects-gitlink": {
+      "head": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds",
+          "rev-parse",
+          "HEAD"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "5d03f1db9c38db34ecac7fe6048937478ffb82cc\n",
+        "stderr": ""
+      },
+      "status": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds",
+          "status",
+          "--porcelain",
+          "--untracked-files=normal"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "EventStore-Projects-gitlink": {
+      "head": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.EventStore",
+          "rev-parse",
+          "HEAD"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "6c56c27bc1a8d63c83f9631f7162cf79fdde0a1e\n",
+        "stderr": ""
+      },
+      "status": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.EventStore",
+          "status",
+          "--porcelain",
+          "--untracked-files=normal"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "Platform": {
+      "head": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.Platform",
+          "rev-parse",
+          "HEAD"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "bb81fc9e98533246cfeed43ffcce08866a2a57f6\n",
+        "stderr": ""
+      },
+      "status": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.Platform",
+          "status",
+          "--porcelain",
+          "--untracked-files=normal"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "Conversations": {
+      "head": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.Conversations",
+          "rev-parse",
+          "HEAD"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "0c7bfac19cafbf4cbb2f67340b06e569280ef05a\n",
+        "stderr": ""
+      },
+      "status": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.Conversations",
+          "status",
+          "--porcelain",
+          "--untracked-files=normal"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "Folders": {
+      "head": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.Folders",
+          "rev-parse",
+          "HEAD"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "9bacd7f62848c23222dc7309635eb65dc6e5ed9c\n",
+        "stderr": ""
+      },
+      "status": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.Folders",
+          "status",
+          "--porcelain",
+          "--untracked-files=normal"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "FrontComposer": {
+      "head": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.FrontComposer",
+          "rev-parse",
+          "HEAD"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "a2196fd67d6da3e9e56200847f6ea3b51419fc0a\n",
+        "stderr": ""
+      },
+      "status": {
+        "command": [
+          "git",
+          "-C",
+          "/home/administrator/projects/hexalith/projects/references/Hexalith.FrontComposer",
+          "status",
+          "--porcelain",
+          "--untracked-files=normal"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    }
+  },
+  "rootGitlinks": {
+    "command": [
+      "git",
+      "-C",
+      "/home/administrator/projects/hexalith/projects",
+      "ls-tree",
+      "HEAD",
+      "references"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/builds",
+    "exitCode": 0,
+    "stdout": "040000 tree 9ac550e4e9e0c51e9604e0b1598985e61206cba1\treferences\n",
+    "stderr": ""
+  },
+  "nugetIndexes": [
+    {
+      "id": "Hexalith.Builds.Module.Cli",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.module.cli/index.json",
+      "indexSha256": "575655791032cc909b5f2a62f722d1219bf30f795ce7206c04e4a2bb83f63036",
+      "lastFive": [
+        "4.30.1",
+        "4.31.2",
+        "4.32.0",
+        "4.33.0",
+        "4.33.1"
+      ],
+      "proposedLocalVersionAlreadyPresent": false
+    },
+    {
+      "id": "Hexalith.Builds.Evidence.Cli",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.evidence.cli/index.json",
+      "indexSha256": "e2486721246a9a18bb396081a4e86532dbff0605627f28ac0c602f357b24e497",
+      "lastFive": [
+        "4.31.1",
+        "4.31.2",
+        "4.32.0",
+        "4.33.0",
+        "4.33.1"
+      ],
+      "proposedLocalVersionAlreadyPresent": false
+    },
+    {
+      "id": "Hexalith.EventStore.Contracts",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.eventstore.contracts/index.json",
+      "indexSha256": "e5d4232598376116173c89a9b45de541c9eef7f514e43eaab6f222e80fdb3039",
+      "lastFive": [
+        "3.123.0",
+        "3.124.0",
+        "3.125.0",
+        "3.125.1",
+        "3.126.0"
+      ],
+      "proposedLocalVersionAlreadyPresent": false
+    },
+    {
+      "id": "Hexalith.Conversations.Contracts",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.conversations.contracts/index.json",
+      "indexSha256": "54407d8f996ff1dea8b3fd1ca004bf38c0324587e68030c087b0ab5f7a174640",
+      "lastFive": [
+        "1.0.0",
+        "1.1.0",
+        "1.2.0"
+      ],
+      "proposedLocalVersionAlreadyPresent": false
+    },
+    {
+      "id": "Hexalith.Folders.Contracts",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.folders.contracts/index.json",
+      "indexSha256": "69f2de073c30d1fa6047be59a13e26f70182630cda4c1c8efb8a13c90ebd8afc",
+      "lastFive": [
+        "1.0.0",
+        "1.1.1",
+        "1.2.0",
+        "1.2.1",
+        "1.3.0"
+      ],
+      "proposedLocalVersionAlreadyPresent": false
+    }
+  ],
+  "packageMetadata": [
+    {
+      "id": "Hexalith.Builds.Module.Cli",
+      "version": "4.33.1",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.module.cli/4.33.1/hexalith.builds.module.cli.nuspec",
+      "nuspecSha256": "95aff09ccc2958cd2f02e0f8afd3152a5a663ea27da41498239cc6a420e70874",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.Builds",
+        "branch": "refs/heads/main",
+        "commit": "c6f56c011ce3a83cdf6100c322352daf125c6af9"
+      },
+      "dependencies": []
+    },
+    {
+      "id": "Hexalith.Builds.Evidence.Cli",
+      "version": "4.33.1",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.evidence.cli/4.33.1/hexalith.builds.evidence.cli.nuspec",
+      "nuspecSha256": "8f8e7644357abddd4486a31c02d74714e5b755975c4f3616862acbcc86adeedd",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.Builds",
+        "branch": "refs/heads/main",
+        "commit": "c6f56c011ce3a83cdf6100c322352daf125c6af9"
+      },
+      "dependencies": []
+    },
+    {
+      "id": "Hexalith.EventStore.Contracts",
+      "version": "3.125.1",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.eventstore.contracts/3.125.1/hexalith.eventstore.contracts.nuspec",
+      "nuspecSha256": "16d97ad73a492a8113fc30ce39811b5de9e3cd42ea4267ea4bd0ce75dd44d6ef",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.EventStore",
+        "commit": "55432c50d4b6f1666b4bd6d4a60bfc263b2d0e0b"
+      },
+      "dependencies": [
+        {
+          "id": "Hexalith.Commons.UniqueIds",
+          "version": "2.30.1",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "ByteAether.Ulid",
+          "version": "1.4.2",
+          "exclude": "Build,Analyzers"
+        }
+      ]
+    },
+    {
+      "id": "Hexalith.EventStore.Contracts",
+      "version": "3.126.0",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.eventstore.contracts/3.126.0/hexalith.eventstore.contracts.nuspec",
+      "nuspecSha256": "330fd1b6e06353c4e60def8a9728dc1bf5c8db74aa3de9571f25ed8435474767",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.EventStore",
+        "commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      "dependencies": [
+        {
+          "id": "Hexalith.Commons.UniqueIds",
+          "version": "2.30.3",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "ByteAether.Ulid",
+          "version": "1.4.2",
+          "exclude": "Build,Analyzers"
+        }
+      ]
+    },
+    {
+      "id": "Hexalith.EventStore.Client",
+      "version": "3.126.0",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.eventstore.client/3.126.0/hexalith.eventstore.client.nuspec",
+      "nuspecSha256": "bc7b89605cd28ef9d08c04e1d5e52d380e94a826e1fadcbbaaba7493df3d5b64",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.EventStore",
+        "commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      "dependencies": [
+        {
+          "id": "Hexalith.EventStore.Contracts",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.Client",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.AspNetCore.DataProtection.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration.Binder",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Hosting.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Http",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "ByteAether.Ulid",
+          "version": "1.4.2",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.Commons.UniqueIds",
+          "version": "2.30.3",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.DependencyInjection",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Diagnostics.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Logging.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Options",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Options.ConfigurationExtensions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        }
+      ]
+    },
+    {
+      "id": "Hexalith.EventStore.DomainService",
+      "version": "3.126.0",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.eventstore.domainservice/3.126.0/hexalith.eventstore.domainservice.nuspec",
+      "nuspecSha256": "eac6ac57c5f62d3f53c31b5fd7056e13df0e25a161ab6cea646e7c59b6b6b99d",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.EventStore",
+        "commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      "dependencies": [
+        {
+          "id": "Hexalith.EventStore.Client",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.EventStore.ServiceDefaults",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.Actors.AspNetCore",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.AspNetCore",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "ByteAether.Ulid",
+          "version": "1.4.2",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.Actors",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.Client",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.Commons.UniqueIds",
+          "version": "2.30.3",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Http.Resilience",
+          "version": "10.11.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.ServiceDiscovery",
+          "version": "10.11.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Abstractions",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.JsonWebTokens",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Logging",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Protocols",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Tokens",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Extensions.Hosting",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.AspNetCore",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.Http",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.Runtime",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "System.IdentityModel.Tokens.Jwt",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        }
+      ]
+    },
+    {
+      "id": "Hexalith.EventStore.ServiceDefaults",
+      "version": "3.126.0",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.eventstore.servicedefaults/3.126.0/hexalith.eventstore.servicedefaults.nuspec",
+      "nuspecSha256": "3a84e3676d45e65fc619f74964f996cc4ac89494fc5a6ed22dab50041f4b41f2",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.EventStore",
+        "commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      "dependencies": [
+        {
+          "id": "Hexalith.EventStore.Contracts",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Http.Resilience",
+          "version": "10.11.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.ServiceDiscovery",
+          "version": "10.11.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Extensions.Hosting",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.AspNetCore",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.Http",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.Runtime",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "ByteAether.Ulid",
+          "version": "1.4.2",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.Commons.UniqueIds",
+          "version": "2.30.3",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Abstractions",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.JsonWebTokens",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Logging",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Protocols",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Tokens",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "System.IdentityModel.Tokens.Jwt",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        }
+      ]
+    },
+    {
+      "id": "Hexalith.EventStore.Gateway",
+      "version": "3.126.0",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.eventstore.gateway/3.126.0/hexalith.eventstore.gateway.nuspec",
+      "nuspecSha256": "322423efacb08bd2905cd505ec9f64a732b0767e9d50f535799618d121a755f4",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.EventStore",
+        "commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      "dependencies": [
+        {
+          "id": "Hexalith.EventStore.Admin.Abstractions",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.EventStore.Contracts",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.EventStore.Server",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.EventStore.ServiceDefaults",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.AspNetCore",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "FluentValidation.DependencyInjectionExtensions",
+          "version": "12.2.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "MediatR",
+          "version": "14.2.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.AspNetCore.OpenApi",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.AspNetCore.SignalR.StackExchangeRedis",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Swashbuckle.AspNetCore.SwaggerUI",
+          "version": "10.3.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "ByteAether.Ulid",
+          "version": "1.4.2",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.Actors",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.Actors.AspNetCore",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.Client",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "FluentValidation",
+          "version": "12.2.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.Commons.UniqueIds",
+          "version": "2.30.3",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "MessagePack",
+          "version": "3.1.12",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Http.Resilience",
+          "version": "10.11.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.ServiceDiscovery",
+          "version": "10.11.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Abstractions",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.JsonWebTokens",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Logging",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Protocols",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Tokens",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.OpenApi",
+          "version": "2.12.2",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Extensions.Hosting",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.AspNetCore",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.Http",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.Runtime",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "StackExchange.Redis",
+          "version": "3.4.5",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "System.IdentityModel.Tokens.Jwt",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        }
+      ]
+    },
+    {
+      "id": "Hexalith.EventStore.Server",
+      "version": "3.126.0",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.eventstore.server/3.126.0/hexalith.eventstore.server.nuspec",
+      "nuspecSha256": "836aa32268949d06fe7b6ccd07f961d98d60033836c337981903f0320ff33a0e",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.EventStore",
+        "commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      "dependencies": [
+        {
+          "id": "Hexalith.EventStore.Client",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.EventStore.Contracts",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.EventStore.DomainService",
+          "version": "3.126.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.Actors",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.Actors.AspNetCore",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.Client",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "MediatR",
+          "version": "14.2.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Http.Resilience",
+          "version": "10.11.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "ByteAether.Ulid",
+          "version": "1.4.2",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Dapr.AspNetCore",
+          "version": "1.18.10",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.Commons.UniqueIds",
+          "version": "2.30.3",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.AspNetCore.DataProtection.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration.Binder",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.DependencyInjection",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Diagnostics.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Hosting.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Http",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Logging.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Options",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Options.ConfigurationExtensions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.ServiceDiscovery",
+          "version": "10.11.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Abstractions",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.JsonWebTokens",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Logging",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Protocols",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Tokens",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Extensions.Hosting",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.AspNetCore",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.Http",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Instrumentation.Runtime",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "System.IdentityModel.Tokens.Jwt",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        }
+      ]
+    },
+    {
+      "id": "Hexalith.EventStore.Aspire",
+      "version": "3.126.0",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.eventstore.aspire/3.126.0/hexalith.eventstore.aspire.nuspec",
+      "nuspecSha256": "3535da743f63ad60ba8c6451ce3a32216ed6e8d1cc2574c66271d2463c2aaa4d",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.EventStore",
+        "commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      "dependencies": [
+        {
+          "id": "Aspire.Hosting",
+          "version": "13.6.1",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Aspire.Hosting.Keycloak",
+          "version": "13.6.1-preview.1.26506.6",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Aspire.Hosting.Redis",
+          "version": "13.6.1",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "CommunityToolkit.Aspire.Hosting.Dapr",
+          "version": "13.6.1-beta.935",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Grpc.Net.ClientFactory",
+          "version": "2.84.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "MessagePack",
+          "version": "3.1.12",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration.Binder",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration.FileExtensions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Configuration.UserSecrets",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.DependencyInjection",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Diagnostics.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Hosting",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Hosting.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Http",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Logging.Abstractions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Options",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.Extensions.Options.ConfigurationExtensions",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "ModelContextProtocol",
+          "version": "2.2.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Newtonsoft.Json",
+          "version": "13.0.4",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "OpenTelemetry.Extensions.Hosting",
+          "version": "1.20.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "StackExchange.Redis",
+          "version": "3.4.5",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "YamlDotNet",
+          "version": "18.1.0",
+          "exclude": "Build,Analyzers"
+        }
+      ]
+    },
+    {
+      "id": "Hexalith.FrontComposer.Shell",
+      "version": "4.7.0",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.shell/4.7.0/hexalith.frontcomposer.shell.nuspec",
+      "nuspecSha256": "9b5098b58f26676a14fc65b9bc0e45e4c70a64b0b3cf88069736e66e9fef4c62",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.FrontComposer",
+        "commit": "cf5fe8da100bd5224a0d7f597fc92e1ebb98a5f4"
+      },
+      "dependencies": [
+        {
+          "id": "Hexalith.FrontComposer.Contracts.UI",
+          "version": "4.7.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Hexalith.FrontComposer.Contracts",
+          "version": "4.7.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Fluxor.Blazor.Web",
+          "version": "6.11.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.AspNetCore.Authentication.OpenIdConnect",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.AspNetCore.SignalR.Client",
+          "version": "10.0.13",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.FluentUI.AspNetCore.Components",
+          "version": "5.0.1",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.FluentUI.AspNetCore.Components.Icons",
+          "version": "5.0.1",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "NUlid",
+          "version": "1.7.3",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "System.Reactive",
+          "version": "7.0.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Fluxor",
+          "version": "6.11.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Abstractions",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.JsonWebTokens",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Logging",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Protocols",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "Microsoft.IdentityModel.Tokens",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        },
+        {
+          "id": "System.IdentityModel.Tokens.Jwt",
+          "version": "8.23.0",
+          "exclude": "Build,Analyzers"
+        }
+      ]
+    },
+    {
+      "id": "Hexalith.Conversations.Contracts",
+      "version": "1.2.0",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.conversations.contracts/1.2.0/hexalith.conversations.contracts.nuspec",
+      "nuspecSha256": "8d82aba201d88f93a9ee6a29d52172ee73ccafe200d8e412e5988b2369b87bb4",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.Conversations",
+        "commit": "7f67adb8bb67b668dd37d64e9d4795e37dcfb758"
+      },
+      "dependencies": [
+        {
+          "id": "Hexalith.Commons.Serialization",
+          "version": "2.30.3",
+          "exclude": "Build,Analyzers"
+        }
+      ]
+    },
+    {
+      "id": "Hexalith.Folders.Contracts",
+      "version": "1.3.0",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.folders.contracts/1.3.0/hexalith.folders.contracts.nuspec",
+      "nuspecSha256": "c5044ae7e111e9f84aae2e39ce74e8319c5622f863128f4b27d69af1e05024fc",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.Folders",
+        "commit": "efb98b1e5215ad73b4591f2a2a8ff00f8b8c794a"
+      },
+      "dependencies": []
+    }
+  ],
+  "publishedToolArchives": [
+    {
+      "id": "hexalith.builds.module.cli",
+      "version": "4.33.1",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.module.cli/4.33.1/hexalith.builds.module.cli.4.33.1.nupkg",
+      "sha256": "8689159ad33dd597f723c19567c6aee78b0585cffaf0d0f8d345fb857d49e530",
+      "sha512Base64": "hu9lurhiDfbRH2AgfG4JqPVuBM7cZOZa7To/mqHSM99uq0quTELI88qOcHXsmj0NIqna6BOc5vTpUFROIh+tCQ==",
+      "size": 36632130,
+      "signatureValidation": "not-run",
+      "embeddedCatalog": {
+        "schemaVersion": "1",
+        "eventStoreVersion": "3.125.1",
+        "frontComposerVersion": "4.6.0",
+        "daprSdkVersion": "1.18.10",
+        "aspireHostingVersion": "13.6.1",
+        "aspireHostingDaprVersion": "13.6.1-beta.935",
+        "aspireAppHostSdkVersion": "13.6.1",
+        "daprRuntimeVersion": "1.18.2",
+        "daprCliVersion": "1.18.0",
+        "redisImage": "docker.io/library/redis",
+        "redisImageTag": "7.4-alpine",
+        "redisImageDigest": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+        "eventStoreHostingDaprRange": "13.6.1-beta.935"
+      },
+      "resourceRead": {
+        "command": [
+          "pwsh",
+          "-NoProfile",
+          "-Command",
+          "$a=[System.Reflection.Assembly]::LoadFile('/tmp/p0-tuple-inspect-20261020-mlyxgcjy/hexalith.builds.module.cli/Hexalith.Builds.Tooling.dll'); $s=$a.GetManifestResourceStream('Hexalith.Builds.Tooling.Manifest.platform-version-catalog.json'); $r=[System.IO.StreamReader]::new($s); $r.ReadToEnd(); $r.Dispose()"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "{\n  \"schemaVersion\": \"1\",\n  \"eventStoreVersion\": \"3.125.1\",\n  \"frontComposerVersion\": \"4.6.0\",\n  \"daprSdkVersion\": \"1.18.10\",\n  \"aspireHostingVersion\": \"13.6.1\",\n  \"aspireHostingDaprVersion\": \"13.6.1-beta.935\",\n  \"aspireAppHostSdkVersion\": \"13.6.1\",\n  \"daprRuntimeVersion\": \"1.18.2\",\n  \"daprCliVersion\": \"1.18.0\",\n  \"redisImage\": \"docker.io/library/redis\",\n  \"redisImageTag\": \"7.4-alpine\",\n  \"redisImageDigest\": \"sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf\",\n  \"eventStoreHostingDaprRange\": \"13.6.1-beta.935\"\n}\n\n",
+        "stderr": ""
+      }
+    },
+    {
+      "id": "hexalith.builds.evidence.cli",
+      "version": "4.33.1",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.evidence.cli/4.33.1/hexalith.builds.evidence.cli.4.33.1.nupkg",
+      "sha256": "d8c8cb574307c729eff7b4c679b4150da8bd8a8653949b1d5b3e8c65d06fd271",
+      "sha512Base64": "Ca5kQ98BMo7gtfZjvuTvXOiuxJNOJMAh0SZ998BIwKOG43qDIaTQimdW+ghThcSKe0WLQT/4FFIszDfEtnvznA==",
+      "size": 2571678,
+      "signatureValidation": "not-run",
+      "embeddedCatalog": {
+        "schemaVersion": "1",
+        "eventStoreVersion": "3.125.1",
+        "frontComposerVersion": "4.6.0",
+        "daprSdkVersion": "1.18.10",
+        "aspireHostingVersion": "13.6.1",
+        "aspireHostingDaprVersion": "13.6.1-beta.935",
+        "aspireAppHostSdkVersion": "13.6.1",
+        "daprRuntimeVersion": "1.18.2",
+        "daprCliVersion": "1.18.0",
+        "redisImage": "docker.io/library/redis",
+        "redisImageTag": "7.4-alpine",
+        "redisImageDigest": "sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+        "eventStoreHostingDaprRange": "13.6.1-beta.935"
+      },
+      "resourceRead": {
+        "command": [
+          "pwsh",
+          "-NoProfile",
+          "-Command",
+          "$a=[System.Reflection.Assembly]::LoadFile('/tmp/p0-tuple-inspect-20261020-mlyxgcjy/hexalith.builds.evidence.cli/Hexalith.Builds.Tooling.dll'); $s=$a.GetManifestResourceStream('Hexalith.Builds.Tooling.Manifest.platform-version-catalog.json'); $r=[System.IO.StreamReader]::new($s); $r.ReadToEnd(); $r.Dispose()"
+        ],
+        "cwd": "/home/administrator/projects/hexalith/builds",
+        "exitCode": 0,
+        "stdout": "{\n  \"schemaVersion\": \"1\",\n  \"eventStoreVersion\": \"3.125.1\",\n  \"frontComposerVersion\": \"4.6.0\",\n  \"daprSdkVersion\": \"1.18.10\",\n  \"aspireHostingVersion\": \"13.6.1\",\n  \"aspireHostingDaprVersion\": \"13.6.1-beta.935\",\n  \"aspireAppHostSdkVersion\": \"13.6.1\",\n  \"daprRuntimeVersion\": \"1.18.2\",\n  \"daprCliVersion\": \"1.18.0\",\n  \"redisImage\": \"docker.io/library/redis\",\n  \"redisImageTag\": \"7.4-alpine\",\n  \"redisImageDigest\": \"sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf\",\n  \"eventStoreHostingDaprRange\": \"13.6.1-beta.935\"\n}\n\n",
+        "stderr": ""
+      }
+    }
+  ],
+  "evidenceReferences": [
+    {
+      "path": "projects/_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+      "sha256": "37e2532154319cc030b9559f3cfee4bfb0853a4e50d47dcc0196f89e448a4eb7",
+      "size": 1452
+    },
+    {
+      "path": "projects/_bmad-output/implementation-artifacts/6-4-prerequisite-decisions-2026-10-20.md",
+      "sha256": "005672c767f655267004ab8788d83abb118f3732d36b86ff12db26a8ff1256cb",
+      "size": 9584
+    },
+    {
+      "path": "projects/_bmad-output/implementation-artifacts/6-4-resolution-evidence-contracts.md",
+      "sha256": "93337259e741be5847a6273277128332c832fd7316d83abbd2fd3b260a1821de",
+      "size": 51317
+    },
+    {
+      "path": "eventstore/_bmad-output/implementation-artifacts/evidence/6-1-p1r-31251-published-run/final-attempt/canonical-v4-index.json",
+      "sha256": "f62f14434c352c7a098b3d45f2c772f1384ab543e6d0ac03039389440900b228",
+      "size": 3868
+    },
+    {
+      "path": "eventstore/_bmad-output/implementation-artifacts/evidence/6-1-p1r-31251-published-run/reconciliation/selected-final-parent-audit-9895165b155e48f2852f55b91c9bea35.json",
+      "sha256": "40d9724e31b4a63dd936dd5c0743f6e64cd2d1267f1120dd1f09f43d0bc5f0df",
+      "size": 16524
+    },
+    {
+      "path": "eventstore/_bmad-output/implementation-artifacts/evidence/6-1-p1r-31251-published-run/final-attempt/outer-shared-after-canonical-v4.json",
+      "sha256": "3b4ecd157c316d483a3b7d0ba4ebcbcedc94582d8cd46beec373efc1167aee18",
+      "size": 13971
+    },
+    {
+      "path": "projects/references/Hexalith.Builds/Tools/g6-current-policy.json",
+      "sha256": "b322645318505aecbed54c14675c0d0117c4ec268c4c62547812414664ce7aa7",
+      "size": 4713
+    },
+    {
+      "path": "projects/src/Hexalith.Projects.AppHost/Hexalith.Projects.AppHost.csproj",
+      "sha256": "10312b469bea61d7064becdf56293f18728e65e9f99b5e49845a43d640228245",
+      "size": 1644
+    },
+    {
+      "path": "projects/references/Hexalith.Platform/hexalith-platform.json",
+      "sha256": "294f2ac0ba0ddecdf12c89b92ea4fd658fe90404c366e04eaa71d7e06971a5db",
+      "size": 68
+    }
+  ]
+}

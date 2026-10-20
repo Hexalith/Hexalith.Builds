@@ -1,0 +1,9 @@
+{
+  "scope": "read-only image observation after the retained G6 run; not a launch identity proof",
+  "declaredG6AuxiliaryImage": "redis:7.4",
+  "exitCode": 0,
+  "observation": "\"sha256:c6eabf748fc7a61dbb5a705c78bcf3d6377b1127a97d0ce965c11c44ba46896f\" [\"redis@sha256:c6eabf748fc7a61dbb5a705c78bcf3d6377b1127a97d0ce965c11c44ba46896f\"]",
+  "p0ImageUnchanged": "docker.io/library/redis:7.4-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+  "p1rAuxiliaryRedisImage": "redis@sha256:c35b83ce044bb6d148c484d36e059ad28e02d5714ba6731fb55b6421e2ed0ccf",
+  "inference": "G6 current controlled-tuple source qualification does not replace P0 Redis persisted proof or attest an immutable auxiliary Redis launch digest"
+}

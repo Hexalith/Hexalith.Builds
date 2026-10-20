@@ -1,0 +1,64 @@
+{
+  "artifactKind": "fresh historical tuple reconciliation; prior evidence files unchanged",
+  "historicalTools": {
+    "version": "4.29.1",
+    "sourceRevision": "21ce044ab465ccb2adab58b3d66e394ffbecf3c2",
+    "freshSignedArchiveHashesMatchEarlierObservation": true,
+    "qualifiedUnsignedArchiveBytesProvedEquivalent": true,
+    "evidence": "historical-tools-4291-signing-proof.json",
+    "qualificationInherited": false,
+    "p0Accepted": false
+  },
+  "historicalP1R": {
+    "record": "/home/administrator/projects/hexalith/projects/_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+    "recordSha256": "37e2532154319cc030b9559f3cfee4bfb0853a4e50d47dcc0196f89e448a4eb7",
+    "value": {
+      "schema": "hexalith.projects.p1r-acceptance.v1",
+      "selected": {
+        "eventstore_version": "3.110.0",
+        "eventstore_tag": "v3.110.0",
+        "eventstore_revision": "27279fe6431925a6ea046c3f89af61487185c7de",
+        "builds_revision": "21ce044ab465ccb2adab58b3d66e394ffbecf3c2"
+      },
+      "rollback": {
+        "eventstore_version": "3.70.1",
+        "eventstore_tag": "v3.70.1",
+        "eventstore_revision": "f13f9925fdca53efa2ab8c90d396ab106f91bb9c",
+        "builds_revision": "7af20f8bafbfe561df6f7705913a0800603090b5"
+      },
+      "timestamp_utc": "2026-10-01T06:17:01Z",
+      "decisions": {
+        "EventStore Owner": {
+          "decision": "accept",
+          "approver": "J\u00e9r\u00f4me Piquot",
+          "record": "_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+          "selected": "#/selected"
+        },
+        "Builds Owner": {
+          "decision": "accept",
+          "approver": "J\u00e9r\u00f4me Piquot",
+          "record": "_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+          "selected": "#/selected"
+        },
+        "Solution Architect": {
+          "decision": "accept",
+          "approver": "J\u00e9r\u00f4me Piquot",
+          "record": "_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+          "selected": "#/selected"
+        },
+        "Test Architect": {
+          "decision": "accept",
+          "approver": "J\u00e9r\u00f4me Piquot",
+          "record": "_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json",
+          "selected": "#/selected"
+        }
+      }
+    }
+  },
+  "rollback": {
+    "acceptedPriorP0ToolPin": null,
+    "capableDataDowngrade": null,
+    "constraint": "archive equivalence does not supply persisted/native/G6/P0 acceptance or a capable rollback"
+  },
+  "recordedUtc": "2026-10-20T15:35:52.056865+00:00"
+}

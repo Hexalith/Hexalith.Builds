@@ -1,0 +1,51 @@
+{
+  "artifactKind": "post-upgrade restore fixture diagnosis; no qualification waiver",
+  "recordedUtc": "2026-10-20T14:49:15.678114+00:00",
+  "receipt": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/df4c638795764551ba18b2b6278c9ab2.json",
+  "receiptSha256": "c4e8e1189ab6f75bd9a87a5dc841aa0fe7d13093e5d2c4b08c95672b527755d1",
+  "failedChecks": [
+    "fresh-restore-appends-thirteen",
+    "fresh-restart-reconstructs-thirteen",
+    "restored-head-thirteen"
+  ],
+  "beforeMutation": {
+    "command": 4022,
+    "head": 12,
+    "floor": 1,
+    "sourceProof": {
+      "domain": "counter",
+      "erased": false,
+      "tenantId": "tenant-a",
+      "aggregateId": "fixture",
+      "codecVersion": 1,
+      "headSequence": 12,
+      "headMessageId": "01M5CVXZRRK3GQ5VAAF2S284A9",
+      "retainedFloor": 1,
+      "cumulativeDigest": "fd6b8299f53ec8be1da78d409e451b7097933340794d7c56b7aa494e7ddc8194",
+      "sourceIncarnation": "01M5CVX9C0R2A72QZ2S20HEM84"
+    }
+  },
+  "reconstructedRestoredMetadata": {
+    "head": 12,
+    "floor": 5,
+    "proofFloor": 1,
+    "sha256": "8a6581eb7007ce6c6db86fccfbec8e06077b2ef5ac230b052b2006dd7e616906",
+    "matchesActualRestoredInventory": true
+  },
+  "observedAppend": {
+    "accepted": false,
+    "event_count": 0,
+    "error": "Protected data diagnostic details were redacted. ReasonCode=protected-data-diagnostic-redacted; Stage=EventsStored.",
+    "sequence": 12
+  },
+  "sourceEvidence": {
+    "mutator": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/tools/p1r_published_executor.py:988",
+    "publishedPersister": "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020/src/Hexalith.EventStore.Server/Events/EventPersister.cs:131",
+    "publishedProofPredicate": "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020/src/Hexalith.EventStore.Server/Events/SourceProofCodec.cs:126"
+  },
+  "finding": "The stopped-writer retention fixture changes outer retainedFloor only. Exact reconstructed mismatch matches real restored metadata hash. Published persister validates proof floor equals metadata floor and refuses source_conflict. Runtime log redaction prevents claiming the hidden exception text was directly observed.",
+  "repair": "For valid retained fixtures only, preserve the actor-created completed-prefix proof and advance its sampled floor together with metadata. Refuse a pre-existing contradictory proof. Keep invalid-floor negative control uncorrected.",
+  "verification": "focused regression controls and fresh complete published campaign required; original failed receipts preserved",
+  "approvedRuntimePackagesChanged": false,
+  "g6AcceptedSourceWorkspaceChanged": false
+}

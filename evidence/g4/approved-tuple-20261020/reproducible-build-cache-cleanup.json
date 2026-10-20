@@ -1,0 +1,1675 @@
+{
+  "recordedUtc": "2026-10-20T14:53:08.687458+00:00",
+  "freeBytesBefore": 1840644096,
+  "directories": [
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/tests/Hexalith.Projects.E2E.Fixtures/bin",
+      "bytes": 201502,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/tests/Hexalith.Projects.E2E.Fixtures/obj",
+      "bytes": 354878,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Aspire/bin",
+      "bytes": 73457,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Aspire/obj",
+      "bytes": 399220,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Client/bin",
+      "bytes": 11336969,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Client/obj",
+      "bytes": 1111691,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Client/Generation/bin",
+      "bytes": 490678,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Client/Generation/obj",
+      "bytes": 312319,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Client/Generation/Shared/bin",
+      "bytes": 30275,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Client/Generation/Shared/obj",
+      "bytes": 129424,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.AppHost/bin",
+      "bytes": 49695330,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.AppHost/obj",
+      "bytes": 674263,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Infrastructure/bin",
+      "bytes": 11394880,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Infrastructure/obj",
+      "bytes": 762128,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.UI/bin",
+      "bytes": 40057923,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.UI/obj",
+      "bytes": 1943294,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Workers/bin",
+      "bytes": 45538384,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Workers/obj",
+      "bytes": 1692789,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Server/bin",
+      "bytes": 63354315,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Server/obj",
+      "bytes": 3113855,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects/bin",
+      "bytes": 11300026,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects/obj",
+      "bytes": 1065768,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Contracts/bin",
+      "bytes": 11001989,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.Contracts/obj",
+      "bytes": 2751910,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.ServiceDefaults/bin",
+      "bytes": 62055,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/src/Hexalith.Projects.ServiceDefaults/obj",
+      "bytes": 248946,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.TenantAccess/bin",
+      "bytes": 150117,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.TenantAccess/obj",
+      "bytes": 248695,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons/bin",
+      "bytes": 167341,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons/obj",
+      "bytes": 408689,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.ServiceDefaults/bin",
+      "bytes": 110061,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.ServiceDefaults/obj",
+      "bytes": 268843,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.UniqueIds/bin",
+      "bytes": 88008,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.UniqueIds/obj",
+      "bytes": 141778,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.Aspire/bin",
+      "bytes": 113880,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.Aspire/obj",
+      "bytes": 414835,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.Http/bin",
+      "bytes": 92922,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.Http/obj",
+      "bytes": 188057,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.Diagnostics/bin",
+      "bytes": 57999,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.Diagnostics/obj",
+      "bytes": 162347,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.Serialization/bin",
+      "bytes": 56824,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.Serialization/obj",
+      "bytes": 136999,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.Publication/bin",
+      "bytes": 58895,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Commons/src/libraries/Hexalith.Commons.Publication/obj",
+      "bytes": 141822,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.EventStore/bin",
+      "bytes": 2275313,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.EventStore/obj",
+      "bytes": 658307,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Telemetry/bin",
+      "bytes": 32169,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Telemetry/obj",
+      "bytes": 136097,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Server/bin",
+      "bytes": 548221549,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Server/obj",
+      "bytes": 5305904,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.AccessTelemetry.Clock/bin",
+      "bytes": 7725257,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.AccessTelemetry.Clock/obj",
+      "bytes": 585758,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Aspire/bin",
+      "bytes": 81663,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Aspire/obj",
+      "bytes": 409012,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.AppHost/bin",
+      "bytes": 48392040,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.AppHost/obj",
+      "bytes": 744312,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Client.Rest/bin",
+      "bytes": 2097792,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Client.Rest/obj",
+      "bytes": 417660,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.AccessTelemetry/bin",
+      "bytes": 8225621,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.AccessTelemetry/obj",
+      "bytes": 874146,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.ServiceDefaults/bin",
+      "bytes": 2082955,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.ServiceDefaults/obj",
+      "bytes": 392070,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.AccessTelemetry.Contracts/bin",
+      "bytes": 151973,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.AccessTelemetry.Contracts/obj",
+      "bytes": 314290,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Contracts/bin",
+      "bytes": 1951533,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Contracts/obj",
+      "bytes": 2576696,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Mcp/bin",
+      "bytes": 10984829,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Memories/src/Hexalith.Memories.Mcp/obj",
+      "bytes": 715611,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.Workers/bin",
+      "bytes": 40459382,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.Workers/obj",
+      "bytes": 1195069,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders/bin",
+      "bytes": 6686008,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders/obj",
+      "bytes": 4706011,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.AppHost/bin",
+      "bytes": 49566026,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.AppHost/obj",
+      "bytes": 740544,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.ServiceDefaults/bin",
+      "bytes": 62688,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.ServiceDefaults/obj",
+      "bytes": 251548,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.Aspire/bin",
+      "bytes": 72145,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.Aspire/obj",
+      "bytes": 397707,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.Server/bin",
+      "bytes": 41340329,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.Server/obj",
+      "bytes": 2295532,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.EventStore/bin",
+      "bytes": 51646351,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.EventStore/obj",
+      "bytes": 3188103,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.UI/bin",
+      "bytes": 34656000,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.UI/obj",
+      "bytes": 1699750,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.Client/bin",
+      "bytes": 1183478,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.Client/obj",
+      "bytes": 1987883,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.Contracts/bin",
+      "bytes": 57526,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Folders/src/Hexalith.Folders.Contracts/obj",
+      "bytes": 180039,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/tests/Hexalith.EventStore.TestSubscriber/bin",
+      "bytes": 50594326,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/tests/Hexalith.EventStore.TestSubscriber/obj",
+      "bytes": 337499,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/tests/Hexalith.EventStore.Server.Tests/bin",
+      "bytes": 107272162,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/tests/Hexalith.EventStore.Server.Tests/obj",
+      "bytes": 18059722,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/tests/Hexalith.EventStore.DomainService.Tests/bin",
+      "bytes": 95437203,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/tests/Hexalith.EventStore.DomainService.Tests/obj",
+      "bytes": 4401692,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/tests/Hexalith.EventStore.Server.LiveSidecar.Tests/bin",
+      "bytes": 141619478,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/tests/Hexalith.EventStore.Server.LiveSidecar.Tests/obj",
+      "bytes": 3259606,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Admin.UI/bin",
+      "bytes": 37258383,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Admin.UI/obj",
+      "bytes": 3994178,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore/bin",
+      "bytes": 22392850,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore/obj",
+      "bytes": 819777,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Admin.Server.Host/bin",
+      "bytes": 11054115,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Admin.Server.Host/obj",
+      "bytes": 735315,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.AppHost/bin",
+      "bytes": 60015948,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.AppHost/obj",
+      "bytes": 838849,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Testing/bin",
+      "bytes": 9871605,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Testing/obj",
+      "bytes": 924694,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.DomainService/bin",
+      "bytes": 5355649,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.DomainService/obj",
+      "bytes": 2337299,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.RestApi.Generators/bin",
+      "bytes": 154210,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.RestApi.Generators/obj",
+      "bytes": 305523,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Gateway/bin",
+      "bytes": 11431748,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Gateway/obj",
+      "bytes": 2154941,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Server/bin",
+      "bytes": 9631985,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Server/obj",
+      "bytes": 6745176,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Client/bin",
+      "bytes": 3735856,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Client/obj",
+      "bytes": 2632871,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Admin.Server/bin",
+      "bytes": 3477175,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Admin.Server/obj",
+      "bytes": 1382472,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.ServiceDefaults/bin",
+      "bytes": 2101491,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.ServiceDefaults/obj",
+      "bytes": 628933,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Testing.Integration/bin",
+      "bytes": 10114712,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Testing.Integration/obj",
+      "bytes": 1137902,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Admin.Abstractions/bin",
+      "bytes": 2526558,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Admin.Abstractions/obj",
+      "bytes": 1045911,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Aspire/bin",
+      "bytes": 148473,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Aspire/obj",
+      "bytes": 524724,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Contracts/bin",
+      "bytes": 1852692,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.Contracts/obj",
+      "bytes": 2476923,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.SignalR/bin",
+      "bytes": 1924931,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/src/Hexalith.EventStore.SignalR/obj",
+      "bytes": 317021,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample/bin",
+      "bytes": 11110937,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample/obj",
+      "bytes": 697660,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample.Api/bin",
+      "bytes": 9453611,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample.Api/obj",
+      "bytes": 662362,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample.Contracts/bin",
+      "bytes": 1878494,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample.Contracts/obj",
+      "bytes": 212040,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample.BlazorUI/bin",
+      "bytes": 34429191,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample.BlazorUI/obj",
+      "bytes": 1269018,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.Server/bin",
+      "bytes": 9883244,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.Server/obj",
+      "bytes": 803985,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants/bin",
+      "bytes": 22854118,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants/obj",
+      "bytes": 1248400,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.AppHost/bin",
+      "bytes": 49585248,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.AppHost/obj",
+      "bytes": 699392,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.Client/bin",
+      "bytes": 3935530,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.Client/obj",
+      "bytes": 415254,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.Aspire/bin",
+      "bytes": 179567,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.Aspire/obj",
+      "bytes": 444315,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.Contracts/bin",
+      "bytes": 2017339,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.Contracts/obj",
+      "bytes": 449155,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.UI/bin",
+      "bytes": 45979727,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.UI/obj",
+      "bytes": 7649489,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.Api/bin",
+      "bytes": 9636095,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/src/Hexalith.Tenants.Api/obj",
+      "bytes": 768105,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/samples/Hexalith.Tenants.Sample/bin",
+      "bytes": 13250390,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Tenants/samples/Hexalith.Tenants.Sample/obj",
+      "bytes": 826812,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Contracts/bin",
+      "bytes": 2330745,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Contracts/obj",
+      "bytes": 912807,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Security/bin",
+      "bytes": 2623370,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Security/obj",
+      "bytes": 693743,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Picker/bin",
+      "bytes": 2684606,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Picker/obj",
+      "bytes": 694110,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Client/bin",
+      "bytes": 2535142,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Client/obj",
+      "bytes": 563448,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.ConsumerPortal/bin",
+      "bytes": 7647180,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.ConsumerPortal/obj",
+      "bytes": 1317069,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.AdminPortal/bin",
+      "bytes": 9957956,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.AdminPortal/obj",
+      "bytes": 1829042,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties/bin",
+      "bytes": 18807774,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties/obj",
+      "bytes": 1984439,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Mcp/bin",
+      "bytes": 6925024,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Mcp/obj",
+      "bytes": 740856,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.UI/bin",
+      "bytes": 62828027,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.UI/obj",
+      "bytes": 2707737,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.AppHost/bin",
+      "bytes": 59945183,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.AppHost/obj",
+      "bytes": 707566,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Authentication/bin",
+      "bytes": 2361475,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Authentication/obj",
+      "bytes": 311613,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Projections/bin",
+      "bytes": 6010772,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Parties/src/Hexalith.Parties.Projections/obj",
+      "bytes": 883689,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.Testing/bin",
+      "bytes": 6830999,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.Testing/obj",
+      "bytes": 590821,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.Client/bin",
+      "bytes": 4744455,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.Client/obj",
+      "bytes": 472392,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.AppHost/bin",
+      "bytes": 48217417,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.AppHost/obj",
+      "bytes": 576883,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.Server/bin",
+      "bytes": 15349230,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.Server/obj",
+      "bytes": 2140070,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations/bin",
+      "bytes": 6720645,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations/obj",
+      "bytes": 743964,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.Admin.Web/bin",
+      "bytes": 9397985,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.Admin.Web/obj",
+      "bytes": 634878,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.Contracts/bin",
+      "bytes": 2745547,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Conversations/src/Hexalith.Conversations.Contracts/obj",
+      "bytes": 4063213,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/bin",
+      "bytes": 18005782,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/obj",
+      "bytes": 518942,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/bin",
+      "bytes": 52435655,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/obj",
+      "bytes": 818627,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/bin",
+      "bytes": 29780082,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/obj",
+      "bytes": 1008725,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin",
+      "bytes": 1821759,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/obj",
+      "bytes": 2372373,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.McpCli/src/Hexalith.McpCli.Analyzers/bin",
+      "bytes": 34977,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.McpCli/src/Hexalith.McpCli.Analyzers/obj",
+      "bytes": 185200,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.McpCli/src/Hexalith.McpCli.Abstractions/bin",
+      "bytes": 35984,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.McpCli/src/Hexalith.McpCli.Abstractions/obj",
+      "bytes": 134738,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.McpCli/src/Hexalith.McpCli/bin",
+      "bytes": 10509493,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.McpCli/src/Hexalith.McpCli/obj",
+      "bytes": 570800,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.McpCli/src/Hexalith.McpCli.Mcp/bin",
+      "bytes": 514507,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.McpCli/src/Hexalith.McpCli.Mcp/obj",
+      "bytes": 366044,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.McpCli/src/Hexalith.McpCli.Core/bin",
+      "bytes": 457889,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.McpCli/src/Hexalith.McpCli.Core/obj",
+      "bytes": 752210,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/tests/Hexalith.FrontComposer.CounterFixture/bin",
+      "bytes": 61552116,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/tests/Hexalith.FrontComposer.CounterFixture/obj",
+      "bytes": 736875,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.Contracts.UI/bin",
+      "bytes": 764888,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.Contracts.UI/obj",
+      "bytes": 291066,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.SourceTools/bin",
+      "bytes": 1878460,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.SourceTools/obj",
+      "bytes": 1433491,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.Contracts/bin",
+      "bytes": 1358786,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.Contracts/obj",
+      "bytes": 1770549,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.Shell/bin",
+      "bytes": 4747174,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.Shell/obj",
+      "bytes": 5863979,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.AppHost/bin",
+      "bytes": 49466211,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.AppHost/obj",
+      "bytes": 596637,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.UI/bin",
+      "bytes": 69754139,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.UI/obj",
+      "bytes": 2591910,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.Schema/bin",
+      "bytes": 714652,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.Schema/obj",
+      "bytes": 281955,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.Mcp/bin",
+      "bytes": 1284954,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/src/Hexalith.FrontComposer.Mcp/obj",
+      "bytes": 1016809,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/samples/Counter/Counter.Specimens.Domain/bin",
+      "bytes": 5715558,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/samples/Counter/Counter.Specimens.Domain/obj",
+      "bytes": 1504648,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/samples/Counter/Counter.Web/bin",
+      "bytes": 54459067,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/samples/Counter/Counter.Web/obj",
+      "bytes": 1668250,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/samples/Counter/Counter.Domain/bin",
+      "bytes": 5625864,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/samples/Counter/Counter.Domain/obj",
+      "bytes": 1405168,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/samples/Counter/Counter.Specimens/bin",
+      "bytes": 6856061,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.FrontComposer/samples/Counter/Counter.Specimens/obj",
+      "bytes": 979337,
+      "trackedFiles": 0,
+      "gitIgnored": true,
+      "purpose": "own completed G6 compile/test cache; retained evidence and all P1R consumers excluded"
+    }
+  ],
+  "scope": "only reproducible ignored build outputs in task-owned frozen source workspace; no shared checkout or Docker cleanup",
+  "retainedEvidenceUnchanged": true,
+  "freeBytesAfter": 4600111104
+}
