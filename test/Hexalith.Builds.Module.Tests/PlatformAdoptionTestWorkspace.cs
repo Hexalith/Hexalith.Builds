@@ -5,8 +5,6 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests;
 
-using System.Text.Json.Nodes;
-
 using Hexalith.Builds.ModuleTool.Tests.Workspace;
 using Hexalith.Builds.Tooling.Manifest;
 
@@ -31,9 +29,10 @@ internal sealed class PlatformAdoptionTestWorkspace : IDisposable
     public static async Task<PlatformAdoptionTestWorkspace> CreateAsync(bool nested = false)
     {
         WorkspaceGitFixture git = await WorkspaceGitFixture.CreateAsync(withNested: nested).ConfigureAwait(true);
-        PlatformAdoptionTestWorkspace workspace = new(git);
+        PlatformAdoptionTestWorkspace? workspace = null;
         try
         {
+            workspace = new(git);
             _ = await WorkspaceGitFixture.RunGitAsync(workspace.Root, "-c", "protocol.file.allow=always", "submodule", "update", "--init").ConfigureAwait(true);
             foreach (string name in new[] { "EventStore", "Tenants", "Memories", "McpCli" })
             {
@@ -52,12 +51,13 @@ internal sealed class PlatformAdoptionTestWorkspace : IDisposable
             _ = await WorkspaceGitFixture.RunGitAsync(platform, "add", ".config").ConfigureAwait(true);
             _ = await WorkspaceGitFixture.RunGitAsync(platform, "-c", "user.name=Enrollment Test", "-c", "user.email=enrollment@example.invalid", "commit", "-m", "test fixture pin").ConfigureAwait(true);
             await workspace.TrackAsync().ConfigureAwait(true);
-            return workspace;
+            PlatformAdoptionTestWorkspace result = workspace;
+            workspace = null;
+            return result;
         }
-        catch
+        finally
         {
-            workspace.Dispose();
-            throw;
+            workspace?.Dispose();
         }
     }
 

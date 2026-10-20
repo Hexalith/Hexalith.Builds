@@ -88,7 +88,10 @@ internal static class ModuleCommandApplication
             DefaultValueFactory = _ => "human",
         };
         _ = outputOption.AcceptOnlyFromAmong("human", "json");
-        Option<bool> adoptionOption = new("--adoption", "Reports bounded static module enrollment requirements; SM-2 requires human verification.");
+        Option<bool> adoptionOption = new("--adoption")
+        {
+            Description = "Reports bounded static module enrollment requirements; SM-2 requires human verification.",
+        };
         command.Options.Add(adoptionOption);
         command.Options.Add(manifestOption);
         command.Options.Add(outputOption);

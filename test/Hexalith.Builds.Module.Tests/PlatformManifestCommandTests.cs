@@ -798,7 +798,8 @@ public sealed class PlatformManifestCommandTests
         string cli = typeof(ModuleCommandApplication).Assembly.Location;
         async Task<Hexalith.Builds.Tooling.Runtime.CompositionProcessResult> InvokeAsync() => await Hexalith.Builds.Tooling.Runtime.CompositionProcess.RunAsync(
             Hexalith.Builds.Tooling.Runtime.CompositionProcess.CreateStartInfo("dotnet", [cli, "validate", "--manifest", workspace.Manifest, "--adoption", "--output", format], workspace.Root, null),
-            TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            TimeSpan.FromSeconds(30),
+            TestContext.Current.CancellationToken).ConfigureAwait(true);
         Hexalith.Builds.Tooling.Runtime.CompositionProcessResult passed = await InvokeAsync().ConfigureAwait(true);
         passed.ExitCode.ShouldBe(0, passed.Output + passed.ErrorOutput);
         passed.Output.ShouldContain("SM-2 remains separately unverified");

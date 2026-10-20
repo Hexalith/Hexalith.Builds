@@ -15,10 +15,10 @@ using Hexalith.Builds.Tooling.Workspace;
 /// <summary>Inspects enrollment in the active module Git workspace without initialization, resolution or writes.</summary>
 public static class PlatformAdoptionValidator
 {
-    private static readonly string[] _minimumDependencies = ["eventstore", "tenants", "memories"];
-
     /// <summary>Gets the scope of this report and the required human verification.</summary>
     public const string Scope = "Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified.";
+
+    private static readonly string[] _minimumDependencies = ["eventstore", "tenants", "memories"];
 
     /// <summary>Validates every independent static requirement without changing the workspace.</summary>
     /// <param name="manifestPaths">Declarations inside the current module workspace.</param>
@@ -34,9 +34,10 @@ public static class PlatformAdoptionValidator
         List<PlatformAdoptionRow> rows = [];
         List<ToolDiagnostic> diagnostics = [];
         string[] paths = [.. manifestPaths];
-        string root = workingDirectory ?? Directory.GetCurrentDirectory();
+        string root = workingDirectory ?? ".";
         string[] tracked = [];
         IReadOnlyList<string> references = [];
+        HashSet<string> requiredReferences = new(StringComparer.Ordinal);
         PlatformManifestValidationResult? declaration = null;
         await CheckAsync("workspace", ".git", async () =>
         {
@@ -89,7 +90,8 @@ public static class PlatformAdoptionValidator
                 }
             }
 
-            string[] missing = [.. required.Where(id => !self.Contains(id) && !references.Contains("references/Hexalith." + id, StringComparer.OrdinalIgnoreCase)).Order(StringComparer.Ordinal)];
+            requiredReferences = new HashSet<string>(required.Where(id => !self.Contains(id)).Select(id => "references/Hexalith." + id), StringComparer.Ordinal);
+            string[] missing = [.. requiredReferences.Where(path => !references.Contains(path, StringComparer.Ordinal)).Order(StringComparer.Ordinal)];
             Require(missing.Length == 0, "Declare distinct direct references for: " + string.Join(", ", missing) + ". Self references are excluded.");
         }).ConfigureAwait(false);
         await CheckAsync("gitlinks", ".gitmodules", async () =>
@@ -98,7 +100,7 @@ public static class PlatformAdoptionValidator
             foreach (string reference in references)
             {
                 IReadOnlyDictionary<string, string> recorded = await SubmoduleInitializer.ValidateRecordedGitlinksAsync(root, [reference], cancellationToken).ConfigureAwait(false);
-                Require(SubmoduleInitializer.IsInitialized(Path.Combine(root, reference)), "Initialize only the recorded direct reference: " + reference + ".");
+                Require(!requiredReferences.Contains(reference) || SubmoduleInitializer.IsInitialized(Path.Combine(root, reference)), "Initialize only the recorded required direct reference: " + reference + ".");
                 await SubmoduleInitializer.ValidateInitializedPackageRootsAsync(root, [reference], recorded, cancellationToken).ConfigureAwait(false);
             }
         }).ConfigureAwait(false);
@@ -194,7 +196,7 @@ public static class PlatformAdoptionValidator
         }
     }
 
-    private static bool InspectionFailure(Exception exception) => exception is IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException or System.Xml.XmlException or InvalidOperationException or KeyNotFoundException;
+    private static bool InspectionFailure(Exception exception) => exception is InvalidDataException or IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException or System.Xml.XmlException or InvalidOperationException or KeyNotFoundException;
 
     private static bool Succeeded(CompositionProcessResult result) => result.Started && !result.TimedOut && !result.OutputTruncated && result.ExitCode == 0;
 

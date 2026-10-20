@@ -39,47 +39,53 @@ internal static class PlatformAdoptionSourceAudit
                 continue;
             }
 
-            FileInfo info = new(Path.Combine(root, path));
-            if (info.Length > 1_048_576)
+            try
             {
-                rows.Add(new PlatformAdoptionRow(requirement, false, path, "File exceeds the bounded 1 MiB source audit; owner review is required."));
-                continue;
-            }
-
-            string content = File.ReadAllText(info.FullName);
-            if (requirement == "dependency-selectors")
-            {
-                if (extension is ".CSPROJ" or ".PROPS" or ".TARGETS")
+                FileInfo info = new(Path.Combine(root, path));
+                if (info.Length > 1_048_576)
                 {
-                    InspectBuild(content, path, rows);
+                    rows.Add(new PlatformAdoptionRow(requirement, false, path, "File exceeds the bounded 1 MiB source audit; owner review is required."));
+                    continue;
                 }
-                else if (extension is ".CS" or ".PS1" or ".SH" or ".PY")
+
+                string content = File.ReadAllText(info.FullName);
+                if (requirement == "dependency-selectors")
                 {
-                    bool helper = Match(content, @"(?:Resolve|Find|Get)[-_]?(?:Hexalith|Sibling|Repository|Source)\w*(?:Root|Path)|(?:sibling|nested|package)[-_]?(?:fallback|root|checkout)");
-                    bool discovery = Match(content, @"(?:File\s*\.\s*Exists|Directory\s*\.\s*Exists|Test-Path|os\.path\.(?:exists|isdir)|Path\([^\r\n]*\)\.exists|\[\s*-[def]\s)");
-                    bool dependency = Match(content, "Hexalith[.A-Za-z]*|UseNuGetDeps|UseHexalithProjectReferences|FromSource|source.?mode|package.?mode");
-                    if (helper || (discovery && dependency) || Match(content, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]"))
+                    if (extension is ".CSPROJ" or ".PROPS" or ".TARGETS")
                     {
-                        rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping."));
+                        InspectBuild(content, path, rows);
+                    }
+                    else if (extension is ".CS" or ".PS1" or ".SH" or ".PY")
+                    {
+                        bool helper = Match(content, @"(?:Resolve|Find|Get)[-_]?(?:Hexalith|Sibling|Repository|Source)\w*(?:Root|Path)|(?:sibling|nested|package)[-_]?(?:fallback|root|checkout)");
+                        bool discovery = Match(content, @"(?:File\s*\.\s*Exists|Directory\s*\.\s*Exists|Test-Path|os\.path\.(?:exists|isdir)|Path|\[\s*-[def]\s)[^\r\n]*(?:Hexalith\.|UseNuGetDeps|UseHexalithProjectReferences|FromSource|Root)|(?:UseNuGetDeps|UseHexalithProjectReferences|FromSource|\w+Root)[^\r\n]*(?:Exists|Test-Path|exists|isdir)");
+                        if (helper || discovery || Match(content, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]"))
+                        {
+                            rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping."));
+                        }
                     }
                 }
-            }
-            else if (extension == ".CS")
-            {
-                if (Match(content, @"\b(?:WithTopic|MapSubscribeHandler|MapDaprSubscribeHandler|SubscribeTopic|AddTopicEventHandler)\s*\(|\[\s*(?:Dapr\s*\.\s*)?Topic(?:Attribute)?\s*\(|[""']/dapr/subscribe[""']"))
+                else if (extension == ".CS")
                 {
-                    rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Programmatic subscription discovery is forbidden; declare delivery routes and dead-letter policy in the module declaration."));
-                }
+                    if (Match(content, @"\b(?:WithTopic|MapSubscribeHandler|MapDaprSubscribeHandler|SubscribeTopic|AddTopicEventHandler)\s*\(|\[\s*(?:Dapr\s*\.\s*)?Topic(?:Attribute)?\s*\(|[""']/dapr/subscribe[""']"))
+                    {
+                        rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Programmatic subscription discovery is forbidden; declare delivery routes and dead-letter policy in the module declaration."));
+                    }
 
-                if (Match(content, @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|SaveStateAsync|DeleteStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<[^>\r\n]+>)?\s*\(\s*""[^""]+""|\b(?:StoreName|StateStoreName|PubSubName|PubsubName|SecretStoreName|ComponentName|storeName|pubsubName)\s*[:=]\s*""[^""]+"""))
+                    if (Match(content, @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|SaveStateAsync|DeleteStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<[^>\r\n]+>)?\s*\(\s*""[^""]+""|\b(?:StoreName|StateStoreName|PubSubName|PubsubName|SecretStoreName|ComponentName|storeName|pubsubName)\s*[:=]\s*""[^""]+"""))
+                    {
+                        rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component name; obtain the name from the declared configuration key."));
+                    }
+                }
+                else if (requirement == "dapr-subscriptions" && extension is ".JSON" or ".YAML" or ".YML"
+                    && Match(content, @"[""']?(?:StoreName|StateStoreName|PubSubName|SecretStoreName|ComponentName)[""']?\s*:\s*[""']?[A-Za-z0-9][A-Za-z0-9._-]*"))
                 {
-                    rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component name; obtain the name from the declared configuration key."));
+                    rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component default in configuration; Platform injects the declared configuration key."));
                 }
             }
-            else if (requirement == "dapr-subscriptions" && extension is ".JSON" or ".YAML" or ".YML"
-                && Match(content, @"[""']?(?:StoreName|StateStoreName|PubSubName|SecretStoreName|ComponentName)[""']?\s*:\s*[""']?[A-Za-z0-9][A-Za-z0-9._-]*"))
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Xml.XmlException or RegexMatchTimeoutException)
             {
-                rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component default in configuration; Platform injects the declared configuration key."));
+                rows.Add(new PlatformAdoptionRow(requirement, false, path, "Cannot complete the bounded source inspection; correct unreadable/malformed input or obtain owner review."));
             }
         }
 
