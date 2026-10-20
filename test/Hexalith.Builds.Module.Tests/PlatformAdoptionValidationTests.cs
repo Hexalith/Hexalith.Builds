@@ -323,6 +323,23 @@ public sealed class PlatformAdoptionValidationTests
         }
     }
 
+    /// <summary>Verifies generic component-name defaults fail in each supported configuration format.</summary>
+    /// <param name="format">The configuration format.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("json")]
+    [InlineData("yaml")]
+    [InlineData("yml")]
+    public async Task GenericDaprConfigurationDefaultsAreAuditedAsync(string format)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        string filename = "appsettings." + format;
+        workspace.Write(filename, format == "json" ? "{\"PubSubName\":\"pubsub\"}" : "PubSubName: pubsub\n");
+        await workspace.TrackAsync().ConfigureAwait(true);
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        report.Rows.ShouldContain(row => row.Requirement == "dapr-subscriptions" && !row.Passed && row.File == filename);
+    }
+
     /// <summary>Verifies invalid command arrays cannot masquerade as a runnable exact tool pin.</summary>
     /// <param name="commands">The commands value, or missing sentinel.</param>
     /// <returns>The assertion task.</returns>
