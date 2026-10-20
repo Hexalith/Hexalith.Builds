@@ -29,11 +29,11 @@ public static partial class ModuleManifestLoader
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     };
 
-    /// <summary>Gets the unchanged EventStore pin for v1 module manifests.</summary>
-    internal static string ModuleManifestEventStoreVersion => "3.120.0";
+    /// <summary>Gets the EventStore pin from this runner release's embedded catalog.</summary>
+    internal static string ModuleManifestEventStoreVersion => SupportedPlatformPins.EventStoreVersion;
 
-    /// <summary>Gets the unchanged FrontComposer pin for v1 module manifests.</summary>
-    internal static string ModuleManifestFrontComposerVersion => "4.6.0";
+    /// <summary>Gets the FrontComposer pin from this runner release's embedded catalog.</summary>
+    internal static string ModuleManifestFrontComposerVersion => SupportedPlatformPins.FrontComposerVersion;
 
     /// <summary>
     /// Loads a manifest and returns deterministic, metadata-only diagnostics.

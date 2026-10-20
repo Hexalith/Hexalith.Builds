@@ -22,6 +22,29 @@ HISTORICAL = WORKSPACE / "_bmad-output/implementation-artifacts/qualification-ev
 
 
 class CurrentG6Tests(unittest.TestCase):
+    def test_restored_hosting_previews_are_exact_and_specific_to_the_selected_sdk(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "consumer.csproj"
+            project.write_text("<Project />")
+            (root / "obj").mkdir()
+            assets = root / "obj/project.assets.json"
+            for sdk, preview, allowed in (
+                ("13.6.1", "13.6.1-preview.1.26506.6", True),
+                ("13.6.0", "13.6.0-preview.1.26479.8", True),
+                ("13.6.1", "13.6.0-preview.1.26479.8", False),
+                ("13.6.0", "13.6.1-preview.1.26506.6", False),
+                ("13.6.1", "13.6.1-preview.1.26506.7", False),
+            ):
+                with self.subTest(sdk=sdk, preview=preview):
+                    assets.write_text(json.dumps({"libraries": {
+                        "Aspire.Hosting.Keycloak/" + preview: {"type": "package"},
+                        "Aspire.Hosting.Kubernetes/" + preview: {"type": "package"},
+                    }}))
+                    graph, issues = G6.resolved_graph(root, {"resolvedProjects": ["consumer.csproj"]}, {"aspireSdk": sdk})
+                    self.assertEqual(2, len(graph[0]["packages"]))
+                    self.assertEqual(0 if allowed else 2, len(issues))
+
     def test_sdk_scanner_recognizes_explicit_imports_and_property_selection(self) -> None:
         import xml.etree.ElementTree as ET
         document = ET.fromstring('<Project><Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /><Import Project="Sdk.targets" Sdk="Aspire.AppHost.Sdk" Version="$(HexalithAspireAppHostSdkVersion)" /></Project>')

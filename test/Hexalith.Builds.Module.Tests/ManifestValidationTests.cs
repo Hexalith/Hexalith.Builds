@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -216,13 +217,40 @@ public sealed class ManifestValidationTests
         JsonElement properties = platform.GetProperty("properties");
 
         properties.GetProperty("eventStoreVersion").GetProperty("const").GetString()
-            .ShouldBe(ModuleManifestLoader.ModuleManifestEventStoreVersion);
+            .ShouldBe(SupportedPlatformPins.EventStoreVersion);
         properties.GetProperty("daprRuntimeVersion").GetProperty("const").GetString()
             .ShouldBe(SupportedPlatformPins.DaprRuntimeVersion);
         properties.GetProperty("daprSdkVersion").GetProperty("const").GetString()
             .ShouldBe(SupportedPlatformPins.DaprSdkVersion);
         properties.GetProperty("frontComposerVersion").GetProperty("const").GetString()
-            .ShouldBe(ModuleManifestLoader.ModuleManifestFrontComposerVersion);
+            .ShouldBe(SupportedPlatformPins.FrontComposerVersion);
+    }
+
+    /// <summary>
+    /// Rejects historical manifest pins that disagree with the runtime and acceptance catalog.
+    /// </summary>
+    /// <param name="field">The selected package field.</param>
+    /// <param name="version">The historical package version.</param>
+    [Theory]
+    [InlineData("eventStoreVersion", "3.120.0")]
+    [InlineData("eventStoreVersion", "3.125.1")]
+    [InlineData("frontComposerVersion", "4.6.0")]
+    public void LoadManifestWithHistoricalPackagePinFailsBeforeComposition(string field, string version)
+    {
+        string directory = CreateFixtureDirectory();
+        try
+        {
+            JsonObject document = JsonNode.Parse(ValidManifestJson())!.AsObject();
+            document["platform"]!.AsObject()[field] = version;
+            ManifestLoadResult result = ModuleManifestLoader.Load(WriteManifest(directory, document.ToJsonString()));
+
+            result.IsValid.ShouldBeFalse();
+            result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXM016" && diagnostic.Field == "platform." + field);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
     }
 
     /// <summary>
@@ -491,10 +519,10 @@ public sealed class ManifestValidationTests
                 modules,
                 platform = new
                 {
-                    eventStoreVersion = "3.120.0",
+                    eventStoreVersion = "3.126.0",
                     daprRuntimeVersion = "1.18.2",
                     daprSdkVersion = "1.18.10",
-                    frontComposerVersion = "4.6.0",
+                    frontComposerVersion = "4.7.0",
                 },
                 profiles = new
                 {
@@ -566,10 +594,10 @@ public sealed class ManifestValidationTests
             }
           ],
           "platform": {
-            "eventStoreVersion": "3.120.0",
+            "eventStoreVersion": "3.126.0",
             "daprRuntimeVersion": "1.18.2",
             "daprSdkVersion": "1.18.10",
-            "frontComposerVersion": "4.6.0"
+            "frontComposerVersion": "4.7.0"
           },
           "ui": {
             "descriptorAssembly": "assemblies/ui.dll"
