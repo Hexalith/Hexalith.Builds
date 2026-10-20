@@ -279,10 +279,13 @@ public sealed class McpCliRunBuildTests
         }
     }
 
-    /// <summary>Verifies an McpCli run reports the run-scoped build once ready, and down deletes it with the workspace.</summary>
+    /// <summary>Verifies an McpCli run or debug reports the run-scoped build once ready, and down deletes it with the workspace.</summary>
+    /// <param name="debugAttach">Whether the command is <c>debug</c> rather than <c>run</c>.</param>
     /// <returns>The readiness and teardown assertions.</returns>
-    [Fact]
-    public async Task McpCliRunReportsTheRunScopedBuildAndDownDeletesItAsync()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task McpCliRunReportsTheRunScopedBuildAndDownDeletesItAsync(bool debugAttach)
     {
         SkipWindows();
         using PlatformManifestTestWorkspace workspace = new();
@@ -304,7 +307,7 @@ public sealed class McpCliRunBuildTests
                 await File.WriteAllTextAsync(tool, "run-scoped", token).ConfigureAwait(false);
                 return tool;
             },
-            DebugAttach = true,
+            DebugAttach = debugAttach,
         });
 
         CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -414,6 +417,42 @@ public sealed class McpCliRunBuildTests
         CompositionStartResult result = await new CompositionEngine(options).StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(8));
+        result.IsReady.ShouldBeFalse();
+        result.Result.Outcome.RuleId.ShouldBe("HXR021");
+        modelBuilds.ShouldBe(0);
+        Directory.Exists(Path.Combine(options.WorkspaceRoot, result.RunId.ShouldNotBeNull())).ShouldBeFalse();
+    }
+
+    /// <summary>Verifies an McpCli build that ignores cancellation and returns after the deadline still stops before the model build.</summary>
+    /// <returns>The deadline assertions.</returns>
+    [Fact]
+    public async Task McpCliBuildReturningAfterTheDeadlineStopsBeforeTheModelBuildAsync()
+    {
+        SkipWindows();
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules", "[" + _mcpCliModule + "]");
+        int modelBuilds = 0;
+        CompositionEngineOptions options = Options(workspace.Root, typeof(McpCliRunBuildTests).Assembly.Location) with
+        {
+            SourceMapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root),
+            ReadinessTimeout = TimeSpan.FromSeconds(2),
+            PlatformModelBuildOverride = (_, _, _) =>
+            {
+                _ = Interlocked.Increment(ref modelBuilds);
+                throw new InvalidOperationException("The model must not build after the McpCli stage exhausted the deadline.");
+            },
+            McpCliBuildOverride = async (_, run, _) =>
+            {
+                // The build ignores the startup token, so only the post-build deadline check can stop the run.
+                await Task.Delay(TimeSpan.FromSeconds(4), CancellationToken.None).ConfigureAwait(false);
+                return PlatformManifestCommand.McpCliToolPath(run);
+            },
+        };
+        System.Diagnostics.Stopwatch elapsed = System.Diagnostics.Stopwatch.StartNew();
+
+        CompositionStartResult result = await new CompositionEngine(options).StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(10));
         result.IsReady.ShouldBeFalse();
         result.Result.Outcome.RuleId.ShouldBe("HXR021");
         modelBuilds.ShouldBe(0);
