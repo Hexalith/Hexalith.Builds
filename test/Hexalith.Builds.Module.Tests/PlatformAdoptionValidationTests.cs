@@ -160,6 +160,207 @@ public sealed class PlatformAdoptionValidationTests
         (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.ShouldContain(row => row.Requirement == "hosting-inventory" && !row.Passed);
     }
 
+    /// <summary>Verifies tracked helpers below references remain module-owned audit inputs.</summary>
+    /// <returns>The assertion task.</returns>
+    [Fact]
+    public async Task TrackedReferencesHelperIsAuditedAsync()
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write("references/resolve-source.sh", "if [ -d ../Hexalith.EventStore ]; then UseNuGetDeps=false; fi");
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.ShouldContain(row => row.Requirement == "dependency-selectors" && !row.Passed && row.File == "references/resolve-source.sh");
+    }
+
+    /// <summary>Verifies repository identity matching preserves actual mixed-case direct paths.</summary>
+    /// <returns>The assertion task.</returns>
+    [Fact]
+    public async Task MixedCaseChatBotDependencyUsesActualDirectPathAsync()
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        string source = Path.Combine(workspace.Root, "references/Hexalith.Dep");
+        _ = await WorkspaceGitFixture.RunGitAsync(workspace.Root, "-c", "protocol.file.allow=always", "submodule", "add", new Uri(source).AbsoluteUri, "references/Hexalith.ChatBot").ConfigureAwait(true);
+        JsonNode document = JsonNode.Parse(await File.ReadAllTextAsync(workspace.Manifest, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+        document["modules"]![0]!["identity"]!["dependencies"]!.AsArray().Add("chatbot");
+        workspace.Write("module.json", document.ToJsonString());
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies a declared direct self-reference fails even with a valid recorded gitlink.</summary>
+    /// <returns>The assertion task.</returns>
+    [Fact]
+    public async Task DirectSelfReferenceIsRejectedAsync()
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(workspace.Root, "-c", "protocol.file.allow=always", "submodule", "add", new Uri(Path.Combine(workspace.Root, "references/Hexalith.Dep")).AbsoluteUri, "references/Hexalith.Sample").ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.ShouldContain(row => row.Requirement == "references" && !row.Passed && row.Reason.Contains("self reference", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies frozen hosts cannot hide dependency assignments and missing projects grant no exclusion.</summary>
+    /// <param name="deleteProject">Whether the tracked host project is removed after inventory creation.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FrozenHostsCannotBypassDependencyOrExistenceChecksAsync(bool deleteProject)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        const string project = "src/Hexalith.Sample.AppHost/Hexalith.Sample.AppHost.csproj";
+        workspace.Write(project, "<Project><PropertyGroup><UseNuGetDeps>true</UseNuGetDeps></PropertyGroup></Project>");
+        workspace.Write("src/Hexalith.Sample.AppHost/Program.cs", "app.MapSubscribeHandler();");
+        workspace.Write("module/hosting-inventory.json", "{\"schemaVersion\":1,\"projects\":[{\"path\":\"" + project + "\",\"kind\":\"AppHost\",\"owner\":\"owner\",\"consumers\":[\"sample\"],\"state\":\"frozen\",\"replacementPlan\":\"pending\",\"retirementPlan\":\"pending\",\"gates\":{\"producerAdoption\":\"pending\",\"ownerReviewedSourcePackageDeployedParity\":\"pending\",\"eventStoreAd22ExactSubjectRemovalAuthority\":\"pending\"}}]}");
+        await workspace.TrackAsync().ConfigureAwait(true);
+        if (deleteProject)
+        {
+            File.Delete(Path.Combine(workspace.Root, project));
+        }
+
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        report.Rows.ShouldContain(row => row.Requirement == "dependency-selectors" && !row.Passed && row.File == project);
+        if (deleteProject)
+        {
+            report.Rows.ShouldContain(row => row.Requirement == "hosting-inventory" && !row.Passed);
+            report.Rows.ShouldContain(row => row.Requirement == "dapr-subscriptions" && !row.Passed && row.File.EndsWith("Program.cs", StringComparison.Ordinal));
+        }
+        else
+        {
+            report.Rows.ShouldContain(row => row.Requirement == "dapr-subscriptions" && row.Passed);
+        }
+    }
+
+    /// <summary>Verifies case-insensitive generated properties and dependency-selecting imports fail.</summary>
+    /// <param name="body">The build body.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("<PropertyGroup><HexalithEventStoreFromSource>true</HexalithEventStoreFromSource></PropertyGroup>")]
+    [InlineData("<PropertyGroup><hexalitheventstorefromsource>true</hexalitheventstorefromsource></PropertyGroup>")]
+    [InlineData("<PropertyGroup><usenugetdeps>true</usenugetdeps></PropertyGroup>")]
+    [InlineData("<PropertyGroup><usehexalithprojectreferences>true</usehexalithprojectreferences></PropertyGroup>")]
+    [InlineData("<PropertyGroup><hexalitheventstoreroot>references/Hexalith.EventStore</hexalitheventstoreroot></PropertyGroup>")]
+    [InlineData("<Import Project=\"$(HexalithBuildsRoot)/Hexalith.Build.props\" Condition=\"Exists('$(HexalithBuildsRoot)/Hexalith.Build.props')\" />")]
+    public async Task ToolOwnedPropertiesAndSelectingImportsFailAsync(string body)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write("Directory.Build.props", "<Project>" + body + "</Project>");
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.ShouldContain(row => row.Requirement == "dependency-selectors" && !row.Passed && row.File == "Directory.Build.props");
+    }
+
+    /// <summary>Verifies ordinary path construction and content-root access are not existence probes.</summary>
+    /// <param name="source">Ordinary module source.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("var path = Path.Combine(environment.ContentRootPath, \"data\");")]
+    [InlineData("var path = Path.Combine(\"Hexalith.Sample\", \"data\");")]
+    public async Task OrdinaryPathAccessPassesAsync(string source)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write("src/PathAccess.cs", source);
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies comments and literal-only text cannot impersonate C# invocations or attributes.</summary>
+    /// <param name="source">The C# input.</param>
+    /// <param name="passes">Whether bounded Dapr inspection should pass.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("// removed app.MapSubscribeHandler();\nclass Sample {}", true)]
+    [InlineData("/* [global::Dapr.Topic(\"pubsub\", \"events\")] */ class Sample {}", true)]
+    [InlineData("var text = \"WithTopic(\";", true)]
+    [InlineData("var text = @\"MapSubscribeHandler(\";", true)]
+    [InlineData("var text = \"\"\"[Topic(\"pubsub\", \"events\")]\"\"\";", true)]
+    [InlineData("// dapr.PublishEventAsync(\"literal\", topic, value);", true)]
+    [InlineData("app.MapSubscribeHandler();", false)]
+    [InlineData("endpoint.WithTopic(\"events\");", false)]
+    [InlineData("[Dapr.Topic(\"pubsub\", \"events\")] class Sample {}", false)]
+    [InlineData("[global::Dapr.Topic(\"pubsub\", \"events\")] class Sample {}", false)]
+    [InlineData("app.MapGet(\"/dapr/subscribe\", () => result);", false)]
+    [InlineData("await dapr.PublishEventAsync(\"literal\", topic, value);", false)]
+    public async Task DaprAuditUsesExecutableSyntaxAsync(string source, bool passes)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write("src/Consumer.cs", source);
+        await workspace.TrackAsync().ConfigureAwait(true);
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        report.Rows.Single(row => row.Requirement == "dapr-subscriptions").Passed.ShouldBe(passes);
+    }
+
+    /// <summary>Verifies declared Dapr configuration keys reject physical defaults in each supported format.</summary>
+    /// <param name="format">The configuration format.</param>
+    /// <param name="value">The configured value.</param>
+    /// <param name="passes">Whether the value is an empty or injected input.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("json", "physical-pubsub", false)]
+    [InlineData("yaml", "physical-pubsub", false)]
+    [InlineData("yml", "physical-pubsub", false)]
+    [InlineData("json", "", true)]
+    [InlineData("yaml", "", true)]
+    [InlineData("yml", "", true)]
+    [InlineData("json", "${SAMPLE_EVENTS_COMPONENT}", true)]
+    [InlineData("yaml", "${SAMPLE_EVENTS_COMPONENT}", true)]
+    [InlineData("yml", "${SAMPLE_EVENTS_COMPONENT}", true)]
+    [InlineData("json", null, true)]
+    [InlineData("yaml", null, true)]
+    [InlineData("yml", null, true)]
+    public async Task DeclaredDaprConfigurationDefaultsAreAuditedAsync(string format, string? value, bool passes)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        JsonNode manifest = JsonNode.Parse(await File.ReadAllTextAsync(workspace.Manifest, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+        manifest["modules"]![0]!["runtime"]!["dapr"]![0]!["configurationKey"] = "Sample:Dapr:EventsComponent";
+        workspace.Write("module.json", manifest.ToJsonString());
+        string configuration = format == "json"
+            ? new JsonObject { ["Sample"] = new JsonObject { ["Dapr"] = new JsonObject { ["EventsComponent"] = value } } }.ToJsonString()
+            : "Sample:\n  Dapr:\n    EventsComponent: " + JsonSerializer.Serialize(value) + "\n";
+        workspace.Write("appsettings." + format, configuration);
+        await workspace.TrackAsync().ConfigureAwait(true);
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        report.Rows.Single(row => row.Requirement == "dapr-subscriptions").Passed.ShouldBe(passes);
+        if (!passes)
+        {
+            report.Rows.ShouldContain(row => !row.Passed && row.File == "appsettings." + format);
+        }
+    }
+
+    /// <summary>Verifies invalid command arrays cannot masquerade as a runnable exact tool pin.</summary>
+    /// <param name="commands">The commands value, or missing sentinel.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("<missing>")]
+    [InlineData("[]")]
+    [InlineData("[\"another-command\"]")]
+    public async Task ToolPinRequiresRunnableModuleCommandAsync(string commands)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        JsonNode pin = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(workspace.Root, ".config/dotnet-tools.json"), TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+        JsonObject tool = pin["tools"]!["hexalith.builds.module.cli"]!.AsObject();
+        if (commands == "<missing>")
+        {
+            _ = tool.Remove("commands");
+        }
+        else
+        {
+            tool["commands"] = JsonNode.Parse(commands);
+        }
+
+        workspace.Write(".config/dotnet-tools.json", pin.ToJsonString());
+        workspace.Write("references/Hexalith.Platform/.config/dotnet-tools.json", pin.ToJsonString());
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.ShouldContain(row => row.Requirement == "tool-pin" && !row.Passed && row.Reason.Contains("command", StringComparison.Ordinal));
+    }
+
+    /// <summary>Verifies matching working-tree pins cannot override the committed direct Platform identity.</summary>
+    /// <returns>The assertion task.</returns>
+    [Fact]
+    public async Task MatchingWorkingTreePinsMustMatchCommittedPlatformPinAsync()
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        string pin = (await File.ReadAllTextAsync(Path.Combine(workspace.Root, ".config/dotnet-tools.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).Replace("4.34.0", "4.35.0", StringComparison.Ordinal);
+        workspace.Write(".config/dotnet-tools.json", pin);
+        workspace.Write("references/Hexalith.Platform/.config/dotnet-tools.json", pin);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.ShouldContain(row => row.Requirement == "tool-pin" && !row.Passed && row.Reason.Contains("committed", StringComparison.Ordinal));
+    }
+
     /// <summary>Verifies reports contain machine rows and human PASS/FAIL labels while legacy JSON stays unchanged.</summary>
     /// <returns>The assertion task.</returns>
     [Fact]

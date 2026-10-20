@@ -39,6 +39,7 @@ public static class PlatformAdoptionValidator
         IReadOnlyList<string> references = [];
         HashSet<string> requiredReferences = new(StringComparer.Ordinal);
         PlatformManifestValidationResult? declaration = null;
+        HashSet<string> daprConfigurationKeys = new(StringComparer.OrdinalIgnoreCase);
         await CheckAsync("workspace", ".git", async () =>
         {
             CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "rev-parse", "--show-toplevel").ConfigureAwait(false);
@@ -46,7 +47,7 @@ public static class PlatformAdoptionValidator
             root = result.Output.TrimEnd('\r', '\n');
             result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "-z").ConfigureAwait(false);
             Require(Succeeded(result), "Cannot enumerate tracked module-owned files.");
-            tracked = [.. result.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries).Where(path => !path.StartsWith("references/", StringComparison.Ordinal))];
+            tracked = [.. result.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries)];
         }).ConfigureAwait(false);
         await CheckAsync("declaration", string.Join(", ", paths.Select(path => Path.GetFileName(path))), () =>
         {
@@ -60,9 +61,14 @@ public static class PlatformAdoptionValidator
             declaration = PlatformManifestValidator.Validate(resolvedPaths, cancellationToken);
             diagnostics.AddRange(declaration.Diagnostics);
             Require(declaration.IsValid, "Correct the declaration failures reported below.");
-            foreach (PlatformModuleDeclaration module in declaration.Declarations!)
+            foreach (JsonElement module in declaration.Declarations!.Select(item => item.Declaration))
             {
-                JsonElement identity = module.Declaration.GetProperty("identity");
+                JsonElement identity = module.GetProperty("identity");
+                foreach (JsonElement role in module.GetProperty("runtime").GetProperty("dapr").EnumerateArray())
+                {
+                    _ = daprConfigurationKeys.Add(role.GetProperty("configurationKey").GetString()!);
+                }
+
                 string self = identity.GetProperty("moduleId").GetString()!;
                 HashSet<string> dependencies = new(identity.GetProperty("dependencies").EnumerateArray().Select(value => value.GetString()!), StringComparer.Ordinal);
                 Require(_minimumDependencies.Where(id => id != self).All(dependencies.Contains), "Declare the distinct minimum server dependencies eventstore, tenants and memories, excluding self.");
@@ -74,7 +80,7 @@ public static class PlatformAdoptionValidator
         await CheckAsync("references", ".gitmodules", async () =>
         {
             references = await WorkspaceRootResolver.ReadDirectReferencesAsync(root, cancellationToken).ConfigureAwait(false);
-            HashSet<string> required = new(StringComparer.Ordinal) { "Platform", "Builds", "McpCli", "EventStore", "Tenants", "Memories" };
+            HashSet<string> required = new(StringComparer.OrdinalIgnoreCase) { "Platform", "Builds", "McpCli", "EventStore", "Tenants", "Memories" };
             HashSet<string> self = new(StringComparer.OrdinalIgnoreCase);
             if (declaration?.Declarations is not null)
             {
@@ -85,14 +91,14 @@ public static class PlatformAdoptionValidator
                     foreach (JsonElement dependency in identity.GetProperty("dependencies").EnumerateArray())
                     {
                         string id = dependency.GetString()!;
-                        string repository = id switch { "eventstore" => "EventStore", "mcpcli" => "McpCli", _ => char.ToUpperInvariant(id[0]) + id[1..] };
-                        _ = required.Add(repository);
+                        _ = required.Add(id);
                     }
                 }
             }
 
-            requiredReferences = new HashSet<string>(required.Where(id => !self.Contains(id)).Select(id => "references/Hexalith." + id), StringComparer.Ordinal);
-            string[] missing = [.. requiredReferences.Where(path => !references.Contains(path, StringComparer.Ordinal)).Order(StringComparer.Ordinal)];
+            Require(!references.Any(reference => self.Contains(Path.GetFileName(reference).Replace("Hexalith.", string.Empty, StringComparison.OrdinalIgnoreCase))), "Remove the declared direct self reference; the active module must not reference itself.");
+            string[] missing = [.. required.Where(id => !self.Contains(id) && !references.Any(reference => string.Equals(Path.GetFileName(reference), "Hexalith." + id, StringComparison.OrdinalIgnoreCase))).Order(StringComparer.Ordinal)];
+            requiredReferences = new HashSet<string>(references.Where(reference => required.Contains(Path.GetFileName(reference).Replace("Hexalith.", string.Empty, StringComparison.OrdinalIgnoreCase)) && !self.Contains(Path.GetFileName(reference).Replace("Hexalith.", string.Empty, StringComparison.OrdinalIgnoreCase))), StringComparer.Ordinal);
             Require(missing.Length == 0, "Declare distinct direct references for: " + string.Join(", ", missing) + ". Self references are excluded.");
         }).ConfigureAwait(false);
         await CheckAsync("gitlinks", ".gitmodules", async () =>
@@ -134,7 +140,7 @@ public static class PlatformAdoptionValidator
             try
             {
                 Require(tracked.Length > 0, "No tracked module files were available for bounded static inspection.");
-                rows.AddRange(PlatformAdoptionSourceAudit.Scan(root, tracked, frozen, requirement, cancellationToken));
+                rows.AddRange(PlatformAdoptionSourceAudit.Scan(root, tracked, frozen, daprConfigurationKeys, requirement, cancellationToken));
                 if (rows.Count == before)
                 {
                     rows.Add(new PlatformAdoptionRow(requirement, true, ".", "No known forbidden patterns in tracked module-owned files. " + Scope));
@@ -215,6 +221,10 @@ public static class PlatformAdoptionValidator
         JsonElement tool = root.GetProperty("tools").GetProperty("hexalith.builds.module.cli");
         Require(tool.ValueKind == JsonValueKind.Object && tool.TryGetProperty("version", out JsonElement version) && version.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(version.GetString()), "An exact tool version is required.");
         Require(!tool.TryGetProperty("rollForward", out JsonElement rollForward) || rollForward.ValueKind == JsonValueKind.False, "Disable tool roll-forward for exact accepted-tool restore.");
+        Require(
+            tool.TryGetProperty("commands", out JsonElement commands) && commands.ValueKind == JsonValueKind.Array
+                && commands.GetArrayLength() == 1 && commands[0].ValueKind == JsonValueKind.String && commands[0].GetString() == "hexalith-module",
+            "The tool pin must expose the runnable hexalith-module command.");
         string pin = tool.GetProperty("version").GetString()!;
         Require(NuGet.Versioning.NuGetVersion.TryParse(pin, out _), "Use one exact semantic tool version.");
         return pin;

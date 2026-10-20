@@ -5,8 +5,11 @@
 
 namespace Hexalith.Builds.Tooling.Manifest;
 
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+
+using YamlDotNet.RepresentationModel;
 
 /// <summary>Bounds known source patterns; unsupported languages and indirection require owner review.</summary>
 internal static class PlatformAdoptionSourceAudit
@@ -17,10 +20,11 @@ internal static class PlatformAdoptionSourceAudit
     /// <param name="root">The module root.</param>
     /// <param name="tracked">Tracked module-owned paths.</param>
     /// <param name="frozen">Exact verified hosting directories.</param>
+    /// <param name="configurationKeys">The declared Dapr configuration keys.</param>
     /// <param name="requirement">The audit requirement.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>Failures with file and reason; no raw source is emitted.</returns>
-    internal static IReadOnlyList<PlatformAdoptionRow> Scan(string root, IReadOnlyList<string> tracked, HashSet<string> frozen, string requirement, CancellationToken cancellationToken)
+    internal static IReadOnlyList<PlatformAdoptionRow> Scan(string root, IReadOnlyList<string> tracked, HashSet<string> frozen, HashSet<string> configurationKeys, string requirement, CancellationToken cancellationToken)
     {
         List<PlatformAdoptionRow> rows = [];
         foreach (string path in tracked)
@@ -28,7 +32,7 @@ internal static class PlatformAdoptionSourceAudit
             cancellationToken.ThrowIfCancellationRequested();
             string extension = Path.GetExtension(path).ToUpperInvariant();
             if (!new[] { ".CS", ".CSPROJ", ".PROPS", ".TARGETS", ".PS1", ".SH", ".PY", ".JSON", ".YAML", ".YML" }.Contains(extension, StringComparer.Ordinal)
-                || frozen.Any(directory => path.StartsWith(directory + "/", StringComparison.Ordinal)))
+                || (requirement == "dapr-subscriptions" && frozen.Any(directory => path.StartsWith(directory + "/", StringComparison.Ordinal))))
             {
                 continue;
             }
@@ -58,7 +62,7 @@ internal static class PlatformAdoptionSourceAudit
                     else if (extension is ".CS" or ".PS1" or ".SH" or ".PY")
                     {
                         bool helper = Match(content, @"(?:Resolve|Find|Get)[-_]?(?:Hexalith|Sibling|Repository|Source)\w*(?:Root|Path)|(?:sibling|nested|package)[-_]?(?:fallback|root|checkout)");
-                        bool discovery = Match(content, @"(?:File\s*\.\s*Exists|Directory\s*\.\s*Exists|Test-Path|os\.path\.(?:exists|isdir)|Path|\[\s*-[def]\s)[^\r\n]*(?:Hexalith\.|UseNuGetDeps|UseHexalithProjectReferences|FromSource|Root)|(?:UseNuGetDeps|UseHexalithProjectReferences|FromSource|\w+Root)[^\r\n]*(?:Exists|Test-Path|exists|isdir)");
+                        bool discovery = Match(content, @"(?:File\s*\.\s*Exists|Directory\s*\.\s*Exists|Test-Path|os\.path\.(?:exists|isdir)|Path\s*\([^\r\n]*\)\s*\.\s*(?:exists|is_dir|is_file)\s*\(|\[\s*-[def]\s)[^\r\n]*(?:Hexalith\.|UseNuGetDeps|UseHexalithProjectReferences|FromSource|Root)|(?:UseNuGetDeps|UseHexalithProjectReferences|FromSource|\w+Root)[^\r\n]*(?:Exists|Test-Path|exists|isdir)");
                         if (helper || discovery || Match(content, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]"))
                         {
                             rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping."));
@@ -67,23 +71,23 @@ internal static class PlatformAdoptionSourceAudit
                 }
                 else if (extension == ".CS")
                 {
-                    if (Match(content, @"\b(?:WithTopic|MapSubscribeHandler|MapDaprSubscribeHandler|SubscribeTopic|AddTopicEventHandler)\s*\(|\[\s*(?:Dapr\s*\.\s*)?Topic(?:Attribute)?\s*\(|[""']/dapr/subscribe[""']"))
+                    string executable = MaskCSharpNonExecutable(content);
+                    if (MatchCode(content, executable, @"\b(?:WithTopic|MapSubscribeHandler|MapDaprSubscribeHandler|SubscribeTopic|AddTopicEventHandler)\s*\(|\[\s*(?:global\s*::\s*)?(?:[A-Za-z_]\w*\s*\.\s*)*Topic(?:Attribute)?\s*\(|\bMap(?:Get|Post|Methods)\s*\(\s*""/dapr/subscribe"""))
                     {
                         rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Programmatic subscription discovery is forbidden; declare delivery routes and dead-letter policy in the module declaration."));
                     }
 
-                    if (Match(content, @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|SaveStateAsync|DeleteStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<[^>\r\n]+>)?\s*\(\s*""[^""]+""|\b(?:StoreName|StateStoreName|PubSubName|PubsubName|SecretStoreName|ComponentName|storeName|pubsubName)\s*[:=]\s*""[^""]+"""))
+                    if (MatchCode(content, executable, @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|SaveStateAsync|DeleteStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<[^>\r\n]+>)?\s*\(\s*""[^""]+""|\b(?:StoreName|StateStoreName|PubSubName|PubsubName|SecretStoreName|ComponentName|storeName|pubsubName)\s*[:=]\s*""[^""]+"""))
                     {
                         rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component name; obtain the name from the declared configuration key."));
                     }
                 }
-                else if (requirement == "dapr-subscriptions" && extension is ".JSON" or ".YAML" or ".YML"
-                    && Match(content, @"[""']?(?:StoreName|StateStoreName|PubSubName|SecretStoreName|ComponentName)[""']?\s*:\s*[""']?[A-Za-z0-9][A-Za-z0-9._-]*"))
+                else if (extension is ".JSON" or ".YAML" or ".YML" && HasPhysicalComponentDefault(content, extension, configurationKeys))
                 {
-                    rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component default in configuration; Platform injects the declared configuration key."));
+                    rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component default in configuration; Platform injects the declared configuration key. Bounded static check only."));
                 }
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Xml.XmlException or RegexMatchTimeoutException)
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Xml.XmlException or RegexMatchTimeoutException or JsonException or YamlDotNet.Core.YamlException)
             {
                 rows.Add(new PlatformAdoptionRow(requirement, false, path, "Cannot complete the bounded source inspection; correct unreadable/malformed input or obtain owner review."));
             }
@@ -101,8 +105,12 @@ internal static class PlatformAdoptionSourceAudit
             string condition = string.Join(" ", element.AncestorsAndSelf().Attributes("Condition").Select(attribute => attribute.Value));
             string value = element.HasElements ? string.Empty : element.Value;
             string include = element.Attribute("Include")?.Value ?? element.Attribute("Project")?.Value ?? string.Empty;
-            bool dependency = name.Contains("Hexalith", StringComparison.OrdinalIgnoreCase) || name is "UseNuGetDeps" or "UseHexalithProjectReferences" || name.EndsWith("FromSource", StringComparison.Ordinal) || include.Contains("Hexalith", StringComparison.OrdinalIgnoreCase);
-            bool selector = name is "ProjectReference" or "PackageReference" || name.EndsWith("Root", StringComparison.Ordinal) || name.EndsWith("FromSource", StringComparison.Ordinal) || name is "UseNuGetDeps" or "UseHexalithProjectReferences";
+            bool mode = name.Equals("UseNuGetDeps", StringComparison.OrdinalIgnoreCase) || name.Equals("UseHexalithProjectReferences", StringComparison.OrdinalIgnoreCase);
+            bool generated = name.StartsWith("Hexalith", StringComparison.OrdinalIgnoreCase)
+                && (name.EndsWith("Root", StringComparison.OrdinalIgnoreCase) || name.EndsWith("FromSource", StringComparison.OrdinalIgnoreCase));
+            bool dependency = generated || mode || include.Contains("Hexalith", StringComparison.OrdinalIgnoreCase);
+            bool selector = generated || mode || name.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase)
+                || name.Equals("PackageReference", StringComparison.OrdinalIgnoreCase) || name.Equals("Import", StringComparison.OrdinalIgnoreCase);
             if ((dependency && selector && Match(condition, @"\bExists\s*\("))
                 || (dependency && Match(value + " " + include, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]")))
             {
@@ -110,13 +118,133 @@ internal static class PlatformAdoptionSourceAudit
                 return;
             }
 
-            if (name is "UseNuGetDeps" or "UseHexalithProjectReferences" || (name.EndsWith("Root", StringComparison.Ordinal) && dependency))
+            if (mode || generated)
             {
                 rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "Module build files assign a tool-owned dependency root or mode property; leave selection to the pinned tool."));
                 return;
             }
         }
     }
+
+    private static bool MatchCode(string content, string executable, string pattern) =>
+        Regex.Matches(content, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout)
+            .Any(match => !char.IsWhiteSpace(executable[match.Index]));
+
+    private static string MaskCSharpNonExecutable(string content)
+    {
+        char[] executable = content.ToCharArray();
+        int index = 0;
+        while (index < content.Length)
+        {
+            int start = index;
+            if (content[index] == '/' && index + 1 < content.Length && content[index + 1] == '/')
+            {
+                index = content.IndexOf('\n', index);
+                if (index < 0)
+                {
+                    index = content.Length;
+                }
+            }
+            else if (content[index] == '/' && index + 1 < content.Length && content[index + 1] == '*')
+            {
+                int end = content.IndexOf("*/", index + 2, StringComparison.Ordinal);
+                index = end < 0 ? content.Length : end + 2;
+            }
+            else if (content[index] is '"' or '\'')
+            {
+                char quote = content[index++];
+                bool verbatim = start > 0 && content[start - 1] == '@';
+                int quotes = 1;
+                while (index < content.Length && content[index] == quote && quote == '"')
+                {
+                    quotes++;
+                    index++;
+                }
+
+                if (quotes >= 3)
+                {
+                    int end = content.IndexOf(new string(quote, quotes), index, StringComparison.Ordinal);
+                    index = end < 0 ? content.Length : end + quotes;
+                }
+                else if (quotes == 1)
+                {
+                    while (index < content.Length)
+                    {
+                        char current = content[index++];
+                        if (current == quote)
+                        {
+                            if (verbatim && index < content.Length && content[index] == quote)
+                            {
+                                index++;
+                                continue;
+                            }
+
+                            break;
+                        }
+
+                        if (!verbatim && current == '\\' && index < content.Length)
+                        {
+                            index++;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                index++;
+                continue;
+            }
+
+            for (int position = start; position < index; position++)
+            {
+                if (executable[position] is not '\r' and not '\n')
+                {
+                    executable[position] = ' ';
+                }
+            }
+        }
+
+        return new string(executable);
+    }
+
+    private static bool HasPhysicalComponentDefault(string content, string extension, HashSet<string> configurationKeys)
+    {
+        if (extension == ".JSON")
+        {
+            using JsonDocument document = JsonDocument.Parse(content);
+            return InspectJson(document.RootElement, string.Empty);
+        }
+
+        YamlStream yaml = [];
+        using StringReader reader = new(content);
+        yaml.Load(reader);
+        return yaml.Documents.Any(document => InspectYaml(document.RootNode, string.Empty));
+
+        bool InspectJson(JsonElement value, string prefix) => value.ValueKind switch
+        {
+            JsonValueKind.Object => value.EnumerateObject().Any(property => InspectJson(property.Value, Join(prefix, property.Name))),
+            JsonValueKind.Array => value.EnumerateArray().Any(item => InspectJson(item, prefix)),
+            JsonValueKind.String or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null or JsonValueKind.Undefined => IsComponentKey(prefix) && Physical(value.ValueKind == JsonValueKind.Null ? null : value.ToString()),
+            _ => false,
+        };
+
+        bool InspectYaml(YamlNode value, string prefix) => value switch
+        {
+            YamlMappingNode mapping => mapping.Children.Any(pair => pair.Key is YamlScalarNode key && InspectYaml(pair.Value, Join(prefix, key.Value ?? string.Empty))),
+            YamlSequenceNode sequence => sequence.Children.Any(item => InspectYaml(item, prefix)),
+            YamlScalarNode scalar => IsComponentKey(prefix) && Physical(scalar.Value),
+            _ => false,
+        };
+
+        bool IsComponentKey(string key) => configurationKeys.Contains(key)
+            || Match(key, "(?:^|:)(?:StoreName|StateStoreName|PubSubName|SecretStoreName|ComponentName)$");
+    }
+
+    private static string Join(string prefix, string name) => prefix.Length == 0 ? name : prefix + ":" + name;
+
+    private static bool Physical(string? value) => !string.IsNullOrWhiteSpace(value)
+        && value is not "null" and not "~"
+        && !Match(value, @"^(?:\$\{[A-Za-z_][A-Za-z0-9_]*\}|\$\([A-Za-z_][A-Za-z0-9_:]*\)|\{\{\s*[A-Za-z_][A-Za-z0-9_.:]*\s*\}\})$");
 
     private static bool Match(string content, string pattern) => Regex.IsMatch(content, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout);
 }
