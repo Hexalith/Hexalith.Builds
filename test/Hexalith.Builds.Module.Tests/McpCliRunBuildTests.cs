@@ -117,6 +117,8 @@ public sealed class McpCliRunBuildTests
             refusal.Diagnostic.Message.ShouldContain("'Hexalith.McpCli'");
             refusal.Diagnostic.Message.ShouldContain(expected);
             refusal.Diagnostic.Message.ShouldNotContain(sibling);
+            refusal.Diagnostic.Message.ShouldContain(state == "unmapped" ? "selects no direct" : "is missing or resolves outside the checkout");
+            refusal.Diagnostic.Hint.ShouldNotBeNull().ShouldContain("lies inside the checkout rather than behind a link");
             PlatformManifestCommand.McpCliProjectPath(mapping).ShouldBe(expected);
         }
         finally
@@ -197,6 +199,53 @@ public sealed class McpCliRunBuildTests
         refusal.Message.ShouldContain($"McpCli '{project}' could not build");
         refusal.Message.ShouldContain("The sibling McpCli checkout was built.");
         File.Exists(PlatformManifestCommand.McpCliToolPath(workspace)).ShouldBeFalse();
+    }
+
+    /// <summary>Refuses an unavailable or changed pinned authority before the McpCli build process starts.</summary>
+    /// <param name="drift">The missing or altered authority.</param>
+    /// <returns>The refusal assertion.</returns>
+    /// <exception cref="InvalidOperationException">The fixture requests an unknown drift.</exception>
+    [Theory]
+    [InlineData("catalog")]
+    [InlineData("snapshot")]
+    [InlineData("bytes")]
+    [InlineData("mapping")]
+    [InlineData("pin")]
+    [InlineData("mode")]
+    [InlineData("path")]
+    public async Task McpCliBuildRefusesMissingOrAlteredCatalogAuthorityAsync(string drift)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        SourceMapping resolved = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string checkout = Path.Combine(fixture.Checkout, "references", "Hexalith.McpCli");
+        WriteFakeMcpCli(checkout, siblingGuard: false);
+        SourceMapping mapping = resolved with { Entries = [.. resolved.Entries, new SourceMappingEntry("Hexalith.McpCli", "source", checkout)] };
+        string workspace = Path.Combine(fixture.Directory, "mcpcli-refused-run");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string project = Path.Combine(checkout, "src", "Hexalith.McpCli", "Hexalith.McpCli.csproj");
+        string pinnedCatalog = Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props");
+        string snapshotPath = Path.Combine(workspace, "source-mapping", "catalog-versions.json");
+        switch (drift)
+        {
+            case "catalog": File.Delete(pinnedCatalog); break;
+            case "snapshot": File.Delete(snapshotPath); break;
+            case "bytes": await File.AppendAllTextAsync(pinnedCatalog, "<!-- changed -->", TestContext.Current.CancellationToken).ConfigureAwait(true); break;
+            case "mapping": mapping = mapping with { ActiveModule = "foreign" }; break;
+            case "pin": mapping = mapping with { PlatformIdentity = mapping.PlatformIdentity! with { CatalogCommit = new string('a', 40) } }; break;
+            case "mode": mapping = mapping with { Mode = WorkspaceMode.Package }; break;
+            case "path":
+                System.Text.Json.Nodes.JsonNode snapshot = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(snapshotPath, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+                snapshot["PinnedFiles"]!["invalid\0path"] = "malformed";
+                await File.WriteAllTextAsync(snapshotPath, snapshot.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                break;
+            default: throw new InvalidOperationException("Unknown authority drift.");
+        }
+
+        InvalidOperationException refusal = await Should.ThrowAsync<InvalidOperationException>(() => PlatformManifestCommand.BuildMcpCliAsync(mapping, workspace, null, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        refusal.Message.ShouldStartWith($"McpCli '{project}' cannot use");
+        refusal.Message.ShouldContain(drift == "catalog" ? "was not materialized" : "cannot use its pinned catalog");
+        Directory.Exists(Path.Combine(workspace, "tools")).ShouldBeFalse();
     }
 
     /// <summary>Verifies the McpCli declaration shape validates, and an MCP interface on it is rejected.</summary>

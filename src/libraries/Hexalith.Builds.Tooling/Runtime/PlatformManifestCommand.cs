@@ -211,7 +211,7 @@ public static class PlatformManifestCommand
         }
         else if (!RepositoryPathResolver.TryResolveExistingFile(entry.Path, Path.GetRelativePath(entry.Path, project), out _))
         {
-            reason = "the mapped checkout is uninitialized or has no McpCli tool project";
+            reason = "the mapped checkout is uninitialized, or its McpCli tool project is missing or resolves outside the checkout";
         }
         else
         {
@@ -224,7 +224,7 @@ public static class PlatformManifestCommand
             ToolFailureCategory.PrerequisiteUnavailable,
             $"Required source '{_mcpCliRepository}' at '{project}' is unavailable: {reason}. No other McpCli checkout is used.",
             project,
-            "Initialize the direct references/Hexalith.McpCli checkout without --recursive, then retry; no resources were started."));
+            "Initialize the direct references/Hexalith.McpCli checkout without --recursive, at a commit whose src/Hexalith.McpCli/Hexalith.McpCli.csproj lies inside the checkout rather than behind a link, then retry; no resources were started."));
     }
 
     private static string McpCliArtifactsPath(string workspace) => Path.Combine(workspace, "tools", McpCliModule);

@@ -270,9 +270,11 @@ apply to that project. Equivalent exact NuGet ranges are accepted before
 restore; the guard checks the resolved package version after restore.
 
 McpCli is a short-lived tool, not a server, so its v2 declaration lists no
-server. When the active v2 module is `mcpcli`, source-mode `run`, `debug` and
-`test` build `src/Hexalith.McpCli/Hexalith.McpCli.csproj` under the mapped
+server. When the active v2 module is `mcpcli`, source-mode `run` and `debug`
+build `src/Hexalith.McpCli/Hexalith.McpCli.csproj` under the mapped
 `HexalithMcpCliRoot` before the Platform model and before any resource starts.
+`test` needs `--profile` naming a declared test; the McpCli declaration
+declares none, so `test` refuses it (`HXC002`) and builds nothing.
 The build uses Debug, the run's pinned catalog with transitive pinning and
 `--artifacts-path <run workspace>/tools/mcpcli`. It never packs or publishes,
 and it writes no `bin` or `obj` into the checkout. A ready run reports
