@@ -1,0 +1,87 @@
+{
+  "scope": "independent-debug-source-selection-and-native-report-regressions",
+  "approvedTupleQualification": false,
+  "livePersistedQualification": false,
+  "ownerAcceptance": false,
+  "sourceFiles": 364,
+  "sourceUnchangedDuringBuildAndTests": true,
+  "binaryFiles": 650,
+  "binariesUnchangedDuringTests": true,
+  "selectedClasses": [
+    "ReadsProfileSelectionTests",
+    "ModuleTestSelectionTests",
+    "NativeTestExecutorTests",
+    "NativeTestReportLoaderTests",
+    "PersistedProfileNativeTestsTests",
+    "NativeTestReportRedactorTests"
+  ],
+  "nativeExitCode": 0,
+  "testAssembly": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.Tests.dll",
+  "reportPath": "evidence/g4/p0-resume-20261020/native-source-regressions.trx",
+  "reportSha256": "1b796a9bafb56700d57f064c0a04984762ddf7ef23df8a8e0e2d23debcb0eaa3",
+  "nativeOutcome": "Completed",
+  "counters": {
+    "total": "106",
+    "executed": "106",
+    "passed": "106",
+    "failed": "0",
+    "error": "0",
+    "timeout": "0",
+    "aborted": "0",
+    "inconclusive": "0",
+    "passedButRunAborted": "0",
+    "notRunnable": "0",
+    "notExecuted": "0",
+    "disconnected": "0",
+    "warning": "0",
+    "completed": "0",
+    "inProgress": "0",
+    "pending": "0"
+  },
+  "resultsByOutcome": {
+    "Passed": 106,
+    "Failed": 0,
+    "NotExecuted": 0
+  },
+  "redaction": {
+    "originalReportSha256": "ae3e894488e1770662aaea636d5a8139d875d87fe3b4f4467bbf9401c4420ec1",
+    "retainedReportSha256": "1b796a9bafb56700d57f064c0a04984762ddf7ef23df8a8e0e2d23debcb0eaa3",
+    "policy": "Remove display-name argument text, machine/user/path metadata and captured output; preserve native IDs, method identities, outcomes, timings and counters.",
+    "rawReportRetained": false,
+    "nativeSemanticsUnchanged": true,
+    "argumentAttributesRedacted": 160,
+    "identityAttributesRemoved": 107,
+    "outputElementsRemoved": 0,
+    "script": "redact-native-report.py",
+    "scriptSha256": "bdc1fbb4475147dedfd1edbec36e7051bad28b46c5cd03c99d20fdd728539580"
+  },
+  "casesPerClass": {
+    "PersistedProfileNativeTestsTests": 14,
+    "NativeTestReportRedactorTests": 2,
+    "NativeTestReportLoaderTests": 19,
+    "NativeTestExecutorTests": 16,
+    "ModuleTestSelectionTests": 42,
+    "ReadsProfileSelectionTests": 13
+  },
+  "g6Audit": {
+    "commandExitCode": 0,
+    "artifact": "g6-current-audit.json",
+    "tupleApproved": false,
+    "issueCount": 56,
+    "scope": "read-only-audit-not-runtime-qualification"
+  },
+  "inputs": {
+    "buildsRevision": "b435f2e3b3892e03f69322d24de6003b0baf7a7d",
+    "repositoryState": "dirty",
+    "dotnetSdk": "10.0.402",
+    "os": "Linux",
+    "architecture": "x86_64",
+    "catalogObservations": {
+      "eventStore": "3.126.0",
+      "frontComposer": "4.7.0",
+      "aspireHosting": "13.6.1",
+      "communityToolkitAspireDapr": "13.6.1-beta.935"
+    },
+    "note": "Catalog observations and independently tested source inputs are not an approved P0 execution tuple."
+  }
+}

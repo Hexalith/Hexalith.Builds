@@ -1,0 +1,184 @@
+{
+  "scope": "independent-source-regression",
+  "commands": [
+    {
+      "name": "debug-build",
+      "argv": [
+        "dotnet",
+        "build",
+        "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj",
+        "--configuration",
+        "Debug",
+        "-m:1",
+        "--nologo"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds",
+      "startedUtc": "2026-10-20T03:10:10.722457+00:00",
+      "completedUtc": "2026-10-20T03:11:55.302147+00:00",
+      "exitCode": 0,
+      "stdout": "debug-build.stdout.txt",
+      "stderr": "debug-build.stderr.txt",
+      "disposition": "interrupted-unqualified",
+      "interruption": "Sent SIGTERM to invocation-owned dotnet build PID 355251 after discovering a concurrent shared-output build; process returned 0 without a build summary, so it is not passing evidence."
+    },
+    {
+      "name": "isolated-debug-build",
+      "argv": [
+        "dotnet",
+        "build",
+        "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj",
+        "--configuration",
+        "Debug",
+        "--artifacts-path",
+        "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd",
+        "-p:HexalithG4FixtureArtifacts=/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/fixture/",
+        "-m:1",
+        "--nologo"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds",
+      "startedUtc": "2026-10-20T03:12:22.036454+00:00",
+      "stdout": "isolated-debug-build.stdout.txt",
+      "stderr": "isolated-debug-build.stderr.txt",
+      "status": "finished",
+      "completedUtc": "2026-10-20T03:14:26.098980+00:00",
+      "exitCode": 1
+    },
+    {
+      "name": "isolated-debug-build-retry",
+      "argv": [
+        "dotnet",
+        "build",
+        "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj",
+        "--configuration",
+        "Debug",
+        "--artifacts-path",
+        "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd",
+        "-p:HexalithG4FixtureArtifacts=/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/fixture/",
+        "-m:1",
+        "--nologo"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds",
+      "startedUtc": "2026-10-20T03:14:55.465445+00:00",
+      "completedUtc": "2026-10-20T03:15:54.242235+00:00",
+      "exitCode": 0,
+      "stdout": "isolated-debug-build-retry.stdout.txt",
+      "stderr": "isolated-debug-build-retry.stderr.txt"
+    },
+    {
+      "name": "final-isolated-debug-build",
+      "argv": [
+        "dotnet",
+        "build",
+        "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj",
+        "--configuration",
+        "Debug",
+        "--artifacts-path",
+        "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd",
+        "-p:HexalithG4FixtureArtifacts=/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/fixture/",
+        "-m:1",
+        "--nologo",
+        "--no-restore"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds",
+      "startedUtc": "2026-10-20T03:16:27.346344+00:00",
+      "completedUtc": "2026-10-20T03:16:47.835368+00:00",
+      "exitCode": 0,
+      "stdout": "final-isolated-debug-build.stdout.txt",
+      "stderr": "final-isolated-debug-build.stderr.txt"
+    },
+    {
+      "name": "native-source-regressions",
+      "argv": [
+        "dotnet",
+        "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.Tests.dll",
+        "-noLogo",
+        "-noColor",
+        "-trx",
+        "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/evidence/g4/p0-resume-20261020/native-source-regressions.trx",
+        "-class",
+        "*ReadsProfileSelectionTests",
+        "-class",
+        "*ModuleTestSelectionTests",
+        "-class",
+        "*NativeTestExecutorTests",
+        "-class",
+        "*NativeTestReportLoaderTests",
+        "-class",
+        "*PersistedProfileNativeTestsTests",
+        "-class",
+        "*NativeTestReportRedactorTests"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds",
+      "startedUtc": "2026-10-20T03:16:48.059092+00:00",
+      "completedUtc": "2026-10-20T03:16:54.816045+00:00",
+      "exitCode": 0,
+      "stdout": "native-source-regressions.stdout.txt",
+      "stderr": "native-source-regressions.stderr.txt",
+      "environmentOverrides": {
+        "TMPDIR": "/var/tmp/hexalith-p0-source-b_yd6sec",
+        "HEXALITH_G4_LIVE": null
+      }
+    },
+    {
+      "name": "g6-current-audit",
+      "argv": [
+        "python3",
+        "Tools/g6_current.py",
+        "audit",
+        "--workspace",
+        "/home/administrator/projects/hexalith/projects",
+        "--policy",
+        "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/Tools/g6-current-policy.json",
+        "--out",
+        "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/evidence/g4/p0-resume-20261020/g6-current-audit.json"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds",
+      "startedUtc": "2026-10-20T03:17:10.931686+00:00",
+      "completedUtc": "2026-10-20T03:17:22.449736+00:00",
+      "exitCode": 0,
+      "stdout": "g6-current-audit.stdout.txt",
+      "stderr": "g6-current-audit.stderr.txt",
+      "scope": "read-only-audit-no-live-qualifier"
+    },
+    {
+      "name": "metadata-only-native-report-retention",
+      "argv": [
+        "python3",
+        "evidence/g4/p0-resume-20261020/redact-native-report.py"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds",
+      "exitCode": 0,
+      "recordedUtc": "2026-10-20T03:18:57.754373+00:00",
+      "resultArtifact": "native-regressions.binding.json#/redaction",
+      "stdoutCapture": "not separately retained; result fields are in the redaction binding"
+    },
+    {
+      "name": "builds-diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds",
+      "startedUtc": "2026-10-20T03:20:57.648835+00:00",
+      "completedUtc": "2026-10-20T03:20:57.653738+00:00",
+      "exitCode": 0,
+      "stdout": "builds-diff-check.stdout.txt",
+      "stderr": "builds-diff-check.stderr.txt"
+    },
+    {
+      "name": "projects-diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/projects",
+      "startedUtc": "2026-10-20T03:20:57.653758+00:00",
+      "completedUtc": "2026-10-20T03:20:57.721679+00:00",
+      "exitCode": 0,
+      "stdout": "projects-diff-check.stdout.txt",
+      "stderr": "projects-diff-check.stderr.txt"
+    }
+  ]
+}

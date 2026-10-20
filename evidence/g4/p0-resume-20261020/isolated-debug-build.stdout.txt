@@ -1,0 +1,34 @@
+  Determining projects to restore...
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/Hexalith.Builds.Module.UiHost.csproj (in 492 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj (in 481 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj (in 483 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj (in 485 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.csproj (in 480 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.csproj (in 479 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj (in 494 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj (in 482 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.csproj (in 480 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Inventory/P0Fixture.Inventory.csproj (in 482 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj (in 588 ms).
+  Restored /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj (in 583 ms).
+  P0Fixture.Inventory -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.dll
+  P0Fixture.Inventory.Descriptor -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll
+  P0Fixture.Orders -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/P0Fixture.Orders.dll
+  P0Fixture.Orders.Descriptor -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll
+  P0Fixture.Ui -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll
+  P0Fixture.Ui.Descriptor -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.0, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Tooling/debug/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/Hexalith.Builds.Module.Cli.dll
+  Hexalith.Builds.Module.EventStoreHost -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.Builds.Module.EventStoreHost.dll
+  Hexalith.Builds.Module.UiHost -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Hexalith.Builds.Module.UiHost.dll
+  Hexalith.Builds.Module.AppHost -> /home/administrator/projects/hexalith/projects/references/Hexalith.Builds/artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Hexalith.Builds.Module.AppHost.dll
+/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/ReadsProfileSelectionTests.cs(56,25): error SA1117: The parameters should all be placed on the same line or each parameter should be placed on its own line (https://dotnetanalyzers.github.io/StyleCopAnalyzers/SA1117.html) [/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj]
+
+Build FAILED.
+
+/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/ReadsProfileSelectionTests.cs(56,25): error SA1117: The parameters should all be placed on the same line or each parameter should be placed on its own line (https://dotnetanalyzers.github.io/StyleCopAnalyzers/SA1117.html) [/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:02:03.77

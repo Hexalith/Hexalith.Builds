@@ -1,0 +1,8 @@
+The '-trx' switch has been deprecated in favor of '-result-trx' and will be removed in the next major version
+
+  Discovering: Hexalith.Builds.Module.Tests
+  Discovered:  Hexalith.Builds.Module.Tests
+  Starting:    Hexalith.Builds.Module.Tests
+  Finished:    Hexalith.Builds.Module.Tests (ID = 'b079f7c6cd536e8eea3523b0ad3766603279fe0ca0da8b5ec7317504fc278db1')
+=== TEST EXECUTION SUMMARY ===
+   Hexalith.Builds.Module.Tests  Total: 106, Errors: 0, Failed: 0, Skipped: 0, Not Run: 0, Time: 6.221s

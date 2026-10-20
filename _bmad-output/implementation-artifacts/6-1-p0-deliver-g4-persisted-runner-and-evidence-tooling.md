@@ -140,6 +140,61 @@ so that Projects Story 6.1 and later consumers can prove supported-path behavior
 
 ## Tasks / Subtasks
 
+### Active continuation — 2026-10-20
+
+The user's current instruction resumes this existing work item and separately
+authorizes Projects consumer-adoption changes. Preserve every prior change and
+historical packet. Do not commit, stage, publish, select package versions, infer
+owner acceptance, or create a replacement runner/work item.
+
+This dispatch's implementable scope is profile-selection reconciliation and
+honest native regression evidence. Read the Projects handoff and continuation
+spec at `../../_bmad-output/implementation-artifacts/` relative to this repository
+root, plus the Projects `6-4-resolution-evidence-contracts.md` section on G-4.
+The owning Builds checkout at resumption is
+`b435f2e3b3892e03f69322d24de6003b0baf7a7d`; retain the original authorization
+`baseline_commit`. Projects has existing uncommitted Story 6.4 prerequisite
+documents; preserve them and do not edit those unrelated files.
+
+- [x] Reconcile the historical reads/filter example in this work item and the
+  Projects handoff with the existing platform-v2 contract: `tests` declares one
+  unique `reads` entry and its native executor/mode; select it with `--profile
+  reads` and no `--filter`. Explain source/package mode declarations accurately.
+  Reuse existing manifest validators, executor, fixtures and native reporting.
+- [x] Add focused regression coverage in `test/Hexalith.Builds.Module.Tests/`
+  for named reads selection, unsupported filters before startup, and fail-closed
+  absent/ambiguous/mode-mismatched selection. Reuse existing coverage when it
+  already proves a condition. Do not present generated inner fixture TRX claims
+  as actual persisted or product results.
+- [x] Run the narrow relevant Debug source test project using its real native
+  xUnit report. Retain exact commands, actual totals, reports and hashes under
+  `evidence/g4/p0-resume-20261020/`, explicitly distinguishing source regression
+  evidence from approved-tuple live/package qualification and owner acceptance.
+  Record any blocker exactly; do not weaken gates or change dependency pins.
+- [x] Update the existing work item and Projects P0 handoff with measured status
+  and remaining dependencies. Projects tool/manifest adoption and all live
+  qualification require the selected exact package/runtime tuple first.
+
+The records located so far select tools `4.29.1` / EventStore `3.110.0` /
+Builds `21ce044ab465ccb2adab58b3d66e394ffbecf3c2`, but mark current P1R
+usability false. Current catalogs (`3.126.0`) are observations, not selection.
+The later `3.125.1` Projects qualification handoff remains draft. Read-only
+tracing also found the EventStore-local `spec-6-1-p1r-31251-published-qualification.md`,
+approved for execution on 2026-10-18. It selects five EventStore `3.125.1`
+packages, tagged source `55432c50d4b6f1666b4bd6d4a60bfc263b2d0e0b`, tag
+Builds `4629ff2d3bd66376b29a553663c241d3a7b87853` and Dapr `1.18.2`
+for P1R measurement only. It expressly keeps P1R unusable, decisions pending
+and Projects/Builds pins unchanged. This is newer execution authority, not
+a selected P0 tool pair or accepted matching G-6 result. No replacement P0
+approval record was located; no new selection is inferred.
+Until that record exists, do not silently advance consumer pins, manufacture a
+runnable manifest with unsupported packages, or run live qualification as if
+prerequisites passed.
+Independent source contract tests are allowed and must state their actual SDK
+and catalog inputs. Full P0 Stages 6–7 remain open. Missing Story 6.4 handlers
+do not prevent runner capability qualification once its own tuple is authorized;
+final Story 6.4 persisted scenarios run only after those handlers exist.
+
 ### Approved remaining acceptance stages — 2026-08-01 rebaseline
 
 **2026-09-22 resumption:** Projects accepted P1R through
@@ -455,7 +510,7 @@ dotnet tool run hexalith-module test --manifest module/hexalith-projects.module.
 dotnet tool run hexalith-evidence validate _bmad-output/planning-artifacts/implementation-readiness-traceability-matrix.yaml
 ```
 
-Story 6.1 later narrows the test command to `--profile reads --filter Story=6.1`. P0 must support the filter/profile contract but must not fabricate Story 6.1 results.
+The current platform-v2 contract selects Story 6.1 reads with `--profile reads` and no `--filter`. Declare exactly one matching entry in the module's `tests` array with `name: "reads"`, native `executor: "vstest"` or `"mtp"` (xUnit v3), its module-owned `.csproj` entry, `reportFormat: "trx"`, finite execution/stop timeouts, and `mode: "source"` or `"package"`. The command defaults to source; `--mode package` requires a declaration whose mode is package. An installed tool can run either mode: package installation does not select package execution. Two declarations named reads, even with different modes, are ambiguous; use one per invocation manifest. The historical filter example is superseded for this continuation: platform-v2 rejects every supplied filter with usage exit 1/HXC002 before startup. Optional filter orchestration in AC 6 is not qualified by these source regressions. Missing or ambiguous selection and a mode mismatch are nonpassing. Projects adoption and actual Story 6.1 reports still require the approved exact package/runtime tuple and product assertions.
 
 ### Existing Builds Behavior to Preserve
 
@@ -2494,6 +2549,49 @@ G-6 result bind the same immutable source/package tuple. Any tuple other than
 `3.110.0` / `21ce044` / `4.29.1` requires renegotiating the Projects spec's
 frozen target decision.
 
+### 2026-10-20 reads selection and native source regression continuation
+
+The active continuation's four scoped tasks are complete. P0 remains
+**in-progress**; Stages 6–7 and the full acceptance criteria remain open.
+No runner, schema, dependency pin, release or consumer manifest changed.
+`ReadsProfileSelectionTests.cs` adds 13 public-command cases over the existing
+platform-v2 validator/selector: four native executor/mode selections and nine
+missing, absent, duplicate, ambiguous, filtered or mode-mismatched refusals.
+Matching selections reach an intentionally unavailable startup seam; invalid
+ones never reach startup. These tests start no platform infrastructure and
+produce no product or persisted pass claims. Existing selection, executor,
+report-loader, profile and redaction regressions are reused.
+
+The evidence is retained at `evidence/g4/p0-resume-20261020/`. Exact argv,
+working directories, environment overrides, command exits and streams are in
+`commands.json` and `observation-commands.json`.
+
+| Verification | Measured result |
+| --- | --- |
+| Isolated Module test project Debug build, pinned SDK `10.0.402`, unchanged catalog | Final exit `0`, zero warnings/errors. EventStore `3.126.0`, FrontComposer `4.7.0`, Aspire packages `13.6.1` and Toolkit `13.6.1-beta.935` are source-build observations, not a selected P0 tuple. |
+| Actual outer xUnit native execution, six focused classes | Exit `0`; **106/106 passed**, zero failures/skips/not-run; native outcome `Completed`. The 13 new reads cases passed. This is a focused assembly run, not the full solution or full Module suite. |
+| Final input binding | 364 corrected source inputs unchanged before/after final build and tests; 650 isolated binary/runtime metadata files unchanged across tests. The initial pre-formatting snapshot stays historical. |
+| Retained native report | `native-source-regressions.trx`, SHA-256 `1b796a9bafb56700d57f064c0a04984762ddf7ef23df8a8e0e2d23debcb0eaa3`. Argument text and host/output metadata were redacted from actual xUnit output; original byte hash `ae3e894488e1770662aaea636d5a8139d875d87fe3b4f4467bbf9401c4420ec1`, transformation and unchanged native IDs/methods/outcomes/timings/counters are bound in `native-regressions.binding.json`. No raw seeded credential labels remain. Generated inner fixture reports are synthetic test inputs and supply no persisted/product credit. |
+| Fresh read-only current G-6 audit | Command exit `0` means audit completed; `tupleApproved: false` with **56 issues**, including missing restored graphs, Aspire `13.6.1` package/AppHost drift and policy differences for SDK `10.0.402`, Toolkit `13.6.1-beta.935` and Fluent UI `5.0.1`. No qualifier or runtime lane ran. |
+
+The first shared-output build was deliberately interrupted after discovering
+an unrelated concurrent build. Its process returned `0` without a build
+summary; it is explicitly unqualified. A unique ignored artifacts directory
+then isolated main and fixture outputs. The first isolated build failed
+`SA1117` in the new test; the corrected retry and final hash-bound build passed.
+All attempts remain retained; no analyzer or audit gate was disabled.
+
+The reads/filter text and Projects handoff now describe declared native
+`reads` selection with no filter and the actual source/package mode rule.
+Historical tools `4.29.1` come from a source revision with no platform-v2
+contract; this read-only source observation is not fresh remote package
+qualification. The newer EventStore `3.125.1` approval is P1R execution-only,
+not P0 package selection or acceptance. Current usable P1R, an approved matching
+G-6 tuple and current runtime proof, the exact P0 tool/runtime selection,
+Projects adoption, clean source/package/live qualification, rollback and
+three dated P0 owner decisions remain outstanding. Missing Story 6.4 handlers
+are a later product-scenario dependency, not a reason to invent runner results.
+
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
@@ -2618,3 +2716,5 @@ frozen target decision.
   - Committed on local `main` (not pushed) after moving superseded evidence out of the tree.
 - 2026-09-25: Stage 6 readiness repair (not pushed). EventStore `3.108.1` corpus, CR-only renormalization of 54 C# blobs, `Host.csproj.template` shims packed through a pack-time copy, consumer-evidence audit refresh, and a clean-tree `0.0.0-stage5.8` requalification (gate, live campaign, native lane). P1R and G-6 remain open.
 - 2026-10-06: Recorded the prerequisite blocker. Current P1R usability is false and its remediation is open. Current G-6 is failed and its packet is pending. Builds/EventStore drifted to `ba4ca78`/`3.113.0`. Stages 6–7 stay open; no live run, acceptance record, or owner decision.
+
+- 2026-10-20: Reconciled platform-v2 reads/no-filter/mode selection, added 13 focused regressions and retained 106/106 actual native source results with corrected source/binary hashes and metadata-only reporting. Fresh read-only G-6 audit records tupleApproved false/56 issues; tuple selection, live/package qualification, consumer adoption and full P0 acceptance stay open.

@@ -1,0 +1,16 @@
+{
+  "scope": "source-regression-artifact-verification",
+  "reportHashMatches": true,
+  "actualNativeTotal": 106,
+  "actualNativePassed": 106,
+  "actualNativeFailed": 0,
+  "actualNativeSkipped": 0,
+  "actualNativeNotRun": 0,
+  "sourceHashesVerified": 364,
+  "binaryHashesVerified": 650,
+  "g6TupleApproved": false,
+  "g6IssueCount": 56,
+  "newSourceCrlfAndWhitespaceValid": true,
+  "documentationWhitespaceValid": true,
+  "acceptanceClaimed": false
+}

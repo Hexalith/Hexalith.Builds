@@ -1,0 +1,3254 @@
+{
+  "files": [
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Aspire.Hosting.AppHost.dll",
+      "sha256": "b62a572a1cb22f2e5f5a249dcbafa414c6b5882e2cd0442334cae6fcb4d2e990",
+      "size": 27488
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Aspire.Hosting.Keycloak.dll",
+      "sha256": "dcaf7f574f2c0ca76e0cc691327c77cbd3a7df3654ddac3a7c570b626377dfef",
+      "size": 38752
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Aspire.Hosting.Redis.dll",
+      "sha256": "97a1b4eefca84bc08ab28a9c424fbfe508b59c4cd6cb5c15180cb92e6e7dd2bb",
+      "size": 70968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Aspire.Hosting.dll",
+      "sha256": "30d89e1adbccb28820d60f060ae87071d39ef99fe2bd04029ca736c660766f0e",
+      "size": 3363128
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/CommunityToolkit.Aspire.Hosting.Dapr.dll",
+      "sha256": "7763ba9497ce1e91100a694a265daec1c7ec069094f8bcf74cc1a8f15b8b0996",
+      "size": 137544
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Fractions.dll",
+      "sha256": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf",
+      "size": 22016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Google.Protobuf.dll",
+      "sha256": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73",
+      "size": 501760
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Grpc.AspNetCore.Server.ClientFactory.dll",
+      "sha256": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3",
+      "size": 21504
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Grpc.AspNetCore.Server.dll",
+      "sha256": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2",
+      "size": 157184
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Grpc.Core.Api.dll",
+      "sha256": "16b1ff898b9a2c1ffac0e22035c8280728967e7041bfe8a382bcb1f99a9a530b",
+      "size": 70296
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Grpc.Net.Client.dll",
+      "sha256": "71454959f95469ea1a4abfbbb2ccb71487f6bfe50714277e73d2f7665c89244e",
+      "size": 360088
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Grpc.Net.ClientFactory.dll",
+      "sha256": "52a981845704edf969120f10e6a0a65fce858adf45412b5c10571a1b07222380",
+      "size": 54936
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Grpc.Net.Common.dll",
+      "sha256": "2fe0acf1042d43af95cc33f610a5c7d4d70ae65e3d5f4ce8707a3e2bf95df823",
+      "size": 22168
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/HealthChecks.Redis.dll",
+      "sha256": "3ce9e611ecd44219f4bed786d665712759583b87a1bb9228355e9161ce7ffa52",
+      "size": 22528
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/HealthChecks.Uris.dll",
+      "sha256": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708",
+      "size": 29184
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Hex1b.dll",
+      "sha256": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc",
+      "size": 7401984
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Hexalith.Builds.Module.AppHost.deps.json",
+      "sha256": "1f442e294c77b67e26e70224a9fd68b35aa30e23f9ac461f9956ec64abcd017c",
+      "size": 45752
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Hexalith.Builds.Module.AppHost.dll",
+      "sha256": "b596353969634bb199711a9d10d15dc2dcd52aa911e3827762a10858812aac53",
+      "size": 98304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Hexalith.Builds.Module.AppHost.runtimeconfig.json",
+      "sha256": "dd72603f49fc74ad956017904a955b25d7043d65291c0c7d033a2064e141622a",
+      "size": 369
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Hexalith.Builds.Tooling.dll",
+      "sha256": "5e5acd1a71a5e547446ed687cf7496dfb89125d669f43a982c947a2fae8dde7f",
+      "size": 1046016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Hexalith.EventStore.Aspire.dll",
+      "sha256": "0bcb55b6f936ce11b6a5cf8323f7827a2f886bf9a4e88c5e59a157cc47340e0a",
+      "size": 69120
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Humanizer.dll",
+      "sha256": "2769ed8265b691a5482c72506ed274dc52446fa1641997a8c12c66f5b9263d39",
+      "size": 643760
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Json.More.dll",
+      "sha256": "80b6cd50331fa2ded4fbacdbf80dcedd2b142dee679df227c30299d2a3c3840f",
+      "size": 54272
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/JsonPointer.Net.dll",
+      "sha256": "4d7ce7739bc0bf8df69778f4545c390a6c06fd11c8f583ae166f0fdc6e9c3123",
+      "size": 25600
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/JsonSchema.Net.dll",
+      "sha256": "5eca1875cdf54faf841fb14353b7f3cbbb345e26de6458ff01888a1c0e578fa2",
+      "size": 294400
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/KubernetesClient.dll",
+      "sha256": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce",
+      "size": 10680320
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/MessagePack.Annotations.dll",
+      "sha256": "1e51e087987bc857e55863eb4e986c2f2f0bf17230eb2c243e5dc25c34e7cf86",
+      "size": 18432
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/MessagePack.dll",
+      "sha256": "a7f8d30a8e6f4a1b445bf6752621a4a7b1f4ff11f5d4dc62dba0d8d7d6995e36",
+      "size": 385024
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Microsoft.Extensions.AI.Abstractions.dll",
+      "sha256": "bcc8f693103eb00505179f154b1b3a996b85d067e112facd724fd9d695f17a5e",
+      "size": 672056
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Microsoft.NET.StringTools.dll",
+      "sha256": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0",
+      "size": 33552
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Microsoft.VisualStudio.Threading.dll",
+      "sha256": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426",
+      "size": 441888
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Microsoft.VisualStudio.Validation.dll",
+      "sha256": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c",
+      "size": 37392
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Microsoft.Win32.SystemEvents.dll",
+      "sha256": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850",
+      "size": 26224
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ModelContextProtocol.Core.dll",
+      "sha256": "b1752096ea9d2f38ba88e467f04aea43fb300d9a54d881c165f62b69028ee3ab",
+      "size": 1296896
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ModelContextProtocol.dll",
+      "sha256": "8cd6f626c8d6a0a5ff3e154789d3fcde2b1d66a595c0ef0198e092c2c30fe93a",
+      "size": 91136
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Nerdbank.MessagePack.dll",
+      "sha256": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa",
+      "size": 641024
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Nerdbank.Streams.dll",
+      "sha256": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872",
+      "size": 222048
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Newtonsoft.Json.dll",
+      "sha256": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+      "size": 723368
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/NuGet.Versioning.dll",
+      "sha256": "fc2f75a7a5f3be9b4c3dcfc21644b871bb5a41ada8615c92d778713d2a310670",
+      "size": 62264
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+      "sha256": "d9248458b433d3317f3618b5d9fa9d776bd88a78220af2faab06f6416208094b",
+      "size": 24576
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/OpenTelemetry.Api.dll",
+      "sha256": "43a7484269df9efae3a063198c42683a631d90c278940ee3cc11435719481ced",
+      "size": 83968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+      "sha256": "02a75ffefd0ca9f79043af39c73d44e3773a03dca8a9eaa8c49d465197bf6b45",
+      "size": 195072
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/OpenTelemetry.Extensions.Hosting.dll",
+      "sha256": "617ca46b1297625de495f3e5a903701c19bef0f727de2e46c60c3246f898cb5d",
+      "size": 15872
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/OpenTelemetry.dll",
+      "sha256": "b780e5e7ec6b730b3207b5921395fe616070f13d0b0e63ad662131be4703a30b",
+      "size": 338944
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Polly.Core.dll",
+      "sha256": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a",
+      "size": 223136
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/PolyType.dll",
+      "sha256": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968",
+      "size": 323072
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/QRCoder.dll",
+      "sha256": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a",
+      "size": 195584
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/RESPite.dll",
+      "sha256": "ec60961494a640b0faff3447afe14c90f5bd27e53f5ab0b4284b34cae717f4fa",
+      "size": 116736
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/Semver.dll",
+      "sha256": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f",
+      "size": 72704
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/StackExchange.Redis.dll",
+      "sha256": "e14460fe50cd699b34c75b9a8b10cdb79c2ed68f4088879afa2e073b7afba502",
+      "size": 2349056
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/StreamJsonRpc.dll",
+      "sha256": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5",
+      "size": 647048
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/System.Drawing.Common.dll",
+      "sha256": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f",
+      "size": 175216
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/System.IO.Hashing.dll",
+      "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+      "size": 56104
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/YamlDotNet.dll",
+      "sha256": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a",
+      "size": 300032
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/cs/Aspire.Hosting.resources.dll",
+      "sha256": "e9f1a83a61b7f47da725de981cd9b5327ff64ad94c97feeb85a315d702bf8c9e",
+      "size": 26424
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/cs/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "53fa0540b7787d2702df6526dd9df68b1a44575c66ff007f3e11b1e2b528330e",
+      "size": 17936
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/cs/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "830b54077b4f3febe75ed87aa163eb49fb58362c61be5ca26cf42d4e13c51f3c",
+      "size": 14880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/cs/StreamJsonRpc.resources.dll",
+      "sha256": "5115a8c09c591d1caa16359b5a45eccece63d9c337e703d89c05a69264ba291b",
+      "size": 25944
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/de/Aspire.Hosting.resources.dll",
+      "sha256": "35f600ff04d2f4a2dad22d56eea9452ad3b58ec3b51e1635e44d53a97c2e72d9",
+      "size": 26424
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/de/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "0a68bd16faed213eb7bf17025b25125c6aaee5b86a545449afe297632a503853",
+      "size": 18448
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/de/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "fd7edef2b3f30903f2c287c49d62cb3394f9656fd82ff1c98eb122ad62a04a56",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/de/StreamJsonRpc.resources.dll",
+      "sha256": "01e2c454d751b89aba08d4270ca00d8e07fa8af861650ecd704481ce06b87b24",
+      "size": 27016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/es/Aspire.Hosting.resources.dll",
+      "sha256": "f5d81068d45d871db86558500d93ee005ab61aa48b6966e47b6cf8db3999aab4",
+      "size": 26424
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/es/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "7fc33931e5c544e89ce8d767781a729a7be21c60e559294ef693fa249034b066",
+      "size": 18448
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/es/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "c40129bf64177dbfbd79bf977e11d46f2888c20c3e807336a36dac82370f6d83",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/es/StreamJsonRpc.resources.dll",
+      "sha256": "bacf7fadae7361e00f097dcafbe9a4a759f4346f364676389304a688fdb3b636",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/fr/Aspire.Hosting.resources.dll",
+      "sha256": "0c328bef1bc3c845dc25e928c5e43e7b4661bb8bfd9733c1ebf513d28e6b2eb8",
+      "size": 26936
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/fr/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "abe294e2c7ecf00f3632b83f61e19538b8b9531e6289b5d84992bc447f29783e",
+      "size": 18448
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/fr/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "e56fe93ab669c22850389bdb685bbc45317d962849cc683d412bc9e8ad637740",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/fr/StreamJsonRpc.resources.dll",
+      "sha256": "99ee72e2ea1de18367345b83884d0aa8c4192f98f2f3fb6b50bdbbebd6960afc",
+      "size": 26976
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/it/Aspire.Hosting.resources.dll",
+      "sha256": "a2f5e78ba60195cbea00313c6a1c80b0d6fa8ed7c5f6a5b5230004d16e52eb21",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/it/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "c6d1c91560f9914f36ff52d9a2704f44255adfd88a2c57ccd44fce62603667a7",
+      "size": 18448
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/it/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "8918618aaf356bf03333f62507ed4b2511c98850388c3856afe970c41672fae0",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/it/StreamJsonRpc.resources.dll",
+      "sha256": "31741ef214310f03ec256b3dd8643e5d4151c9123bd6994bb8f53381ca348244",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ja/Aspire.Hosting.resources.dll",
+      "sha256": "b5d499561caf6101856a3c1202764623535559b766a991f4663406a9809de9d1",
+      "size": 27448
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ja/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "e375ebb7fe0f6807371dd42f09671b4eafcab6a1464851af68b8fd14494067c9",
+      "size": 18456
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ja/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "89963143a49c629f52776c88715544a8a53b12f1f6c7b4cd6c686d0751ea0d5b",
+      "size": 14880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ja/StreamJsonRpc.resources.dll",
+      "sha256": "36897272170334ea43284e4f7c8f908e170bc1f082e9612528787ca03ae9e7ce",
+      "size": 28512
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ko/Aspire.Hosting.resources.dll",
+      "sha256": "bfadcadd036295703717e95fbf898841fa7e726c865b42bb08cc83e6ba4a1126",
+      "size": 26424
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ko/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "6fda6bb4822f56356cd446ef30750319552780ea28434b741cc35bf3d8111010",
+      "size": 17952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ko/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "a2be5cbddafa74c4d64b6cb46e60a64b151d46056566e3fc39b810e431cf047f",
+      "size": 14880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ko/StreamJsonRpc.resources.dll",
+      "sha256": "53ce6c7e88dd7228d968fc26ff7cbf35bcdc81ee88275ca2325eaf8feffe47bc",
+      "size": 26976
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/pl/Aspire.Hosting.resources.dll",
+      "sha256": "ac558842d06342df5a3f4c530e91534e49cbe6aea107c265cd4eff282a441f8b",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/pl/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "c2d599b82424ac6961d568f411a01e366b359ac3c167ab2fce74c5e2c96c1ca6",
+      "size": 18464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/pl/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "f77bd918ee6d7e3dfade1bbbf192fdd0fcd4f2ceb6296d14775f235f1562aea5",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/pl/StreamJsonRpc.resources.dll",
+      "sha256": "2e3d2bc745170f9b323711bf584b56246a6b9e4235e5e1dcac2ce83b7a9a1e1f",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/pt-BR/Aspire.Hosting.resources.dll",
+      "sha256": "dd0205ccc2bf87d86d5f929b3efd3e1e1da32a60c46cb9b6e2eadccd6b1e9a35",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/pt-BR/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "432ba5ed5c1f37436ec28d4f4b37b622cee3c833bdb01b44b6cf9fe255a445e5",
+      "size": 17952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/pt-BR/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "656bcea3398e47aff8e86741bfb097940b589f52ebca2236ec104129d0d3014d",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/pt-BR/StreamJsonRpc.resources.dll",
+      "sha256": "990e5f544dd810cc9af2921cd4809c45a4c216697d9a5c4bd22d42700f57d8fc",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ru/Aspire.Hosting.resources.dll",
+      "sha256": "bcbeccb2a9c73c25b25f2d8045dd15af51bd80800cd4bb631fb35862a01474cc",
+      "size": 28472
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ru/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "ff177fd4f159895d050fd7a19c4632b8e69792e79ef181f3aa1af9ae6c770f21",
+      "size": 19480
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ru/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "db19d56c8e725fc91182ffc75c3803c5d6ca9f0dc6d99d695cbf4e30acc56fce",
+      "size": 15392
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/ru/StreamJsonRpc.resources.dll",
+      "sha256": "5a32d75f02d6de17cfabe4f1f7fe57191a5549fcc11d5975fe77427826b38dea",
+      "size": 30088
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/runtimes/unix/lib/net6.0/System.Drawing.Common.dll",
+      "sha256": "89ea595ccb1fd1384480c1e30bd487c92af5d06d3b06f295323eff601acd9019",
+      "size": 427112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/runtimes/win/lib/net10.0/System.Diagnostics.EventLog.Messages.dll",
+      "sha256": "8caf8d059ed75d232cdcc63c4d95164029b5dcf5f27cca7abad81f534db1648f",
+      "size": 800552
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/runtimes/win/lib/net6.0/Microsoft.Win32.SystemEvents.dll",
+      "sha256": "142cce4ed8ac9da22d69c38a6f22738abfb22090dc9313e8b58e6f91978e89af",
+      "size": 53352
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/runtimes/win/lib/net6.0/System.Drawing.Common.dll",
+      "sha256": "4d3001697df50cca54f32ed2dbbd1f3f415b48d5d756b1bf9500a43ae9b68da0",
+      "size": 454248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/runtimes/win-arm64/native/conpty.dll",
+      "sha256": "db3d173640b172bafd42d5b541b638a9aeec1c7d0e40dd636bf02822a32c912c",
+      "size": 106336
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/runtimes/win-x64/native/conpty.dll",
+      "sha256": "39fba2713e2495117b1591ae8c32a3b904bea7aa66069cf7815e2844c76d75d8",
+      "size": 109920
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/tr/Aspire.Hosting.resources.dll",
+      "sha256": "92735053ea62008c3afe83986bb2ef6519306d28a28355825bddc965baded1a3",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/tr/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "cfd3afd4bd9b0d7f6f782370ca460f3333bb2ebf7db4977e6d2af22a47b71dd9",
+      "size": 17952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/tr/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "620295974b05a36b268169cd94b39f99848224f7774b9748db014c2a2d027073",
+      "size": 14880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/tr/StreamJsonRpc.resources.dll",
+      "sha256": "1df15719aa69c7915028419f93bdb27cf8814f1ea6455e6d4f23dc110d81f1f1",
+      "size": 25952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/zh-Hans/Aspire.Hosting.resources.dll",
+      "sha256": "1aedc58e2fe22178f96a11a89f30aa6a55fdea3068c0da1c4f073b4081f85ada",
+      "size": 25440
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/zh-Hans/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "ef07ef11562297acd78ee9ec7a21bee4b9fb0f4255794f87ccff0970f9f3ccb4",
+      "size": 16400
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/zh-Hans/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "158f33332fa83a4c01f136482305a1d7d7feffa626fb082d65bfef4a0ce493a3",
+      "size": 14880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/zh-Hans/StreamJsonRpc.resources.dll",
+      "sha256": "0c3a6e2b27cd768f6b94b9ffcd86097811f2be89583bef4f1bb24fd81a18fd47",
+      "size": 24928
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/zh-Hant/Aspire.Hosting.resources.dll",
+      "sha256": "1fd96116c93452026803f1abb72e43c4a46b3d76471745235e302a1e5f01c51a",
+      "size": 25440
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/zh-Hant/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "d0d594d3590ad804b8a9d5f0b23306864c7e8870ce9a445ef6990597d0ad20ab",
+      "size": 17424
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/zh-Hant/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "8a3bffea88dc96fca9c307a9a8843a20fe1c7cafc2534b1cb95d688f07b6dbfd",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.AppHost/debug/zh-Hant/StreamJsonRpc.resources.dll",
+      "sha256": "23e40ffa7c609dbb2b79e8fc38b7097d9d9d9a86f9a03abfd744e5f6bc8330a0",
+      "size": 24968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/Hexalith.Builds.Module.Cli.deps.json",
+      "sha256": "471588a405a5513b075e9e19d94814b7e26adfae985a34d99a2e3173a41490ac",
+      "size": 9496
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/Hexalith.Builds.Module.Cli.dll",
+      "sha256": "2f216164c88d0cbe2c8cda0a3e26e2b984b9d51b683baf7ed29da670cb578d25",
+      "size": 24064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/Hexalith.Builds.Module.Cli.runtimeconfig.json",
+      "sha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+      "size": 259
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/Hexalith.Builds.Tooling.dll",
+      "sha256": "5e5acd1a71a5e547446ed687cf7496dfb89125d669f43a982c947a2fae8dde7f",
+      "size": 1046016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/Humanizer.dll",
+      "sha256": "2769ed8265b691a5482c72506ed274dc52446fa1641997a8c12c66f5b9263d39",
+      "size": 643760
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/Json.More.dll",
+      "sha256": "80b6cd50331fa2ded4fbacdbf80dcedd2b142dee679df227c30299d2a3c3840f",
+      "size": 54272
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/JsonPointer.Net.dll",
+      "sha256": "4d7ce7739bc0bf8df69778f4545c390a6c06fd11c8f583ae166f0fdc6e9c3123",
+      "size": 25600
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/JsonSchema.Net.dll",
+      "sha256": "5eca1875cdf54faf841fb14353b7f3cbbb345e26de6458ff01888a1c0e578fa2",
+      "size": 294400
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+      "sha256": "842fc19802a761e49c65b0e90b2c68bc6868b989145da5ac6ca30b766e2658f2",
+      "size": 66320
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/Microsoft.Extensions.Logging.Abstractions.dll",
+      "sha256": "03e916b9c5f91717b67c790325d4e5dd2debe81d8e403928806ba1d430ea7147",
+      "size": 67384
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/NuGet.Versioning.dll",
+      "sha256": "fc2f75a7a5f3be9b4c3dcfc21644b871bb5a41ada8615c92d778713d2a310670",
+      "size": 62264
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/RESPite.dll",
+      "sha256": "ec60961494a640b0faff3447afe14c90f5bd27e53f5ab0b4284b34cae717f4fa",
+      "size": 116736
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/StackExchange.Redis.dll",
+      "sha256": "e14460fe50cd699b34c75b9a8b10cdb79c2ed68f4088879afa2e073b7afba502",
+      "size": 2349056
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/System.CommandLine.dll",
+      "sha256": "cd7fa6b61988d3151ef5764a59978c3fef9090dc58ef40323cc134aa31bbc410",
+      "size": 151352
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/System.IO.Hashing.dll",
+      "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+      "size": 56104
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/YamlDotNet.dll",
+      "sha256": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a",
+      "size": 300032
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/cs/System.CommandLine.resources.dll",
+      "sha256": "cbdc17ac2fc65ca6fbea34870247700f69d7ab1b8f7134cd664ae4ffb25d83f1",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/de/System.CommandLine.resources.dll",
+      "sha256": "700c70cf9f9da6056f49bc8a2d09f6ffabe4832cd79b67d74f5a60e7b46150cb",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/es/System.CommandLine.resources.dll",
+      "sha256": "14baee330015d955cc6d76027c34cc7d6b970563bdc1605cb7d10034156b6430",
+      "size": 18784
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/fr/System.CommandLine.resources.dll",
+      "sha256": "e5f6c5440095f9b8da3622cc463711cc5ddb8e531d205928c66dfd953ecf4fbb",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/it/System.CommandLine.resources.dll",
+      "sha256": "aa50352d5f620a367424667686c911920151caad488feeb5f164907e5bdf4302",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/ja/System.CommandLine.resources.dll",
+      "sha256": "03b776128e35fb4a9e7d805b9287f909efcd43aa15fb528b9906425f4ddca692",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/ko/System.CommandLine.resources.dll",
+      "sha256": "e6d7be1a37f6bf7c4d430a5d41e8b9b5754f78d03d6a6fbd6d28810bfeb384a3",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/pl/System.CommandLine.resources.dll",
+      "sha256": "e7016042e574008295a73a9a8e198fc34b2a59f02870bac704580bd008c937d6",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/pt-BR/System.CommandLine.resources.dll",
+      "sha256": "47fbe8b10efb04ae1aa52482b1b9a99a72fcfda9250a3ba373a766cb5c0470c1",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/ru/System.CommandLine.resources.dll",
+      "sha256": "23b196ee9a4bc73aed9a991eb93c02e8f3fac43f25e79a82aa97a2e0df48a623",
+      "size": 19256
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/tr/System.CommandLine.resources.dll",
+      "sha256": "674eac7ecf7bd32f55b2476cd4d30af356fb4895cbf4a57ca854c46b109e3cd3",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/zh-Hans/System.CommandLine.resources.dll",
+      "sha256": "c15c5336cdc3fe8e06540026721e746bbaef677894cd3cc01ad4dcc6cb61be31",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Cli/debug/zh-Hant/System.CommandLine.resources.dll",
+      "sha256": "f9800562a563fbf626e5f2a4baf962524d395a843bf8489ce727513a4a9400c8",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/ByteAether.Ulid.dll",
+      "sha256": "fc4f3d99e88023ffbd37eea2941ddd81f604611fc967fedb116a4daaf9ae4590",
+      "size": 29696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Dapr.Actors.AspNetCore.dll",
+      "sha256": "c7deffe0f4b6c754fff3935a42ad378d729e85b277da853fbc8924790482d8b0",
+      "size": 26112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Dapr.Actors.dll",
+      "sha256": "98d77fb28b39fe6832e06cb2bd66d58024b9587411b04965da385909f32a9dfa",
+      "size": 214016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Dapr.AspNetCore.dll",
+      "sha256": "4db46444a22bbfd473e0f132139d943cec95e3637cdbf61077d88e618a48213d",
+      "size": 57344
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Dapr.Client.dll",
+      "sha256": "cc7b8e629416c52be2569d7610c5c830b19ba690d4f54300ffdee901dec99115",
+      "size": 181248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Dapr.Common.dll",
+      "sha256": "9c10b91825371c10e469e91627080414bde4e8fa5acd894a2dbe398af03e1893",
+      "size": 77824
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Dapr.Protos.dll",
+      "sha256": "659938b9475b4951bd49086a66d8ad24f89ac6c1c33d6888adfefb8420edf03c",
+      "size": 635904
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/FluentValidation.DependencyInjectionExtensions.dll",
+      "sha256": "32385a476b65365d0f9de1819cd1f46d155d1f46beea68176603cf341b29a797",
+      "size": 15360
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/FluentValidation.dll",
+      "sha256": "07373bb5527d6d96908c60962102c9c1339b363c4ee8ad62277eb2ffc6387df4",
+      "size": 549888
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Google.Api.CommonProtos.dll",
+      "sha256": "329cf0f2b66c5cbf675321f0d6b33c17d1092e5761f32d3d2c1307a110c0dbbd",
+      "size": 450048
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Google.Protobuf.dll",
+      "sha256": "e9b892ac667931162ffefa411ef8dc3eae777d634d8bfe8beddc28b1de95a612",
+      "size": 501400
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Grpc.Core.Api.dll",
+      "sha256": "5674c1203706b5a261e8bbd3499147d94fc80b5f077bf45f9934ca28a9c8574b",
+      "size": 70296
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Grpc.Net.Client.dll",
+      "sha256": "f884d8444feb888656cbb7de87ee8f53a50811329bb32c6e7a7a81cb1de008ef",
+      "size": 359064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Grpc.Net.Common.dll",
+      "sha256": "fdff383bbd8e5015f3c4aaaa7508b769228f33c92ba14fec4e59d35c5d78e6ae",
+      "size": 22168
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Grpc.Reflection.dll",
+      "sha256": "87795d17c1385e7c05469c447ad8eecc883c3c71b4804319c5918a5a490c8d57",
+      "size": 77976
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.Builds.Module.EventStoreHost.deps.json",
+      "sha256": "7adebe7db30d9360c7588e523f134714ce4d46fbd8c241d4fef26f9cd0658692",
+      "size": 50542
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.Builds.Module.EventStoreHost.dll",
+      "sha256": "1cbe6d165e67df89bba03a73cc831a96acf006411a50ad798640e24ba5824df1",
+      "size": 31744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.Builds.Module.EventStoreHost.runtimeconfig.json",
+      "sha256": "2854c873c21edc9fa7c2056f9d4744054aeb11f009d271702daa7794b74e895f",
+      "size": 401
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.Commons.UniqueIds.dll",
+      "sha256": "73db021277a5c3cc2af66a0ac117d108ec2b9f1708199984880772a575018b8e",
+      "size": 9728
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.EventStore.Admin.Abstractions.dll",
+      "sha256": "a325051ee2a32d39e5a7ce002f4570413a3e60075bd75e27c30b70970aca4291",
+      "size": 233984
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.EventStore.Client.dll",
+      "sha256": "c56fc44abd1aa2e49a9d14c67694e570d2e8258e81d300c6862ff81b09aef765",
+      "size": 943104
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.EventStore.Contracts.dll",
+      "sha256": "1ce3c3af88c82ea058ff8d25e5cd55e9d5ebdd46b38098cf16d3047c255948ca",
+      "size": 685568
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.EventStore.DomainService.dll",
+      "sha256": "c5576f35dc9c4c615ee4ad56b587bea8a66a46d1f07c1b1f5c7434c895a15c4c",
+      "size": 1005056
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.EventStore.Gateway.dll",
+      "sha256": "126c9c96ae62fad803699c5e991e57034f2666ecf96b48c6141fecd2c4b88ebe",
+      "size": 808960
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.EventStore.Server.dll",
+      "sha256": "55aeb61af9550242a1ea5e6629387f2e6e9fbe07a70129da7598f6c5816a0586",
+      "size": 3122688
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Hexalith.EventStore.ServiceDefaults.dll",
+      "sha256": "bebcef924c706fefd70175edc39098cfb9a8f84e7b9dac2da6c105bde282015a",
+      "size": 155136
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/MediatR.Contracts.dll",
+      "sha256": "c2601304aa9d15c51a543e1c3300368c64ac38633e7277bb835a04f68ddf6a61",
+      "size": 6656
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/MediatR.dll",
+      "sha256": "856b8a06d82033415ffef0edcac5f38256f1ef0336dbc372609f75b82a333d97",
+      "size": 94208
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/MessagePack.Annotations.dll",
+      "sha256": "1e51e087987bc857e55863eb4e986c2f2f0bf17230eb2c243e5dc25c34e7cf86",
+      "size": 18432
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/MessagePack.dll",
+      "sha256": "a7f8d30a8e6f4a1b445bf6752621a4a7b1f4ff11f5d4dc62dba0d8d7d6995e36",
+      "size": 385024
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.AspNetCore.Authentication.JwtBearer.dll",
+      "sha256": "6aa38a3d01cc3e9bfd6ee5cc7c882f4d0399cfb807e52f19ff458f355a31851b",
+      "size": 52008
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.AspNetCore.OpenApi.dll",
+      "sha256": "ed704f63de95981f91ded8d0cc7642ad73c455b54e741b18dd42e9e44e60c51f",
+      "size": 193320
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll",
+      "sha256": "10ccc62ca65bc2e202fa5d8b1714093c6320cc6a8dcef164c3656047cb609991",
+      "size": 82216
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Bcl.Cryptography.dll",
+      "sha256": "91c6bab93638c268569a38bc87770a5e3ef9932676f5b7a6d47aef4208062925",
+      "size": 19248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.AmbientMetadata.Application.dll",
+      "sha256": "aa3fbb981085778df80185ba391253467c363d069308ca5e12213d7a7e689377",
+      "size": 34616
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.Compliance.Abstractions.dll",
+      "sha256": "e4df4358dd2dd57be430a9e7f220bc49bef26ab00007c732605c0defc207e065",
+      "size": 43832
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.DependencyInjection.AutoActivation.dll",
+      "sha256": "050802eb79c8d7ce48f40c89753ddca2a68ec1b7e6a6d646a810cd87cd8e9f78",
+      "size": 33632
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.Diagnostics.ExceptionSummarization.dll",
+      "sha256": "6ae3665434f016222e9d75a54a44a62d01c412ef63b5d7462c3a22ad9757c4d8",
+      "size": 30008
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.Http.Diagnostics.dll",
+      "sha256": "56da1ed94fe5551db5b67292820634136fe8b6d991626288aebdce7ee25400ee",
+      "size": 118112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.Http.Resilience.dll",
+      "sha256": "b28b929922d42b1c979ee403f454387f4522bf973c149753f5300ae959d70531",
+      "size": 135992
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.Resilience.dll",
+      "sha256": "e7cee26992c26c4484b62da5663601456f7af2c9c10e8da4e47ec0df3b078aa4",
+      "size": 33080
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.ServiceDiscovery.Abstractions.dll",
+      "sha256": "58ac3be03e3c4ae03486b8ec619ca769bf94befd38f432d61b32b1fba8d7d193",
+      "size": 28984
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.ServiceDiscovery.dll",
+      "sha256": "3646d627b519e017c3392219b17416b04377c815a918248a503557fd40db9e0a",
+      "size": 77112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.Telemetry.Abstractions.dll",
+      "sha256": "57af8ce079eb3bcec63fd176f1034012f8199c44d38f10168438cc78364a9030",
+      "size": 58680
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.Extensions.Telemetry.dll",
+      "sha256": "cca41d630de69f9afda79cff76c26976c87ee28aec216cba63c2e81241b8f7f5",
+      "size": 152376
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.IdentityModel.Abstractions.dll",
+      "sha256": "46f14d67dfc1894eb24d80282895526db25a854af227eee2fa06a0383fd09e4c",
+      "size": 19264
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.IdentityModel.JsonWebTokens.dll",
+      "sha256": "b48515aeaa4a8fadc5fcacb45978c808a4d5bbffaf74f8894cc57c0769a9fb9e",
+      "size": 174384
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.IdentityModel.Logging.dll",
+      "sha256": "90b6fa70f28a3b7711fe95aa30a0c5551f1e6aa28565187aa7b3681194215c84",
+      "size": 38192
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+      "sha256": "cf37440c96bd178f2676867b77fa651df001b56b2f42be99b08e5226b3ab4918",
+      "size": 137008
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.IdentityModel.Protocols.dll",
+      "sha256": "dd8823215cada7e1c7fe5d2a3b06395fb906baa5f79ec00411ad6a1f80585f60",
+      "size": 54064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.IdentityModel.Tokens.dll",
+      "sha256": "84409b8c3a52313fe4f4f621fce39544f42074109e870ac2631e627c8b70210f",
+      "size": 416024
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.NET.StringTools.dll",
+      "sha256": "e51c8678fd602a21c249b369e833966019935132476f9434da896bef808ba3b1",
+      "size": 30880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Microsoft.OpenApi.dll",
+      "sha256": "dae97412c5804da0906639014cb6bd73b2cf37ad02da95437ded59578946e6e9",
+      "size": 591712
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+      "sha256": "d9248458b433d3317f3618b5d9fa9d776bd88a78220af2faab06f6416208094b",
+      "size": 24576
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/OpenTelemetry.Api.dll",
+      "sha256": "43a7484269df9efae3a063198c42683a631d90c278940ee3cc11435719481ced",
+      "size": 83968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+      "sha256": "02a75ffefd0ca9f79043af39c73d44e3773a03dca8a9eaa8c49d465197bf6b45",
+      "size": 195072
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/OpenTelemetry.Extensions.Hosting.dll",
+      "sha256": "617ca46b1297625de495f3e5a903701c19bef0f727de2e46c60c3246f898cb5d",
+      "size": 15872
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/OpenTelemetry.Instrumentation.AspNetCore.dll",
+      "sha256": "10398265b32699e6f1087ade9c11ee5e331a9975b87b530dc418946fe4612fab",
+      "size": 76800
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/OpenTelemetry.Instrumentation.Http.dll",
+      "sha256": "01d9c4411bd9d6c3e3223929c680cff1703f5bf2d4289baaac91e3b41bca70d2",
+      "size": 69632
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/OpenTelemetry.Instrumentation.Runtime.dll",
+      "sha256": "fc12bb2bafc01952b83e0d452e717a6f466bd713453d6d95f0d50a4696f15799",
+      "size": 10752
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/OpenTelemetry.dll",
+      "sha256": "b780e5e7ec6b730b3207b5921395fe616070f13d0b0e63ad662131be4703a30b",
+      "size": 338944
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Polly.Core.dll",
+      "sha256": "37762ea6fcf05154685b0a616461705c837c2f07d98e4037dc3a0e4b4c186ea5",
+      "size": 242736
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Polly.Extensions.dll",
+      "sha256": "8adac7a20cd056b9a8623efb6e6f9b99a82e18d3c7b7f6c788f7fc4b20ce5f18",
+      "size": 57120
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Polly.RateLimiting.dll",
+      "sha256": "afe3042cd4062438857d42880623845f32575375f460fd1ac07f705ea0211804",
+      "size": 28208
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/RESPite.dll",
+      "sha256": "ec60961494a640b0faff3447afe14c90f5bd27e53f5ab0b4284b34cae717f4fa",
+      "size": 116736
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/StackExchange.Redis.dll",
+      "sha256": "e14460fe50cd699b34c75b9a8b10cdb79c2ed68f4088879afa2e073b7afba502",
+      "size": 2349056
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/Swashbuckle.AspNetCore.SwaggerUI.dll",
+      "sha256": "e206aa659d72850c18102facaf0a12d946aa9a1b70b089fdf23b2853b6694e65",
+      "size": 754176
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/System.IO.Hashing.dll",
+      "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+      "size": 56104
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.EventStoreHost/debug/System.IdentityModel.Tokens.Jwt.dll",
+      "sha256": "593c82287b671e9cceefaf10c51df96793f6db30f9cfa60daabaaf80474670bf",
+      "size": 91952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Aspire.Hosting.AppHost.dll",
+      "sha256": "b62a572a1cb22f2e5f5a249dcbafa414c6b5882e2cd0442334cae6fcb4d2e990",
+      "size": 27488
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Aspire.Hosting.Keycloak.dll",
+      "sha256": "dcaf7f574f2c0ca76e0cc691327c77cbd3a7df3654ddac3a7c570b626377dfef",
+      "size": 38752
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Aspire.Hosting.Redis.dll",
+      "sha256": "97a1b4eefca84bc08ab28a9c424fbfe508b59c4cd6cb5c15180cb92e6e7dd2bb",
+      "size": 70968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Aspire.Hosting.dll",
+      "sha256": "30d89e1adbccb28820d60f060ae87071d39ef99fe2bd04029ca736c660766f0e",
+      "size": 3363128
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/CommunityToolkit.Aspire.Hosting.Dapr.dll",
+      "sha256": "7763ba9497ce1e91100a694a265daec1c7ec069094f8bcf74cc1a8f15b8b0996",
+      "size": 137544
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/DiffEngine.dll",
+      "sha256": "0c6b99a47c609a4263b80feaed95a357e30be3ad5a1cda79355663e407682aa7",
+      "size": 109568
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/EmptyFiles.dll",
+      "sha256": "d5b63e68b8966567f73df025b449e1a2e3b2306c8cec364fd240310c757b3adc",
+      "size": 75264
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Fractions.dll",
+      "sha256": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf",
+      "size": 22016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Google.Protobuf.dll",
+      "sha256": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73",
+      "size": 501760
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Grpc.AspNetCore.Server.ClientFactory.dll",
+      "sha256": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3",
+      "size": 21504
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Grpc.AspNetCore.Server.dll",
+      "sha256": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2",
+      "size": 157184
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Grpc.Core.Api.dll",
+      "sha256": "16b1ff898b9a2c1ffac0e22035c8280728967e7041bfe8a382bcb1f99a9a530b",
+      "size": 70296
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Grpc.Net.Client.dll",
+      "sha256": "71454959f95469ea1a4abfbbb2ccb71487f6bfe50714277e73d2f7665c89244e",
+      "size": 360088
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Grpc.Net.ClientFactory.dll",
+      "sha256": "52a981845704edf969120f10e6a0a65fce858adf45412b5c10571a1b07222380",
+      "size": 54936
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Grpc.Net.Common.dll",
+      "sha256": "2fe0acf1042d43af95cc33f610a5c7d4d70ae65e3d5f4ce8707a3e2bf95df823",
+      "size": 22168
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/HealthChecks.Redis.dll",
+      "sha256": "3ce9e611ecd44219f4bed786d665712759583b87a1bb9228355e9161ce7ffa52",
+      "size": 22528
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/HealthChecks.Uris.dll",
+      "sha256": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708",
+      "size": 29184
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hex1b.dll",
+      "sha256": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc",
+      "size": 7401984
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.AppHost.deps.json",
+      "sha256": "1f442e294c77b67e26e70224a9fd68b35aa30e23f9ac461f9956ec64abcd017c",
+      "size": 45752
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.AppHost.dll",
+      "sha256": "b596353969634bb199711a9d10d15dc2dcd52aa911e3827762a10858812aac53",
+      "size": 98304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.AppHost.runtimeconfig.json",
+      "sha256": "dd72603f49fc74ad956017904a955b25d7043d65291c0c7d033a2064e141622a",
+      "size": 369
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.Cli.deps.json",
+      "sha256": "471588a405a5513b075e9e19d94814b7e26adfae985a34d99a2e3173a41490ac",
+      "size": 9496
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.Cli.dll",
+      "sha256": "2f216164c88d0cbe2c8cda0a3e26e2b984b9d51b683baf7ed29da670cb578d25",
+      "size": 24064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.Cli.runtimeconfig.json",
+      "sha256": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a",
+      "size": 259
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.Tests.deps.json",
+      "sha256": "bc7ec6461349a379f05028e22249bcb378f4cb4e869208792c1a4ab7f8953b47",
+      "size": 80852
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.Tests.dll",
+      "sha256": "f98e78b07c1c2a90bc1dfe48d0aa3df1232c30f8744b1bebe4b36da928e0f159",
+      "size": 1482240
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Module.Tests.runtimeconfig.json",
+      "sha256": "4761a312947a31a30aec259d9ee6f10407d89806d812cd102f3b3aec250dc8b4",
+      "size": 416
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.Builds.Tooling.dll",
+      "sha256": "5e5acd1a71a5e547446ed687cf7496dfb89125d669f43a982c947a2fae8dde7f",
+      "size": 1046016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Hexalith.EventStore.Aspire.dll",
+      "sha256": "0bcb55b6f936ce11b6a5cf8323f7827a2f886bf9a4e88c5e59a157cc47340e0a",
+      "size": 69120
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Humanizer.dll",
+      "sha256": "2769ed8265b691a5482c72506ed274dc52446fa1641997a8c12c66f5b9263d39",
+      "size": 643760
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Json.More.dll",
+      "sha256": "80b6cd50331fa2ded4fbacdbf80dcedd2b142dee679df227c30299d2a3c3840f",
+      "size": 54272
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/JsonPointer.Net.dll",
+      "sha256": "4d7ce7739bc0bf8df69778f4545c390a6c06fd11c8f583ae166f0fdc6e9c3123",
+      "size": 25600
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/JsonSchema.Net.dll",
+      "sha256": "5eca1875cdf54faf841fb14353b7f3cbbb345e26de6458ff01888a1c0e578fa2",
+      "size": 294400
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/KubernetesClient.dll",
+      "sha256": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce",
+      "size": 10680320
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/MessagePack.Annotations.dll",
+      "sha256": "1e51e087987bc857e55863eb4e986c2f2f0bf17230eb2c243e5dc25c34e7cf86",
+      "size": 18432
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/MessagePack.dll",
+      "sha256": "a7f8d30a8e6f4a1b445bf6752621a4a7b1f4ff11f5d4dc62dba0d8d7d6995e36",
+      "size": 385024
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.ApplicationInsights.dll",
+      "sha256": "bf9a4b88c7f94267e1cc7ed0700c575d3eb3266ff25bcb76e4f40f1b0fba022d",
+      "size": 386080
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.Bcl.AsyncInterfaces.dll",
+      "sha256": "5705d245072d3eb78400547b32147dbb6e2c8b02ba8bda76729798f5efdeaecb",
+      "size": 16000
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.Build.Framework.dll",
+      "sha256": "2a6faa9b9ea8ecc97719af8db1486da63ad6654182276f16cfef62a1b38a0a54",
+      "size": 2243880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.Build.Utilities.Core.dll",
+      "sha256": "8b37952e0fab5e45357a47875f8fd874d28a5e7c6efbef6b5b25fd3056b55cfa",
+      "size": 512808
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.Extensions.AI.Abstractions.dll",
+      "sha256": "bcc8f693103eb00505179f154b1b3a996b85d067e112facd724fd9d695f17a5e",
+      "size": 672056
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.NET.StringTools.dll",
+      "sha256": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0",
+      "size": 33552
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.TestPlatform.CommunicationUtilities.dll",
+      "sha256": "c3eff269a9e76dc37e5a70f4f0c9abe4fdf84b5abe7ed8ad357a13cfade7c717",
+      "size": 530784
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.TestPlatform.CoreUtilities.dll",
+      "sha256": "43001bf63cbc4219cbe6749ceb2d7b2a67ef2459ae7f6cfdb84012fb00c89bb2",
+      "size": 102200
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.TestPlatform.CrossPlatEngine.dll",
+      "sha256": "ff3311bdad71d33a6de17beccc9403fbc4601b005902d331fb102299c25f74c7",
+      "size": 721720
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.TestPlatform.PlatformAbstractions.dll",
+      "sha256": "63991819522643c682204f141cdd179bb01b70598198c50393656fe01d3324c1",
+      "size": 52536
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.TestPlatform.Utilities.dll",
+      "sha256": "b17f9126a9469a2a975e5afc10a12261c031d2c6910f9304fe46cff5160c09e6",
+      "size": 69432
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.Testing.Extensions.MSBuild.dll",
+      "sha256": "828e7dc4e0206da2a9a58df26651acc2f28b7169509c5c26dcff3c991513fe09",
+      "size": 116024
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.Testing.Extensions.Telemetry.dll",
+      "sha256": "c4f35fc45c100733d6f00f9aba87fe6c96481d3c43c416d32a4722fddd6e79e1",
+      "size": 37728
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.Testing.Extensions.TrxReport.Abstractions.dll",
+      "sha256": "f57bc3dcd63c0dcd08db8d5e729836d156351a2d18041a5b7978a424e5b37142",
+      "size": 22328
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.Testing.Platform.dll",
+      "sha256": "a3319a6bb4bdfb1df2e531765c5a48c2b48de1fe7cf4dcd932c9b82f114107da",
+      "size": 1477472
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.VisualStudio.CodeCoverage.Shim.dll",
+      "sha256": "4f73128a17e78916f0e2ddb324c5da7b0b373d0cfb2814e17f3a7858e91b68bb",
+      "size": 17248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.VisualStudio.TestPlatform.Common.dll",
+      "sha256": "556cf93a977af4b858bb4b0d9eeb9177d8f084ff79be531b02ded8d317a7df81",
+      "size": 251192
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.VisualStudio.TestPlatform.ObjectModel.dll",
+      "sha256": "707971b2b682b863a33346c30f32b702a79365ad3442758d18a90a979c8f16df",
+      "size": 331576
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.VisualStudio.Threading.dll",
+      "sha256": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426",
+      "size": 441888
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.VisualStudio.Validation.dll",
+      "sha256": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c",
+      "size": 37392
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Microsoft.Win32.SystemEvents.dll",
+      "sha256": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850",
+      "size": 26224
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ModelContextProtocol.Core.dll",
+      "sha256": "b1752096ea9d2f38ba88e467f04aea43fb300d9a54d881c165f62b69028ee3ab",
+      "size": 1296896
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ModelContextProtocol.dll",
+      "sha256": "8cd6f626c8d6a0a5ff3e154789d3fcde2b1d66a595c0ef0198e092c2c30fe93a",
+      "size": 91136
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Nerdbank.MessagePack.dll",
+      "sha256": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa",
+      "size": 641024
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Nerdbank.Streams.dll",
+      "sha256": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872",
+      "size": 222048
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Newtonsoft.Json.dll",
+      "sha256": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+      "size": 723368
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/NuGet.Versioning.dll",
+      "sha256": "fc2f75a7a5f3be9b4c3dcfc21644b871bb5a41ada8615c92d778713d2a310670",
+      "size": 62264
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+      "sha256": "d9248458b433d3317f3618b5d9fa9d776bd88a78220af2faab06f6416208094b",
+      "size": 24576
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/OpenTelemetry.Api.dll",
+      "sha256": "43a7484269df9efae3a063198c42683a631d90c278940ee3cc11435719481ced",
+      "size": 83968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+      "sha256": "02a75ffefd0ca9f79043af39c73d44e3773a03dca8a9eaa8c49d465197bf6b45",
+      "size": 195072
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/OpenTelemetry.Extensions.Hosting.dll",
+      "sha256": "617ca46b1297625de495f3e5a903701c19bef0f727de2e46c60c3246f898cb5d",
+      "size": 15872
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/OpenTelemetry.dll",
+      "sha256": "b780e5e7ec6b730b3207b5921395fe616070f13d0b0e63ad662131be4703a30b",
+      "size": 338944
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/P0Fixture.Inventory.deps.json",
+      "sha256": "2d83950523ac82643032c73e58d58259b8f543a1967307f4021a08c4c6c6c281",
+      "size": 36768
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/P0Fixture.Inventory.runtimeconfig.json",
+      "sha256": "2854c873c21edc9fa7c2056f9d4744054aeb11f009d271702daa7794b74e895f",
+      "size": 401
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/P0Fixture.Orders.deps.json",
+      "sha256": "88440f17fd691d7d08a3ce9299375c5d38df39420bb7403d8c6a3aab9c7fd5e7",
+      "size": 36759
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/P0Fixture.Orders.runtimeconfig.json",
+      "sha256": "2854c873c21edc9fa7c2056f9d4744054aeb11f009d271702daa7794b74e895f",
+      "size": 401
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Polly.Core.dll",
+      "sha256": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a",
+      "size": 223136
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/PolyType.dll",
+      "sha256": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968",
+      "size": 323072
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/QRCoder.dll",
+      "sha256": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a",
+      "size": 195584
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/RESPite.dll",
+      "sha256": "ec60961494a640b0faff3447afe14c90f5bd27e53f5ab0b4284b34cae717f4fa",
+      "size": 116736
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Semver.dll",
+      "sha256": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f",
+      "size": 72704
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/Shouldly.dll",
+      "sha256": "498dad657f324ab068e800d5711ae36feb4af4ba9a572eb941197e2fb677549d",
+      "size": 292864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/StackExchange.Redis.dll",
+      "sha256": "e14460fe50cd699b34c75b9a8b10cdb79c2ed68f4088879afa2e073b7afba502",
+      "size": 2349056
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/StreamJsonRpc.dll",
+      "sha256": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5",
+      "size": 647048
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/System.CodeDom.dll",
+      "sha256": "bfb75074ac26c7632bbe9ffc1063ceca9a56aae86ac4913481d6bba88c4c4a34",
+      "size": 184944
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/System.CommandLine.dll",
+      "sha256": "cd7fa6b61988d3151ef5764a59978c3fef9090dc58ef40323cc134aa31bbc410",
+      "size": 151352
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/System.Drawing.Common.dll",
+      "sha256": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f",
+      "size": 175216
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/System.IO.Hashing.dll",
+      "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+      "size": 56104
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/System.Management.dll",
+      "sha256": "4dc4d6846a3142087bf258e5923abf303c0a4c19e4bb212b066ad7ab8e6de859",
+      "size": 72824
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/YamlDotNet.dll",
+      "sha256": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a",
+      "size": 300032
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Aspire.Hosting.resources.dll",
+      "sha256": "e9f1a83a61b7f47da725de981cd9b5327ff64ad94c97feeb85a315d702bf8c9e",
+      "size": 26424
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.Build.Framework.resources.dll",
+      "sha256": "cc2fcafa1a573bddf872bcf6daaeb3e22c7ff6c868b261321f1b2c270873fae9",
+      "size": 19240
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "a665db3061e98ba15f8dc72bb87b7159f0178ecf1c856c9401b202bf1b760eed",
+      "size": 36648
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "9b8d77f33e0122c842d6c554281deec01a48cb009d81487b57ab00bad41b53a5",
+      "size": 17248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "f721c8cb2237aea24c0c9f4496a92d149a421cf493cb0954275c8c37a49366d1",
+      "size": 16696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "5af617afc056f463ab20513621bf3402cb7721b69eba5563c0300aff1d920aef",
+      "size": 21344
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "89eb97d173b9a1e449567ba443502542df77743f158c8fee41f6f2bdc3629638",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "31b09f9bc213163bfa28978ac925e08bf75d0ae3c332c4b9941c21a5edb1bec3",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "ee849dcddda6b96cbb84f0cb0d00f2faefb9b9f3ae48dd1156b51ae98f604380",
+      "size": 85304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "f8e73a92fd297faf3d383350d8a40cf5199dd594e3f6727b6ade5e51e9012463",
+      "size": 21304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "3301572c63ff1219c834be4030c337ccb89f7247d1578eb0b9c3d99691b88d02",
+      "size": 23392
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "53fa0540b7787d2702df6526dd9df68b1a44575c66ff007f3e11b1e2b528330e",
+      "size": 17936
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "830b54077b4f3febe75ed87aa163eb49fb58362c61be5ca26cf42d4e13c51f3c",
+      "size": 14880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/StreamJsonRpc.resources.dll",
+      "sha256": "5115a8c09c591d1caa16359b5a45eccece63d9c337e703d89c05a69264ba291b",
+      "size": 25944
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/cs/System.CommandLine.resources.dll",
+      "sha256": "cbdc17ac2fc65ca6fbea34870247700f69d7ab1b8f7134cd664ae4ffb25d83f1",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Aspire.Hosting.resources.dll",
+      "sha256": "35f600ff04d2f4a2dad22d56eea9452ad3b58ec3b51e1635e44d53a97c2e72d9",
+      "size": 26424
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.Build.Framework.resources.dll",
+      "sha256": "20d13cda49dc136e61b6cd84f7f1149d837b40fc7808a4d381f880ced67018c5",
+      "size": 19792
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "6223bf6bf06cce45d859e90f5962dd5ff1f8ec1f8c4a0b583fc3ac8518ffabcd",
+      "size": 37672
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "e51df5416ce9cc4430ce9e8467ecda1133f4825f1d071e531a69bb46ecb78f7e",
+      "size": 17208
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "1a0b10879dcb410f5671d68af33d40fa57d93d8ba1674a0869549499cdac4e62",
+      "size": 16696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "4293af9e00aee1956511461afa7e2bda0df8de9384faae08faaa1a6485682147",
+      "size": 21304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "fcd8e6dda5bd53595685f1b4393a5e377b3a8ec5614f4db7ae3fd8f3970b01ad",
+      "size": 15200
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "305f8f8953f1a382113f974c188790bab193509aff87b515dfcd1d8064b093a8",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "54dc9bd2a5fe2cb080613014f938c0bf5f6a6a01ab3d009a513878bb7e863eca",
+      "size": 87392
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "4ddb65907d7d1c30b66e477d66810e2e4e202f86898043107e33a4aae9e6b783",
+      "size": 21304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "4bb237aa85201f309008531eb434736d11c7d6034ca5385741a1338f01a8146e",
+      "size": 23904
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "0a68bd16faed213eb7bf17025b25125c6aaee5b86a545449afe297632a503853",
+      "size": 18448
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "fd7edef2b3f30903f2c287c49d62cb3394f9656fd82ff1c98eb122ad62a04a56",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/StreamJsonRpc.resources.dll",
+      "sha256": "01e2c454d751b89aba08d4270ca00d8e07fa8af861650ecd704481ce06b87b24",
+      "size": 27016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/de/System.CommandLine.resources.dll",
+      "sha256": "700c70cf9f9da6056f49bc8a2d09f6ffabe4832cd79b67d74f5a60e7b46150cb",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Aspire.Hosting.resources.dll",
+      "sha256": "f5d81068d45d871db86558500d93ee005ab61aa48b6966e47b6cf8db3999aab4",
+      "size": 26424
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.Build.Framework.resources.dll",
+      "sha256": "e1dccc7c5980fd27b485c13d5e9d7cdb4c0be578ae3f2699ef3fa3c8e0a1a749",
+      "size": 19240
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "91f81bd841d6316467b6902fe36c8ae8af9057af7cf821f2141169993f95e956",
+      "size": 37672
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "5bc99d027776d19d400437a5dc8777fa03977bbd2eb323a83f89573a99a490cc",
+      "size": 17248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "f6a3f1643f7871a2cd296c3b2b2698042173d2713108151adeb2bbc4da38dc24",
+      "size": 16696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "d91c5338cea14f9d167cd3e30cdf9fb27146a41cfd6bce9afa01e686e55d99a7",
+      "size": 21304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "8a0534058fc1262117ddbcf3d38e0a4597770f966ce40113556359c0a428c379",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "be2c60c3513efed1807fde9e2d89c07a80f5efc52b2c8273498250323ec063a3",
+      "size": 15200
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "2fc212a30af72cccb225128537955c28678b726c2209b81c43bc95f8fd036c34",
+      "size": 85856
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "d6cddf9576d1eeb4a8ae2fbdb63ec4d9010aec4dc1ab472d9f912d86e3b86abb",
+      "size": 21304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "99a679649d25e57e739029c1853a01f780f5d39973a83b0a559251362579ec94",
+      "size": 23864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "7fc33931e5c544e89ce8d767781a729a7be21c60e559294ef693fa249034b066",
+      "size": 18448
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "c40129bf64177dbfbd79bf977e11d46f2888c20c3e807336a36dac82370f6d83",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/StreamJsonRpc.resources.dll",
+      "sha256": "bacf7fadae7361e00f097dcafbe9a4a759f4346f364676389304a688fdb3b636",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/es/System.CommandLine.resources.dll",
+      "sha256": "14baee330015d955cc6d76027c34cc7d6b970563bdc1605cb7d10034156b6430",
+      "size": 18784
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Aspire.Hosting.resources.dll",
+      "sha256": "0c328bef1bc3c845dc25e928c5e43e7b4661bb8bfd9733c1ebf513d28e6b2eb8",
+      "size": 26936
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.Build.Framework.resources.dll",
+      "sha256": "1a9c490517f7e848eec8877e08ff7dbd5d8778056ead956401da126ec2ca15af",
+      "size": 19752
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "39657e9859b42b93837156b9be377ca90e9aa8f1fe072f9d4d4a4655aade8798",
+      "size": 37672
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "393fa328585623934f6aa9d0f51df65fa7cb2f66df6243a33768783286a0a998",
+      "size": 17760
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "540e8f8f72642555e324e297fd9223cf3362cdd3ebf681c4ed80ddb0058356a9",
+      "size": 16736
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "23faa9424c1beca572dc46908f05547f03496dd150891cee4194a7ec1338fd0d",
+      "size": 21344
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "03501f48b593ae0cfd4db74fd200049c0d43295b2697d00032aed88feb635292",
+      "size": 15200
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "624a77a903f4456f742d2ae9be2f24443de123715f46bb71345aa26e2109e08a",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "2574ae39d02056c9a56ca80a6f0b20619ae66f9bdea2dc1d9c78acec036d01ed",
+      "size": 89912
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "a73deb0da7ac4cae639cadad7198128d7bd5a756bd9106f2f6c7428618096d95",
+      "size": 21856
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "26ea3c34c8092c62a606f959c1f41dab285be1fecef70eda50abeba2e1f2d6b6",
+      "size": 23864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "abe294e2c7ecf00f3632b83f61e19538b8b9531e6289b5d84992bc447f29783e",
+      "size": 18448
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "e56fe93ab669c22850389bdb685bbc45317d962849cc683d412bc9e8ad637740",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/StreamJsonRpc.resources.dll",
+      "sha256": "99ee72e2ea1de18367345b83884d0aa8c4192f98f2f3fb6b50bdbbebd6960afc",
+      "size": 26976
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/fr/System.CommandLine.resources.dll",
+      "sha256": "e5f6c5440095f9b8da3622cc463711cc5ddb8e531d205928c66dfd953ecf4fbb",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Aspire.Hosting.resources.dll",
+      "sha256": "a2f5e78ba60195cbea00313c6a1c80b0d6fa8ed7c5f6a5b5230004d16e52eb21",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.Build.Framework.resources.dll",
+      "sha256": "cc865d61097ae7b94f3f6debeda23923e5e528c823da8d95498b0dcc0669c0b7",
+      "size": 19280
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "cbc053fa44fff5df598ab3f3dae05fc365523225cb2a63623830470452f05bd1",
+      "size": 37672
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "2f79717d0eda586078bb59b96854eb57e68353d3d8ce8e816030407b52157a0d",
+      "size": 17720
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "180a1b31a4acaa90d641d2c8a41df42f95d56b1f8ec19aea89b369f8ccbba405",
+      "size": 16696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "0eca6d8d30e1806a489bb43569153c4d8fa9af0cc27bbde2e7db82566407144e",
+      "size": 21304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "2f41fe8e1163b94573c80b732be76f263bdb66099fa0c0f8e94ead03a550eb49",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "0ce2b9749100e058295b59f6cc12cb4b3c89da536ccbec88c3f3b3d43b1532e2",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "821cb47f17a40d440f52a3c6cb258db90385cf420c5224484ced81b92f79b795",
+      "size": 86328
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "78bdb761561c1a6c132bebdac005309058ac08fd6c6fcde6a6b53f58fb002a8c",
+      "size": 21344
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "88c9e84ccb18308f5a5f51aec632bbd62383e67b2c24a91cbededcfeb71f3f67",
+      "size": 23864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "c6d1c91560f9914f36ff52d9a2704f44255adfd88a2c57ccd44fce62603667a7",
+      "size": 18448
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "8918618aaf356bf03333f62507ed4b2511c98850388c3856afe970c41672fae0",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/StreamJsonRpc.resources.dll",
+      "sha256": "31741ef214310f03ec256b3dd8643e5d4151c9123bd6994bb8f53381ca348244",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/it/System.CommandLine.resources.dll",
+      "sha256": "aa50352d5f620a367424667686c911920151caad488feeb5f164907e5bdf4302",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Aspire.Hosting.resources.dll",
+      "sha256": "b5d499561caf6101856a3c1202764623535559b766a991f4663406a9809de9d1",
+      "size": 27448
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.Build.Framework.resources.dll",
+      "sha256": "c3741f43763a798cce55013f2a19c52a3df4200f120c41dd1fe855ca449df883",
+      "size": 20264
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "99a231634f2169a696169c0b780b20da0fabeae697e1179a8a708b9834a78c94",
+      "size": 40272
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "97c2dacbaa58a4ba07129ecd70580c87332ad61dbba21edd931b5efad0d77c48",
+      "size": 17760
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "2342df11c612dd3404e8c3754fac524af8348e1d42669f6c06041576d6b01fdf",
+      "size": 17248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "ad9b1e2c9c5605dacc1ff502970b255f69f63f66fbdd0769b3a1ba2db879856f",
+      "size": 22328
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "cb70d4bfd21a2919440f67e86e712872dff435d870ca123b3f9684c0f63be856",
+      "size": 15200
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "2f1909e5e06cd214dc617d75330ca67e2a3c7245fdd8f3b446cc51b049d35f7f",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "dcece76d6c872cd65e597f7eefddebca4de8688e996263fed2d69d735452f0f0",
+      "size": 95032
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "f284dd4a3d53c9603f592d1e66ed1fc807d34c1093384819fbfec9795c9dc547",
+      "size": 22328
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "ccd969748999dfae1789076240db09b173d62edae0946b35eeafd04520397940",
+      "size": 24376
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "e375ebb7fe0f6807371dd42f09671b4eafcab6a1464851af68b8fd14494067c9",
+      "size": 18456
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "89963143a49c629f52776c88715544a8a53b12f1f6c7b4cd6c686d0751ea0d5b",
+      "size": 14880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/StreamJsonRpc.resources.dll",
+      "sha256": "36897272170334ea43284e4f7c8f908e170bc1f082e9612528787ca03ae9e7ce",
+      "size": 28512
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ja/System.CommandLine.resources.dll",
+      "sha256": "03b776128e35fb4a9e7d805b9287f909efcd43aa15fb528b9906425f4ddca692",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Aspire.Hosting.resources.dll",
+      "sha256": "bfadcadd036295703717e95fbf898841fa7e726c865b42bb08cc83e6ba4a1126",
+      "size": 26424
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.Build.Framework.resources.dll",
+      "sha256": "eb332ee8c386fbd94c755338a065a8f610966e1dec953b419f29d89c234adb30",
+      "size": 19752
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "0e4bb0defb7fb0fb5b45cd90c80e089229038f54fe7f3c914df692ed61bcd693",
+      "size": 38224
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "84a6d865a9ee1dc2ede74e431a63c0a5ffa48c775758b8535bac6485f88b8adf",
+      "size": 17760
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "3112441cc8819d6da68395a08be1d5d23a99ee1a2358c466acf0128e3201c7de",
+      "size": 16736
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "f274928801ce53cc7f8a1642331534c0643e0242b7b19931d13cbc69200b3d93",
+      "size": 21304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "c028ce9285c9e4e65cd13f8eec21cc5b8fa144dba0f9514e3b6fc09c9476b185",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "8be28bc62fa915a6f884520b105f9749ec1eaaaae13097291820a35b2e21f769",
+      "size": 15200
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "b825a9994bb95d7b1a37ea76f71adb33cca9a63c6e7a158021abdad944c889ed",
+      "size": 87904
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "8e07a537be939f31d23fc48f1ff4f7dafbc7bf10fdd7e3c18977c6d5c5c2379b",
+      "size": 21304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "f90f0d340f88b7ff104cbb17afe6563a78330042d372af7477a3b5d08ba0862c",
+      "size": 23864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "6fda6bb4822f56356cd446ef30750319552780ea28434b741cc35bf3d8111010",
+      "size": 17952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "a2be5cbddafa74c4d64b6cb46e60a64b151d46056566e3fc39b810e431cf047f",
+      "size": 14880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/StreamJsonRpc.resources.dll",
+      "sha256": "53ce6c7e88dd7228d968fc26ff7cbf35bcdc81ee88275ca2325eaf8feffe47bc",
+      "size": 26976
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ko/System.CommandLine.resources.dll",
+      "sha256": "e6d7be1a37f6bf7c4d430a5d41e8b9b5754f78d03d6a6fbd6d28810bfeb384a3",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Aspire.Hosting.resources.dll",
+      "sha256": "ac558842d06342df5a3f4c530e91534e49cbe6aea107c265cd4eff282a441f8b",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.Build.Framework.resources.dll",
+      "sha256": "7cb0f3961d99e6d57589b60c14aeeb974d94e974839e05db055b2b652f4a9899",
+      "size": 19792
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "44daf1d60584706a715008d4c5f811e1c77939343fc84ba527a94c736a3ca285",
+      "size": 38184
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "454b9fdc68ce206226cc6a249f85835c0b569c7267f073fe7cafa311676e3dfd",
+      "size": 17208
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "ede98c9705d436ce2f20f81248a4892cbd876f86af7fd198adcc9c9e46dca8b8",
+      "size": 16696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "3d22c1eba7fe8647fa7f4714fdf2fb09f4d161aa2e46e4f70670bb184dac388f",
+      "size": 21344
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "1b356a67f1a6d3522658c0e19253c26336cb09f9b5f8b7fc174d0bae6d5a906f",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "5f526e320e2ed6cea9e7436b3710da6fbcbed038a8b2f6567db47f2bfe965d25",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "9c565afdafa7f30bfb19ceb59375da9c9a9bf083362a65a961055029c2811b2d",
+      "size": 87864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "be72d68ed0d8ccdc3e0ad2b4f93cc047a8fdfa246e6e27afc02a47ac91c48ce5",
+      "size": 21856
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "a2a1eebf3059fc967a925be03d22b02c88317a29dea83e87b9499895e11b9dc4",
+      "size": 23864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "c2d599b82424ac6961d568f411a01e366b359ac3c167ab2fce74c5e2c96c1ca6",
+      "size": 18464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "f77bd918ee6d7e3dfade1bbbf192fdd0fcd4f2ceb6296d14775f235f1562aea5",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/StreamJsonRpc.resources.dll",
+      "sha256": "2e3d2bc745170f9b323711bf584b56246a6b9e4235e5e1dcac2ce83b7a9a1e1f",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pl/System.CommandLine.resources.dll",
+      "sha256": "e7016042e574008295a73a9a8e198fc34b2a59f02870bac704580bd008c937d6",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Aspire.Hosting.resources.dll",
+      "sha256": "dd0205ccc2bf87d86d5f929b3efd3e1e1da32a60c46cb9b6e2eadccd6b1e9a35",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.Build.Framework.resources.dll",
+      "sha256": "eef936458db438ce8b382eda894a9e8e3458d7443c6ed535cc9569d1737f7288",
+      "size": 19240
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "c3d380de1466ac197482e3a80e85f4abab530074a3fb7222ddeed6f5be7dc816",
+      "size": 36648
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "9da5e48d831b60d1f73f499e8a902ebee73f143300700afaa78f1d40cd51b6b5",
+      "size": 17248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "4c8937d92b5150d38e8b2843138617aebd8b1493caed9590e2597e7eb0570b79",
+      "size": 16696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "3db2d47f9b887cb90761bbec4add64cb38a3536de838d915f66edca283588901",
+      "size": 20792
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "0fc5ebb3313d8151cae638e302e3feab7913f28c51aedcafcb0cb9a32d3fffc0",
+      "size": 15200
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "52d86a70478e014a9df2b9a87742881f15569f2cf422b755280239ae3cf698cc",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "cf2cc21f90f599f74db14ff684479378fee4b0ace77dbc2ecd03022586235366",
+      "size": 85344
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "6ad7af987a3db1840f37e3710f140a0aa1cb1f33800d68de5f6d78b8d6ef09f1",
+      "size": 21344
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "9e92139627450b08a169c1ce686e4c89806e8a4525cf4982ed53ab4292eb6f74",
+      "size": 23904
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "432ba5ed5c1f37436ec28d4f4b37b622cee3c833bdb01b44b6cf9fe255a445e5",
+      "size": 17952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "656bcea3398e47aff8e86741bfb097940b589f52ebca2236ec104129d0d3014d",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/StreamJsonRpc.resources.dll",
+      "sha256": "990e5f544dd810cc9af2921cd4809c45a4c216697d9a5c4bd22d42700f57d8fc",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/pt-BR/System.CommandLine.resources.dll",
+      "sha256": "47fbe8b10efb04ae1aa52482b1b9a99a72fcfda9250a3ba373a766cb5c0470c1",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Aspire.Hosting.resources.dll",
+      "sha256": "bcbeccb2a9c73c25b25f2d8045dd15af51bd80800cd4bb631fb35862a01474cc",
+      "size": 28472
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.Build.Framework.resources.dll",
+      "sha256": "9167fb4bfbef7d2c7538797edf9b340851c35467bcc3806dd36fc92d6db06670",
+      "size": 20776
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "f36c18ac4ce7f8b9052dd184038f22b46d9c403ca0a7e9313b88f49719b71b82",
+      "size": 44328
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "4ec91b15ae14ce1f7b4f5542eb525352b8140fc2c3e1dc02f10807cace3c9584",
+      "size": 18232
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "698b37413d4ea46520a5696a4feb0ee4016a2998ebc0940e840878022ba5114b",
+      "size": 17208
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "563bbf9459665bf1517dbd09820b9f2003e6e627f35ef3ca4ef868c4a7c30df7",
+      "size": 23352
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "f9327680fe76b9a1ce3464890416d0d62114454b0ab16bcd17b9fdf2a76e70c5",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "f355955e1651665f500e6f1112e3cfba9dce61e86cb646b78ecdcefac9d3b652",
+      "size": 15200
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "8cc183c808a547514a93a9938999aca13d7f126a9ba6469ff5f98d294be956e0",
+      "size": 104760
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "72185fe710c46bfcc8d9dd7edf322c9dde8d0f9b2cbfc6121e41b67ad2db3f31",
+      "size": 23864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "cf22985b20dcdfd99223d4d4a84a9c69f9c56b2e9c17dbd4791be1cf2237e21b",
+      "size": 25952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "ff177fd4f159895d050fd7a19c4632b8e69792e79ef181f3aa1af9ae6c770f21",
+      "size": 19480
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "db19d56c8e725fc91182ffc75c3803c5d6ca9f0dc6d99d695cbf4e30acc56fce",
+      "size": 15392
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/StreamJsonRpc.resources.dll",
+      "sha256": "5a32d75f02d6de17cfabe4f1f7fe57191a5549fcc11d5975fe77427826b38dea",
+      "size": 30088
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/ru/System.CommandLine.resources.dll",
+      "sha256": "23b196ee9a4bc73aed9a991eb93c02e8f3fac43f25e79a82aa97a2e0df48a623",
+      "size": 19256
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/runtimes/unix/lib/net6.0/System.Drawing.Common.dll",
+      "sha256": "89ea595ccb1fd1384480c1e30bd487c92af5d06d3b06f295323eff601acd9019",
+      "size": 427112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/runtimes/win/lib/net10.0/System.Diagnostics.EventLog.Messages.dll",
+      "sha256": "8caf8d059ed75d232cdcc63c4d95164029b5dcf5f27cca7abad81f534db1648f",
+      "size": 800552
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/runtimes/win/lib/net6.0/Microsoft.Win32.SystemEvents.dll",
+      "sha256": "142cce4ed8ac9da22d69c38a6f22738abfb22090dc9313e8b58e6f91978e89af",
+      "size": 53352
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/runtimes/win/lib/net6.0/System.Drawing.Common.dll",
+      "sha256": "4d3001697df50cca54f32ed2dbbd1f3f415b48d5d756b1bf9500a43ae9b68da0",
+      "size": 454248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/runtimes/win/lib/net6.0/System.Management.dll",
+      "sha256": "a7bcdf99ab1ddff27a018123ef8d960c03feab75fa005ab0d7bcf94e2cdc5605",
+      "size": 291960
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/runtimes/win-arm64/native/conpty.dll",
+      "sha256": "db3d173640b172bafd42d5b541b638a9aeec1c7d0e40dd636bf02822a32c912c",
+      "size": 106336
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/runtimes/win-x64/native/conpty.dll",
+      "sha256": "39fba2713e2495117b1591ae8c32a3b904bea7aa66069cf7815e2844c76d75d8",
+      "size": 109920
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/testhost.dll",
+      "sha256": "629918ab2027e9e21169cbcc485b9689c2a14821850670fa99a625bd66dd407f",
+      "size": 49504
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Aspire.Hosting.resources.dll",
+      "sha256": "92735053ea62008c3afe83986bb2ef6519306d28a28355825bddc965baded1a3",
+      "size": 26464
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.Build.Framework.resources.dll",
+      "sha256": "a77204fb7a5b4b541a50d8bf1c1a6815c7ff4c4177a1dd032632ba87abdd0871",
+      "size": 19240
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "1e9c1e098dd071d592c4c93caf1c72bc25c88e2130c3873dea881a2c69af6623",
+      "size": 36688
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "974901ce8494396a1389af513258a0e13efc8d6ee5d348bdccfed5e2f5241bf6",
+      "size": 17208
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "9bd32ed6e33b902a2e56319b316c2ce0da70fde2de572179193fdfa5b9915999",
+      "size": 16696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "715226924491a3c1f10bf3e7b57d5a3c2bd981d4ea826f77a4aa4861850d497a",
+      "size": 21304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "b6ee86b4703400b80c6865cda1582333465184126e0ed66780cae92f642b452c",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "60863acb3fc748fd994454f69a0323454850e4b0f252bfba898ea4d5a7245131",
+      "size": 15200
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "575a0f0d5db2eb2ebcf405457cdc41e44852febcb8f862c814d15c54962b3dfc",
+      "size": 85304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "9341fa970e883e0534f06bb3541b606d8259f96515c2103213099384e461b4fa",
+      "size": 21304
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "5efaabd36729efdc3a3b28518486bfb13578a26d703bd90e9ee5de2029afa78a",
+      "size": 23352
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "cfd3afd4bd9b0d7f6f782370ca460f3333bb2ebf7db4977e6d2af22a47b71dd9",
+      "size": 17952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "620295974b05a36b268169cd94b39f99848224f7774b9748db014c2a2d027073",
+      "size": 14880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/StreamJsonRpc.resources.dll",
+      "sha256": "1df15719aa69c7915028419f93bdb27cf8814f1ea6455e6d4f23dc110d81f1f1",
+      "size": 25952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/tr/System.CommandLine.resources.dll",
+      "sha256": "674eac7ecf7bd32f55b2476cd4d30af356fb4895cbf4a57ca854c46b109e3cd3",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/xunit.abstractions.dll",
+      "sha256": "3166dc70323fb30ccf1cedb0fe86f2ad122c46d254542342d90386efc4c9285c",
+      "size": 21928
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/xunit.v3.assert.dll",
+      "sha256": "ba29b691b762dbb1cd5597e8eea036a8e40b51848626b8d63131f935d41ec1f4",
+      "size": 217864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/xunit.v3.common.dll",
+      "sha256": "9cf3cd23eefabd397c0eb86e705a8e620f459715e2b3e0428db07ff68e53bf39",
+      "size": 201480
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/xunit.v3.core.dll",
+      "sha256": "ac165a05487a95a1d5c163bb08e81ae15b4f51c7d7fbb23f1c5fd55254b7e056",
+      "size": 649992
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/xunit.v3.mtp-v2.dll",
+      "sha256": "734d5b7650cd8e575d675cfdeca99519c51ebf7720552f14981fe83c3afad58b",
+      "size": 131848
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/xunit.v3.runner.common.dll",
+      "sha256": "4070293988b67cb44ac29647abb68188b528e1b29ab846f0223cdaff9c12a789",
+      "size": 1091336
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/xunit.v3.runner.inproc.console.dll",
+      "sha256": "19daaa378a3c0eea354434ca6dc3a38a91cc9b88507ae18b6c1e7ae7bc38a480",
+      "size": 82184
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/xunit.v3.runner.utility.netcore.dll",
+      "sha256": "035e0f4dd52dc218d815f80ec758bf2d1ffa525c3c84a5107936ec189f928a85",
+      "size": 160520
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Aspire.Hosting.resources.dll",
+      "sha256": "1aedc58e2fe22178f96a11a89f30aa6a55fdea3068c0da1c4f073b4081f85ada",
+      "size": 25440
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.Build.Framework.resources.dll",
+      "sha256": "50e9ea435917bbd9ec529d4a27c46db6b046c4a2b7a1ed4d3e1634d0cd54e412",
+      "size": 18728
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "6fe3f2b60627b226af4b52a6d1f57ba9d1ff29865da83f32f4b00fec6beb3889",
+      "size": 34640
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "bccdbb6566d014ee25dcaabbcd524f6b8600e6bf3bcc9c9fa86c63a14de39de8",
+      "size": 17208
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "359930772dc5951c87bdcc46932f6b40ba4ce2ed1d8487372c1dac44af00cca3",
+      "size": 16696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "057ffb7f74606298329f76406383d303ceea41aa5ba37dc2184f1d50069a2c5f",
+      "size": 20320
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "86180329b340727d69b7969f0a6117750c369a3239fd611696f41cc0ea25a1f9",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "b81555fd20abcec4b5a66fe11115080eb89cd11a8a0b9858cf9b4bc0503c0479",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "a6323cb66a3b0bf33d3cd3a8ef567126b49b7c777b7352230e52236d5fae4c99",
+      "size": 78176
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "a82de6bac48901f9bf0d21378cc394a7e072fbf948aa1947a664e806e75c42a1",
+      "size": 20280
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "4cc89da156817282d044f31dd743713e6526c9b770999ff3678b77c6daea9f63",
+      "size": 22880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "ef07ef11562297acd78ee9ec7a21bee4b9fb0f4255794f87ccff0970f9f3ccb4",
+      "size": 16400
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "158f33332fa83a4c01f136482305a1d7d7feffa626fb082d65bfef4a0ce493a3",
+      "size": 14880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/StreamJsonRpc.resources.dll",
+      "sha256": "0c3a6e2b27cd768f6b94b9ffcd86097811f2be89583bef4f1bb24fd81a18fd47",
+      "size": 24928
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hans/System.CommandLine.resources.dll",
+      "sha256": "c15c5336cdc3fe8e06540026721e746bbaef677894cd3cc01ad4dcc6cb61be31",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Aspire.Hosting.resources.dll",
+      "sha256": "1fd96116c93452026803f1abb72e43c4a46b3d76471745235e302a1e5f01c51a",
+      "size": 25440
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.Build.Framework.resources.dll",
+      "sha256": "fa19e4a0b8269075e4a6e4df877032ddfda4850351067e294fab0da0bd037a8f",
+      "size": 18728
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.Build.Utilities.Core.resources.dll",
+      "sha256": "cdf5029cd6359bbd80ba13c10c4e4fb3013583549a22337fecb9cf7b509b3e29",
+      "size": 34600
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+      "sha256": "c6be11befd8e43e3c53ec50358e9dabd59c98a047b58d59b330f81acd85aab9c",
+      "size": 16696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.TestPlatform.CoreUtilities.resources.dll",
+      "sha256": "f0095585da9fb47b90d08ee103713a87bbdccb4c5057f76c45a6710d75a38913",
+      "size": 16736
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.TestPlatform.CrossPlatEngine.resources.dll",
+      "sha256": "3969511b92dac03f1ffbc17bdfeb7afc08f3d7282a78ff15ab2b6b153376d742",
+      "size": 20280
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.Testing.Extensions.MSBuild.resources.dll",
+      "sha256": "e4fbe648379c0788eab6a3e1e1655ee108683ed8511923d3050cfa0a3bcd276b",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.Testing.Extensions.Telemetry.resources.dll",
+      "sha256": "68f0fac1b1f5a7815be0e27e8093f008643f2c46dabdea9eca8be3485075c406",
+      "size": 15160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.Testing.Platform.resources.dll",
+      "sha256": "ac2d2abbad624cd80ae79f7505c64e914850bcd68cc361b699d485327f0c68f8",
+      "size": 78648
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
+      "sha256": "eda8531440a79dfebc863f8bd523c54e6dbccc6029cff963c9678ea7498d64ad",
+      "size": 20280
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll",
+      "sha256": "535464ebb941b0bf2221cbd90e4b075481d4949b5cb1ecfd8451bb9bf7275bd2",
+      "size": 22880
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.VisualStudio.Threading.resources.dll",
+      "sha256": "d0d594d3590ad804b8a9d5f0b23306864c7e8870ce9a445ef6990597d0ad20ab",
+      "size": 17424
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/Microsoft.VisualStudio.Validation.resources.dll",
+      "sha256": "8a3bffea88dc96fca9c307a9a8843a20fe1c7cafc2534b1cb95d688f07b6dbfd",
+      "size": 14864
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/StreamJsonRpc.resources.dll",
+      "sha256": "23e40ffa7c609dbb2b79e8fc38b7097d9d9d9a86f9a03abfd744e5f6bc8330a0",
+      "size": 24968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.Tests/debug/zh-Hant/System.CommandLine.resources.dll",
+      "sha256": "f9800562a563fbf626e5f2a4baf962524d395a843bf8489ce727513a4a9400c8",
+      "size": 18744
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Fluxor.Blazor.Web.dll",
+      "sha256": "e05df290ff01c96ff09de7e92eac3f82fa5e4f5cf89096319e5f12b6e34beb65",
+      "size": 28160
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Fluxor.dll",
+      "sha256": "f9b73d7c618dee8cd124a56e9d73d02267702d1591e993fb465b7276b834cd39",
+      "size": 88576
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Hexalith.Builds.Module.UiHost.deps.json",
+      "sha256": "fa7608fa17231902463f3dd0e2c06cf910223f02b14de907bd4826e74aacea63",
+      "size": 16337
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Hexalith.Builds.Module.UiHost.dll",
+      "sha256": "519396d5460198c92f45675976b2006f263b9be553c32b6d74541dee8c6a0144",
+      "size": 17408
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Hexalith.Builds.Module.UiHost.runtimeconfig.json",
+      "sha256": "2854c873c21edc9fa7c2056f9d4744054aeb11f009d271702daa7794b74e895f",
+      "size": 401
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Hexalith.FrontComposer.Contracts.UI.dll",
+      "sha256": "b4be74c8903c6d66f940532fb995a426349ffc98658b67697201a9597e391365",
+      "size": 24064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Hexalith.FrontComposer.Contracts.dll",
+      "sha256": "c0934428656918777de11bce8b10c6544e8ff037213223112ba0be02cc297d4d",
+      "size": 225792
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Hexalith.FrontComposer.Shell.dll",
+      "sha256": "bfec1ca1de0650d80a9a5e98f8557c1e890d7ec15732e25eaf7338fd3ac91f42",
+      "size": 1865728
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.AspNetCore.Authentication.OpenIdConnect.dll",
+      "sha256": "b0b139e6396b5b473513e3abc50d5007009a7e38d3b0b27663cede04211e5c65",
+      "size": 126760
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.AspNetCore.Http.Connections.Client.dll",
+      "sha256": "774836d9ac97adbf5624f686a03bbc1306d780c7cb6f524e5be343135720f3be",
+      "size": 116520
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.AspNetCore.SignalR.Client.Core.dll",
+      "sha256": "38412214f0c67f1bded26ba59e33612e7c16850d74e72000cfb6f68775e71453",
+      "size": 211240
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.AspNetCore.SignalR.Client.dll",
+      "sha256": "c6f8b0db98b630d8d4edd1e79654e1ddf9fce9340804f90ae11278ffa5a9bca5",
+      "size": 20776
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.Bcl.Cryptography.dll",
+      "sha256": "91c6bab93638c268569a38bc87770a5e3ef9932676f5b7a6d47aef4208062925",
+      "size": 19248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.FluentUI.AspNetCore.Components.Icons.Color.dll",
+      "sha256": "951a7c6e090c45094cad4b1f21c495faaa0ead726521640579140a097f20ca76",
+      "size": 3541504
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.FluentUI.AspNetCore.Components.Icons.Filled.dll",
+      "sha256": "9006678810eb5709719ccbc8d4c3c197f13b67afc33c0d4de0d75f0a74323552",
+      "size": 8631808
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.FluentUI.AspNetCore.Components.Icons.Light.dll",
+      "sha256": "76c071e504c643107a474aee7cc1cfc8b452cf9b082e4b9f33cec4d0497c3c96",
+      "size": 206848
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.dll",
+      "sha256": "ea2d135a4a8f33b92aebb359bd2a03b14002fedc44f2d0015220a09fa3b98bde",
+      "size": 10221056
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.FluentUI.AspNetCore.Components.Icons.dll",
+      "sha256": "709e7efee1a530a2832022f8e382828c29807b1c29aa1bc93ffd50126bf1b997",
+      "size": 5120
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.FluentUI.AspNetCore.Components.dll",
+      "sha256": "82718d81e3d28d7a8b80bfb6a543390678ab136bfc4af02af11f55101d613964",
+      "size": 1817600
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.IdentityModel.Abstractions.dll",
+      "sha256": "46f14d67dfc1894eb24d80282895526db25a854af227eee2fa06a0383fd09e4c",
+      "size": 19264
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.IdentityModel.JsonWebTokens.dll",
+      "sha256": "b48515aeaa4a8fadc5fcacb45978c808a4d5bbffaf74f8894cc57c0769a9fb9e",
+      "size": 174384
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.IdentityModel.Logging.dll",
+      "sha256": "90b6fa70f28a3b7711fe95aa30a0c5551f1e6aa28565187aa7b3681194215c84",
+      "size": 38192
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+      "sha256": "cf37440c96bd178f2676867b77fa651df001b56b2f42be99b08e5226b3ab4918",
+      "size": 137008
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.IdentityModel.Protocols.dll",
+      "sha256": "dd8823215cada7e1c7fe5d2a3b06395fb906baa5f79ec00411ad6a1f80585f60",
+      "size": 54064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/Microsoft.IdentityModel.Tokens.dll",
+      "sha256": "84409b8c3a52313fe4f4f621fce39544f42074109e870ac2631e627c8b70210f",
+      "size": 416024
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/NUlid.dll",
+      "sha256": "6f867f7716683b6b48a67877d616ae3805955eab5b2ec92f0e74b49fae467de7",
+      "size": 22528
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/System.IdentityModel.Tokens.Jwt.dll",
+      "sha256": "593c82287b671e9cceefaf10c51df96793f6db30f9cfa60daabaaf80474670bf",
+      "size": 91952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/System.Reactive.dll",
+      "sha256": "e8070137fc07efeb8fd00e1607a096c7718ee1814c6b2032e4cb865f5cf042a9",
+      "size": 1387984
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Module.UiHost/debug/fr/Hexalith.FrontComposer.Shell.resources.dll",
+      "sha256": "fa4dd8c7940d607370d1d79071da460408d9a3e722dee934331bf7fc783360e5",
+      "size": 30208
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Tooling/debug/Hexalith.Builds.Tooling.deps.json",
+      "sha256": "9204e9032d141f1ff0045f011ad6eb736904f4a92262ebf968047239675fa458",
+      "size": 7064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/bin/Hexalith.Builds.Tooling/debug/Hexalith.Builds.Tooling.dll",
+      "sha256": "5e5acd1a71a5e547446ed687cf7496dfb89125d669f43a982c947a2fae8dde7f",
+      "size": 1046016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/ByteAether.Ulid.dll",
+      "sha256": "fc4f3d99e88023ffbd37eea2941ddd81f604611fc967fedb116a4daaf9ae4590",
+      "size": 29696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Dapr.Actors.AspNetCore.dll",
+      "sha256": "c7deffe0f4b6c754fff3935a42ad378d729e85b277da853fbc8924790482d8b0",
+      "size": 26112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Dapr.Actors.dll",
+      "sha256": "98d77fb28b39fe6832e06cb2bd66d58024b9587411b04965da385909f32a9dfa",
+      "size": 214016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Dapr.AspNetCore.dll",
+      "sha256": "4db46444a22bbfd473e0f132139d943cec95e3637cdbf61077d88e618a48213d",
+      "size": 57344
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Dapr.Client.dll",
+      "sha256": "cc7b8e629416c52be2569d7610c5c830b19ba690d4f54300ffdee901dec99115",
+      "size": 181248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Dapr.Common.dll",
+      "sha256": "9c10b91825371c10e469e91627080414bde4e8fa5acd894a2dbe398af03e1893",
+      "size": 77824
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Dapr.Protos.dll",
+      "sha256": "659938b9475b4951bd49086a66d8ad24f89ac6c1c33d6888adfefb8420edf03c",
+      "size": 635904
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Google.Api.CommonProtos.dll",
+      "sha256": "329cf0f2b66c5cbf675321f0d6b33c17d1092e5761f32d3d2c1307a110c0dbbd",
+      "size": 450048
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Google.Protobuf.dll",
+      "sha256": "e9b892ac667931162ffefa411ef8dc3eae777d634d8bfe8beddc28b1de95a612",
+      "size": 501400
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Grpc.Core.Api.dll",
+      "sha256": "5674c1203706b5a261e8bbd3499147d94fc80b5f077bf45f9934ca28a9c8574b",
+      "size": 70296
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Grpc.Net.Client.dll",
+      "sha256": "f884d8444feb888656cbb7de87ee8f53a50811329bb32c6e7a7a81cb1de008ef",
+      "size": 359064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Grpc.Net.Common.dll",
+      "sha256": "fdff383bbd8e5015f3c4aaaa7508b769228f33c92ba14fec4e59d35c5d78e6ae",
+      "size": 22168
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Grpc.Reflection.dll",
+      "sha256": "87795d17c1385e7c05469c447ad8eecc883c3c71b4804319c5918a5a490c8d57",
+      "size": 77976
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Hexalith.Commons.UniqueIds.dll",
+      "sha256": "73db021277a5c3cc2af66a0ac117d108ec2b9f1708199984880772a575018b8e",
+      "size": 9728
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Hexalith.EventStore.Client.dll",
+      "sha256": "c56fc44abd1aa2e49a9d14c67694e570d2e8258e81d300c6862ff81b09aef765",
+      "size": 943104
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Hexalith.EventStore.Contracts.dll",
+      "sha256": "1ce3c3af88c82ea058ff8d25e5cd55e9d5ebdd46b38098cf16d3047c255948ca",
+      "size": 685568
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Hexalith.EventStore.DomainService.dll",
+      "sha256": "c5576f35dc9c4c615ee4ad56b587bea8a66a46d1f07c1b1f5c7434c895a15c4c",
+      "size": 1005056
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Hexalith.EventStore.ServiceDefaults.dll",
+      "sha256": "bebcef924c706fefd70175edc39098cfb9a8f84e7b9dac2da6c105bde282015a",
+      "size": 155136
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.AspNetCore.Authentication.JwtBearer.dll",
+      "sha256": "6aa38a3d01cc3e9bfd6ee5cc7c882f4d0399cfb807e52f19ff458f355a31851b",
+      "size": 52008
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Bcl.Cryptography.dll",
+      "sha256": "91c6bab93638c268569a38bc87770a5e3ef9932676f5b7a6d47aef4208062925",
+      "size": 19248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.AmbientMetadata.Application.dll",
+      "sha256": "aa3fbb981085778df80185ba391253467c363d069308ca5e12213d7a7e689377",
+      "size": 34616
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.Compliance.Abstractions.dll",
+      "sha256": "e4df4358dd2dd57be430a9e7f220bc49bef26ab00007c732605c0defc207e065",
+      "size": 43832
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.DependencyInjection.AutoActivation.dll",
+      "sha256": "050802eb79c8d7ce48f40c89753ddca2a68ec1b7e6a6d646a810cd87cd8e9f78",
+      "size": 33632
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.Diagnostics.ExceptionSummarization.dll",
+      "sha256": "6ae3665434f016222e9d75a54a44a62d01c412ef63b5d7462c3a22ad9757c4d8",
+      "size": 30008
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.Http.Diagnostics.dll",
+      "sha256": "56da1ed94fe5551db5b67292820634136fe8b6d991626288aebdce7ee25400ee",
+      "size": 118112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.Http.Resilience.dll",
+      "sha256": "b28b929922d42b1c979ee403f454387f4522bf973c149753f5300ae959d70531",
+      "size": 135992
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.Resilience.dll",
+      "sha256": "e7cee26992c26c4484b62da5663601456f7af2c9c10e8da4e47ec0df3b078aa4",
+      "size": 33080
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.ServiceDiscovery.Abstractions.dll",
+      "sha256": "58ac3be03e3c4ae03486b8ec619ca769bf94befd38f432d61b32b1fba8d7d193",
+      "size": 28984
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.ServiceDiscovery.dll",
+      "sha256": "3646d627b519e017c3392219b17416b04377c815a918248a503557fd40db9e0a",
+      "size": 77112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.Telemetry.Abstractions.dll",
+      "sha256": "57af8ce079eb3bcec63fd176f1034012f8199c44d38f10168438cc78364a9030",
+      "size": 58680
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.Extensions.Telemetry.dll",
+      "sha256": "cca41d630de69f9afda79cff76c26976c87ee28aec216cba63c2e81241b8f7f5",
+      "size": 152376
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.IdentityModel.Abstractions.dll",
+      "sha256": "46f14d67dfc1894eb24d80282895526db25a854af227eee2fa06a0383fd09e4c",
+      "size": 19264
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.IdentityModel.JsonWebTokens.dll",
+      "sha256": "b48515aeaa4a8fadc5fcacb45978c808a4d5bbffaf74f8894cc57c0769a9fb9e",
+      "size": 174384
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.IdentityModel.Logging.dll",
+      "sha256": "90b6fa70f28a3b7711fe95aa30a0c5551f1e6aa28565187aa7b3681194215c84",
+      "size": 38192
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+      "sha256": "cf37440c96bd178f2676867b77fa651df001b56b2f42be99b08e5226b3ab4918",
+      "size": 137008
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.IdentityModel.Protocols.dll",
+      "sha256": "dd8823215cada7e1c7fe5d2a3b06395fb906baa5f79ec00411ad6a1f80585f60",
+      "size": 54064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Microsoft.IdentityModel.Tokens.dll",
+      "sha256": "84409b8c3a52313fe4f4f621fce39544f42074109e870ac2631e627c8b70210f",
+      "size": 416024
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+      "sha256": "d9248458b433d3317f3618b5d9fa9d776bd88a78220af2faab06f6416208094b",
+      "size": 24576
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/OpenTelemetry.Api.dll",
+      "sha256": "43a7484269df9efae3a063198c42683a631d90c278940ee3cc11435719481ced",
+      "size": 83968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+      "sha256": "02a75ffefd0ca9f79043af39c73d44e3773a03dca8a9eaa8c49d465197bf6b45",
+      "size": 195072
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/OpenTelemetry.Extensions.Hosting.dll",
+      "sha256": "617ca46b1297625de495f3e5a903701c19bef0f727de2e46c60c3246f898cb5d",
+      "size": 15872
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/OpenTelemetry.Instrumentation.AspNetCore.dll",
+      "sha256": "10398265b32699e6f1087ade9c11ee5e331a9975b87b530dc418946fe4612fab",
+      "size": 76800
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/OpenTelemetry.Instrumentation.Http.dll",
+      "sha256": "01d9c4411bd9d6c3e3223929c680cff1703f5bf2d4289baaac91e3b41bca70d2",
+      "size": 69632
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/OpenTelemetry.Instrumentation.Runtime.dll",
+      "sha256": "fc12bb2bafc01952b83e0d452e717a6f466bd713453d6d95f0d50a4696f15799",
+      "size": 10752
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/OpenTelemetry.dll",
+      "sha256": "b780e5e7ec6b730b3207b5921395fe616070f13d0b0e63ad662131be4703a30b",
+      "size": 338944
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.deps.json",
+      "sha256": "2d83950523ac82643032c73e58d58259b8f543a1967307f4021a08c4c6c6c281",
+      "size": 36768
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.dll",
+      "sha256": "99342daf5d07aa67c3b112570da0d6317df08236f29518fe4cee337d69d5bbfc",
+      "size": 19968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.runtimeconfig.json",
+      "sha256": "2854c873c21edc9fa7c2056f9d4744054aeb11f009d271702daa7794b74e895f",
+      "size": 401
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Polly.Core.dll",
+      "sha256": "37762ea6fcf05154685b0a616461705c837c2f07d98e4037dc3a0e4b4c186ea5",
+      "size": 242736
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Polly.Extensions.dll",
+      "sha256": "8adac7a20cd056b9a8623efb6e6f9b99a82e18d3c7b7f6c788f7fc4b20ce5f18",
+      "size": 57120
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/Polly.RateLimiting.dll",
+      "sha256": "afe3042cd4062438857d42880623845f32575375f460fd1ac07f705ea0211804",
+      "size": 28208
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory/System.IdentityModel.Tokens.Jwt.dll",
+      "sha256": "593c82287b671e9cceefaf10c51df96793f6db30f9cfa60daabaaf80474670bf",
+      "size": 91952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.deps.json",
+      "sha256": "934c41c655e55928639fcefa51a08397cfe576dd301b63ac65e1253fcbc780ca",
+      "size": 462
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll",
+      "sha256": "2b9760d057ba32690ab86384e3635472230e58435f1fbf0a63afcb7c2913c3df",
+      "size": 5632
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/ByteAether.Ulid.dll",
+      "sha256": "fc4f3d99e88023ffbd37eea2941ddd81f604611fc967fedb116a4daaf9ae4590",
+      "size": 29696
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Dapr.Actors.AspNetCore.dll",
+      "sha256": "c7deffe0f4b6c754fff3935a42ad378d729e85b277da853fbc8924790482d8b0",
+      "size": 26112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Dapr.Actors.dll",
+      "sha256": "98d77fb28b39fe6832e06cb2bd66d58024b9587411b04965da385909f32a9dfa",
+      "size": 214016
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Dapr.AspNetCore.dll",
+      "sha256": "4db46444a22bbfd473e0f132139d943cec95e3637cdbf61077d88e618a48213d",
+      "size": 57344
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Dapr.Client.dll",
+      "sha256": "cc7b8e629416c52be2569d7610c5c830b19ba690d4f54300ffdee901dec99115",
+      "size": 181248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Dapr.Common.dll",
+      "sha256": "9c10b91825371c10e469e91627080414bde4e8fa5acd894a2dbe398af03e1893",
+      "size": 77824
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Dapr.Protos.dll",
+      "sha256": "659938b9475b4951bd49086a66d8ad24f89ac6c1c33d6888adfefb8420edf03c",
+      "size": 635904
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Google.Api.CommonProtos.dll",
+      "sha256": "329cf0f2b66c5cbf675321f0d6b33c17d1092e5761f32d3d2c1307a110c0dbbd",
+      "size": 450048
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Google.Protobuf.dll",
+      "sha256": "e9b892ac667931162ffefa411ef8dc3eae777d634d8bfe8beddc28b1de95a612",
+      "size": 501400
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Grpc.Core.Api.dll",
+      "sha256": "5674c1203706b5a261e8bbd3499147d94fc80b5f077bf45f9934ca28a9c8574b",
+      "size": 70296
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Grpc.Net.Client.dll",
+      "sha256": "f884d8444feb888656cbb7de87ee8f53a50811329bb32c6e7a7a81cb1de008ef",
+      "size": 359064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Grpc.Net.Common.dll",
+      "sha256": "fdff383bbd8e5015f3c4aaaa7508b769228f33c92ba14fec4e59d35c5d78e6ae",
+      "size": 22168
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Grpc.Reflection.dll",
+      "sha256": "87795d17c1385e7c05469c447ad8eecc883c3c71b4804319c5918a5a490c8d57",
+      "size": 77976
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Hexalith.Commons.UniqueIds.dll",
+      "sha256": "73db021277a5c3cc2af66a0ac117d108ec2b9f1708199984880772a575018b8e",
+      "size": 9728
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Hexalith.EventStore.Client.dll",
+      "sha256": "c56fc44abd1aa2e49a9d14c67694e570d2e8258e81d300c6862ff81b09aef765",
+      "size": 943104
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Hexalith.EventStore.Contracts.dll",
+      "sha256": "1ce3c3af88c82ea058ff8d25e5cd55e9d5ebdd46b38098cf16d3047c255948ca",
+      "size": 685568
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Hexalith.EventStore.DomainService.dll",
+      "sha256": "c5576f35dc9c4c615ee4ad56b587bea8a66a46d1f07c1b1f5c7434c895a15c4c",
+      "size": 1005056
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Hexalith.EventStore.ServiceDefaults.dll",
+      "sha256": "bebcef924c706fefd70175edc39098cfb9a8f84e7b9dac2da6c105bde282015a",
+      "size": 155136
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.AspNetCore.Authentication.JwtBearer.dll",
+      "sha256": "6aa38a3d01cc3e9bfd6ee5cc7c882f4d0399cfb807e52f19ff458f355a31851b",
+      "size": 52008
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Bcl.Cryptography.dll",
+      "sha256": "91c6bab93638c268569a38bc87770a5e3ef9932676f5b7a6d47aef4208062925",
+      "size": 19248
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.AmbientMetadata.Application.dll",
+      "sha256": "aa3fbb981085778df80185ba391253467c363d069308ca5e12213d7a7e689377",
+      "size": 34616
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.Compliance.Abstractions.dll",
+      "sha256": "e4df4358dd2dd57be430a9e7f220bc49bef26ab00007c732605c0defc207e065",
+      "size": 43832
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.DependencyInjection.AutoActivation.dll",
+      "sha256": "050802eb79c8d7ce48f40c89753ddca2a68ec1b7e6a6d646a810cd87cd8e9f78",
+      "size": 33632
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.Diagnostics.ExceptionSummarization.dll",
+      "sha256": "6ae3665434f016222e9d75a54a44a62d01c412ef63b5d7462c3a22ad9757c4d8",
+      "size": 30008
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.Http.Diagnostics.dll",
+      "sha256": "56da1ed94fe5551db5b67292820634136fe8b6d991626288aebdce7ee25400ee",
+      "size": 118112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.Http.Resilience.dll",
+      "sha256": "b28b929922d42b1c979ee403f454387f4522bf973c149753f5300ae959d70531",
+      "size": 135992
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.Resilience.dll",
+      "sha256": "e7cee26992c26c4484b62da5663601456f7af2c9c10e8da4e47ec0df3b078aa4",
+      "size": 33080
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.ServiceDiscovery.Abstractions.dll",
+      "sha256": "58ac3be03e3c4ae03486b8ec619ca769bf94befd38f432d61b32b1fba8d7d193",
+      "size": 28984
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.ServiceDiscovery.dll",
+      "sha256": "3646d627b519e017c3392219b17416b04377c815a918248a503557fd40db9e0a",
+      "size": 77112
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.Telemetry.Abstractions.dll",
+      "sha256": "57af8ce079eb3bcec63fd176f1034012f8199c44d38f10168438cc78364a9030",
+      "size": 58680
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.Extensions.Telemetry.dll",
+      "sha256": "cca41d630de69f9afda79cff76c26976c87ee28aec216cba63c2e81241b8f7f5",
+      "size": 152376
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.IdentityModel.Abstractions.dll",
+      "sha256": "46f14d67dfc1894eb24d80282895526db25a854af227eee2fa06a0383fd09e4c",
+      "size": 19264
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.IdentityModel.JsonWebTokens.dll",
+      "sha256": "b48515aeaa4a8fadc5fcacb45978c808a4d5bbffaf74f8894cc57c0769a9fb9e",
+      "size": 174384
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.IdentityModel.Logging.dll",
+      "sha256": "90b6fa70f28a3b7711fe95aa30a0c5551f1e6aa28565187aa7b3681194215c84",
+      "size": 38192
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+      "sha256": "cf37440c96bd178f2676867b77fa651df001b56b2f42be99b08e5226b3ab4918",
+      "size": 137008
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.IdentityModel.Protocols.dll",
+      "sha256": "dd8823215cada7e1c7fe5d2a3b06395fb906baa5f79ec00411ad6a1f80585f60",
+      "size": 54064
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Microsoft.IdentityModel.Tokens.dll",
+      "sha256": "84409b8c3a52313fe4f4f621fce39544f42074109e870ac2631e627c8b70210f",
+      "size": 416024
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+      "sha256": "d9248458b433d3317f3618b5d9fa9d776bd88a78220af2faab06f6416208094b",
+      "size": 24576
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/OpenTelemetry.Api.dll",
+      "sha256": "43a7484269df9efae3a063198c42683a631d90c278940ee3cc11435719481ced",
+      "size": 83968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+      "sha256": "02a75ffefd0ca9f79043af39c73d44e3773a03dca8a9eaa8c49d465197bf6b45",
+      "size": 195072
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/OpenTelemetry.Extensions.Hosting.dll",
+      "sha256": "617ca46b1297625de495f3e5a903701c19bef0f727de2e46c60c3246f898cb5d",
+      "size": 15872
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/OpenTelemetry.Instrumentation.AspNetCore.dll",
+      "sha256": "10398265b32699e6f1087ade9c11ee5e331a9975b87b530dc418946fe4612fab",
+      "size": 76800
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/OpenTelemetry.Instrumentation.Http.dll",
+      "sha256": "01d9c4411bd9d6c3e3223929c680cff1703f5bf2d4289baaac91e3b41bca70d2",
+      "size": 69632
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/OpenTelemetry.Instrumentation.Runtime.dll",
+      "sha256": "fc12bb2bafc01952b83e0d452e717a6f466bd713453d6d95f0d50a4696f15799",
+      "size": 10752
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/OpenTelemetry.dll",
+      "sha256": "b780e5e7ec6b730b3207b5921395fe616070f13d0b0e63ad662131be4703a30b",
+      "size": 338944
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/P0Fixture.Orders.deps.json",
+      "sha256": "88440f17fd691d7d08a3ce9299375c5d38df39420bb7403d8c6a3aab9c7fd5e7",
+      "size": 36759
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/P0Fixture.Orders.dll",
+      "sha256": "9aa3f3f3d398c046d98fce5d4a29bcad9d8c51eee2429c1ef2ec3efc73ac8992",
+      "size": 19968
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/P0Fixture.Orders.runtimeconfig.json",
+      "sha256": "2854c873c21edc9fa7c2056f9d4744054aeb11f009d271702daa7794b74e895f",
+      "size": 401
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Polly.Core.dll",
+      "sha256": "37762ea6fcf05154685b0a616461705c837c2f07d98e4037dc3a0e4b4c186ea5",
+      "size": 242736
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Polly.Extensions.dll",
+      "sha256": "8adac7a20cd056b9a8623efb6e6f9b99a82e18d3c7b7f6c788f7fc4b20ce5f18",
+      "size": 57120
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/Polly.RateLimiting.dll",
+      "sha256": "afe3042cd4062438857d42880623845f32575375f460fd1ac07f705ea0211804",
+      "size": 28208
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders/System.IdentityModel.Tokens.Jwt.dll",
+      "sha256": "593c82287b671e9cceefaf10c51df96793f6db30f9cfa60daabaaf80474670bf",
+      "size": 91952
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.deps.json",
+      "sha256": "edcc815540443c917b08a317e6d1a055392b789e635e1813610d12094405824a",
+      "size": 453
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll",
+      "sha256": "ae93c8cd0af87e623128cdcfa6e5688be8cce4d20e179c9d25aeb73ff7903317",
+      "size": 5632
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Ui/P0Fixture.Ui.deps.json",
+      "sha256": "c7b07cf86388467da8e1f1c4347f000882ecbda8d782587b3f67a03a2e581129",
+      "size": 1094
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll",
+      "sha256": "a0ec2354457b45b603e735ba4a17d06d77e4a7383adc06be3709932b10c12cde",
+      "size": 5632
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.deps.json",
+      "sha256": "882f8c9fc0f288868e9f546b67b6cd4071483101206869a3c57db94212a6d67b",
+      "size": 441
+    },
+    {
+      "path": "artifacts/p0-resume-20261020-15d908bd/fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll",
+      "sha256": "df10f1dbdd3928ea50108497a928d45a6ea1c0bbefb39dc753b93e4047e7868d",
+      "size": 5632
+    }
+  ]
+}

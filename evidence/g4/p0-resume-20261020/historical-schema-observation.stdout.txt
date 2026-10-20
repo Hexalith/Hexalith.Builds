@@ -1,0 +1,6 @@
+schemas/hexalith.module-descriptor.v1.json
+schemas/hexalith.module-manifest.v1.json
+schemas/hexalith.module-run-evidence.v1.json
+schemas/hexalith.readiness-evidence.v1.json
+schemas/hexalith.runtime-toolchain-evidence.v1.json
+schemas/hexalith.ui-descriptor.v1.json
