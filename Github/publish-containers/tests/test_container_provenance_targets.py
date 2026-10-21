@@ -1,9 +1,9 @@
 """Exercise the shared repair at the SDK image-creation boundary without publishing."""
 from pathlib import Path
-import subprocess
+from html import escape
+import subprocess  # nosec B404 -- tests execute fixed repository-owned MSBuild fixtures.
 import tempfile
 import unittest
-import xml.etree.ElementTree as ET
 
 TARGETS = Path(__file__).resolve().parents[3] / "Props/ContainerProvenance.targets"
 
@@ -26,23 +26,27 @@ class ContainerProvenanceTargetsTests(unittest.TestCase):
             if labels:
                 seed.update({"org.opencontainers.image.source": "https",
                              "org.opencontainers.image.created": "2026-10-21T18"})
-            project = ET.Element("Project")
-            group = ET.SubElement(project, "PropertyGroup")
-            for key, value in properties.items():
-                ET.SubElement(group, key).text = value
-            ET.SubElement(project, "Import", Project=str(target))
-            group = ET.SubElement(project, "ItemGroup")
-            for key, value in seed.items():
-                ET.SubElement(group, "ContainerLabel", Include=key, Value=value)
-            publish = ET.SubElement(project, "Target", Name="_PublishSingleContainer")
-            ET.SubElement(publish, "WriteLinesToFile", File=str(output),
-                          Lines="@(ContainerLabel->'%(Identity)=%(Value)')", Overwrite="true")
-            ET.SubElement(publish, "WriteLinesToFile", File=str(root / "flags.txt"),
-                          Lines="$(ContainerGenerateLabelsImageSource)", Overwrite="true")
+            property_xml = "".join(f"<{key}>{escape(value)}</{key}>"
+                                   for key, value in properties.items())
+            label_xml = "".join(f'<ContainerLabel Include="{escape(key, quote=True)}" '
+                                f'Value="{escape(value, quote=True)}" />'
+                                for key, value in seed.items())
+            project = f'''<Project>
+  <PropertyGroup>{property_xml}</PropertyGroup>
+  <Import Project="{escape(str(target), quote=True)}" />
+  <ItemGroup>{label_xml}</ItemGroup>
+  <Target Name="_PublishSingleContainer">
+    <WriteLinesToFile File="{escape(str(output), quote=True)}"
+      Lines="@(ContainerLabel-&gt;'%(Identity)=%(Value)')" Overwrite="true" />
+    <WriteLinesToFile File="{escape(str(root / 'flags.txt'), quote=True)}"
+      Lines="$(ContainerGenerateLabelsImageSource)" Overwrite="true" />
+  </Target>
+</Project>'''
             path = root / "fixture.proj"
-            ET.ElementTree(project).write(path, encoding="unicode")
+            path.write_text(project)
             command = ["dotnet", "msbuild", str(path), "-nologo", "-v:q", "-t:_PublishSingleContainer"]
-            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(  # nosec B603 -- fixed executable/arguments and locally generated fixture; no shell.
+                command, capture_output=True, text=True, timeout=30)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             rows = [line.split("=", 1) for line in output.read_text().splitlines()]
             self.assertEqual(len(rows), len(dict(rows)), "Duplicate labels reached image creation")
@@ -109,10 +113,12 @@ class ContainerProvenanceTargetsTests(unittest.TestCase):
     def test_removing_the_rebinding_target_is_detected(self):
         with tempfile.TemporaryDirectory(prefix="builds-provenance-mutation-") as temporary:
             mutant = Path(temporary) / "removed.targets"
-            tree = ET.parse(TARGETS)
-            for target in list(tree.getroot().findall("Target")):
-                tree.getroot().remove(target)
-            tree.write(mutant, encoding="unicode")
+            source = TARGETS.read_text()
+            start_marker = '  <Target Name="RebindContainerProvenanceLabels"'
+            self.assertEqual(source.count(start_marker), 1)
+            start = source.index(start_marker)
+            end = source.index("  </Target>", start) + len("  </Target>")
+            mutant.write_text(source[:start] + source[end:])
             labels, properties = self.run_target(mutant)
             with self.assertRaises(AssertionError):
                 self.assert_provenance(labels, properties)
