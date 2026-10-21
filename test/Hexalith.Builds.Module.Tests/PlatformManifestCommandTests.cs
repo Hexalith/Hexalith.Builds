@@ -834,6 +834,28 @@ public sealed class PlatformManifestCommandTests
         {
             failed.Output.ShouldContain("FAIL hosting-inventory");
         }
+        else
+        {
+            using JsonDocument failedReport = JsonDocument.Parse(failed.Output);
+            JsonElement failedRoot = failedReport.RootElement;
+            failedRoot.GetProperty("adoptionScope").GetString().ShouldBe(Hexalith.Builds.Tooling.Manifest.PlatformAdoptionValidator.Scope);
+            JsonElement[] failedRows = [.. failedRoot.GetProperty("adoption").EnumerateArray()];
+            failedRows.Select(row => row.GetProperty("requirement").GetString()).Distinct().ShouldBe(
+                ["workspace", "declaration", "references", "gitlinks", "nested-references", "tool-pin", "hosting-inventory", "dependency-selectors", "dapr-subscriptions"], ignoreOrder: true);
+            foreach (JsonElement row in failedRows)
+            {
+                row.GetProperty("file").GetString().ShouldNotBeNullOrWhiteSpace();
+                row.GetProperty("reason").GetString().ShouldNotBeNullOrWhiteSpace();
+                if (row.GetProperty("requirement").GetString() is not "hosting-inventory" and not "dapr-subscriptions")
+                {
+                    row.GetProperty("passed").GetBoolean().ShouldBeTrue();
+                }
+            }
+
+            JsonElement hosting = failedRows.Single(row => row.GetProperty("requirement").GetString() == "hosting-inventory");
+            hosting.GetProperty("passed").GetBoolean().ShouldBeFalse();
+            hosting.GetProperty("file").GetString().ShouldBe("module/hosting-inventory.json");
+        }
     }
 
     private static async Task AssertMutationAsync(string path, string json, string field, string format)

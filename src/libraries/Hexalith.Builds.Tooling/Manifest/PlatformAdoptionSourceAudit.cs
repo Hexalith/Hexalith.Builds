@@ -73,10 +73,11 @@ internal static class PlatformAdoptionSourceAudit
                         const string dependencyTarget = @"references[/\\]Hexalith\.|(?:\.\.[/\\])+Hexalith\.|UseNuGetDeps|UseHexalithProjectReferences|Hexalith\w*(?:FromSource|Root)|HexalithTenantsBasePath|HexalithSourceMapping\w*";
                         string executable = MaskNonExecutable(content, hashComments: extension != ".CS");
                         bool discovery = HasDependencyProbe(commentsMasked, executable, dependencyTarget)
-                            || HasSegmentBuiltSiblingPath(commentsMasked, executable);
+                            || HasSegmentBuiltDependencyPath(commentsMasked, executable);
                         bool helper = MatchCode(commentsMasked, executable, @"(?:Resolve|Find|Get)[-_]?(?:Hexalith|Sibling)\w*(?:Root|Path)|(?:sibling|nested|package)[-_]?fallback")
                             || MatchCode(commentsMasked, executable, @"(?:Resolve|Find|Get)[-_]?(?:Repository|Source)\w*(?:Root|Path)\s*\([^()\r\n]*(?:" + dependencyTarget + ")");
-                        bool assignment = Match(executable, @"(?<![\w.])\$?" + _reservedPropertyPattern + @"\s*=(?!=)");
+                        bool assignment = Match(executable, @"(?<![\w.])\$?" + _reservedPropertyPattern + @"\s*=(?!=)")
+                            || HasDotnetPropertyOverride(commentsMasked, executable);
                         if (helper || discovery || assignment)
                         {
                             rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping."));
@@ -95,6 +96,7 @@ internal static class PlatformAdoptionSourceAudit
                     const string componentLiteral = @"(?:@?""+[^""]+""+|(?:\$@?|@\$)""[^""{}]+"")";
                     if (MatchCode(syntax, executable, _daprApiPattern + @"\s*(?:(?:storeName|pubsubName|secretStoreName|componentName|bindingName)\s*:\s*)?" + componentLiteral)
                         || MatchCode(syntax, executable, @"\b(?:StateStoreName|PubSubName|SecretStoreName|bindingName)\s*[:=]\s*" + componentLiteral)
+                        || HasNamedDaprComponentLiteral(syntax, executable, componentLiteral)
                         || HasGenericComponentBinding(syntax, executable, componentLiteral))
                     {
                         rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component name; obtain the name from the declared configuration key."));
@@ -166,6 +168,55 @@ internal static class PlatformAdoptionSourceAudit
     private static bool HasReservedPropertyAssignment(string? value) =>
         value is not null && Match(value, @"(?:^|;)\s*" + _reservedPropertyPattern + @"\s*=");
 
+    private static bool HasDotnetPropertyOverride(string syntax, string executable)
+    {
+        foreach (Match command in Regex.Matches(executable, @"(?:^|[;{}\r\n|&])\s*(?:(?:then|do|exec)\s+|&\s*)?dotnet(?:\.exe)?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
+        {
+            int start = command.Index + command.Length;
+            int end = ProbeArgumentEnd(executable, start, call: false);
+            if (Match(syntax[start..end], @"(?:^|\s)['""]?(?:-p:|/p:|--property(?::|=|\s+))" + _reservedPropertyPattern + @"\s*="))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasNamedDaprComponentLiteral(string syntax, string executable, string literal)
+    {
+        foreach (Match call in Regex.Matches(executable, _daprApiPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
+        {
+            int start = call.Index + call.Length;
+            int end = ProbeArgumentEnd(executable, start, call: true);
+            int argumentStart = start;
+            int depth = 0;
+            for (int index = start; index <= end; index++)
+            {
+                if (index < end && executable[index] == '(')
+                {
+                    depth++;
+                }
+                else if (index < end && executable[index] == ')')
+                {
+                    depth--;
+                }
+
+                if (index == end || (executable[index] == ',' && depth == 0))
+                {
+                    if (Match(syntax[argumentStart..index], @"^\s*(?:storeName|pubsubName|secretStoreName|componentName|bindingName)\s*:\s*" + literal))
+                    {
+                        return true;
+                    }
+
+                    argumentStart = index + 1;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private static bool HasGenericComponentBinding(string syntax, string executable, string literal)
     {
         foreach (Match assignment in Regex.Matches(syntax, @"\b(?<name>StoreName|ComponentName)\s*(?<operator>[:=])\s*" + literal, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
@@ -209,13 +260,14 @@ internal static class PlatformAdoptionSourceAudit
             || Match(relative, @"^references/Hexalith\.[^/]+(?:/|$)");
     }
 
-    private static bool HasSegmentBuiltSiblingPath(string syntax, string executable)
+    private static bool HasSegmentBuiltDependencyPath(string syntax, string executable, bool includeDirectReferences = false)
     {
         foreach (Match construction in Regex.Matches(executable, @"\b(?:Path\s*\.\s*Combine|os\s*\.\s*path\s*\.\s*join)\s*\(|\bJoin-Path\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
         {
             int start = construction.Index + construction.Length;
             int end = ProbeArgumentEnd(executable, start, call: construction.Value.EndsWith('('));
-            if (Match(syntax[start..end], @"@?['""]\.\.['""]\s*,?\s*(?:@?['""]references['""]\s*,?\s*)?@?['""]Hexalith\.[^'""]+['""]"))
+            if (Match(syntax[start..end], @"@?['""]\.\.['""]\s*,?\s*(?:@?['""]references['""]\s*,?\s*)?@?['""]Hexalith\.[^'""]+['""]")
+                || (includeDirectReferences && Match(syntax[start..end], @"@?['""]references['""]\s*,?\s*@?['""]Hexalith\.[^'""]+['""]")))
             {
                 return true;
             }
@@ -242,16 +294,19 @@ internal static class PlatformAdoptionSourceAudit
                 continue;
             }
 
-            if (Match(syntax[start..end], dependencyTarget))
+            if (Match(syntax[start..end], dependencyTarget)
+                || HasSegmentBuiltDependencyPath(syntax[start..end], executable[start..end], includeDirectReferences: true))
             {
                 return true;
             }
         }
 
-        foreach (Match probe in Regex.Matches(executable, @"\bTest-Path\b|\btest\s+-(?-i:[abcdefghkLprSstuwxOGN])\b|\[\s*-(?-i:[abcdefghkLprSstuwxOGN])\s", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
+        foreach (Match probe in Regex.Matches(executable, @"\bTest-Path\b|\btest\s+(?:!\s+)?-(?-i:[abcdefghkLprSstuwxOGN])\b|\[\s*(?:!\s+)?-(?-i:[abcdefghkLprSstuwxOGN])\s", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
         {
             int start = probe.Index + probe.Length;
-            if (Match(syntax[start..ProbeArgumentEnd(executable, start, call: false)], dependencyTarget))
+            int end = ProbeArgumentEnd(executable, start, call: false);
+            if (Match(syntax[start..end], dependencyTarget)
+                || HasSegmentBuiltDependencyPath(syntax[start..end], executable[start..end], includeDirectReferences: true))
             {
                 return true;
             }

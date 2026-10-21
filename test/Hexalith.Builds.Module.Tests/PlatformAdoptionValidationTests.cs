@@ -410,6 +410,13 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("await dapr.GetStateAsync<List<Order>>(\"statestore\", key);", false)]
     [InlineData("await dapr.GetStateAsync<List<Order>>(configuration[\"Sample:Dapr:StateComponent\"], key);", true)]
     [InlineData("await dapr.GetStateAsync<Dictionary<string, Order>>(\"statestore\", key);", false)]
+    [InlineData("await dapr.GetStateAsync<Order>(key: GetKey(), storeName: \"literal\");", false)]
+    [InlineData("await dapr.GetStateAsync<Order>(key: GetKey(), storeName: configuration[\"Sample:Dapr:StateComponent\"]);", true)]
+    [InlineData("await dapr.GetStateAsync<Order>(key: GetKey(CreateKey()), storeName: \"literal\");", false)]
+    [InlineData("await dapr.PublishEventAsync(data: CreateEvent(), pubsubName: \"literal\", topicName: topic);", false)]
+    [InlineData("await dapr.InvokeBindingAsync(data: CreateData(), bindingName: \"literal\", operation: \"create\");", false)]
+    [InlineData("var value = business.Load(key: GetKey(), storeName: \"BusinessStore\");", true)]
+    [InlineData("await dapr.GetStateAsync<Order>(key: business.Create(storeName: \"BusinessStore\"), storeName: configuredName);", true)]
     public async Task DaprAuditUsesExecutableSyntaxAsync(string source, bool passes)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
@@ -724,6 +731,26 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("eng/check.sh", "[ -L ../Hexalith.Other ]", false)]
     [InlineData("eng/check.sh", "test -r data", true)]
     [InlineData("eng/check.sh", "test -n ../Hexalith.Other", true)]
+    [InlineData("eng/check.cs", "if (Directory.Exists(Path.Combine(root, \"references\", \"Hexalith.Other\"))) return Select();", false)]
+    [InlineData("eng/check.cs", "if (File.Exists(Path.Combine(root, \"references\", \"Hexalith.Other\", \"Other.csproj\"))) return Select();", false)]
+    [InlineData("eng/check.py", "os.path.exists(os.path.join(root, 'references', 'Hexalith.Other'))", false)]
+    [InlineData("eng/check.ps1", "Test-Path (Join-Path $root 'references' 'Hexalith.Other')", false)]
+    [InlineData("eng/check.cs", "Directory.Exists(Path.Combine(root, \"references\", \"Hexalith.Other\")).ShouldBeFalse();", true)]
+    [InlineData("eng/check.cs", "Assert.True(Directory.Exists(Path.Combine(root, \"references\", \"Hexalith.Other\")));", true)]
+    [InlineData("eng/check.cs", "var path = Path.Combine(root, \"references\", \"Hexalith.Other\");", true)]
+    [InlineData("eng/check.cs", "if (Directory.Exists(Path.Combine(root, \"references\", \"data\"))) return Select();", true)]
+    [InlineData("eng/check.sh", "[ ! -d ../Hexalith.Other ]", false)]
+    [InlineData("eng/check.sh", "test ! -d ../Hexalith.Other", false)]
+    [InlineData("eng/check.sh", "[ ! -d data ]", true)]
+    [InlineData("eng/check.sh", "test ! -d data", true)]
+    [InlineData("eng/check.sh", "dotnet build \"-p:UseNuGetDeps=false\"", false)]
+    [InlineData("eng/check.ps1", "dotnet build '-p:UseHexalithProjectReferences=false'", false)]
+    [InlineData("eng/check.sh", "dotnet build \"--property:HexalithTenantsRoot=../Hexalith.Tenants\"", false)]
+    [InlineData("eng/check.sh", "dotnet build \"-p:Configuration=Release\"", true)]
+    [InlineData("eng/check.sh", "echo 'dotnet build \"-p:UseNuGetDeps=false\"'", true)]
+    [InlineData("eng/check.sh", "echo dotnet build \"-p:UseNuGetDeps=false\"", true)]
+    [InlineData("eng/check.sh", "# dotnet build \"-p:UseNuGetDeps=false\"\necho ready", true)]
+    [InlineData("eng/check.ps1", "Write-Host 'dotnet build \"-p:UseNuGetDeps=false\"'", true)]
     public async Task DependencyProbesRequireDependencyTargetsAsync(string path, string source, bool passes)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
