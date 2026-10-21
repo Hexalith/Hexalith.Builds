@@ -32,6 +32,32 @@ delivery_state:
   published_consumer_pin: candidate-4.29.1-remote-contract-controls-passed; exact-p1r-accepted; fresh-g6-and-full-p0-acceptance-pending
   owner_acceptance: stage3-evidence-accepted-2026-09-23; full-p0-acceptance-absent
   test_architect_acceptance: stage3-evidence-accepted-2026-09-23; full-p0-acceptance-absent
+approved_preparation_20261020:
+  authority: user conversation; verbatim "I approve"
+  proposal: 6-1-p0-tool-runtime-tuple-proposal-20261020.md
+  execution_record: evidence/g4/approved-tuple-20261020/continuation-state.json
+  local_tool_version: 4.33.2-p0.20261020.1
+  tool_revision: e40ed9c7110d56a2f38c9291627728aea2f205cb
+  eventstore_version: 3.126.0
+  eventstore_revision: fcf78d6cafb6c0c9f52dc350a9a09aff54ded288
+  eventstore_tag_builds_revision: 1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c
+  frontcomposer_version: 4.7.0
+  frontcomposer_revision: cf5fe8da100bd5224a0d7f597fc92e1ebb98a5f4
+  qualification_projects_revision: 83c4802be3626560e53d4ef88aa78647e89df589
+  qualification_eventstore_revision: 47def45665312410b73fa12cb047c6bbaa431cf2
+  p1r_corrected_projects_revision: a107d736c5991b2753655d5afd2a90198fd6dbe0
+  p1r_corrected_verifier_revision: 51422dff60f7f1db06f5356efea2548c45c370d7
+  published_successor_proposal: 6-1-p0-published-4-35-0-tuple-addendum-20261020.md
+  published_successor_decision: pending-no-selection
+  package_contract_gate: passed-locally-clean-source
+  published: false
+  p1r_usable: false
+  g6_qualification: passed-locally-and-independently-validated
+  g6_result_artifact_sha256: 287663d2a1d5ae25acf64e27a9984780062f26aaa4b8e71a972c73ead4488a08
+  g6_accepted: true
+  g6_accepted_at_utc: 2026-10-20T14:40:32Z
+  p0_accepted: false
+  projects_adoption: pending-accepted-p0
 accepted_p1r_baseline:
   acceptance_record: Hexalith.Projects/_bmad-output/implementation-artifacts/6-1-p1r-acceptance.json
   accepted_at_utc: 2026-10-01T06:17:01Z
@@ -99,6 +125,18 @@ traceability:
 # Story 6.1-P0: Deliver the G-4 Persisted Runner and Evidence Tooling
 
 Status: in-progress
+
+Current continuation: the user approved the [2026-10-20 tool/runtime tuple
+proposal](6-1-p0-tool-runtime-tuple-proposal-20261020.md) with “I approve”. The
+original proposal remains unchanged as approval evidence. The [approved
+continuation record](../../evidence/g4/approved-tuple-20261020/README.md) and
+[machine-readable state](../../evidence/g4/approved-tuple-20261020/continuation-state.json)
+record the actual repaired source, package identities and subsequent results.
+Both local tools `4.33.2-p0.20261020.1` passed the source/package contract gate
+from Builds `e40ed9c7110d56a2f38c9291627728aea2f205cb`, embedding EventStore
+`3.126.0` / FrontComposer `4.7.0`. Matching G-6 passed on frozen isolated source and the user accepted its exact
+result in Builds, Platform and FrontComposer/Web owner roles. The first complete P1R campaign measured 4,805/4,808 passing assertions; three restore failures trace to a retained-floor/source-proof fixture mismatch. Its correction and fresh qualification remain open. Acceptance and Projects consumer adoption
+remain gated on their actual results; target approval is not result acceptance.
 
 ## Story
 

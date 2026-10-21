@@ -1,0 +1,8 @@
+{
+  "artifactKind": "complete G6 material hydration proof for sparse proposal checkout",
+  "expectedTrackedMaterialFiles": 8283,
+  "missingMaterialFiles": [],
+  "materialPathInventorySha256": "08d850e7b157a09f632eb401f20039ffcb21bbc2ccf74a11d009227d3498d614",
+  "sparseOmissionScope": "historical documentation outside every G6 material scope; no code, build inputs, selected graph source or required material omitted",
+  "liveQualificationStarted": false
+}

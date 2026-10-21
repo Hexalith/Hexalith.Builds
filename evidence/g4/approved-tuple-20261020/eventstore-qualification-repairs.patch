@@ -1,0 +1,749 @@
+diff --git a/src/Hexalith.EventStore.DomainService/EventStoreDomainServiceExtensions.cs b/src/Hexalith.EventStore.DomainService/EventStoreDomainServiceExtensions.cs
+index 713ab46da..5619516c4 100644
+--- a/src/Hexalith.EventStore.DomainService/EventStoreDomainServiceExtensions.cs
++++ b/src/Hexalith.EventStore.DomainService/EventStoreDomainServiceExtensions.cs
+@@ -277,14 +277,6 @@ public static class EventStoreDomainServiceExtensions {
+ 
+         ValidateDomainQueryHandlerRoutes(app.Services);
+         app.Services.GetService<EventStoreDomainServiceEndpointSource>()?.Capture(app);
+-        bool mapProjectionEndpoint = !IsRouteMapped(app, "/project", HttpMethods.Post);
+-        bool mapNamedProjectionEndpoint = !IsRouteMapped(app, "/project/v2", HttpMethods.Post);
+-        if (mapProjectionEndpoint) {
+-            ValidateDomainProjectionHandlerRoutes(app.Services);
+-        }
+-
+-        ValidateNamedDomainProjectionHandlerRoutes(app.Services);
+-
+         // Preserve the status-root contract without adding an anonymous endpoint (AD-16).
+         _ = app.MapGet("/", () => "Hexalith EventStore domain service")
+             .RequireAuthorization(EventStoreDomainServicePolicies.AnyWorkload);
+@@ -346,6 +338,27 @@ public static class EventStoreDomainServiceExtensions {
+             })
+             .RequireEventStoreDomainServicePolicy("/query");
+ 
++        _ = app.MapEventStoreDomainProjectionEndpoints();
++        _ = app.MapEventStoreDomainProjectionMetadataEndpoint();
++
++        return app;
++    }
++
++    /// <summary>Maps the canonical projection, rebuild and source-guard routes while retaining routes already supplied by the host.</summary>
++    /// <param name="app">The domain host application.</param>
++    /// <returns>The application for chaining.</returns>
++    public static WebApplication MapEventStoreDomainProjectionEndpoints(this WebApplication app)
++    {
++        ArgumentNullException.ThrowIfNull(app);
++        app.Services.GetService<EventStoreDomainServiceEndpointSource>()?.Capture(app);
++        bool mapProjectionEndpoint = !IsRouteMapped(app, "/project", HttpMethods.Post);
++        bool mapNamedProjectionEndpoint = !IsRouteMapped(app, "/project/v2", HttpMethods.Post);
++        if (mapProjectionEndpoint)
++        {
++            ValidateDomainProjectionHandlerRoutes(app.Services);
++        }
++        ValidateNamedDomainProjectionHandlerRoutes(app.Services);
++
+         // /project — the stateless full-replay projection endpoint (Model a). Dispatches to the matching
+         // IDomainProjectionHandler. Skipped when the app already mapped its own /project so a domain with
+         // bespoke projection wire behavior (e.g. a Tier-3 fault injector) takes precedence — registering the
+@@ -462,6 +475,41 @@ public static class EventStoreDomainServiceExtensions {
+         }
+         MapSharedProjectionRebuildEndpoint(app);
+ 
++        if (!IsRouteMapped(app, "/project/source-guard/reconcile-applied-receipt/v1", HttpMethods.Post))
++        {
++            _ = app.MapPost("/project/source-guard/reconcile-applied-receipt/v1", async (ProjectionAppliedReceiptRequest request,
++                IServiceProvider services, [FromServices] DomainProjectionCatalogRegistry catalog, CancellationToken token) =>
++                    Results.Ok(await DomainProjectionOwnerProof.ReconcileAppliedReceiptAsync(services, request, catalog, token).ConfigureAwait(false)))
++                .RequireEventStoreDomainServicePolicy("/project/source-guard/reconcile-applied-receipt/v1");
++        }
++        if (!IsRouteMapped(app, "/project/source-guard/applied-receipt/v1", HttpMethods.Post))
++        {
++            _ = app.MapPost("/project/source-guard/applied-receipt/v1", async (ProjectionAppliedReceiptRequest request,
++                IServiceProvider services, [FromServices] DomainProjectionCatalogRegistry catalog, CancellationToken token) =>
++                    Results.Ok(await DomainProjectionOwnerProof.ReadAppliedReceiptAsync(services, request, catalog, token).ConfigureAwait(false)))
++                .RequireEventStoreDomainServicePolicy("/project/source-guard/applied-receipt/v1");
++        }
++        if (!IsRouteMapped(app, "/project/source-guard/owner-proof/v1", HttpMethods.Post))
++        {
++            _ = app.MapPost("/project/source-guard/owner-proof/v1", async (ProjectionOwnerProofRequest request,
++                IServiceProvider services, [FromServices] DomainProjectionCatalogRegistry catalog, CancellationToken cancellationToken) =>
++                Results.Ok(await DomainProjectionOwnerProof.ReadAsync(services, request, catalog, cancellationToken).ConfigureAwait(false)))
++                .RequireEventStoreDomainServicePolicy("/project/source-guard/owner-proof/v1");
++        }
++
++        return app;
++    }
++
++    /// <summary>Maps the SDK projection catalog using the canonical metadata policy without replacing a host route.</summary>
++    /// <param name="app">The domain host application.</param>
++    /// <returns>The application for chaining.</returns>
++    public static WebApplication MapEventStoreDomainProjectionMetadataEndpoint(this WebApplication app)
++    {
++        ArgumentNullException.ThrowIfNull(app);
++        if (IsRouteMapped(app, "/admin/operational-index-metadata", HttpMethods.Post))
++        {
++            return app;
++        }
+         _ = app.MapPost(
+             "/admin/operational-index-metadata",
+             (AdminOperationalIndexMetadata.Request request,
+@@ -513,19 +561,6 @@ public static class EventStoreDomainServiceExtensions {
+             })
+             .RequireEventStoreDomainServicePolicy("/admin/operational-index-metadata");
+ 
+-        _ = app.MapPost("/project/source-guard/reconcile-applied-receipt/v1", async (ProjectionAppliedReceiptRequest request,
+-            IServiceProvider services, [FromServices] DomainProjectionCatalogRegistry catalog, CancellationToken token) =>
+-                Results.Ok(await DomainProjectionOwnerProof.ReconcileAppliedReceiptAsync(services, request, catalog, token).ConfigureAwait(false)))
+-            .RequireEventStoreDomainServicePolicy("/project/source-guard/reconcile-applied-receipt/v1");
+-        _ = app.MapPost("/project/source-guard/applied-receipt/v1", async (ProjectionAppliedReceiptRequest request,
+-            IServiceProvider services, [FromServices] DomainProjectionCatalogRegistry catalog, CancellationToken token) =>
+-                Results.Ok(await DomainProjectionOwnerProof.ReadAppliedReceiptAsync(services, request, catalog, token).ConfigureAwait(false)))
+-            .RequireEventStoreDomainServicePolicy("/project/source-guard/applied-receipt/v1");
+-        _ = app.MapPost("/project/source-guard/owner-proof/v1", async (ProjectionOwnerProofRequest request,
+-            IServiceProvider services, [FromServices] DomainProjectionCatalogRegistry catalog, CancellationToken cancellationToken) =>
+-            Results.Ok(await DomainProjectionOwnerProof.ReadAsync(services, request, catalog, cancellationToken).ConfigureAwait(false)))
+-            .RequireEventStoreDomainServicePolicy("/project/source-guard/owner-proof/v1");
+-
+         return app;
+     }
+ 
+diff --git a/tests/Hexalith.EventStore.DomainService.Tests/EventStoreDomainServiceExtensionsTests.cs b/tests/Hexalith.EventStore.DomainService.Tests/EventStoreDomainServiceExtensionsTests.cs
+index 4aa3c44f3..846e4e76a 100644
+--- a/tests/Hexalith.EventStore.DomainService.Tests/EventStoreDomainServiceExtensionsTests.cs
++++ b/tests/Hexalith.EventStore.DomainService.Tests/EventStoreDomainServiceExtensionsTests.cs
+@@ -33,6 +33,34 @@ namespace Hexalith.EventStore.DomainService.Tests;
+ /// Tier 1 coverage of the domain-service SDK host extensions and the moved router/metadata helpers.
+ /// </summary>
+ public sealed class EventStoreDomainServiceExtensionsTests {
++    /// <summary>Verifies projection-only hosts preserve owner routes and canonical authorization on repeated mapping.</summary>
++    [Fact]
++    public async Task ProjectionOnlyMappingsPreserveCustomRoutesAndCanonicalPoliciesAsync()
++    {
++        WebApplicationBuilder builder = WebApplication.CreateBuilder();
++        builder.AddEventStoreDomainService(typeof(WidgetAggregate).Assembly);
++        await using WebApplication app = builder.Build();
++        app.MapPost("/project", () => Results.Ok("owner-projection"));
++        app.MapPost("/query", () => Results.Ok("owner-query"));
++        app.MapEventStoreDomainProjectionEndpoints();
++        app.MapEventStoreDomainProjectionMetadataEndpoint();
++        app.MapEventStoreDomainProjectionEndpoints();
++        app.MapEventStoreDomainProjectionMetadataEndpoint();
++        RouteEndpoint[] endpoints = GetRouteEndpoints(app);
++        endpoints.Count(endpoint => endpoint.RoutePattern.RawText == "/project").ShouldBe(1);
++        endpoints.Count(endpoint => endpoint.RoutePattern.RawText == "/query").ShouldBe(1);
++        endpoints.ShouldNotContain(endpoint => endpoint.RoutePattern.RawText == "/process");
++        foreach (var route in EventStoreDomainServiceRoutes.Operational.Where(route =>
++            route.Route.StartsWith("/project", StringComparison.Ordinal)
++            || route.Route == "/admin/operational-index-metadata"))
++        {
++            if (route.Route == "/project") { continue; }
++            RouteEndpoint endpoint = endpoints.Single(endpoint => endpoint.RoutePattern.RawText == route.Route);
++            endpoint.Metadata.GetOrderedMetadata<Microsoft.AspNetCore.Authorization.IAuthorizeData>()
++                .ShouldContain(policy => policy.Policy == route.Policy);
++        }
++    }
++
+     [Fact]
+     public void MetadataReportsRegisteredHandlerOnlyDomainWithoutGrantingOrphanProjectionCapabilities()
+     {
+diff --git a/tools/p1r-published-consumers/Directory.Build.props b/tools/p1r-published-consumers/Directory.Build.props
+index d1d97e86c..ffeda52b9 100644
+--- a/tools/p1r-published-consumers/Directory.Build.props
++++ b/tools/p1r-published-consumers/Directory.Build.props
+@@ -6,8 +6,8 @@
+     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+     <DefineConstants Condition="'$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_SOURCE</DefineConstants>
+-    <DefineConstants Condition="'$(EventStoreVersion)' == '3.110.0' or '$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_CAPABILITIES</DefineConstants>
+-    <DefineConstants Condition="'$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_CANDIDATE</DefineConstants>
+-    <DefineConstants Condition="'$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_FOLDED_SNAPSHOT</DefineConstants>
++    <DefineConstants Condition="'$(EventStoreVersion)' == '3.110.0' or '$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_CAPABILITIES</DefineConstants>
++    <DefineConstants Condition="'$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_CANDIDATE</DefineConstants>
++    <DefineConstants Condition="'$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0' or '$(UseCurrentSource)' == 'true'">$(DefineConstants);P1R_FOLDED_SNAPSHOT</DefineConstants>
+   </PropertyGroup>
+ </Project>
+diff --git a/tools/p1r-published-consumers/README.md b/tools/p1r-published-consumers/README.md
+index b14d42167..8cad343cf 100644
+--- a/tools/p1r-published-consumers/README.md
++++ b/tools/p1r-published-consumers/README.md
+@@ -329,3 +329,30 @@ Both explicit source routes copy the selected tagged source’s `global.json` in
+ each fresh consumer root before the first MSBuild evaluation or restore. This
+ selects its SDK for Debug source builds and Release published-package builds,
+ even when the verifier checkout pins a newer SDK.
++
++## Exact 3.126.0 enrollment, 2026-10-20
++
++The approved P0 current-catalog preparation target additionally enrolls published
++3.126.0 for the existing finite snapshot, recovery, Reminder and evolution proof.
++Its exact tag/source is `fcf78d6cafb6c0c9f52dc350a9a09aff54ded288`; tag-construction
++Builds is `1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c`. The verifier and its actual
++execution Builds remain separate identities. Use the existing separate
++verifier/candidate-closure route with an explicit clean tagged `--source-root`.
++The optional pinned-tooling/runtime-source route remains bounded to its existing
++3.125.1 contract; this enrollment does not silently widen that route.
++
++The fixture executes genuine manual snapshot nine, tail twelve, restore floor
++five/head twelve and append thirteen, plus the existing strict Reminder and
++logical evolution additions. Exact 3.126.0 package writers and the separately
++bound Debug source writer are supported fixture inputs; 3.126.1/3.127.0 and
++cross-version writer substitution remain refused. Historical 3.125.1 identities,
++measurements and failures are preserved. Enrollment and synthetic controls grant
++no P1R support boundary, conformance, acceptance, downgrade, or consumer adoption.
++Keep comparison-only 3.70.1/3.110.0, rollback null and AD-17 forward recovery.
++
++The approved 3.126.0 tagged-source path uses the independently measured immutable
++Linux/amd64 SDK 10.0.402 image required by that source's `global.json`. Historical
++paths retain SDK 10.0.401. The controller and independent receipt validators
++derive the exact image, version and executable hash from the bound tagged source;
++rehashed cross-profile proof substitutions remain non-passing. Source comparison
++uses the immutable release checkout, separately from newer consumer-build repairs.
+diff --git a/tools/p1r-published-consumers/domain/Domain.csproj b/tools/p1r-published-consumers/domain/Domain.csproj
+index f8614a1db..c72b7c865 100644
+--- a/tools/p1r-published-consumers/domain/Domain.csproj
++++ b/tools/p1r-published-consumers/domain/Domain.csproj
+@@ -1,13 +1,13 @@
+ <Project Sdk="Microsoft.NET.Sdk.Web">
+   <PropertyGroup></PropertyGroup>
+   <ItemGroup><Content Update="fixture-evolution-manifest.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+-  <ItemGroup Condition="'$(UseCurrentSource)' != 'true' and '$(EventStoreVersion)' != '3.119.0' and '$(EventStoreVersion)' != '3.121.0' and '$(EventStoreVersion)' != '3.122.1' and '$(EventStoreVersion)' != '3.125.0' and '$(EventStoreVersion)' != '3.125.1'">
++  <ItemGroup Condition="'$(UseCurrentSource)' != 'true' and '$(EventStoreVersion)' != '3.119.0' and '$(EventStoreVersion)' != '3.121.0' and '$(EventStoreVersion)' != '3.122.1' and '$(EventStoreVersion)' != '3.125.0' and '$(EventStoreVersion)' != '3.125.1' and '$(EventStoreVersion)' != '3.126.0'">
+     <Compile Remove="FixtureEvolutionManifest.cs" />
+   </ItemGroup>
+-  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1'">
++  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0'">
+     <Compile Include="../FixtureSnapshotQualification.cs" Link="FixtureSnapshotQualification.cs" />
+   </ItemGroup>
+-  <ItemGroup Condition="'$(UseCurrentSource)' != 'true' and '$(EventStoreVersion)' != '3.121.0' and '$(EventStoreVersion)' != '3.122.1' and '$(EventStoreVersion)' != '3.125.0' and '$(EventStoreVersion)' != '3.125.1'">
++  <ItemGroup Condition="'$(UseCurrentSource)' != 'true' and '$(EventStoreVersion)' != '3.121.0' and '$(EventStoreVersion)' != '3.122.1' and '$(EventStoreVersion)' != '3.125.0' and '$(EventStoreVersion)' != '3.125.1' and '$(EventStoreVersion)' != '3.126.0'">
+     <Compile Remove="CounterSnapshotParity.cs" />
+   </ItemGroup>
+   <ItemGroup><Compile Include="../PublishedIdentity.cs" Link="PublishedIdentity.cs" /></ItemGroup>
+diff --git a/tools/p1r-published-consumers/host/Host.csproj b/tools/p1r-published-consumers/host/Host.csproj
+index 942cf20a5..2ed1c4e92 100644
+--- a/tools/p1r-published-consumers/host/Host.csproj
++++ b/tools/p1r-published-consumers/host/Host.csproj
+@@ -1,11 +1,11 @@
+ <Project Sdk="Microsoft.NET.Sdk.Web">
+   <PropertyGroup></PropertyGroup>
+   <ItemGroup><Compile Include="../PublishedIdentity.cs" Link="PublishedIdentity.cs" /></ItemGroup>
+-  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1'">
++  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.119.0' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0'">
+     <Compile Include="../domain/FixtureEvolutionManifest.cs" Link="FixtureEvolutionManifest.cs" />
+     <Content Include="../domain/fixture-evolution-manifest.json" Link="fixture-evolution-manifest.json" CopyToOutputDirectory="PreserveNewest" />
+   </ItemGroup>
+-  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1'">
++  <ItemGroup Condition="'$(UseCurrentSource)' == 'true' or '$(EventStoreVersion)' == '3.121.0' or '$(EventStoreVersion)' == '3.122.1' or '$(EventStoreVersion)' == '3.125.0' or '$(EventStoreVersion)' == '3.125.1' or '$(EventStoreVersion)' == '3.126.0'">
+     <Compile Include="../FixtureSnapshotQualification.cs" Link="FixtureSnapshotQualification.cs" />
+   </ItemGroup>
+   <ItemGroup Condition="'$(UseCurrentSource)' != 'true'">
+diff --git a/tools/p1r_check_witnesses.py b/tools/p1r_check_witnesses.py
+index c1a6fae03..967a13238 100644
+--- a/tools/p1r_check_witnesses.py
++++ b/tools/p1r_check_witnesses.py
+@@ -130,7 +130,7 @@ def validate_shape(node, tree):
+ 
+ def requires_qualified_snapshot(candidate_version, lane, identifier):
+     """Derive the genuine successor seed requirement without trusting optional observations."""
+-    return candidate_version in ('3.121.0','3.122.1','3.125.0','3.125.1') and (lane == 'post-upgrade-restore' or (
++    return candidate_version in ('3.121.0','3.122.1','3.125.0','3.125.1','3.126.0') and (lane == 'post-upgrade-restore' or (
+         lane in ('snapshot-tail','retained-covered','retained-uncovered','metadata-write')
+         and identifier.split('-to-',1)[0] in (candidate_version,'source')))
+ 
+@@ -184,7 +184,7 @@ def validate_qualified_snapshot(observed, prefix, checks, evidence, binding, wri
+             except (ValueError,TypeError):
+                 pass
+     role, configuration = ('source','Debug') if writer_version == 'source' else ('candidate','Release')
+-    require(writer_version in ('3.121.0','3.122.1','3.125.0','3.125.1','source'), 'qualified snapshot writer is not the selected successor')
++    require(writer_version in ('3.121.0','3.122.1','3.125.0','3.125.1','3.126.0','source'), 'qualified snapshot writer is not the selected successor')
+     def probe_command(check_prefix, operation):
+         identities = {record.get('command') for record in evidence['check_witnesses']
+                       if record.get('kind') == 'probe' and record.get('id','').startswith(prefix + check_prefix)}
+@@ -763,7 +763,7 @@ def validate_case(row, evidence, binding, lane, retained_sources, candidate_vers
+         require(not equivalent or comparison.get('delta') == [], 'equivalence carries contradictory semantic deltas')
+ 
+     if not incomplete and lane == 'reminder-recovery':
+-        if candidate_version == '3.125.1':
++        if candidate_version in ('3.125.1', '3.126.0'):
+             validate_reminder_windows(observation, successful_http, configurations, checks, row['id'])
+             validate_reminder_identity(observation, successful_http, checks, row['id'])
+         for name, identity in (('registration','initial-convergence-no-direct-submission'), ('rearmed','restart-convergence-no-direct-submission')):
+diff --git a/tools/p1r_isolation.py b/tools/p1r_isolation.py
+index 99c9b1a25..778f8b9a4 100644
+--- a/tools/p1r_isolation.py
++++ b/tools/p1r_isolation.py
+@@ -28,6 +28,24 @@ from p1r_qualification import InvalidPacket, digest, regular, require, stamp
+ ROOT = preparation.ROOT
+ # Linux/amd64 manifests, rather than mutable tags or multi-platform selection.
+ SDK_IMAGE = "mcr.microsoft.com/dotnet/sdk@sha256:0eeb52c76e35a5431ca707ad2bc75e38006a05393045d8532ae44c15d9474523"
++# The approved 3.126.0 source requires SDK 10.0.402; historical evidence keeps
++# its original image and executable identity. Both manifests were measured on amd64.
++APPROVED_31260_SOURCE = "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
++APPROVED_31260_SDK_IMAGE = "mcr.microsoft.com/dotnet/sdk@sha256:3a48280a9a7c6276c3eeaba1efa6a08820f18c84fb9e6274c187719ecfaf9fbc"
++
++
++def sdk_profile(binding=None):
++    """Derive an exact image and executable profile from the bound tagged source."""
++    source = (binding or {}).get("candidate_source", {})
++    if source.get("main", {}).get("head") == APPROVED_31260_SOURCE:
++        return {"image": APPROVED_31260_SDK_IMAGE, "version": "10.0.402",
++                "executable": {"path": "/usr/share/dotnet/dotnet",
++                    "sha256": "8b3d902364f618e31e029d4eba077d52c141dd641e375f4555715604806e44b6"}}
++    return {"image": SDK_IMAGE, "version": "10.0.401",
++            "executable": {"path": "/usr/share/dotnet/dotnet",
++                "sha256": "01d89e0a0191052bfea616cd4ce624c8faf13b05bbddf7f64499c23e2a9d9269"}}
++
++
+ DAEMON_IMAGE = "docker@sha256:6316d612722fd7fb2bd7edf9fcbb4439d08915cfb2e0e0b28bf16675fc9f3314"
+ PYTHON_IMAGE = "python@sha256:2986c55feb36e6cae00fa1fefb454283e4b33f35e75ff8bdd123b134130be301"
+ SOCKET = "unix:///var/lib/docker/p1r-run/docker.sock"
+@@ -456,6 +474,7 @@ class IsolatedRunner:
+                 self.result["source_root"] = str(self.source_root)
+                 self.controller_binding = preparation.source_binding(ROOT, self.source_root)
+                 self.result["controller_source_binding"] = self.controller_binding
++                self.result["images"]["sdk"] = sdk_profile(self.controller_binding)["image"]
+             require(self.output.is_relative_to(self.workspace), "isolation output is outside the mounted workspace; private evidence would be lost")
+             self.result["outer_host"] = self.outer_host
+             self.save()
+@@ -556,6 +575,7 @@ class IsolatedRunner:
+                     controller_binding = command_source_binding(command)
+                 require(self.result["selected_input"] == executor_input(command, ROOT),
+                         "selected input changed during admission")
++            self.result["images"]["sdk"] = sdk_profile(controller_binding)["image"]
+             if controller_binding is not None:
+                 preparation.check_current_source(controller_binding)
+             _, data = self.docker(["info", "--format", "{{.ID}}"])
+@@ -567,7 +587,7 @@ class IsolatedRunner:
+             self.result["outer_toolchain"] = {"docker": {"path":str(executable), "sha256":digest(regular(executable))},
+                                                "version":json.loads(version)}
+             self.result["image_measurements"] = {}
+-            for role, image in (("sdk", SDK_IMAGE), ("daemon", DAEMON_IMAGE), ("python", PYTHON_IMAGE)):
++            for role, image in (("sdk", sdk_profile(controller_binding)["image"]), ("daemon", DAEMON_IMAGE), ("python", PYTHON_IMAGE)):
+                 self.docker(["pull", "--platform", "linux/amd64", image], timeout=600)
+                 _, data = self.docker(["image", "inspect", "--format", IMAGE_INSPECT, image])
+                 measured = json.loads(data)
+@@ -600,7 +620,7 @@ class IsolatedRunner:
+             python = self.create("python-tools", PYTHON_IMAGE, ["--network", "none", "--entrypoint", "/bin/true"])
+             self.docker(["cp", python + ":/usr/local", self.scratch / "python"])
+             self.docker(["cp", daemon + ":/usr/local/bin/docker", self.scratch / "docker"])
+-            runner = self.create("sdk", SDK_IMAGE,
++            runner = self.create("sdk", sdk_profile(controller_binding)["image"],
+                 sdk_arguments(self.workspace, ROOT, self.invocation, daemon, self.volume, source_paths), ["infinity"])
+             self.docker(["cp", self.scratch / "python", runner + ":/opt/python"])
+             self.docker(["cp", self.scratch / "docker", runner + ":/usr/local/bin/docker"])
+diff --git a/tools/p1r_isolation_evidence.py b/tools/p1r_isolation_evidence.py
+index f72b52dd5..10c3b2ef0 100644
+--- a/tools/p1r_isolation_evidence.py
++++ b/tools/p1r_isolation_evidence.py
+@@ -79,6 +79,9 @@ def validate(wrapper, private, context, run_root, wrapper_path, times):
+             and selected['sha256'] == context['inputs']['sha256']
+             and json.loads(regular(Path(selected['path']))) == context['inputs']['value'],
+             'isolation selected physical input or hash substituted')
++    sdk_profile = isolation.sdk_profile(context['source_binding'])
++    require(wrapper.get('images') == {'sdk':sdk_profile['image'], 'daemon':isolation.DAEMON_IMAGE,
++                                    'python':isolation.PYTHON_IMAGE}, 'bound source image profile differs')
+     proof, measured = private.get('proof', {}), wrapper.get('toolchain_proof', {})
+     require(isinstance(measured,dict) and measured, 'isolation toolchain measurement missing')
+     for name in ('executables','python_version','dotnet_version','docker_version','glibc','daemon','outer_daemon_id','socket','namespaces','daemon_namespaces'):
+@@ -87,7 +90,7 @@ def validate(wrapper, private, context, run_root, wrapper_path, times):
+         item = proof['executables'].get(name,{})
+         require(set(item) == {'path','sha256'} and Path(item['path']).is_absolute()
+                 and bool(re.fullmatch(r'[0-9a-f]{64}', item['sha256'])), 'invalid private executable identity')
+-    require(all(proof['executables'][name] == expected for name,expected in PINNED_EXECUTABLES.items()),
++    require(all(proof['executables'][name] == expected for name,expected in (PINNED_EXECUTABLES | {'dotnet':sdk_profile['executable']}).items()),
+             'pinned Docker or dotnet executable bytes or location differ')
+     for name in ('namespaces','daemon_namespaces'):
+         links = proof[name]
+@@ -96,7 +99,7 @@ def validate(wrapper, private, context, run_root, wrapper_path, times):
+                         for kind,value in links.items()), 'complete private namespace links missing or invalid')
+     require(isinstance(proof['glibc'],str) and bool(re.fullmatch(r'glibc [0-9]+\.[0-9]+',proof['glibc'])),
+             'private glibc measurement missing or invalid')
+-    require(proof['dotnet_version'] == '10.0.401'
++    require(proof['dotnet_version'] == sdk_profile['version']
+             and proof['docker_version'].get('Client',{}).get('Version') == '29.8.2'
+             and proof['docker_version'].get('Server',{}).get('Version') == proof['daemon'].get('ServerVersion') == '29.8.2',
+             'pinned private Docker or dotnet version differs')
+@@ -248,7 +251,7 @@ def validate(wrapper, private, context, run_root, wrapper_path, times):
+     created('python-tools',isolation.PYTHON_IMAGE,['--network','none','--entrypoint','/bin/true'],[])
+     take(['cp',python+':/usr/local',scratch/'python'])
+     take(['cp',daemon+':/usr/local/bin/docker',scratch/'docker'])
+-    created('sdk',isolation.SDK_IMAGE,isolation.sdk_arguments(workspace,repository,invocation,daemon,volume,
++    created('sdk',sdk_profile['image'],isolation.sdk_arguments(workspace,repository,invocation,daemon,volume,
+             paths or ((source_root,) if source_root is not None else ())),['infinity'])
+     take(['cp',scratch/'python',sdk+':/opt/python'])
+     take(['cp',scratch/'docker',sdk+':/usr/local/bin/docker'])
+diff --git a/tools/p1r_published_executor.py b/tools/p1r_published_executor.py
+index a10dfc2cb..da3a9522d 100644
+--- a/tools/p1r_published_executor.py
++++ b/tools/p1r_published_executor.py
+@@ -210,7 +210,7 @@ def validate_execution_inputs(inputs, source_root=None, source_builds_root=None)
+     if "tooling" in inputs:
+         return
+     selected_root = ROOT if source_root is None else Path(source_root)
+-    if source_root is None and candidate["version"] == "3.125.1":
++    if source_root is None and candidate["version"] in ("3.125.1", "3.126.0"):
+         binding = preparation.source_binding(ROOT, selected_root)
+         qualification.validate_candidate_source(binding, inputs)
+     tag_commit = preparation.git(selected_root, "rev-parse", candidate["tag"] + "^{commit}").decode().strip()
+@@ -1030,7 +1030,7 @@ class Executor:
+         genuine = interval == 10 and qualification.is_successor_selection(
+             {"candidate": {"version": self.candidate if version == "source" else version}})
+         if genuine:
+-            require(self.candidate in ("3.121.0", "3.122.1", "3.125.0", "3.125.1")
++            require(self.candidate in ("3.121.0", "3.122.1", "3.125.0", "3.125.1", "3.126.0")
+                     and version in (self.candidate, "source"), "successor snapshot fixture is not explicitly enabled")
+         self.stop_nodes()
+         self.postgres_query(self.redis, "DO $$ BEGIN IF to_regclass('public.state') IS NOT NULL THEN TRUNCATE TABLE state; END IF; END $$;")
+@@ -1262,7 +1262,7 @@ class Executor:
+         evidence = {"id": identifier, "commands": self.commands[start_index:], "observations": observed,
+                     "configurations": getattr(self, "configurations", [])[start_configuration:],
+                     "check_witnesses": checks.witnesses}
+-        if self.candidate in ("3.121.0", "3.122.1", "3.125.0", "3.125.1") and getattr(self, "last_snapshot_creation", None) is not None:
++        if self.candidate in ("3.121.0", "3.122.1", "3.125.0", "3.125.1", "3.126.0") and getattr(self, "last_snapshot_creation", None) is not None:
+             path = ROOT / "tools/p1r-published-consumers/FixtureSnapshotQualification.cs"
+             data = regular(path)
+             evidence["snapshot_fixture_source"] = {"path": str(path), "sha256": digest(data), "content": data.decode()}
+@@ -1640,12 +1640,12 @@ class Executor:
+             time.sleep(max(0, (due - datetime.datetime.now(datetime.timezone.utc)).total_seconds()) + .2)
+             natural = self.natural_reminder(checks)
+         callback_url = f"http://127.0.0.1:{self.host_port}/reminder/callback/1"
+-        if self.candidate == "3.125.1":
++        if self.candidate in ("3.125.1", "3.126.0"):
+             require(registration.get("intent_due") == original_due and registration.get("intent_revision") == 1
+                     and isinstance(registration.get("reminder_name"), str), "original armed reminder identity missing")
+             callback_url += "?" + urllib.parse.urlencode({"due": original_due, "reminderName": registration["reminder_name"]})
+         repeated = self.http("POST", callback_url, {})
+-        if self.candidate == "3.125.1":
++        if self.candidate in ("3.125.1", "3.126.0"):
+             checks.check("callback-actor-request-accepted", isinstance(repeated.get("callback_status"), int)
+                          and not isinstance(repeated.get("callback_status"), bool)
+                          and 200 <= repeated["callback_status"] < 300)
+diff --git a/tools/p1r_published_qualification.py b/tools/p1r_published_qualification.py
+index b9f71edfa..1cb58d736 100644
+--- a/tools/p1r_published_qualification.py
++++ b/tools/p1r_published_qualification.py
+@@ -80,8 +80,8 @@ PACKET_KEYS = ("schema", "invocation", "started_utc", "finished_utc", "source_bi
+ ROW_KEYS = ("id", "execution", "compatibility", "scope", "assertions", "receipts", "reason")
+ INPUT_KEYS = ("schema", "fixture", "authority", "candidate", "rollback", "operational_profile",
+               "assertion_instrumentation", "selected_additions")
+-FOLDED_SNAPSHOT_VERSIONS = ("3.121.0", "3.122.1", "3.125.0", "3.125.1")
+-ISOLATION_VERSIONS = ("3.122.1", "3.125.0", "3.125.1")
++FOLDED_SNAPSHOT_VERSIONS = ("3.121.0", "3.122.1", "3.125.0", "3.125.1", "3.126.0")
++ISOLATION_VERSIONS = ("3.122.1", "3.125.0", "3.125.1", "3.126.0")
+ SELECTED_SOURCE_COMMIT = "55432c50d4b6f1666b4bd6d4a60bfc263b2d0e0b"
+ SELECTED_TAG_BUILDS = "4629ff2d3bd66376b29a553663c241d3a7b87853"
+ COMPARISON_VERSIONS = ("3.70.1", "3.110.0")
+@@ -220,7 +220,7 @@ def validate_candidate_source(binding, selection):
+     if candidate.get("tag") is None or "tooling" in selection:
+         return
+     source = binding.get("candidate_source")
+-    require(source is not None or "runtime_source" in binding or candidate["version"] != "3.125.1",
++    require(source is not None or "runtime_source" in binding or candidate["version"] not in ("3.125.1", "3.126.0"),
+             "selected candidate source closure missing")
+     if source is None:
+         return
+@@ -239,6 +239,11 @@ def validate_candidate_source(binding, selection):
+         require(head == SELECTED_SOURCE_COMMIT and tree[2] == SELECTED_TAG_BUILDS
+                 and candidate["feed"] == "https://api.nuget.org/v3/index.json",
+                 "selected 3.125.1 published source substituted")
++    if candidate["version"] == "3.126.0":
++        require(head == "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
++                and tree[2] == "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c"
++                and candidate["feed"] == "https://api.nuget.org/v3/index.json",
++                "selected 3.126.0 published source substituted")
+ 
+ 
+ # Owner inputs and decisions -------------------------------------------------------------------------------------
+@@ -1304,7 +1309,8 @@ def validate_final_isolation(receipt, context):
+         for attempt in cleanup["attempts"]:
+             start,end = validate_times(attempt)
+             require(execution_start <= start <= end <= execution_end, "cleanup attempt escapes final executor interval")
+-    require(wrapper.get("images") == {"sdk":isolation.SDK_IMAGE,"daemon":isolation.DAEMON_IMAGE,"python":isolation.PYTHON_IMAGE}
++    sdk_profile = isolation.sdk_profile(context["source_binding"])
++    require(wrapper.get("images") == {"sdk":sdk_profile["image"],"daemon":isolation.DAEMON_IMAGE,"python":isolation.PYTHON_IMAGE}
+             and wrapper.get("pending_containers") == {}, "final isolation image or pending creation differs")
+     command = wrapper.get("inner_command", [])
+     require(command == private.get("command") and len(command) >= 5
+@@ -1347,7 +1353,7 @@ def validate_final_isolation(receipt, context):
+     verifier_mounts = [Path(item["Destination"]) for item in runner.get("Mounts", [])
+                        if item.get("Type") == "bind" and Path(context["source_binding"]["repository"]).is_relative_to(Path(item["Destination"]))]
+     expected_mount_count = 2 + int(source_root is not None and not any(source_root.is_relative_to(path) for path in verifier_mounts))
+-    require(owned.get(sdk, {}).get("role") == "sdk" and owned[sdk].get("image") == isolation.SDK_IMAGE
++    require(owned.get(sdk, {}).get("role") == "sdk" and owned[sdk].get("image") == sdk_profile["image"]
+             and owned.get(daemon, {}).get("role") == "daemon" and owned[daemon].get("image") == isolation.DAEMON_IMAGE
+             and runner.get("Id") == sdk and runner.get("Labels", {}).get(isolation.LABEL) == wrapper["invocation"]
+             and runner.get("NetworkMode") == runner.get("PidMode") == "container:"+str(daemon)
+@@ -1421,7 +1427,7 @@ def validate_final_isolation(receipt, context):
+ 
+ def finalize_isolation_receipts(output, isolation_output, selection):
+     """Attach new successful wrapper evidence after teardown, retaining old receipt schemas."""
+-    if selection["candidate"]["version"] not in ("3.122.1", "3.125.0", "3.125.1"):
++    if selection["candidate"]["version"] not in ("3.122.1", "3.125.0", "3.125.1", "3.126.0"):
+         return
+     output, isolation_output = Path(output), Path(isolation_output)
+     reference = {}
+diff --git a/tools/tests/p1r_isolation_fixture.py b/tools/tests/p1r_isolation_fixture.py
+index 94b70806a..55b498377 100644
+--- a/tools/tests/p1r_isolation_fixture.py
++++ b/tools/tests/p1r_isolation_fixture.py
+@@ -91,8 +91,10 @@ class DockerBoundary:
+         self.private_failure, self.outer_failure = private_failure, outer_failure
+         self.current = datetime(2026,10,13,23,59,50,tzinfo=timezone.utc)
+         self.containers, self.volume = {}, None
++        profile = isolation.sdk_profile(context['source_binding'])
++        self.sdk_image = profile['image']
+         self.images = {image:{'Id':'sha256:'+str(index)*64,'RepoDigests':[image],'Os':'linux','Architecture':'amd64'}
+-                       for index,image in enumerate((isolation.SDK_IMAGE,isolation.DAEMON_IMAGE,isolation.PYTHON_IMAGE),1)}
++                       for index,image in enumerate((self.sdk_image,isolation.DAEMON_IMAGE,isolation.PYTHON_IMAGE),1)}
+         python = context['source_binding']['python']
+         self.proof = {'outer_daemon_id':'outer','daemon':{'ID':'private','DockerRootDir':'/var/lib/docker/data','ServerVersion':'29.8.2'},
+             'socket':isolation.SOCKET,'namespaces':{'net':'net:[1]','pid':'pid:[2]','mnt':'mnt:[3]'},
+@@ -100,8 +102,8 @@ class DockerBoundary:
+             'process':{'pid':7,'start_ticks':7,'pgid':7,'session':7},'glibc':'glibc 2.36',
+             'executables':{'python':{'path':python['path'],'sha256':python['sha256']},
+                            'docker':{'path':'/usr/local/bin/docker','sha256':'6f7a95d27f98fc8c5f6b220898988bf8f61dd9b040936797917cbdc72c6cabe6'},
+-                           'dotnet':{'path':'/usr/share/dotnet/dotnet','sha256':'01d89e0a0191052bfea616cd4ce624c8faf13b05bbddf7f64499c23e2a9d9269'}},
+-            'python_version':python['version'],'dotnet_version':'10.0.401',
++                           'dotnet':copy.deepcopy(profile['executable'])},
++            'python_version':python['version'],'dotnet_version':profile['version'],
+             'docker_version':{'Client':{'Version':'29.8.2'},'Server':{'Version':'29.8.2'}}}
+ 
+     def stamp(self):
+@@ -126,7 +128,7 @@ class DockerBoundary:
+             name = args[args.index('--name')+1]
+             role = name.split(self.worker.invocation+'-',1)[1]
+             identity = {'daemon':'d','python-tools':'e','sdk':'c'}[role]*64
+-            image = {'daemon':isolation.DAEMON_IMAGE,'python-tools':isolation.PYTHON_IMAGE,'sdk':isolation.SDK_IMAGE}[role]
++            image = {'daemon':isolation.DAEMON_IMAGE,'python-tools':isolation.PYTHON_IMAGE,'sdk':self.sdk_image}[role]
+             value = {'Id':identity,'Image':self.images[image]['Id'],'Name':'/'+name,
+                      'Labels':{isolation.LABEL:self.worker.invocation},
+                      'NetworkMode':'bridge' if role=='daemon' else 'none', 'PidMode':'',
+diff --git a/tools/tests/test_p1r_isolation_hardening.py b/tools/tests/test_p1r_isolation_hardening.py
+index 9009ad080..137467742 100644
+--- a/tools/tests/test_p1r_isolation_hardening.py
++++ b/tools/tests/test_p1r_isolation_hardening.py
+@@ -24,6 +24,27 @@ import test_p1r_published_executor as published_tests
+ 
+ 
+ class TaggedSourceLifecycleTests(unittest.TestCase):
++    def testExactSdkProfileFollowsTaggedSourceAndRejectsCrossProfileProofs(self):
++        for witness_type in (published_tests.Published31251SnapshotWitnessTests,
++                             published_tests.Published31260SnapshotWitnessTests):
++            witness = witness_type()
++            witness.setUp()
++            self.addCleanup(witness.doCleanups)
++            receipt, context = witness.import_fixture(scope='operational')
++            self.assertEqual('passed', qualification.receipt_outcome(receipt, context)[2]['execution'])
++            profile = isolation.sdk_profile(context['source_binding'])
++            self.assertEqual('10.0.402' if witness.candidate_version == '3.126.0' else '10.0.401', profile['version'])
++            other = isolation.sdk_profile() if witness.candidate_version == '3.126.0' else isolation.sdk_profile(
++                {'candidate_source':{'main':{'head':isolation.APPROVED_31260_SOURCE}}})
++            for record in ('wrapper', 'private'):
++                def changed(value, record=record):
++                    proof = value['toolchain_proof' if record == 'wrapper' else 'proof']
++                    proof['dotnet_version'] = other['version']
++                    proof['executables']['dotnet'] = copy.deepcopy(other['executable'])
++                witness.change_isolation(receipt, record, changed)
++            with self.assertRaisesRegex(preparation.InvalidPacket, 'pinned Docker or dotnet'):
++                qualification.receipt_outcome(receipt, context)
++
+     def testControllerRechecksSelectedSourceBeforeProvisioningAndAfterOuterCleanup(self):
+         witness = published_tests.Published31251SnapshotWitnessTests()
+         witness.setUp()
+diff --git a/tools/tests/test_p1r_published_executor.py b/tools/tests/test_p1r_published_executor.py
+index 48f2788ff..dc7862d01 100644
+--- a/tools/tests/test_p1r_published_executor.py
++++ b/tools/tests/test_p1r_published_executor.py
+@@ -321,11 +321,11 @@ class QualifiedSnapshotWitnessTests(unittest.TestCase):
+                 with self.subTest(lane=lane,writer=writer):
+                     self.assertTrue(executor.witnesses.requires_qualified_snapshot(self.candidate_version,lane,writer+'-to-3.110.0'))
+             for writer in ('3.110.0','3.70.1','3.122.2',
+-                           *(version for version in ('3.121.0','3.122.1','3.125.0','3.125.1') if version != self.candidate_version)):
++                           *(version for version in ('3.121.0','3.122.1','3.125.0','3.125.1','3.126.0') if version != self.candidate_version)):
+                 with self.subTest(lane=lane,writer=writer):
+                     self.assertFalse(executor.witnesses.requires_qualified_snapshot(self.candidate_version,lane,writer+'-to-'+self.candidate_version))
+         self.assertTrue(executor.witnesses.requires_qualified_snapshot(self.candidate_version,'post-upgrade-restore','fresh-backup-restore-append-restart'))
+-        for version in ('3.119.0','3.122.0','3.122.2','3.125.2','3.126.0'):
++        for version in ('3.119.0','3.122.0','3.122.2','3.125.2','3.126.1','3.127.0'):
+             self.assertFalse(executor.witnesses.requires_qualified_snapshot(version,'post-upgrade-restore','fresh-backup-restore-append-restart'))
+             self.assertFalse(executor.witnesses.requires_qualified_snapshot(version,'snapshot-tail','source-to-3.110.0'))
+ 
+@@ -580,7 +580,7 @@ class QualifiedSnapshotWitnessTests(unittest.TestCase):
+                     'sha256':value} for entry in verified.values() for value in entry['dlls']]},
+             'cases':[row],'execution_evidence':executed,'output_sha256':executor.digest(executor.canonical(executed)),
+             'assertions':row['assertions'],'execution':'passed','compatibility':'compatible'}
+-        if self.candidate_version in ('3.122.1','3.125.0','3.125.1'):
++        if self.candidate_version in ('3.122.1','3.125.0','3.125.1','3.126.0'):
+             receipt = self.attach_isolation(receipt,context)
+         return receipt,context
+ 
+@@ -646,7 +646,7 @@ class QualifiedSnapshotWitnessTests(unittest.TestCase):
+     def testLaunchReadinessOwnershipAndRestartedStateStoreAreMandatory(self):
+         fixture = self.fixture()
+         for version in ('source','3.122.2',
+-                        *[candidate for candidate in ('3.121.0','3.122.1','3.125.0','3.125.1') if candidate != self.candidate_version]):
++                        *[candidate for candidate in ('3.121.0','3.122.1','3.125.0','3.125.1','3.126.0') if candidate != self.candidate_version]):
+             changed = copy.deepcopy(fixture)
+             config = changed[1]['configurations'][0]
+             config['version'] = version
+@@ -1154,6 +1154,8 @@ class ProposedQualifiedSnapshotWitnessTests(QualifiedSnapshotWitnessTests):
+ 
+ class Published31251SnapshotWitnessTests(ProposedQualifiedSnapshotWitnessTests):
+     candidate_version = '3.125.1'
++    source_commit = qualification.SELECTED_SOURCE_COMMIT
++    tag_builds_commit = qualification.SELECTED_TAG_BUILDS
+ 
+     def setUp(self):
+         super().setUp()
+@@ -1172,8 +1174,8 @@ class Published31251SnapshotWitnessTests(ProposedQualifiedSnapshotWitnessTests):
+         def git(root,*arguments):
+             if Path(root) == self.tagged_root:
+                 if arguments[0] == 'ls-tree':
+-                    return ('160000 commit '+qualification.SELECTED_TAG_BUILDS+'\treferences/Hexalith.Builds\n').encode()
+-                return qualification.SELECTED_SOURCE_COMMIT.encode()
++                    return ('160000 commit '+self.tag_builds_commit+'\treferences/Hexalith.Builds\n').encode()
++                return self.source_commit.encode()
+             return original_git(root,*arguments)
+         for patcher in (mock.patch.object(preparation,'source_binding',side_effect=bind),
+                         mock.patch.object(preparation,'self_contained_checkout'),
+@@ -1219,15 +1221,15 @@ class Published31251SnapshotWitnessTests(ProposedQualifiedSnapshotWitnessTests):
+ 
+     def attach_isolation(self,receipt,context):
+         binding = context['source_binding']
+-        production = {'head':qualification.SELECTED_SOURCE_COMMIT,'diff_sha256':preparation.digest(b''),
++        production = {'head':self.source_commit,'diff_sha256':preparation.digest(b''),
+             'files':[{'path':'src/Production.cs','sha256':'a'*64,'git_blob':'b'*40,'index_blob':'b'*40}],
+-            'gitlinks':{'references/Hexalith.Builds':qualification.SELECTED_TAG_BUILDS}}
++            'gitlinks':{'references/Hexalith.Builds':self.tag_builds_commit}}
+         binding['candidate_source'] = {'repository':str(self.tagged_root),'main':production,'retained_inputs':[],
+             'python':binding['python'],'dependencies':[{'path':'references/Hexalith.Builds','initialized':True,
+-                'binding':dict(copy.deepcopy(production),head=qualification.SELECTED_TAG_BUILDS)}]}
++                'binding':dict(copy.deepcopy(production),head=self.tag_builds_commit)}]}
+         self.test_binding = binding
+-        context['inputs']['value']['candidate'].update(tag='v3.125.1',tag_commit=qualification.SELECTED_SOURCE_COMMIT,
+-            tag_builds_commit=qualification.SELECTED_TAG_BUILDS,feed='https://api.nuget.org/v3/index.json')
++        context['inputs']['value']['candidate'].update(tag='v'+self.candidate_version,tag_commit=self.source_commit,
++            tag_builds_commit=self.tag_builds_commit,feed='https://api.nuget.org/v3/index.json')
+         source_path = Path(self.temporary.name)/'executor-source.json'
+         executor.write_json(source_path,binding)
+         execution_path = Path(self.temporary.name)/'execution.json'
+@@ -1239,6 +1241,12 @@ class Published31251SnapshotWitnessTests(ProposedQualifiedSnapshotWitnessTests):
+         return super().attach_isolation(receipt,context)
+ 
+ 
++class Published31260SnapshotWitnessTests(Published31251SnapshotWitnessTests):
++    candidate_version = '3.126.0'
++    source_commit = 'fcf78d6cafb6c0c9f52dc350a9a09aff54ded288'
++    tag_builds_commit = '1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c'
++
++
+ class IndependentRecoverySelectionTests(unittest.TestCase):
+     def setUp(self):
+         import importlib.util
+@@ -1335,7 +1343,7 @@ class MeasurementTests(unittest.TestCase):
+         worker.postgres_write.assert_not_called()
+ 
+     def testSuccessorSnapshotSeedUsesNineManualCreationAndThreeActualAppends(self):
+-        writers = [(version, version) for version in ("3.121.0", "3.122.1", "3.125.0", "3.125.1")]
++        writers = [(version, version) for version in ("3.121.0", "3.122.1", "3.125.0", "3.125.1", "3.126.0")]
+         for candidate, version in writers + [("3.125.0", "source"), ("3.125.1", "source")]:
+             with self.subTest(candidate=candidate, version=version):
+                 worker, checks = self.snapshotSeedWorker({"sequenceNumber": 9, "snapshotEnvelopeVersion": 1, "state": {"count": 9}},
+@@ -1349,7 +1357,7 @@ class MeasurementTests(unittest.TestCase):
+                 self.assertEqual(worker.last_snapshot_creation["persisted_snapshot"]["snapshotEnvelopeVersion"], 1)
+ 
+     def testUnqualifiedOrMissingSuccessorSnapshotRemainsFailedWithoutSqlSynthesis(self):
+-        writers = [(version, version) for version in ("3.121.0", "3.122.1", "3.125.0", "3.125.1")]
++        writers = [(version, version) for version in ("3.121.0", "3.122.1", "3.125.0", "3.125.1", "3.126.0")]
+         for candidate, version in writers + [("3.125.0", "source"), ("3.125.1", "source")]:
+             for snapshot in (None, {"sequenceNumber": 9, "state": {"count": 9}},
+                              {"sequenceNumber": 9, "snapshotEnvelopeVersion": 1, "state": {"count": 8}}):
+@@ -1362,8 +1370,8 @@ class MeasurementTests(unittest.TestCase):
+     def testUnenrolledSuccessorSeedRefusesBeforeManualSnapshotOrDiagnosticSynthesis(self):
+         for candidate,version in (("3.125.0","3.122.0"),("3.125.0","3.122.2"),
+                                   ("3.125.0","3.125.2"),("3.125.2","3.125.2"),
+-                                  ("3.125.2","source"),("3.126.0","3.126.0"),("3.126.0","source"),
+-                                  ("3.125.1","3.126.0"),("3.125.1","3.125.0"),
++                                  ("3.125.2","source"),("3.127.0","3.127.0"),("3.127.0","source"),
++                                  ("3.125.1","3.127.0"),("3.125.1","3.125.0"),
+                                   ("3.125.0","3.121.0")):
+             worker, checks = self.snapshotSeedWorker(None,candidate=candidate)
+             with self.subTest(candidate=candidate,version=version), self.assertRaisesRegex(executor.InvalidPacket,"not explicitly enabled"):
+@@ -1377,9 +1385,9 @@ class MeasurementTests(unittest.TestCase):
+ 
+     def testEverySeedIntervalRefusesUnenrolledCandidatesAndWrongWritersBeforeMutation(self):
+         for interval in (10, 50, 1000):
+-            for candidate, version in (("3.126.0", "source"), ("3.126.0", "3.126.0"),
+-                                       ("3.126.0", "3.110.0"), ("3.125.2", "source"),
+-                                       ("3.125.1", "3.125.0"), ("3.125.1", "3.126.0"),
++            for candidate, version in (("3.127.0", "source"), ("3.127.0", "3.127.0"),
++                                       ("3.127.0", "3.110.0"), ("3.125.2", "source"),
++                                       ("3.125.1", "3.125.0"), ("3.125.1", "3.127.0"),
+                                        ("3.125.1", "unknown")):
+                 worker, checks = self.snapshotSeedWorker(None, candidate=candidate)
+                 with self.subTest(interval=interval, candidate=candidate, version=version):
+@@ -1395,7 +1403,7 @@ class MeasurementTests(unittest.TestCase):
+         for candidate,writer in (("3.121.0","3.121.0"),("3.122.1","3.122.1"),("3.125.0","3.125.0"),("3.125.1","3.125.1"),
+                                  ("3.125.1","source"),("3.125.0","source"),
+                                  ("3.122.2","3.122.2"),("3.125.2","3.125.2"),
+-                                 ("3.126.0","source"),("3.125.0",None)):
++                                 ("3.127.0","source"),("3.125.0",None)):
+             with self.subTest(candidate=candidate,writer=writer):
+                 worker = executor.Executor.__new__(executor.Executor)
+                 worker.commands, worker.configurations, worker.errors = [], [], []
+@@ -1405,7 +1413,7 @@ class MeasurementTests(unittest.TestCase):
+                     worker.commands.append({"id":1})
+                     return {"seed_snapshot":worker.last_snapshot_creation},"effect","compatible"
+                 _,evidence = worker.case("snapshot-tail",(writer or candidate)+"-to-3.110.0",action,False)
+-                if candidate in ("3.122.2","3.125.2","3.126.0") or writer is None:
++                if candidate in ("3.122.2","3.125.2","3.127.0") or writer is None:
+                     self.assertNotIn("snapshot_fixture_source",evidence)
+                 else:
+                     path = preparation.ROOT/"tools/p1r-published-consumers/FixtureSnapshotQualification.cs"
+@@ -1446,7 +1454,7 @@ class MeasurementTests(unittest.TestCase):
+         return worker, executor.Measurements()
+ 
+     def testRestoreReceiptAttributesBackupAndDatabaseCreationToTheirCommands(self):
+-        for candidate in ("3.125.0", "3.125.1"):
++        for candidate in ("3.125.0", "3.125.1", "3.126.0"):
+             with self.subTest(candidate=candidate):
+                 with tempfile.TemporaryDirectory() as scratch, mock.patch.object(executor, "reserve_port", return_value=15432):
+                     worker = CleanupTests.worker(self, scratch)
+@@ -2905,7 +2913,7 @@ class PublishedPatchSourceTests(unittest.TestCase):
+                     with self.assertRaises(preparation.InvalidPacket):
+                         helper.validate(fixture,lane)
+         self.assertIn('3.125.1',qualification.ISOLATION_VERSIONS)
+-        self.assertFalse(executor.witnesses.requires_qualified_snapshot('3.126.0','snapshot-tail','source-to-3.110.0'))
++        self.assertFalse(executor.witnesses.requires_qualified_snapshot('3.127.0','snapshot-tail','source-to-3.110.0'))
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/tools/tests/test_p1r_qualification.py b/tools/tests/test_p1r_qualification.py
+index f51c91dff..a6d8a1b3e 100644
+--- a/tools/tests/test_p1r_qualification.py
++++ b/tools/tests/test_p1r_qualification.py
+@@ -819,7 +819,11 @@ class TaggedPhysicalSourceTests(unittest.TestCase):
+             builds = root / "references/Hexalith.Builds"
+             names = {".editorconfig", ".gitattributes", "global.json",
+                      "src/Hexalith.EventStore.Contracts/Events/EventEnvelope.cs", "src/Untracked.cs"}
+-            for source, target in ((p.ROOT, root), (p.ROOT / "references/Hexalith.Builds", builds)):
++            builds_source = p.ROOT / "references/Hexalith.Builds"
++            if not (builds_source / ".git").exists():
++                binding = p.source_binding()
++                builds_source = Path(binding["workspace_builds"]["path"])
++            for source, target in ((p.ROOT, root), (builds_source, builds)):
+                 target.parent.mkdir(parents=True, exist_ok=True)
+                 subprocess.run(["git", "clone", "--shared", "--no-checkout", "-q", str(source), str(target)],
+                                check=True, capture_output=True)
+diff --git a/tools/tests/test_p1r_snapshot_registration.py b/tools/tests/test_p1r_snapshot_registration.py
+index bed060197..055524033 100644
+--- a/tools/tests/test_p1r_snapshot_registration.py
++++ b/tools/tests/test_p1r_snapshot_registration.py
+@@ -77,7 +77,7 @@ class FixtureSnapshotRegistrationTests(unittest.TestCase):
+         }
+         all_fixture_sources = set().union(*expected_sources.values())
+         for version, enrolled in (('3.125.0', True), ('3.125.1', True),
+-                                  ('3.125.2', False), ('3.126.0', False)):
++                                  ('3.126.0', True), ('3.125.2', False), ('3.126.1', False), ('3.127.0', False)):
+             for role in ('host', 'domain', 'probe'):
+                 with self.subTest(version=version, role=role):
+                     project = FIXTURES / role / (role.title() + '.csproj')

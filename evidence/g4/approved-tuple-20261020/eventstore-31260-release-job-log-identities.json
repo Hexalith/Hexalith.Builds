@@ -1,0 +1,14 @@
+{
+  "api": "repos/Hexalith/Hexalith.EventStore/actions/jobs/117787041974/logs",
+  "exitCode": 0,
+  "byteCount": 189629,
+  "sha256": "9ead0e29ffe91b7bf5680c869d7617f14c411f69e49132d593284334946f453d",
+  "selectedIdentityLines": [
+    "2026-10-18T20:54:24.6017171Z \u001b[36;1mtest \"$(git -C .hexalith/builds-execution rev-parse HEAD)\" = \"22a578b576a515d2af214fe81859447fffc97981\"\u001b[0m",
+    "2026-10-18T20:55:10.9619419Z Submodule path 'references/Hexalith.Builds': checked out '1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c'",
+    "2026-10-18T20:58:38.1515854Z   builds-execution-sha: 22a578b576a515d2af214fe81859447fffc97981",
+    "2026-10-18T20:58:38.1629392Z   HEXALITH_BUILDS_EXECUTION_SHA: 22a578b576a515d2af214fe81859447fffc97981",
+    "2026-10-18T20:58:43.1298254Z   HEXALITH_BUILDS_EXECUTION_SHA: 22a578b576a515d2af214fe81859447fffc97981"
+  ],
+  "stderr": ""
+}

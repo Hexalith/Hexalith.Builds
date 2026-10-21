@@ -13,3 +13,8 @@ evidence/g4/story117-package-seed-20261016/*.patch -whitespace
 evidence/g4/story117-package-seed-20261016/**/*.patch -whitespace
 evidence/g4/story117-package-seed-20261016/*.log -whitespace
 evidence/g4/story117-package-seed-20261016/**/*.log -whitespace
+
+# Preserve raw approved-tuple observations and saved patch context.
+evidence/g4/approved-tuple-20261020/** whitespace=cr-at-eol
+evidence/g4/approved-tuple-20261020/*.patch -whitespace
+evidence/g4/approved-tuple-20261020/*.log -whitespace

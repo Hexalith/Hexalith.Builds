@@ -1,0 +1,77 @@
+{
+  "artifactKind": "6.1-P0 owner decisions after preparation target approval",
+  "decisions": [
+    {
+      "name": "Current-catalog preparation target, timing and v1 contract",
+      "status": "approved",
+      "evidence": "approval.json",
+      "action": "continue exact approved preparation; no repeated version/design vote"
+    },
+    {
+      "name": "G6 tuple, .935 prerelease and Dapr exception qualification",
+      "status": "approved for qualification",
+      "evidence": "approval.json",
+      "resultAcceptance": "separate"
+    },
+    {
+      "name": "Exact G6 source result assessment",
+      "status": "accepted",
+      "roles": [
+        "Builds",
+        "Platform",
+        "FrontComposer/Web"
+      ],
+      "evidence": "g6-result-review.json",
+      "artifactSha256": "287663d2a1d5ae25acf64e27a9984780062f26aaa4b8e71a972c73ead4488a08",
+      "acceptedAtUtc": "2026-10-20T14:40:32Z"
+    },
+    {
+      "name": "P1R measured support-boundary disposition, four-role exact-result decisions and same-baseline conformance",
+      "status": "awaiting complete new campaign and independent packet audit",
+      "roles": [
+        "EventStore Owner",
+        "Builds Owner",
+        "Solution Architect",
+        "Test Architect"
+      ],
+      "constraint": "technical failures require correction and requalification; owner signatures cannot convert failures to passing evidence"
+    },
+    {
+      "name": "Final P0 exact delivery/result acceptance",
+      "status": "not ready for decision; prerequisite, native/persisted, publication/remote-restore and rollback evidence still required",
+      "roles": [
+        "Builds Owner",
+        "Platform Owner",
+        "Test Architect"
+      ],
+      "constraint": "approval of the target is not acceptance of unseen results"
+    }
+  ],
+  "deliveryWorkNotNewDesignDecisions": [
+    "Release the source-only EventStore origin-context/dynamic-binding/aggregate-256 repairs and Folders projection helpers, then qualify affected published consumers.",
+    "Deliver the previously selected Conversations metadata, File evidence/provider/native revision and RTI feed/head contracts.",
+    "Keep the AD-17 drain/freeze/forward recovery direction; no capable downgrade pin exists.",
+    "Complete existing P0 acceptance before Projects consumer adoption; no duplicate runner or implicit v2 migration."
+  ],
+  "deliveryActions": [
+    {
+      "name": "Published delivery coordinate and source promotion",
+      "status": "not yet published",
+      "constraint": "local 4.33.2-p0.20261020.1 is qualified only as a local candidate; use actual protected semantic-release output and remote archive proof before adoption",
+      "classification": "gated delivery work under the existing semantic-release policy; not a manual version vote"
+    }
+  ],
+  "currentToolTarget": {
+    "version": "4.33.2-p0.20261020.1",
+    "source": "e40ed9c7110d56a2f38c9291627728aea2f205cb",
+    "authority": "original approval.json"
+  },
+  "publishedSuccessorDecision": {
+    "version": "4.35.0",
+    "source": "fff4a212180d8cd1c5c0759655a9bc4fb6963c45",
+    "status": "pending user response; no automatic selection",
+    "proposal": "published-4350-proposal-review.json",
+    "reason": "new source adds adoption validation beyond the approved candidate; user required explicit version selection",
+    "existingRuntimeAuthorization": "unchanged; corrected 3.126.0 P1R continues"
+  }
+}

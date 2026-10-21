@@ -1,0 +1,75 @@
+{
+  "artifactKind": "read-only catalog refresh during approved qualification; no version selection",
+  "observations": [
+    {
+      "package": "hexalith.builds.module.cli",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.module.cli/index.json",
+      "fetchedUtc": "2026-10-20T15:09:18.890572+00:00",
+      "responseSha256": "e56fb204e493eacb2e8b282e49223b920450faf57913700014a1c32f9b41b3c9",
+      "headers": {
+        "ETag": "0x8DF2EB443F8DB21",
+        "Last-Modified": "Tue, 20 Oct 2026 14:13:07 GMT"
+      },
+      "latestStable": "4.35.0",
+      "lastObservedVersions": [
+        "4.30.0",
+        "4.30.1",
+        "4.31.2",
+        "4.32.0",
+        "4.33.0",
+        "4.33.1",
+        "4.34.0",
+        "4.35.0"
+      ]
+    },
+    {
+      "package": "hexalith.builds.evidence.cli",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.evidence.cli/index.json",
+      "fetchedUtc": "2026-10-20T15:09:21.653601+00:00",
+      "responseSha256": "28eed72a5f3cc36c3fec8591fe7c715564462f6c006bb7de1ecda13fce589fda",
+      "headers": {
+        "ETag": "0x8DF2EB46B5E5DDD",
+        "Last-Modified": "Tue, 20 Oct 2026 14:14:14 GMT"
+      },
+      "latestStable": "4.35.0",
+      "lastObservedVersions": [
+        "4.31.0",
+        "4.31.1",
+        "4.31.2",
+        "4.32.0",
+        "4.33.0",
+        "4.33.1",
+        "4.34.0",
+        "4.35.0"
+      ]
+    },
+    {
+      "package": "hexalith.eventstore.server",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.eventstore.server/index.json",
+      "fetchedUtc": "2026-10-20T15:09:21.851867+00:00",
+      "responseSha256": "e5d4232598376116173c89a9b45de541c9eef7f514e43eaab6f222e80fdb3039",
+      "headers": {
+        "ETag": "0x8DF2D5B6849E186",
+        "Last-Modified": "Sun, 18 Oct 2026 21:04:32 GMT"
+      },
+      "latestStable": "3.126.0",
+      "lastObservedVersions": [
+        "3.120.0",
+        "3.121.0",
+        "3.122.0",
+        "3.123.0",
+        "3.124.0",
+        "3.125.0",
+        "3.125.1",
+        "3.126.0"
+      ]
+    },
+    {
+      "package": "hexalith.frontcomposer.domain",
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.domain/index.json",
+      "error": "HTTP Error 404: The specified blob does not exist."
+    }
+  ],
+  "approvedRuntimeSelectionUnchanged": true,
+  "approvedToolCandidateUnchanged": true
+}

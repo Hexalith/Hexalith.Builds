@@ -1,0 +1,18 @@
+{
+  "command": [
+    "python3",
+    "Tools/g6_current.py",
+    "audit",
+    "--workspace",
+    "/home/administrator/projects/hexalith/projects",
+    "--policy",
+    "/home/administrator/projects/hexalith/projects/references/Hexalith.Builds/Tools/g6-current-policy.json",
+    "--out",
+    "/tmp/p0-tuple-g6-static-audit-20261020.json"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/builds",
+  "exitCode": 0,
+  "stderr": "",
+  "interpretation": "audit command completed; tupleApproved=false, no runtime proof; Aspire 13.6.0 derives from current Projects AppHost/policy, not catalog alignment",
+  "liveQualificationStarted": false
+}

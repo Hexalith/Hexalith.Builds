@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "node",
+    "/var/tmp/hexalith-p0-commitlint-21.2.0/node_modules/@commitlint/cli/cli.js",
+    "--config",
+    "/var/tmp/hexalith-p0-commitlint-21.2.0/commitlint.config.mjs",
+    "--edit",
+    "/home/administrator/projects/hexalith/builds/evidence/g4/approved-tuple-20261020/published-4350-proposal-message.txt",
+    "--verbose"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/p0-4350-proposal-20261020",
+  "exitCode": 0,
+  "stdout": "\u29d7   --- input ---\nbuild(qualification): prepare the published 4.35.0 tuple review\n\u2714   found 0 problems, 0 warnings\n",
+  "stderr": "",
+  "exactMessage": "build(qualification): prepare the published 4.35.0 tuple review\n",
+  "messageSha256": "a99ef1c8dcc58c87be93079cf5b1452cf5a284b7e10c01c2f38ce650eee09955",
+  "configSha256": "51ed651cbefef01c7ab1965c089a36c3cfaf98a997a54ad04c97584a4a15d056",
+  "pinnedVersion": "21.2.0"
+}

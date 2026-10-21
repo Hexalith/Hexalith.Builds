@@ -1,0 +1,1737 @@
+{
+  "candidate": "3.126.0",
+  "candidate_builds_commit": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c",
+  "candidate_tag_builds_commit": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c",
+  "candidate_tag_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+  "disposition": null,
+  "lanes": {
+    "checkout": {
+      "cases": [
+        {
+          "id": "current-build",
+          "measured_checks_sha256": "752b6551090c3d9170b55fbf3e77d32d5573dc7fc98991c7e31a89e64044c05b",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "legacy-metadata",
+          "measured_checks_sha256": "d90fffb4437b3febb6902145a8687965db9af262873a9a151060feea50de14e1",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "query-wire",
+          "measured_checks_sha256": "d21e8fe44a3a4cd687687606bf2fb5aeb3ce896abe371afd044397f4cf6b1d06",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "projection-wire",
+          "measured_checks_sha256": "81cd8a3a4e8e34bf9f1a02a87e57cf4bf4c424efc847c08723de5371e1dbba95",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "full-replay",
+          "measured_checks_sha256": "2ee77f95d114053cdd32d9e8a2bf25381047e249b38fee57ae5c6b92dbd7cccc",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "snapshot-tail",
+          "measured_checks_sha256": "2ee77f95d114053cdd32d9e8a2bf25381047e249b38fee57ae5c6b92dbd7cccc",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "retained-covered",
+          "measured_checks_sha256": "2ee77f95d114053cdd32d9e8a2bf25381047e249b38fee57ae5c6b92dbd7cccc",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "retained-uncovered",
+          "measured_checks_sha256": "2ee77f95d114053cdd32d9e8a2bf25381047e249b38fee57ae5c6b92dbd7cccc",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "missing-event",
+          "measured_checks_sha256": "2ee77f95d114053cdd32d9e8a2bf25381047e249b38fee57ae5c6b92dbd7cccc",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "metadata-write",
+          "measured_checks_sha256": "794fa823a95c59e0ea371cd60ce028b225ab0e72d898fc37ff9af7cd1bf96c11",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "invalid-evidence",
+          "measured_checks_sha256": "69e510d5a4ba78874e50905a0e806a1c49d46b5b9e2eec3b6b276d222b666ee8",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "49db4cd6a4abe3deaad55d7e4f84a7eac88b8a7f1117f7d38b69e0c96f510154"
+    },
+    "failure-cleanup": {
+      "cases": [
+        {
+          "id": "startup-failure",
+          "measured_checks_sha256": "4f61b6a027e54e97936273cc0d08ae6a7a470353f8c783f9dec8fbcda4ef57f3",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "timeout",
+          "measured_checks_sha256": "d01b425ee139e930c1719cd0d20757f5d8f913bbca9f107577bf6ad7b4c60218",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "cancellation",
+          "measured_checks_sha256": "faeecc96fd40b5904a24a55e24ef893bacf3773e3e17d8825d6648492f36a568",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "b0d11c0f0e00301e0b69c0de658080e8977e5e82ae54749ce79265c6aeb3aab4"
+    },
+    "full-replay": {
+      "cases": [
+        {
+          "id": "3.110.0-to-3.70.1",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-to-3.126.0",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.110.0",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.126.0",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.110.0",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.70.1",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "c99fd090958f4f4f4549bc65d0a975cd030e4409d1eab0861d1437537f0cf838"
+    },
+    "invalid-evidence": {
+      "cases": [
+        {
+          "id": "3.110.0-invalid-floor",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.110.0-unreadable",
+          "measured_checks_sha256": "a68da251660da3af8d06573f3b8c7252d1327386f3abef3e45834f906251b97d",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-protected",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.110.0-unknown-type",
+          "measured_checks_sha256": "a68da251660da3af8d06573f3b8c7252d1327386f3abef3e45834f906251b97d",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-unknown-version",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-invalid-floor",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-unreadable",
+          "measured_checks_sha256": "a68da251660da3af8d06573f3b8c7252d1327386f3abef3e45834f906251b97d",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-protected",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-unknown-type",
+          "measured_checks_sha256": "a68da251660da3af8d06573f3b8c7252d1327386f3abef3e45834f906251b97d",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-unknown-version",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.126.0-invalid-floor",
+          "measured_checks_sha256": "a68da251660da3af8d06573f3b8c7252d1327386f3abef3e45834f906251b97d",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-unreadable",
+          "measured_checks_sha256": "a68da251660da3af8d06573f3b8c7252d1327386f3abef3e45834f906251b97d",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-protected",
+          "measured_checks_sha256": "a68da251660da3af8d06573f3b8c7252d1327386f3abef3e45834f906251b97d",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-unknown-type",
+          "measured_checks_sha256": "a68da251660da3af8d06573f3b8c7252d1327386f3abef3e45834f906251b97d",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-unknown-version",
+          "measured_checks_sha256": "a68da251660da3af8d06573f3b8c7252d1327386f3abef3e45834f906251b97d",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "50c5622be826f61bb40aeca67ddc4c1d1815e8014b0861405728203515cbb857"
+    },
+    "legacy-metadata": {
+      "cases": [
+        {
+          "id": "3.110.0-pascal-floor-None",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-web-floor-None",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-pascal-floor-None",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-web-floor-None",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.126.0-pascal-floor-None",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-web-floor-None",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "6813f8bb1858408591f04a72fce25c65579f9e1b893ebcc41f73e8dac9ee8bd5"
+    },
+    "logical-event-evolution": {
+      "cases": [
+        {
+          "id": "logical-alias-replay",
+          "measured_checks_sha256": "5c076f8e356fddc34cd560d10cb89443988d8414d0ffb77a45b34df1e861a5e7",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "unknown-version-refusal",
+          "measured_checks_sha256": "1a985371f6d62e64126d8811a1dd8eebe7a00072d6dfbeae62703699fb21b6cd",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "original-envelope-preserved",
+          "measured_checks_sha256": "5c076f8e356fddc34cd560d10cb89443988d8414d0ffb77a45b34df1e861a5e7",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "817679a46d7aa896ea90d0f5bab6122c48f260494a641ce5d813f08985482ec4"
+    },
+    "metadata-read": {
+      "cases": [
+        {
+          "id": "3.110.0-pascal-floor-1",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-pascal-floor-5",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-web-floor-1",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-web-floor-5",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-pascal-floor-1",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-pascal-floor-5",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-web-floor-1",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-web-floor-5",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.126.0-pascal-floor-1",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-pascal-floor-5",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-web-floor-1",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-web-floor-5",
+          "measured_checks_sha256": "41535510c3c543ca7c4d40ce2eaa0aebab5beca9b6b5482f76f26cb55af11390",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "450acba0f5b3cc403c5bcb1bf9d917a42b3b6bfc9d5499ccb52027045a5cefa2"
+    },
+    "metadata-write": {
+      "cases": [
+        {
+          "id": "3.110.0-to-3.70.1",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.110.0-to-3.126.0",
+          "measured_checks_sha256": "5c12cadba3cbed449a4c1147d9fc027dbbfec2b00de0e18720e7d5fbc0b65fb7",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.110.0",
+          "measured_checks_sha256": "5c12cadba3cbed449a4c1147d9fc027dbbfec2b00de0e18720e7d5fbc0b65fb7",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.126.0",
+          "measured_checks_sha256": "5c12cadba3cbed449a4c1147d9fc027dbbfec2b00de0e18720e7d5fbc0b65fb7",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.110.0",
+          "measured_checks_sha256": "eab209f900585b2c07f1a48ad1c11c8d1d4b2bd8a039d5991897da6bc3ecc14c",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.70.1",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        }
+      ],
+      "receipt_sha256": "f553c1ab00ba191f119838bb1f6b5a0a19797ec6978874cee8144849bc2f5aaa"
+    },
+    "missing-event": {
+      "cases": [
+        {
+          "id": "3.110.0-to-3.70.1-interior",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-to-3.70.1-tail",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-to-3.126.0-interior",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-to-3.126.0-tail",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.110.0-interior",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.110.0-tail",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.126.0-interior",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.126.0-tail",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.110.0-interior",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.110.0-tail",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.70.1-interior",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.70.1-tail",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "06515c8b4284ab865c11384c5887039ecb3eaa0d82901f70b04657d0b6890420"
+    },
+    "mixed-api": {
+      "cases": [
+        {
+          "id": "3.110.0-client-3.70.1-host",
+          "measured_checks_sha256": "f5ad7cdba4ad8b4e49f5ba48ce5b115ca9374b5cb160869bdacf00cedae89c28",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-client-3.126.0-host",
+          "measured_checks_sha256": "f5ad7cdba4ad8b4e49f5ba48ce5b115ca9374b5cb160869bdacf00cedae89c28",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-client-3.110.0-host",
+          "measured_checks_sha256": "f5ad7cdba4ad8b4e49f5ba48ce5b115ca9374b5cb160869bdacf00cedae89c28",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-client-3.126.0-host",
+          "measured_checks_sha256": "f5ad7cdba4ad8b4e49f5ba48ce5b115ca9374b5cb160869bdacf00cedae89c28",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-client-3.110.0-host",
+          "measured_checks_sha256": "f5ad7cdba4ad8b4e49f5ba48ce5b115ca9374b5cb160869bdacf00cedae89c28",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-client-3.70.1-host",
+          "measured_checks_sha256": "f5ad7cdba4ad8b4e49f5ba48ce5b115ca9374b5cb160869bdacf00cedae89c28",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-status",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.110.0-cursor-scope",
+          "measured_checks_sha256": "b77152989276ff12b54f965c8c4c5ed92350ab140646379cbb023a7994746ca9",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-fenced-effect",
+          "measured_checks_sha256": "a43e0c125a97ac7a11668a5ff1b39fc1ac62545c368d4d07cc4216c3a0ecd34e",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-stale-fence",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.110.0-trusted-effect",
+          "measured_checks_sha256": "3fc9efff9812f20079585964113cb93131d0b90b3b95459dd81553eb306d46de",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-unauthorized-effect",
+          "measured_checks_sha256": "be1dda044700ecddf73c9dfb90369219c11a778872f3f08357941b71b8ace970",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-retained-floor",
+          "measured_checks_sha256": "d7f3071b57fa9922ebeb948fb4dc61ed3fb5905f7cc4985ef5e973f2444765be",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-status",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-cursor-scope",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-fenced-effect",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-stale-fence",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-trusted-effect",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-unauthorized-effect",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-retained-floor",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.126.0-status",
+          "measured_checks_sha256": "656c2574357fe744edb387e9bfde1676b902cb93d6e2b134e04d06e2a115a5fb",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-cursor-scope",
+          "measured_checks_sha256": "b77152989276ff12b54f965c8c4c5ed92350ab140646379cbb023a7994746ca9",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-fenced-effect",
+          "measured_checks_sha256": "a43e0c125a97ac7a11668a5ff1b39fc1ac62545c368d4d07cc4216c3a0ecd34e",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-stale-fence",
+          "measured_checks_sha256": "a15e2a87cc98ddb6691654752e954988a7c0b1dfc1bd3e89b2ebf100589f125d",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-trusted-effect",
+          "measured_checks_sha256": "0516c2c4ae5b200f4e245acfcd093e600129aeb8d042e11dad866592904ef04d",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-unauthorized-effect",
+          "measured_checks_sha256": "2c14d2185223fd6b3dcb902792983a628dd7a84e0f167736ebfaf514616ce493",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-retained-floor",
+          "measured_checks_sha256": "d7f3071b57fa9922ebeb948fb4dc61ed3fb5905f7cc4985ef5e973f2444765be",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "2b6436f963c3b24f52d782cfb5269e77c8d90f38549b7fcb477ec91f5c588302"
+    },
+    "post-upgrade-restore": {
+      "cases": [
+        {
+          "id": "fresh-backup-restore-append-restart",
+          "measured_checks_sha256": "4eca7cb1d98b9c39cc1d1fb694e8db31045eec1743a1f89442dba697847cfbb0",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 3,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "bc4edd11cf35681346e12167b7217ea196c21cd24849880ebf2fdc49a791848f"
+    },
+    "pre-upgrade-restore": {
+      "cases": [
+        {
+          "id": "containment-only-backup-restore",
+          "measured_checks_sha256": "550d752a00c4d691ce6e0aa87fd067bffa0c3a23ebe5e80cb88434ad87d295fa",
+          "measured_disposition": "incompatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "containment"
+        }
+      ],
+      "receipt_sha256": "84881d2810dd08c6963c5b718d250d3b42405d6a197176133237542d97dcce33"
+    },
+    "projection-wire": {
+      "cases": [
+        {
+          "id": "3.110.0-3.70.1-json-positive",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.110.0-3.126.0-json-positive",
+          "measured_checks_sha256": "e2f82b021d8d735a2144eea248871b14781631b307e78b520f755aa20e6f42e8",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-3.110.0-json-positive",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-3.126.0-json-positive",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.126.0-3.110.0-json-positive",
+          "measured_checks_sha256": "e2f82b021d8d735a2144eea248871b14781631b307e78b520f755aa20e6f42e8",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-3.70.1-json-positive",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        }
+      ],
+      "receipt_sha256": "e80ecc24f1c9bae0998e1db1c58d85daf674ca645d720cd1e65df5639411ed8e"
+    },
+    "provenance": {
+      "cases": [
+        {
+          "id": "3.110.0",
+          "measured_checks_sha256": "5e4f20b04a4a104993a5a2cd34c16d5788f0b40360675bcf5d8e83d3d48c1b4f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1",
+          "measured_checks_sha256": "5e4f20b04a4a104993a5a2cd34c16d5788f0b40360675bcf5d8e83d3d48c1b4f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0",
+          "measured_checks_sha256": "5e4f20b04a4a104993a5a2cd34c16d5788f0b40360675bcf5d8e83d3d48c1b4f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "0a224f6ccb872661ed1cf69eaff20601de6a78376d97966de4caefec5ed37c67"
+    },
+    "query-wire": {
+      "cases": [
+        {
+          "id": "3.110.0-3.70.1-json-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-3.70.1-json-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.110.0-3.70.1-xml-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-3.70.1-xml-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.110.0-3.126.0-json-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-3.126.0-json-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.110.0-3.126.0-xml-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-3.126.0-xml-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-3.110.0-json-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-3.110.0-json-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-3.110.0-xml-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-3.110.0-xml-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-3.126.0-json-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-3.126.0-json-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.70.1-3.126.0-xml-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-3.126.0-xml-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.126.0-3.110.0-json-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-3.110.0-json-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.126.0-3.110.0-xml-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-3.110.0-xml-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.126.0-3.70.1-json-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-3.70.1-json-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        },
+        {
+          "id": "3.126.0-3.70.1-xml-legacy",
+          "measured_checks_sha256": "64c56dea161226961d8a8fefa800150f5d3dc252b038df78eb1f84aac439780f",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-3.70.1-xml-dual",
+          "measured_checks_sha256": "14988e8d10414f3724c6513fa7d33254be7befcbccf02e31b4a44e3e5873dd76",
+          "measured_disposition": "incompatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "unsupported",
+          "measured_outcome": "refusal",
+          "treatment": "refused"
+        }
+      ],
+      "receipt_sha256": "374f9ceddb4176157385d08e4545fb131c96f9e9e9a6b64fee34655d6e1729cb"
+    },
+    "reminder-recovery": {
+      "cases": [
+        {
+          "id": "scheduled-restart-effect",
+          "measured_checks_sha256": "0ce1143df3f2bb82f2f3e85b42a61cde484b3c1a5a26cd9f52016fa4d309e59c",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "stale-generation-refusal",
+          "measured_checks_sha256": "2a00db254642e9c18c06b6f64b824367489e7364e12b5a9e02f08a3b9e07c01c",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "tenant-preservation",
+          "measured_checks_sha256": "0ce1143df3f2bb82f2f3e85b42a61cde484b3c1a5a26cd9f52016fa4d309e59c",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "4af861ecb1e58ca27562e255fb15dc4bfd00a6796eb6871f9d1d9cfaa6edf672"
+    },
+    "retained-covered": {
+      "cases": [
+        {
+          "id": "3.110.0-to-3.70.1",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-to-3.126.0",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.110.0",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.126.0",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.110.0",
+          "measured_checks_sha256": "65991cdf5c63fddc51b518ea96b59750deeaba81024c36c24ddbaaab853109b9",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.70.1",
+          "measured_checks_sha256": "65991cdf5c63fddc51b518ea96b59750deeaba81024c36c24ddbaaab853109b9",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "993c9e6171a381c8c2d78788f3f8627621695ed35bdee9f4f4b702591e44284e"
+    },
+    "retained-uncovered": {
+      "cases": [
+        {
+          "id": "3.110.0-to-3.70.1-absent",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-to-3.70.1-non-covering",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-to-3.126.0-absent",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-to-3.126.0-non-covering",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.110.0-absent",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.110.0-non-covering",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.126.0-absent",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.126.0-non-covering",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.110.0-absent",
+          "measured_checks_sha256": "65991cdf5c63fddc51b518ea96b59750deeaba81024c36c24ddbaaab853109b9",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.110.0-non-covering",
+          "measured_checks_sha256": "65991cdf5c63fddc51b518ea96b59750deeaba81024c36c24ddbaaab853109b9",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.70.1-absent",
+          "measured_checks_sha256": "65991cdf5c63fddc51b518ea96b59750deeaba81024c36c24ddbaaab853109b9",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.70.1-non-covering",
+          "measured_checks_sha256": "65991cdf5c63fddc51b518ea96b59750deeaba81024c36c24ddbaaab853109b9",
+          "measured_disposition": "compatible",
+          "measured_expected": "refusal",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "refusal",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "b24e56c2e5a832adce818d7b27847b35e8f2ae2f385843eceeb77ae670a024bc"
+    },
+    "snapshot-tail": {
+      "cases": [
+        {
+          "id": "3.110.0-to-3.70.1",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.110.0-to-3.126.0",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.110.0",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.70.1-to-3.126.0",
+          "measured_checks_sha256": "43a78a2571c85cb192b75e4d220ef5fedd9c9716f7661013edac56a3585d3593",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.110.0",
+          "measured_checks_sha256": "65991cdf5c63fddc51b518ea96b59750deeaba81024c36c24ddbaaab853109b9",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        },
+        {
+          "id": "3.126.0-to-3.70.1",
+          "measured_checks_sha256": "65991cdf5c63fddc51b518ea96b59750deeaba81024c36c24ddbaaab853109b9",
+          "measured_disposition": "compatible",
+          "measured_expected": "effect",
+          "measured_failed": 0,
+          "measured_operation": "supported",
+          "measured_outcome": "effect",
+          "treatment": "supported"
+        }
+      ],
+      "receipt_sha256": "ebd017a6dd4fa3abc7395feeb080ac485db25e27edc209f8d58e9c174992f70f"
+    }
+  },
+  "schema": "hexalith.p1r.successor-support-boundary.v1",
+  "selection_sha256": "c9443393f870df05c8e3c21e385e3dd8644d6fef8580692b23e3e4488f216c29",
+  "status": "measured-pending-disposition"
+}

@@ -1,0 +1,18 @@
+{
+  "cwd": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore",
+  "argv": [
+    "python3",
+    "tools/p1r-published-executor.py",
+    "observe",
+    "--out",
+    "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/.p0-qualification/p1r-31260-retention-observation-attempt1",
+    "--planning-observations",
+    "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/.p0-qualification/inputs/p1r-31260-planning-observations.json",
+    "--selection-reference",
+    "approved-tuple-20261020/approval.json; unchanged runtime selection; retention-fixture correction p1r-restore-fixture-diagnosis.json",
+    "--source-root",
+    "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020"
+  ],
+  "sourceRevision": "51422dff60f7f1db06f5356efea2548c45c370d7",
+  "workspaceRevision": "a107d736c5991b2753655d5afd2a90198fd6dbe0"
+}

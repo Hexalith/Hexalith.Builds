@@ -1,0 +1,64 @@
+{
+  "observedUtc": "2026-10-20T09:15:32.817740+00:00",
+  "command": "GET Docker Hub v2 daprio/dapr/manifests/1.18.2 with read-only repository pull token; token not retained",
+  "url": "https://registry-1.docker.io/v2/daprio/dapr/manifests/1.18.2",
+  "tag": "1.18.2",
+  "registryDigest": "sha256:9ec89d30076155d2376c06f98028b6920f31fac5df0eb40e0b8b94cc88dd5b59",
+  "bodySha256": "9ec89d30076155d2376c06f98028b6920f31fac5df0eb40e0b8b94cc88dd5b59",
+  "manifest": {
+    "schemaVersion": 2,
+    "mediaType": "application/vnd.docker.distribution.manifest.list.v2+json",
+    "manifests": [
+      {
+        "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "size": 3234,
+        "digest": "sha256:1146cf75f6a900f098489f995bcb2145bf9b040f87ab70eb0de2db21000d01bb",
+        "platform": {
+          "architecture": "amd64",
+          "os": "linux"
+        }
+      },
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "size": 2940,
+        "digest": "sha256:59ead25b753d79121d6e0c9c6da075705a0497e9b2916ce978d98c09030a43b5",
+        "platform": {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v7"
+        }
+      },
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "size": 2940,
+        "digest": "sha256:9cbaaa2ca35270616bd0ed6974b5d700387abf60444606152ba045d791093c4e",
+        "platform": {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      },
+      {
+        "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "size": 1993,
+        "digest": "sha256:3297875ba3234dbc6a5398576ae2cfdc6d7228c71ab71f9cb4defe23f99ca0be",
+        "platform": {
+          "architecture": "amd64",
+          "os": "windows",
+          "os.version": "10.0.17763.4010"
+        }
+      },
+      {
+        "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "size": 1993,
+        "digest": "sha256:bcbaa3689514345208e23ae24634966d46157060d8d29d66c5d83c27187183f1",
+        "platform": {
+          "architecture": "amd64",
+          "os": "windows",
+          "os.version": "10.0.20348.1547"
+        }
+      }
+    ]
+  },
+  "runtimeQualification": false,
+  "manifestRawUtf8": "{\n   \"schemaVersion\": 2,\n   \"mediaType\": \"application/vnd.docker.distribution.manifest.list.v2+json\",\n   \"manifests\": [\n      {\n         \"mediaType\": \"application/vnd.docker.distribution.manifest.v2+json\",\n         \"size\": 3234,\n         \"digest\": \"sha256:1146cf75f6a900f098489f995bcb2145bf9b040f87ab70eb0de2db21000d01bb\",\n         \"platform\": {\n            \"architecture\": \"amd64\",\n            \"os\": \"linux\"\n         }\n      },\n      {\n         \"mediaType\": \"application/vnd.oci.image.manifest.v1+json\",\n         \"size\": 2940,\n         \"digest\": \"sha256:59ead25b753d79121d6e0c9c6da075705a0497e9b2916ce978d98c09030a43b5\",\n         \"platform\": {\n            \"architecture\": \"arm\",\n            \"os\": \"linux\",\n            \"variant\": \"v7\"\n         }\n      },\n      {\n         \"mediaType\": \"application/vnd.oci.image.manifest.v1+json\",\n         \"size\": 2940,\n         \"digest\": \"sha256:9cbaaa2ca35270616bd0ed6974b5d700387abf60444606152ba045d791093c4e\",\n         \"platform\": {\n            \"architecture\": \"arm64\",\n            \"os\": \"linux\"\n         }\n      },\n      {\n         \"mediaType\": \"application/vnd.docker.distribution.manifest.v2+json\",\n         \"size\": 1993,\n         \"digest\": \"sha256:3297875ba3234dbc6a5398576ae2cfdc6d7228c71ab71f9cb4defe23f99ca0be\",\n         \"platform\": {\n            \"architecture\": \"amd64\",\n            \"os\": \"windows\",\n            \"os.version\": \"10.0.17763.4010\"\n         }\n      },\n      {\n         \"mediaType\": \"application/vnd.docker.distribution.manifest.v2+json\",\n         \"size\": 1993,\n         \"digest\": \"sha256:bcbaa3689514345208e23ae24634966d46157060d8d29d66c5d83c27187183f1\",\n         \"platform\": {\n            \"architecture\": \"amd64\",\n            \"os\": \"windows\",\n            \"os.version\": \"10.0.20348.1547\"\n         }\n      }\n   ]\n}"
+}

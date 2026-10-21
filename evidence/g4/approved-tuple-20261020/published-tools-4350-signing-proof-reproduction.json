@@ -1,0 +1,33 @@
+{
+  "artifactKind": "independent static NuGet signing transformation proof",
+  "procedureSha256": "733b60ee6cecf65281fd3d521fe0ee24e0bea55d6b53e0194b46211579d89cea",
+  "inventory": "/home/administrator/projects/hexalith/builds/evidence/g4/approved-tuple-20261020/published-tools-4350-release-inventory.json",
+  "inventorySha256": "26c1251938fbebaae5cf7d72306980fc82cee340779adafa450c3554ca5d86ff",
+  "method": "remove signature local/central records and adjust ZIP offsets/counts; preserve all other compressed bytes and metadata",
+  "packages": [
+    {
+      "id": "Hexalith.Builds.Evidence.Cli",
+      "version": "4.35.0",
+      "archive": "/var/tmp/hexalith-p0-published-observation-20261020/hexalith.builds.evidence.cli.4.35.0.nupkg",
+      "signedArchiveSha256": "cd860844beeaa58be034abbd198326cd1bb8abad86bdd74da03ba66a8346fa96",
+      "qualifiedLocalSha256": "984443b718ebefb0e4e9e8daff9fc2f7d9ca15b9584d9b001e4f71296553a0a5",
+      "reconstructedUnsignedSha256": "984443b718ebefb0e4e9e8daff9fc2f7d9ca15b9584d9b001e4f71296553a0a5",
+      "exactQualifiedArchiveReconstructed": true,
+      "payloadEntryCount": 40,
+      "derivedBytes": 2577278
+    },
+    {
+      "id": "Hexalith.Builds.Module.Cli",
+      "version": "4.35.0",
+      "archive": "/var/tmp/hexalith-p0-published-observation-20261020/hexalith.builds.module.cli.4.35.0.nupkg",
+      "signedArchiveSha256": "2b2f0689f38c8a20efa823bd3dc277b4bbe785b03c62513878b9e4c261cb2880",
+      "qualifiedLocalSha256": "48175e5669d1f9eb1c74ce0fff6a06de09e4ae24e6fc6741f98e2dfc2003d20b",
+      "reconstructedUnsignedSha256": "48175e5669d1f9eb1c74ce0fff6a06de09e4ae24e6fc6741f98e2dfc2003d20b",
+      "exactQualifiedArchiveReconstructed": true,
+      "payloadEntryCount": 279,
+      "derivedBytes": 36713815
+    }
+  ],
+  "allQualifiedArchiveHashesMatch": true,
+  "qualificationOrAcceptanceGranted": false
+}

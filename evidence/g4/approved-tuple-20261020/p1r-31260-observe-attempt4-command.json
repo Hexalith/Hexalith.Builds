@@ -1,0 +1,17 @@
+{
+  "cwd": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore",
+  "argv": [
+    "python3",
+    "tools/p1r-published-executor.py",
+    "observe",
+    "--out",
+    "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-observation-attempt4",
+    "--planning-observations",
+    "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/inputs/planning-31260.json",
+    "--selection-reference",
+    "2026-10-20 user-approved P0 tuple; approval.json sha256:2020d5e314d211f48fa1b6ebbf9620b956edbcfa8a3334e79863d60234590ad1",
+    "--source-root",
+    "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020"
+  ],
+  "prerequisite": "G6 attempt2 completes cleanup before this independent observation starts"
+}

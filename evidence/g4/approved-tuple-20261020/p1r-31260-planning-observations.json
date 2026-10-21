@@ -1,0 +1,45 @@
+{
+  "candidate_proposed": {
+    "version": "3.126.0",
+    "tag": "v3.126.0",
+    "tag_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+    "tag_builds_commit": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c",
+    "builds": {
+      "version": "4.33.1-1-g1dfc39e",
+      "commit": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c"
+    },
+    "feed": "https://api.nuget.org/v3/index.json",
+    "packages": [
+      {
+        "id": "Hexalith.EventStore.Client",
+        "archive_sha256": "e7616aeb79023bbb5c9a2dddc9ac731a0199b7501b1a79d1afe80fc37f7b9469",
+        "content_hash": "2K2YhHVrGpiCWe+hdlNncKZ0takPymxpdM2LwMccvBQiVkoLjUgxoSViy2vypEszrefbYEvWs/pre/3DQWB4KA==",
+        "repository_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      {
+        "id": "Hexalith.EventStore.Contracts",
+        "archive_sha256": "9868f2a2687fbab48b6910bb8d74d4fb18d26ec81464f3364b915fae2445fc99",
+        "content_hash": "axp+KcCtwvIfyxNX/6E3f7StaYx8O9fg9c0DLgGtl4semgTiaBajkRES6aeUrDaSik9JWpa8GtnsSgZrd8l8oA==",
+        "repository_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      {
+        "id": "Hexalith.EventStore.DomainService",
+        "archive_sha256": "6bc48c18a729a4bda53b2c6f2095c8951028083eb7e57b5340d6cc4e1a5fb49b",
+        "content_hash": "k6XQB5PlFTNZMHuoI0WDArMSx+zOHbiAhB3KKZombNoYxU3I0ggSCvYpQmag5mPi1Pv8K8VvDUnE8MV9RBjdMw==",
+        "repository_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      {
+        "id": "Hexalith.EventStore.Server",
+        "archive_sha256": "c8d2732a064100c43e9abce5575af1d7647e5d20b7f9b212bea1d612a5518aa1",
+        "content_hash": "clJBxbXXwWv1l2h5yPJU4IY6cygOu5Kv0snWLE4BMs2cK+ThuclSvf9ptfzisrED4pKEvMOlj9JdRNegHVIf2g==",
+        "repository_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      {
+        "id": "Hexalith.EventStore.ServiceDefaults",
+        "archive_sha256": "d295c4708fa7c204821d7de7a0afcdd265080c50827bad128bbe4cd8011f450d",
+        "content_hash": "STAUHKzj1nYAQretEdCaNwJcB2vaBQicsQqH9A0m6e4CcjJbUKZMjKej/sD2EXlQXT3rNcIwjPzxkN0BXaDVng==",
+        "repository_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      }
+    ]
+  }
+}

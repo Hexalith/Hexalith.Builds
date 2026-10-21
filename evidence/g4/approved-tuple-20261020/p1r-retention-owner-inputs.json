@@ -1,0 +1,156 @@
+{
+  "assertion_instrumentation": {
+    "accepted_by": "test-owner",
+    "mechanism": "p1r-executed-checks-v1",
+    "reference": "approved-tuple-20261020/approval.json; unchanged runtime selection; retention-fixture correction p1r-restore-fixture-diagnosis.json"
+  },
+  "authority": {
+    "date": "2026-10-20",
+    "owner": "user",
+    "reference": "approved-tuple-20261020/approval.json; unchanged runtime selection; retention-fixture correction p1r-restore-fixture-diagnosis.json"
+  },
+  "candidate": {
+    "builds": {
+      "commit": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c",
+      "version": "4.33.1-1-g1dfc39e"
+    },
+    "feed": "https://api.nuget.org/v3/index.json",
+    "packages": [
+      {
+        "archive_sha256": "e7616aeb79023bbb5c9a2dddc9ac731a0199b7501b1a79d1afe80fc37f7b9469",
+        "content_hash": "2K2YhHVrGpiCWe+hdlNncKZ0takPymxpdM2LwMccvBQiVkoLjUgxoSViy2vypEszrefbYEvWs/pre/3DQWB4KA==",
+        "id": "Hexalith.EventStore.Client",
+        "repository_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      {
+        "archive_sha256": "9868f2a2687fbab48b6910bb8d74d4fb18d26ec81464f3364b915fae2445fc99",
+        "content_hash": "axp+KcCtwvIfyxNX/6E3f7StaYx8O9fg9c0DLgGtl4semgTiaBajkRES6aeUrDaSik9JWpa8GtnsSgZrd8l8oA==",
+        "id": "Hexalith.EventStore.Contracts",
+        "repository_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      {
+        "archive_sha256": "6bc48c18a729a4bda53b2c6f2095c8951028083eb7e57b5340d6cc4e1a5fb49b",
+        "content_hash": "k6XQB5PlFTNZMHuoI0WDArMSx+zOHbiAhB3KKZombNoYxU3I0ggSCvYpQmag5mPi1Pv8K8VvDUnE8MV9RBjdMw==",
+        "id": "Hexalith.EventStore.DomainService",
+        "repository_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      {
+        "archive_sha256": "c8d2732a064100c43e9abce5575af1d7647e5d20b7f9b212bea1d612a5518aa1",
+        "content_hash": "clJBxbXXwWv1l2h5yPJU4IY6cygOu5Kv0snWLE4BMs2cK+ThuclSvf9ptfzisrED4pKEvMOlj9JdRNegHVIf2g==",
+        "id": "Hexalith.EventStore.Server",
+        "repository_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      },
+      {
+        "archive_sha256": "d295c4708fa7c204821d7de7a0afcdd265080c50827bad128bbe4cd8011f450d",
+        "content_hash": "STAUHKzj1nYAQretEdCaNwJcB2vaBQicsQqH9A0m6e4CcjJbUKZMjKej/sD2EXlQXT3rNcIwjPzxkN0BXaDVng==",
+        "id": "Hexalith.EventStore.ServiceDefaults",
+        "repository_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+      }
+    ],
+    "tag": "v3.126.0",
+    "tag_builds_commit": "1dfc39e3a3e6ab1c8ce95138490b39d76e7feb2c",
+    "tag_commit": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+    "version": "3.126.0"
+  },
+  "comparisons": [
+    {
+      "builds": {
+        "commit": "cfafcbf1e904138b435b63ba4fd79f86b8dda069",
+        "version": "4.19.2-20-gcfafcbf"
+      },
+      "feed": "https://api.nuget.org/v3/index.json",
+      "packages": [
+        {
+          "archive_sha256": "2399a970ca7f6685e04e1d5bad06f7a7dec88de9e2f767f32df2371f2e599601",
+          "content_hash": "UjVLImHNmOZkgc0VkzeFyWFLnCrqYZ967RH4PF1caD/xgsrMsRwtLtd6+d6JQs8f5eLTJyAvYinnguRqg+zYiw==",
+          "id": "Hexalith.EventStore.Client",
+          "repository_commit": "650faf053a98ed1c03c048b8e0d2e4d281b095cf"
+        },
+        {
+          "archive_sha256": "ee6cb34319615cf2612b75c6298aad3c1862ee07ce3cb78fa39deee1c62b7c1a",
+          "content_hash": "D46Ujom2BaRA9dliNQEDkddSI+aETQX56bfK6RnHSGOTJnrK5MdUvvg4txZJLc/8OvhMEuRhxwHbS96O+gKo0A==",
+          "id": "Hexalith.EventStore.Contracts",
+          "repository_commit": "650faf053a98ed1c03c048b8e0d2e4d281b095cf"
+        },
+        {
+          "archive_sha256": "e9377c4cf418dbb73e30eefaab98f0ba4381e1ce8dd6108225f348ab56b7810f",
+          "content_hash": "M0SprdUzSyPnfvFAIMHq2BT7HfxnR7G77DT26JnPxIFhBR3ysov7hkuaCUGVi+i5TfMLieEng+++UjdoaxNIjQ==",
+          "id": "Hexalith.EventStore.DomainService",
+          "repository_commit": "650faf053a98ed1c03c048b8e0d2e4d281b095cf"
+        },
+        {
+          "archive_sha256": "a9b1f8e8b83b069421951f386572042f67ef31a58f024310b6ff9ad794567f74",
+          "content_hash": "dDmVa7LxtzWyEsDYeyqfYaHAu7r0twGmagaCjVM+n9kFFMpAC5v7rWaIOi+CEiQUEkT/6kC5sXgHP0kYIy7tFg==",
+          "id": "Hexalith.EventStore.Server",
+          "repository_commit": "650faf053a98ed1c03c048b8e0d2e4d281b095cf"
+        },
+        {
+          "archive_sha256": "64b1b32359e04c6b3523fd8135f373bfa6bbcc3346bcda6c744de053519397d6",
+          "content_hash": "8SwIg3ok4Tb+rQnVJziGGZV0OSDRrHEinn5TUXX8zu2KdyWFAmZkdWb9nwjQ+xTvn/G9qznYBKH+O0oMupQGVQ==",
+          "id": "Hexalith.EventStore.ServiceDefaults",
+          "repository_commit": "650faf053a98ed1c03c048b8e0d2e4d281b095cf"
+        }
+      ],
+      "tag": "v3.70.1",
+      "tag_commit": "f13f9925fdca53efa2ab8c90d396ab106f91bb9c",
+      "version": "3.70.1"
+    },
+    {
+      "builds": {
+        "commit": "125566f1205ef4f4b81511cccaf4e4a0820db61d",
+        "version": "4.28.0-10-g125566f"
+      },
+      "feed": "https://api.nuget.org/v3/index.json",
+      "packages": [
+        {
+          "archive_sha256": "2085e60de82eefb00d0e76ea48438ecbcb14f610b9f65dc926feb1886af845b1",
+          "content_hash": "OSjRL4VNdN7U40CQKxVWeboQV4Go4mnXm5a6zuKsyMOz/1/qmq/g6VRbGyEN1wN9R6nDElv2RHeV754BlQvjjg==",
+          "id": "Hexalith.EventStore.Client",
+          "repository_commit": "27279fe6431925a6ea046c3f89af61487185c7de"
+        },
+        {
+          "archive_sha256": "5c32eada89b3d6424f89cb01929e5e18d3240c463f1f1a6e32a5fb380bd4d6f2",
+          "content_hash": "baYsmElIPNyTHly6B18qIldqyV3IQ10znHmYON+AKeuL3xyvacz2Jrn9xFMY8b2C/Ow874JYCkq0o6x/NbcUsQ==",
+          "id": "Hexalith.EventStore.Contracts",
+          "repository_commit": "27279fe6431925a6ea046c3f89af61487185c7de"
+        },
+        {
+          "archive_sha256": "ead5dfabb5d4cfc90739fa414b3c2f8806d388c8237f74737a864d3b7b518e93",
+          "content_hash": "HWvcNBAfLqxjZ2w7aOABVaZv2WXn7W3aox1GHjq5zFQe1UjXW3en/aiPazsa8ccXCUfXE+WqrA+Q1YNABKSmHw==",
+          "id": "Hexalith.EventStore.DomainService",
+          "repository_commit": "27279fe6431925a6ea046c3f89af61487185c7de"
+        },
+        {
+          "archive_sha256": "ca676768798b2dd69035eaef9dce92a8a55db2c77d44ce3b0dda216fb7ed776a",
+          "content_hash": "ag4Svmfv94X4DxxTRAiyJPQZM0IXxrH40JaOtTx5RTCfh2ASaKHf9aIwWJGSOL4pWHGqd5w3apvu4or1PYzoxg==",
+          "id": "Hexalith.EventStore.Server",
+          "repository_commit": "27279fe6431925a6ea046c3f89af61487185c7de"
+        },
+        {
+          "archive_sha256": "7f23addbfca231eac9c2a6b3cc73d9db82c7674478e5f5c79f90a73d7abeb5c4",
+          "content_hash": "oz8knL5wa0XjWO1FcvTASXgpew08t+pEN21lqn7dC6rvIYls9CeQ72KeRgQndEhN4DSGbupWBkGAIhLa9yd7Mg==",
+          "id": "Hexalith.EventStore.ServiceDefaults",
+          "repository_commit": "27279fe6431925a6ea046c3f89af61487185c7de"
+        }
+      ],
+      "tag": "v3.110.0",
+      "tag_commit": "27279fe6431925a6ea046c3f89af61487185c7de",
+      "version": "3.110.0"
+    }
+  ],
+  "fixture": null,
+  "operational_profile": {
+    "backend": "state.postgresql",
+    "backend_image": "postgres@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636",
+    "reference": "approved-tuple-20261020/approval.json; unchanged runtime selection; retention-fixture correction p1r-restore-fixture-diagnosis.json",
+    "runtime": "dapr",
+    "runtime_version": "1.18.2",
+    "selected_by": "user"
+  },
+  "rollback": null,
+  "schema": "hexalith.p1r.owner-inputs.v1",
+  "selected_additions": [
+    "reminder-recovery",
+    "logical-event-evolution"
+  ]
+}

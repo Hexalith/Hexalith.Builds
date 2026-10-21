@@ -1,0 +1,202 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 3a32b3c..e88b9ab 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -104,7 +104,7 @@ jobs:
+ 
+   ci:
+     needs: workflow-gates
+-    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@51af786cf156d2a3396dbd49f5e4898222e55c12
++    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@e40ed9c7110d56a2f38c9291627728aea2f205cb
+     with:
+       # Bare solution path only. The callee runs `dotnet restore "$SOLUTION"`, so an
+       # embedded `-p:` switch is parsed as part of the project path (MSB1009), and
+@@ -142,10 +142,10 @@ jobs:
+           submodules: false
+ 
+       - name: Initialize root-declared submodules
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@51af786cf156d2a3396dbd49f5e4898222e55c12
++        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e40ed9c7110d56a2f38c9291627728aea2f205cb
+ 
+       - name: Initialize .NET
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@51af786cf156d2a3396dbd49f5e4898222e55c12
++        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@e40ed9c7110d56a2f38c9291627728aea2f205cb
+         with:
+           global-json-file: global.json
+ 
+@@ -178,10 +178,10 @@ jobs:
+           submodules: false
+ 
+       - name: Initialize root-declared submodules
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@51af786cf156d2a3396dbd49f5e4898222e55c12
++        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e40ed9c7110d56a2f38c9291627728aea2f205cb
+ 
+       - name: Initialize .NET
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@51af786cf156d2a3396dbd49f5e4898222e55c12
++        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@e40ed9c7110d56a2f38c9291627728aea2f205cb
+         with:
+           global-json-file: global.json
+ 
+@@ -201,7 +201,7 @@ jobs:
+             # Jérôme Piquot, 2026-10-03: “Unset CI in restore (Recommended)”.
+             # This dedicated Debug source proof retains the normal package-only CI guard.
+             env -u CI dotnet restore "$project" -p:UseHexalithProjectReferences=true
+-          done < <(jq -r '.resolvedProjects[]' references/Hexalith.Builds/Tools/g6-current-policy.json)
++          done < <(jq -r '.resolvedProjects[]' references/Hexalith.Builds/Tools/g6-current-policy-2026-10-20.json)
+ 
+       - name: Audit and qualify current G-6 when required
+         env:
+@@ -211,7 +211,7 @@ jobs:
+           python3 tests/tools/run_g6_ci_gate.py
+           --event "$G6_EVENT_NAME"
+           --base-sha "$G6_BASE_SHA"
+-          --policy references/Hexalith.Builds/Tools/g6-current-policy.json
++          --policy references/Hexalith.Builds/Tools/g6-current-policy-2026-10-20.json
+           --output "$G6_OUTPUT"
+ 
+       - name: Upload G-6 result and diagnostics
+@@ -237,7 +237,7 @@ jobs:
+           submodules: false
+ 
+       - name: Initialize root-declared submodules
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@51af786cf156d2a3396dbd49f5e4898222e55c12
++        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e40ed9c7110d56a2f38c9291627728aea2f205cb
+ 
+       - name: Fetch EventStore tags read by the P1R evidence replay
+         run: >-
+@@ -268,10 +268,10 @@ jobs:
+           submodules: false
+ 
+       - name: Initialize root-declared submodules
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@51af786cf156d2a3396dbd49f5e4898222e55c12
++        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e40ed9c7110d56a2f38c9291627728aea2f205cb
+ 
+       - name: Initialize .NET
+-        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@51af786cf156d2a3396dbd49f5e4898222e55c12
++        uses: Hexalith/Hexalith.Builds/Github/initialize-dotnet@e40ed9c7110d56a2f38c9291627728aea2f205cb
+         with:
+           global-json-file: global.json
+ 
+@@ -282,7 +282,7 @@ jobs:
+           runtime-version: '1.18.2'
+ 
+       - name: Install Aspire CLI
+-        run: dotnet tool install --global Aspire.Cli --version 13.6.0
++        run: dotnet tool install --global Aspire.Cli --version 13.6.1
+ 
+       - name: Initialize Node.js
+         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+index ac5fbe5..aa428d8 100644
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -93,13 +93,13 @@ jobs:
+         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+         with:
+           repository: Hexalith/Hexalith.Builds
+-          ref: a07078ad74d3727bc5a6b6d85d47d56a6e5c9fec
++          ref: e40ed9c7110d56a2f38c9291627728aea2f205cb
+           path: .hexalith/builds-execution
+           persist-credentials: false
+       - name: Validate approved Builds actions identity
+         shell: bash
+         env:
+-          BUILDS_EXECUTION_SHA: a07078ad74d3727bc5a6b6d85d47d56a6e5c9fec
++          BUILDS_EXECUTION_SHA: e40ed9c7110d56a2f38c9291627728aea2f205cb
+         run: |
+           set -euo pipefail
+           checked_out_builds_sha="$(git -C .hexalith/builds-execution rev-parse HEAD)"
+@@ -139,7 +139,7 @@ jobs:
+           G6_OUTPUT: .g6-current-evidence/release-${{ github.run_id }}-${{ github.run_attempt }}
+         run: >-
+           python3 tools/qualification/run_g6_current.py
+-          --policy references/Hexalith.Builds/Tools/g6-current-policy.json
++          --policy references/Hexalith.Builds/Tools/g6-current-policy-2026-10-20.json
+           --output "$G6_OUTPUT"
+           --execution-scope release
+       - name: Validate fresh exact-source G-6 evidence
+@@ -149,7 +149,7 @@ jobs:
+         run: >-
+           python3 references/Hexalith.Builds/Tools/g6_current.py validate
+           --workspace .
+-          --policy references/Hexalith.Builds/Tools/g6-current-policy.json
++          --policy references/Hexalith.Builds/Tools/g6-current-policy-2026-10-20.json
+           --evidence "$G6_OUTPUT/result.json"
+           --release
+       - name: Upload exact-source G-6 evidence
+diff --git a/tests/tools/test_run_g6_current.py b/tests/tools/test_run_g6_current.py
+index 33ae69a..c924111 100644
+--- a/tests/tools/test_run_g6_current.py
++++ b/tests/tools/test_run_g6_current.py
+@@ -21,6 +21,22 @@ SPEC.loader.exec_module(RUNNER)
+ 
+ 
+ class CurrentRunnerPreflightTests(unittest.TestCase):
++    def test_source_lane_names_direct_workspace_dependency_roots(self) -> None:
++        command = RUNNER.source_build_arguments()
++        self.assertIn("-p:UseHexalithProjectReferences=true", command)
++        for name in ("EventStore", "Commons", "Tenants", "Memories", "FrontComposer"):
++            self.assertIn(f"-p:Hexalith{name}Root={ROOT / 'references' / ('Hexalith.' + name)}", command)
++        self.assertFalse(any("/references/Hexalith.Folders/references/" in arg for arg in command))
++
++    def test_platform_file_host_uses_packages_and_per_project_artifacts(self) -> None:
++        platform = ROOT / "references/Hexalith.Platform/apphost.cs"
++        scratch = ROOT / ".g6-current-evidence/scratch"
++        command = RUNNER.platform_build_command(platform, scratch)
++        self.assertEqual(["dotnet", "build", str(platform)], command[:3])
++        self.assertIn("-p:UseHexalithProjectReferences=false", command)
++        self.assertEqual(str(scratch / "platform-artifacts"), command[command.index("--artifacts-path") + 1])
++        self.assertFalse(any("BaseIntermediateOutputPath" in arg for arg in command))
++
+     def test_mismatched_tuple_retains_not_verified_without_starting_resources(self) -> None:
+         (ROOT / ".g6-current-evidence").mkdir(exist_ok=True)
+         with tempfile.TemporaryDirectory(dir=ROOT / ".g6-current-evidence") as temporary:
+diff --git a/tools/qualification/run_g6_current.py b/tools/qualification/run_g6_current.py
+index 1286876..40bb259 100644
+--- a/tools/qualification/run_g6_current.py
++++ b/tools/qualification/run_g6_current.py
+@@ -59,6 +59,23 @@ def digest(value: dict) -> str:
+                                      ensure_ascii=False).encode("utf-8")).hexdigest()
+ 
+ 
++def source_build_arguments() -> list[str]:
++    """Bind the source lane to direct workspace dependencies without nested checkouts."""
++    names = ("Builds", "Commons", "Conversations", "EventStore", "Folders", "FrontComposer",
++             "McpCli", "Memories", "Parties", "Platform", "Tenants")
++    return ["--configuration", "Debug", "--no-incremental", "-m:1",
++            "-p:UseHexalithProjectReferences=true", "-v:minimal",
++            *[f"-p:Hexalith{name}Root={ROOT / 'references' / ('Hexalith.' + name)}" for name in names],
++            f"-p:HexalithAiToolsRoot={ROOT / 'references/Hexalith.AI.Tools'}"]
++
++
++def platform_build_command(platform: Path, scratch: Path) -> list[str]:
++    """Keep the file host package lane and each referenced project's artifacts separate."""
++    return ["dotnet", "build", str(platform), "--configuration", "Debug",
++            "--no-incremental", "-v:minimal", "--artifacts-path", str(scratch / "platform-artifacts"),
++            "-p:UseHexalithProjectReferences=false"]
++
++
+ def main(arguments: list[str] | None = None) -> int:
+     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+     parser.add_argument("--policy", type=Path, default=POLICY)
+@@ -149,8 +166,7 @@ def main(arguments: list[str] | None = None) -> int:
+             HEXALITH_OQ8_EVIDENCE_DIRECTORY=str(capture),
+             HEXALITH_OQ8_CLEANUP_PATH=str(scratch / "fixture-cleanup.json"),
+             HEXALITH_OQ8_DIAGNOSTICS_PATH=str(scratch / "fixture-diagnostics.json"))
+-        build = ["--configuration", "Debug", "--no-incremental", "-m:1",
+-                 "-p:UseHexalithProjectReferences=true", "-v:minimal"]
++        build = source_build_arguments()
+         live_project = "tests/Hexalith.EventStore.Server.LiveSidecar.Tests/Hexalith.EventStore.Server.LiveSidecar.Tests.csproj"
+         support_project = "tests/Hexalith.EventStore.Server.Tests/Hexalith.EventStore.Server.Tests.csproj"
+         live_build = run.run("fresh EventStore qualifier build", ["dotnet", "build", live_project, *build], EVENTSTORE)
+@@ -188,9 +204,7 @@ def main(arguments: list[str] | None = None) -> int:
+             code = run.run("AppHost build " + project.parent.name, ["dotnet", "build", str(project), *build], project.parent)
+             apphosts.append({"path": item["path"], "exitCode": code, "dependencyMode": "source"})
+         platform = ROOT / "references/Hexalith.Platform/apphost.cs"
+-        code = run.run("AppHost build Hexalith.Platform", ["dotnet", "build", str(platform),
+-            "--configuration", "Debug", "--no-incremental", "-v:minimal",
+-            f"-p:BaseIntermediateOutputPath={scratch / 'platform-obj'}/"], platform.parent)
++        code = run.run("AppHost build Hexalith.Platform", platform_build_command(platform, scratch), platform.parent)
+         apphosts.append({"path": platform.relative_to(ROOT).as_posix(), "exitCode": code, "dependencyMode": "packages"})
+         mcp = ROOT / "references/Hexalith.McpCli/src/Hexalith.McpCli/Hexalith.McpCli.csproj"
+         run.run("McpCli transitive Dapr consumer", ["dotnet", "build", str(mcp), *build], mcp.parent)

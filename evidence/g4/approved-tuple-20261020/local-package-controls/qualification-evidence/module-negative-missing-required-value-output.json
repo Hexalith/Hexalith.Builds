@@ -1,0 +1,1 @@
+{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXM015"},"diagnostics":[{"ruleId":"HXM015","phase":"Manifest","category":"Manifest","message":"A required manifest value is missing.","field":"modules[0].domain","hint":"Supply a required deterministic identifier.","source":null,"location":null,"row":null}]}

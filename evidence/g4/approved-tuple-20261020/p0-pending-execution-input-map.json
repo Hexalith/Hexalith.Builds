@@ -1,0 +1,127 @@
+{
+  "artifactKind": "pending P0 execution/acceptance input map; not an acceptance record",
+  "phase": "blocked on usable matching P1R and actual lane prerequisite scope",
+  "sourceRevision": "e40ed9c7110d56a2f38c9291627728aea2f205cb",
+  "toolVersion": "4.33.2-p0.20261020.1",
+  "localPackages": [
+    {
+      "id": "Hexalith.Builds.Evidence.Cli",
+      "version": "4.33.2-p0.20261020.1",
+      "nupkg": {
+        "file": "Hexalith.Builds.Evidence.Cli.4.33.2-p0.20261020.1.nupkg",
+        "sha256": "DF67B92B0BA16F1C6EB7EBE2D78713671B7F7CECB0101D12AEA463643BA0ABD1",
+        "sizeBytes": 2562516
+      },
+      "snupkg": {
+        "file": "Hexalith.Builds.Evidence.Cli.4.33.2-p0.20261020.1.snupkg",
+        "sha256": "EE54CD7ABFFE7C58D6465DF2655980C3CACAFC819331BAD0C46F98B27E145F61",
+        "sizeBytes": 125750
+      }
+    },
+    {
+      "id": "Hexalith.Builds.Module.Cli",
+      "version": "4.33.2-p0.20261020.1",
+      "nupkg": {
+        "file": "Hexalith.Builds.Module.Cli.4.33.2-p0.20261020.1.nupkg",
+        "sha256": "ED53E13F955EABBAE863B17645824B9F4712EE3CEF4175AC2A09E03916D0753F",
+        "sizeBytes": 36683938
+      },
+      "snupkg": {
+        "file": "Hexalith.Builds.Module.Cli.4.33.2-p0.20261020.1.snupkg",
+        "sha256": "A243D1063CDC1001AD0E18FC3FF7A7FD0A016DED9CB1757AE05210C307E2F695",
+        "sizeBytes": 305051
+      }
+    }
+  ],
+  "g6": {
+    "status": "owner accepted source result",
+    "artifactSha256": "287663d2a1d5ae25acf64e27a9984780062f26aaa4b8e71a972c73ead4488a08",
+    "review": "g6-result-review.json",
+    "constraint": "preserve accepted source scope; do not treat it as published archive or P0 acceptance"
+  },
+  "p1r": {
+    "status": "fresh corrected campaign running; unusable pending passing audit, measured owner boundary disposition, four role decisions and same-baseline conformance",
+    "sourceRevision": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+  },
+  "fixture": {
+    "manifestPath": "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+    "manifestSha256": "08735b6937ab60a65557966c3e550542cefb647130769207d0734df6718a112b",
+    "profiles": [
+      {
+        "name": "full",
+        "fixture": "test/fixtures/module/executable/profiles/p0-two-module-full.fixture.json",
+        "fixtureSha256": "472ab1becbf89c1502333bbc27838d81afbb267141bd72639eceecb6c794be14",
+        "nativePlatform": "vstest",
+        "nativeProject": "test/fixtures/module/executable/P0Fixture.NativeTests.VsTest/P0Fixture.NativeTests.VsTest.csproj",
+        "command": [
+          "hexalith-module",
+          "test",
+          "--manifest",
+          "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+          "--profile",
+          "full",
+          "--evidence",
+          "<fresh-run-evidence-relative-path>",
+          "--output",
+          "json"
+        ]
+      },
+      {
+        "name": "full-mtp",
+        "fixture": "test/fixtures/module/executable/profiles/p0-two-module-full-mtp.fixture.json",
+        "fixtureSha256": "1d92af2bada25d89195d084f3df54ea2f3f4c63ec00deb3187dccf1dc9e4b835",
+        "nativePlatform": "mtp",
+        "nativeProject": "test/fixtures/module/executable/P0Fixture.NativeTests/P0Fixture.NativeTests.csproj",
+        "command": [
+          "hexalith-module",
+          "test",
+          "--manifest",
+          "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+          "--profile",
+          "full-mtp",
+          "--evidence",
+          "<fresh-run-evidence-relative-path>",
+          "--output",
+          "json"
+        ]
+      }
+    ]
+  },
+  "remainingEvidence": [
+    "actual persisted/native VSTest and Microsoft.Testing.Platform runs with full state assertions",
+    "active cancellation and real unavailable-prerequisite controls, each retaining its nonpassing outcome",
+    "invocation-scoped idempotent down and final owned resource absence",
+    "protected semantic-release package publication and matching remote restore/archive/consumer identity proof",
+    "exercised rollback/recovery control with actual artifact and hash",
+    "Builds Owner, Platform Owner and named Test Architect exact-result acceptance"
+  ],
+  "acceptanceContract": {
+    "schema": "hexalith.g4-p0-acceptance.v1",
+    "requiredRootFields": [
+      "schema",
+      "status",
+      "sourceRevision",
+      "platformPins",
+      "fixture",
+      "packages",
+      "runs",
+      "cleanup",
+      "rollback",
+      "approvals"
+    ],
+    "g6FieldAdded": false,
+    "recordCreated": false
+  },
+  "rollback": {
+    "acceptedPriorToolVersion": null,
+    "capableDataDowngrade": null,
+    "dataRecovery": "AD-17 drain/freeze/forward",
+    "greenfieldBuildsBoundary": "8e0e2da5e1eff07468b41d85d97979c96c2ac975"
+  },
+  "projectsAdoption": {
+    "status": "blocked until P0 acceptance and needed released owner APIs",
+    "manifestCreated": false,
+    "designs": "existing D1\u2013D6; no implicit v2 migration"
+  },
+  "executedLiveP0Commands": []
+}

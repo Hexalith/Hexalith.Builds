@@ -1,0 +1,20 @@
+{
+  "argv": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tools/tests",
+    "-p",
+    "test_p1r_published_executor.py",
+    "-k",
+    "RetentionFixture"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore",
+  "exitCode": 0,
+  "stdout": "",
+  "stderr": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n",
+  "diskFreeBytesAfter": 11473625088,
+  "scope": "new retention fixture controls; not operational qualification"
+}

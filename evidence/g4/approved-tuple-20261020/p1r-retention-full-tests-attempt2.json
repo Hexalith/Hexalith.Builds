@@ -1,0 +1,9 @@
+{
+  "status": "storage-blocked; no complete test result",
+  "wrapperExitCode": 1,
+  "testExitCode": null,
+  "rawLogBytes": 4096,
+  "rawLogSha256": "2911875e95407221ce0e0dcfd02a66e73fca96092529784360093662c8ee8104",
+  "blocker": "No space left on device; structured result write also failed",
+  "verification": "superseded only after a complete successful rerun; no passing status inferred"
+}

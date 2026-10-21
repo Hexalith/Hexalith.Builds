@@ -1,0 +1,220 @@
+{
+  "recordedUtc": "2026-10-20T14:54:28.623482+00:00",
+  "executionRoot": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2",
+  "scope": "incomplete campaign observation; not acceptance",
+  "complete": false,
+  "qualified": false,
+  "usable": false,
+  "completedReceipts": [
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/16ad0413242545058d67895934712184.json",
+      "lane": "failure-cleanup",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 115,
+        "failed": 0,
+        "passed": 115
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/185f816aac5f46dfb5f9eb0989db2eec.json",
+      "lane": "metadata-write",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 226,
+        "failed": 0,
+        "passed": 226
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/246537c9540d4c18afb097afa826b3ae.json",
+      "lane": "checkout",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 704,
+        "failed": 0,
+        "passed": 704
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/350e64a2a2bf48aa8812865ac5f3bee6.json",
+      "lane": "pre-upgrade-restore",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 44,
+        "failed": 0,
+        "passed": 44
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/41a81ec4c4d44750be4d5cbfa744a8ce.json",
+      "lane": "full-replay",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 270,
+        "failed": 0,
+        "passed": 270
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/553b23fe6797410290ac74a76d0738e2.json",
+      "lane": "mixed-api",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 641,
+        "failed": 0,
+        "passed": 641
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/62b00bb800e0425388634a61008a634a.json",
+      "lane": "logical-event-evolution",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 193,
+        "failed": 0,
+        "passed": 193
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/6401069b0b6a48a2986082451324f46f.json",
+      "lane": "metadata-read",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 40,
+        "failed": 0,
+        "passed": 40
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/856da473da5941a18bd18f6f5d229fd4.json",
+      "lane": "missing-event",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 540,
+        "failed": 0,
+        "passed": 540
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/95652fba2a51444cb07aebed0f23bb03.json",
+      "lane": "legacy-metadata",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 20,
+        "failed": 0,
+        "passed": 20
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/9592c8964973494a89f9d0235093301b.json",
+      "lane": "retained-covered",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 298,
+        "failed": 0,
+        "passed": 298
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/98fa50d6dc894560b978e743d206796a.json",
+      "lane": "invalid-evidence",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 354,
+        "failed": 0,
+        "passed": 354
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/9a6b78ef926640409ee31b0feafd1f11.json",
+      "lane": "reminder-recovery",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 149,
+        "failed": 0,
+        "passed": 149
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/aeba67045b93469a91d0075cfca5c62f.json",
+      "lane": "snapshot-tail",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 298,
+        "failed": 0,
+        "passed": 298
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/b08ee32c86a74f1d8e7e939af9675ed8.json",
+      "lane": "projection-wire",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 34,
+        "failed": 0,
+        "passed": 34
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/b3f781a8c2a34af3bb7d68e8f4fab222.json",
+      "lane": null,
+      "execution": "passed",
+      "assertions": {
+        "attempted": 7,
+        "failed": 0,
+        "passed": 7
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/ba9431409dc446ec9314fa100983f199.json",
+      "lane": null,
+      "execution": "failed",
+      "assertions": {
+        "attempted": 12,
+        "failed": 2,
+        "passed": 10
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/d5dfcffa954d4a62973596a55596f4e8.json",
+      "lane": "query-wire",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 192,
+        "failed": 0,
+        "passed": 192
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/dcce812f8b9f4a5c8b044c0df4419d3c.json",
+      "lane": "provenance",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 33,
+        "failed": 0,
+        "passed": 33
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/df4c638795764551ba18b2b6278c9ab2.json",
+      "lane": "post-upgrade-restore",
+      "execution": "failed",
+      "assertions": {
+        "attempted": 61,
+        "failed": 3,
+        "passed": 58
+      }
+    },
+    {
+      "path": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-execution-attempt2/receipts/f5819b4910d846dc9d279e313f0770ce.json",
+      "lane": "retained-uncovered",
+      "execution": "passed",
+      "assertions": {
+        "attempted": 596,
+        "failed": 0,
+        "passed": 596
+      }
+    }
+  ]
+}

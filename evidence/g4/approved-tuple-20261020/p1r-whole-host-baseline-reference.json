@@ -1,0 +1,54 @@
+{
+  "artifactKind": "preceding outer-host baseline reference for P1R observation and execution",
+  "source": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.g6-current-evidence/p0-approved-20261020-attempt2/cleanup.json",
+  "sourceSha256": "9a64b03a26e80643ab0ce026678587b01f313a55f94cea3769848eba1936debd",
+  "sourceField": "after",
+  "scope": "all outer Docker container identities, images, start/running/restart state and global Dapr binary hashes; this is the retained G6 completion observation preceding P1R, not a newly captured pre-run snapshot",
+  "baseline": {
+    "containers": [
+      {
+        "id": "8623af8b7bbd8ebd3d73221af72615162475f3f8a7190432e09e64e51befc826",
+        "name": "dapr_scheduler",
+        "image": "sha256:0ac4fadf0016be85065cdebab952a8350e468cf9283d26777b0307a14a10aecc",
+        "running": true,
+        "startedAt": "2026-10-19T15:22:08.450688315Z",
+        "restartCount": 0
+      },
+      {
+        "id": "8d0788f8322fdb91a51f3960cb9a0ceab4a7b892f27bacf2147e97fc4d471922",
+        "name": "dapr_redis",
+        "image": "sha256:c35b83ce044bb6d148c484d36e059ad28e02d5714ba6731fb55b6421e2ed0ccf",
+        "running": true,
+        "startedAt": "2026-10-19T15:22:08.435874046Z",
+        "restartCount": 0
+      },
+      {
+        "id": "cb7c12622c180c9a16d24a67fc57115f8aeb0d038fed8793d6c9d49e11d1e488",
+        "name": "dapr_zipkin",
+        "image": "sha256:bb570eb45c2994eaf32da783cc098b3d51d1095b73ec92919863d73d0a9eaafb",
+        "running": true,
+        "startedAt": "2026-10-19T15:22:08.445118114Z",
+        "restartCount": 0
+      },
+      {
+        "id": "f1e0a30a3a93a1542ee5ad74856e44d483a94f7a8e5ef769f398827815cc1da6",
+        "name": "dapr_placement",
+        "image": "sha256:0ac4fadf0016be85065cdebab952a8350e468cf9283d26777b0307a14a10aecc",
+        "running": true,
+        "startedAt": "2026-10-19T15:22:08.452373149Z",
+        "restartCount": 0
+      }
+    ],
+    "binaries": [
+      {
+        "name": "dapr",
+        "sha256": "43429557ff18a7230737b945699417ec391ad41bd431244c175b79ab3c904ce5"
+      },
+      {
+        "name": "daprd",
+        "sha256": "e988a6f53abec017fc9ebcb4f89de9bed11bce005eb49bd8e85e8d3d6adbf488"
+      }
+    ]
+  },
+  "comparison": "pending post-P1R cleanup observation; old 3.125.1 non-preservation remains unchanged"
+}

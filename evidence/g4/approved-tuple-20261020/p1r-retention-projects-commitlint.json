@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "node",
+    "/var/tmp/hexalith-p0-commitlint-21.2.0/node_modules/@commitlint/cli/cli.js",
+    "--config",
+    "/var/tmp/hexalith-p0-commitlint-21.2.0/commitlint.config.mjs",
+    "--edit",
+    "/home/administrator/projects/hexalith/builds/evidence/g4/approved-tuple-20261020/p1r-retention-projects-message.txt",
+    "--verbose"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020",
+  "pinnedVersion": "21.2.0",
+  "configSha256": "51ed651cbefef01c7ab1965c089a36c3cfaf98a997a54ad04c97584a4a15d056",
+  "exactMessage": "build(qualification): freeze the corrected retention fixture\n",
+  "messageSha256": "9a729311c529a7e299259ea0ab8372c1391de2fbcd1de9dc6cc807f107fedecc",
+  "exitCode": 0,
+  "stdout": "\u29d7   --- input ---\nbuild(qualification): freeze the corrected retention fixture\n\u2714   found 0 problems, 0 warnings\n",
+  "stderr": ""
+}

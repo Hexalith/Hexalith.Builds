@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "tools/planning/validate_production_authority.py",
+    "--validate-index"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/projects",
+  "exitCode": 0,
+  "stdout": "PASS: production-authority index is [6, 7, 8]\n",
+  "recordedUtc": "2026-10-20T15:00:21.910030+00:00",
+  "scope": "actual tool result after latest P1R/G6 handoff edits; unchanged guarded statuses"
+}

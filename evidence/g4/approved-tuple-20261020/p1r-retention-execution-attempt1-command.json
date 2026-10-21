@@ -1,0 +1,26 @@
+{
+  "cwd": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore",
+  "argv": [
+    "python3",
+    "tools/p1r-published-executor.py",
+    "run",
+    "--out",
+    "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore/.p0-qualification/p1r-31260-retention-execution-attempt1",
+    "--inputs",
+    "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/.p0-qualification/p1r-31260-retention-observation-attempt1/owner-inputs.json",
+    "--source-root",
+    "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020"
+  ],
+  "preflight": {
+    "outputAbsent": true,
+    "outputCanonical": true,
+    "outputInsideVerifierRepository": true,
+    "outputInsideMountedWorkspace": true,
+    "frozenSourceClean": true
+  },
+  "sourceRevision": "51422dff60f7f1db06f5356efea2548c45c370d7",
+  "workspaceRevision": "a107d736c5991b2753655d5afd2a90198fd6dbe0",
+  "runtimeTupleUnchanged": true,
+  "outerBeforeSnapshot": "p1r-outer-before-retention-campaign.json",
+  "startedUtc": "2026-10-20T15:02:02.855809+00:00"
+}

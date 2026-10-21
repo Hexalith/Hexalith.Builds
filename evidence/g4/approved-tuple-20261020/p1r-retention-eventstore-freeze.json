@@ -1,0 +1,8 @@
+{
+  "exitCode": 0,
+  "stdout": "[detached HEAD 51422dff6] fix(qualification): preserve source proof during retention fixtures\n 2 files changed, 59 insertions(+)\n",
+  "stderr": "",
+  "messageEvidence": "p1r-retention-eventstore-commitlint.json",
+  "patchSha256": "f94c81f1b4f23c61b0f16d8cc12fe905dabcc49f3868bac91b37dda694e3c6db",
+  "revision": "51422dff60f7f1db06f5356efea2548c45c370d7"
+}

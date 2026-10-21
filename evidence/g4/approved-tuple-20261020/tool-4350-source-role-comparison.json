@@ -1,0 +1,43 @@
+{
+  "artifactKind": "source-role comparison for proposed producer versus current P1R qualification Builds",
+  "before": "e40ed9c7110d56a2f38c9291627728aea2f205cb",
+  "after": "fff4a212180d8cd1c5c0759655a9bc4fb6963c45",
+  "changedProductionFiles": [
+    "src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandResult.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionRow.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionSourceAudit.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionValidationResult.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionValidator.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformHostingInventory.cs"
+  ],
+  "identicalControlledInputs": [
+    {
+      "path": "Props/Directory.Packages.props",
+      "identical": true,
+      "beforeSha256": "ee8e744429e07fdf47ffbf0da0c6e5e767736dd0c7518f1b5a634484c68def79",
+      "afterSha256": "ee8e744429e07fdf47ffbf0da0c6e5e767736dd0c7518f1b5a634484c68def79"
+    },
+    {
+      "path": "src/libraries/Hexalith.Builds.Tooling/Manifest/SupportedPlatformPins.cs",
+      "identical": true,
+      "beforeSha256": "d5e744bb6f9ef32fbdeef0431af326e4d6360c2554670812f842a20c341ca78e",
+      "afterSha256": "d5e744bb6f9ef32fbdeef0431af326e4d6360c2554670812f842a20c341ca78e"
+    },
+    {
+      "path": "src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformVersionCatalog.cs",
+      "identical": true,
+      "beforeSha256": "4238cf8f46e92673a7a3a5ef45a987aa3e0ed158945c13f67ce0382cb5715e70",
+      "afterSha256": "4238cf8f46e92673a7a3a5ef45a987aa3e0ed158945c13f67ce0382cb5715e70"
+    },
+    {
+      "path": "Tools/g6-current-policy-2026-10-20.json",
+      "identical": true,
+      "beforeSha256": "739f0633421386d5f46638adeb18eea16ffe94ae677bd5f957cc55bef64bb189",
+      "afterSha256": "739f0633421386d5f46638adeb18eea16ffe94ae677bd5f957cc55bef64bb189"
+    }
+  ],
+  "patchSha256": "2bcde778fa9f68939bbf2e3c74664f2a245841a0a24ed5b2c35ff4fc3c22e6cc",
+  "constraint": "same controlled runtime/catalog bytes do not qualify different tool assembly bytes or transfer G6 source acceptance"
+}

@@ -1,0 +1,59 @@
+{
+  "scope": "metadata-only tuple proposal; no qualification or acceptance",
+  "artifacts": [
+    {
+      "path": "api-inspection.json",
+      "sha256": "c16b498d905b571a180aebecc16d3c6638325628f7face5c9d65c1ab53641f50",
+      "size": 7342
+    },
+    {
+      "path": "dapr-registry-manifest.json",
+      "sha256": "0ed870072c6348ebd417b4627b0454a5622774bc78289e90f820e4816fee63c2",
+      "size": 4191
+    },
+    {
+      "path": "g6-audit-command.json",
+      "sha256": "52e0e177ca755ce29cd082f94f69979936e8a0ef170401aeae87bb588c4cba65",
+      "size": 636
+    },
+    {
+      "path": "g6-static-audit.json",
+      "sha256": "74b9670e647a2b705f43741b9afe984ce27ec90151ca14ce8a10fe14f8ffdd46",
+      "size": 16416
+    },
+    {
+      "path": "host-tools.json",
+      "sha256": "4da0909119ac46c0091b84cf04adfc24728150208c741b04bccde37197855296",
+      "size": 3992
+    },
+    {
+      "path": "observations.json",
+      "sha256": "3f32570e6b70190af992790208699aeec049211a3105bab98301c7fe820bfff4",
+      "size": 48611
+    },
+    {
+      "path": "proposed-tuple.json",
+      "sha256": "4681fe740af4746fa34cf3112044c89cce05695cfc8921fbc99c1a9dc0930d4a",
+      "size": 2986
+    },
+    {
+      "path": "runtime-archive-observations.json",
+      "sha256": "4f37e4a01d8d99e6a4e7aeb382e077269cd0bf2be8de0e5120fe968c0ccf5029",
+      "size": 4100
+    },
+    {
+      "path": "source-comparison.json",
+      "sha256": "c90f36f7f0f37caf1606d94bb30dcfc2df5ff7a26c172b727a9272a6930dc91b",
+      "size": 168523
+    },
+    {
+      "path": "validation.json",
+      "sha256": "5d30d30ee2189a5f5f78aee0a13763b8f6d928d5f466d7bea44b5e117d03704f",
+      "size": 3428
+    }
+  ],
+  "proposal": {
+    "path": "_bmad-output/implementation-artifacts/6-1-p0-tool-runtime-tuple-proposal-20261020.md",
+    "sha256": "ecfcf399e23d79e4a4594d08feaf986273cc3c2d6e4734049b0d90a0a657c32f"
+  }
+}

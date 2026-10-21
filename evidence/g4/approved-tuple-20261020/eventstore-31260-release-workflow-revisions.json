@@ -1,0 +1,8 @@
+{
+  "conclusion": "success",
+  "event": "workflow_dispatch",
+  "head_sha": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+  "html_url": "https://github.com/Hexalith/Hexalith.EventStore/actions/runs/39165347868",
+  "id": 39165347868,
+  "referenced_workflows": []
+}

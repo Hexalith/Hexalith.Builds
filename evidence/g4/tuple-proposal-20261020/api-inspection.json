@@ -1,0 +1,186 @@
+{
+  "toolVersion": {
+    "command": [
+      "dnx",
+      "dotnet-inspect",
+      "-y",
+      "--",
+      "--version"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/builds",
+    "exitCode": 0,
+    "stdout": "0.26.0+d236a7a\n",
+    "stderr": ""
+  },
+  "commands": [
+    {
+      "command": [
+        "dnx",
+        "dotnet-inspect",
+        "-y",
+        "--",
+        "member",
+        "VerifiedQueryCaller",
+        "--package",
+        "Hexalith.EventStore.DomainService@3.125.1",
+        "-s",
+        "Properties",
+        "-v:q"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "# Hexalith.EventStore.DomainService.VerifiedQueryCaller\n\n## Properties\n\n| Name | Digest | Signature |\n| ---- | ------ | --------- |\n| OriginalQuery | `5329822d3e` | `public Hexalith.EventStore.Contracts.Queries.QueryEnvelope OriginalQuery { get; }` |\n| Principal | `fbe39d9044` | `public System.Security.Claims.ClaimsPrincipal Principal { get; }` |\n| Query | `1bd251a08d` | `public Hexalith.EventStore.Contracts.Queries.QueryEnvelope Query { get; }` |\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "dnx",
+        "dotnet-inspect",
+        "-y",
+        "--",
+        "member",
+        "VerifiedQueryCaller",
+        "--package",
+        "Hexalith.EventStore.DomainService@3.126.0",
+        "-s",
+        "Properties",
+        "-v:q"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "# Hexalith.EventStore.DomainService.VerifiedQueryCaller\n\n## Properties\n\n| Name | Digest | Signature |\n| ---- | ------ | --------- |\n| OriginalQuery | `5329822d3e` | `public Hexalith.EventStore.Contracts.Queries.QueryEnvelope OriginalQuery { get; }` |\n| Principal | `fbe39d9044` | `public System.Security.Claims.ClaimsPrincipal Principal { get; }` |\n| Query | `1bd251a08d` | `public Hexalith.EventStore.Contracts.Queries.QueryEnvelope Query { get; }` |\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "dnx",
+        "dotnet-inspect",
+        "-y",
+        "--",
+        "member",
+        "DelegatedOwnerQueryClient",
+        "--package",
+        "Hexalith.EventStore.DomainService@3.126.0",
+        "-s",
+        "Methods",
+        "-v:q"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "# Hexalith.EventStore.DomainService.DelegatedOwnerQueryClient\n\n## Methods\n\n| Name | Digest | Signature |\n| ---- | ------ | --------- |\n| InvokeAsync | `2c5b03a6a3` | `public System.Threading.Tasks.Task<Hexalith.EventStore.Contracts.Queries.QueryResult> InvokeAsync(Hexalith.EventStore.Contracts.Queries.SubmitQueryRequest query, System.Threading.CancellationToken cancellationToken = default)` |\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "dnx",
+        "dotnet-inspect",
+        "-y",
+        "--",
+        "member",
+        "IReadModelStore",
+        "--package",
+        "Hexalith.EventStore.Client@3.126.0",
+        "-s",
+        "Methods",
+        "-v:q"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "# Hexalith.EventStore.Client.Projections.IReadModelStore\n\nPersisted read-model store for domain modules that maintain incrementally-updated, multi-key read models in a DAPR state store.\n\n## Methods\n\n| Name | Digest | Signature | Description |\n| ---- | ------ | --------- | ----------- |\n| GetAsync | `d03ecf8095` | `public abstract System.Threading.Tasks.Task<Hexalith.EventStore.Client.Projections.ReadModelEntry<TValue>> GetAsync<TValue>(string storeName, string key, System.Threading.CancellationToken cancellationToken = default) where TValue : class` | Reads a read-model value together with its current ETag. |\n| SaveAsync | `1e304e523d` | `public abstract System.Threading.Tasks.Task SaveAsync<TValue>(string storeName, string key, TValue value, System.Threading.CancellationToken cancellationToken = default) where TValue : class` | Saves a read-model value unconditionally (last-write-wins). |\n| TrySaveAsync | `01a1d3ad93` | `public abstract System.Threading.Tasks.Task<bool> TrySaveAsync<TValue>(string storeName, string key, TValue value, string etag, System.Threading.CancellationToken cancellationToken = default) where TValue : class` | Attempts to save a read-model value under optimistic concurrency (first-write-wins). |\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "dnx",
+        "dotnet-inspect",
+        "-y",
+        "--",
+        "diff",
+        "--package",
+        "Hexalith.EventStore.Contracts@3.125.1..3.126.0",
+        "-t",
+        "*Query*",
+        "-v:q",
+        "-60"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "# API Diff: Hexalith.EventStore.Contracts\n\n| Field | Value |\n| ----- | ----- |\n| Versions | **3.125.1** → **3.126.0** |\n\n> [!NOTE]\n> No API changes detected.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "dnx",
+        "dotnet-inspect",
+        "-y",
+        "--",
+        "type",
+        "--package",
+        "Hexalith.EventStore.Contracts@3.126.0",
+        "-t",
+        "*Originating*",
+        "-v:q"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "# Hexalith.EventStore.Contracts\n\nLibrary: Hexalith.EventStore.Contracts.dll | Types: 0 | Methods: 1693 | Properties: 1320 | Source: NuGet | Version: 3.126.0 | TFM: net10.0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "dnx",
+        "dotnet-inspect",
+        "-y",
+        "--",
+        "member",
+        "FolderOwnerReadResult",
+        "--package",
+        "Hexalith.Folders.Contracts@1.3.0",
+        "-s",
+        "Properties",
+        "-v:q"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "# Hexalith.Folders.Contracts.FolderOwnerReadResult\n\n## Properties\n\n| Name | Digest | Signature |\n| ---- | ------ | --------- |\n| Outcome | `730ac81ade` | `public Hexalith.Folders.Contracts.FolderOwnerReadOutcome Outcome { get; set; }` |\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "dnx",
+        "dotnet-inspect",
+        "-y",
+        "--",
+        "type",
+        "--package",
+        "Hexalith.Folders.Contracts@1.3.0",
+        "-t",
+        "*FolderFileOwnerRead*",
+        "-v:q"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "# Hexalith.Folders.Contracts\n\nLibrary: Hexalith.Folders.Contracts.dll | Types: 0 | Methods: 119 | Properties: 64 | Source: NuGet | Version: 1.3.0 | TFM: net10.0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "dnx",
+        "dotnet-inspect",
+        "-y",
+        "--",
+        "type",
+        "--package",
+        "Hexalith.Conversations.Contracts@1.2.0",
+        "-t",
+        "*ConversationResolutionMetadata*",
+        "-v:q"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "# Hexalith.Conversations.Contracts\n\nLibrary: Hexalith.Conversations.Contracts.dll | Types: 0 | Methods: 1662 | Properties: 1483 | Source: NuGet | Version: 1.2.0 | TFM: net10.0\n",
+      "stderr": ""
+    }
+  ],
+  "qualification": false
+}

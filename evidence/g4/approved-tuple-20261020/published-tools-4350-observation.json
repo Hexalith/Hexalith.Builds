@@ -1,0 +1,44 @@
+{
+  "artifactKind": "read-only published tool archive observation; no adoption or acceptance",
+  "packages": [
+    {
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.module.cli/4.35.0/hexalith.builds.module.cli.4.35.0.nupkg",
+      "path": "/var/tmp/hexalith-p0-published-observation-20261020/hexalith.builds.module.cli.4.35.0.nupkg",
+      "bytes": 36726902,
+      "archiveSha256": "2b2f0689f38c8a20efa823bd3dc277b4bbe785b03c62513878b9e4c261cb2880",
+      "metadata": {
+        "id": "Hexalith.Builds.Module.Cli",
+        "version": "4.35.0",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.Builds",
+          "branch": "refs/heads/main",
+          "commit": "fff4a212180d8cd1c5c0759655a9bc4fb6963c45"
+        }
+      },
+      "selectedCatalogEntries": [],
+      "signatureEntryPresent": true,
+      "fetchedUtc": "2026-10-20T15:10:28.795620+00:00"
+    },
+    {
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.evidence.cli/4.35.0/hexalith.builds.evidence.cli.4.35.0.nupkg",
+      "path": "/var/tmp/hexalith-p0-published-observation-20261020/hexalith.builds.evidence.cli.4.35.0.nupkg",
+      "bytes": 2590364,
+      "archiveSha256": "cd860844beeaa58be034abbd198326cd1bb8abad86bdd74da03ba66a8346fa96",
+      "metadata": {
+        "id": "Hexalith.Builds.Evidence.Cli",
+        "version": "4.35.0",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.Builds",
+          "branch": "refs/heads/main",
+          "commit": "fff4a212180d8cd1c5c0759655a9bc4fb6963c45"
+        }
+      },
+      "selectedCatalogEntries": [],
+      "signatureEntryPresent": true,
+      "fetchedUtc": "2026-10-20T15:10:32.925076+00:00"
+    }
+  ],
+  "approvedCandidateUnchanged": true
+}

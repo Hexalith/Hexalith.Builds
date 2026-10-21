@@ -1,0 +1,11 @@
+{
+  "status": "pending owner tool-source decision",
+  "proposal": "/home/administrator/projects/hexalith/builds/_bmad-output/implementation-artifacts/6-1-p0-published-4-35-0-tuple-addendum-20261020.md",
+  "proposalSha256": "8714ef868fa0544046e874085962c5a8b7a682ccf34c8414b4f71265e65e1d93",
+  "toolVersion": "4.35.0",
+  "toolSource": "fff4a212180d8cd1c5c0759655a9bc4fb6963c45",
+  "proposedG6Source": "3f5ab317d1d1dbfafd6102308258818a84e0a322",
+  "runtimeSelectionUnchanged": true,
+  "newLiveG6Started": false,
+  "p0LiveStarted": false
+}

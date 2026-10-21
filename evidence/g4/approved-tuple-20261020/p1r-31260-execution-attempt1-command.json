@@ -1,0 +1,15 @@
+{
+  "cwd": "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/references/Hexalith.EventStore",
+  "argv": [
+    "python3",
+    "tools/p1r-published-executor.py",
+    "run",
+    "--out",
+    "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-execution-attempt1",
+    "--inputs",
+    "/home/administrator/projects/hexalith/p0-approved-qualification-20261020/.p0-qualification/p1r-31260-observation-attempt4/owner-inputs.json",
+    "--source-root",
+    "/home/administrator/projects/hexalith/p0-runtime-3.126.0-20261020"
+  ],
+  "inputsSha256": "74dff2e020cb4064800b83f8c814693d252e844ec3194e11fbccbe4710cced98"
+}

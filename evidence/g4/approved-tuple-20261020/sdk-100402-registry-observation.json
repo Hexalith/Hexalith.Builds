@@ -1,0 +1,17 @@
+{
+  "url": "https://mcr.microsoft.com/v2/dotnet/sdk/manifests/10.0.402",
+  "digest": "sha256:0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa",
+  "sha256": "0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa",
+  "rawUtf8": "{\n   \"schemaVersion\": 2,\n   \"mediaType\": \"application/vnd.docker.distribution.manifest.list.v2+json\",\n   \"manifests\": [\n      {\n         \"mediaType\": \"application/vnd.docker.distribution.manifest.v2+json\",\n         \"size\": 2636,\n         \"digest\": \"sha256:3a48280a9a7c6276c3eeaba1efa6a08820f18c84fb9e6274c187719ecfaf9fbc\",\n         \"platform\": {\n            \"architecture\": \"amd64\",\n            \"os\": \"linux\"\n         }\n      },\n      {\n         \"mediaType\": \"application/vnd.docker.distribution.manifest.v2+json\",\n         \"size\": 2636,\n         \"digest\": \"sha256:78ad9618df4d09a826bcf279af9e4237c886945898195b285f4a7e876da9f969\",\n         \"platform\": {\n            \"architecture\": \"arm\",\n            \"os\": \"linux\",\n            \"variant\": \"v7\"\n         }\n      },\n      {\n         \"mediaType\": \"application/vnd.docker.distribution.manifest.v2+json\",\n         \"size\": 2636,\n         \"digest\": \"sha256:894cb75b58dcbac5400eec23aaf02288f4494b01d56b85b7db42385d5deb914b\",\n         \"platform\": {\n            \"architecture\": \"arm64\",\n            \"os\": \"linux\"\n         }\n      }\n   ]\n}",
+  "linuxAmd64": [
+    {
+      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+      "size": 2636,
+      "digest": "sha256:3a48280a9a7c6276c3eeaba1efa6a08820f18c84fb9e6274c187719ecfaf9fbc",
+      "platform": {
+        "architecture": "amd64",
+        "os": "linux"
+      }
+    }
+  ]
+}

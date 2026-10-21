@@ -1,0 +1,278 @@
+{
+  "src/libraries/Hexalith.Builds.Tooling/Manifest/ModuleManifestLoader.cs": {
+    "before": "048d926bdc0a1c476bbd80befd5b49cced89ccb786647984651c329a32b47b1b",
+    "after": "b58d782adcfc9f0f99cf49cd43f609c3cd63fcc952951d8e27a051b802d158dd"
+  },
+  "schemas/hexalith.module-manifest.v1.json": {
+    "before": "ede1e2b938dce727b87968b872bf1297065f37c8bc2ee7bea2e2dba5f8550c8f",
+    "after": "21ef19479e4fe78b50b7dfeccd9feed89796e5523b0213d87099f5408746b836"
+  },
+  "test/Hexalith.Builds.Module.Tests/ExecutableDescriptorLoaderTests.cs": {
+    "before": "25eeb4276a50285137fdadc2ccdaa38c8003eeab174e1027982be661abc5ad6c",
+    "after": "e0f9803a1a6bc5b4878f85a7d70ae7ef242ab43532b573a1385f6c5e2ad1c64b"
+  },
+  "test/Hexalith.Builds.Module.Tests/ManifestValidationTests.cs": {
+    "before": "7e5ae827970236eb396e8c23025a7204962bf9cd77333e115a58512222e4e563",
+    "after": "c3a3cf3d46eb3e32ba8e99c41fb75d68125394c49759b693921b05c7d5496009"
+  },
+  "test/Hexalith.Builds.Module.Tests/ModuleRunEvidenceSerializationTests.cs": {
+    "before": "614dcc2d7daa1a731d60dd3d1f503d5b701e4d3bf7bf8d76262c396143d40e70",
+    "after": "88950316b208976c3f59dd9178f38214ea4d08b3013e12e532fb721d1cb30c36"
+  },
+  "test/Hexalith.Builds.Module.Tests/ModuleInvocationStateStoreTests.cs": {
+    "before": "fab5005867118894ea5ea616484db80dd61a22bc6cc36dce3a8f5449d1052c6d",
+    "after": "5796ccff81738addfbc56a0573a661494122a7c159eb54b499927c94d48fdf67"
+  },
+  "test/Hexalith.Builds.Module.Tests/RuntimePrerequisiteGateTests.cs": {
+    "before": "90f3bf4b91f173a1939939b0de2c58fa27321bd96edf8a245e5bbf56be1cd531",
+    "after": "7966a706ef5f4f4f1f22767066cdbe2277b91e3f3795feaaffa09dab519e054c"
+  },
+  "test/Hexalith.Builds.Module.Tests/ModuleRunEvidenceWriterTests.cs": {
+    "before": "c27a50dae66b3801e48a58a62b7b015dfb8dc7f0bed54167b048ae2038c99dee",
+    "after": "fe51403aea2d0b06a146c1f970f25b256ca9c7e046cad8f4094d94d4b576a16f"
+  },
+  "test/Hexalith.Builds.Module.Tests/CompositionRunPlanFactoryTests.cs": {
+    "before": "a1f93e35d8c85447ee1ee373dd3f9a92fbeadb88e92977ea8689a60cd14799ee",
+    "after": "5708938efa7d09528174b47cdf5e15414fe2dd66d8db5544d6605f0c2257a3b2"
+  },
+  "test/Hexalith.Builds.Module.Tests/ModuleCommandApplicationTests.cs": {
+    "before": "301b252ad293a86c7a53b6b9b8961c0146957393266724df410aa0f8c5308f70",
+    "after": "a0283379dadd04144c9faa4e721658b14079977a3c61c2b67e5145b614182f0f"
+  },
+  "Tools/G4PackageQualification.functions.ps1": {
+    "before": "38fe4ee066187595219ec10d35aec4acbae4d0065ae7ed92b810dce58ce148ed",
+    "after": "bb8adeed382937e6bf22f44a6c048b0a679ce62c80d5429bf457270dde4b627c"
+  },
+  "Tools/test-g4-tool-package-contracts.ps1": {
+    "before": "91e42adc495c54619283fd2beab8b733d79f3ce6e586db0db7c1f6b2999fe832",
+    "after": "3769dcc20fa875c654321ad22e0480746b6c71a0aadb4b5fb3e8bf406bf05572"
+  },
+  "Tools/test-publish-g4-tool-packages.ps1": {
+    "before": "25b6e58c58ec8dd6436ac761328a84656704a42c912534967fa3c5f94a219f8f",
+    "after": "5af2d29e4f33d0136822aa8c71f4cc4b2b076806f381bf7e38ac8e3dfe7ba83f"
+  },
+  "test/fixtures/module/negative/secret-bearing.json": {
+    "before": "e598bd4eb0634920634e8e80cd4c4040313547aedaae6504afbb43c7faaa073e",
+    "after": "6ffe82b533d0d71736424931d9295971acb4754ab2ff415a147396e07bc28e97"
+  },
+  "test/fixtures/module/negative/missing-required-value.json": {
+    "before": "16b20af56747b754583c8abf486f1d9d0fed0ff5d7aba47aea1a57054c803ada",
+    "after": "d5d8ac6e1d041591f8f0fffdef83aa7d8c65ec97769b0b15cb77f6c0f8147c08"
+  },
+  "test/fixtures/module/negative/duplicate-id.json": {
+    "before": "02be4ce9395fb93b8ab7dc26458340670dd872cf3b3eab75937c9df8b87ff70c",
+    "after": "469657fc0f8da0dfc4620b3d355bc4969ab174c43f53ee59742f3dd7133ba79c"
+  },
+  "test/fixtures/module/negative/missing-descriptor.json": {
+    "before": "b97b9c5b0fb42a648bc37304379a6a010ea7775f242372e32dca9ac447a744f3",
+    "after": "a66dbe46107128caf0bd21e97564a6196c68d83daf40bd738f00054a1ee78294"
+  },
+  "test/fixtures/module/negative/unknown-field.json": {
+    "before": "08f964e8412a0783e21bed2c106a642e669fc733428e28e4b782d12447974e08",
+    "after": "27ae29f7bbfbc6b302b9d4baa6e36c350d45252a0d36cda258b575eb49d5745c"
+  },
+  "test/fixtures/module/negative/invalid-profile.json": {
+    "before": "5849aebe8ca450d3b4c52dfcdc187b5847f02a4a916f2fc8081d76f85fd766da",
+    "after": "7719994c3d6abb3157b4a1ad5ee4e8cbf12b8ca1d15a41779a262ac1ea222650"
+  },
+  "test/fixtures/module/negative/superseded-platform-pin.json": {
+    "before": "347b908771689bd7b485c7060a5414f2d94c7970fa74cdbf5d357b0d23dfcb15",
+    "after": "7f2e052ac5c1fd57b2a34d5b5a01d4e39d6208ca0d2c411f8ac271e6ce11c17c"
+  },
+  "test/fixtures/module/negative/absolute-path.json": {
+    "before": "2f28cbb3316c3c7ad9bca9a9df34143b94e6addaf104dad8a9a977ee4f789ad7",
+    "after": "356d81630153d04b111134c60a31c06e4f8daddf4574e367ede4026aca540efb"
+  },
+  "test/fixtures/module/negative/unsupported-profile-class.json": {
+    "before": "66480bb2696698c16ca46a06f86e9bd01f8fe4d0d61c80c2109a70eeebd43107",
+    "after": "fe81f35bd901dc8001e92f520e4d2402c5d8337790219f447bb6cfb4ea618467"
+  },
+  "test/fixtures/module/negative/unknown-schema.json": {
+    "before": "78f209803a606f029795920d743d967d99711216c833aa59f5aeba2bb334c045",
+    "after": "88f3ffbd2f1d1eb341613e3aa4a5b3b8f0cf92cb1fd9e8b0c3a65b79295bd5e2"
+  },
+  "test/fixtures/module/negative/duplicate-json-key.json": {
+    "before": "616404bc5caed4978a49ee2719cb0af9d77ca4937381b8f335d4a3cdaa7f662c",
+    "after": "1862298cce86f580f5c10bdd0d6048305ecd78eaf17de815e8eb44e989d12f46"
+  },
+  "test/fixtures/module/negative/malformed-dependency.json": {
+    "before": "fc292afc5db2ad09045a5a5b408515dcfb30b75552b457543d1557e9bd9f218a",
+    "after": "a4110b718fde0cee68c2da0857703d683698ed77f2c2a5e92a33c017a86b92d8"
+  },
+  "test/fixtures/module/negative/placeholder.json": {
+    "before": "03b69ffe07d9a5560c2c3e0ea9e3ec39b700afa577d0a68e9cc5f80c9b3fe339",
+    "after": "bcaf7bb562c258ce70d9880a4e545f847a3f4c8c5605d47305b63b73bcdb0feb"
+  },
+  "test/fixtures/module/negative/superseded-frontcomposer-pin.json": {
+    "before": "289106bad9b15afdf8768e5447edb07655390b8a9083b57ee30edac753773bec",
+    "after": "86fc6f8e4d1b18f85d9e54a4d18ce4726d238289ca0ffd153fdb5f3bdc7b5975"
+  },
+  "test/fixtures/module/negative/path-escape.json": {
+    "before": "f53dcb76cd64d276b008f00b6313e17881e5afb7ed812d6e7cf0b4167fb1034b",
+    "after": "36d77b445bea290eb3de9eca1c17e3876d67757654f09cb8d6dcb6b27e2e9c50"
+  },
+  "test/fixtures/module/negative/tampered-platform-pin.json": {
+    "before": "70ad29dd70cfd360b45a583e3392192d613d89441223394eb36de16cbf66fbb4",
+    "after": "bd1943dd5d797fda4a3e4804c6c0feb5f1267b992463dd84805876981bc6a5cb"
+  },
+  "test/fixtures/module/positive/hexalith.module-manifest.v1.json": {
+    "before": "74dfb9fe53f6b5297874024879c673a327e3edf5371bcedcdc133111dede7e36",
+    "after": "e96e6ba2d4703734267bdd564c8917b4a223708f8c971ebef80f54d09f188961"
+  },
+  "test/fixtures/module/executable/hexalith.module-manifest.v1.json": {
+    "before": "0f271e4193a195a3d47a507da76d69aee04eb70ebe7a9f463fdb14d6ba07b1ce",
+    "after": "08735b6937ab60a65557966c3e550542cefb647130769207d0734df6718a112b"
+  },
+  "test/fixtures/evidence/negative/fixture-path-mismatch.yaml": {
+    "before": "2f5d533e2165425594b9c76b9ada953e49798183355771bc1ae401665cb090f7",
+    "after": "6f051e32c6384bd902cfddf2442fcf286e8d5d99dd86605e4a8802a59fa4305e"
+  },
+  "test/fixtures/evidence/negative/artifact-raw-filter-mismatch.yaml": {
+    "before": "8140c49a2cba89cc21541327a36a860bded2d9c7a5cb688a4c6d69b3b3b74de2",
+    "after": "be516770dbdf6844867a884c7cbd0faf5b61a8aaf068f51fff92af620f5e96c9"
+  },
+  "test/fixtures/evidence/negative/row-duplicate-option-mismatch.yaml": {
+    "before": "80f047aba56a9504c964b7941cbc3bac0f3f3ed31ef697bbbcc33bf823c0b949",
+    "after": "4fe090c7426c2c4800b5ab77c3ad6b2376793c01f147fcc2a3803801485844c1"
+  },
+  "test/fixtures/evidence/negative/row-profile-mismatch.yaml": {
+    "before": "3acb7af5ca977711fed87533f7c73bb06b87a0edc97d099258a9b928f08449c9",
+    "after": "5c7547b482f33a675ef3ff864db1ceea30e0cc82a3013e8245abe4b97ed14153"
+  },
+  "test/fixtures/evidence/negative/no-executed-tests.yaml": {
+    "before": "4df00133e7c6447a2756cea34721b78df8bd89c91239083f13e9c09b0a70b394",
+    "after": "65dfaee28576f98157b3fa364bfa1f861697a1f68d148d022e4b743f70a52a72"
+  },
+  "test/fixtures/evidence/negative/row-missing-filter-mismatch.yaml": {
+    "before": "fb397c3cf786945693d838df7ab9720c5606a8f00b94fa1ae4f665854f8d045f",
+    "after": "47e53772fe034392978b25efc8801d02b4179e0b91295943a92f1f4b5fe13fbc"
+  },
+  "test/fixtures/evidence/negative/artifact-command-filter-mismatch.yaml": {
+    "before": "2ec6ed801b74db4e6adef48b1b046d0d84f698efab4c910e9cfc7ddb69b369f6",
+    "after": "cf457cfaefee94fc674000884f613720c481d2e8fbbb7044b0e475ddd84e14ee"
+  },
+  "test/fixtures/evidence/negative/artifact-command-manifest-mismatch.yaml": {
+    "before": "5289308442fefc475f5827c94aac7c854f05604d7b9b2566b5bef1d0eebbc78d",
+    "after": "42ba69ee0d81a4050be97ca4d38d31429fef2461bbd55b56808726240915fb45"
+  },
+  "test/fixtures/evidence/negative/row-missing-manifest-mismatch.yaml": {
+    "before": "94b983d314309ba17b7616b79494b63a55588d2012390aabd9046b98f0c20d20",
+    "after": "2900733e79cb5bac11a9d49031f603ea436761286ad2ac97717bbb10b7594801"
+  },
+  "test/fixtures/evidence/negative/coverage-shortfall.yaml": {
+    "before": "6ab76a0d05e625dada87da8a998399464dd1c9a66369de1d006c6f2ab11fc235",
+    "after": "f866eed9626fdea6fa935daaa0be12364c2396aba52b876056bb676088aa5aba"
+  },
+  "test/fixtures/evidence/negative/binding-mismatch.yaml": {
+    "before": "2cce8b134131c12ef8c92719d6908751979d01c6665babd682f3afd30a89ff36",
+    "after": "4bf718a3b65f17445cc076e0cf06761f4ef6d85326427752c1e7585687a46099"
+  },
+  "test/fixtures/evidence/negative/policy-controls.yaml": {
+    "before": "32fe78cea14e7e39bf54f4e4b772e3bcbc8b59d50aea70edcfead31637dd3f9e",
+    "after": "3f4adeed705e2115e2be27bff7762b5f0a28e33e62fb13eb7471aa143045d65d"
+  },
+  "test/fixtures/evidence/negative/artifact-raw-filter-equals-mismatch.yaml": {
+    "before": "8a2777a73d3fa4d455e1b89f76dde9d632cefabbe1744911f9ab3528c244576f",
+    "after": "053b49cf7d16c54e790148d8374d60d7563a055eca441e987342799b2a50bdd7"
+  },
+  "test/fixtures/evidence/negative/manifest-profile-fixture-mismatch.yaml": {
+    "before": "49dde7ea9e31dde61c0d73d243e17c5d334479ea1a61c3f3c9947de53a0d71a1",
+    "after": "505d856cf6698b3c05b155469a54d35be376f191c299467c7f250e94232fb15e"
+  },
+  "test/fixtures/evidence/negative/malformed-row-option-mismatch.yaml": {
+    "before": "a27c47254fa465894e641a75a51b46047206abf80d8375ceca1633cfc342b692",
+    "after": "e8687fd02b58c4fdb5b3ec6036b8e603d7762cb415117252b27d4264e23c0ae9"
+  },
+  "test/fixtures/evidence/negative/secret-metadata.yaml": {
+    "before": "8f461aa361ac18550a784d0942cfd119f1a103d6abd35be91f6cc1f5b70bd45e",
+    "after": "b168784161732a7a661c9adfc7f14420f1922cbd33e3c5ae8d85e465a6782f74"
+  },
+  "test/fixtures/evidence/negative/fixture-hash-mismatch.yaml": {
+    "before": "73f41027e80f0325c21cbfe778f7f22aa67014ec6d9a06164bf364a7b06d40f3",
+    "after": "01414039e23ebbd7ef1140c3ffa218388120eb447324ba03e70d149539b7f433"
+  },
+  "test/fixtures/evidence/negative/artifact-command-profile-mismatch.yaml": {
+    "before": "1e9c9319b0f2d1bd71aa5a8c51721bbb1cacd5a50b73d690fbb6b5d56db3a1d4",
+    "after": "670bbf8951431dee8cb32c4467eb25dbeb5929dfb5665e55a7009e9ee10dfc8c"
+  },
+  "test/fixtures/evidence/negative/manifest-path-mismatch.yaml": {
+    "before": "54af504fa7532274fcbbafcf804c20e20f0efd7e3b9b9bd0a5fc4181f7df8a7b",
+    "after": "d1d5f08804384218ec9e4579a5cd08b7cbff8413bcdf9ff8f8303b5106ec37b1"
+  },
+  "test/fixtures/evidence/negative/manifest-hash-mismatch.yaml": {
+    "before": "9eccecd2ecf018c37619833e07326cdee989955861e5917cc191c3c3f914c1fd",
+    "after": "27fbb8550047b507249046bd3f2bf5e86581950e5f0641ab04e18b738cbd87bf"
+  },
+  "test/fixtures/evidence/negative/artifact-duplicate-option-mismatch.yaml": {
+    "before": "37394494f14896859cc1d26fac177c2647c2533f8a26c58892b920478655f352",
+    "after": "377b6be7462cd1946ab9147816072a1d51d6dc557213d1926c6de4da73ce55c6"
+  },
+  "test/fixtures/evidence/negative/filter-hash-mismatch.yaml": {
+    "before": "f30a05c314b3174f6ef318897307541796dbb53873a3b08116c7fbaea1599b43",
+    "after": "a6aa5488bf786f0879d4823f8459cb26a2fb27f1e6d9be6802398685d4deebb9"
+  },
+  "test/fixtures/evidence/negative/outcome-mismatch.yaml": {
+    "before": "a92e822fad099dcde25795586eba90e883aa4ac7aff37fa3e810bca8883a4a3f",
+    "after": "f8a811bb0158e1a8383daa6028fc17114cc8e748a9100458768a773c5c45dda4"
+  },
+  "test/fixtures/evidence/positive/readiness.yaml": {
+    "before": "9a700064c0582999c609b507a0e537fbb3aa23403bc2d58f7031dbac656ec71d",
+    "after": "158a39efa4ffe09ed98108bcc816524a55fcafe7d49704815751eeef3a042b74"
+  },
+  "test/fixtures/evidence/positive/evidence/release-passed.json": {
+    "before": "76f1ddeebe2dd8ce3b19e473a54d3038fffc2cc7b1d7c8c58a1c632cc7478ac7",
+    "after": "5ac435fc7855666906ad387f6661c66df0325a511f388157b494306d0f7f37ee"
+  },
+  "test/fixtures/evidence/negative/evidence/artifact-raw-filter-equals-mismatch.json": {
+    "before": "7a16c1d58b0bfba6e75def3d15f769286fb5b1c5548d625ca5504b3a8ab794a5",
+    "after": "9a94a9e4b4adac093fea6f4ad24237ee17fe916202f5bdb879e8144ea5f976a2"
+  },
+  "test/fixtures/evidence/negative/evidence/secret-metadata.json": {
+    "before": "23908d8989a70c2caa8deb71d4597c03ec3d37dcb3146ea8d8f6c8e7095b9616",
+    "after": "d6b38de84920afbb43dc00dc59686125036c5352f6933e35466edec74456819e"
+  },
+  "test/fixtures/evidence/negative/evidence/manifest-hash-mismatch.json": {
+    "before": "d6314b85d1e3bd4f63a7e7287caecccbbf6217d59f76a8222e60547d84877958",
+    "after": "8c5501636b99d1bfd9e8eeb2bc572178bd4b7ed13910c82eeadfef6a89e7a92d"
+  },
+  "test/fixtures/evidence/negative/evidence/fixture-hash-mismatch.json": {
+    "before": "5e401fddc3a4e2366f59e1b0ee74cd3b3554857379e7d80e14b9bdf9e45082f5",
+    "after": "ace89b51002165c0ed315014643296e1a2720ee26653116b1266d18c05c15a99"
+  },
+  "test/fixtures/evidence/negative/evidence/down-run.json": {
+    "before": "8fca1fb1bf0a366df66d20bd70cd7ef84cb7afe64f9e8b5e59fb5fecb7a197b6",
+    "after": "4cc93b80b3cc067ae2a3f4db8daf32404cd065d3c0f4bc98f876b513d77582af"
+  },
+  "test/fixtures/evidence/negative/evidence/artifact-raw-filter-mismatch.json": {
+    "before": "c8c61df1d7f683a819f5dcb895594256c8e6e0ca2a1689e6421ef496b22b7087",
+    "after": "c021d1875b83da9f39e2a74766714ed31cd993b3e0919e12d7fd957e52a28384"
+  },
+  "test/fixtures/evidence/negative/evidence/artifact-command-profile-mismatch.json": {
+    "before": "c3c9fd1709e8ec17a3704b74f3853a83adba8f6c012ee0389483a99348c0cdb8",
+    "after": "6d87d0e0476a4b583242c9329a73b1732fd4e0d5366ae55ce1c025d9683a9ccc"
+  },
+  "test/fixtures/evidence/negative/evidence/test-no-tests.json": {
+    "before": "158dd06e747bf17b5a3d959f8b13651ae37b8b9465e99a992ea421634bd4720c",
+    "after": "dc2c9458d073eba00795b169120d8ff6a6812b534a8b9c61a628ee175254b17b"
+  },
+  "test/fixtures/evidence/negative/evidence/artifact-command-filter-mismatch.json": {
+    "before": "a31ea208f1f50c423d984b3487fc0bb3320e81d0ce8902c245d8fdf899403cea",
+    "after": "4d902b8d27654ec692e06ad7110a9d3ec31da847a5fb44311307262c00e5d00b"
+  },
+  "test/fixtures/evidence/negative/evidence/artifact-duplicate-option-mismatch.json": {
+    "before": "aad3c9ee74d9d31446c2570ece75f1401684ead0d41006ebc93e5de246e8b173",
+    "after": "23888535c894e4ee68ef0cdb54f674fc15ce88a090bbfb4309e0c763f1e6c7c8"
+  },
+  "test/fixtures/evidence/negative/evidence/manifest-profile-fixture-mismatch.json": {
+    "before": "d340d03778787ea187ee5d2d74d5d5341c986c33b63a5822639555c9fc55dbc1",
+    "after": "1eb7f96e241d60c6596b9d17ea5967e78ce56bd782d90e0a1e5ebeddf8c6ee13"
+  },
+  "test/fixtures/evidence/negative/evidence/artifact-command-manifest-mismatch.json": {
+    "before": "be040b142776af8e5194dd9ae1f0e71c487af2c354b3476e52de744011cf4db1",
+    "after": "dffc7f9c8b41ad089b25b7c5173ca2f60d897ead2cd2dc54403517f07130232f"
+  },
+  "test/fixtures/evidence/acceptance/README.md": {
+    "before": "171f75a8d114ccaf05df1abc62a12be6b7b668ba4f024117aede2b5ee5bfa4e4",
+    "after": "4d305d87d25606b929216eab0078a8a4415dacbcaada55296fce7e2d3e3999d1"
+  }
+}

@@ -1,0 +1,81 @@
+diff --git a/tools/p1r_published_executor.py b/tools/p1r_published_executor.py
+index da3a9522d..35565596e 100644
+--- a/tools/p1r_published_executor.py
++++ b/tools/p1r_published_executor.py
+@@ -986,6 +986,15 @@ class Executor:
+             value = json.loads(data)
+             changed = False
+             if key.endswith(":metadata") and kind in ("retained", "invalid-floor"):
++                if kind == "retained" and value.get("sourceProof") is not None:
++                    proof = value["sourceProof"]
++                    require(isinstance(proof, dict)
++                            and proof.get("retainedFloor") == value.get("retainedFloor", 1)
++                            and proof.get("headSequence") == value.get("currentSequence"),
++                            "retained fixture source proof does not match metadata")
++                    # Retention changes the sampled floor, not the completed prefix.
++                    # Keep the actor-created proof and its cumulative digest intact.
++                    proof["retainedFloor"] = 5
+                 value["retainedFloor"] = 5 if kind == "retained" else 0
+                 changed = True
+             if ":events:" in key:
+diff --git a/tools/tests/test_p1r_published_executor.py b/tools/tests/test_p1r_published_executor.py
+index dc7862d01..94665a8da 100644
+--- a/tools/tests/test_p1r_published_executor.py
++++ b/tools/tests/test_p1r_published_executor.py
+@@ -1562,6 +1562,56 @@ class MeasurementTests(unittest.TestCase):
+         self.assertIn(executor.canonical({"currentSequence": 12, "retainedFloor": 5}).hex(), sql)
+         self.assertIn("::jsonb", sql)
+ 
++    def testRetentionFixturePreservesCompletedProofAndOtherTenant(self):
++        proof = {"codecVersion": 1, "tenantId": "tenant-a", "domain": "counter",
++                 "aggregateId": "fixture", "headSequence": 12, "retainedFloor": 1,
++                 "sourceIncarnation": "actor-created-incarnation", "headMessageId": "actor-created-head",
++                 "cumulativeDigest": "a" * 64, "erased": False}
++        for source_proof in (proof, None):
++            with self.subTest(proof=source_proof is not None):
++                metadata = {"currentSequence": 12, "retainedFloor": 1, "sourceProof": source_proof}
++                key = "tenant-a:counter:fixture:metadata"
++                values = {key: executor.canonical(metadata),
++                          "tenant-b:counter:fixture:metadata": executor.canonical(metadata),
++                          "tenant-a:counter:fixture:snapshot": executor.canonical({"sequenceNumber": 9})}
++                values.update({"tenant-a:counter:fixture:events:" + str(i): b"{}" for i in range(1, 13)})
++                worker = executor.Executor.__new__(executor.Executor)
++                worker.active, worker.redis = [], "owned"
++                worker.raw_state = mock.Mock(return_value=values)
++                worker.postgres_write, worker.postgres_delete = mock.Mock(), mock.Mock()
++                worker.mutate("retained")
++                expected = copy.deepcopy(metadata)
++                expected["retainedFloor"] = 5
++                if source_proof is not None:
++                    expected["sourceProof"]["retainedFloor"] = 5
++                worker.postgres_write.assert_called_once_with("owned", key, expected)
++                self.assertEqual(worker.postgres_delete.call_args_list,
++                                 [mock.call("owned", "tenant-a:counter:fixture:events:" + str(i)) for i in range(1, 5)])
++                self.assertEqual(metadata["sourceProof"], source_proof)
++
++    def testRetentionFixtureRefusesContradictoryProofAndKeepsInvalidFloorControl(self):
++        for defect in ("retainedFloor", "headSequence", "shape", None):
++            with self.subTest(defect=defect):
++                proof = {"retainedFloor": 1, "headSequence": 12, "cumulativeDigest": "a" * 64}
++                if defect in proof:
++                    proof[defect] = 99
++                if defect == "shape":
++                    proof = "malformed"
++                metadata = {"currentSequence": 12, "retainedFloor": 1, "sourceProof": proof}
++                worker = executor.Executor.__new__(executor.Executor)
++                worker.active, worker.redis = [], "owned"
++                key = "tenant-a:counter:fixture:metadata"
++                worker.raw_state = mock.Mock(return_value={key: executor.canonical(metadata)})
++                worker.postgres_write, worker.postgres_delete = mock.Mock(), mock.Mock()
++                if defect is not None:
++                    with self.assertRaisesRegex(preparation.InvalidPacket, "source proof does not match metadata"):
++                        worker.mutate("retained")
++                    worker.postgres_write.assert_not_called()
++                worker.mutate("invalid-floor")
++                expected = copy.deepcopy(metadata)
++                expected["retainedFloor"] = 0
++                worker.postgres_write.assert_called_once_with("owned", key, expected)
++
+     def testPostgresqlInventoryNormalizesDatabaseCollationOrder(self):
+         identity = "a" * 64
+         observed = {"Id": identity, "Config": {"Labels": {"hexalith.p1r.invocation": "owned"}}}

@@ -1,0 +1,717 @@
+diff --git a/src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs b/src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs
+index 8bfe5cb..784bbea 100644
+--- a/src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs
++++ b/src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs
+@@ -88,12 +88,18 @@ internal static class ModuleCommandApplication
+             DefaultValueFactory = _ => "human",
+         };
+         _ = outputOption.AcceptOnlyFromAmong("human", "json");
++        Option<bool> adoptionOption = new("--adoption")
++        {
++            Description = "Reports bounded static module enrollment requirements; SM-2 requires human verification.",
++        };
++        command.Options.Add(adoptionOption);
+         command.Options.Add(manifestOption);
+         command.Options.Add(outputOption);
+         command.SetAction((parseResult, cancellationToken) =>
+         {
+             Task<int> execution = ExecuteValidationAsync(
+                 parseResult.GetValue(manifestOption)!,
++                parseResult.GetValue(adoptionOption),
+                 ParseOutputFormat(parseResult.GetValue(outputOption)),
+                 standardOutput,
+                 cancellationToken);
+@@ -105,6 +111,7 @@ internal static class ModuleCommandApplication
+ 
+     private static async Task<int> ExecuteValidationAsync(
+         string[] manifestPaths,
++        bool adoption,
+         ToolOutputFormat format,
+         TextWriter writer,
+         CancellationToken cancellationToken)
+@@ -117,9 +124,22 @@ internal static class ModuleCommandApplication
+         ToolCommandResult commandResult;
+         try
+         {
+-            PlatformManifestValidationResult validation = PlatformManifestValidator.Validate(manifestPaths, cancellationToken);
+-            ToolOutcome outcome = validation.IsValid ? ToolOutcome.Passed() : ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest);
+-            commandResult = new ToolCommandResult(validation.IsValid ? "validated" : "failed", outcome, validation.Diagnostics);
++            if (adoption)
++            {
++                PlatformAdoptionValidationResult report = await PlatformAdoptionValidator.ValidateAsync(manifestPaths, cancellationToken: cancellationToken).ConfigureAwait(false);
++                ToolOutcome adoptionOutcome = report.IsValid ? ToolOutcome.Passed() : ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, report.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest);
++                commandResult = new ToolCommandResult(report.IsValid ? "validated" : "failed", adoptionOutcome, report.Diagnostics)
++                {
++                    Adoption = report.Rows,
++                    AdoptionScope = PlatformAdoptionValidator.Scope,
++                };
++            }
++            else
++            {
++                PlatformManifestValidationResult validation = PlatformManifestValidator.Validate(manifestPaths, cancellationToken);
++                ToolOutcome outcome = validation.IsValid ? ToolOutcome.Passed() : ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest);
++                commandResult = new ToolCommandResult(validation.IsValid ? "validated" : "failed", outcome, validation.Diagnostics);
++            }
+         }
+         catch (OperationCanceledException)
+         {
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandResult.cs b/src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandResult.cs
+index 2d65c88..6658192 100644
+--- a/src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandResult.cs
++++ b/src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandResult.cs
+@@ -18,6 +18,14 @@ public sealed record ToolCommandResult(
+     ToolOutcome Outcome,
+     IReadOnlyList<ToolDiagnostic> Diagnostics)
+ {
++    /// <summary>Gets the optional bounded static enrollment report.</summary>
++    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
++    public IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformAdoptionRow>? Adoption { get; init; }
++
++    /// <summary>Gets the static-only scope and pending human SM-2 verification.</summary>
++    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
++    public string? AdoptionScope { get; init; }
++
+     /// <summary>
+     /// Gets the run identity returned by a public composition command, when allocated.
+     /// </summary>
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs b/src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs
+index c3bdeea..c33f90f 100644
+--- a/src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs
++++ b/src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs
+@@ -55,6 +55,21 @@ public static class ToolDiagnosticFormatter
+             AppendDiagnostic(builder, diagnostic);
+         }
+ 
++        if (result.Adoption is not null)
++        {
++            foreach (Hexalith.Builds.Tooling.Manifest.PlatformAdoptionRow row in result.Adoption)
++            {
++                _ = builder.Append('\n').Append(row.Passed ? "PASS " : "FAIL ");
++                AppendEscaped(builder, row.Requirement);
++                AppendField(builder, "file", row.File);
++                _ = builder.Append(": ");
++                AppendEscaped(builder, row.Reason);
++            }
++
++            _ = builder.Append('\n');
++            AppendEscaped(builder, result.AdoptionScope ?? string.Empty);
++        }
++
+         return builder.ToString();
+     }
+ 
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionRow.cs b/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionRow.cs
+new file mode 100644
+index 0000000..a1dd250
+--- /dev/null
++++ b/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionRow.cs
+@@ -0,0 +1,13 @@
++// <copyright file="PlatformAdoptionRow.cs" company="ITANEO">
++// Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved.
++// Licensed under the MIT license. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace Hexalith.Builds.Tooling.Manifest;
++
++/// <summary>A bounded static enrollment requirement, never runtime or SM-2 proof.</summary>
++/// <param name="Requirement">The stable requirement identifier.</param>
++/// <param name="Passed">Whether the inspected requirement passed.</param>
++/// <param name="File">The inspected workspace-relative file.</param>
++/// <param name="Reason">The metadata-only result and remediation.</param>
++public sealed record PlatformAdoptionRow(string Requirement, bool Passed, string File, string Reason);
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionSourceAudit.cs b/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionSourceAudit.cs
+new file mode 100644
+index 0000000..d697813
+--- /dev/null
++++ b/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionSourceAudit.cs
+@@ -0,0 +1,250 @@
++// <copyright file="PlatformAdoptionSourceAudit.cs" company="ITANEO">
++// Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved.
++// Licensed under the MIT license. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace Hexalith.Builds.Tooling.Manifest;
++
++using System.Text.Json;
++using System.Text.RegularExpressions;
++using System.Xml.Linq;
++
++using YamlDotNet.RepresentationModel;
++
++/// <summary>Bounds known source patterns; unsupported languages and indirection require owner review.</summary>
++internal static class PlatformAdoptionSourceAudit
++{
++    private static readonly TimeSpan _regexTimeout = TimeSpan.FromSeconds(1);
++
++    /// <summary>Inspects tracked module-owned build, source, configuration and helper files.</summary>
++    /// <param name="root">The module root.</param>
++    /// <param name="tracked">Tracked module-owned paths.</param>
++    /// <param name="frozen">Exact verified hosting directories.</param>
++    /// <param name="configurationKeys">The declared Dapr configuration keys.</param>
++    /// <param name="requirement">The audit requirement.</param>
++    /// <param name="cancellationToken">The cancellation token.</param>
++    /// <returns>Failures with file and reason; no raw source is emitted.</returns>
++    internal static IReadOnlyList<PlatformAdoptionRow> Scan(string root, IReadOnlyList<string> tracked, HashSet<string> frozen, HashSet<string> configurationKeys, string requirement, CancellationToken cancellationToken)
++    {
++        List<PlatformAdoptionRow> rows = [];
++        foreach (string path in tracked)
++        {
++            cancellationToken.ThrowIfCancellationRequested();
++            string extension = Path.GetExtension(path).ToUpperInvariant();
++            if (!new[] { ".CS", ".CSPROJ", ".PROPS", ".TARGETS", ".PS1", ".SH", ".PY", ".JSON", ".YAML", ".YML" }.Contains(extension, StringComparer.Ordinal)
++                || (requirement == "dapr-subscriptions" && frozen.Any(directory => path.StartsWith(directory + "/", StringComparison.Ordinal))))
++            {
++                continue;
++            }
++
++            if (!PlatformAdoptionValidator.IsLocalFile(root, path))
++            {
++                rows.Add(new PlatformAdoptionRow(requirement, false, path, "Tracked audit file is missing, unreadable or physically escapes the active workspace."));
++                continue;
++            }
++
++            try
++            {
++                FileInfo info = new(Path.Combine(root, path));
++                if (info.Length > 1_048_576)
++                {
++                    rows.Add(new PlatformAdoptionRow(requirement, false, path, "File exceeds the bounded 1 MiB source audit; owner review is required."));
++                    continue;
++                }
++
++                string content = File.ReadAllText(info.FullName);
++                if (requirement == "dependency-selectors")
++                {
++                    if (extension is ".CSPROJ" or ".PROPS" or ".TARGETS")
++                    {
++                        InspectBuild(content, path, rows);
++                    }
++                    else if (extension is ".CS" or ".PS1" or ".SH" or ".PY")
++                    {
++                        bool helper = Match(content, @"(?:Resolve|Find|Get)[-_]?(?:Hexalith|Sibling|Repository|Source)\w*(?:Root|Path)|(?:sibling|nested|package)[-_]?(?:fallback|root|checkout)");
++                        bool discovery = Match(content, @"(?:File\s*\.\s*Exists|Directory\s*\.\s*Exists|Test-Path|os\.path\.(?:exists|isdir)|Path\s*\([^\r\n]*\)\s*\.\s*(?:exists|is_dir|is_file)\s*\(|\[\s*-[def]\s)[^\r\n]*(?:Hexalith\.|UseNuGetDeps|UseHexalithProjectReferences|FromSource|Root)|(?:UseNuGetDeps|UseHexalithProjectReferences|FromSource|\w+Root)[^\r\n]*(?:Exists|Test-Path|exists|isdir)");
++                        if (helper || discovery || Match(content, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]"))
++                        {
++                            rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping."));
++                        }
++                    }
++                }
++                else if (extension == ".CS")
++                {
++                    string executable = MaskCSharpNonExecutable(content);
++                    if (MatchCode(content, executable, @"\b(?:WithTopic|MapSubscribeHandler|MapDaprSubscribeHandler|SubscribeTopic|AddTopicEventHandler)\s*\(|\[\s*(?:global\s*::\s*)?(?:[A-Za-z_]\w*\s*\.\s*)*Topic(?:Attribute)?\s*\(|\bMap(?:Get|Post|Methods)\s*\(\s*""/dapr/subscribe"""))
++                    {
++                        rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Programmatic subscription discovery is forbidden; declare delivery routes and dead-letter policy in the module declaration."));
++                    }
++
++                    if (MatchCode(content, executable, @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|SaveStateAsync|DeleteStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<[^>\r\n]+>)?\s*\(\s*""[^""]+""|\b(?:StoreName|StateStoreName|PubSubName|PubsubName|SecretStoreName|ComponentName|storeName|pubsubName)\s*[:=]\s*""[^""]+"""))
++                    {
++                        rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component name; obtain the name from the declared configuration key."));
++                    }
++                }
++                else if (extension is ".JSON" or ".YAML" or ".YML" && HasPhysicalComponentDefault(content, extension, configurationKeys))
++                {
++                    rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component default in configuration; Platform injects the declared configuration key. Bounded static check only."));
++                }
++            }
++            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Xml.XmlException or RegexMatchTimeoutException or JsonException or YamlDotNet.Core.YamlException)
++            {
++                rows.Add(new PlatformAdoptionRow(requirement, false, path, "Cannot complete the bounded source inspection; correct unreadable/malformed input or obtain owner review."));
++            }
++        }
++
++        return rows;
++    }
++
++    private static void InspectBuild(string content, string path, List<PlatformAdoptionRow> rows)
++    {
++        XDocument document = XDocument.Parse(content);
++        foreach (XElement element in document.Descendants())
++        {
++            string name = element.Name.LocalName;
++            string condition = string.Join(" ", element.AncestorsAndSelf().Attributes("Condition").Select(attribute => attribute.Value));
++            string value = element.HasElements ? string.Empty : element.Value;
++            string include = element.Attribute("Include")?.Value ?? element.Attribute("Project")?.Value ?? string.Empty;
++            bool mode = name.Equals("UseNuGetDeps", StringComparison.OrdinalIgnoreCase) || name.Equals("UseHexalithProjectReferences", StringComparison.OrdinalIgnoreCase);
++            bool generated = name.StartsWith("Hexalith", StringComparison.OrdinalIgnoreCase)
++                && (name.EndsWith("Root", StringComparison.OrdinalIgnoreCase) || name.EndsWith("FromSource", StringComparison.OrdinalIgnoreCase));
++            bool dependency = generated || mode || include.Contains("Hexalith", StringComparison.OrdinalIgnoreCase);
++            bool selector = generated || mode || name.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase)
++                || name.Equals("PackageReference", StringComparison.OrdinalIgnoreCase) || name.Equals("Import", StringComparison.OrdinalIgnoreCase);
++            if ((dependency && selector && Match(condition, @"\bExists\s*\("))
++                || (dependency && Match(value + " " + include, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]")))
++            {
++                rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."));
++                return;
++            }
++
++            if (mode || generated)
++            {
++                rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "Module build files assign a tool-owned dependency root or mode property; leave selection to the pinned tool."));
++                return;
++            }
++        }
++    }
++
++    private static bool MatchCode(string content, string executable, string pattern) =>
++        Regex.Matches(content, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout)
++            .Any(match => !char.IsWhiteSpace(executable[match.Index]));
++
++    private static string MaskCSharpNonExecutable(string content)
++    {
++        char[] executable = content.ToCharArray();
++        int index = 0;
++        while (index < content.Length)
++        {
++            int start = index;
++            if (content[index] == '/' && index + 1 < content.Length && content[index + 1] == '/')
++            {
++                index = content.IndexOf('\n', index);
++                if (index < 0)
++                {
++                    index = content.Length;
++                }
++            }
++            else if (content[index] == '/' && index + 1 < content.Length && content[index + 1] == '*')
++            {
++                int end = content.IndexOf("*/", index + 2, StringComparison.Ordinal);
++                index = end < 0 ? content.Length : end + 2;
++            }
++            else if (content[index] is '"' or '\'')
++            {
++                char quote = content[index++];
++                bool verbatim = start > 0 && content[start - 1] == '@';
++                int quotes = 1;
++                while (index < content.Length && content[index] == quote && quote == '"')
++                {
++                    quotes++;
++                    index++;
++                }
++
++                if (quotes >= 3)
++                {
++                    int end = content.IndexOf(new string(quote, quotes), index, StringComparison.Ordinal);
++                    index = end < 0 ? content.Length : end + quotes;
++                }
++                else if (quotes == 1)
++                {
++                    while (index < content.Length)
++                    {
++                        char current = content[index++];
++                        if (current == quote)
++                        {
++                            if (verbatim && index < content.Length && content[index] == quote)
++                            {
++                                index++;
++                                continue;
++                            }
++
++                            break;
++                        }
++
++                        if (!verbatim && current == '\\' && index < content.Length)
++                        {
++                            index++;
++                        }
++                    }
++                }
++            }
++            else
++            {
++                index++;
++                continue;
++            }
++
++            for (int position = start; position < index; position++)
++            {
++                if (executable[position] is not '\r' and not '\n')
++                {
++                    executable[position] = ' ';
++                }
++            }
++        }
++
++        return new string(executable);
++    }
++
++    private static bool HasPhysicalComponentDefault(string content, string extension, HashSet<string> configurationKeys)
++    {
++        if (extension == ".JSON")
++        {
++            using JsonDocument document = JsonDocument.Parse(content);
++            return InspectJson(document.RootElement, string.Empty);
++        }
++
++        YamlStream yaml = [];
++        using StringReader reader = new(content);
++        yaml.Load(reader);
++        return yaml.Documents.Any(document => InspectYaml(document.RootNode, string.Empty));
++
++        bool InspectJson(JsonElement value, string prefix) => value.ValueKind switch
++        {
++            JsonValueKind.Object => value.EnumerateObject().Any(property => InspectJson(property.Value, Join(prefix, property.Name))),
++            JsonValueKind.Array => value.EnumerateArray().Any(item => InspectJson(item, prefix)),
++            JsonValueKind.String or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null or JsonValueKind.Undefined => IsComponentKey(prefix) && Physical(value.ValueKind == JsonValueKind.Null ? null : value.ToString()),
++            _ => false,
++        };
++
++        bool InspectYaml(YamlNode value, string prefix) => value switch
++        {
++            YamlMappingNode mapping => mapping.Children.Any(pair => pair.Key is YamlScalarNode key && InspectYaml(pair.Value, Join(prefix, key.Value ?? string.Empty))),
++            YamlSequenceNode sequence => sequence.Children.Any(item => InspectYaml(item, prefix)),
++            YamlScalarNode scalar => IsComponentKey(prefix) && Physical(scalar.Value),
++            _ => false,
++        };
++
++        bool IsComponentKey(string key) => configurationKeys.Contains(key)
++            || Match(key, "(?:^|:)(?:StoreName|StateStoreName|PubSubName|SecretStoreName|ComponentName)$");
++    }
++
++    private static string Join(string prefix, string name) => prefix.Length == 0 ? name : prefix + ":" + name;
++
++    private static bool Physical(string? value) => !string.IsNullOrWhiteSpace(value)
++        && value is not "null" and not "~"
++        && !Match(value, @"^(?:\$\{[A-Za-z_][A-Za-z0-9_]*\}|\$\([A-Za-z_][A-Za-z0-9_:]*\)|\{\{\s*[A-Za-z_][A-Za-z0-9_.:]*\s*\}\})$");
++
++    private static bool Match(string content, string pattern) => Regex.IsMatch(content, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout);
++}
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionValidationResult.cs b/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionValidationResult.cs
+new file mode 100644
+index 0000000..68459ee
+--- /dev/null
++++ b/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionValidationResult.cs
+@@ -0,0 +1,17 @@
++// <copyright file="PlatformAdoptionValidationResult.cs" company="ITANEO">
++// Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved.
++// Licensed under the MIT license. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace Hexalith.Builds.Tooling.Manifest;
++
++using Hexalith.Builds.Tooling.Diagnostics;
++
++/// <summary>The complete bounded static enrollment report.</summary>
++/// <param name="Rows">Every requirement result.</param>
++/// <param name="Diagnostics">Declaration and adoption failures.</param>
++public sealed record PlatformAdoptionValidationResult(IReadOnlyList<PlatformAdoptionRow> Rows, IReadOnlyList<ToolDiagnostic> Diagnostics)
++{
++    /// <summary>Gets a value indicating whether all static requirements passed; SM-2 remains separately unverified.</summary>
++    public bool IsValid => Rows.All(row => row.Passed);
++}
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionValidator.cs b/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionValidator.cs
+new file mode 100644
+index 0000000..200b955
+--- /dev/null
++++ b/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformAdoptionValidator.cs
+@@ -0,0 +1,232 @@
++// <copyright file="PlatformAdoptionValidator.cs" company="ITANEO">
++// Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved.
++// Licensed under the MIT license. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace Hexalith.Builds.Tooling.Manifest;
++
++using System.Text.Json;
++
++using Hexalith.Builds.Tooling.Diagnostics;
++using Hexalith.Builds.Tooling.Filesystem;
++using Hexalith.Builds.Tooling.Runtime;
++using Hexalith.Builds.Tooling.Workspace;
++
++/// <summary>Inspects enrollment in the active module Git workspace without initialization, resolution or writes.</summary>
++public static class PlatformAdoptionValidator
++{
++    /// <summary>Gets the scope of this report and the required human verification.</summary>
++    public const string Scope = "Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified.";
++
++    private static readonly string[] _minimumDependencies = ["eventstore", "tenants", "memories"];
++
++    /// <summary>Validates every independent static requirement without changing the workspace.</summary>
++    /// <param name="manifestPaths">Declarations inside the current module workspace.</param>
++    /// <param name="workingDirectory">The active directory, defaulting to the process directory.</param>
++    /// <param name="cancellationToken">The cancellation token.</param>
++    /// <returns>All requirement rows, including failures independent of malformed inputs.</returns>
++    public static async Task<PlatformAdoptionValidationResult> ValidateAsync(
++        IEnumerable<string> manifestPaths,
++        string? workingDirectory = null,
++        CancellationToken cancellationToken = default)
++    {
++        ArgumentNullException.ThrowIfNull(manifestPaths);
++        List<PlatformAdoptionRow> rows = [];
++        List<ToolDiagnostic> diagnostics = [];
++        string[] paths = [.. manifestPaths];
++        string root = workingDirectory ?? ".";
++        string[] tracked = [];
++        IReadOnlyList<string> references = [];
++        HashSet<string> requiredReferences = new(StringComparer.Ordinal);
++        PlatformManifestValidationResult? declaration = null;
++        HashSet<string> daprConfigurationKeys = new(StringComparer.OrdinalIgnoreCase);
++        await CheckAsync("workspace", ".git", async () =>
++        {
++            CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "rev-parse", "--show-toplevel").ConfigureAwait(false);
++            Require(Succeeded(result), "Run adoption validation in the current module Git workspace.");
++            root = result.Output.TrimEnd('\r', '\n');
++            result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "-z").ConfigureAwait(false);
++            Require(Succeeded(result), "Cannot enumerate tracked module-owned files.");
++            tracked = [.. result.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries)];
++        }).ConfigureAwait(false);
++        await CheckAsync("declaration", string.Join(", ", paths.Select(path => Path.GetFileName(path))), () =>
++        {
++            Require(paths.Length > 0, "Supply at least one module declaration.");
++            string[] resolvedPaths = [.. paths.Select(path => Path.GetFullPath(path, workingDirectory ?? Directory.GetCurrentDirectory()))];
++            foreach (string path in resolvedPaths)
++            {
++                Require(IsLocalFile(root, path), "Every manifest must be an existing file physically inside the active workspace.");
++            }
++
++            declaration = PlatformManifestValidator.Validate(resolvedPaths, cancellationToken);
++            diagnostics.AddRange(declaration.Diagnostics);
++            Require(declaration.IsValid, "Correct the declaration failures reported below.");
++            foreach (JsonElement module in declaration.Declarations!.Select(item => item.Declaration))
++            {
++                JsonElement identity = module.GetProperty("identity");
++                foreach (JsonElement role in module.GetProperty("runtime").GetProperty("dapr").EnumerateArray())
++                {
++                    _ = daprConfigurationKeys.Add(role.GetProperty("configurationKey").GetString()!);
++                }
++
++                string self = identity.GetProperty("moduleId").GetString()!;
++                HashSet<string> dependencies = new(identity.GetProperty("dependencies").EnumerateArray().Select(value => value.GetString()!), StringComparer.Ordinal);
++                Require(_minimumDependencies.Where(id => id != self).All(dependencies.Contains), "Declare the distinct minimum server dependencies eventstore, tenants and memories, excluding self.");
++                Require(!dependencies.Contains(self), "A module must not depend on itself.");
++            }
++
++            return Task.CompletedTask;
++        }).ConfigureAwait(false);
++        await CheckAsync("references", ".gitmodules", async () =>
++        {
++            references = await WorkspaceRootResolver.ReadDirectReferencesAsync(root, cancellationToken).ConfigureAwait(false);
++            HashSet<string> required = new(StringComparer.OrdinalIgnoreCase) { "Platform", "Builds", "McpCli", "EventStore", "Tenants", "Memories" };
++            HashSet<string> self = new(StringComparer.OrdinalIgnoreCase);
++            if (declaration?.Declarations is not null)
++            {
++                foreach (PlatformModuleDeclaration module in declaration.Declarations)
++                {
++                    JsonElement identity = module.Declaration.GetProperty("identity");
++                    _ = self.Add(identity.GetProperty("moduleId").GetString()!);
++                    foreach (JsonElement dependency in identity.GetProperty("dependencies").EnumerateArray())
++                    {
++                        string id = dependency.GetString()!;
++                        _ = required.Add(id);
++                    }
++                }
++            }
++
++            Require(!references.Any(reference => self.Contains(Path.GetFileName(reference).Replace("Hexalith.", string.Empty, StringComparison.OrdinalIgnoreCase))), "Remove the declared direct self reference; the active module must not reference itself.");
++            string[] missing = [.. required.Where(id => !self.Contains(id) && !references.Any(reference => string.Equals(Path.GetFileName(reference), "Hexalith." + id, StringComparison.OrdinalIgnoreCase))).Order(StringComparer.Ordinal)];
++            requiredReferences = new HashSet<string>(references.Where(reference => required.Contains(Path.GetFileName(reference).Replace("Hexalith.", string.Empty, StringComparison.OrdinalIgnoreCase)) && !self.Contains(Path.GetFileName(reference).Replace("Hexalith.", string.Empty, StringComparison.OrdinalIgnoreCase))), StringComparer.Ordinal);
++            Require(missing.Length == 0, "Declare distinct direct references for: " + string.Join(", ", missing) + ". Self references are excluded.");
++        }).ConfigureAwait(false);
++        await CheckAsync("gitlinks", ".gitmodules", async () =>
++        {
++            Require(references.Count > 0, "No direct references were available for recorded-gitlink inspection.");
++            foreach (string reference in references)
++            {
++                IReadOnlyDictionary<string, string> recorded = await SubmoduleInitializer.ValidateRecordedGitlinksAsync(root, [reference], cancellationToken).ConfigureAwait(false);
++                Require(!requiredReferences.Contains(reference) || SubmoduleInitializer.IsInitialized(Path.Combine(root, reference)), "Initialize only the recorded required direct reference: " + reference + ".");
++                await SubmoduleInitializer.ValidateInitializedPackageRootsAsync(root, [reference], recorded, cancellationToken).ConfigureAwait(false);
++            }
++        }).ConfigureAwait(false);
++        await CheckAsync("nested-references", ".gitmodules", async () =>
++        {
++            // Read independently, so malformed declarations never suppress nested-checkout inspection.
++            IReadOnlyList<string> direct = await WorkspaceRootResolver.ReadDirectReferencesAsync(root, cancellationToken).ConfigureAwait(false);
++            await SubmoduleInitializer.CheckNestedReferencesAsync(root, direct, cancellationToken).ConfigureAwait(false);
++        }).ConfigureAwait(false);
++        await CheckAsync("tool-pin", ".config/dotnet-tools.json", async () =>
++        {
++            string platform = Path.Combine(root, "references/Hexalith.Platform");
++            string localPin = ReadPin(root);
++            string platformPin = ReadPin(platform);
++            Require(localPin == platformPin, "The tool pin must exactly match the direct Platform checkout's accepted tool pin.");
++            CompositionProcessResult record = await GitWorkspaceProcess.RunAsync(platform, cancellationToken, "show", "HEAD:.config/dotnet-tools.json").ConfigureAwait(false);
++            Require(Succeeded(record), "Cannot read the direct Platform checkout's committed tool pin.");
++            using JsonDocument committed = JsonDocument.Parse(record.Output);
++            Require(localPin == Pin(committed.RootElement), "The direct Platform tool manifest differs from its committed identity.");
++        }).ConfigureAwait(false);
++        HashSet<string> frozen = new(StringComparer.Ordinal);
++        await CheckAsync("hosting-inventory", "module/hosting-inventory.json", () =>
++        {
++            frozen = PlatformHostingInventory.Validate(root, tracked);
++            return Task.CompletedTask;
++        }).ConfigureAwait(false);
++        foreach (string requirement in new[] { "dependency-selectors", "dapr-subscriptions" })
++        {
++            int before = rows.Count;
++            try
++            {
++                Require(tracked.Length > 0, "No tracked module files were available for bounded static inspection.");
++                rows.AddRange(PlatformAdoptionSourceAudit.Scan(root, tracked, frozen, daprConfigurationKeys, requirement, cancellationToken));
++                if (rows.Count == before)
++                {
++                    rows.Add(new PlatformAdoptionRow(requirement, true, ".", "No known forbidden patterns in tracked module-owned files. " + Scope));
++                }
++            }
++            catch (Exception exception) when (InspectionFailure(exception))
++            {
++                rows.Add(new PlatformAdoptionRow(requirement, false, ".", exception.Message));
++            }
++        }
++
++        foreach (PlatformAdoptionRow row in rows.Where(row => !row.Passed))
++        {
++            diagnostics.Add(new ToolDiagnostic("HXA001", ToolPhase.Manifest, ToolFailureCategory.Manifest, row.Reason, row.Requirement, Source: row.File));
++        }
++
++        return new PlatformAdoptionValidationResult(rows.AsReadOnly(), diagnostics.AsReadOnly());
++
++        async Task CheckAsync(string requirement, string file, Func<Task> action)
++        {
++            try
++            {
++                cancellationToken.ThrowIfCancellationRequested();
++                await action().ConfigureAwait(false);
++                rows.Add(new PlatformAdoptionRow(requirement, true, file, "Static requirement passed. " + Scope));
++            }
++            catch (WorkspaceMappingException exception)
++            {
++                foreach (ToolDiagnostic diagnostic in exception.Diagnostics)
++                {
++                    rows.Add(new PlatformAdoptionRow(requirement, false, diagnostic.Source ?? diagnostic.Field ?? file, diagnostic.Message));
++                }
++            }
++            catch (Exception exception) when (InspectionFailure(exception))
++            {
++                rows.Add(new PlatformAdoptionRow(requirement, false, file, exception.Message));
++            }
++        }
++    }
++
++    /// <summary>Checks physical confinement and existence without opening an external target.</summary>
++    /// <param name="root">The owning root.</param>
++    /// <param name="path">The candidate path.</param>
++    /// <returns>Whether the candidate is a local existing file.</returns>
++    internal static bool IsLocalFile(string root, string path)
++    {
++        string relative = Path.GetRelativePath(root, Path.GetFullPath(path, root));
++        return RepositoryPathResolver.TryResolveExistingFile(root, relative, out _);
++    }
++
++    /// <summary>Raises a structured inspection failure for an unmet requirement.</summary>
++    /// <param name="condition">The checked condition.</param>
++    /// <param name="reason">The metadata-only reason.</param>
++    /// <exception cref="InvalidDataException">The requirement is not met.</exception>
++    internal static void Require(bool condition, string reason)
++    {
++        if (!condition)
++        {
++            throw new InvalidDataException(reason);
++        }
++    }
++
++    private static bool InspectionFailure(Exception exception) => exception is InvalidDataException or IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException or System.Xml.XmlException or InvalidOperationException or KeyNotFoundException;
++
++    private static bool Succeeded(CompositionProcessResult result) => result.Started && !result.TimedOut && !result.OutputTruncated && result.ExitCode == 0;
++
++    private static string ReadPin(string root)
++    {
++        const string path = ".config/dotnet-tools.json";
++        Require(IsLocalFile(root, path), "A readable tool manifest inside the module and direct Platform checkout is required.");
++        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, path)));
++        return Pin(document.RootElement);
++    }
++
++    private static string Pin(JsonElement root)
++    {
++        Require(root.ValueKind == JsonValueKind.Object && root.TryGetProperty("tools", out JsonElement tools) && tools.ValueKind == JsonValueKind.Object && tools.TryGetProperty("hexalith.builds.module.cli", out _), "Pin hexalith.builds.module.cli in .config/dotnet-tools.json.");
++        JsonElement tool = root.GetProperty("tools").GetProperty("hexalith.builds.module.cli");
++        Require(tool.ValueKind == JsonValueKind.Object && tool.TryGetProperty("version", out JsonElement version) && version.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(version.GetString()), "An exact tool version is required.");
++        Require(!tool.TryGetProperty("rollForward", out JsonElement rollForward) || rollForward.ValueKind == JsonValueKind.False, "Disable tool roll-forward for exact accepted-tool restore.");
++        Require(
++            tool.TryGetProperty("commands", out JsonElement commands) && commands.ValueKind == JsonValueKind.Array
++                && commands.GetArrayLength() == 1 && commands[0].ValueKind == JsonValueKind.String && commands[0].GetString() == "hexalith-module",
++            "The tool pin must expose the runnable hexalith-module command.");
++        string pin = tool.GetProperty("version").GetString()!;
++        Require(NuGet.Versioning.NuGetVersion.TryParse(pin, out _), "Use one exact semantic tool version.");
++        return pin;
++    }
++}
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformHostingInventory.cs b/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformHostingInventory.cs
+new file mode 100644
+index 0000000..4ae5b9d
+--- /dev/null
++++ b/src/libraries/Hexalith.Builds.Tooling/Manifest/PlatformHostingInventory.cs
+@@ -0,0 +1,73 @@
++// <copyright file="PlatformHostingInventory.cs" company="ITANEO">
++// Copyright (c) ITANEO (https://www.itaneo.com). All rights reserved.
++// Licensed under the MIT license. See LICENSE file in the project root for full license information.
++// </copyright>
++
++namespace Hexalith.Builds.Tooling.Manifest;
++
++using System.Text.Json;
++
++/// <summary>Checks exact frozen hosting project directories and their pending retirement gates.</summary>
++internal static class PlatformHostingInventory
++{
++    private static readonly string[] _kinds = ["AppHost", "Aspire", "ServiceDefaults"];
++
++    /// <summary>Validates inventory completeness; it grants no retirement authority.</summary>
++    /// <param name="root">The active module root.</param>
++    /// <param name="tracked">Tracked module-owned paths.</param>
++    /// <returns>Only exact, verified frozen hosting project directories.</returns>
++    internal static HashSet<string> Validate(string root, IReadOnlyList<string> tracked)
++    {
++        const string path = "module/hosting-inventory.json";
++        PlatformAdoptionValidator.Require(PlatformAdoptionValidator.IsLocalFile(root, path), "Supply module/hosting-inventory.json; use an empty projects array only when no hosting projects exist.");
++        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, path)));
++        JsonElement inventory = document.RootElement;
++        PlatformAdoptionValidator.Require(inventory.ValueKind == JsonValueKind.Object && inventory.TryGetProperty("schemaVersion", out JsonElement version) && version.ValueKind == JsonValueKind.Number && version.TryGetInt32(out int major) && major == 1, "Use hosting inventory schemaVersion 1.");
++        PlatformAdoptionValidator.Require(inventory.TryGetProperty("projects", out JsonElement projects) && projects.ValueKind == JsonValueKind.Array, "Supply the hosting projects array.");
++        RequireProperties(inventory, ["schemaVersion", "projects"]);
++        HashSet<string> recorded = new(StringComparer.Ordinal);
++        HashSet<string> frozen = new(StringComparer.Ordinal);
++        foreach (JsonElement project in projects.EnumerateArray())
++        {
++            RequireProperties(project, ["path", "kind", "owner", "consumers", "state", "replacementPlan", "retirementPlan", "gates"]);
++            string projectPath = Text(project, "path");
++            string kind = Text(project, "kind");
++            string? actualKind = Kind(projectPath);
++            PlatformAdoptionValidator.Require(actualKind is not null && actualKind == kind && tracked.Contains(projectPath, StringComparer.Ordinal), "Inventory path must name a tracked AppHost, Aspire or ServiceDefaults project with its matching kind: " + projectPath + ".");
++            PlatformAdoptionValidator.Require(PlatformAdoptionValidator.IsLocalFile(root, projectPath), "A frozen hosting project must exist physically inside the active workspace: " + projectPath + ".");
++            PlatformAdoptionValidator.Require(recorded.Add(projectPath), "Remove duplicate hosting record: " + projectPath + ".");
++            _ = Text(project, "owner");
++            PlatformAdoptionValidator.Require(project.TryGetProperty("consumers", out JsonElement consumers) && consumers.ValueKind == JsonValueKind.Array && consumers.GetArrayLength() > 0 && consumers.EnumerateArray().All(value => value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString())), "List owning consumers (or explicitly 'none') for " + projectPath + ".");
++            PlatformAdoptionValidator.Require(Text(project, "state") == "frozen", "Hosting projects must remain frozen: " + projectPath + ".");
++            _ = Text(project, "replacementPlan");
++            _ = Text(project, "retirementPlan");
++            PlatformAdoptionValidator.Require(project.TryGetProperty("gates", out JsonElement gates) && gates.ValueKind == JsonValueKind.Object, "Record pending retirement gates for " + projectPath + ".");
++            RequireProperties(gates, ["producerAdoption", "ownerReviewedSourcePackageDeployedParity", "eventStoreAd22ExactSubjectRemovalAuthority"]);
++            foreach (string gate in new[] { "producerAdoption", "ownerReviewedSourcePackageDeployedParity", "eventStoreAd22ExactSubjectRemovalAuthority" })
++            {
++                _ = Text(gates, gate);
++            }
++
++            PlatformAdoptionValidator.Require(projectPath.Contains('/', StringComparison.Ordinal), "A frozen project must have its own directory.");
++            string directory = projectPath[..projectPath.LastIndexOf('/')];
++            PlatformAdoptionValidator.Require(directory.Contains('/', StringComparison.Ordinal) && directory is not "src" and not "test" and not "tests", "Only an exact hosting-project directory can be frozen; never root build files.");
++            PlatformAdoptionValidator.Require(!tracked.Any(file => file.StartsWith(directory + "/", StringComparison.Ordinal) && file.EndsWith(".csproj", StringComparison.Ordinal) && file != projectPath), "A frozen directory cannot contain another project: " + directory + ".");
++            _ = frozen.Add(directory);
++        }
++
++        string[] missing = [.. tracked.Where(path => Kind(path) is not null && !recorded.Contains(path))];
++        PlatformAdoptionValidator.Require(missing.Length == 0, "Inventory every module-owned hosting project: " + string.Join(", ", missing) + ".");
++        return frozen;
++    }
++
++    private static void RequireProperties(JsonElement parent, string[] names) =>
++        PlatformAdoptionValidator.Require(parent.ValueKind == JsonValueKind.Object && parent.EnumerateObject().All(property => names.Contains(property.Name, StringComparer.Ordinal)), "Remove unknown inventory fields and arbitrary exclusions; only exact frozen hosting-project directories are permitted.");
++
++    private static string Text(JsonElement parent, string name)
++    {
++        PlatformAdoptionValidator.Require(parent.ValueKind == JsonValueKind.Object && parent.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()), "Supply a nonblank hosting inventory field: " + name + ".");
++        return parent.GetProperty(name).GetString()!;
++    }
++
++    private static string? Kind(string path) => _kinds.FirstOrDefault(kind => path.EndsWith("." + kind + ".csproj", StringComparison.OrdinalIgnoreCase));
++}

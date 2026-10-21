@@ -1,0 +1,35 @@
+{
+  "artifactKind": "actual NuGet signature checks; no P0 acceptance",
+  "commands": [
+    {
+      "argv": [
+        "dotnet",
+        "nuget",
+        "verify",
+        "--all",
+        "/var/tmp/hexalith-p0-published-observation-20261020/hexalith.builds.module.cli.4.35.0.nupkg"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "\nVerifying Hexalith.Builds.Module.Cli.4.35.0\nContent hash: U4U+qv+eg7q7MV6MEma1tvfCZ+2JrhmEJSGQ5BT/KacZjjcSboigyqXXCP4v1I8rVbjtCee3nLtNxGjOW8ucrQ==\n\nSignature type: Repository\n  Subject Name: CN=NuGet.org Repository by Microsoft, O=NuGet.org Repository by Microsoft, L=Redmond, S=Washington, C=US\n  SHA256 hash: 1F4B311D9ACC115C8DC8018B5A49E00FCE6DA8E2855F9F014CA6F34570BC482D\n  Valid from: 02/23/2024 01:00:00 to 05/19/2027 01:59:59\n",
+      "stderr": "",
+      "archiveSha256": "2b2f0689f38c8a20efa823bd3dc277b4bbe785b03c62513878b9e4c261cb2880",
+      "finishedUtc": "2026-10-20T15:16:26.870536+00:00"
+    },
+    {
+      "argv": [
+        "dotnet",
+        "nuget",
+        "verify",
+        "--all",
+        "/var/tmp/hexalith-p0-published-observation-20261020/hexalith.builds.evidence.cli.4.35.0.nupkg"
+      ],
+      "cwd": "/home/administrator/projects/hexalith/builds",
+      "exitCode": 0,
+      "stdout": "\nVerifying Hexalith.Builds.Evidence.Cli.4.35.0\nContent hash: bKCSg70ywqLsHyGn9h2uK2GXrbPQYTMCNY0Ac76VUio4kvY6f9LoEbrsVt/K9RYvpJSJNrf4RrOZ0bIMaycYUg==\n\nSignature type: Repository\n  Subject Name: CN=NuGet.org Repository by Microsoft, O=NuGet.org Repository by Microsoft, L=Redmond, S=Washington, C=US\n  SHA256 hash: 1F4B311D9ACC115C8DC8018B5A49E00FCE6DA8E2855F9F014CA6F34570BC482D\n  Valid from: 02/23/2024 01:00:00 to 05/19/2027 01:59:59\n",
+      "stderr": "",
+      "archiveSha256": "cd860844beeaa58be034abbd198326cd1bb8abad86bdd74da03ba66a8346fa96",
+      "finishedUtc": "2026-10-20T15:16:27.204173+00:00"
+    }
+  ]
+}

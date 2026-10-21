@@ -1,0 +1,19 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tools/tests",
+    "-p",
+    "test_p1r_published_executor.py"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/p1r-retention-qualification-20261020/references/Hexalith.EventStore",
+  "exitCode": 1,
+  "totalTests": 213,
+  "errors": 113,
+  "blocker": "OSError: [Errno 28] No space left on device",
+  "freeBytesObservedAfterFailure": 264241152,
+  "note": "transient host storage exhaustion; test temporary directories removed by their own finalizers; no user or Docker resources pruned"
+}

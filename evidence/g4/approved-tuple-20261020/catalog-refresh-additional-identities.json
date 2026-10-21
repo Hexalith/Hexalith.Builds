@@ -1,0 +1,48 @@
+{
+  "artifactKind": "additional read-only publication observations; initial nonexistent FrontComposer.Domain observation preserved separately",
+  "observations": [
+    {
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.module.cli/4.34.0/hexalith.builds.module.cli.nuspec",
+      "fetchedUtc": "2026-10-20T15:11:09.102277+00:00",
+      "metadata": {
+        "id": "Hexalith.Builds.Module.Cli",
+        "version": "4.34.0",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.Builds",
+          "branch": "refs/heads/main",
+          "commit": "5d03f1db9c38db34ecac7fe6048937478ffb82cc"
+        }
+      }
+    },
+    {
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.builds.evidence.cli/4.34.0/hexalith.builds.evidence.cli.nuspec",
+      "fetchedUtc": "2026-10-20T15:11:09.997371+00:00",
+      "metadata": {
+        "id": "Hexalith.Builds.Evidence.Cli",
+        "version": "4.34.0",
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/Hexalith/Hexalith.Builds",
+          "branch": "refs/heads/main",
+          "commit": "5d03f1db9c38db34ecac7fe6048937478ffb82cc"
+        }
+      }
+    },
+    {
+      "url": "https://api.nuget.org/v3-flatcontainer/hexalith.frontcomposer.contracts/index.json",
+      "observedVersions": [
+        "4.1.0",
+        "4.1.1",
+        "4.2.0",
+        "4.3.0",
+        "4.4.0",
+        "4.5.0",
+        "4.6.0",
+        "4.7.0"
+      ],
+      "fetchedUtc": "2026-10-20T15:11:10.172003+00:00"
+    }
+  ],
+  "selectionMade": false
+}

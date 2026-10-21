@@ -1,0 +1,1 @@
+{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXM002"},"diagnostics":[{"ruleId":"HXM002","phase":"Manifest","category":"Manifest","message":"The manifest contains an unknown or invalid field.","field":"schema","hint":"Remove unknown or invalid manifest fields.","source":null,"location":null,"row":null}]}

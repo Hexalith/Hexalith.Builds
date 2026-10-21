@@ -1,0 +1,83 @@
+{
+  "artifactId": 12151085743,
+  "archiveSha256": "15ba6bbbcfbdb83f3b025ed40897f0712b50c3813e5af1f59402dc71cc81293e",
+  "entry": "3.126.0/preflight/publication-identity.json",
+  "entrySha256": "970dc1a60d947839af919f554717b42011186ce846b806884099eb34ec16b76c",
+  "selectedFields": {
+    "schema": "hexalith.release-publication-preflight.v4",
+    "version": "3.126.0",
+    "repository": "Hexalith/Hexalith.EventStore",
+    "source_sha": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+    "source": {
+      "branch": "main",
+      "ci_run": {
+        "conclusion": "success",
+        "event": "push",
+        "head_branch": "main",
+        "head_sha": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+        "id": 39159607831,
+        "status": "completed"
+      },
+      "ci_workflow": "ci.yml",
+      "live_sha": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288",
+      "ref": "refs/heads/main"
+    },
+    "builds": {
+      "action_sha": "22a578b576a515d2af214fe81859447fffc97981",
+      "files": {
+        "oci_registry_validator.py": "0fff2281ecb9d8a46c48d65d1b0de58b724f2439138da43395004232e5942045",
+        "publication_preflight.py": "f87b48e649092cc68de8f07977bae48c65f0570007f60de42887201988ee0062",
+        "publish-containers.sh": "7e64bb1f744b9e3cb793df5c47813d15db00aaa8bc76e1875088f259574e9622",
+        "smoke-container-platforms.sh": "f11865658a24ecea906da087d8446c7f631dc5a9328e294676534d590ef0e89e",
+        "smoke_container_platforms.py": "7f1161d6f477c77ddf6a1e2f381df03451168565dd8cabc28010ab23db443491"
+      },
+      "workflow_sha": "22a578b576a515d2af214fe81859447fffc97981"
+    },
+    "packages": {
+      "ids": [
+        "Hexalith.EventStore.Contracts",
+        "Hexalith.EventStore.Client",
+        "Hexalith.EventStore.Server",
+        "Hexalith.EventStore.SignalR",
+        "Hexalith.EventStore.Testing",
+        "Hexalith.EventStore.Testing.Integration",
+        "Hexalith.EventStore.Aspire",
+        "Hexalith.EventStore.ServiceDefaults",
+        "Hexalith.EventStore.DomainService",
+        "Hexalith.EventStore.RestApi.Generators",
+        "Hexalith.EventStore.Gateway",
+        "Hexalith.EventStore.Admin.Abstractions",
+        "Hexalith.EventStore.Admin.Cli",
+        "Hexalith.EventStore.Admin.Server"
+      ],
+      "manifest_sha256": "6b0b70b856839d4117bcd969f6a2de0093c477c109cb79f3f2882b1f05effcae",
+      "normalized_ids": [
+        "hexalith.eventstore.contracts",
+        "hexalith.eventstore.client",
+        "hexalith.eventstore.server",
+        "hexalith.eventstore.signalr",
+        "hexalith.eventstore.testing",
+        "hexalith.eventstore.testing.integration",
+        "hexalith.eventstore.aspire",
+        "hexalith.eventstore.servicedefaults",
+        "hexalith.eventstore.domainservice",
+        "hexalith.eventstore.restapi.generators",
+        "hexalith.eventstore.gateway",
+        "hexalith.eventstore.admin.abstractions",
+        "hexalith.eventstore.admin.cli",
+        "hexalith.eventstore.admin.server"
+      ]
+    },
+    "run": {
+      "actor": "jpiquot",
+      "attempt": "1",
+      "event": "workflow_dispatch",
+      "id": "39165347868",
+      "number": "993",
+      "ref": "refs/heads/main",
+      "triggering_actor": "jpiquot",
+      "workflow_ref": "Hexalith/Hexalith.EventStore/.github/workflows/release.yml@refs/heads/main",
+      "workflow_sha": "fcf78d6cafb6c0c9f52dc350a9a09aff54ded288"
+    }
+  }
+}

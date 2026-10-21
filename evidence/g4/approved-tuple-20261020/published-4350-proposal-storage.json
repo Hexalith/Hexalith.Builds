@@ -1,0 +1,125 @@
+{
+  "artifactKind": "proposal workspace initialization/storage correction; no live execution",
+  "recordedUtc": "2026-10-20T15:21:04.900276+00:00",
+  "reason": "no-checkout sparse setup needed explicit index hydration; share only immutable Git object file storage with task-owned frozen clones to avoid exhausting host storage",
+  "repositories": [
+    {
+      "repository": ".",
+      "hardlinkedImmutableObjectFiles": 19,
+      "deduplicatedBytes": 13097161,
+      "statusEntryCount": 12,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.AI.Tools",
+      "hardlinkedImmutableObjectFiles": 3,
+      "deduplicatedBytes": 127578,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.EventStore",
+      "hardlinkedImmutableObjectFiles": 37,
+      "deduplicatedBytes": 591525608,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.Tenants",
+      "hardlinkedImmutableObjectFiles": 3,
+      "deduplicatedBytes": 27768162,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.FrontComposer",
+      "hardlinkedImmutableObjectFiles": 3,
+      "deduplicatedBytes": 3277841584,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.Conversations",
+      "hardlinkedImmutableObjectFiles": 3,
+      "deduplicatedBytes": 22157631,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.Folders",
+      "hardlinkedImmutableObjectFiles": 3,
+      "deduplicatedBytes": 114044602,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.Parties",
+      "hardlinkedImmutableObjectFiles": 3,
+      "deduplicatedBytes": 20152016,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.Commons",
+      "hardlinkedImmutableObjectFiles": 3,
+      "deduplicatedBytes": 6956890,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.Builds",
+      "hardlinkedImmutableObjectFiles": 0,
+      "deduplicatedBytes": 0,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.Memories",
+      "hardlinkedImmutableObjectFiles": 3,
+      "deduplicatedBytes": 29768489,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.Platform",
+      "hardlinkedImmutableObjectFiles": 3,
+      "deduplicatedBytes": 11202755,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    },
+    {
+      "repository": "references/Hexalith.McpCli",
+      "hardlinkedImmutableObjectFiles": 3,
+      "deduplicatedBytes": 4162601,
+      "statusEntryCount": 0,
+      "independentRefsAndIndex": true,
+      "alternates": false,
+      "commonGitDirectory": ".git"
+    }
+  ],
+  "notP1RVerifier": true
+}
