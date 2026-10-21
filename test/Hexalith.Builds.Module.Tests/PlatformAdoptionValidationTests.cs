@@ -417,6 +417,8 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("await dapr.InvokeBindingAsync(data: CreateData(), bindingName: \"literal\", operation: \"create\");", false)]
     [InlineData("var value = business.Load(key: GetKey(), storeName: \"BusinessStore\");", true)]
     [InlineData("await dapr.GetStateAsync<Order>(key: business.Create(storeName: \"BusinessStore\"), storeName: configuredName);", true)]
+    [InlineData("await dapr.PublishEventAsync(@$\"pubsub\", topic, data);", false)]
+    [InlineData("await dapr.PublishEventAsync(@$\"{componentName}\", topic, data);", true)]
     public async Task DaprAuditUsesExecutableSyntaxAsync(string source, bool passes)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
@@ -751,6 +753,28 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("eng/check.sh", "echo dotnet build \"-p:UseNuGetDeps=false\"", true)]
     [InlineData("eng/check.sh", "# dotnet build \"-p:UseNuGetDeps=false\"\necho ready", true)]
     [InlineData("eng/check.ps1", "Write-Host 'dotnet build \"-p:UseNuGetDeps=false\"'", true)]
+    [InlineData("eng/check.sh", "if [[ $UseNuGetDeps == true ]]; then echo package; fi", true)]
+    [InlineData("eng/check.py", "if UseHexalithProjectReferences == False:\n    print(\"package\")", true)]
+    [InlineData("eng/check.sh", "if ready; then dotnet build \"-p:UseNuGetDeps=false\"; fi", false)]
+    [InlineData("eng/check.sh", "for c in Debug; do dotnet build \"-p:UseNuGetDeps=false\"; done", false)]
+    [InlineData("eng/check.sh", "exec dotnet build \"-p:UseNuGetDeps=false\"", false)]
+    [InlineData("eng/check.sh", "dotnet build \"/p:UseNuGetDeps=false\"", false)]
+    [InlineData("eng/check.sh", "dotnet build \"-property:UseNuGetDeps=false\"", false)]
+    [InlineData("eng/check.ps1", "dotnet build '/property:UseHexalithProjectReferences=false'", false)]
+    [InlineData("eng/check.sh", "dotnet build \"-p:Configuration=Release;UseNuGetDeps=false\"", false)]
+    [InlineData("eng/check.sh", "dotnet build \"-property:Configuration=Release\"", true)]
+    [InlineData("eng/check.sh", "dotnet build \"-p:Configuration=Release;Platform=x64\"", true)]
+    [InlineData("eng/check.cs", "var source = Path.Join(repoRoot, \"..\", \"Hexalith.Builds\");", false)]
+    [InlineData("eng/check.cs", "var source = Path.Combine(repoRoot, \"../Hexalith.Builds\");", false)]
+    [InlineData("eng/check.cs", "var source = Path.Combine(repoRoot, @\"..\\..\\Hexalith.Builds\");", false)]
+    [InlineData("eng/check.cs", "var source = Path.Combine(repoRoot, \"../..\", \"Hexalith.Builds\");", false)]
+    [InlineData("eng/check.cs", "var source = Path.Combine(repoRoot, \"../references/Hexalith.Builds\");", false)]
+    [InlineData("eng/check.ps1", "$source = Join-Path $root '../Hexalith.Builds'", false)]
+    [InlineData("eng/check.py", "source = os.path.join(repo_root, '../Hexalith.Builds')", false)]
+    [InlineData("eng/check.cs", "var path = Path.Join(repoRoot, \"..\", \"artifacts\");", true)]
+    [InlineData("eng/check.cs", "var path = Path.Combine(repoRoot, \"../artifacts/Hexalith.Other\");", true)]
+    [InlineData("eng/check.cs", "var path = Path.Combine(repoRoot, \"src/Hexalith.Sample\");", true)]
+    [InlineData("eng/check.cs", "var text = \"Path.Join(root, \\\"../Hexalith.Builds\\\")\";", true)]
     public async Task DependencyProbesRequireDependencyTargetsAsync(string path, string source, bool passes)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
@@ -910,6 +934,8 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("<Import Project=\"$(HexalithTenantsBasePath)/Tenants.props\" Condition=\"Exists('$(HexalithTenantsBasePath)/Tenants.props')\" />", false)]
     [InlineData("<PackageReference Include=\"Hexalith.EventStore.Contracts\" Condition=\"!Exists('use-source.marker')\" />", false)]
     [InlineData("<ProjectReference Include=\"$(HexalithEventStoreRoot)/Contracts.csproj\" Condition=\"Exists('use-source.marker')\" />", false)]
+    [InlineData("<ProjectReference Include=\"  ../../../references/Hexalith.EventStore/src/Contracts.csproj  \" />", false)]
+    [InlineData("<Import Project=\"\n    ../../../../Hexalith.Other/Hexalith.Other.props\n  \" />", false)]
     public async Task BuildReferencesDistinguishLocalAndMappedDependenciesAsync(string body, bool passes)
     {
         ArgumentNullException.ThrowIfNull(body);
@@ -1012,6 +1038,9 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("Directory.Build.props", "<BaseOutputPath>$(MSBuildThisFileDirectory)../artifacts/</BaseOutputPath>", true)]
     [InlineData("Directory.Build.props", "<BaseIntermediateOutputPath>../obj/</BaseIntermediateOutputPath>", true)]
     [InlineData("Directory.Build.props", "<ArtifactsPath>$(MSBuildThisFileDirectory)../../artifacts/</ArtifactsPath>", true)]
+    [InlineData("Directory.Packages.props", "<BuildPackageProps>\n    $(MSBuildThisFileDirectory)../Hexalith.Builds/Props/Directory.Packages.props\n  </BuildPackageProps>", false)]
+    [InlineData("Directory.Packages.props", "<BuildPackageProps>  ../Hexalith.Builds/Props/Directory.Packages.props  </BuildPackageProps>", false)]
+    [InlineData("Directory.Packages.props", "<BuildPackageProps>\n    $(MSBuildThisFileDirectory)eng/Hexalith.Sample.props\n  </BuildPackageProps>", true)]
     public async Task CustomBuildPropertiesCannotSelectDependencyPathsAsync(string path, string body, bool passes)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
