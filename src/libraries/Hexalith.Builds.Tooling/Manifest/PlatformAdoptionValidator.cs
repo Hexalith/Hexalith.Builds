@@ -119,7 +119,9 @@ public static class PlatformAdoptionValidator
         }).ConfigureAwait(false);
         await CheckAsync("tool-pin", ".config/dotnet-tools.json", async () =>
         {
-            string platform = Path.Combine(root, "references/Hexalith.Platform");
+            string? platformReference = references.FirstOrDefault(reference => string.Equals(Path.GetFileName(reference), "Hexalith.Platform", StringComparison.OrdinalIgnoreCase));
+            Require(platformReference is not null, "Declare the direct Platform reference before checking its accepted tool pin.");
+            string platform = Path.Combine(root, platformReference!);
             string localPin = ReadPin(root);
             string platformPin = ReadPin(platform);
             Require(localPin == platformPin, "The tool pin must exactly match the direct Platform checkout's accepted tool pin.");
