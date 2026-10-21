@@ -67,7 +67,7 @@ internal static class PlatformAdoptionSourceAudit
                         string commentsMasked = MaskNonExecutable(content, maskStrings: false, hashComments: extension != ".CS");
                         const string dependencyTarget = @"references[/\\]Hexalith\.|(?:\.\.[/\\])+Hexalith\.|UseNuGetDeps|UseHexalithProjectReferences|Hexalith\w*(?:FromSource|Root)";
                         const string probe = @"File\s*\.\s*Exists|Directory\s*\.\s*Exists|Test-Path|os\.path\.(?:exists|isdir)|Path\s*\([^\r\n]*\)\s*\.\s*(?:exists|is_dir|is_file)\s*\(|\[\s*-[def]\s";
-                        bool discovery = Match(commentsMasked, @"(?:" + probe + @")[^\r\n]*(?:" + dependencyTarget + @")|(?:" + dependencyTarget + @")[^\r\n]*(?:" + probe + @")");
+                        bool discovery = Match(commentsMasked, "(?:" + probe + @")[^\r\n]*(?:" + dependencyTarget + ")|(?:" + dependencyTarget + @")[^\r\n]*(?:" + probe + ")");
                         bool helper = Match(commentsMasked, @"(?:Resolve|Find|Get)[-_]?(?:Hexalith|Sibling|Repository|Source)\w*(?:Root|Path)|(?:sibling|nested|package)[-_]?(?:fallback|root|checkout)")
                             && Match(commentsMasked, dependencyTarget);
                         if (helper || discovery || Match(commentsMasked, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]"))
@@ -168,15 +168,8 @@ internal static class PlatformAdoptionSourceAudit
         {
             int start = index;
             bool mask = true;
-            if (hashComments && content[index] == '#')
-            {
-                index = content.IndexOf('\n', index);
-                if (index < 0)
-                {
-                    index = content.Length;
-                }
-            }
-            else if (content[index] == '/' && index + 1 < content.Length && content[index + 1] == '/')
+            if ((hashComments && content[index] == '#')
+                || (content[index] == '/' && index + 1 < content.Length && content[index + 1] == '/'))
             {
                 index = content.IndexOf('\n', index);
                 if (index < 0)
