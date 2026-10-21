@@ -36,8 +36,8 @@ internal static class PlatformHostingInventory
             PlatformAdoptionValidator.Require(actualKind is not null && actualKind == kind && tracked.Contains(projectPath, StringComparer.Ordinal), "Inventory path must name a tracked AppHost, Aspire or ServiceDefaults project with its matching kind: " + projectPath + ".");
             PlatformAdoptionValidator.Require(PlatformAdoptionValidator.IsLocalFile(root, projectPath), "A frozen hosting project must exist physically inside the active workspace: " + projectPath + ".");
             PlatformAdoptionValidator.Require(recorded.Add(projectPath), "Remove duplicate hosting record: " + projectPath + ".");
-            _ = Text(project, "owner");
-            PlatformAdoptionValidator.Require(project.TryGetProperty("consumers", out JsonElement consumers) && consumers.ValueKind == JsonValueKind.Array && consumers.GetArrayLength() > 0 && consumers.EnumerateArray().All(value => value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString())), "List owning consumers (or explicitly 'none') for " + projectPath + ".");
+            PlatformAdoptionValidator.Require(!Pending(Text(project, "owner")), "Replace the pending hosting owner for " + projectPath + ".");
+            PlatformAdoptionValidator.Require(project.TryGetProperty("consumers", out JsonElement consumers) && consumers.ValueKind == JsonValueKind.Array && consumers.GetArrayLength() > 0 && consumers.EnumerateArray().All(value => value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()) && !Pending(value.GetString()!)), "List identified owning consumers (or explicitly 'none') for " + projectPath + ".");
             PlatformAdoptionValidator.Require(Text(project, "state") == "frozen", "Hosting projects must remain frozen: " + projectPath + ".");
             _ = Text(project, "replacementPlan");
             _ = Text(project, "retirementPlan");
@@ -50,7 +50,7 @@ internal static class PlatformHostingInventory
 
             PlatformAdoptionValidator.Require(projectPath.Contains('/', StringComparison.Ordinal), "A frozen project must have its own directory.");
             string directory = projectPath[..projectPath.LastIndexOf('/')];
-            PlatformAdoptionValidator.Require(directory.Contains('/', StringComparison.Ordinal) && directory is not "src" and not "test" and not "tests", "Only an exact hosting-project directory can be frozen; never root build files.");
+            PlatformAdoptionValidator.Require(directory is not "src" and not "test" and not "tests", "Only an exact hosting-project directory can be frozen; never root build files.");
             PlatformAdoptionValidator.Require(!tracked.Any(file => file.StartsWith(directory + "/", StringComparison.Ordinal) && file.EndsWith(".csproj", StringComparison.Ordinal) && file != projectPath), "A frozen directory cannot contain another project: " + directory + ".");
             _ = frozen.Add(directory);
         }
@@ -68,6 +68,8 @@ internal static class PlatformHostingInventory
         PlatformAdoptionValidator.Require(parent.ValueKind == JsonValueKind.Object && parent.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString()), "Supply a nonblank hosting inventory field: " + name + ".");
         return parent.GetProperty(name).GetString()!;
     }
+
+    private static bool Pending(string value) => value.TrimStart().StartsWith("pending", StringComparison.OrdinalIgnoreCase);
 
     private static string? Kind(string path) => _kinds.FirstOrDefault(kind => path.EndsWith("." + kind + ".csproj", StringComparison.OrdinalIgnoreCase));
 }

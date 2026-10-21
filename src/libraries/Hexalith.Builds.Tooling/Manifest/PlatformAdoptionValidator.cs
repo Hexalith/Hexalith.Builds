@@ -34,7 +34,7 @@ public static class PlatformAdoptionValidator
         List<PlatformAdoptionRow> rows = [];
         List<ToolDiagnostic> diagnostics = [];
         string[] paths = [.. manifestPaths];
-        string root = workingDirectory ?? ".";
+        string root = Path.GetFullPath(workingDirectory ?? ".");
         string[] tracked = [];
         IReadOnlyList<string> references = [];
         HashSet<string> requiredReferences = new(StringComparer.Ordinal);
@@ -45,14 +45,14 @@ public static class PlatformAdoptionValidator
             CompositionProcessResult result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "rev-parse", "--show-toplevel").ConfigureAwait(false);
             Require(Succeeded(result), "Run adoption validation in the current module Git workspace.");
             root = result.Output.TrimEnd('\r', '\n');
-            result = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-files", "-z").ConfigureAwait(false);
+            result = await GitWorkspaceProcess.RunAsync(root, 64 * 1_048_576, cancellationToken, "ls-files", "-z").ConfigureAwait(false);
             Require(Succeeded(result), "Cannot enumerate tracked module-owned files.");
             tracked = [.. result.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries)];
         }).ConfigureAwait(false);
         await CheckAsync("declaration", string.Join(", ", paths.Select(path => Path.GetFileName(path))), () =>
         {
             Require(paths.Length > 0, "Supply at least one module declaration.");
-            string[] resolvedPaths = [.. paths.Select(path => Path.GetFullPath(path, workingDirectory ?? Directory.GetCurrentDirectory()))];
+            string[] resolvedPaths = [.. paths.Select(path => Path.GetFullPath(path, Path.GetFullPath(workingDirectory ?? ".")))];
             foreach (string path in resolvedPaths)
             {
                 Require(IsLocalFile(root, path), "Every manifest must be an existing file physically inside the active workspace.");
@@ -171,7 +171,14 @@ public static class PlatformAdoptionValidator
             {
                 foreach (ToolDiagnostic diagnostic in exception.Diagnostics)
                 {
-                    rows.Add(new PlatformAdoptionRow(requirement, false, diagnostic.Source ?? diagnostic.Field ?? file, diagnostic.Message));
+                    string source = diagnostic.Source ?? diagnostic.Field ?? file;
+                    if (Path.IsPathFullyQualified(source))
+                    {
+                        source = Path.GetRelativePath(root, source).Replace('\\', '/');
+                    }
+
+                    string reason = string.IsNullOrWhiteSpace(diagnostic.Hint) ? diagnostic.Message : diagnostic.Message + " " + diagnostic.Hint;
+                    rows.Add(new PlatformAdoptionRow(requirement, false, source, reason));
                 }
             }
             catch (Exception exception) when (InspectionFailure(exception))

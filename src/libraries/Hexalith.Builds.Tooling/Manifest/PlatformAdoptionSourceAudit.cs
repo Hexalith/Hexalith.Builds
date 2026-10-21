@@ -31,7 +31,10 @@ internal static class PlatformAdoptionSourceAudit
         {
             cancellationToken.ThrowIfCancellationRequested();
             string extension = Path.GetExtension(path).ToUpperInvariant();
-            if (!new[] { ".CS", ".CSPROJ", ".PROPS", ".TARGETS", ".PS1", ".SH", ".PY", ".JSON", ".YAML", ".YML" }.Contains(extension, StringComparer.Ordinal)
+            bool configuration = extension is ".JSON" or ".YAML" or ".YML";
+            bool supported = new[] { ".CS", ".CSPROJ", ".PROPS", ".TARGETS", ".PS1", ".SH", ".PY" }.Contains(extension, StringComparer.Ordinal)
+                || (requirement == "dapr-subscriptions" && configuration && Path.GetFileName(path).StartsWith("appsettings", StringComparison.OrdinalIgnoreCase));
+            if (!supported
                 || (requirement == "dapr-subscriptions" && frozen.Any(directory => path.StartsWith(directory + "/", StringComparison.Ordinal))))
             {
                 continue;
@@ -57,13 +60,17 @@ internal static class PlatformAdoptionSourceAudit
                 {
                     if (extension is ".CSPROJ" or ".PROPS" or ".TARGETS")
                     {
-                        InspectBuild(content, path, rows);
+                        InspectBuild(root, content, path, rows);
                     }
                     else if (extension is ".CS" or ".PS1" or ".SH" or ".PY")
                     {
-                        bool helper = Match(content, @"(?:Resolve|Find|Get)[-_]?(?:Hexalith|Sibling|Repository|Source)\w*(?:Root|Path)|(?:sibling|nested|package)[-_]?(?:fallback|root|checkout)");
-                        bool discovery = Match(content, @"(?:File\s*\.\s*Exists|Directory\s*\.\s*Exists|Test-Path|os\.path\.(?:exists|isdir)|Path\s*\([^\r\n]*\)\s*\.\s*(?:exists|is_dir|is_file)\s*\(|\[\s*-[def]\s)[^\r\n]*(?:Hexalith\.|UseNuGetDeps|UseHexalithProjectReferences|FromSource|Root)|(?:UseNuGetDeps|UseHexalithProjectReferences|FromSource|\w+Root)[^\r\n]*(?:Exists|Test-Path|exists|isdir)");
-                        if (helper || discovery || Match(content, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]"))
+                        string commentsMasked = MaskNonExecutable(content, maskStrings: false, hashComments: extension != ".CS");
+                        const string dependencyTarget = @"references[/\\]Hexalith\.|(?:\.\.[/\\])+Hexalith\.|UseNuGetDeps|UseHexalithProjectReferences|Hexalith\w*(?:FromSource|Root)";
+                        const string probe = @"File\s*\.\s*Exists|Directory\s*\.\s*Exists|Test-Path|os\.path\.(?:exists|isdir)|Path\s*\([^\r\n]*\)\s*\.\s*(?:exists|is_dir|is_file)\s*\(|\[\s*-[def]\s";
+                        bool discovery = Match(commentsMasked, @"(?:" + probe + @")[^\r\n]*(?:" + dependencyTarget + @")|(?:" + dependencyTarget + @")[^\r\n]*(?:" + probe + @")");
+                        bool helper = Match(commentsMasked, @"(?:Resolve|Find|Get)[-_]?(?:Hexalith|Sibling|Repository|Source)\w*(?:Root|Path)|(?:sibling|nested|package)[-_]?(?:fallback|root|checkout)")
+                            && Match(commentsMasked, dependencyTarget);
+                        if (helper || discovery || Match(commentsMasked, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]"))
                         {
                             rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping."));
                         }
@@ -71,13 +78,13 @@ internal static class PlatformAdoptionSourceAudit
                 }
                 else if (extension == ".CS")
                 {
-                    string executable = MaskCSharpNonExecutable(content);
-                    if (MatchCode(content, executable, @"\b(?:WithTopic|MapSubscribeHandler|MapDaprSubscribeHandler|SubscribeTopic|AddTopicEventHandler)\s*\(|\[\s*(?:global\s*::\s*)?(?:[A-Za-z_]\w*\s*\.\s*)*Topic(?:Attribute)?\s*\(|\bMap(?:Get|Post|Methods)\s*\(\s*""/dapr/subscribe"""))
+                    string executable = MaskNonExecutable(content);
+                    if (MatchCode(content, executable, @"\b(?:WithTopic|MapSubscribeHandler|MapDaprSubscribeHandler|SubscribeTopic|AddTopicEventHandler)\s*\(|(?:\[\s*|,\s*)(?:global\s*::\s*)?(?:[A-Za-z_]\w*\s*\.\s*)*Topic(?:Attribute)?\s*\(|\b(?:Map(?:Get|Post|Methods)|Http(?:Get|Post))\s*\(\s*""/?dapr/subscribe"""))
                     {
                         rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Programmatic subscription discovery is forbidden; declare delivery routes and dead-letter policy in the module declaration."));
                     }
 
-                    if (MatchCode(content, executable, @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|SaveStateAsync|DeleteStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<[^>\r\n]+>)?\s*\(\s*""[^""]+""|\b(?:StoreName|StateStoreName|PubSubName|PubsubName|SecretStoreName|ComponentName|storeName|pubsubName)\s*[:=]\s*""[^""]+"""))
+                    if (MatchCode(content, executable, @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|SaveStateAsync|TrySaveStateAsync|QueryStateAsync|DeleteStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|PublishBulkEventAsync|InvokeBindingAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<[^>\r\n]+>)?\s*\(\s*""[^""]+""|\b(?:StoreName|StateStoreName|PubSubName|PubsubName|SecretStoreName|ComponentName|storeName|pubsubName)\s*[:=]\s*""[^""]+"""))
                     {
                         rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component name; obtain the name from the declared configuration key."));
                     }
@@ -96,7 +103,7 @@ internal static class PlatformAdoptionSourceAudit
         return rows;
     }
 
-    private static void InspectBuild(string content, string path, List<PlatformAdoptionRow> rows)
+    private static void InspectBuild(string root, string content, string path, List<PlatformAdoptionRow> rows)
     {
         XDocument document = XDocument.Parse(content);
         foreach (XElement element in document.Descendants())
@@ -105,6 +112,14 @@ internal static class PlatformAdoptionSourceAudit
             string condition = string.Join(" ", element.AncestorsAndSelf().Attributes("Condition").Select(attribute => attribute.Value));
             string value = element.HasElements ? string.Empty : element.Value;
             string include = element.Attribute("Include")?.Value ?? element.Attribute("Project")?.Value ?? string.Empty;
+            if (name.Equals("HexalithBuildsRoot", StringComparison.OrdinalIgnoreCase)
+                && Regex.Replace(condition, @"\s+", string.Empty, RegexOptions.CultureInvariant, _regexTimeout).Equals("'$(HexalithBuildsRoot)'==''", StringComparison.OrdinalIgnoreCase)
+                && Regex.Replace(value.Replace('\\', '/'), @"\s+", string.Empty, RegexOptions.CultureInvariant, _regexTimeout) == "$(MSBuildThisFileDirectory)references/Hexalith.Builds")
+            {
+                continue;
+            }
+
+            bool projectReference = name.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase);
             bool mode = name.Equals("UseNuGetDeps", StringComparison.OrdinalIgnoreCase) || name.Equals("UseHexalithProjectReferences", StringComparison.OrdinalIgnoreCase);
             bool generated = name.StartsWith("Hexalith", StringComparison.OrdinalIgnoreCase)
                 && (name.EndsWith("Root", StringComparison.OrdinalIgnoreCase) || name.EndsWith("FromSource", StringComparison.OrdinalIgnoreCase));
@@ -112,7 +127,8 @@ internal static class PlatformAdoptionSourceAudit
             bool selector = generated || mode || name.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase)
                 || name.Equals("PackageReference", StringComparison.OrdinalIgnoreCase) || name.Equals("Import", StringComparison.OrdinalIgnoreCase);
             if ((dependency && selector && Match(condition, @"\bExists\s*\("))
-                || (dependency && Match(value + " " + include, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]")))
+                || (projectReference && EscapesModule(root, path, include))
+                || (!projectReference && dependency && Match(value + " " + include, @"(?:\.\.[/\\])+(?:references[/\\])?Hexalith\.|references[/\\]Hexalith\.[^\s""']+[/\\]references[/\\]")))
             {
                 rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."));
                 return;
@@ -126,18 +142,41 @@ internal static class PlatformAdoptionSourceAudit
         }
     }
 
+    private static bool EscapesModule(string root, string path, string include)
+    {
+        string local = include.Replace('\\', '/').Replace("$(MSBuildThisFileDirectory)", string.Empty, StringComparison.OrdinalIgnoreCase);
+        if (local.Length == 0 || local.Contains("$(", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        string directory = Path.GetDirectoryName(Path.Combine(root, path))!;
+        string relative = Path.GetRelativePath(root, Path.GetFullPath(local, directory)).Replace('\\', '/');
+        return relative == ".." || relative.StartsWith("../", StringComparison.Ordinal)
+            || Match(relative, @"(?:^|/)references/Hexalith\.[^/]+/references/");
+    }
+
     private static bool MatchCode(string content, string executable, string pattern) =>
         Regex.Matches(content, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout)
             .Any(match => !char.IsWhiteSpace(executable[match.Index]));
 
-    private static string MaskCSharpNonExecutable(string content)
+    private static string MaskNonExecutable(string content, bool maskStrings = true, bool hashComments = false)
     {
         char[] executable = content.ToCharArray();
         int index = 0;
         while (index < content.Length)
         {
             int start = index;
-            if (content[index] == '/' && index + 1 < content.Length && content[index + 1] == '/')
+            bool mask = true;
+            if (hashComments && content[index] == '#')
+            {
+                index = content.IndexOf('\n', index);
+                if (index < 0)
+                {
+                    index = content.Length;
+                }
+            }
+            else if (content[index] == '/' && index + 1 < content.Length && content[index + 1] == '/')
             {
                 index = content.IndexOf('\n', index);
                 if (index < 0)
@@ -152,6 +191,7 @@ internal static class PlatformAdoptionSourceAudit
             }
             else if (content[index] is '"' or '\'')
             {
+                mask = maskStrings;
                 char quote = content[index++];
                 bool verbatim = start > 0 && content[start - 1] == '@';
                 int quotes = 1;
@@ -195,7 +235,7 @@ internal static class PlatformAdoptionSourceAudit
                 continue;
             }
 
-            for (int position = start; position < index; position++)
+            for (int position = start; mask && position < index; position++)
             {
                 if (executable[position] is not '\r' and not '\n')
                 {
@@ -211,7 +251,7 @@ internal static class PlatformAdoptionSourceAudit
     {
         if (extension == ".JSON")
         {
-            using JsonDocument document = JsonDocument.Parse(content);
+            using JsonDocument document = JsonDocument.Parse(content, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
             return InspectJson(document.RootElement, string.Empty);
         }
 

@@ -801,20 +801,33 @@ public sealed class PlatformManifestCommandTests
             TimeSpan.FromSeconds(30),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
         Hexalith.Builds.Tooling.Runtime.CompositionProcessResult passed = await InvokeAsync().ConfigureAwait(true);
+        passed.TimedOut.ShouldBeFalse(passed.Output + passed.ErrorOutput);
         passed.ExitCode.ShouldBe(0, passed.Output + passed.ErrorOutput);
         passed.Output.ShouldContain("SM-2 remains separately unverified");
         if (format == "json")
         {
             using JsonDocument parsed = JsonDocument.Parse(passed.Output);
-            parsed.RootElement.GetProperty("adoption").GetArrayLength().ShouldBe(9);
+            JsonElement root = parsed.RootElement;
+            root.GetProperty("adoptionScope").GetString().ShouldBe(PlatformAdoptionValidator.Scope);
+            JsonElement[] rows = [.. root.GetProperty("adoption").EnumerateArray()];
+            rows.Length.ShouldBe(9);
+            foreach (JsonElement row in rows)
+            {
+                row.GetProperty("requirement").GetString().ShouldNotBeNullOrWhiteSpace();
+                row.GetProperty("passed").GetBoolean().ShouldBeTrue();
+                row.GetProperty("file").GetString().ShouldNotBeNullOrWhiteSpace();
+                row.GetProperty("reason").GetString().ShouldNotBeNullOrWhiteSpace();
+            }
         }
         else
         {
             passed.Output.ShouldContain("PASS tool-pin file=.config/dotnet-tools.json");
+            passed.Output.TrimEnd().ShouldEndWith(PlatformAdoptionValidator.Scope);
         }
 
         File.Delete(Path.Combine(workspace.Root, "module/hosting-inventory.json"));
         Hexalith.Builds.Tooling.Runtime.CompositionProcessResult failed = await InvokeAsync().ConfigureAwait(true);
+        failed.TimedOut.ShouldBeFalse(failed.Output + failed.ErrorOutput);
         failed.ExitCode.ShouldBe(1, failed.Output + failed.ErrorOutput);
         failed.Output.ShouldContain("hosting-inventory");
         if (format == "human")

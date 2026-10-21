@@ -54,6 +54,7 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("declared-dependency", "references")]
     [InlineData("missing-gitlink", "gitlinks")]
     [InlineData("stale-gitlink", "gitlinks")]
+    [InlineData("uninitialized-reference", "gitlinks")]
     [InlineData("missing-pin", "tool-pin")]
     [InlineData("malformed-pin", "tool-pin")]
     [InlineData("wrong-pin", "tool-pin")]
@@ -79,6 +80,9 @@ public sealed class PlatformAdoptionValidationTests
             case "missing-gitlink": _ = await WorkspaceGitFixture.RunGitAsync(workspace.Root, "update-index", "--force-remove", "references/Hexalith.Tenants").ConfigureAwait(true); break;
             case "stale-gitlink":
                 _ = await WorkspaceGitFixture.RunGitAsync(Path.Combine(workspace.Root, "references/Hexalith.Tenants"), "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "--allow-empty", "-m", "fixture stale checkout").ConfigureAwait(true);
+                break;
+            case "uninitialized-reference":
+                _ = await WorkspaceGitFixture.RunGitAsync(workspace.Root, "submodule", "deinit", "-f", "--", "references/Hexalith.Tenants").ConfigureAwait(true);
                 break;
             case "missing-pin": File.Delete(Path.Combine(workspace.Root, ".config/dotnet-tools.json")); break;
             case "malformed-pin": workspace.Write(".config/dotnet-tools.json", "[]"); break;
@@ -123,9 +127,10 @@ public sealed class PlatformAdoptionValidationTests
         using PlatformManifestTestWorkspace outside = new();
         PlatformAdoptionValidationResult external = await PlatformAdoptionValidator.ValidateAsync([outside.Save()], workspace.Root, TestContext.Current.CancellationToken).ConfigureAwait(true);
         external.Rows.ShouldContain(row => row.Requirement == "declaration" && !row.Passed && row.Reason.Contains("inside", StringComparison.Ordinal));
-        PlatformAdoptionValidationResult noGit = await PlatformAdoptionValidator.ValidateAsync([outside.Save()], outside.Root, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        PlatformAdoptionValidationResult noGit = await PlatformAdoptionValidator.ValidateAsync([outside.Save()], Path.GetRelativePath(Directory.GetCurrentDirectory(), outside.Root), TestContext.Current.CancellationToken).ConfigureAwait(true);
         noGit.Rows.ShouldContain(row => row.Requirement == "workspace" && !row.Passed);
         noGit.Rows.Select(row => row.Requirement).Distinct().Count().ShouldBe(9);
+        noGit.Rows.ShouldNotContain(row => row.Reason.Contains("basePath", StringComparison.Ordinal));
     }
 
     /// <summary>Verifies nested initialization is rejected without initialization or checkout writes.</summary>
@@ -138,6 +143,10 @@ public sealed class PlatformAdoptionValidationTests
         _ = await WorkspaceGitFixture.RunGitAsync(direct, "-c", "protocol.file.allow=always", "submodule", "update", "--init", "--", "nested/Other").ConfigureAwait(true);
         PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
         report.Rows.ShouldContain(row => row.Requirement == "nested-references" && !row.Passed && row.Reason.Contains("nested", StringComparison.OrdinalIgnoreCase));
+        PlatformAdoptionRow nested = report.Rows.Single(row => row.Requirement == "nested-references" && !row.Passed);
+        Path.IsPathFullyQualified(nested.File).ShouldBeFalse();
+        nested.File.ShouldContain("references/Hexalith.Dep");
+        nested.Reason.ShouldContain("submodule deinit");
         File.Exists(Path.Combine(direct, "nested/Other/.git")).ShouldBeTrue();
     }
 
@@ -252,6 +261,10 @@ public sealed class PlatformAdoptionValidationTests
     [Theory]
     [InlineData("var path = Path.Combine(environment.ContentRootPath, \"data\");")]
     [InlineData("var path = Path.Combine(\"Hexalith.Sample\", \"data\");")]
+    [InlineData("bool exists = File.Exists(Path.Combine(repoRoot, \"Hexalith.Tenants.sln\"));")]
+    [InlineData("var root = FindRepositoryRoot(); var source = GetSourcePath(); var packageRoot = GetPackageDirectory();")]
+    [InlineData("// if (File.Exists(\"../Hexalith.EventStore\")) UseNuGetDeps = true;\nclass Sample {}")]
+    [InlineData("/* return FindRepositoryRoot(\"references/Hexalith.EventStore\"); */ class Sample {}")]
     public async Task OrdinaryPathAccessPassesAsync(string source)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
@@ -277,6 +290,12 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("[global::Dapr.Topic(\"pubsub\", \"events\")] class Sample {}", false)]
     [InlineData("app.MapGet(\"/dapr/subscribe\", () => result);", false)]
     [InlineData("await dapr.PublishEventAsync(\"literal\", topic, value);", false)]
+    [InlineData("[HttpPost(\"orders\"), Topic(\"pubsub\", \"orders\")] public void Receive() {}", false)]
+    [InlineData("[HttpGet(\"dapr/subscribe\")] public object Subscribe() => topics;", false)]
+    [InlineData("await dapr.TrySaveStateAsync(\"literal\", key, value, etag);", false)]
+    [InlineData("await dapr.QueryStateAsync<State>(\"literal\", query);", false)]
+    [InlineData("await dapr.PublishBulkEventAsync(\"literal\", topic, values);", false)]
+    [InlineData("await dapr.InvokeBindingAsync(\"literal\", operation, value);", false)]
     public async Task DaprAuditUsesExecutableSyntaxAsync(string source, bool passes)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
@@ -399,7 +418,17 @@ public sealed class PlatformAdoptionValidationTests
         {
             await ToolDiagnosticFormatter.WriteAsync(json, result, ToolOutputFormat.Json, TestContext.Current.CancellationToken).ConfigureAwait(true);
             using JsonDocument parsed = JsonDocument.Parse(json.ToString());
-            parsed.RootElement.GetProperty("adoption").GetArrayLength().ShouldBe(9);
+            JsonElement output = parsed.RootElement;
+            output.GetProperty("adoptionScope").GetString().ShouldBe(PlatformAdoptionValidator.Scope);
+            JsonElement[] rendered = [.. output.GetProperty("adoption").EnumerateArray()];
+            rendered.Length.ShouldBe(report.Rows.Count);
+            for (int index = 0; index < rendered.Length; index++)
+            {
+                rendered[index].GetProperty("requirement").GetString().ShouldBe(report.Rows[index].Requirement);
+                rendered[index].GetProperty("passed").GetBoolean().ShouldBe(report.Rows[index].Passed);
+                rendered[index].GetProperty("file").GetString().ShouldBe(report.Rows[index].File);
+                rendered[index].GetProperty("reason").GetString().ShouldBe(report.Rows[index].Reason);
+            }
         }
 
         StringWriter legacy = new();
@@ -409,4 +438,177 @@ public sealed class PlatformAdoptionValidationTests
             legacy.ToString().ShouldNotContain("adoption");
         }
     }
+
+    /// <summary>Verifies tracked-file inventories larger than the ordinary process output bound pass.</summary>
+    /// <returns>The assertion task.</returns>
+    [Fact]
+    public async Task LargeTrackedPathInventoryPassesAsync()
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        for (int index = 0; index < 800; index++)
+        {
+            workspace.Write("evidence/" + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + new string('x', 90) + ".txt", "evidence");
+        }
+
+        await workspace.TrackAsync().ConfigureAwait(true);
+        string paths = (await WorkspaceGitFixture.RunGitAsync(workspace.Root, "ls-files", "-z").ConfigureAwait(true)).Output;
+        paths.Length.ShouldBeGreaterThan(65_536);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies only supported application configuration receives JSON/YAML inspection and size limits.</summary>
+    /// <param name="path">The tracked input path.</param>
+    /// <param name="passes">Whether bounded static inspection accepts the input.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("evidence/report.json", true)]
+    [InlineData("api/openapi.yaml", true)]
+    [InlineData("appsettings.Development.json", false)]
+    [InlineData("appsettings.yaml", false)]
+    public async Task ConfigurationFilteringPrecedesSizeBoundAsync(string path, bool passes)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write(path, new string(' ', 1_048_577));
+        await workspace.TrackAsync().ConfigureAwait(true);
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        report.Rows.Single(row => row.Requirement == "dependency-selectors").Passed.ShouldBeTrue();
+        report.Rows.Single(row => row.Requirement == "dapr-subscriptions").Passed.ShouldBe(passes);
+    }
+
+    /// <summary>Verifies application JSON accepts comments and trailing commas while auditing physical defaults.</summary>
+    /// <param name="value">The configured component name.</param>
+    /// <param name="passes">Whether the name is injected.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("${PUBSUB}", true)]
+    [InlineData("literal", false)]
+    public async Task JsonConfigurationCommentsAndTrailingCommasAreSupportedAsync(string value, bool passes)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write("appsettings.Development.json", "{ /* configuration comment */ \"PubSubName\":\"" + value + "\", }");
+        workspace.Write(".vscode/launch.json", "{ // editor configuration is outside the audit\n \"version\": \"0.2.0\", }");
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.Single(row => row.Requirement == "dapr-subscriptions").Passed.ShouldBe(passes);
+    }
+
+    /// <summary>Verifies only the inert direct Builds bootstrap is permitted.</summary>
+    /// <param name="body">The MSBuild property body.</param>
+    /// <param name="passes">Whether the exact bootstrap is used.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("<HexalithBuildsRoot Condition=\" '$(HexalithBuildsRoot)' == '' \"> $(MSBuildThisFileDirectory)references/Hexalith.Builds </HexalithBuildsRoot>", true)]
+    [InlineData("<HexalithBuildsRoot Condition=\"'$(HexalithBuildsRoot)'==''\">$(MSBuildThisFileDirectory)references\\Hexalith.Builds</HexalithBuildsRoot>", true)]
+    [InlineData("<HexalithBuildsRoot>$(MSBuildThisFileDirectory)references/Hexalith.Builds</HexalithBuildsRoot>", false)]
+    [InlineData("<HexalithBuildsRoot Condition=\"'$(HexalithBuildsRoot)'==''\">$(MSBuildThisFileDirectory)../Hexalith.Builds</HexalithBuildsRoot>", false)]
+    [InlineData("<HexalithBuildsRoot Condition=\"'$(HexalithBuildsRoot)'=='' and Exists('local')\">$(MSBuildThisFileDirectory)references/Hexalith.Builds</HexalithBuildsRoot>", false)]
+    [InlineData("<HexalithEventStoreRoot Condition=\"'$(HexalithEventStoreRoot)'==''\">$(MSBuildThisFileDirectory)references/Hexalith.EventStore</HexalithEventStoreRoot>", false)]
+    [InlineData("<HexalithBuildsFromSource Condition=\"'$(HexalithBuildsFromSource)'==''\">true</HexalithBuildsFromSource>", false)]
+    [InlineData("<UseNuGetDeps Condition=\"'$(UseNuGetDeps)'==''\">true</UseNuGetDeps>", false)]
+    public async Task ExactBuildsBootstrapDefaultIsPermittedAsync(string body, bool passes)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write("Directory.Build.props", "<Project><PropertyGroup>" + body + "</PropertyGroup></Project>");
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.Single(row => row.Requirement == "dependency-selectors").Passed.ShouldBe(passes);
+    }
+
+    /// <summary>Verifies relative project references are resolved against the owning project directory.</summary>
+    /// <param name="include">The project reference path.</param>
+    /// <param name="passes">Whether it stays inside the active module.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("../Hexalith.Sample.Contracts/Hexalith.Sample.Contracts.csproj", true)]
+    [InlineData("..\\Hexalith.Sample.Contracts\\Hexalith.Sample.Contracts.csproj", true)]
+    [InlineData("../../../../Hexalith.Other/src/Other.csproj", false)]
+    [InlineData("../../../references/Hexalith.Other/references/Hexalith.Nested/Other.csproj", false)]
+    public async Task IntraRepositoryProjectReferencesPassAsync(string include, bool passes)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write("src/libraries/Hexalith.Sample/Hexalith.Sample.csproj", "<Project><ItemGroup><ProjectReference Include=\"" + include + "\" /></ItemGroup></Project>");
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.Single(row => row.Requirement == "dependency-selectors").Passed.ShouldBe(passes);
+    }
+
+    /// <summary>Verifies script comments and ordinary repository probes do not select dependencies.</summary>
+    /// <param name="path">The script path.</param>
+    /// <param name="source">The script contents.</param>
+    /// <param name="passes">Whether it avoids dependency selection.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("eng/check.ps1", "# Test-Path '../Hexalith.Other'\nTest-Path $repoRoot", true)]
+    [InlineData("eng/check.py", "# os.path.exists('../Hexalith.Other')\nos.path.exists(repoRoot)", true)]
+    [InlineData("eng/check.sh", "# if [ -d ../Hexalith.Other ]; then UseNuGetDeps=false; fi\ntest -d data", true)]
+    [InlineData("eng/check.cs", "bool exists = File.Exists(Path.Combine(repoRoot, \"references/Hexalith.Other\"));", false)]
+    [InlineData("eng/check.py", "os.path.exists('../Hexalith.Other')", false)]
+    [InlineData("eng/check.ps1", "Test-Path $HexalithOtherFromSource", false)]
+    public async Task DependencyProbesRequireDependencyTargetsAsync(string path, string source, bool passes)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write(path, source);
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.Single(row => row.Requirement == "dependency-selectors").Passed.ShouldBe(passes);
+    }
+
+    /// <summary>Verifies malformed frozen inventories cannot grant source-scan exclusions.</summary>
+    /// <param name="mutation">The invalid record or confinement case.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("pending-owner")]
+    [InlineData("pending-consumer")]
+    [InlineData("not-frozen")]
+    [InlineData("src-directory")]
+    [InlineData("another-project")]
+    public async Task InvalidHostingRecordsGrantNoExemptionAsync(string mutation)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        string directory = mutation == "src-directory" ? "src" : "src/Hexalith.Sample.AppHost";
+        string project = directory + "/Hexalith.Sample.AppHost.csproj";
+        workspace.Write(project, "<Project />");
+        workspace.Write(directory + "/Program.cs", "app.MapSubscribeHandler();");
+        if (mutation == "another-project")
+        {
+            workspace.Write(directory + "/Other.csproj", "<Project />");
+        }
+
+        JsonObject record = HostingRecord(project);
+        if (mutation == "pending-owner") record["owner"] = "Pending: module owner";
+        if (mutation == "pending-consumer") record["consumers"] = new JsonArray("PENDING: identify consumer");
+        if (mutation == "not-frozen") record["state"] = "active";
+        workspace.Write("module/hosting-inventory.json", new JsonObject { ["schemaVersion"] = 1, ["projects"] = new JsonArray(record) }.ToJsonString());
+        await workspace.TrackAsync().ConfigureAwait(true);
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        report.Rows.ShouldContain(row => row.Requirement == "hosting-inventory" && !row.Passed);
+        report.Rows.ShouldContain(row => row.Requirement == "dapr-subscriptions" && !row.Passed && row.File == directory + "/Program.cs");
+    }
+
+    /// <summary>Verifies an exact top-level hosting directory can be frozen with explicit no-consumers.</summary>
+    /// <returns>The assertion task.</returns>
+    [Fact]
+    public async Task TopLevelHostingDirectoryWithNoConsumersPassesAsync()
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        const string project = "Hexalith.Sample.AppHost/Hexalith.Sample.AppHost.csproj";
+        workspace.Write(project, "<Project />");
+        workspace.Write("Hexalith.Sample.AppHost/Program.cs", "app.MapSubscribeHandler();");
+        workspace.Write("module/hosting-inventory.json", new JsonObject { ["schemaVersion"] = 1, ["projects"] = new JsonArray(HostingRecord(project)) }.ToJsonString());
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).IsValid.ShouldBeTrue();
+    }
+
+    private static JsonObject HostingRecord(string project) => new()
+    {
+        ["path"] = project,
+        ["kind"] = "AppHost",
+        ["owner"] = "Sample owner",
+        ["consumers"] = new JsonArray("none"),
+        ["state"] = "frozen",
+        ["replacementPlan"] = "pending",
+        ["retirementPlan"] = "pending",
+        ["gates"] = new JsonObject
+        {
+            ["producerAdoption"] = "pending",
+            ["ownerReviewedSourcePackageDeployedParity"] = "pending",
+            ["eventStoreAd22ExactSubjectRemovalAuthority"] = "pending",
+        },
+    };
 }

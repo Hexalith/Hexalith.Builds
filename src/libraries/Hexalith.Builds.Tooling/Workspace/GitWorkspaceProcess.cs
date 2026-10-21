@@ -19,6 +19,15 @@ internal static class GitWorkspaceProcess
     /// <param name="arguments">The Git arguments.</param>
     /// <returns>The bounded process result.</returns>
     internal static Task<CompositionProcessResult> RunAsync(string directory, CancellationToken cancellationToken, params string[] arguments)
+        => RunAsync(directory, 65_536, cancellationToken, arguments);
+
+    /// <summary>Runs Git with an explicit output bound for large read-only inventories.</summary>
+    /// <param name="directory">The Git working directory.</param>
+    /// <param name="maximumOutputCharacters">The maximum captured standard-output characters.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="arguments">The Git arguments.</param>
+    /// <returns>The bounded process result.</returns>
+    internal static Task<CompositionProcessResult> RunAsync(string directory, int maximumOutputCharacters, CancellationToken cancellationToken, params string[] arguments)
     {
         string[] command = ["-c", "submodule.recurse=false", "-C", directory, .. arguments];
         Dictionary<string, string> environment = new(StringComparer.Ordinal);
@@ -70,6 +79,7 @@ internal static class GitWorkspaceProcess
         return CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo("git", command, directory, environment),
             timeout,
+            maximumOutputCharacters,
             cancellationToken);
     }
 }
