@@ -16,7 +16,7 @@ internal static class PlatformAdoptionSourceAudit
 {
     private const string _reservedPropertyPattern = @"(?:UseNuGetDeps|UseHexalithProjectReferences|Hexalith\w*(?:FromSource|Root)|HexalithTenantsBasePath|HexalithSourceMapping\w*)";
 
-    private const string _daprApiPattern = @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|GetStateAndETagAsync|SaveStateAsync|SaveBulkStateAsync|TrySaveStateAsync|QueryStateAsync|DeleteStateAsync|TryDeleteStateAsync|DeleteBulkStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|PublishBulkEventAsync|PublishByteEventAsync|InvokeBindingAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<[^>\r\n]+>)?\s*\(";
+    private const string _daprApiPattern = @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|GetStateAndETagAsync|SaveStateAsync|SaveBulkStateAsync|TrySaveStateAsync|QueryStateAsync|DeleteStateAsync|TryDeleteStateAsync|DeleteBulkStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|PublishBulkEventAsync|PublishByteEventAsync|InvokeBindingAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<(?:[^<>\r\n]|<[^<>\r\n]*>)+>)?\s*\(";
 
     private static readonly TimeSpan _regexTimeout = TimeSpan.FromSeconds(1);
 
@@ -72,7 +72,8 @@ internal static class PlatformAdoptionSourceAudit
                         string commentsMasked = MaskNonExecutable(content, maskStrings: false, hashComments: extension != ".CS");
                         const string dependencyTarget = @"references[/\\]Hexalith\.|(?:\.\.[/\\])+Hexalith\.|UseNuGetDeps|UseHexalithProjectReferences|Hexalith\w*(?:FromSource|Root)|HexalithTenantsBasePath|HexalithSourceMapping\w*";
                         string executable = MaskNonExecutable(content, hashComments: extension != ".CS");
-                        bool discovery = HasDependencyProbe(commentsMasked, executable, dependencyTarget);
+                        bool discovery = HasDependencyProbe(commentsMasked, executable, dependencyTarget)
+                            || HasSegmentBuiltSiblingPath(commentsMasked, executable);
                         bool helper = MatchCode(commentsMasked, executable, @"(?:Resolve|Find|Get)[-_]?(?:Hexalith|Sibling)\w*(?:Root|Path)|(?:sibling|nested|package)[-_]?fallback")
                             || MatchCode(commentsMasked, executable, @"(?:Resolve|Find|Get)[-_]?(?:Repository|Source)\w*(?:Root|Path)\s*\([^()\r\n]*(?:" + dependencyTarget + ")");
                         bool assignment = Match(executable, @"(?<![\w.])\$?" + _reservedPropertyPattern + @"\s*=(?!=)");
@@ -143,7 +144,8 @@ internal static class PlatformAdoptionSourceAudit
             bool package = name.Equals("PackageReference", StringComparison.OrdinalIgnoreCase) && include.StartsWith("Hexalith.", StringComparison.OrdinalIgnoreCase);
             bool dependency = generated || mode || mappedPath || crossModulePath || package;
             if (crossModulePath || (dependency && Match(condition, @"\bExists\s*\("))
-                || HasBuildDependencyProbe(root, path, condition) || (property && HasExternalAncestorLookup(root, path, value)))
+                || HasBuildDependencyProbe(root, path, condition) || (property && HasExternalAncestorLookup(root, path, value))
+                || (pathReference && HasExternalAncestorLookup(root, path, include)))
             {
                 rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."));
                 return;
@@ -207,9 +209,24 @@ internal static class PlatformAdoptionSourceAudit
             || Match(relative, @"^references/Hexalith\.[^/]+(?:/|$)");
     }
 
+    private static bool HasSegmentBuiltSiblingPath(string syntax, string executable)
+    {
+        foreach (Match construction in Regex.Matches(executable, @"\b(?:Path\s*\.\s*Combine|os\s*\.\s*path\s*\.\s*join)\s*\(|\bJoin-Path\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
+        {
+            int start = construction.Index + construction.Length;
+            int end = ProbeArgumentEnd(executable, start, call: construction.Value.EndsWith('('));
+            if (Match(syntax[start..end], @"@?['""]\.\.['""]\s*,?\s*(?:@?['""]references['""]\s*,?\s*)?@?['""]Hexalith\.[^'""]+['""]"))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static bool HasDependencyProbe(string syntax, string executable, string dependencyTarget)
     {
-        foreach (Match probe in Regex.Matches(executable, @"(?:\b(?:File\s*\.\s*Exists|Directory\s*\.\s*Exists|Path\s*\.\s*Exists|os\s*\.\s*path\s*\.\s*(?:exists|isdir|isfile|lexists)|Path)|\[\s*(?:System\s*\.\s*)?IO\s*\.\s*(?:Directory|File)\s*\]\s*::\s*Exists)\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
+        foreach (Match probe in Regex.Matches(executable, @"(?:\b(?:File\s*\.\s*Exists|Directory\s*\.\s*Exists|Path\s*\.\s*Exists|os\s*\.\s*path\s*\.\s*(?:exists|isdir|isfile|lexists)|Path)|\[\s*(?:System\s*\.\s*)?IO\s*\.\s*(?:Directory|File|Path)\s*\]\s*::\s*Exists)\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
         {
             int start = probe.Index + probe.Length;
             int end = ProbeArgumentEnd(executable, start, call: true);
@@ -231,7 +248,7 @@ internal static class PlatformAdoptionSourceAudit
             }
         }
 
-        foreach (Match probe in Regex.Matches(executable, @"\bTest-Path\b|\btest\s+-[def]\b|\[\s*-[def]\s", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
+        foreach (Match probe in Regex.Matches(executable, @"\bTest-Path\b|\btest\s+-(?-i:[abcdefghkLprSstuwxOGN])\b|\[\s*-(?-i:[abcdefghkLprSstuwxOGN])\s", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
         {
             int start = probe.Index + probe.Length;
             if (Match(syntax[start..ProbeArgumentEnd(executable, start, call: false)], dependencyTarget))
