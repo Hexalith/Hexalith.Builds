@@ -14,6 +14,10 @@ using YamlDotNet.RepresentationModel;
 /// <summary>Bounds known source patterns; unsupported languages and indirection require owner review.</summary>
 internal static class PlatformAdoptionSourceAudit
 {
+    private const string _reservedPropertyPattern = @"(?:UseNuGetDeps|UseHexalithProjectReferences|Hexalith\w*(?:FromSource|Root)|HexalithTenantsBasePath|HexalithSourceMapping\w*)";
+
+    private const string _daprApiPattern = @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|GetStateAndETagAsync|SaveStateAsync|SaveBulkStateAsync|TrySaveStateAsync|QueryStateAsync|DeleteStateAsync|TryDeleteStateAsync|DeleteBulkStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|PublishBulkEventAsync|PublishByteEventAsync|InvokeBindingAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<[^>\r\n]+>)?\s*\(";
+
     private static readonly TimeSpan _regexTimeout = TimeSpan.FromSeconds(1);
 
     /// <summary>Inspects tracked module-owned build, source, configuration and helper files.</summary>
@@ -32,8 +36,9 @@ internal static class PlatformAdoptionSourceAudit
             cancellationToken.ThrowIfCancellationRequested();
             string extension = Path.GetExtension(path).ToUpperInvariant();
             bool configuration = extension is ".JSON" or ".YAML" or ".YML";
-            bool supported = new[] { ".CS", ".CSPROJ", ".PROPS", ".TARGETS", ".PS1", ".SH", ".PY" }.Contains(extension, StringComparer.Ordinal)
-                || (requirement == "dapr-subscriptions" && configuration && Path.GetFileName(path).StartsWith("appsettings", StringComparison.OrdinalIgnoreCase));
+            bool supported = requirement == "dependency-selectors"
+                ? new[] { ".CS", ".CSPROJ", ".PROPS", ".TARGETS", ".PS1", ".SH", ".PY" }.Contains(extension, StringComparer.Ordinal)
+                : extension == ".CS" || (configuration && Path.GetFileName(path).StartsWith("appsettings", StringComparison.OrdinalIgnoreCase));
             if (!supported
                 || (requirement == "dapr-subscriptions" && frozen.Any(directory => path.StartsWith(directory + "/", StringComparison.Ordinal))))
             {
@@ -70,7 +75,8 @@ internal static class PlatformAdoptionSourceAudit
                         bool discovery = HasDependencyProbe(commentsMasked, executable, dependencyTarget);
                         bool helper = MatchCode(commentsMasked, executable, @"(?:Resolve|Find|Get)[-_]?(?:Hexalith|Sibling)\w*(?:Root|Path)|(?:sibling|nested|package)[-_]?fallback")
                             || MatchCode(commentsMasked, executable, @"(?:Resolve|Find|Get)[-_]?(?:Repository|Source)\w*(?:Root|Path)\s*\([^()\r\n]*(?:" + dependencyTarget + ")");
-                        if (helper || discovery)
+                        bool assignment = Match(executable, @"(?<![\w.])\$?" + _reservedPropertyPattern + @"\s*=(?!=)");
+                        if (helper || discovery || assignment)
                         {
                             rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping."));
                         }
@@ -80,12 +86,15 @@ internal static class PlatformAdoptionSourceAudit
                 {
                     string executable = MaskNonExecutable(content);
                     string syntax = MaskNonExecutable(content, maskStrings: false);
-                    if (MatchCode(syntax, executable, @"\b(?:WithTopic|MapSubscribeHandler|MapDaprSubscribeHandler|SubscribeTopic|AddTopicEventHandler)\s*\(|(?:\[\s*|,\s*)(?:global\s*::\s*)?(?:[A-Za-z_]\w*\s*\.\s*)*Topic(?:Attribute)?\s*\(|\b(?:Map(?:Get|Post|Methods)|Http(?:Get|Post))\s*\(\s*@?""/?dapr/subscribe"""))
+                    if (MatchCode(syntax, executable, @"\b(?:WithTopic|MapSubscribeHandler|MapDaprSubscribeHandler|SubscribeTopic|AddTopicEventHandler)\s*\(|(?:\[\s*|,\s*)(?:global\s*::\s*)?(?:[A-Za-z_]\w*\s*\.\s*)*Topic(?:Attribute)?\s*\(|\b(?:Map(?:Get|Post|Methods)?|Http(?:Get|Post)|Route)\s*\(\s*(?:pattern\s*:\s*)?@?""/?dapr/subscribe/?"""))
                     {
                         rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Programmatic subscription discovery is forbidden; declare delivery routes and dead-letter policy in the module declaration."));
                     }
 
-                    if (MatchCode(syntax, executable, @"\b(?:GetStateAsync|GetBulkStateAsync|GetStateEntryAsync|SaveStateAsync|TrySaveStateAsync|QueryStateAsync|DeleteStateAsync|ExecuteStateTransactionAsync|PublishEventAsync|PublishBulkEventAsync|InvokeBindingAsync|GetSecretAsync|GetBulkSecretAsync)\s*(?:<[^>\r\n]+>)?\s*\(\s*@?""[^""]+""|\b(?:StoreName|StateStoreName|PubSubName|PubsubName|SecretStoreName|ComponentName|storeName|pubsubName)\s*[:=]\s*@?""[^""]+"""))
+                    const string componentLiteral = @"(?:@?""+[^""]+""+|(?:\$@?|@\$)""[^""{}]+"")";
+                    if (MatchCode(syntax, executable, _daprApiPattern + @"\s*(?:(?:storeName|pubsubName|secretStoreName|componentName|bindingName)\s*:\s*)?" + componentLiteral)
+                        || MatchCode(syntax, executable, @"\b(?:StateStoreName|PubSubName|SecretStoreName|bindingName)\s*[:=]\s*" + componentLiteral)
+                        || HasGenericComponentBinding(syntax, executable, componentLiteral))
                     {
                         rows.Add(new PlatformAdoptionRow("dapr-subscriptions", false, path, "Literal Dapr component name; obtain the name from the declared configuration key."));
                     }
@@ -128,16 +137,23 @@ internal static class PlatformAdoptionSourceAudit
                     && (name.EndsWith("Root", StringComparison.OrdinalIgnoreCase) || name.EndsWith("FromSource", StringComparison.OrdinalIgnoreCase)));
             bool pathReference = projectReference || name.Equals("Import", StringComparison.OrdinalIgnoreCase);
             bool mappedPath = pathReference && Match(include, @"\$\((?:Hexalith\w*Root|HexalithTenantsBasePath)\)");
-            bool crossModulePath = pathReference && IsCrossModulePath(root, path, include);
+            bool property = !element.HasElements && element.Parent?.Name.LocalName.Equals("PropertyGroup", StringComparison.OrdinalIgnoreCase) == true;
+            bool crossModulePath = (pathReference && IsCrossModulePath(root, path, include))
+                || (property && IsPathPropertyValue(value) && Match(value, @"(?:^|[/\\])Hexalith\.") && IsCrossModulePath(root, path, value));
             bool package = name.Equals("PackageReference", StringComparison.OrdinalIgnoreCase) && include.StartsWith("Hexalith.", StringComparison.OrdinalIgnoreCase);
             bool dependency = generated || mode || mappedPath || crossModulePath || package;
-            if (crossModulePath || (dependency && Match(condition, @"\bExists\s*\(")))
+            if (crossModulePath || (dependency && Match(condition, @"\bExists\s*\("))
+                || HasBuildDependencyProbe(root, path, condition) || (property && HasExternalAncestorLookup(root, path, value)))
             {
                 rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."));
                 return;
             }
 
-            if (mode || generated)
+            bool metadataOverride = (projectReference && HasReservedPropertyAssignment(element.Attribute("AdditionalProperties")?.Value))
+                || (name.Equals("AdditionalProperties", StringComparison.OrdinalIgnoreCase)
+                    && element.Parent?.Name.LocalName.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase) == true && HasReservedPropertyAssignment(value))
+                || (name.Equals("MSBuild", StringComparison.OrdinalIgnoreCase) && HasReservedPropertyAssignment(element.Attribute("Properties")?.Value));
+            if (mode || generated || metadataOverride)
             {
                 rows.Add(new PlatformAdoptionRow("dependency-selectors", false, path, "Module build files assign a tool-owned dependency root or mode property; leave selection to the pinned tool."));
                 return;
@@ -145,10 +161,42 @@ internal static class PlatformAdoptionSourceAudit
         }
     }
 
+    private static bool HasReservedPropertyAssignment(string? value) =>
+        value is not null && Match(value, @"(?:^|;)\s*" + _reservedPropertyPattern + @"\s*=");
+
+    private static bool HasGenericComponentBinding(string syntax, string executable, string literal)
+    {
+        foreach (Match assignment in Regex.Matches(syntax, @"\b(?<name>StoreName|ComponentName)\s*(?<operator>[:=])\s*" + literal, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
+        {
+            if (!char.IsWhiteSpace(executable[assignment.Index])
+                && ((assignment.Groups["operator"].Value == ":" && Match(executable[..assignment.Index], _daprApiPattern + "[^(){};]*$"))
+                    || MatchCode(syntax, executable, _daprApiPattern + @"\s*(?:(?:storeName|componentName|bindingName)\s*:\s*)?(?:\w+\s*\.\s*)?" + assignment.Groups["name"].Value + @"\b")
+                    || MatchCode(syntax, executable, @"\bnew\s+(?:\w+\s*\.\s*)*Dapr\w*(?:\s*\.\s*\w+)*\s*(?:\([^;{}]*\))?\s*\{[^{};]*\b" + assignment.Groups["name"].Value + @"\s*[:=]\s*" + literal)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsPathPropertyValue(string value) =>
+        Match(value.Trim(), @"^(?:\$\(MSBuildThisFileDirectory\)|\.{1,2}[/\\]|[/\\]{2}|/|[A-Za-z]:[/\\]|references[/\\]Hexalith\.)");
+
+    private static bool HasBuildDependencyProbe(string root, string path, string condition) =>
+        Regex.Matches(condition, @"\bExists\s*\(\s*(['""])(?<path>.*?)\1\s*\)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout)
+            .Any(probe => Match(probe.Groups["path"].Value, @"\$\((?:Hexalith\w*(?:Root|FromSource)|HexalithTenantsBasePath|HexalithSourceMapping\w*|UseNuGetDeps|UseHexalithProjectReferences)\)")
+                || (Match(probe.Groups["path"].Value, @"references[/\\]Hexalith\.|(?:\.\.[/\\])+Hexalith\.")
+                    && IsCrossModulePath(root, path, probe.Groups["path"].Value)));
+
+    private static bool HasExternalAncestorLookup(string root, string path, string value) =>
+        Regex.Matches(value, @"\b(?<method>GetPathOfFileAbove|GetDirectoryNameOfFileAbove)\s*\(\s*(?<firstQuote>['""])(?<first>.*?)\k<firstQuote>\s*,\s*(?<secondQuote>['""])(?<second>.*?)\k<secondQuote>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout)
+            .Any(lookup => IsCrossModulePath(root, path, lookup.Groups[lookup.Groups["method"].Value.Equals("GetPathOfFileAbove", StringComparison.OrdinalIgnoreCase) ? "second" : "first"].Value));
+
     private static bool IsCrossModulePath(string root, string path, string include)
     {
         string directory = Path.GetDirectoryName(Path.Combine(root, path))!;
-        string local = include.Replace('\\', '/').Replace("$(MSBuildThisFileDirectory)", directory.Replace('\\', '/') + "/", StringComparison.OrdinalIgnoreCase);
+        string local = include.Trim().Replace('\\', '/').Replace("$(MSBuildThisFileDirectory)", directory.Replace('\\', '/') + "/", StringComparison.OrdinalIgnoreCase);
         if (local.Length == 0 || local.Contains("$(", StringComparison.Ordinal))
         {
             return false;
@@ -161,11 +209,18 @@ internal static class PlatformAdoptionSourceAudit
 
     private static bool HasDependencyProbe(string syntax, string executable, string dependencyTarget)
     {
-        foreach (Match probe in Regex.Matches(executable, @"\b(?:File\s*\.\s*Exists|Directory\s*\.\s*Exists|os\s*\.\s*path\s*\.\s*(?:exists|isdir)|Path)\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
+        foreach (Match probe in Regex.Matches(executable, @"(?:\b(?:File\s*\.\s*Exists|Directory\s*\.\s*Exists|Path\s*\.\s*Exists|os\s*\.\s*path\s*\.\s*(?:exists|isdir|isfile|lexists)|Path)|\[\s*(?:System\s*\.\s*)?IO\s*\.\s*(?:Directory|File)\s*\]\s*::\s*Exists)\s*\(", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
         {
             int start = probe.Index + probe.Length;
             int end = ProbeArgumentEnd(executable, start, call: true);
             if (Match(probe.Value, @"^Path\s*\(") && !Match(executable[end..], @"^\)\s*\.\s*(?:exists|is_dir|is_file)\s*\("))
+            {
+                continue;
+            }
+
+            if (end < executable.Length && (Match(executable[(end + 1)..], @"^\s*\.\s*ShouldBe(?:True|False)\s*\(")
+                || (Match(executable[..probe.Index], @"\bAssert\s*\.\s*(?:True|False)\s*\(\s*(?:(?:global\s*::\s*)?System\s*\.\s*IO\s*\.\s*)?$")
+                    && Match(executable[(end + 1)..], @"^\s*(?:,|\))"))))
             {
                 continue;
             }
@@ -237,7 +292,7 @@ internal static class PlatformAdoptionSourceAudit
             int start = index;
             bool mask = true;
             if ((hashComments && content[index] == '#')
-                || (content[index] == '/' && index + 1 < content.Length && content[index + 1] == '/'))
+                || (!hashComments && content[index] == '/' && index + 1 < content.Length && content[index + 1] == '/'))
             {
                 index = content.IndexOf('\n', index);
                 if (index < 0)
@@ -245,7 +300,7 @@ internal static class PlatformAdoptionSourceAudit
                     index = content.Length;
                 }
             }
-            else if (content[index] == '/' && index + 1 < content.Length && content[index + 1] == '*')
+            else if (!hashComments && content[index] == '/' && index + 1 < content.Length && content[index + 1] == '*')
             {
                 int end = content.IndexOf("*/", index + 2, StringComparison.Ordinal);
                 index = end < 0 ? content.Length : end + 2;
@@ -344,7 +399,7 @@ internal static class PlatformAdoptionSourceAudit
     private static string Join(string prefix, string name) => prefix.Length == 0 ? name : prefix + ":" + name;
 
     private static bool Physical(string? value) => !string.IsNullOrWhiteSpace(value)
-        && value is not "null" and not "~"
+        && !value.Equals("null", StringComparison.OrdinalIgnoreCase) && value != "~"
         && !Match(value, @"^(?:\$\{[A-Za-z_][A-Za-z0-9_]*\}|\$\([A-Za-z_][A-Za-z0-9_:]*\)|\{\{\s*[A-Za-z_][A-Za-z0-9_.:]*\s*\}\})$");
 
     private static bool Match(string content, string pattern) => Regex.IsMatch(content, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout);

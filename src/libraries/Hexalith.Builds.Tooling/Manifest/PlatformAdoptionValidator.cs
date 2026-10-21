@@ -49,7 +49,7 @@ public static class PlatformAdoptionValidator
             Require(Succeeded(result), "Cannot enumerate tracked module-owned files.");
             tracked = [.. result.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries)];
         }).ConfigureAwait(false);
-        await CheckAsync("declaration", string.Join(", ", paths.Select(path => Path.GetFileName(path))), () =>
+        await CheckAsync("declaration", string.Join(", ", paths.Select(path => Path.GetRelativePath(root, Path.GetFullPath(path, Path.GetFullPath(workingDirectory ?? "."))).Replace('\\', '/'))), () =>
         {
             Require(paths.Length > 0, "Supply at least one module declaration.");
             string[] resolvedPaths = [.. paths.Select(path => Path.GetFullPath(path, Path.GetFullPath(workingDirectory ?? ".")))];
@@ -96,9 +96,9 @@ public static class PlatformAdoptionValidator
                 }
             }
 
-            Require(!references.Any(reference => self.Contains(Path.GetFileName(reference).Replace("Hexalith.", string.Empty, StringComparison.OrdinalIgnoreCase))), "Remove the declared direct self reference; the active module must not reference itself.");
             string[] missing = [.. required.Where(id => !self.Contains(id) && !references.Any(reference => string.Equals(Path.GetFileName(reference), "Hexalith." + id, StringComparison.OrdinalIgnoreCase))).Order(StringComparer.Ordinal)];
             requiredReferences = new HashSet<string>(references.Where(reference => required.Contains(Path.GetFileName(reference).Replace("Hexalith.", string.Empty, StringComparison.OrdinalIgnoreCase)) && !self.Contains(Path.GetFileName(reference).Replace("Hexalith.", string.Empty, StringComparison.OrdinalIgnoreCase))), StringComparer.Ordinal);
+            Require(!references.Any(reference => self.Contains(Path.GetFileName(reference).Replace("Hexalith.", string.Empty, StringComparison.OrdinalIgnoreCase))), "Remove the declared direct self reference; the active module must not reference itself.");
             Require(missing.Length == 0, "Declare distinct direct references for: " + string.Join(", ", missing) + ". Self references are excluded.");
         }).ConfigureAwait(false);
         await CheckAsync("gitlinks", ".gitmodules", async () =>
@@ -122,8 +122,8 @@ public static class PlatformAdoptionValidator
             string? platformReference = references.FirstOrDefault(reference => string.Equals(Path.GetFileName(reference), "Hexalith.Platform", StringComparison.OrdinalIgnoreCase));
             Require(platformReference is not null, "Declare the direct Platform reference before checking its accepted tool pin.");
             string platform = Path.Combine(root, platformReference!);
-            string localPin = ReadPin(root);
-            string platformPin = ReadPin(platform);
+            string localPin = ReadPin(root, root);
+            string platformPin = ReadPin(platform, root);
             Require(localPin == platformPin, "The tool pin must exactly match the direct Platform checkout's accepted tool pin.");
             CompositionProcessResult record = await GitWorkspaceProcess.RunAsync(platform, cancellationToken, "show", "HEAD:.config/dotnet-tools.json").ConfigureAwait(false);
             Require(Succeeded(record), "Cannot read the direct Platform checkout's committed tool pin.");
@@ -216,10 +216,15 @@ public static class PlatformAdoptionValidator
 
     private static bool Succeeded(CompositionProcessResult result) => result.Started && !result.TimedOut && !result.OutputTruncated && result.ExitCode == 0;
 
-    private static string ReadPin(string root)
+    private static string ReadPin(string root, string workspaceRoot)
     {
         const string path = ".config/dotnet-tools.json";
-        Require(IsLocalFile(root, path), "A readable tool manifest inside the module and direct Platform checkout is required.");
+        if (!IsLocalFile(root, path))
+        {
+            string relative = Path.GetRelativePath(workspaceRoot, Path.Combine(root, path)).Replace('\\', '/');
+            throw new WorkspaceMappingException(new ToolDiagnostic("HXA001", ToolPhase.Manifest, ToolFailureCategory.Manifest, "Supply a readable tool manifest inside the workspace at " + relative + ".", Source: relative));
+        }
+
         using JsonDocument document = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, path)));
         return Pin(document.RootElement);
     }

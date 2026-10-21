@@ -50,6 +50,7 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("missing-manifest", "declaration")]
     [InlineData("malformed-manifest", "declaration")]
     [InlineData("minimum-dependencies", "declaration")]
+    [InlineData("self-dependency", "declaration")]
     [InlineData("missing-reference", "references")]
     [InlineData("declared-dependency", "references")]
     [InlineData("missing-gitlink", "gitlinks")]
@@ -75,6 +76,7 @@ public sealed class PlatformAdoptionValidationTests
             case "missing-manifest": File.Delete(workspace.Manifest); break;
             case "malformed-manifest": workspace.Write("module.json", "{"); break;
             case "minimum-dependencies": ChangeDependencies("[]"); break;
+            case "self-dependency": ChangeDependencies("[\"eventstore\",\"tenants\",\"memories\",\"sample\"]"); break;
             case "declared-dependency": ChangeDependencies("[\"eventstore\",\"tenants\",\"memories\",\"folders\"]"); break;
             case "missing-reference": workspace.Write(".gitmodules", (await File.ReadAllTextAsync(Path.Combine(workspace.Root, ".gitmodules"), TestContext.Current.CancellationToken).ConfigureAwait(true)).Replace("path = references/Hexalith.Tenants", "path = references/Hexalith.Unrelated", StringComparison.Ordinal)); break;
             case "missing-gitlink": _ = await WorkspaceGitFixture.RunGitAsync(workspace.Root, "update-index", "--force-remove", "references/Hexalith.Tenants").ConfigureAwait(true); break;
@@ -195,14 +197,50 @@ public sealed class PlatformAdoptionValidationTests
         (await workspace.ValidateAsync().ConfigureAwait(true)).IsValid.ShouldBeTrue();
     }
 
-    /// <summary>Verifies a declared direct self-reference fails even with a valid recorded gitlink.</summary>
+    /// <summary>Verifies an additional recorded dependency cannot pass while uninitialized and is never initialized by validation.</summary>
     /// <returns>The assertion task.</returns>
     [Fact]
-    public async Task DirectSelfReferenceIsRejectedAsync()
+    public async Task UninitializedAdditionalDeclaredDependencyFailsReadOnlyAsync()
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        string source = Path.Combine(workspace.Root, "references/Hexalith.Dep");
+        const string reference = "references/Hexalith.ChatBot";
+        _ = await WorkspaceGitFixture.RunGitAsync(workspace.Root, "-c", "protocol.file.allow=always", "submodule", "add", new Uri(source).AbsoluteUri, reference).ConfigureAwait(true);
+        JsonNode document = JsonNode.Parse(await File.ReadAllTextAsync(workspace.Manifest, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+        document["modules"]![0]!["identity"]!["dependencies"]!.AsArray().Add("chatbot");
+        workspace.Write("module.json", document.ToJsonString());
+        await workspace.TrackAsync().ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(workspace.Root, "submodule", "deinit", "-f", "--", reference).ConfigureAwait(true);
+        string before = (await WorkspaceGitFixture.RunGitAsync(workspace.Root, "status", "--porcelain=v1", "--untracked-files=all").ConfigureAwait(true)).Output;
+        string dependency = Path.Combine(workspace.Root, reference);
+        File.Exists(Path.Combine(dependency, ".git")).ShouldBeFalse();
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        report.Rows.Single(row => row.Requirement == "references").Passed.ShouldBeTrue();
+        report.Rows.ShouldContain(row => row.Requirement == "gitlinks" && !row.Passed && row.Reason.Contains(reference, StringComparison.Ordinal));
+        File.Exists(Path.Combine(dependency, ".git")).ShouldBeFalse();
+        Directory.Exists(Path.Combine(dependency, ".git")).ShouldBeFalse();
+        Directory.GetFileSystemEntries(dependency).ShouldBeEmpty();
+        (await WorkspaceGitFixture.RunGitAsync(workspace.Root, "status", "--porcelain=v1", "--untracked-files=all").ConfigureAwait(true)).Output.ShouldBe(before);
+    }
+
+    /// <summary>Verifies a declared direct self-reference fails even with a valid recorded gitlink.</summary>
+    /// <param name="uninitializedRequiredReference">Whether another required reference is uninitialized.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DirectSelfReferenceIsRejectedAsync(bool uninitializedRequiredReference)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
         _ = await WorkspaceGitFixture.RunGitAsync(workspace.Root, "-c", "protocol.file.allow=always", "submodule", "add", new Uri(Path.Combine(workspace.Root, "references/Hexalith.Dep")).AbsoluteUri, "references/Hexalith.Sample").ConfigureAwait(true);
-        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.ShouldContain(row => row.Requirement == "references" && !row.Passed && row.Reason.Contains("self reference", StringComparison.Ordinal));
+        if (uninitializedRequiredReference)
+        {
+            _ = await WorkspaceGitFixture.RunGitAsync(workspace.Root, "submodule", "deinit", "-f", "--", "references/Hexalith.Tenants").ConfigureAwait(true);
+        }
+
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        report.Rows.ShouldContain(row => row.Requirement == "references" && !row.Passed && row.Reason.Contains("self reference", StringComparison.Ordinal));
+        report.Rows.Single(row => row.Requirement == "gitlinks").Passed.ShouldBe(!uninitializedRequiredReference);
     }
 
     /// <summary>Verifies frozen hosts cannot hide dependency assignments and missing projects grant no exclusion.</summary>
@@ -263,6 +301,26 @@ public sealed class PlatformAdoptionValidationTests
         (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.ShouldContain(row => row.Requirement == "dependency-selectors" && !row.Passed && row.File == "Directory.Build.props");
     }
 
+    /// <summary>Verifies project metadata and MSBuild tasks cannot replace reserved mapping properties.</summary>
+    /// <param name="body">The build declaration.</param>
+    /// <param name="passes">Whether its properties are ordinary build settings.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("<ItemGroup><ProjectReference Include=\"Local.csproj\" AdditionalProperties=\"UseHexalithProjectReferences=false\" /></ItemGroup>", false)]
+    [InlineData("<ItemGroup><ProjectReference Include=\"Local.csproj\"><AdditionalProperties>Configuration=Debug;HexalithTenantsRoot=../Hexalith.Tenants</AdditionalProperties></ProjectReference></ItemGroup>", false)]
+    [InlineData("<Target Name=\"BuildLocal\"><MSBuild Projects=\"Local.csproj\" Properties=\"Configuration=Debug;UseHexalithProjectReferences=false\" /></Target>", false)]
+    [InlineData("<Target Name=\"BuildLocal\"><MSBuild Projects=\"Local.csproj\" Properties=\"HexalithTenantsRoot=../Hexalith.Tenants\" /></Target>", false)]
+    [InlineData("<ItemGroup><ProjectReference Include=\"Local.csproj\" AdditionalProperties=\"Configuration=Debug;TargetFramework=net10.0\" /></ItemGroup>", true)]
+    [InlineData("<ItemGroup><ProjectReference Include=\"Local.csproj\"><AdditionalProperties>Configuration=Debug</AdditionalProperties></ProjectReference></ItemGroup>", true)]
+    [InlineData("<Target Name=\"BuildLocal\"><MSBuild Projects=\"Local.csproj\" Properties=\"Configuration=Release;EnableFeature=true\" /></Target>", true)]
+    public async Task BuildMetadataAndTasksPreserveReservedPropertiesAsync(string body, bool passes)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write("Directory.Build.targets", "<Project>" + body + "</Project>");
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.Single(row => row.Requirement == "dependency-selectors").Passed.ShouldBe(passes);
+    }
+
     /// <summary>Verifies ordinary path construction and content-root access are not existence probes.</summary>
     /// <param name="source">Ordinary module source.</param>
     /// <returns>The assertion task.</returns>
@@ -276,6 +334,10 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("var root = FindRepositoryRoot(); var catalog = XDocument.Load(Path.Combine(root, \"references/Hexalith.Builds/Props/Directory.Packages.props\"));")]
     [InlineData("references.ShouldContain(@\"..\\Hexalith.Sample.Contracts\\Hexalith.Sample.Contracts.csproj\");")]
     [InlineData("var example = \"File.Exists(\\\"../Hexalith.Other\\\")\";")]
+    [InlineData("Directory.Exists(Path.Combine(partiesRoot, \"references/Hexalith.McpCli\")).ShouldBeFalse();")]
+    [InlineData("Directory.Exists(Path.Combine(partiesRoot, \"references/Hexalith.McpCli\")).ShouldBeTrue();")]
+    [InlineData("Assert.False(Directory.Exists(Path.Combine(partiesRoot, \"references/Hexalith.McpCli\")));")]
+    [InlineData("Assert.True(System.IO.File.Exists(Path.Combine(partiesRoot, \"references/Hexalith.McpCli\")), \"required\");")]
     public async Task OrdinaryPathAccessPassesAsync(string source)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
@@ -314,6 +376,34 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("await dapr.PublishEventAsync /* comment */ (@\"pubsub\", topic, data);", false)]
     [InlineData("var options = new Options { PubSubName = @\"pubsub\" };", false)]
     [InlineData("app.MapGet(/* route */@\"/dapr/subscribe\", () => topics);", false)]
+    [InlineData("app.Map(\"/dapr/subscribe\", handler);", false)]
+    [InlineData("[Route(\"dapr/subscribe\")] public object Subscribe() => topics;", false)]
+    [InlineData("await dapr.GetStateAndETagAsync<State>(\"literal\", key);", false)]
+    [InlineData("await dapr.SaveBulkStateAsync(\"literal\", values);", false)]
+    [InlineData("await dapr.TryDeleteStateAsync(\"literal\", key, etag);", false)]
+    [InlineData("await dapr.DeleteBulkStateAsync(\"literal\", values);", false)]
+    [InlineData("await dapr.PublishByteEventAsync(\"literal\", topic, bytes);", false)]
+    [InlineData("app.MapGet(pattern: \"/dapr/subscribe\", handler: () => topics);", false)]
+    [InlineData("app.MapGet(\"/dapr/subscribe/\", () => topics);", false)]
+    [InlineData("app.MapGet(pattern: \"/dapr/subscribe/\", handler: () => topics);", false)]
+    [InlineData("await dapr.PublishEventAsync(\"\"\"pubsub\"\"\", topic, data);", false)]
+    [InlineData("await dapr.PublishEventAsync($\"pubsub\", topic, data);", false)]
+    [InlineData("await dapr.PublishEventAsync($@\"pubsub\", topic, data);", false)]
+    [InlineData("await dapr.PublishEventAsync($\"{componentName}\", topic, data);", true)]
+    [InlineData("await dapr.InvokeBindingAsync(bindingName: \"literal\", operation: \"create\", data: value);", false)]
+    [InlineData("const string StoreName = \"BusinessStore\";", true)]
+    [InlineData("const string ComponentName = \"BusinessComponent\";", true)]
+    [InlineData("var options = new BusinessOptions { StoreName = \"BusinessStore\", ComponentName = \"BusinessComponent\" };", true)]
+    [InlineData("const string StoreName = \"statestore\"; await dapr.GetStateAsync<State>(StoreName, key);", false)]
+    [InlineData("const string ComponentName = \"pubsub\"; await dapr.PublishEventAsync(ComponentName, topic, data);", false)]
+    [InlineData("var options = new DaprOptions { StoreName = \"statestore\" };", false)]
+    [InlineData("var options = new Dapr.StateStoreOptions { ComponentName = \"statestore\" };", false)]
+    [InlineData("var options = new Options { StateStoreName = \"statestore\" };", false)]
+    [InlineData("var options = new Options { SecretStoreName = \"secrets\" };", false)]
+    [InlineData("await dapr.GetStateAsync<State>(key: key, storeName: \"literal\");", false)]
+    [InlineData("var value = business.Load(key: key, StoreName: \"BusinessStore\");", true)]
+    [InlineData("await dapr.PublishEventAsync(component, topic, business.Create(StoreName: \"BusinessStore\"));", true)]
+    [InlineData("// dapr.PublishEventAsync($\"pubsub\", topic, data);", true)]
     [InlineData("// app.MapSubscribeHandler /* comment */ ();", true)]
     [InlineData("var text = @\"MapSubscribeHandler /* comment */ (\";", true)]
     [InlineData("var text = \"\"\"dapr.PublishEventAsync(@\"pubsub\", topic, data)\"\"\";", true)]
@@ -581,6 +671,26 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("eng/check.ps1", "Test-Path data\n$path = '../Hexalith.Other'", true)]
     [InlineData("eng/check.sh", "test -d data; printf '%s' '../Hexalith.Other'", true)]
     [InlineData("eng/check.sh", "test -d data && echo references/Hexalith.Other", true)]
+    [InlineData("eng/check.cs", "if (Directory.Exists(Path.Combine(partiesRoot, \"references/Hexalith.McpCli\"))) UseNuGetDeps = true;", false)]
+    [InlineData("eng/check.cs", "Assert.True(Directory.Exists(\"../Hexalith.Other\") && selected);", false)]
+    [InlineData("eng/check.cs", "if (Path.Exists(\"../Hexalith.Other\")) UseNuGetDeps = true;", false)]
+    [InlineData("eng/check.ps1", "[System.IO.Directory]::Exists('../Hexalith.Other')", false)]
+    [InlineData("eng/check.ps1", "[IO.File]::Exists('../Hexalith.Other')", false)]
+    [InlineData("eng/check.py", "os.path.isfile('../Hexalith.Other')", false)]
+    [InlineData("eng/check.py", "os.path.lexists('../Hexalith.Other')", false)]
+    [InlineData("eng/check.sh", "cp src/* out/\ntest -d ../Hexalith.Other", false)]
+    [InlineData("eng/check.sh", "curl https://example.invalid; test -d ../Hexalith.Other", false)]
+    [InlineData("eng/check.ps1", "Copy-Item src/* out/; Test-Path '../Hexalith.Other'", false)]
+    [InlineData("eng/check.ps1", "Invoke-WebRequest https://example.invalid; Test-Path '../Hexalith.Other'", false)]
+    [InlineData("eng/check.ps1", "$UseNuGetDeps = $true", false)]
+    [InlineData("eng/check.sh", "dotnet build -p:UseHexalithProjectReferences=false", false)]
+    [InlineData("eng/check.py", "UseHexalithProjectReferences = False", false)]
+    [InlineData("eng/check.sh", "HexalithTenantsRoot=../Hexalith.Tenants", false)]
+    [InlineData("eng/check.ps1", "# $UseNuGetDeps = $true\n$EnableFeature = $true", true)]
+    [InlineData("eng/check.ps1", "Write-Host '$UseNuGetDeps = $true'", true)]
+    [InlineData("eng/check.sh", "echo 'dotnet build -p:UseHexalithProjectReferences=false'", true)]
+    [InlineData("eng/check.py", "# UseHexalithProjectReferences = False\nmessage = 'UseNuGetDeps = True'", true)]
+    [InlineData("eng/check.sh", "dotnet build -p:Configuration=Release", true)]
     public async Task DependencyProbesRequireDependencyTargetsAsync(string path, string source, bool passes)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
@@ -599,10 +709,30 @@ public sealed class PlatformAdoptionValidationTests
     [InlineData("src-directory")]
     [InlineData("another-project")]
     [InlineData("another-project-uppercase")]
+    [InlineData("eng-directory")]
+    [InlineData("src-directory-uppercase")]
+    [InlineData("missing-replacement-plan")]
+    [InlineData("missing-retirement-plan")]
+    [InlineData("empty-gates")]
+    [InlineData("missing-producerAdoption")]
+    [InlineData("missing-ownerReviewedSourcePackageDeployedParity")]
+    [InlineData("missing-eventStoreAd22ExactSubjectRemovalAuthority")]
+    [InlineData("blank-producerAdoption")]
+    [InlineData("blank-ownerReviewedSourcePackageDeployedParity")]
+    [InlineData("blank-eventStoreAd22ExactSubjectRemovalAuthority")]
+    [InlineData("kind-mismatch")]
+    [InlineData("empty-consumers")]
+    [InlineData("duplicate-record")]
     public async Task InvalidHostingRecordsGrantNoExemptionAsync(string mutation)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
-        string directory = mutation == "src-directory" ? "src" : "src/Hexalith.Sample.AppHost";
+        string directory = mutation switch
+        {
+            "src-directory" => "src",
+            "src-directory-uppercase" => "Src",
+            "eng-directory" => "eng",
+            _ => "src/Hexalith.Sample.AppHost",
+        };
         string project = directory + "/Hexalith.Sample.AppHost.csproj";
         workspace.Write(project, "<Project />");
         workspace.Write(directory + "/Program.cs", "app.MapSubscribeHandler();");
@@ -627,7 +757,33 @@ public sealed class PlatformAdoptionValidationTests
             record["state"] = "active";
         }
 
-        workspace.Write("module/hosting-inventory.json", new JsonObject { ["schemaVersion"] = 1, ["projects"] = new JsonArray(record) }.ToJsonString());
+        switch (mutation)
+        {
+            case "missing-replacement-plan": _ = record.Remove("replacementPlan"); break;
+            case "missing-retirement-plan": _ = record.Remove("retirementPlan"); break;
+            case "empty-gates": record["gates"] = new JsonObject(); break;
+            case "kind-mismatch": record["kind"] = "Aspire"; break;
+            case "empty-consumers": record["consumers"] = new JsonArray(); break;
+            default:
+                if (mutation.StartsWith("missing-", StringComparison.Ordinal))
+                {
+                    _ = record["gates"]!.AsObject().Remove(mutation["missing-".Length..]);
+                }
+                else if (mutation.StartsWith("blank-", StringComparison.Ordinal))
+                {
+                    record["gates"]![mutation["blank-".Length..]] = " ";
+                }
+
+                break;
+        }
+
+        JsonArray projects = new(record);
+        if (mutation == "duplicate-record")
+        {
+            projects.Add(record.DeepClone());
+        }
+
+        workspace.Write("module/hosting-inventory.json", new JsonObject { ["schemaVersion"] = 1, ["projects"] = projects }.ToJsonString());
         await workspace.TrackAsync().ConfigureAwait(true);
         PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
         report.Rows.ShouldContain(row => row.Requirement == "hosting-inventory" && !row.Passed);
@@ -635,14 +791,17 @@ public sealed class PlatformAdoptionValidationTests
     }
 
     /// <summary>Verifies an exact top-level hosting directory can be frozen with explicit no-consumers.</summary>
+    /// <param name="directory">The project's own directory, compared without case sensitivity.</param>
     /// <returns>The assertion task.</returns>
-    [Fact]
-    public async Task TopLevelHostingDirectoryWithNoConsumersPassesAsync()
+    [Theory]
+    [InlineData("Hexalith.Sample.AppHost")]
+    [InlineData("hexalith.sample.apphost")]
+    public async Task TopLevelHostingDirectoryWithNoConsumersPassesAsync(string directory)
     {
         using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
-        const string project = "Hexalith.Sample.AppHost/Hexalith.Sample.AppHost.csproj";
+        string project = directory + "/Hexalith.Sample.AppHost.csproj";
         workspace.Write(project, "<Project />");
-        workspace.Write("Hexalith.Sample.AppHost/Program.cs", "app.MapSubscribeHandler();");
+        workspace.Write(directory + "/Program.cs", "app.MapSubscribeHandler();");
         workspace.Write("module/hosting-inventory.json", new JsonObject { ["schemaVersion"] = 1, ["projects"] = new JsonArray(HostingRecord(project)) }.ToJsonString());
         await workspace.TrackAsync().ConfigureAwait(true);
         (await workspace.ValidateAsync().ConfigureAwait(true)).IsValid.ShouldBeTrue();
@@ -738,6 +897,149 @@ public sealed class PlatformAdoptionValidationTests
         (await WorkspaceGitFixture.RunGitAsync(workspace.Root, "status", "--porcelain=v1", "--untracked-files=all").ConfigureAwait(true)).Output.ShouldBe(before);
         (await File.ReadAllTextAsync(external, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(content);
         new FileInfo(link).LinkTarget.ShouldBe(external);
+    }
+
+    /// <summary>Verifies custom build properties cannot hide dependency paths or ancestor discovery.</summary>
+    /// <param name="path">The owning build file.</param>
+    /// <param name="body">The property declaration.</param>
+    /// <param name="passes">Whether the declaration stays within module-local paths.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("Directory.Packages.props", "<Hexalith1BuildPackageProps>$(MSBuildThisFileDirectory)references/Hexalith.Builds/Props/Directory.Packages.props</Hexalith1BuildPackageProps>", false)]
+    [InlineData("Directory.Packages.props", "<Hexalith2BuildPackageProps>$(MSBuildThisFileDirectory)../Hexalith.Builds/Props/Directory.Packages.props</Hexalith2BuildPackageProps>", false)]
+    [InlineData("Directory.Packages.props", "<Hexalith3BuildPackageProps>$(MSBuildThisFileDirectory)../../Hexalith.Builds/Props/Directory.Packages.props</Hexalith3BuildPackageProps>", false)]
+    [InlineData("Module.Directory.Build.props", "<BuildPackageProps>$(MSBuildThisFileDirectory)../references/Hexalith.Builds/Hexalith.Build.props</BuildPackageProps>", false)]
+    [InlineData("Module.Directory.Build.props", "<ParentDirectoryBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentDirectoryBuildProps>", false)]
+    [InlineData("Module.Directory.Build.props", "<ParentDirectoryBuildProps>$([MSBuild]::GetDirectoryNameOfFileAbove('$(MSBuildThisFileDirectory)../', 'Directory.Build.props'))</ParentDirectoryBuildProps>", false)]
+    [InlineData("eng/Module.Directory.Build.props", "<ParentDirectoryBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</ParentDirectoryBuildProps>", true)]
+    [InlineData("eng/Module.Directory.Build.props", "<ParentDirectoryBuildProps>$([MSBuild]::GetDirectoryNameOfFileAbove('$(MSBuildThisFileDirectory)../', 'Directory.Build.props'))</ParentDirectoryBuildProps>", true)]
+    [InlineData("Directory.Build.props", "<HexalithFrontComposerSourceAvailable Condition=\"Exists('$(HexalithFrontComposerRoot)/src/Contracts.csproj')\">true</HexalithFrontComposerSourceAvailable>", false)]
+    [InlineData("Directory.Build.props", "<SourceAvailable Condition=\"Exists('references/Hexalith.Other/Other.props')\">true</SourceAvailable>", false)]
+    [InlineData("Directory.Build.props", "<SourceAvailable Condition=\"Exists('../Hexalith.Other/Other.props')\">true</SourceAvailable>", false)]
+    [InlineData("Directory.Build.props", "<SourceAvailable Condition=\"Exists('local/Optional.props')\">true</SourceAvailable>", true)]
+    [InlineData("Directory.Build.props", "<OptionalAvailable Condition=\"Exists('../Optional.props')\">true</OptionalAvailable>", true)]
+    [InlineData("Directory.Build.props", "<ProjectsRepositoryDirectory>$(MSBuildThisFileDirectory)</ProjectsRepositoryDirectory>", true)]
+    [InlineData("src/libraries/Sample/Sample.csproj", "<ContractsDirectory>../Hexalith.Sample.Contracts</ContractsDirectory>", true)]
+    [InlineData("Directory.Build.targets", @"<_ContainerProvenanceHttpsUrlPattern>\Ahttps://[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*(?::(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?(?:[/?#][^\s]*)?\z</_ContainerProvenanceHttpsUrlPattern>", true)]
+    [InlineData("Directory.Build.targets", "<ContainerProvenanceRepositoryUrl>https://github.com/Hexalith/Hexalith.Parties</ContainerProvenanceRepositoryUrl>", true)]
+    [InlineData("Directory.Build.targets", "<ContainerBaseImage>mcr.microsoft.com/dotnet/aspnet:10.0-alpine</ContainerBaseImage>", true)]
+    [InlineData("Directory.Build.targets", "<ContainerImage>registry.hexalith.com/hexalith.parties:4.35.1</ContainerImage>", true)]
+    [InlineData("Directory.Build.props", @"<BuildPackageProps>..\Hexalith.Builds\Props\Directory.Packages.props</BuildPackageProps>", false)]
+    [InlineData("Directory.Build.props", "<DependencyDirectory>/tmp/Hexalith.Other/src</DependencyDirectory>", false)]
+    [InlineData("Directory.Build.props", "<BaseOutputPath>$(MSBuildThisFileDirectory)../artifacts/</BaseOutputPath>", true)]
+    [InlineData("Directory.Build.props", "<BaseIntermediateOutputPath>../obj/</BaseIntermediateOutputPath>", true)]
+    [InlineData("Directory.Build.props", "<ArtifactsPath>$(MSBuildThisFileDirectory)../../artifacts/</ArtifactsPath>", true)]
+    public async Task CustomBuildPropertiesCannotSelectDependencyPathsAsync(string path, string body, bool passes)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write(path, "<Project><PropertyGroup>" + body + "</PropertyGroup></Project>");
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.Single(row => row.Requirement == "dependency-selectors").Passed.ShouldBe(passes);
+    }
+
+    /// <summary>Verifies unreadable non-Dapr file types affect only the dependency audit.</summary>
+    /// <param name="extension">The supported dependency-only extension.</param>
+    /// <param name="mutation">The file-read failure.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("csproj", "missing")]
+    [InlineData("props", "missing")]
+    [InlineData("targets", "missing")]
+    [InlineData("ps1", "missing")]
+    [InlineData("sh", "missing")]
+    [InlineData("py", "missing")]
+    [InlineData("csproj", "oversized")]
+    [InlineData("props", "oversized")]
+    [InlineData("targets", "oversized")]
+    [InlineData("ps1", "oversized")]
+    [InlineData("sh", "oversized")]
+    [InlineData("py", "oversized")]
+    [InlineData("csproj", "external")]
+    [InlineData("props", "external")]
+    [InlineData("targets", "external")]
+    [InlineData("ps1", "external")]
+    [InlineData("sh", "external")]
+    [InlineData("py", "external")]
+    public async Task DependencyOnlyFileFailuresDoNotEnterDaprAuditAsync(string extension, string mutation)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        using PlatformManifestTestWorkspace outside = new();
+        string path = "eng/Audit." + extension;
+        workspace.Write(path, mutation == "oversized" ? new string(' ', 1_048_577) : string.Empty);
+        string fullPath = Path.Combine(workspace.Root, path);
+        if (mutation == "external")
+        {
+            string external = Path.Combine(outside.Root, "External." + extension);
+            await File.WriteAllTextAsync(external, "external content", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            File.Delete(fullPath);
+            _ = File.CreateSymbolicLink(fullPath, external);
+        }
+
+        await workspace.TrackAsync().ConfigureAwait(true);
+        if (mutation == "missing")
+        {
+            File.Delete(fullPath);
+        }
+
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        report.Rows.ShouldContain(row => row.Requirement == "dependency-selectors" && !row.Passed && row.File == path);
+        report.Rows.Single(row => row.Requirement == "dapr-subscriptions").Passed.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies YAML null spellings do not invent physical component defaults.</summary>
+    /// <param name="format">The configuration extension.</param>
+    /// <param name="value">The YAML null spelling.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("yaml", "Null")]
+    [InlineData("yaml", "NULL")]
+    [InlineData("yml", "Null")]
+    [InlineData("yml", "NULL")]
+    public async Task YamlNullDefaultsRemainUnsetAsync(string format, string value)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        workspace.Write("appsettings." + format, "PubSubName: " + value + "\n");
+        await workspace.TrackAsync().ConfigureAwait(true);
+        (await workspace.ValidateAsync().ConfigureAwait(true)).IsValid.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies a missing pin reports the exact workspace-relative manifest.</summary>
+    /// <param name="path">The missing module or direct Platform manifest.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData(".config/dotnet-tools.json")]
+    [InlineData("references/Hexalith.Platform/.config/dotnet-tools.json")]
+    public async Task MissingToolPinNamesItsActualManifestAsync(string path)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        File.Delete(Path.Combine(workspace.Root, path));
+        PlatformAdoptionRow row = (await workspace.ValidateAsync().ConfigureAwait(true)).Rows.Single(row => row.Requirement == "tool-pin");
+        row.Passed.ShouldBeFalse();
+        row.File.ShouldBe(path);
+        row.Reason.ShouldContain(path);
+    }
+
+    /// <summary>Verifies declaration rows retain workspace-relative paths even when invoked below the root.</summary>
+    /// <param name="missing">Whether the declaration is missing.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeclarationRowsUseWorkspaceRelativePathsAsync(bool missing)
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        const string filename = "hexalith.module-manifest.v2.json";
+        workspace.Write("module/" + filename, await File.ReadAllTextAsync(workspace.Manifest, TestContext.Current.CancellationToken).ConfigureAwait(true));
+        await workspace.TrackAsync().ConfigureAwait(true);
+        if (missing)
+        {
+            File.Delete(Path.Combine(workspace.Root, "module", filename));
+        }
+
+        PlatformAdoptionValidationResult report = await PlatformAdoptionValidator.ValidateAsync([filename], Path.Combine(workspace.Root, "module"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        PlatformAdoptionRow row = report.Rows.Single(row => row.Requirement == "declaration");
+        row.File.ShouldBe("module/" + filename);
+        row.Passed.ShouldBe(!missing);
     }
 
     private static JsonObject HostingRecord(string project) => new()

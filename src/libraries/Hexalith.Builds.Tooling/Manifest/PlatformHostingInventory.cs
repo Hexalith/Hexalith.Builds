@@ -50,7 +50,7 @@ internal static class PlatformHostingInventory
 
             PlatformAdoptionValidator.Require(projectPath.Contains('/', StringComparison.Ordinal), "A frozen project must have its own directory.");
             string directory = projectPath[..projectPath.LastIndexOf('/')];
-            PlatformAdoptionValidator.Require(directory is not "src" and not "test" and not "tests", "Only an exact hosting-project directory can be frozen; never root build files.");
+            PlatformAdoptionValidator.Require(Path.GetFileName(directory).Equals(Path.GetFileNameWithoutExtension(projectPath), StringComparison.OrdinalIgnoreCase), "Only the hosting project's own exact directory can be frozen; never shared directories or root build files.");
             PlatformAdoptionValidator.Require(!tracked.Any(file => file.StartsWith(directory + "/", StringComparison.Ordinal) && file.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase) && file != projectPath), "A frozen directory cannot contain another project: " + directory + ".");
             _ = frozen.Add(directory);
         }
