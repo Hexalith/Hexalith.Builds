@@ -174,7 +174,7 @@ internal static class PlatformAdoptionSourceAudit
         {
             int start = command.Index + command.Length;
             int end = ProbeArgumentEnd(executable, start, call: false);
-            if (Match(syntax[start..end], @"(?:^|\s)['""]?(?:-p:|/p:|--property(?::|=|\s+))" + _reservedPropertyPattern + @"\s*="))
+            if (Match(syntax[start..end], @"(?:^|\s)['""]?(?:[-/]p:|[-/]property:|--property(?::|=|\s+))(?:[^\s'"";]*;)*" + _reservedPropertyPattern + @"\s*="))
             {
                 return true;
             }
@@ -262,11 +262,11 @@ internal static class PlatformAdoptionSourceAudit
 
     private static bool HasSegmentBuiltDependencyPath(string syntax, string executable, bool includeDirectReferences = false)
     {
-        foreach (Match construction in Regex.Matches(executable, @"\b(?:Path\s*\.\s*Combine|os\s*\.\s*path\s*\.\s*join)\s*\(|\bJoin-Path\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
+        foreach (Match construction in Regex.Matches(executable, @"\b(?:Path\s*\.\s*(?:Combine|Join)|os\s*\.\s*path\s*\.\s*join)\s*\(|\bJoin-Path\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, _regexTimeout))
         {
             int start = construction.Index + construction.Length;
             int end = ProbeArgumentEnd(executable, start, call: construction.Value.EndsWith('('));
-            if (Match(syntax[start..end], @"@?['""]\.\.['""]\s*,?\s*(?:@?['""]references['""]\s*,?\s*)?@?['""]Hexalith\.[^'""]+['""]")
+            if (Match(syntax[start..end], @"@?['""](?:\.\.[/\\])*\.\.[/\\]?['""]\s*,?\s*(?:@?['""]references['""]\s*,?\s*)?@?['""]Hexalith\.[^'""]+['""]|@?['""](?:\.\.[/\\])+(?:references[/\\])?Hexalith\.[^'""]*['""]")
                 || (includeDirectReferences && Match(syntax[start..end], @"@?['""]references['""]\s*,?\s*@?['""]Hexalith\.[^'""]+['""]")))
             {
                 return true;

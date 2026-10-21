@@ -408,6 +408,18 @@ dotnet tool run hexalith-module validate --manifest module/first.json --manifest
 dotnet tool run hexalith-module validate --manifest module/first.json --output json
 ```
 
+Add `--adoption` to report a domain module's static enrollment requirements:
+`workspace`, `declaration`, `references`, `gitlinks`, `nested-references`,
+`tool-pin`, `hosting-inventory`, `dependency-selectors` and `dapr-subscriptions`.
+Each row gives the requirement, PASS/FAIL, a workspace-relative file and a reason.
+JSON output adds the rows as `adoption` with the fixed `adoptionScope` statement.
+Any failing row exits `1`, and independent requirements are still reported. The
+check only reads the active module Git workspace and its tracked files. It never
+initializes references, resolves a source mapping, restores packages or starts
+resources. It is a bounded static check: it cannot prove runtime behavior or
+replace human source review and SM-2 verification. Module owners follow the
+Platform [domain-module enrollment guide](https://github.com/Hexalith/Hexalith.Platform/blob/main/docs/domain-module-enrollment.md).
+
 The strict [Draft 2020-12 schema](schemas/hexalith.module-manifest.v2.json)
 defines all five groups: identity, runtime, surfaces, integration and lifecycle.
 Unused capabilities use empty collections. Runtime replicas default to one;
