@@ -808,7 +808,7 @@ public sealed class PlatformManifestCommandTests
         {
             using JsonDocument parsed = JsonDocument.Parse(passed.Output);
             JsonElement root = parsed.RootElement;
-            root.GetProperty("adoptionScope").GetString().ShouldBe(PlatformAdoptionValidator.Scope);
+            root.GetProperty("adoptionScope").GetString().ShouldBe(Hexalith.Builds.Tooling.Manifest.PlatformAdoptionValidator.Scope);
             JsonElement[] rows = [.. root.GetProperty("adoption").EnumerateArray()];
             rows.Length.ShouldBe(9);
             foreach (JsonElement row in rows)
@@ -822,7 +822,7 @@ public sealed class PlatformManifestCommandTests
         else
         {
             passed.Output.ShouldContain("PASS tool-pin file=.config/dotnet-tools.json");
-            passed.Output.TrimEnd().ShouldEndWith(PlatformAdoptionValidator.Scope);
+            passed.Output.TrimEnd().ShouldEndWith(Hexalith.Builds.Tooling.Manifest.PlatformAdoptionValidator.Scope);
         }
 
         File.Delete(Path.Combine(workspace.Root, "module/hosting-inventory.json"));

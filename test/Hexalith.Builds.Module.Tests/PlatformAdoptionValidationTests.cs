@@ -451,7 +451,7 @@ public sealed class PlatformAdoptionValidationTests
         }
 
         await workspace.TrackAsync().ConfigureAwait(true);
-        string paths = (await WorkspaceGitFixture.RunGitAsync(workspace.Root, "ls-files", "-z").ConfigureAwait(true)).Output;
+        string paths = (await Hexalith.Builds.Tooling.Workspace.GitWorkspaceProcess.RunAsync(workspace.Root, 1_048_576, TestContext.Current.CancellationToken, "ls-files", "-z").ConfigureAwait(true)).Output;
         paths.Length.ShouldBeGreaterThan(65_536);
         (await workspace.ValidateAsync().ConfigureAwait(true)).IsValid.ShouldBeTrue();
     }
@@ -571,9 +571,21 @@ public sealed class PlatformAdoptionValidationTests
         }
 
         JsonObject record = HostingRecord(project);
-        if (mutation == "pending-owner") record["owner"] = "Pending: module owner";
-        if (mutation == "pending-consumer") record["consumers"] = new JsonArray("PENDING: identify consumer");
-        if (mutation == "not-frozen") record["state"] = "active";
+        if (mutation == "pending-owner")
+        {
+            record["owner"] = "Pending: module owner";
+        }
+
+        if (mutation == "pending-consumer")
+        {
+            record["consumers"] = new JsonArray("PENDING: identify consumer");
+        }
+
+        if (mutation == "not-frozen")
+        {
+            record["state"] = "active";
+        }
+
         workspace.Write("module/hosting-inventory.json", new JsonObject { ["schemaVersion"] = 1, ["projects"] = new JsonArray(record) }.ToJsonString());
         await workspace.TrackAsync().ConfigureAwait(true);
         PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
