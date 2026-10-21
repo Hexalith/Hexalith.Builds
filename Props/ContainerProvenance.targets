@@ -1,0 +1,30 @@
+<Project>
+  <!-- The SDK reconstructs multi-RID labels by splitting on ':'. Rebind publisher-owned
+       provenance immediately before creating an image, after that lossy reconstruction. -->
+  <PropertyGroup Condition="'$(EnableContainer)' == 'true' and '$(ContainerProvenanceSourceSha)' != '' and '$(ContainerProvenanceReleaseVersion)' != '' and '$(ContainerProvenanceCreated)' != ''">
+    <ContainerGenerateLabelsImageSource>false</ContainerGenerateLabelsImageSource>
+    <ContainerGenerateLabelsImageUrl>false</ContainerGenerateLabelsImageUrl>
+    <ContainerGenerateLabelsImageDocumentation>false</ContainerGenerateLabelsImageDocumentation>
+    <ContainerGenerateLabelsImageRevision>false</ContainerGenerateLabelsImageRevision>
+    <ContainerGenerateLabelsImageVersion>false</ContainerGenerateLabelsImageVersion>
+    <ContainerGenerateLabelsImageCreated>false</ContainerGenerateLabelsImageCreated>
+    <ContainerProvenanceRepositoryUrl Condition="'$(ContainerProvenanceRepositoryUrl)' == ''">$(RepositoryUrl)</ContainerProvenanceRepositoryUrl>
+    <ContainerProvenanceReleaseUrl Condition="'$(ContainerProvenanceReleaseUrl)' == ''">$(ContainerProvenanceRepositoryUrl)/releases/tag/v$(ContainerProvenanceReleaseVersion)</ContainerProvenanceReleaseUrl>
+    <ContainerProvenanceDocumentationUrl Condition="'$(ContainerProvenanceDocumentationUrl)' == ''">$(ContainerProvenanceRepositoryUrl)/blob/$(ContainerProvenanceSourceSha)/README.md</ContainerProvenanceDocumentationUrl>
+  </PropertyGroup>
+
+  <Target Name="RebindContainerProvenanceLabels"
+          BeforeTargets="_PublishSingleContainer"
+          Condition="'$(EnableContainer)' == 'true' and '$(ContainerProvenanceSourceSha)' != '' and '$(ContainerProvenanceReleaseVersion)' != '' and '$(ContainerProvenanceCreated)' != ''">
+    <ItemGroup>
+      <ContainerLabel Remove="org.opencontainers.image.source;org.opencontainers.image.url;org.opencontainers.image.documentation;org.opencontainers.image.revision;org.opencontainers.image.version;org.opencontainers.image.created;org.opencontainers.artifact.created" />
+      <ContainerLabel Include="org.opencontainers.image.source" Value="$(ContainerProvenanceRepositoryUrl)" />
+      <ContainerLabel Include="org.opencontainers.image.url" Value="$(ContainerProvenanceReleaseUrl)" />
+      <ContainerLabel Include="org.opencontainers.image.documentation" Value="$(ContainerProvenanceDocumentationUrl)" />
+      <ContainerLabel Include="org.opencontainers.image.revision" Value="$(ContainerProvenanceSourceSha)" />
+      <ContainerLabel Include="org.opencontainers.image.version" Value="$(ContainerProvenanceReleaseVersion)" />
+      <ContainerLabel Include="org.opencontainers.image.created" Value="$(ContainerProvenanceCreated)" />
+      <ContainerLabel Include="org.opencontainers.artifact.created" Value="$(ContainerProvenanceCreated)" />
+    </ItemGroup>
+  </Target>
+</Project>
