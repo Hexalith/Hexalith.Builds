@@ -8,16 +8,16 @@
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.5</HexalithPolymorphicSerializationsVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.126.1</HexalithEventStoreVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.7.0</HexalithFrontComposerVersion>
-    <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.3.0</HexalithFoldersVersion>
+    <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.3.1</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">1.0.0</HexalithMcpCliVersion>
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.27.1</HexalithMemoriesVersion>
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.10.0</HexalithTenantsVersion>
-    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.5.1</HexalithPartiesVersion>
-    <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.0.0</HexalithProjectsVersion>
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.29.8</HexalithMemoriesVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.10.1</HexalithTenantsVersion>
+    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.5.2</HexalithPartiesVersion>
+    <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.0</HexalithProjectsVersion>
     <!-- Folders.Aspire is a stable public package; all other consumers retain the preview integration. -->
     <HexalithAspireHostingDaprVersion>13.6.1-beta.935</HexalithAspireHostingDaprVersion>
     <HexalithAspireHostingDaprVersion Condition="'$(MSBuildProjectName)' == 'Hexalith.Folders.Aspire'">13.0.0</HexalithAspireHostingDaprVersion>
-    <HexalithAspireAppHostSdkVersion>13.6.1</HexalithAspireAppHostSdkVersion>
+    <HexalithAspireAppHostSdkVersion>13.6.3</HexalithAspireAppHostSdkVersion>
     <HexalithDaprRuntimeVersion>1.18.7</HexalithDaprRuntimeVersion>
     <HexalithDaprCliVersion>1.18.2</HexalithDaprCliVersion>
     <HexalithRedisImage>docker.io/library/redis</HexalithRedisImage>
@@ -99,10 +99,7 @@
     <PackageVersion Include="Hexalith.Parties.ConsumerPortal" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.Contracts" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.Picker" Version="$(HexalithPartiesVersion)" />
-    <PackageVersion Include="Hexalith.Parties.Server" Version="$(HexalithPartiesVersion)" />
-    <PackageVersion Include="Hexalith.Parties.ServiceDefaults" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.Testing" Version="$(HexalithPartiesVersion)" />
-    <PackageVersion Include="Hexalith.Parties.UI" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Projects" Version="$(HexalithProjectsVersion)" />
     <PackageVersion Include="Hexalith.Projects.Client" Version="$(HexalithProjectsVersion)" />
     <PackageVersion Include="Hexalith.Projects.Contracts" Version="$(HexalithProjectsVersion)" />
@@ -116,7 +113,6 @@
     <PackageVersion Include="Hexalith.Tenants.Contracts" Version="$(HexalithTenantsVersion)" />
     <PackageVersion Include="Hexalith.Tenants.Server" Version="$(HexalithTenantsVersion)" />
     <PackageVersion Include="Hexalith.Tenants.Testing" Version="$(HexalithTenantsVersion)" />
-    <PackageVersion Include="Hexalith.Tenants.UI" Version="$(HexalithTenantsVersion)" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
@@ -138,19 +134,19 @@
     <PackageVersion Include="AspNet.Security.OAuth.Paypal" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Yahoo" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Slack" Version="10.0.0" />
-    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="13.6.1" />
-    <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="13.6.1" />
-    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.6.1" />
-    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="13.6.1" />
-    <PackageVersion Include="Aspire.Hosting" Version="13.6.1" />
-    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.6.1" />
-    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.6.1" />
-    <PackageVersion Include="Aspire.Hosting.Docker" Version="13.6.1" />
-    <PackageVersion Include="Aspire.Hosting.Keycloak" Version="13.6.1-preview.1.26506.6" />
-    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="13.6.1-preview.1.26506.6" />
-    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.6.1" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.6.1" />
-    <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="13.6.1" />
+    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="13.6.3" />
+    <PackageVersion Include="Aspire.Azure.Security.KeyVault" Version="13.6.3" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.6.3" />
+    <PackageVersion Include="Aspire.Azure.Storage.Queues" Version="13.6.3" />
+    <PackageVersion Include="Aspire.Hosting" Version="13.6.3" />
+    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.6.3" />
+    <PackageVersion Include="Aspire.Hosting.Azure.CosmosDB" Version="13.6.3" />
+    <PackageVersion Include="Aspire.Hosting.Docker" Version="13.6.3" />
+    <PackageVersion Include="Aspire.Hosting.Keycloak" Version="13.6.3-preview.1.26521.2" />
+    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="13.6.3-preview.1.26521.2" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.6.3" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.6.3" />
+    <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="13.6.3" />
     <PackageVersion Include="Azure.Bicep.Core" Version="0.48.1" />
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.6.0" />
@@ -185,16 +181,16 @@
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.2.0" />
     <PackageVersion Include="Fluxor" Version="6.11.0" />
     <PackageVersion Include="Fluxor.Blazor.Web" Version="6.11.0" />
-    <PackageVersion Include="FsCheck" Version="3.5.0" />
+    <PackageVersion Include="FsCheck" Version="3.6.0" />
     <!-- FrontComposer Story 2-1: xUnit v3 integration for property-based tests. -->
-    <PackageVersion Include="FsCheck.Xunit.v3" Version="3.5.0" />
+    <PackageVersion Include="FsCheck.Xunit.v3" Version="3.6.0" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="3.0.5" />
     <PackageVersion Include="Google.Apis" Version="1.77.0" />
     <PackageVersion Include="Google.Apis.Auth.AspNetCore3" Version="1.77.0" />
     <PackageVersion Include="Grpc" Version="2.46.6" />
     <PackageVersion Include="Grpc.HealthCheck" Version="2.84.0" />
     <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.84.0" />
-    <PackageVersion Include="HotChocolate" Version="16.6.8" />
+    <PackageVersion Include="HotChocolate" Version="16.6.9" />
     <PackageVersion Include="Humanizer" Version="3.0.10" />
     <PackageVersion Include="ISO3166" Version="1.0.4" />
     <PackageVersion Include="JsonSchema.Net" Version="9.4.1" />
@@ -262,7 +258,7 @@
     <PackageVersion Include="Microsoft.FluentUI.AspNetCore.Components" Version="5.0.1" />
     <PackageVersion Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="5.0.1" />
     <PackageVersion Include="Microsoft.Graph" Version="6.8.0" />
-    <PackageVersion Include="Microsoft.Identity.Client" Version="4.91.0" />
+    <PackageVersion Include="Microsoft.Identity.Client" Version="4.91.1" />
     <PackageVersion Include="Microsoft.IdentityModel.Abstractions" Version="8.23.0" />
     <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.23.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Logging" Version="8.23.0" />
@@ -272,8 +268,8 @@
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.16.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <!-- Keep Microsoft.OpenApi on 2.x: Microsoft.AspNetCore.OpenApi 10.x is compiled against the 2.x API surface; v3 breaks runtime OpenAPI document generation. -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="2.12.2" />
-    <PackageVersion Include="Microsoft.Playwright" Version="1.63.0" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.13.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.64.0" />
     <!-- Existing Timesheets Works prerequisite; retain the published version. -->
     <PackageVersion Include="Hexalith.Works.Contracts" Version="1.0.2" />
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.81.0" />
@@ -283,9 +279,9 @@
     <PackageVersion Include="Microsoft.TypeScript.MSBuild" Version="7.0.1" />
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.12.1" />
     <PackageVersion Include="MinVer" Version="8.0.0" />
-    <PackageVersion Include="ModelContextProtocol" Version="2.2.0" />
+    <PackageVersion Include="ModelContextProtocol" Version="2.3.0" />
     <!-- FrontComposer MCP server runtime. -->
-    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.3.0" />
     <PackageVersion Include="Moq" Version="4.21.0" />
     <PackageVersion Include="Moq.Contrib.HttpClient" Version="1.4.0" />
     <PackageVersion Include="NBomber" Version="6.7.1" />
@@ -302,20 +298,20 @@
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="Octokit" Version="14.0.0" />
     <PackageVersion Include="ObjectComparator" Version="3.9.0" />
-    <PackageVersion Include="OpenTelemetry" Version="1.20.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.20.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.20.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.20.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.20.0-beta.1" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.20.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.0" />
+    <PackageVersion Include="OpenTelemetry" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.20.1-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.1" />
     <!-- Prerelease accepted explicitly per Hexalith.Memories ADR-8.5-001 (b); upgrade-on-GA trigger tracked in Memories deferred-work.md. -->
-    <PackageVersion Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.20.0-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.20.1-beta.1" />
     <PackageVersion Include="OrchardCore.Localization.Core" Version="3.0.1" />
     <!-- FrontComposer Story 10-3: file-based EventStore REST consumer contracts. -->
     <PackageVersion Include="PactNet" Version="5.0.1" />
-    <PackageVersion Include="Radzen.Blazor" Version="12.1.4" />
+    <PackageVersion Include="Radzen.Blazor" Version="12.1.6" />
     <PackageVersion Include="Roslynator.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Scriban" Version="7.5.1" />
@@ -332,9 +328,9 @@
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
-    <PackageVersion Include="StyleCop.Analyzers" Version="1.3.109-beta" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.3.0" />
-    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.3.0" />
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.3.151-beta" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.3.1" />
+    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.3.1" />
     <!-- FrontComposer netstandard2.0 contracts dependencies; net10.0 provides these APIs in-box. -->
     <PackageVersion Include="System.Collections.Immutable" Version="10.0.13" />
     <!-- Microsoft-supported CLI parser chosen per Hexalith.Memories ADR-7.1-008: recursive/global options, async handlers with CancellationToken, global-tool packaging. -->
@@ -355,7 +351,7 @@
     <PackageVersion Include="Verify" Version="33.3.4" />
     <PackageVersion Include="Verify.XunitV3" Version="33.3.4" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
-    <PackageVersion Include="bunit" Version="2.11.3" />
+    <PackageVersion Include="bunit" Version="2.12.5" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
     <PackageVersion Include="xunit.v3" Version="4.0.2" />
     <PackageVersion Include="xunit.v3.assert" Version="4.0.2" />
