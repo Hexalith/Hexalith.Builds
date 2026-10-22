@@ -6,6 +6,9 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$catalog = [xml][IO.File]::ReadAllText((Join-Path $PSScriptRoot '../Props/Directory.Packages.props'))
+$eventStoreVersion = $catalog.SelectSingleNode('/Project/PropertyGroup/HexalithEventStoreVersion').InnerText.Trim()
+
 $testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "hexalith-g4-publisher-$([System.Guid]::NewGuid().ToString('N'))"
 $sourceRepositoryRoot = Join-Path $testRoot 'source'
 $publisherPath = Join-Path $sourceRepositoryRoot 'Tools/publish-g4-tool-packages.ps1'
@@ -226,7 +229,7 @@ function New-ModuleEvidenceContent {
         }
         topology = [ordered] @{
             platform = [ordered] @{
-                eventStoreVersion = '3.126.0'
+                eventStoreVersion = $eventStoreVersion
             }
         }
     }
@@ -711,6 +714,18 @@ try {
         $path = Join-Path $PackageDirectory $relativePath
         $evidence = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
         $evidence.environment.toolVersion = '9.8.21+0000000000000000000000000000000000000000'
+        $content = ($evidence | ConvertTo-Json -Depth 12) + "`n"
+        Set-EvidenceContentAndRefreshInventory -Inventory $Inventory -PackageDirectory $PackageDirectory `
+            -RelativePath $relativePath -Content $content
+    }
+    # The immediately previous pin must fail even when the retained bytes and
+    # inventory digest are jointly rebound to the modified synthetic evidence.
+    Invoke-RejectionCase -PublishedVersion '9.8.34' -ExpectedMessage 'does not match its exact typed outcome' -Mutate {
+        param($Inventory, $PackageDirectory)
+        $relativePath = 'qualification-evidence/packaged-test-evidence.json'
+        $path = Join-Path $PackageDirectory $relativePath
+        $evidence = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+        $evidence.topology.platform.eventStoreVersion = '3.126.0'
         $content = ($evidence | ConvertTo-Json -Depth 12) + "`n"
         Set-EvidenceContentAndRefreshInventory -Inventory $Inventory -PackageDirectory $PackageDirectory `
             -RelativePath $relativePath -Content $content

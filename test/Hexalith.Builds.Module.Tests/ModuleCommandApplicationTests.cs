@@ -10,6 +10,7 @@ using System.Text.Json;
 
 using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
 
 using Shouldly;
@@ -21,8 +22,8 @@ using Xunit;
 /// </summary>
 public sealed class ModuleCommandApplicationTests
 {
-    private const string _manifestJson =
-        """
+    private static readonly string _manifestJson =
+        $$"""
         {
           "schema": "hexalith.module-manifest.v1",
           "id": "command-fixture",
@@ -45,7 +46,7 @@ public sealed class ModuleCommandApplicationTests
             }
           ],
           "platform": {
-            "eventStoreVersion": "3.126.0",
+            "eventStoreVersion": "{{SupportedPlatformPins.EventStoreVersion}}",
             "daprRuntimeVersion": "1.18.2",
             "daprSdkVersion": "1.18.10",
             "frontComposerVersion": "4.7.0"
