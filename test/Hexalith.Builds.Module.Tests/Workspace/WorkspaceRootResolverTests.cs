@@ -1292,10 +1292,10 @@ public sealed class WorkspaceRootResolverTests
         if (multiple)
         {
             manifest = WriteStandaloneDeclaration(fixture.Checkout, "parties");
-            JsonNode document = JsonNode.Parse(File.ReadAllText(manifest))!;
+            JsonNode document = JsonNode.Parse(await File.ReadAllTextAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
             JsonNode second = JsonNode.Parse(document["modules"]![0]!.ToJsonString().Replace("parties", "other", StringComparison.Ordinal))!;
             document["modules"]!.AsArray().Add(second);
-            File.WriteAllText(manifest, document.ToJsonString());
+            await File.WriteAllTextAsync(manifest, document.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
         }
 
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, mode, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -1320,7 +1320,7 @@ public sealed class WorkspaceRootResolverTests
 
         WorkspaceMappingException failure = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(manifest, mode, TestContext.Current.CancellationToken)).ConfigureAwait(true);
 
-        failure.Diagnostics.ShouldContain(diagnostic => collision ? diagnostic.RuleId == "HXW002" && diagnostic.Message.Contains("Hexalith.Dep", StringComparison.Ordinal) : diagnostic.Source == manifest && diagnostic.Field!.Contains("moduleId", StringComparison.Ordinal));
+        failure.Diagnostics.ShouldContain(diagnostic => collision ? diagnostic.RuleId == "HXW002" && diagnostic.Message.Contains("Hexalith.Dep", StringComparison.Ordinal) : diagnostic.Source != null && Path.GetFullPath(diagnostic.Source) == manifest && diagnostic.Field!.Contains("moduleId", StringComparison.Ordinal));
         foreach (string reference in new[] { "Hexalith.Dep", "Hexalith.Builds", "Hexalith.Platform" })
         {
             File.Exists(Path.Combine(fixture.Checkout, "references", reference, ".git")).ShouldBeFalse();

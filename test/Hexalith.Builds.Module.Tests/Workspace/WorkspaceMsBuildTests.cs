@@ -2070,14 +2070,16 @@ public sealed class WorkspaceMsBuildTests
         string root = NewDirectory();
         try
         {
+            using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
             string active = Path.Combine(root, name);
-            _ = Directory.CreateDirectory(active);
+            Directory.Move(fixture.Checkout, active);
             string manifest = WorkspaceRootResolverTests.WriteStandaloneDeclaration(active, "parties");
             SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
             mapping.ActiveModule.ShouldBe("Hexalith.Parties");
+            mapping.HasGit.ShouldBeTrue();
             string feed = Path.Combine(root, "feed");
             _ = Directory.CreateDirectory(feed);
-            File.WriteAllText(Path.Combine(root, "NuGet.Config"), "<configuration><packageSources><clear /><add key=\"local\" value=\"" + feed + "\" /></packageSources></configuration>");
+            await File.WriteAllTextAsync(Path.Combine(root, "NuGet.Config"), "<configuration><config><add key=\"globalPackagesFolder\" value=\"" + Path.Combine(root, "packages") + "\" /></config><packageSources><clear /><add key=\"local\" value=\"" + feed + "\" /></packageSources></configuration>", TestContext.Current.CancellationToken).ConfigureAwait(true);
             string packageRoot = Path.Combine(root, "package");
             _ = Directory.CreateDirectory(packageRoot);
             string package = WriteProject(packageRoot, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Hexalith.Parties.Contracts</PackageId><Version>1.0.0</Version></PropertyGroup></Project>");
@@ -2093,6 +2095,7 @@ public sealed class WorkspaceMsBuildTests
                 wrapped.ExitCode.ShouldBe(0, wrapped.Output);
                 selected = "Hexalith.Unrelated";
             }
+
             string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"" + selected + "\" Version=\"1.0.0\" /></ItemGroup></Project>");
             string workspace = Path.Combine(root, "run");
             await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -2102,7 +2105,10 @@ public sealed class WorkspaceMsBuildTests
             result.Output.ShouldContain("Hexalith.Parties");
             result.Output.ShouldContain(active);
             result.Output.ShouldContain("Hexalith.Parties.Contracts/1.0.0");
-            if (transitive) File.Exists(Path.Combine(active, "obj", "project.assets.json")).ShouldBeTrue("an unrelated wrapper must pass the direct prefix guard before its restored duplicate refuses");
+            if (transitive)
+            {
+                File.Exists(Path.Combine(active, "obj", "project.assets.json")).ShouldBeTrue("an unrelated wrapper must pass the direct prefix guard before its restored duplicate refuses");
+            }
         }
         finally
         {
