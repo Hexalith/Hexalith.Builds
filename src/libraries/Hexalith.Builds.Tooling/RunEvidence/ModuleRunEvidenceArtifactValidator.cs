@@ -471,6 +471,9 @@ internal static class ModuleRunEvidenceArtifactValidator
             || record.Selection.CredentialExpiryUtc - record.Selection.ExecutionDeadlineUtc >= TimeSpan.FromSeconds(1)
             || record.Selection.CredentialExpiryUtc.Ticks % TimeSpan.TicksPerSecond != 0
             || (record.Selection.Executor == "python3" && record.Selection.Mode != "source")
+            || record.Selections.Count > 1
+            || (record.Selections.Count == 1 && record.Selections[0] != record.Selection)
+            || (record.ExecutionTiming is not null && !IsExecutionTimingCoherent(selected, record))
             || (record.ResourceDisposition == "removed" && !record.RemainingResources.IsEmpty)
             || selected.GetProperty("remainingResources").GetProperty("isEmpty").GetBoolean() != record.RemainingResources.IsEmpty;
         return !invalid && IsSelectedBindingCoherent(root, record!) && (root.GetProperty("finalStatus").GetString() != "completed"
@@ -478,6 +481,20 @@ internal static class ModuleRunEvidenceArtifactValidator
                 && record.ResourceDisposition == "removed" && record.RemainingResources.IsEmpty
                 && record.ReportHash is not null && record.TestCounts is { Total: > 0, Failed: 0, Skipped: 0 } counts
                 && counts.Passed == counts.Total));
+    }
+
+    private static bool IsExecutionTimingCoherent(JsonElement selected, Runtime.ModuleTestRunRecord record)
+    {
+        Runtime.ModuleTestExecutionTiming timing = record.ExecutionTiming!;
+        IReadOnlyList<Runtime.ModuleTestSelection> selections = record.Selections.Count == 0 ? [record.Selection] : record.Selections;
+        return timing.StartedAtUtc >= record.Selection.RequestedAtUtc && timing.StartedAtUtc <= record.TerminalAtUtc
+            && timing.DeadlineUtc - timing.StartedAtUtc == TimeSpan.FromSeconds(timing.EffectiveSeconds)
+            && selected.GetProperty("executionTiming").GetProperty("credentialExpiryUtc").GetDateTimeOffset() == timing.CredentialExpiryUtc
+            && selections.Any(entry => timing.EffectiveSeconds == entry.ExecutionTimeoutSeconds
+                && Runtime.ModuleTestExecutionTiming.Start(entry, timing.StartedAtUtc).ConfigurationContentIdentity == timing.ConfigurationContentIdentity)
+            && selections.Select(entry => entry.Name).Distinct(StringComparer.Ordinal).Count() == selections.Count
+            && selections.All(entry => entry.ManifestHash == record.Selection.ManifestHash && entry.ModuleId == record.Selection.ModuleId
+                && entry.Mode == record.Selection.Mode && entry.DaprRuntimeVersion == record.Selection.DaprRuntimeVersion);
     }
 
     private static bool IsSelectedBindingCoherent(JsonElement root, Runtime.ModuleTestRunRecord record)

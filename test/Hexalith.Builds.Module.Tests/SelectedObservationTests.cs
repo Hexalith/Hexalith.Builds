@@ -83,6 +83,8 @@ public sealed class SelectedObservationTests
             {
                 SelectedTest = new("memories", "functional-retention", "python3", "tools/verify-access-telemetry-lifecycle.py", new string('a', 64), new string('b', 64), 14400, 900, now, now.AddMinutes(7), now.AddMinutes(7), "source"),
             };
+            ModuleTestSelection active = plan.SelectedTest;
+            plan = plan with { SelectedTest = active with { RequestedAtUtc = active.RequestedAtUtc.AddHours(-2), ExecutionDeadlineUtc = active.ExecutionDeadlineUtc.AddHours(-2), CredentialExpiryUtc = active.CredentialExpiryUtc.AddHours(-2) }, ExecutionTiming = ModuleTestExecutionTiming.Start(active, active.RequestedAtUtc) };
             string path = Path.Combine(plan.Workspace, "platform-components", "retention", "gate.json");
             CompositionWorkspace.CreatePrivateDirectory(Path.GetDirectoryName(path)!);
             await File.WriteAllTextAsync(path, "{\"schemaVersion\":1,\"state\":\"disabled\",\"profileSha256\":\"\",\"expiresUtcMs\":0}", TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -110,7 +112,7 @@ public sealed class SelectedObservationTests
             using (JsonDocument enabled = JsonDocument.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true)))
             {
                 enabled.RootElement.GetProperty("state").GetString().ShouldBe("enabled");
-                enabled.RootElement.GetProperty("expiresUtcMs").GetInt64().ShouldBeLessThanOrEqualTo(plan.SelectedTest.ExecutionDeadlineUtc.ToUnixTimeMilliseconds());
+                enabled.RootElement.GetProperty("expiresUtcMs").GetInt64().ShouldBeLessThanOrEqualTo(plan.ExecutionTiming.DeadlineUtc.ToUnixTimeMilliseconds());
             }
 
             await owner.CancelAsync().ConfigureAwait(true);
@@ -174,6 +176,8 @@ public sealed class SelectedObservationTests
             AdjustableClock clock = new();
             DateTimeOffset start = clock.GetUtcNow();
             CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { SelectedTest = new("memories", "functional-retention", "python3", "entry.py", new string('a', 64), new string('b', 64), 1620, 900, start, start.AddMinutes(27), start.AddMinutes(27), "source") };
+            ModuleTestSelection active = plan.SelectedTest;
+            plan = plan with { SelectedTest = active with { RequestedAtUtc = active.RequestedAtUtc.AddHours(-2), ExecutionDeadlineUtc = active.ExecutionDeadlineUtc.AddHours(-2), CredentialExpiryUtc = active.CredentialExpiryUtc.AddHours(-2) }, ExecutionTiming = ModuleTestExecutionTiming.Start(active, active.RequestedAtUtc) };
             string path = Path.Combine(plan.Workspace, "platform-components", "retention", "gate.json");
             CompositionWorkspace.CreatePrivateDirectory(Path.GetDirectoryName(path)!);
             await File.WriteAllTextAsync(path, "{\"schemaVersion\":1,\"state\":\"disabled\",\"profileSha256\":\"\",\"expiresUtcMs\":0}", TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -190,7 +194,7 @@ public sealed class SelectedObservationTests
             {
                 clock.Now = start.AddMinutes(minutes);
                 _ = ticks.Release();
-                long expected = Math.Min(start.AddMinutes(minutes + 10).ToUnixTimeMilliseconds(), plan.SelectedTest.ExecutionDeadlineUtc.ToUnixTimeMilliseconds());
+                long expected = Math.Min(start.AddMinutes(minutes + 10).ToUnixTimeMilliseconds(), plan.ExecutionTiming.DeadlineUtc.ToUnixTimeMilliseconds());
                 await UntilAsync(() => Expiry(path) == expected).ConfigureAwait(true);
             }
 
@@ -278,6 +282,8 @@ public sealed class SelectedObservationTests
             AdjustableClock clock = new();
             DateTimeOffset start = clock.GetUtcNow();
             CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { SelectedTest = new("memories", "functional-retention", "python3", "entry.py", new string('a', 64), new string('b', 64), 3600, 900, start, start.AddHours(1), start.AddHours(1), "source") };
+            ModuleTestSelection active = plan.SelectedTest;
+            plan = plan with { SelectedTest = active with { RequestedAtUtc = active.RequestedAtUtc.AddHours(-2), ExecutionDeadlineUtc = active.ExecutionDeadlineUtc.AddHours(-2), CredentialExpiryUtc = active.CredentialExpiryUtc.AddHours(-2) }, ExecutionTiming = ModuleTestExecutionTiming.Start(active, active.RequestedAtUtc) };
             string path = Path.Combine(plan.Workspace, "platform-components", "retention", "gate.json");
             CompositionWorkspace.CreatePrivateDirectory(Path.GetDirectoryName(path)!);
             const string disabled = "{\"schemaVersion\":1,\"state\":\"disabled\",\"profileSha256\":\"\",\"expiresUtcMs\":0}";

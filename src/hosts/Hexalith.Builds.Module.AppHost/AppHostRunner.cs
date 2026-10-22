@@ -72,7 +72,15 @@ internal static class AppHostRunner
         });
         try
         {
-            compose(builder, plan, signingKey);
+            compose(builder, args.Contains("--validate-platform", StringComparer.Ordinal) ? plan with { ResourceClaimStateDirectory = null } : plan, signingKey);
+        }
+        catch (CompositionResourceClaimConflictException conflict)
+        {
+            await CompositionDocumentStore.WriteAsync(
+                CompositionStartupFailure.PathFor(plan.Workspace),
+                new CompositionStartupFailure(CompositionStartupFailure.SupportedSchema, plan.RunId, "HXR031", "exclusive-resource", "-", "blocked") { BlockingRunId = conflict.OwnerRunId },
+                CancellationToken.None).ConfigureAwait(false);
+            return 3;
         }
         catch (Exception exception) when (args.Contains("--validate-platform", StringComparer.Ordinal)
             && exception is not (OutOfMemoryException or StackOverflowException or AccessViolationException))

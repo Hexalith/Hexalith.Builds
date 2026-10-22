@@ -86,6 +86,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// <summary>Gets the immutable selected module-owned test binding, when present.</summary>
     public ModuleTestSelection? SelectedTest { get; init; }
 
+    /// <summary>Gets compatible batch entries selected before startup.</summary>
+    public IReadOnlyList<ModuleTestSelection> SelectedTests { get; init; } = [];
+
     /// <summary>Gets a value indicating whether local selected-test failures retain surviving resources until explicit down.</summary>
     public bool RetainOnFailure { get; init; }
 

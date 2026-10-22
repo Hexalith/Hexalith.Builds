@@ -18,6 +18,9 @@ public sealed class CompositionRunStateStore(string directory)
         ? Path.GetFullPath(directory)
         : throw new ArgumentException("The state directory must be absolute.", nameof(directory));
 
+    /// <summary>Gets the exclusive resource claims coordinated with this state store.</summary>
+    public CompositionResourceClaimStore Claims { get; } = new(directory);
+
     /// <summary>
     /// Gets the default per-user state directory.
     /// </summary>

@@ -48,4 +48,10 @@ public sealed record CompositionReadiness(
 
     /// <summary>Gets the immutable selected module-owned test binding, when present.</summary>
     public ModuleTestSelection? SelectedTest { get; init; }
+
+    /// <summary>Gets actual required startup task observations.</summary>
+    public IReadOnlyList<CompositionStartupTaskResult> StartupTaskResults { get; init; } = [];
+
+    /// <summary>Gets the readiness observation time.</summary>
+    public DateTimeOffset? ObservedAt { get; init; }
 }

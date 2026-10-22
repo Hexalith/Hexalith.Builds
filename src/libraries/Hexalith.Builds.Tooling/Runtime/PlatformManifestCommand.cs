@@ -88,6 +88,7 @@ public static class PlatformManifestCommand
         List<string> arguments =
         [
             "build", project, "--configuration", mapping.Mode == WorkspaceMode.Source ? "Debug" : "Release", "--output", output,
+            "--artifacts-path", Path.Combine(workspace, "build", "platform-model"),
             "-p:BuildsToolingAssemblyPath=" + typeof(PlatformManifestCommand).Assembly.Location,
             "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0", "-nodeReuse:false", "-p:UseSharedCompilation=false",
             .. PinnedCatalogArguments(pinnedCatalog),

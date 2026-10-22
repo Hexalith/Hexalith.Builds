@@ -373,6 +373,52 @@ consumers restore from NuGet.org. Keep those credentials in user or CI NuGet
 configuration/secret storage, never in a module manifest, filter, or retained
 evidence artifact.
 
+### Declared suites and v1 environment handoff
+
+`hexalith-module test --manifest module/hexalith.module-manifest.v2.json --profile integration`
+provisions a fresh runner-owned environment. Repeat `--profile` to execute a
+compatible batch sequentially in that environment. Every entry must come from
+the same manifest and agree on mode, composition graph and profile-specific
+runtime/resources. Missing, duplicate or incompatible selections refuse before
+services start. Legacy `--evidence` export supports a single entry only: a batch
+with that option refuses before provisioning because the legacy format has only
+one timing/report/count set. Normal batches retain each inspected entry report in
+owned diagnostics without claiming future suite-completion proof. Source mode
+builds Debug assets; package mode keeps the existing Release and pinned catalog boundaries.
+
+Startup defaults to 600 seconds from the environment request, including mapping
+and builds. Valid justified declaration overrides use that same original clock.
+Selected suite handoff refuses a caller fallback other than 600 seconds before
+provisioning unless the authoritative declarations supply an existing justified
+startup override. Actual execution context is also checked before provisioning:
+local execution and complete GitHub Actions metadata are supported; other or
+incomplete CI context refuses with the missing-context requirements.
+Every resource must be healthy and every required per-start verification task
+must pass before execution starts. Execution activates separately after readiness:
+each entry receives its declared execution limit, and the batch has the sum of
+those limits. Final stopping and cleanup use the active entry's declared stop
+limit and original stopping timestamp. Each entry's validated pre-launch
+descriptor and inspected native report are archived durably without rereading
+child-writable paths or renewing that stopping budget. `execution-timing.json` records activation and the immutable absolute
+expiry before launching the child; retries never renew an active expiry. Selected service and test builds use run-private output paths. The
+legacy selection timestamps and source hashes remain immutable evidence bindings.
+
+Tests receive absolute `HEXALITH_TEST_ENVIRONMENT_PATH` pointing to private
+`test-environment.json`, validated with `TestEnvironmentContractReader` before
+handoff. It contains credential-free observed endpoints, real run/attempt/owner/
+environment identities, authoritative composition content, verified catalog commit
+and run instance, synthetic isolation, readiness, startup tasks and independent
+deadlines. Credentials remain in the existing separate private channel. Missing
+catalog identity or invalid observations refuse handoff; unsupported descriptor
+ABIs still refuse. Unavailable candidate, loaded-artifact and qualification proof
+stays `not-yet-populated`, and schema validity grants no acceptance credit.
+
+Managed exclusive listener claims are atomic across runner processes. A conflict
+returns `HXR031` naming the blocking run; independent environments coexist. Port
+probes are not operating-system reservations. Claims are released only after the
+existing ownership-limited cleanup verifies that the owning resources are gone.
+`down --run-id <owner>` continues to target only that run.
+
 ### Platform version catalog and startup prerequisites
 
 The tools are published. The `toolVersionRange` in Platform's

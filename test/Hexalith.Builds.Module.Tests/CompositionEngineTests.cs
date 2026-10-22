@@ -23,6 +23,27 @@ using Xunit;
 [Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class CompositionEngineTests
 {
+    /// <summary>Unsupported selected-suite fallback refuses before prerequisites or allocation.</summary>
+    /// <returns>The useful early refusal.</returns>
+    [Fact]
+    public async Task SelectedFallbackRefusesBeforeAllocationAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.lifecycle.startup", "{}");
+        workspace.Change("modules.0.tests", "[{\"name\":\"suite\",\"executor\":\"python3\",\"entry\":\"suite.py\",\"reportFormat\":\"trx\",\"executionTimeoutSeconds\":5,\"stopTimeoutSeconds\":1,\"mode\":\"source\"}]");
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "suite.py"), "pass", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string manifest = workspace.Save();
+        IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformModuleDeclaration> declarations = Hexalith.Builds.Tooling.Manifest.PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!;
+        ModuleTestSelection selected = ModuleTestSelection.Select(declarations, "suite", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        CompositionEngineOptions options = CreateOptions(workspace.Root) with { SourceMapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root), SelectedTest = selected, ReadinessTimeout = TimeSpan.FromSeconds(2) };
+        CompositionStartResult result = await new CompositionEngine(options).StartAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.UsageOrManifest);
+        result.Result.Diagnostics.Single().Message.ShouldContain("600-second startup default");
+        result.RunId.ShouldBeNull();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+    }
+
     /// <summary>Verifies the owning preflight supplies Development through the environment scrubber before runtime startup.</summary>
     /// <returns>The result assertion.</returns>
     [Fact]
@@ -418,19 +439,57 @@ public sealed class CompositionEngineTests
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
             string workspace = Path.Combine(root, "workspaces", CompositionTestFiles.RunId);
             _ = Directory.CreateDirectory(workspace);
+            engine.StateStore.Claims.Acquire(CompositionTestFiles.RunId, ["owner-listener"]);
+            engine.StateStore.Claims.Acquire(otherRunId, ["peer-listener"]);
 
             CompositionDownResult first = await engine.DownAsync(CompositionTestFiles.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            engine.StateStore.Claims.Acquire(CompositionTestFiles.RunId, ["owner-listener"]);
+            Should.Throw<CompositionResourceClaimConflictException>(() => engine.StateStore.Claims.Acquire(CompositionTestFiles.RunId, ["peer-listener"])).OwnerRunId.ShouldBe(otherRunId);
             CompositionDownResult second = await engine.DownAsync(CompositionTestFiles.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
             CompositionDownResult malformed = await engine.DownAsync("../../escape", TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             first.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
             first.Remaining.IsEmpty.ShouldBeTrue();
+            engine.StateStore.Claims.Acquire(CompositionTestFiles.RunId, ["owner-listener"]);
+            Should.Throw<CompositionResourceClaimConflictException>(() => engine.StateStore.Claims.Acquire(CompositionTestFiles.RunId, ["peer-listener"])).OwnerRunId.ShouldBe(otherRunId);
             second.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
             Directory.Exists(workspace).ShouldBeFalse();
             File.Exists(engine.StateStore.PathFor(CompositionTestFiles.RunId)).ShouldBeFalse();
             File.Exists(engine.StateStore.PathFor(otherRunId)).ShouldBeTrue();
             malformed.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.UsageOrManifest);
             malformed.Result.Diagnostics.Single().RuleId.ShouldBe("HXR024");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Incomplete teardown keeps owner claims blocking while preserving an independent peer.</summary>
+    /// <returns>The exact ownership assertions.</returns>
+    [Fact]
+    public async Task IncompleteCleanupKeepsOwnerAndPeerClaimsAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake Docker CLI uses POSIX scripts.");
+        }
+
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string docker = Path.Combine(root, "leaky-docker");
+            CompositionTestFiles.WriteScript(docker, "if [ \"$1\" = ps ]; then echo leaked0123456789; fi");
+            CompositionEngine engine = new(CreateOptions(root) with { DockerCommand = docker });
+            const string owner = CompositionTestFiles.RunId;
+            string peer = CompositionRunPlanFactory.NewRunId();
+            engine.StateStore.Claims.Acquire(owner, ["owner-listener"]);
+            engine.StateStore.Claims.Acquire(peer, ["peer-listener"]);
+            CompositionDownResult down = await engine.DownAsync(owner, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
+            down.Remaining.IsEmpty.ShouldBeFalse();
+            Should.Throw<CompositionResourceClaimConflictException>(() => engine.StateStore.Claims.Acquire(peer, ["owner-listener"])).OwnerRunId.ShouldBe(owner);
+            Should.Throw<CompositionResourceClaimConflictException>(() => engine.StateStore.Claims.Acquire(owner, ["peer-listener"])).OwnerRunId.ShouldBe(peer);
         }
         finally
         {

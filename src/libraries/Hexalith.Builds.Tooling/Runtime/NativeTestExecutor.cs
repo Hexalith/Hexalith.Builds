@@ -33,6 +33,7 @@ internal static class NativeTestExecutor
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <param name="dotnetCommand">The native dotnet command; tests may supply a local process double.</param>
     /// <param name="selection">The optional v2 binding; legacy native tests retain their existing limit.</param>
+    /// <param name="archiveDirectory">The optional durable owned diagnostic directory outside the child workspace.</param>
     /// <returns>A result that passes only for a zero native exit and a passing native report.</returns>
     public static async Task<NativeTestExecutionResult> ExecuteAsync(
         CompositionRunSession session,
@@ -40,7 +41,8 @@ internal static class NativeTestExecutor
         string manifestPath,
         CancellationToken cancellationToken,
         string dotnetCommand = "dotnet",
-        ModuleTestSelection? selection = null)
+        ModuleTestSelection? selection = null,
+        string? archiveDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(tests);
@@ -48,7 +50,7 @@ internal static class NativeTestExecutor
 
         if (selection is not null)
         {
-            return await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, cancellationToken).ConfigureAwait(false);
+            return await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, archiveDirectory, cancellationToken).ConfigureAwait(false);
         }
 
         string root = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));
@@ -232,13 +234,91 @@ internal static class NativeTestExecutor
         return new NativeTestExecutionResult(new ToolCommandResult("withdrawn", ToolOutcome.Passed().Fail(withdrawn.Phase, withdrawn.Category, withdrawn.RuleId, ToolExitCode.Cancelled), [withdrawn]), null, null);
     }
 
-    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, CancellationToken cancellationToken)
+    /// <summary>Archives only pre-launch descriptor and inspected report snapshots within the existing processing bound.</summary>
+    /// <param name="inspected">The first child outcome and its original stopping timestamp.</param>
+    /// <param name="session">The active entry and execution timing.</param>
+    /// <param name="descriptorSnapshot">The bounded descriptor bytes validated before child launch.</param>
+    /// <param name="archiveDirectory">The durable owned diagnostics, when provided by the runner.</param>
+    /// <param name="processingToken">The original remaining processing budget; this method never renews it.</param>
+    /// <returns>The original outcome with any subsequent evidence diagnostic.</returns>
+    internal static async Task<NativeTestExecutionResult> ArchiveSelectedAsync(NativeTestExecutionResult inspected, CompositionRunSession session, byte[] descriptorSnapshot, string? archiveDirectory, CancellationToken processingToken)
+    {
+        try
+        {
+            processingToken.ThrowIfCancellationRequested();
+            string identity = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(session.Plan.SelectedTest!.Name)));
+            ModuleTestExecutionTiming timing = session.Plan.ExecutionTiming!;
+            byte[] timingBytes = Encoding.UTF8.GetBytes(CompositionDocumentStore.Serialize(timing));
+            string entry = Path.Combine(session.Plan.Workspace, "native-tests", identity);
+            if (archiveDirectory is not null)
+            {
+                string durableEntry = Path.Combine(archiveDirectory, "entries", identity);
+                await ArchiveAsync(durableEntry).ConfigureAwait(false);
+                await WriteSnapshotAsync(Path.Combine(archiveDirectory, "test-environment.json"), descriptorSnapshot, processingToken).ConfigureAwait(false);
+                await WriteSnapshotAsync(Path.Combine(archiveDirectory, "execution-timing.json"), timingBytes, processingToken).ConfigureAwait(false);
+            }
+
+            await WriteSnapshotAsync(Path.Combine(session.Plan.Workspace, "execution-timing.json"), timingBytes, processingToken).ConfigureAwait(false);
+            await ArchiveAsync(entry).ConfigureAwait(false);
+
+            async Task ArchiveAsync(string directory)
+            {
+                await WriteSnapshotAsync(Path.Combine(directory, "test-environment.json"), descriptorSnapshot, processingToken).ConfigureAwait(false);
+                await WriteSnapshotAsync(Path.Combine(directory, "execution-timing.json"), timingBytes, processingToken).ConfigureAwait(false);
+                if (inspected.ReportBytes is { } reportBytes)
+                {
+                    await WriteSnapshotAsync(Path.Combine(directory, _reportFileName), reportBytes, processingToken).ConfigureAwait(false);
+                }
+            }
+        }
+        catch (Exception failure) when (failure is IOException or UnauthorizedAccessException or OperationCanceledException or NotSupportedException)
+        {
+            ToolDiagnostic diagnostic = new("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Inspected selected-entry output could not be archived within the original stopping budget.", "evidence");
+            ToolCommandResult prior = inspected.Result;
+            inspected = inspected with
+            {
+                Result = prior with
+                {
+                    Status = prior.Outcome.ExitCode == ToolExitCode.Success ? "failed" : prior.Status,
+                    Outcome = prior.Outcome.Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.EvidenceSchemaOrPolicy),
+                    Diagnostics = [.. prior.Diagnostics, diagnostic],
+                },
+            };
+        }
+
+        return inspected;
+    }
+
+    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, CancellationToken cancellationToken)
     {
         if (tests.Project != selection.Entry || tests.Platform != selection.Executor || !selection.MatchesSource(manifestPath)
             || session.Plan.SelectedTest != selection || session.Readiness.RunId != session.Plan.RunId
             || session.Readiness.Resources.Count == 0 || session.Readiness.Resources.Any(resource => resource.State != "Healthy")
             || (selection.DaprRuntimeVersion is not null && (session.Readiness.TestObservation is not { IsComplete: true } observed || observed.RunId != session.Plan.RunId))
-            || DateTimeOffset.UtcNow >= selection.ExecutionDeadlineUtc)
+            || (session.Plan.ExecutionTiming is { } existingTiming && DateTimeOffset.UtcNow >= existingTiming.DeadlineUtc))
+        {
+            return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
+        }
+
+        ModuleTestExecutionTiming timing = session.Plan.ExecutionTiming ?? ModuleTestExecutionTiming.Start(selection, DateTimeOffset.UtcNow);
+        session.Plan = session.Plan with { ExecutionTiming = timing };
+        await CompositionDocumentStore.WriteAsync(Path.Combine(session.Plan.Workspace, "execution-timing.json"), timing, cancellationToken).ConfigureAwait(false);
+        await CompositionDocumentStore.WriteAsync(Path.Combine(session.Plan.Workspace, "plan.json"), session.Plan, cancellationToken).ConfigureAwait(false);
+        await CompositionDocumentStore.WriteAsync(session.Plan.ReadinessPath, session.Readiness, cancellationToken).ConfigureAwait(false);
+        string descriptorPath;
+        byte[] descriptorSnapshot;
+        try
+        {
+            descriptorPath = await TestEnvironment.TestEnvironmentDescriptorWriter.WriteAsync(session, cancellationToken).ConfigureAwait(false);
+            TestEnvironment.TestEnvironmentContractReadResult validated = TestEnvironment.TestEnvironmentContractReader.ReadDescriptor(descriptorPath, cancellationToken);
+            if (!validated.IsValid)
+            {
+                throw new InvalidDataException("The handoff descriptor could not be snapshotted.");
+            }
+
+            descriptorSnapshot = Encoding.UTF8.GetBytes(validated.Document!.Value.GetRawText());
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException)
         {
             return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
         }
@@ -254,7 +334,7 @@ internal static class NativeTestExecutor
         }
 
         DateTimeOffset issued = DateTimeOffset.UtcNow;
-        string token = CompositionTokenFactory.Create(session.SigningKey, new CompositionTokenRequest("g4-native-tests", [session.Plan.TenantNamespace], [selection.ModuleId], ["command:submit", "query:read"], false, selection.CredentialExpiryUtc - issued), issued);
+        string token = CompositionTokenFactory.Create(session.SigningKey, new CompositionTokenRequest("g4-native-tests", [session.Plan.TenantNamespace], [selection.ModuleId], ["command:submit", "query:read"], false, timing.CredentialExpiryUtc - issued), issued);
         List<string> handoffSecrets = [token, session.SigningKey];
         if (session.Readiness.TestObservation?.AccessPath is { } accessPath)
         {
@@ -270,6 +350,7 @@ internal static class NativeTestExecutor
         Dictionary<string, string> environment = new(NativeTestHandoff.Create(session.Plan, session.Readiness, token), StringComparer.Ordinal)
         {
             ["HEXALITH_G4_TEST_REPORT_PATH"] = reportPath,
+            [NativeTestHandoff.TestEnvironmentPath] = descriptorPath,
         };
         if (session.Plan.SourceMapping is { } mapping)
         {
@@ -288,7 +369,11 @@ internal static class NativeTestExecutor
         {
             gate.Start();
             cancellationToken.ThrowIfCancellationRequested();
-            process = await CompositionProcess.RunSelectedAsync(CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), Path.GetDirectoryName(project), environment), selection.ExecutionDeadlineUtc - issued, TimeSpan.FromSeconds(selection.StopTimeoutSeconds), timestamp => Interlocked.CompareExchange(ref firstStop, timestamp, 0), gate.Token).ConfigureAwait(false);
+            System.Diagnostics.ProcessStartInfo childStart = CompositionProcess.CreateStartInfo(selection.Executor == "python3" ? "python3" : dotnetCommand, selection.Executor == "python3" ? ["-E", "-s", "-B", project] : [.. CreateArguments(selection.Executor, project, results, session.Plan.SourceMapping), "--artifacts-path", Path.Combine(session.Plan.Workspace, "test-builds")], Path.GetDirectoryName(project), environment);
+            TimeSpan remainingExecution = timing.DeadlineUtc - DateTimeOffset.UtcNow;
+            process = remainingExecution <= TimeSpan.Zero
+                ? new CompositionProcessResult(true, -1, string.Empty, true)
+                : await CompositionProcess.RunSelectedAsync(childStart, remainingExecution, TimeSpan.FromSeconds(selection.StopTimeoutSeconds), timestamp => Interlocked.CompareExchange(ref firstStop, timestamp, 0), gate.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -349,7 +434,42 @@ internal static class NativeTestExecutor
             evaluated = evaluated with { Result = new ToolCommandResult(prior.Outcome.ExitCode == ToolExitCode.Success ? "failed" : prior.Status, prior.Outcome.Fail(closure.Phase, closure.Category, closure.RuleId, ToolExitCode.TopologyOrLifecycle), [.. prior.Diagnostics, closure]) };
         }
 
-        return evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, StoppingTimestamp = stoppingTimestamp };
+        timing = timing with { ActualDurationSeconds = Math.Max(0, (DateTimeOffset.UtcNow - timing.StartedAtUtc).TotalSeconds - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp).TotalSeconds) };
+        session.Plan = session.Plan with { ExecutionTiming = timing };
+        NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, StoppingTimestamp = stoppingTimestamp };
+        return await ArchiveSelectedAsync(inspected, session, descriptorSnapshot, archiveDirectory, processing.Token).ConfigureAwait(false);
+    }
+
+    private static async Task WriteSnapshotAsync(string path, byte[] bytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        string directory = Path.GetDirectoryName(path)!;
+        CompositionWorkspace.CreatePrivateDirectory(directory);
+        string temporary = Path.Combine(directory, ".archive-" + Guid.NewGuid().ToString("N") + ".tmp");
+        try
+        {
+            FileStreamOptions options = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write, Options = FileOptions.Asynchronous };
+            if (!OperatingSystem.IsWindows())
+            {
+                options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            }
+
+            FileStream stream = new(temporary, options);
+            await using (stream.ConfigureAwait(false))
+            {
+                await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            File.Move(temporary, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
+        }
     }
 
     private static bool ContainsRetainedSecret(byte[] reportBytes, IReadOnlyList<string> handoffSecrets)

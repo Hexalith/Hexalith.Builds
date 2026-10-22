@@ -87,6 +87,18 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 { ActiveModule = activeModule })
                 : null;
             deadline = CompositionStartupDeadlineResolver.Resolve(closure, _options.ReadinessTimeout);
+            if (_options.SelectedTest is not null)
+            {
+                try
+                {
+                    TestEnvironment.TestEnvironmentDescriptorWriter.ValidatePreProvisioning(deadline);
+                }
+                catch (InvalidDataException invalid)
+                {
+                    return Failed("failed", ToolExitCode.UsageOrManifest, [Diagnostic("HXC002", ToolPhase.Usage, ToolFailureCategory.Usage, invalid.Message, "tests", null)], null);
+                }
+            }
+
             DateTimeOffset deadlineUtc = requestedAt + deadline.Timeout;
             if (DateTimeOffset.UtcNow >= deadlineUtc)
             {
@@ -304,15 +316,19 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             plan = plan with
             {
                 SelectedTest = _options.SelectedTest,
+                SelectedTests = _options.SelectedTests,
+                ResourceClaimStateDirectory = _options.StateDirectory,
                 RetainOnFailure = _options.RetainOnFailure,
                 EffectiveDeadline = deadline,
                 StartupDeadlineUtc = deadlineUtc,
                 DebugAttach = _options.DebugAttach,
                 StartupTasks = platformComposition ? CompositionStartupTasks.Select(manifestPath, closure, _options.SourceMapping) : [],
                 PlatformDeclarationHash = platformComposition ? manifestHash : plan.PlatformDeclarationHash,
+                CompositionContentIdentity = closure is null ? null : TestEnvironment.TestEnvironmentDescriptorWriter.CompositionIdentity(closure, _options.SelectedTest),
                 McpCliToolPath = mcpCliTool,
             };
 
+            StateStore.Claims.Acquire(runId, plan.Ports.ToList().Select(port => "tcp:127.0.0.1:" + port.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             await CompositionDaprComponentRenderer.WriteAsync(plan, startupBound.Token).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");
             await CompositionDocumentStore.WriteAsync(planPath, plan, startupBound.Token).ConfigureAwait(false);
@@ -375,8 +391,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         {
             if (_options.SelectedTest is not null && _options.SelectedExecutionOwnerToken is { IsCancellationRequested: false })
             {
-                ToolDiagnostic expired = Diagnostic("HXT007", ToolPhase.Test, ToolFailureCategory.ProductOrTest, "The selected execution exhausted its original finite lifetime.", "execution", null);
-                return runId is null ? Failed("failed", ToolExitCode.ProductOrTest, [expired], null) : await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Failed, expired, ToolExitCode.ProductOrTest, requestedAt, deadline).ConfigureAwait(false);
+                return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
             }
 
             ToolDiagnostic cancelled = Diagnostic("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The invocation was cancelled; bounded teardown ran.", "cancellation", null);
@@ -400,6 +415,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         {
             IReadOnlyList<ToolDiagnostic> diagnostics = await CleanupPreparedWorkspaceAsync(preparedWorkspace, exception.Diagnostics).ConfigureAwait(false);
             return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, diagnostics, null);
+        }
+        catch (CompositionResourceClaimConflictException conflict) when (runId is not null)
+        {
+            ToolDiagnostic blocked = Diagnostic("HXR031", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, conflict.Message, "resources", "Stop the named owning run or choose independent resources; attachment is never implicit.");
+            return await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Failed, blocked, ToolExitCode.TopologyOrLifecycle, requestedAt, deadline).ConfigureAwait(false);
         }
         catch (Exception exception) when (runId is not null && exception is not OutOfMemoryException)
         {
@@ -516,7 +536,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     internal async Task<ModuleTestRunRecord?> RecordTestOutcomeAsync(string runId, IReadOnlyList<CompositionResourceReadiness> resources, ToolCommandResult result, string disposition, CompositionRunResources remaining, CancellationToken cancellationToken, NativeTestExecutionResult? native = null, bool waitForLock = true)
     {
         CompositionRunState? state = await StateStore.TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
-        ModuleTestSelection? selection = state?.SelectedTest ?? _options.SelectedTest;
+        ModuleTestSelection? selection = _options.SelectedTest ?? state?.SelectedTest;
         if (selection is null)
         {
             return null;
@@ -539,7 +559,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             CompositionReadiness? observed = await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(Path.Combine(WorkspaceFor(runId), "readiness.json"), cancellationToken).ConfigureAwait(false);
             CompositionTestObservation? identity = observed?.RunId == runId && observed.TestObservation?.RunId == runId ? observed.TestObservation : null;
             ModuleTestRunRecord record = prior ?? new ModuleTestRunRecord(runId, runId, selection, _options.SourceMapping?.ContentHash, _options.SourceMapping?.PlatformIdentity?.Commit, _options.SourceMapping?.PlatformIdentity?.CheckoutCommit, identity?.ObservedCandidateHash, identity?.ObservedBackendIdentity, false, resources, result.Status, result.Outcome, DateTimeOffset.UtcNow, disposition, remaining);
-            record = record with { ResourceDisposition = disposition, RemainingResources = remaining, Resources = resources.Count > 0 ? resources : record.Resources };
+            record = record with { ResourceDisposition = disposition, RemainingResources = remaining, Resources = resources.Count > 0 ? resources : record.Resources, Selections = _options.SelectedTests, ExecutionTiming = await CompositionDocumentStore.TryReadAsync<ModuleTestExecutionTiming>(Path.Combine(WorkspaceFor(runId), "execution-timing.json"), cancellationToken).ConfigureAwait(false) ?? record.ExecutionTiming };
             await CompositionDocumentStore.WriteAsync(path, record, cancellationToken).ConfigureAwait(false);
             CompositionWorkspace.CreatePrivateDirectory(directory);
             CopySelectedMetadata(WorkspaceFor(runId), directory);
@@ -568,7 +588,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             await CompositionDocumentStore.WriteAsync(path, record, cancellationToken).ConfigureAwait(false);
             if (state is not null)
             {
-                await StateStore.WriteAsync(state with { TestRun = record }, cancellationToken).ConfigureAwait(false);
+                await StateStore.WriteAsync(state with { SelectedTest = record.Selection, TestRun = record }, cancellationToken).ConfigureAwait(false);
             }
 
             return record;
@@ -707,14 +727,20 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
         if (!string.Equals(failure.Schema, CompositionStartupFailure.SupportedSchema, StringComparison.Ordinal)
             || !string.Equals(failure.RunId, runId, StringComparison.Ordinal)
-            || failure.RuleId is not ("HXR021" or "HXR025" or "HXR026" or "HXR027" or "HXR028")
+            || failure.RuleId is not ("HXR021" or "HXR025" or "HXR026" or "HXR027" or "HXR028" or "HXR031")
             || !IsSafeFailureText(failure.Resource, 128)
             || !IsSafeFailureText(failure.AppId, 63)
             || !IsSafeFailureText(failure.Status, 120)
             || failure.UnreadyResources.Any(resource => !IsSafeFailureText(resource.Name, 128) || !IsSafeFailureText(resource.Detail ?? resource.State, 120))
-            || (failure.FailingTask is not null && !IsSafeFailureText(failure.FailingTask, 128)))
+            || (failure.FailingTask is not null && !IsSafeFailureText(failure.FailingTask, 128))
+            || (failure.RuleId == "HXR031" && !CompositionRunPlanFactory.IsRunId(failure.BlockingRunId)))
         {
             return [Diagnostic("HXR022", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The AppHost failure document does not describe this run.", "readiness", "Rebuild the Builds-owned AppHost and retry.")];
+        }
+
+        if (failure.RuleId == "HXR031")
+        {
+            return [Diagnostic("HXR031", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, $"An exclusive runner resource is held by run '{failure.BlockingRunId}'.", "resources", "Stop the named owner or use independent resources; attachment is never implicit.")];
         }
 
         if (failure.UnreadyResources.Count > 0)
@@ -748,6 +774,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         foreach ((string source, string name) in new[]
         {
             (Path.Combine(workspace, "plan.json"), "selected-plan.json"),
+            (Path.Combine(workspace, "startup-task-results.json"), "startup-task-results.json"),
             (Path.Combine(workspace, "readiness.json"), "selected-readiness.json"),
             (Path.Combine(workspace, "source-mapping", "mapping.json"), "selected-source-mapping.json"),
         })
@@ -769,6 +796,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 // An absent, unreadable or unsafe observation is never invented.
             }
         }
+
+        // Descriptor, timing and inspected native reports are archived directly from trusted snapshots.
+        // Never reread child-writable entry files during terminal recording or cleanup.
     }
 
     private static bool SafeMetadata(System.Text.Json.JsonElement value) => value.ValueKind switch
@@ -949,6 +979,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         CancellationToken cancellationToken)
     {
         bool tasksCompleted = false;
+        List<CompositionStartupTaskResult> taskResults = [];
         string? expiredTask = null;
         string? refreshId = null;
         while (CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow) > TimeSpan.Zero)
@@ -990,7 +1021,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
                 if (!tasksCompleted)
                 {
-                    (string? failingTask, bool deadlineElapsed, string? expired) = await CompositionStartupTasks.RunOwnedDetailedAsync(plan.StartupTasks, deadlineUtc, plan.RunId, cancellationToken).ConfigureAwait(false);
+                    (string? failingTask, bool deadlineElapsed, string? expired) = await CompositionStartupTasks.RunOwnedDetailedAsync(plan.StartupTasks, deadlineUtc, plan.RunId, cancellationToken, taskResults).ConfigureAwait(false);
+                    await CompositionDocumentStore.WriteAsync(Path.Combine(plan.Workspace, "startup-task-results.json"), taskResults, cancellationToken).ConfigureAwait(false);
                     if (deadlineElapsed)
                     {
                         expiredTask = expired;
@@ -1069,7 +1101,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     EffectiveDeadlineModuleId = deadline.ModuleId,
                     SelectedTest = plan.SelectedTest,
                     StartupDurationSeconds = duration,
+                    StartupTaskResults = taskResults,
                 };
+                await CompositionDocumentStore.WriteAsync(plan.ReadinessPath, readiness, cancellationToken).ConfigureAwait(false);
                 string diagnosticsPath = DiagnosticsDirectory(plan.RunId);
                 await WriteStateAsync(
                     plan.RunId,
@@ -1345,6 +1379,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
             workspaceRemoved = false;
+        }
+
+        if (remaining.IsEmpty && workspaceRemoved)
+        {
+            StateStore.Claims.ReleaseOwned(runId);
         }
 
         return (remaining, workspaceRemoved);

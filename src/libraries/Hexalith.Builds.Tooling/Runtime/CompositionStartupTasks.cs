@@ -125,8 +125,9 @@ public static class CompositionStartupTasks
     /// <param name="deadlineUtc">The absolute startup deadline.</param>
     /// <param name="runId">The owning run identity, when one exists.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="results">The optional actual task observations.</param>
     /// <returns>The failing task, whether the deadline elapsed, and the module task that was running or next in line when it did.</returns>
-    internal static async Task<(string? FailingTask, bool DeadlineElapsed, string? ExpiredTask)> RunOwnedDetailedAsync(IReadOnlyList<CompositionStartupTask> tasks, DateTimeOffset deadlineUtc, string? runId, CancellationToken cancellationToken)
+    internal static async Task<(string? FailingTask, bool DeadlineElapsed, string? ExpiredTask)> RunOwnedDetailedAsync(IReadOnlyList<CompositionStartupTask> tasks, DateTimeOffset deadlineUtc, string? runId, CancellationToken cancellationToken, ICollection<CompositionStartupTaskResult>? results = null)
     {
         ArgumentNullException.ThrowIfNull(tasks);
         foreach (CompositionStartupTask task in tasks)
@@ -138,7 +139,15 @@ public static class CompositionStartupTasks
                 return (null, true, name);
             }
 
+            DateTimeOffset startedAt = DateTimeOffset.UtcNow;
             bool? succeeded = await SucceededAsync(task, deadlineUtc, runId, cancellationToken).ConfigureAwait(false);
+            string status = succeeded is true ? "passed" : "failed";
+            if (succeeded is null)
+            {
+                status = "cancelled";
+            }
+
+            results?.Add(new CompositionStartupTaskResult(name, status, startedAt, DateTimeOffset.UtcNow));
             if (succeeded is null)
             {
                 return (null, true, name);

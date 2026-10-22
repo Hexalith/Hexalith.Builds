@@ -118,6 +118,7 @@ public sealed class ModuleTestSelectionTests
             SelectedPlatformStartOverride = async (_, selected, _) =>
             {
                 selectedPlan = CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selected, SourceMapping = Mapping(workspace.Root), Modules = [], UiMarkers = [] };
+                selectedPlan = await TestEnvironmentProvisioningFixture.PrepareAsync(selectedPlan, manifest, workspace.Root).ConfigureAwait(true);
                 if (scenario == "entry-drift")
                 {
                     await File.AppendAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "\n# changed", TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -134,6 +135,7 @@ public sealed class ModuleTestSelectionTests
                 }
 
                 CompositionReadiness readiness = new(CompositionReadiness.SupportedSchema, selectedPlan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned-resource", "process", "Healthy")]);
+                readiness = TestEnvironmentProvisioningFixture.Observe(readiness, selected.ModuleId);
                 if (scenario is "app-secret" or "dapr-secret")
                 {
                     string accessPath = Path.Combine(selectedPlan.Workspace, "platform-components", "retention", "access.json");
@@ -158,7 +160,7 @@ public sealed class ModuleTestSelectionTests
                 CompositionWorkspace.CreatePrivateDirectory(selectedPlan.Workspace);
                 await CompositionDocumentStore.WriteAsync(Path.Combine(selectedPlan.Workspace, "plan.json"), selectedPlan, TestContext.Current.CancellationToken).ConfigureAwait(true);
                 await CompositionDocumentStore.WriteAsync(selectedPlan.ReadinessPath, readiness, TestContext.Current.CancellationToken).ConfigureAwait(true);
-                await SourceMappingMaterializer.WriteAsync(selectedPlan.SourceMapping, selectedPlan.Workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
                 return new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), selectedPlan.RunId, new CompositionRunSession(selectedPlan, readiness, "private-signing-key-value", appHost));
             },
             PlatformDownOverride = (_, _) =>
@@ -186,6 +188,21 @@ public sealed class ModuleTestSelectionTests
         selectedRun.GetProperty("qualificationCredit").GetBoolean().ShouldBeFalse();
         document.RootElement.GetProperty("invocation").GetProperty("command").GetString().ShouldNotBeNull().ShouldContain("--profile " + profile);
         System.Text.Encoding.UTF8.GetString(evidence).ShouldNotContain("private-signing-key-value");
+        if (scenario == "pass")
+        {
+            foreach (string mutation in new[] { "batch", "nonmember" })
+            {
+                JsonObject imported = JsonNode.Parse(evidence)!.AsObject();
+                JsonObject selected = imported["selectedTestRun"]!.AsObject();
+                JsonObject represented = selected["selection"]!.DeepClone().AsObject();
+                represented["name"] = "unrepresented-entry";
+                selected["selections"] = mutation == "batch"
+                    ? new JsonArray(selected["selection"]!.DeepClone(), represented)
+                    : new JsonArray(represented);
+                ModuleRunEvidenceArtifactValidator.TryValidate(System.Text.Encoding.UTF8.GetBytes(imported.ToJsonString() + "\n"), out _).ShouldBeFalse();
+            }
+        }
+
         if (scenario is "detail-pass" or "memories-detail-pass")
         {
             string detailPath = Path.Combine(workspace.Root, "evidence/result.functional-observations.json");
@@ -290,7 +307,7 @@ public sealed class ModuleTestSelectionTests
         string manifest = workspace.Save();
         PlatformManifestValidationResult validated = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
         ModuleTestSelection expired = ModuleTestSelection.Select(validated.Declarations!, "verify", manifest, DateTimeOffset.UtcNow.AddDays(-1)).ShouldNotBeNull();
-        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = expired, SourceMapping = Mapping(workspace.Root) };
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = expired, SourceMapping = Mapping(workspace.Root), ExecutionTiming = ModuleTestExecutionTiming.Start(expired, expired.RequestedAtUtc) };
         CompositionReadiness readiness = new(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]);
         using Process process = new();
         NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(new CompositionRunSession(plan, readiness, "private-signing-key-value", process), new PersistedProfileNativeTests("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: expired).ConfigureAwait(true);
@@ -463,6 +480,8 @@ public sealed class ModuleTestSelectionTests
             + "import helper, base64, json, datetime, stat, hashlib\n"
             + "assert all(stat.S_IMODE(pathlib.Path(os.environ[key]).stat().st_mode) == 0o600 for key in ['HEXALITH_G4_PLAN_PATH', 'HEXALITH_G4_READINESS_PATH', 'HEXALITH_G4_SOURCE_MAPPING_PATH'])\n"
             + "assert stat.S_IMODE(pathlib.Path(os.environ['HEXALITH_G4_SOURCE_MAPPING_PATH']).parent.stat().st_mode) == 0o700\n"
+            + "descriptor = json.loads(pathlib.Path(os.environ['HEXALITH_TEST_ENVIRONMENT_PATH']).read_text())\n"
+            + "assert descriptor['schema'] == 'hexalith.test-environment.v1' and descriptor['bindings']['run']['runId'] == os.environ['HEXALITH_G4_RUN_ID']\n"
             + "mapping = json.loads(pathlib.Path(os.environ['HEXALITH_G4_SOURCE_MAPPING_PATH']).read_text())\n"
             + "assert mapping['Mode'] == 'source' and 'Root' in mapping and 'Entries' in mapping\n"
             + "payload = {key:mapping[key] for key in ['Mode','Root','ActiveModule','Entries','HasGit','PlatformIdentity','IdentityFindings']}\n"

@@ -36,6 +36,9 @@ public static class NativeTestHandoff
     /// <summary>The run-scoped development bearer token; never retained by the runner.</summary>
     public const string AccessToken = "HEXALITH_G4_ACCESS_TOKEN";
 
+    /// <summary>The absolute path to the private, validated v1 environment descriptor.</summary>
+    public const string TestEnvironmentPath = "HEXALITH_TEST_ENVIRONMENT_PATH";
+
     /// <summary>
     /// Creates the handoff for one ready run. The signing key is never part of it.
     /// </summary>
@@ -43,6 +46,7 @@ public static class NativeTestHandoff
     /// <param name="readiness">The validated readiness document.</param>
     /// <param name="accessToken">The run-scoped bearer token.</param>
     /// <returns>The environment values.</returns>
+    /// <exception cref="InvalidDataException">An active selected execution lacks its validated owned descriptor.</exception>
     public static IReadOnlyDictionary<string, string> Create(CompositionRunPlan plan, CompositionReadiness readiness, string accessToken)
     {
         ArgumentNullException.ThrowIfNull(plan);
@@ -70,6 +74,18 @@ public static class NativeTestHandoff
 
         if (plan.SelectedTest is { } selected)
         {
+            if (plan.ExecutionTiming is not null)
+            {
+                string descriptorPath = Path.GetFullPath(Path.Combine(plan.Workspace, "test-environment.json"));
+                TestEnvironment.TestEnvironmentContractReadResult descriptor = TestEnvironment.TestEnvironmentContractReader.ReadDescriptor(descriptorPath);
+                if (!descriptor.IsValid || descriptor.Document!.Value.GetProperty("bindings").GetProperty("run").GetProperty("runId").GetString() != plan.RunId)
+                {
+                    throw new InvalidDataException("A validated descriptor for the owned execution is required.");
+                }
+
+                values[TestEnvironmentPath] = descriptorPath;
+            }
+
             values[Domains] = selected.ModuleId;
             values["HEXALITH_G4_TEST_NAME"] = selected.Name;
             values["HEXALITH_G4_TEST_OWNER"] = selected.ModuleId;
@@ -77,8 +93,8 @@ public static class NativeTestHandoff
             values["HEXALITH_G4_TEST_ENTRY_HASH"] = selected.EntryHash;
             values["HEXALITH_G4_TEST_LIFETIME_SECONDS"] = selected.ExecutionTimeoutSeconds.ToString(CultureInfo.InvariantCulture);
             values["HEXALITH_G4_TEST_STOP_SECONDS"] = selected.StopTimeoutSeconds.ToString(CultureInfo.InvariantCulture);
-            values["HEXALITH_G4_EXECUTION_DEADLINE_UTC"] = selected.ExecutionDeadlineUtc.ToString("O", CultureInfo.InvariantCulture);
-            values["HEXALITH_G4_CREDENTIAL_EXPIRY_UTC"] = selected.CredentialExpiryUtc.ToString("O", CultureInfo.InvariantCulture);
+            values["HEXALITH_G4_EXECUTION_DEADLINE_UTC"] = (plan.ExecutionTiming?.DeadlineUtc ?? selected.ExecutionDeadlineUtc).ToString("O", CultureInfo.InvariantCulture);
+            values["HEXALITH_G4_CREDENTIAL_EXPIRY_UTC"] = (plan.ExecutionTiming?.CredentialExpiryUtc ?? selected.CredentialExpiryUtc).ToString("O", CultureInfo.InvariantCulture);
             values["HEXALITH_G4_TEST_MODE"] = selected.Mode;
             if (selected.DaprRuntimeVersion is { } runtime)
             {

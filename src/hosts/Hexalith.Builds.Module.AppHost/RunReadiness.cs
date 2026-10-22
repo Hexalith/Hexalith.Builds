@@ -389,6 +389,7 @@ internal static class RunReadiness
                     EffectiveDeadlineIsOverride = plan.EffectiveDeadline?.IsOverride ?? false,
                     EffectiveDeadlineJustification = plan.EffectiveDeadline?.Justification,
                     EffectiveDeadlineModuleId = plan.EffectiveDeadline?.ModuleId,
+                    ObservedAt = DateTimeOffset.UtcNow,
                 },
                 cancellationToken).ConfigureAwait(false);
             return true;
@@ -445,10 +446,25 @@ internal static class RunReadiness
             {
                 Detail = SafeStatus(Status(notifications, resource.Name)),
                 ProcessId = ProcessId(current),
+                ModuleId = OwningModule(resource, runnable),
+                Endpoints = healthy ? RunEndpoints.Observe(resource) : [],
+                ObservedAt = DateTimeOffset.UtcNow,
             });
         }
 
         return resources;
+    }
+
+    private static string OwningModule(IResource resource, IEnumerable<IResource> resources)
+    {
+        string name = resource.Name.EndsWith("-dapr-cli", StringComparison.Ordinal) ? resource.Name[..^"-dapr-cli".Length] : resource.Name;
+        IResource owner = resources.FirstOrDefault(candidate => candidate.Name == name) ?? resource;
+        IResourceAnnotation? annotation = owner.Annotations.FirstOrDefault(candidate => candidate.GetType().Name == "PlatformServerAnnotation");
+        object? binding = annotation?.GetType().GetProperty("Binding")?.GetValue(annotation);
+        object? module = binding?.GetType().GetProperty("Module")?.GetValue(binding);
+        return module?.GetType().GetProperty("Declaration")?.GetValue(module) is System.Text.Json.JsonElement declaration
+            ? declaration.GetProperty("identity").GetProperty("moduleId").GetString()!
+            : "platform";
     }
 
     private static int? TryProcessId(ResourceNotificationService notifications, string resourceName) =>

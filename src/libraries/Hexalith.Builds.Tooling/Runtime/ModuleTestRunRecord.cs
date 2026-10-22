@@ -43,6 +43,12 @@ public sealed record ModuleTestRunRecord(
     /// <summary>Gets the content hash of bounded inspected detailed native observations, when present.</summary>
     public string? ObservationHash { get; init; }
 
+    /// <summary>Gets actual execution activation and duration, independent of source selection.</summary>
+    public ModuleTestExecutionTiming? ExecutionTiming { get; init; }
+
+    /// <summary>Gets immutable batch entries, when one environment served several suites.</summary>
+    public IReadOnlyList<ModuleTestSelection> Selections { get; init; } = [];
+
     /// <summary>Gets the hash of a safe retained native report, when produced.</summary>
     public string? ReportHash { get; init; }
 

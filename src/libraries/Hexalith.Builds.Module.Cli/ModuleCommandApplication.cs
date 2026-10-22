@@ -163,9 +163,11 @@ internal static class ModuleCommandApplication
         {
             Required = true,
         };
-        Option<string> profileOption = new("--profile")
+        Option<string[]> profileOption = new("--profile")
         {
             Required = command == ModuleInvocationCommand.Test,
+            Arity = ArgumentArity.OneOrMore,
+            AllowMultipleArgumentsPerToken = false,
         };
         Option<string> filterOption = new("--filter");
         Option<string> evidenceOption = new("--evidence");
@@ -205,7 +207,7 @@ internal static class ModuleCommandApplication
             Task<int> execution = ModuleCommandExecutionService.ExecuteAsync(
                 command,
                 parseResult.GetValue(manifestOption)!,
-                parseResult.GetValue(profileOption),
+                parseResult.GetValue(profileOption)?.FirstOrDefault(),
                 parseResult.GetValue(filterOption),
                 parseResult.GetValue(evidenceOption),
                 ParseOutputFormat(parseResult.GetValue(outputOption)),
@@ -214,7 +216,8 @@ internal static class ModuleCommandApplication
                 descriptorChildEntryAssemblyPath,
                 command == ModuleInvocationCommand.Down ? parseResult.GetValue(runIdOption) : null,
                 compositionOptions,
-                mode);
+                mode,
+                parseResult.GetValue(profileOption));
             operationStarted(execution);
             return execution;
         });

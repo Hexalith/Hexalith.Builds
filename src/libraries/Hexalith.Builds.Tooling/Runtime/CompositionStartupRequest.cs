@@ -8,7 +8,7 @@ namespace Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Workspace;
 
-/// <summary>Owns the original run/debug startup clock while source mapping is prepared.</summary>
+/// <summary>Owns the original environment startup clock, independently of test execution.</summary>
 internal sealed class CompositionStartupRequest : IDisposable
 {
     private readonly CancellationTokenSource _bound;
