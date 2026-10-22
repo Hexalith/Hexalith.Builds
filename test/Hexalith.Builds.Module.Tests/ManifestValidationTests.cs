@@ -234,6 +234,7 @@ public sealed class ManifestValidationTests
     [Theory]
     [InlineData("eventStoreVersion", "3.120.0")]
     [InlineData("eventStoreVersion", "3.125.1")]
+    [InlineData("eventStoreVersion", "3.126.0")]
     [InlineData("frontComposerVersion", "4.6.0")]
     public void LoadManifestWithHistoricalPackagePinFailsBeforeComposition(string field, string version)
     {
@@ -519,7 +520,7 @@ public sealed class ManifestValidationTests
                 modules,
                 platform = new
                 {
-                    eventStoreVersion = "3.126.0",
+                    eventStoreVersion = SupportedPlatformPins.EventStoreVersion,
                     daprRuntimeVersion = "1.18.2",
                     daprSdkVersion = "1.18.10",
                     frontComposerVersion = "4.7.0",
@@ -571,7 +572,7 @@ public sealed class ManifestValidationTests
     }
 
     private static string ValidManifestJson() =>
-        """
+        $$"""
         {
           "schema": "hexalith.module-manifest.v1",
           "id": "p0-two-module",
@@ -594,7 +595,7 @@ public sealed class ManifestValidationTests
             }
           ],
           "platform": {
-            "eventStoreVersion": "3.126.0",
+            "eventStoreVersion": "{{SupportedPlatformPins.EventStoreVersion}}",
             "daprRuntimeVersion": "1.18.2",
             "daprSdkVersion": "1.18.10",
             "frontComposerVersion": "4.7.0"

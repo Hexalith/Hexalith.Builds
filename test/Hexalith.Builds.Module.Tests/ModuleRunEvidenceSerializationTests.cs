@@ -149,8 +149,8 @@ public sealed class ModuleRunEvidenceSerializationTests
             File.WriteAllText(externalFixture, "{}");
             _ = File.CreateSymbolicLink(fixtureLink, internalFixture);
             string manifestPath = Path.Combine(directory, "manifest.json");
-            const string manifestJson =
-                """
+            string manifestJson =
+                $$"""
                 {
                   "schema": "hexalith.module-manifest.v1",
                   "id": "fixture-swap",
@@ -163,7 +163,7 @@ public sealed class ModuleRunEvidenceSerializationTests
                     "resourceId": "module-a"
                   }],
                   "platform": {
-                    "eventStoreVersion": "3.126.0",
+                    "eventStoreVersion": "{{SupportedPlatformPins.EventStoreVersion}}",
                     "daprRuntimeVersion": "1.18.2",
                     "daprSdkVersion": "1.18.10",
                     "frontComposerVersion": "4.7.0"
