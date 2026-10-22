@@ -226,8 +226,10 @@ The CLI package includes both schemas under `tools/net10.0/any/schemas/`.
 Platform owns the canonical contract schemas and lifecycle semantics; these
 mirrors support independent consumption. The
 [descriptor and result samples](test/fixtures/module/test-environment-v1/) are
-fictional contract examples, with unavailable producers explicitly
-`not-yet-populated`; they grant no runtime qualification. Populated tool,
+fictional contract examples. They illustrate synthetic composition/catalog,
+isolation, readiness, startup, deadline and empty attachment data; unavailable
+tool, candidate and artifact producers remain `not-yet-populated`. These samples
+grant no runtime qualification. Populated tool,
 candidate, gate, loaded-artifact and completion fields remain claims to verify
 under the policy. Successful reads never provision resources, authenticate
 evidence, admit attachments or migrate the existing native handoff/internal run

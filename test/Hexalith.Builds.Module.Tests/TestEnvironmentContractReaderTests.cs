@@ -45,6 +45,24 @@ public sealed class TestEnvironmentContractReaderTests
         document.GetProperty("bindings").GetProperty("run").GetProperty("environmentId").GetString().ShouldBe("sample-environment");
         document.GetProperty("bindings").GetProperty("environment").GetProperty("resources")[0].GetProperty("endpoints")[0].GetProperty("uri").GetString().ShouldBe("http://127.0.0.1:18080");
         document.GetProperty("bindings").GetProperty("candidate").GetProperty("state").GetString().ShouldBe("not-yet-populated");
+        if (result)
+        {
+            document.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("passed");
+        }
+    }
+
+    /// <summary>Both versions retain identical definitions for every shared binding.</summary>
+    [Fact]
+    public void DescriptorAndResultSharedDefinitionsStayAligned()
+    {
+        using JsonDocument descriptor = JsonDocument.Parse(File.ReadAllText(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "schemas", TestEnvironmentContractReader.DescriptorSchema + ".json")));
+        using JsonDocument result = JsonDocument.Parse(File.ReadAllText(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "schemas", TestEnvironmentContractReader.ResultSchema + ".json")));
+        JsonElement resultDefinitions = result.RootElement.GetProperty("$defs");
+        foreach (JsonProperty definition in descriptor.RootElement.GetProperty("$defs").EnumerateObject())
+        {
+            resultDefinitions.TryGetProperty(definition.Name, out JsonElement shared).ShouldBeTrue();
+            JsonElement.DeepEquals(definition.Value, shared).ShouldBeTrue(definition.Name);
+        }
     }
 
     /// <summary>Missing, malformed and foreign versions refuse with only this document kind's supported version.</summary>
@@ -72,8 +90,27 @@ public sealed class TestEnvironmentContractReaderTests
 
         TestEnvironmentContractReadResult read = Read(sample, result);
         AssertRefused(read, "HXT101");
-        read.Diagnostics.Single().Message.ShouldContain(result ? TestEnvironmentContractReader.ResultSchema : TestEnvironmentContractReader.DescriptorSchema);
-        read.Diagnostics.Single().Message.ShouldNotContain("private-input-value");
+        string supported = result ? TestEnvironmentContractReader.ResultSchema : TestEnvironmentContractReader.DescriptorSchema;
+        read.Diagnostics.Single().Message.ShouldBe($"Unsupported or missing contract version. Supported versions: {supported}.");
+        read.Diagnostics.Single().Source.ShouldBe(supported);
+        read.Diagnostics.Single().Field.ShouldBe("schema");
+        JsonSerializer.Serialize(read.Diagnostics).ShouldNotContain("private-input");
+    }
+
+    /// <summary>A non-string schema version has the same stable refusal as an unknown string.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WronglyTypedVersionsAreMetadataOnly(bool result)
+    {
+        JsonObject sample = Sample(result);
+        sample["schema"] = 42;
+        TestEnvironmentContractReadResult read = Read(sample, result);
+        AssertRefused(read, "HXT101");
+        string supported = result ? TestEnvironmentContractReader.ResultSchema : TestEnvironmentContractReader.DescriptorSchema;
+        read.Diagnostics.Single().Source.ShouldBe(supported);
+        read.Diagnostics.Single().Message.ShouldBe($"Unsupported or missing contract version. Supported versions: {supported}.");
     }
 
     /// <summary>Both contracts fail closed for absent, unknown or wrongly typed policies.</summary>
@@ -90,7 +127,11 @@ public sealed class TestEnvironmentContractReaderTests
     {
         JsonObject sample = Sample(result);
         Change(sample, "policyId", policy);
-        AssertRefused(Read(sample, result), "HXT102");
+        TestEnvironmentContractReadResult read = Read(sample, result);
+        AssertRefused(read, "HXT102");
+        read.Diagnostics.Single().Message.ShouldBe($"Use the exact supported policy: {TestEnvironmentContractReader.PolicyId}.");
+        read.Diagnostics.Single().Source.ShouldBe(result ? TestEnvironmentContractReader.ResultSchema : TestEnvironmentContractReader.DescriptorSchema);
+        read.Diagnostics.Single().Field.ShouldBe("policyId");
     }
 
     /// <summary>Closed typed objects reject missing fields, misspellings and invented reserved values.</summary>
@@ -136,6 +177,18 @@ public sealed class TestEnvironmentContractReaderTests
         {
             JsonObject sample = Sample(true);
             sample["terminal"]!["outcome"] = outcome;
+            sample["terminal"]!["cause"] = outcome switch
+            {
+                "failed" => "test-failure",
+                "cancelled" => "run-cancelled",
+                "withdrawn" => "hold-expired",
+                _ => "tests-completed",
+            };
+            if (outcome == "withdrawn")
+            {
+                Attach(sample);
+            }
+
             sample["cleanup"] = JsonNode.Parse($$"""
                 {"state":"populated","disposition":"{{disposition}}","attemptId":"cleanup-attempt","observedAt":"2026-10-22T12:00:30Z","ownedResourceIds":[],"leftoverResourceIds":[],"failures":[],"diagnosticIds":[]}
                 """);
@@ -215,7 +268,7 @@ public sealed class TestEnvironmentContractReaderTests
     /// <param name="path">The inconsistent field.</param>
     /// <param name="json">The replacement JSON.</param>
     [Theory]
-    [InlineData("bindings.attachments.holds", "[{\"originalAttachmentRequestId\":\"request\",\"environmentId\":\"environment\",\"ownerRunId\":\"owner\",\"attachedRunId\":\"attached\",\"requestedHoldSeconds\":300,\"effectiveHoldSeconds\":1800,\"acceptedAt\":\"2026-10-22T12:00:00Z\",\"expiresAt\":\"2026-10-22T12:30:00Z\",\"end\":{\"state\":\"active\"}}]")]
+    [InlineData("bindings.attachments.holds", "[{\"originalAttachmentRequestId\":\"request\",\"environmentId\":\"sample-environment\",\"ownerRunId\":\"sample-owner-run\",\"attachedRunId\":\"attached\",\"requestedHoldSeconds\":300,\"effectiveHoldSeconds\":1800,\"acceptedAt\":\"2026-10-22T12:00:00Z\",\"expiresAt\":\"2026-10-22T12:30:00Z\",\"end\":{\"state\":\"active\"}}]")]
     [InlineData("bindings.deadlines.startup.expiresAt", "\"2026-10-22T12:11:00Z\"")]
     [InlineData("bindings.deadlines.startup.override", "{\"state\":\"declared\",\"requestedSeconds\":700,\"justification\":\"fixture justification\"}")]
     public void InconsistentTimingIsRefused(string path, string json)
@@ -292,6 +345,12 @@ public sealed class TestEnvironmentContractReaderTests
         ReadBytes(exact, false).IsValid.ShouldBeTrue();
         AssertRefused(ReadBytes(new byte[TestEnvironmentContractReader.MaximumDocumentBytes + 1], false), "HXT105");
         ReadBytes([0xEF, 0xBB, 0xBF, .. sample], false).IsValid.ShouldBeTrue();
+        byte[] bomExact = new byte[TestEnvironmentContractReader.MaximumDocumentBytes];
+        bomExact.AsSpan().Fill((byte)' ');
+        new byte[] { 0xEF, 0xBB, 0xBF }.CopyTo(bomExact, 0);
+        sample.CopyTo(bomExact, 3);
+        ReadBytes(bomExact, false).IsValid.ShouldBeTrue();
+        AssertRefused(ReadBytes([.. bomExact, (byte)' '], false), "HXT105");
     }
 
     /// <summary>Unreadable paths never disclose sensitive path text in refusal metadata.</summary>
@@ -371,7 +430,7 @@ public sealed class TestEnvironmentContractReaderTests
         }
     }
 
-    /// <summary>Distinct tiny override values cannot become equal through decimal underflow.</summary>
+    /// <summary>Distinct representable tiny budgets reach the startup override comparison and refuse.</summary>
     /// <param name="result">Whether to read a terminal result.</param>
     [Theory]
     [InlineData(false)]
@@ -379,8 +438,9 @@ public sealed class TestEnvironmentContractReaderTests
     public void MismatchedTinyStartupOverridesAreRefused(bool result)
     {
         JsonObject sample = Sample(result);
-        SetDeadline(sample, "startup", "1e-40", "2026-10-22T12:00:00Z");
-        sample["bindings"]!["deadlines"]!["startup"]!["override"]!["requestedSeconds"] = JsonNode.Parse("2e-40");
+        SetDeadline(sample, "startup", "1e-7", "2026-10-22T12:00:00.0000001Z");
+        Read(sample, result).IsValid.ShouldBeTrue();
+        sample["bindings"]!["deadlines"]!["startup"]!["override"]!["requestedSeconds"] = JsonNode.Parse("2e-7");
         AssertRefused(Read(sample, result), "HXT107");
     }
 
@@ -492,6 +552,14 @@ public sealed class TestEnvironmentContractReaderTests
     [InlineData("expired", "2026-10-22T12:05:00Z", true)]
     [InlineData("terminal-outcome", "2026-10-22T11:59:59Z", false)]
     [InlineData("terminal-outcome", "2026-10-22T12:00:00Z", true)]
+    [InlineData("terminal-outcome", "2026-10-22T12:04:59.9999999Z", true)]
+    [InlineData("terminal-outcome", "2026-10-22T12:05:00Z", false)]
+    [InlineData("terminal-outcome", "2026-10-22T15:00:00Z", false)]
+    [InlineData("owner-cancelled", "2026-10-22T12:05:00Z", false)]
+    [InlineData("developer-stop", "2026-10-22T12:05:00Z", false)]
+    [InlineData("cleanup", "2026-10-22T12:05:00Z", false)]
+    [InlineData("ci-job-completed", "2026-10-22T12:05:00Z", false)]
+    [InlineData("ci-job-cancelled", "2026-10-22T12:05:00Z", false)]
     public void HoldEndRespectsAcceptanceAndExpiryForBothContracts(string reason, string endedAt, bool valid)
     {
         foreach (bool result in new[] { false, true })
@@ -588,6 +656,529 @@ public sealed class TestEnvironmentContractReaderTests
             }
 
             AssertRefused(Read(sample, result), "HXT104");
+        }
+    }
+
+    /// <summary>Every terminal cause belongs to exactly one outcome and withdrawal requires an attached run.</summary>
+    /// <param name="cause">The terminal cause.</param>
+    /// <param name="expectedOutcome">Its only valid outcome.</param>
+    [Theory]
+    [InlineData("tests-completed", "passed")]
+    [InlineData("test-failure", "failed")]
+    [InlineData("startup-failure", "failed")]
+    [InlineData("startup-timeout", "failed")]
+    [InlineData("execution-timeout", "failed")]
+    [InlineData("run-cancelled", "cancelled")]
+    [InlineData("hold-expired", "withdrawn")]
+    [InlineData("owner-cancelled", "withdrawn")]
+    [InlineData("developer-stop", "withdrawn")]
+    [InlineData("cleanup", "withdrawn")]
+    [InlineData("ci-job-completed", "withdrawn")]
+    [InlineData("ci-job-cancelled", "withdrawn")]
+    public void TerminalOutcomeAndCauseMustAgree(string cause, string expectedOutcome)
+    {
+        foreach (string outcome in new[] { "passed", "failed", "cancelled", "withdrawn" })
+        {
+            JsonObject sample = Sample(true);
+            Attach(sample);
+            sample["terminal"]!["outcome"] = outcome;
+            sample["terminal"]!["cause"] = cause;
+            bool valid = outcome == expectedOutcome;
+            Schema(true).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBe(valid);
+            TestEnvironmentContractReadResult read = Read(sample, true);
+            if (valid)
+            {
+                read.IsValid.ShouldBeTrue();
+            }
+            else
+            {
+                AssertRefused(read, "HXT104");
+            }
+        }
+
+        if (expectedOutcome == "withdrawn")
+        {
+            JsonObject owner = Sample(true);
+            owner["terminal"]!["outcome"] = expectedOutcome;
+            owner["terminal"]!["cause"] = cause;
+            Schema(true).Evaluate(JsonSerializer.SerializeToElement(owner), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeFalse();
+            AssertRefused(Read(owner, true), "HXT104");
+        }
+    }
+
+    /// <summary>Integer fields remain consumable with GetInt32 without exponent, decimal or magnitude surprises.</summary>
+    /// <param name="number">The JSON spelling that is not a plain Int32.</param>
+    [Theory]
+    [InlineData("3e2")]
+    [InlineData("300.0")]
+    [InlineData("1800e-4294967296")]
+    [InlineData("1e-4294967296")]
+    [InlineData("1e308")]
+    [InlineData("2147483648")]
+    [InlineData("-2147483649")]
+    public void IntegerFieldsRefuseNonPlainOrOutOfRangeNumbers(string number)
+    {
+        foreach (bool result in new[] { false, true })
+        {
+            JsonObject sample = Sample(result);
+            Populate(sample, "release");
+            JsonObject hold = AddHold(sample, 300);
+            JsonNode bindings = sample["bindings"]!;
+            List<(JsonNode Object, string Property)> fields =
+            [
+                (bindings["run"]!, "attemptSequence"),
+                (bindings["decision"]!, "attemptSequence"),
+                (bindings["environment"]!["executionContext"]!, "workflowAttempt"),
+                (hold, "requestedHoldSeconds"),
+                (hold, "effectiveHoldSeconds"),
+            ];
+            foreach (string name in new[] { "required", "executed", "completed", "passed", "failed", "skipped" })
+            {
+                fields.Add((bindings["suite"]!["completion"]!["counts"]!, name));
+            }
+
+            Read(sample, result).IsValid.ShouldBeTrue();
+            foreach ((JsonNode node, string property) in fields)
+            {
+                JsonNode original = node[property]!.DeepClone();
+                node[property] = JsonNode.Parse(number);
+                AssertRefused(Read(sample, result), "HXT104");
+                node[property] = original;
+            }
+        }
+    }
+
+    /// <summary>Positive sequence/count boundaries remain plain Int32 values on detached documents.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void IntegerBoundariesRemainConsumable(bool result)
+    {
+        JsonObject sample = Sample(result);
+        Populate(sample, "release");
+        sample["bindings"]!["run"]!["attemptSequence"] = int.MaxValue;
+        sample["bindings"]!["suite"]!["completion"]!["counts"]!["executed"] = int.MaxValue;
+        JsonElement bindings = Read(sample, result).Document!.Value.GetProperty("bindings");
+        bindings.GetProperty("run").GetProperty("attemptSequence").GetInt32().ShouldBe(int.MaxValue);
+        bindings.GetProperty("suite").GetProperty("completion").GetProperty("counts").GetProperty("executed").GetInt32().ShouldBe(int.MaxValue);
+        bindings.GetProperty("suite").GetProperty("completion").GetProperty("counts").GetProperty("skipped").GetInt32().ShouldBe(0);
+    }
+
+    /// <summary>Endpoint snapshots never carry inline credentials or query/fragment secrets into retained results.</summary>
+    /// <param name="endpointValue">The unsafe endpoint.</param>
+    [Theory]
+    [InlineData("http://user:secret@host/")]
+    [InlineData("http://user@host/")]
+    [InlineData("http://host/?token=secret")]
+    [InlineData("http://host/?page=1")]
+    [InlineData("http://host/#secret")]
+    public void EndpointCredentialsAndQueriesAreRefused(string endpointValue)
+    {
+        foreach (bool result in new[] { false, true })
+        {
+            JsonObject sample = Sample(result);
+            sample["bindings"]!["environment"]!["resources"]![0]!["endpoints"]![0]!["uri"] = endpointValue;
+            Schema(result).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeFalse();
+            TestEnvironmentContractReadResult read = Read(sample, result);
+            AssertRefused(read, "HXT104");
+            JsonSerializer.Serialize(read.Diagnostics).ShouldNotContain("secret");
+        }
+    }
+
+    /// <summary>Endpoints must be representable absolute URIs without restricting supported schemes.</summary>
+    /// <param name="protocol">The endpoint protocol.</param>
+    /// <param name="endpointValue">The endpoint URI text.</param>
+    /// <param name="valid">Whether the endpoint is representable.</param>
+    [Theory]
+    [InlineData("http", "http://:1234/", false)]
+    [InlineData("http", "http://127.0.0.1:999999/", false)]
+    [InlineData("http", "http://127.0.0.1:8080/health", true)]
+    [InlineData("https", "https://localhost:8443/path", true)]
+    [InlineData("http", "http://[::1]:8080/", true)]
+    [InlineData("grpc", "grpc://127.0.0.1:5000/", true)]
+    [InlineData("hexalith-custom", "hexalith-custom://module/endpoint", true)]
+    public void EndpointUrisRemainRepresentableForBothContracts(string protocol, string endpointValue, bool valid)
+    {
+        foreach (bool result in new[] { false, true })
+        {
+            JsonObject sample = Sample(result);
+            JsonNode endpoint = sample["bindings"]!["environment"]!["resources"]![0]!["endpoints"]![0]!;
+            endpoint["protocol"] = protocol;
+            endpoint["uri"] = endpointValue;
+            Schema(result).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeTrue();
+            TestEnvironmentContractReadResult read = Read(sample, result);
+            if (valid)
+            {
+                read.IsValid.ShouldBeTrue();
+                string detached = read.Document!.Value.GetProperty("bindings").GetProperty("environment").GetProperty("resources")[0].GetProperty("endpoints")[0].GetProperty("uri").GetString()!;
+                new Uri(detached, UriKind.Absolute).IsAbsoluteUri.ShouldBeTrue();
+            }
+            else
+            {
+                AssertRefused(read, "HXT104");
+            }
+        }
+    }
+
+    /// <summary>Distinct request lineages cannot give one attached run conflicting hold expiries.</summary>
+    [Fact]
+    public void AttachedRunIdsRemainUniqueAcrossHoldLineages()
+    {
+        foreach (bool result in new[] { false, true })
+        {
+            JsonObject sample = Sample(result);
+            JsonObject first = AddHold(sample, 300);
+            JsonNode second = first.DeepClone();
+            second["originalAttachmentRequestId"] = "second-original-request";
+            second["requestedHoldSeconds"] = 600;
+            second["effectiveHoldSeconds"] = 600;
+            second["expiresAt"] = "2026-10-22T12:10:00Z";
+            sample["bindings"]!["attachments"]!["holds"]!.AsArray().Add(second);
+            Schema(result).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeTrue();
+            AssertRefused(Read(sample, result), "HXT104");
+            second["attachedRunId"] = "second-attached-run";
+            TestEnvironmentContractReadResult read = Read(sample, result);
+            read.IsValid.ShouldBeTrue();
+            JsonElement holds = read.Document!.Value.GetProperty("bindings").GetProperty("attachments").GetProperty("holds");
+            holds.GetArrayLength().ShouldBe(2);
+            holds[0].GetProperty("expiresAt").GetString().ShouldBe("2026-10-22T12:05:00Z");
+            holds[1].GetProperty("expiresAt").GetString().ShouldBe("2026-10-22T12:10:00Z");
+        }
+    }
+
+    /// <summary>Result-only diagnostic references resolve just like references inside bindings.</summary>
+    /// <param name="scope">The result object containing a dangling reference.</param>
+    [Theory]
+    [InlineData("terminal")]
+    [InlineData("ownedWork")]
+    [InlineData("environmentAccess")]
+    [InlineData("cleanup")]
+    public void ResultDiagnosticReferencesRefuseDanglingIds(string scope)
+    {
+        JsonObject sample = Sample(true);
+        PopulateOperations(sample, true);
+        Read(sample, true).IsValid.ShouldBeTrue();
+        JsonNode target = scope is "ownedWork" or "environmentAccess"
+            ? sample["termination"]![scope]![0]!
+            : sample[scope]!;
+        target["diagnosticIds"] = new JsonArray("missing-result-diagnostic");
+        Schema(true).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeTrue();
+        AssertRefused(Read(sample, true), "HXT104");
+    }
+
+    /// <summary>Unavailable composition and catalog identities need no fabricated producer values.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CompositionAndCatalogCanRemainExplicitlyUnpopulated(bool result)
+    {
+        JsonObject sample = Sample(result);
+        foreach (string name in new[] { "composition", "catalog" })
+        {
+            JsonNode original = sample["bindings"]!["environment"]![name]!.DeepClone();
+            sample["bindings"]!["environment"]![name] = new JsonObject { ["state"] = "not-yet-populated" };
+            Schema(result).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeTrue();
+            Read(sample, result).IsValid.ShouldBeTrue();
+            sample["bindings"]!["environment"]![name]!["inventedIdentity"] = "not-a-producer-value";
+            AssertRefused(Read(sample, result), "HXT104");
+            sample["bindings"]!["environment"]![name] = original;
+        }
+    }
+
+    /// <summary>Run aliases and hold environment/owner bindings agree within one snapshot.</summary>
+    /// <param name="fault">The inconsistent run or hold identity.</param>
+    /// <exception cref="InvalidOperationException">The fixture selects an unknown fault.</exception>
+    [Theory]
+    [InlineData("owner-run")]
+    [InlineData("attached-run")]
+    [InlineData("attached-owner")]
+    [InlineData("hold-environment")]
+    [InlineData("hold-owner")]
+    [InlineData("hold-attached-owner")]
+    [InlineData("missing-current-hold")]
+    public void RunAndHoldIdentityMismatchesAreAtomic(string fault)
+    {
+        foreach (bool result in new[] { false, true })
+        {
+            JsonObject sample = Sample(result);
+            JsonObject hold = AddHold(sample, 300);
+            if (fault is "attached-run" or "attached-owner" or "missing-current-hold")
+            {
+                Attach(sample);
+            }
+
+            JsonNode run = sample["bindings"]!["run"]!;
+            switch (fault)
+            {
+                case "owner-run": run["runId"] = "another-owner"; break;
+                case "attached-run": run["runId"] = "another-attached-run"; break;
+                case "attached-owner":
+                    run["runId"] = "sample-owner-run";
+                    run["attachedRunId"] = "sample-owner-run";
+                    break;
+                case "hold-environment": hold["environmentId"] = "another-environment"; break;
+                case "hold-owner": hold["ownerRunId"] = "another-owner"; break;
+                case "hold-attached-owner": hold["attachedRunId"] = "sample-owner-run"; break;
+                case "missing-current-hold": sample["bindings"]!["attachments"]!["holds"]!.AsArray().Clear(); break;
+                default: throw new InvalidOperationException("Unknown fixture fault.");
+            }
+
+            AssertRefused(Read(sample, result), "HXT104");
+        }
+    }
+
+    /// <summary>Scoped producer IDs and readiness resource references remain unambiguous.</summary>
+    /// <param name="scope">The ambiguous or unresolved scope.</param>
+    /// <exception cref="InvalidOperationException">The fixture selects an unknown scope.</exception>
+    [Theory]
+    [InlineData("tasks")]
+    [InlineData("readiness")]
+    [InlineData("unknown-readiness")]
+    [InlineData("holds")]
+    [InlineData("completion")]
+    public void ScopedProducerIdentitiesAreValidated(string scope)
+    {
+        foreach (bool result in new[] { false, true })
+        {
+            JsonObject sample = Sample(result);
+            Populate(sample, "release");
+            PopulateOperations(sample, result);
+            Read(sample, result).IsValid.ShouldBeTrue();
+            JsonNode bindings = sample["bindings"]!;
+            if (scope == "unknown-readiness")
+            {
+                bindings["environment"]!["readiness"]!["resources"]![0]!["resourceId"] = "unknown-resource";
+            }
+            else
+            {
+                JsonArray items = scope switch
+                {
+                    "tasks" => bindings["environment"]!["startupTasks"]!["tasks"]!.AsArray(),
+                    "readiness" => bindings["environment"]!["readiness"]!["resources"]!.AsArray(),
+                    "holds" => bindings["attachments"]!["holds"]!.AsArray(),
+                    "completion" => bindings["suite"]!["completion"]!["tests"]!.AsArray(),
+                    _ => throw new InvalidOperationException("Unknown fixture scope."),
+                };
+                JsonNode duplicate = items[0]!.DeepClone();
+                if (scope is "tasks" or "readiness")
+                {
+                    duplicate["status"] = "failed";
+                }
+                else if (scope == "completion")
+                {
+                    duplicate["outcome"] = "failed";
+                }
+                else
+                {
+                    duplicate["attachedRunId"] = "another-attached-run";
+                }
+
+                items.Add(duplicate);
+            }
+
+            AssertRefused(Read(sample, result), "HXT104");
+        }
+    }
+
+    /// <summary>Owned-work and access item IDs share one termination scope.</summary>
+    /// <param name="scope">The duplicate termination item scope.</param>
+    [Theory]
+    [InlineData("ownedWork")]
+    [InlineData("environmentAccess")]
+    [InlineData("cross-list")]
+    public void TerminationItemIdsAreUnique(string scope)
+    {
+        JsonObject sample = Sample(true);
+        PopulateOperations(sample, true);
+        JsonNode termination = sample["termination"]!;
+        if (scope == "cross-list")
+        {
+            termination["environmentAccess"]![0]!["id"] = "sample-work";
+        }
+        else
+        {
+            JsonArray items = termination[scope]!.AsArray();
+            items.Add(items[0]!.DeepClone());
+        }
+
+        AssertRefused(Read(sample, true), "HXT104");
+    }
+
+    /// <summary>Failure lists resolve termination item IDs or cleanup-owned resource IDs.</summary>
+    /// <param name="kind">The object holding failure item or resource references.</param>
+    /// <param name="identity">The referenced item or resource.</param>
+    [Theory]
+    [InlineData("termination", "sample-work")]
+    [InlineData("termination", "sample-access")]
+    [InlineData("cleanup", "eventstore")]
+    public void FailuresResolveItemOrResourceIds(string kind, string identity)
+    {
+        JsonObject sample = Sample(true);
+        PopulateOperations(sample, true);
+        sample[kind]!["failures"] = new JsonArray(identity);
+        if (kind == "termination")
+        {
+            sample[kind]![identity == "sample-work" ? "ownedWork" : "environmentAccess"]![0]!["status"] = "failed";
+        }
+        else
+        {
+            sample[kind]!["disposition"] = "incomplete";
+            sample[kind]!["leftoverResourceIds"] = new JsonArray(identity);
+        }
+
+        Read(sample, true).IsValid.ShouldBeTrue();
+        sample[kind]!["failures"] = new JsonArray("classified-diagnostic");
+        AssertRefused(Read(sample, true), "HXT104");
+    }
+
+    /// <summary>Attached runs, actual tasks, stopping, retention and cleanup snapshots are positively consumable.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PopulatedOperationalBindingsAreConsumed(bool result)
+    {
+        JsonObject sample = Sample(result);
+        PopulateOperations(sample, result);
+        Schema(result).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeTrue();
+        TestEnvironmentContractReadResult read = Read(sample, result);
+        read.IsValid.ShouldBeTrue();
+        JsonElement document = read.Document!.Value;
+        document.GetProperty("bindings").GetProperty("run").GetProperty("role").GetString().ShouldBe("attached");
+        document.GetProperty("bindings").GetProperty("environment").GetProperty("startupTasks").GetProperty("tasks")[0].GetProperty("status").GetString().ShouldBe("passed");
+        if (result)
+        {
+            document.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("passed");
+            document.GetProperty("termination").GetProperty("ownedWork")[0].GetProperty("status").GetString().ShouldBe("terminated");
+            document.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe("not-retained");
+            document.GetProperty("cleanup").GetProperty("disposition").GetString().ShouldBe("complete");
+        }
+    }
+
+    /// <summary>The omitted startup override means exactly 600 seconds even when other deadline arithmetic matches.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DefaultStartupBudgetCannotBeRelabelled(bool result)
+    {
+        JsonObject sample = Sample(result);
+        SetDeadline(sample, "startup", "700", "2026-10-22T12:11:40Z");
+        sample["bindings"]!["deadlines"]!["startup"]!["override"] = new JsonObject { ["state"] = "not-overridden" };
+        Schema(result).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeTrue();
+        AssertRefused(Read(sample, result), "HXT107");
+    }
+
+    /// <summary>Unavailable precision in an override is refused even when the effective deadline is representable.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnrepresentableStartupOverrideIsRefused(bool result)
+    {
+        JsonObject sample = Sample(result);
+        SetDeadline(sample, "startup", "1e-7", "2026-10-22T12:00:00.0000001Z");
+        sample["bindings"]!["deadlines"]!["startup"]!["override"]!["requestedSeconds"] = JsonNode.Parse("1e-40");
+        AssertRefused(Read(sample, result), "HXT107");
+    }
+
+    /// <summary>Schema validation itself preserves the default for an omitted original hold request.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OmittedHoldRequestRequiresTheSchemaDefault(bool result)
+    {
+        JsonObject sample = Sample(result);
+        JsonObject hold = AddHold(sample, null);
+        hold["effectiveHoldSeconds"] = 300;
+        hold["expiresAt"] = "2026-10-22T12:05:00Z";
+        Schema(result).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeFalse();
+        AssertRefused(Read(sample, result), "HXT104");
+    }
+
+    /// <summary>Every populated nested policy claim must retain the supported policy identifier.</summary>
+    /// <param name="binding">The qualification or decision carrying the policy claim.</param>
+    [Theory]
+    [InlineData("buildsAdoption")]
+    [InlineData("platformAcceptance")]
+    [InlineData("integrationQualification")]
+    [InlineData("decision")]
+    public void NestedPoliciesFailClosed(string binding)
+    {
+        foreach (bool result in new[] { false, true })
+        {
+            foreach (string policy in new[] { "<missing>", "null", "42", "\"private-input-policy\"" })
+            {
+                JsonObject sample = Sample(result);
+                Populate(sample, "pr-merge");
+                string path = binding == "decision" ? "bindings.decision.policyId" : $"bindings.tool.{binding}.policyId";
+                Change(sample, path, policy);
+                AssertRefused(Read(sample, result), "HXT104");
+            }
+        }
+    }
+
+    /// <summary>A PR merge decision cannot omit its exact head/base/merge-result binding.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PrMergeDecisionRequiresStructuredPr(bool result)
+    {
+        JsonObject sample = Sample(result);
+        Populate(sample, "pr-merge");
+        Change(sample, "bindings.decision.pr", "<missing>");
+        Schema(result).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeFalse();
+        AssertRefused(Read(sample, result), "HXT104");
+    }
+
+    /// <summary>Unrepresentable hold/deadline timestamps have the documented strict-value diagnostic.</summary>
+    /// <param name="kind">The binding containing the unrepresentable year.</param>
+    [Theory]
+    [InlineData("hold")]
+    [InlineData("startup")]
+    [InlineData("execution")]
+    public void UnrepresentableTimingTimestampsUseHxt103(string kind)
+    {
+        foreach (bool result in new[] { false, true })
+        {
+            JsonObject sample = Sample(result);
+            if (kind == "hold")
+            {
+                AddHold(sample, 300)["acceptedAt"] = "0000-10-22T12:00:00Z";
+            }
+            else
+            {
+                SetDeadline(sample, kind, "600", "2026-10-22T12:10:00Z");
+                sample["bindings"]!["deadlines"]![kind]!["originAt"] = "0000-10-22T12:00:00Z";
+            }
+
+            AssertRefused(Read(sample, result), "HXT103");
+        }
+    }
+
+    private static void Attach(JsonObject sample)
+    {
+        JsonNode run = sample["bindings"]!["run"]!;
+        run["role"] = "attached";
+        run["runId"] = "sample-attached-run";
+        run["attachedRunId"] = "sample-attached-run";
+        _ = AddHold(sample, 300);
+    }
+
+    private static void PopulateOperations(JsonObject sample, bool result)
+    {
+        Attach(sample);
+        AddDiagnostic(sample, result);
+        sample["bindings"]!["environment"]!["startupTasks"] = JsonNode.Parse("{\"state\":\"populated\",\"tasks\":[{\"taskId\":\"sample-startup\",\"required\":true,\"status\":\"passed\",\"startedAt\":\"2026-10-22T12:00:00Z\",\"finishedAt\":\"2026-10-22T12:00:10Z\",\"diagnosticIds\":[\"classified-diagnostic\"]}]}");
+        if (result)
+        {
+            sample["termination"] = JsonNode.Parse("{\"state\":\"populated\",\"ownedWork\":[{\"id\":\"sample-work\",\"status\":\"terminated\",\"observedAt\":\"2026-10-22T12:00:30Z\",\"diagnosticIds\":[]}],\"environmentAccess\":[{\"id\":\"sample-access\",\"status\":\"terminated\",\"observedAt\":\"2026-10-22T12:00:30Z\",\"diagnosticIds\":[]}],\"leftoverWorkIds\":[],\"failures\":[]}");
+            sample["retention"] = JsonNode.Parse("{\"state\":\"populated\",\"disposition\":\"not-retained\",\"failureRunIds\":[],\"retainedResourceIds\":[],\"reason\":\"Successful contract fixture\",\"recordedAt\":\"2026-10-22T12:00:30Z\"}");
+            sample["cleanup"] = JsonNode.Parse("{\"state\":\"populated\",\"disposition\":\"complete\",\"attemptId\":\"sample-cleanup\",\"observedAt\":\"2026-10-22T12:00:30Z\",\"ownedResourceIds\":[\"eventstore\"],\"leftoverResourceIds\":[],\"failures\":[],\"diagnosticIds\":[]}");
         }
     }
 

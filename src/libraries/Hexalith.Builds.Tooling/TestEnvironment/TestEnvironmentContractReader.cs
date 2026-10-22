@@ -109,9 +109,12 @@ public static class TestEnvironmentContractReader
                 return Refuse("HXT102", version, "policyId", $"Use the exact supported policy: {PolicyId}.");
             }
 
-            if (!schema.Evaluate(root, new EvaluationOptions { RequireFormatValidation = true }).IsValid || !HasUnambiguousBindings(root))
+            if (!HasPlainIntegers(root)
+                || !schema.Evaluate(root, new EvaluationOptions { RequireFormatValidation = true }).IsValid
+                || !HasUnambiguousBindings(root)
+                || !HasConsistentRunBindings(root.GetProperty("bindings")))
             {
-                return Refuse("HXT104", version, "$", "The document violates the contract shape, identity uniqueness or document-local diagnostic bindings.");
+                return Refuse("HXT104", version, "$", "The document violates the contract shape, integer encoding or document-local identity/reference bindings.");
             }
 
             if (!HasConsistentTiming(root.GetProperty("bindings")))
@@ -128,7 +131,7 @@ public static class TestEnvironmentContractReader
         }
         catch (Exception exception) when (exception is ArgumentException or NotSupportedException or IOException or UnauthorizedAccessException)
         {
-            return Refuse("HXT106", version, "$", "Supply an existing readable local contract file with representable timing values.");
+            return Refuse("HXT106", version, "$", "Supply an existing readable local contract file.");
         }
     }
 
@@ -159,12 +162,13 @@ public static class TestEnvironmentContractReader
         {
             foreach (JsonElement hold in attachments.GetProperty("holds").EnumerateArray())
             {
-                int effective = decimal.ToInt32(hold.GetProperty("effectiveHoldSeconds").GetDecimal());
+                int effective = hold.GetProperty("effectiveHoldSeconds").GetInt32();
                 int requested = hold.TryGetProperty("requestedHoldSeconds", out JsonElement request)
-                    ? decimal.ToInt32(request.GetDecimal())
+                    ? request.GetInt32()
                     : 1800;
                 DateTimeOffset accepted = Timestamp(hold, "acceptedAt");
-                if (effective != requested || Timestamp(hold, "expiresAt").Ticks - accepted.Ticks != effective * TimeSpan.TicksPerSecond)
+                DateTimeOffset expiry = Timestamp(hold, "expiresAt");
+                if (effective != requested || expiry.Ticks - accepted.Ticks != effective * TimeSpan.TicksPerSecond)
                 {
                     return false;
                 }
@@ -173,7 +177,8 @@ public static class TestEnvironmentContractReader
                 if (StringValue(end, "state") == "ended")
                 {
                     DateTimeOffset ended = Timestamp(end, "endedAt");
-                    if (ended < accepted || (StringValue(end, "reason") == "expired" && ended < Timestamp(hold, "expiresAt")))
+                    bool expired = StringValue(end, "reason") == "expired";
+                    if (ended < accepted || (expired ? ended < expiry : ended >= expiry))
                     {
                         return false;
                     }
@@ -213,6 +218,52 @@ public static class TestEnvironmentContractReader
         }
 
         return true;
+    }
+
+    private static bool HasPlainIntegers(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.Object => value.EnumerateObject().All(property =>
+            (!(property.Name is "attemptSequence" or "workflowAttempt" or "requestedHoldSeconds" or "effectiveHoldSeconds"
+                or "required" or "executed" or "completed" or "passed" or "failed" or "skipped")
+                || property.Value.ValueKind != JsonValueKind.Number
+                || property.Value.TryGetInt32(out _))
+            && HasPlainIntegers(property.Value)),
+        JsonValueKind.Array => value.EnumerateArray().All(HasPlainIntegers),
+        JsonValueKind.String or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null or JsonValueKind.Undefined => true,
+        _ => false,
+    };
+
+    private static bool HasConsistentRunBindings(JsonElement bindings)
+    {
+        JsonElement run = bindings.GetProperty("run");
+        string runId = run.GetProperty("runId").GetString()!;
+        string ownerId = run.GetProperty("ownerRunId").GetString()!;
+        bool attached = StringValue(run, "role") == "attached";
+        if (attached ? runId != StringValue(run, "attachedRunId") || runId == ownerId : runId != ownerId)
+        {
+            return false;
+        }
+
+        JsonElement attachments = bindings.GetProperty("attachments");
+        if (StringValue(attachments, "state") != "populated")
+        {
+            return true;
+        }
+
+        bool includesCurrentRun = false;
+        foreach (JsonElement hold in attachments.GetProperty("holds").EnumerateArray())
+        {
+            string? attachedId = StringValue(hold, "attachedRunId");
+            if (StringValue(hold, "environmentId") != StringValue(run, "environmentId")
+                || StringValue(hold, "ownerRunId") != ownerId || attachedId == ownerId)
+            {
+                return false;
+            }
+
+            includesCurrentRun |= attachedId == runId;
+        }
+
+        return !attached || includesCurrentRun;
     }
 
     private static bool TryDeadlineTicks(JsonElement value, out long ticks)
@@ -262,8 +313,10 @@ public static class TestEnvironmentContractReader
 
     private static bool HasUnambiguousBindings(JsonElement root)
     {
+        JsonElement bindings = root.GetProperty("bindings");
+        JsonElement environment = bindings.GetProperty("environment");
         HashSet<string> resources = new(StringComparer.Ordinal);
-        foreach (JsonElement resource in root.GetProperty("bindings").GetProperty("environment").GetProperty("resources").EnumerateArray())
+        foreach (JsonElement resource in environment.GetProperty("resources").EnumerateArray())
         {
             if (!resources.Add(resource.GetProperty("resourceId").GetString()!))
             {
@@ -271,7 +324,48 @@ public static class TestEnvironmentContractReader
             }
 
             HashSet<string> endpoints = new(StringComparer.Ordinal);
-            if (resource.GetProperty("endpoints").EnumerateArray().Any(endpoint => !endpoints.Add(endpoint.GetProperty("name").GetString()!)))
+            if (resource.GetProperty("endpoints").EnumerateArray().Any(endpoint => !endpoints.Add(endpoint.GetProperty("name").GetString()!)
+                || !Uri.TryCreate(endpoint.GetProperty("uri").GetString(), UriKind.Absolute, out _)))
+            {
+                return false;
+            }
+        }
+
+        JsonElement readiness = environment.GetProperty("readiness");
+        if (StringValue(readiness, "state") == "populated"
+            && (!HasUniqueIds(readiness.GetProperty("resources"), "resourceId")
+                || readiness.GetProperty("resources").EnumerateArray().Any(item => !resources.Contains(StringValue(item, "resourceId")!))))
+        {
+            return false;
+        }
+
+        JsonElement tasks = environment.GetProperty("startupTasks");
+        JsonElement attachments = bindings.GetProperty("attachments");
+        JsonElement completion = bindings.GetProperty("suite").GetProperty("completion");
+        if ((StringValue(tasks, "state") == "populated" && !HasUniqueIds(tasks.GetProperty("tasks"), "taskId"))
+            || (StringValue(attachments, "state") == "populated"
+                && (!HasUniqueIds(attachments.GetProperty("holds"), "originalAttachmentRequestId")
+                    || !HasUniqueIds(attachments.GetProperty("holds"), "attachedRunId")))
+            || (StringValue(completion, "state") == "populated" && !HasUniqueIds(completion.GetProperty("tests"), "testId")))
+        {
+            return false;
+        }
+
+        if (root.TryGetProperty("termination", out JsonElement termination) && StringValue(termination, "state") == "populated")
+        {
+            HashSet<string> items = new(StringComparer.Ordinal);
+            if (termination.GetProperty("ownedWork").EnumerateArray().Concat(termination.GetProperty("environmentAccess").EnumerateArray())
+                .Any(item => !items.Add(StringValue(item, "id")!))
+                || termination.GetProperty("failures").EnumerateArray().Any(id => !items.Contains(id.GetString()!)))
+            {
+                return false;
+            }
+        }
+
+        if (root.TryGetProperty("cleanup", out JsonElement cleanup) && StringValue(cleanup, "state") == "populated")
+        {
+            HashSet<string> owned = new(cleanup.GetProperty("ownedResourceIds").EnumerateArray().Select(id => id.GetString()!), StringComparer.Ordinal);
+            if (cleanup.GetProperty("failures").EnumerateArray().Any(id => !owned.Contains(id.GetString()!)))
             {
                 return false;
             }
@@ -280,6 +374,12 @@ public static class TestEnvironmentContractReader
         HashSet<string> diagnostics = new(StringComparer.Ordinal);
         return root.GetProperty("diagnostics").EnumerateArray().All(diagnostic => diagnostics.Add(diagnostic.GetProperty("id").GetString()!))
             && HasResolvedDiagnosticIds(root, diagnostics);
+    }
+
+    private static bool HasUniqueIds(JsonElement items, string property)
+    {
+        HashSet<string> identities = new(StringComparer.Ordinal);
+        return items.EnumerateArray().All(item => identities.Add(StringValue(item, property)!));
     }
 
     private static bool HasResolvedDiagnosticIds(JsonElement value, HashSet<string> diagnostics) => value.ValueKind switch

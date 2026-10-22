@@ -176,7 +176,8 @@
             },
             "attemptSequence": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 1,
+              "maximum": 2147483647
             },
             "ownerRunId": {
               "$ref": "#/$defs/identity"
@@ -210,7 +211,8 @@
             },
             "attemptSequence": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 1,
+              "maximum": 2147483647
             },
             "ownerRunId": {
               "$ref": "#/$defs/identity"
@@ -267,7 +269,8 @@
             },
             "workflowAttempt": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 1,
+              "maximum": 2147483647
             },
             "jobId": {
               "$ref": "#/$defs/identity"
@@ -289,20 +292,27 @@
       ]
     },
     "composition": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "contentIdentity"
-      ],
-      "properties": {
-        "id": {
-          "$ref": "#/$defs/identity"
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
         },
-        "contentIdentity": {
-          "$ref": "#/$defs/contentIdentity"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "contentIdentity"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/identity"
+            },
+            "contentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            }
+          }
         }
-      }
+      ]
     },
     "endpoint": {
       "type": "object",
@@ -322,7 +332,8 @@
         "uri": {
           "type": "string",
           "format": "uri",
-          "pattern": "^[a-zA-Z][a-zA-Z0-9+.-]*://\\S+$(?![\\s\\S])"
+          "pattern": "^[a-zA-Z][a-zA-Z0-9+.-]*://[^/?#@\\s]+(?:/[^?#\\s]*)?$(?![\\s\\S])",
+          "description": "Absolute endpoint without userinfo, query or fragment; credentials use a separate channel."
         }
       }
     },
@@ -678,7 +689,8 @@
             },
             "attemptSequence": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 1,
+              "maximum": 2147483647
             }
           }
         },
@@ -739,7 +751,8 @@
             },
             "attemptSequence": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 1,
+              "maximum": 2147483647
             }
           }
         }
@@ -994,27 +1007,33 @@
       "properties": {
         "required": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "maximum": 2147483647
         },
         "executed": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "maximum": 2147483647
         },
         "completed": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "maximum": 2147483647
         },
         "passed": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "maximum": 2147483647
         },
         "failed": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "maximum": 2147483647
         },
         "skipped": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "maximum": 2147483647
         }
       }
     },
@@ -1469,7 +1488,89 @@
           },
           "uniqueItems": true
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "passed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cause": {
+                "enum": [
+                  "tests-completed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "failed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cause": {
+                "enum": [
+                  "test-failure",
+                  "startup-failure",
+                  "startup-timeout",
+                  "execution-timeout"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "cancelled"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cause": {
+                "enum": [
+                  "run-cancelled"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "withdrawn"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cause": {
+                "enum": [
+                  "hold-expired",
+                  "owner-cancelled",
+                  "developer-stop",
+                  "cleanup",
+                  "ci-job-completed",
+                  "ci-job-cancelled"
+                ]
+              }
+            }
+          }
+        }
+      ]
     },
     "terminationItem": {
       "type": "object",
@@ -1547,7 +1648,8 @@
               "items": {
                 "$ref": "#/$defs/identity"
               },
-              "uniqueItems": true
+              "uniqueItems": true,
+              "description": "IDs resolving to ownedWork or environmentAccess in this object."
             }
           }
         }
@@ -1659,7 +1761,8 @@
               "items": {
                 "$ref": "#/$defs/identity"
               },
-              "uniqueItems": true
+              "uniqueItems": true,
+              "description": "IDs resolving to ownedResourceIds in this object."
             },
             "diagnosticIds": {
               "type": "array",
@@ -1717,20 +1820,27 @@
           "$ref": "#/$defs/executionContext"
         },
         "catalog": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "commit",
-            "instanceId"
-          ],
-          "properties": {
-            "commit": {
-              "$ref": "#/$defs/commit"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/unpopulated"
             },
-            "instanceId": {
-              "$ref": "#/$defs/identity"
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "commit",
+                "instanceId"
+              ],
+              "properties": {
+                "commit": {
+                  "$ref": "#/$defs/commit"
+                },
+                "instanceId": {
+                  "$ref": "#/$defs/identity"
+                }
+              }
             }
-          }
+          ]
         },
         "isolation": {
           "$ref": "#/$defs/isolation"
@@ -1797,5 +1907,35 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "terminal": {
+            "properties": {
+              "outcome": {
+                "const": "withdrawn"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "bindings": {
+            "properties": {
+              "run": {
+                "properties": {
+                  "role": {
+                    "const": "attached"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

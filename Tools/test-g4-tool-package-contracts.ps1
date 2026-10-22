@@ -1023,19 +1023,30 @@ try {
     $modulePackage = Join-Path $packageDirectoryPath "Hexalith.Builds.Module.Cli.$Version.nupkg"
     $archive = [IO.Compression.ZipFile]::OpenRead($modulePackage)
     try {
-        $schemaEntry = $archive.GetEntry('tools/net10.0/any/schemas/hexalith.module-manifest.v2.json')
-        if ($null -eq $schemaEntry) { throw 'The module tool package omitted its Platform v2 schema.' }
-        $schemaReader = [IO.StreamReader]::new($schemaEntry.Open())
-        try { $packagedSchema = $schemaReader.ReadToEnd() }
-        finally { $schemaReader.Dispose() }
-        $expectedSchema = [IO.File]::ReadAllText((Join-Path $repositoryRoot 'schemas/hexalith.module-manifest.v2.json'))
-        if ($packagedSchema -cne $expectedSchema) { throw 'The packed Platform schema differs from its source contract.' }
+        foreach ($schemaName in @('hexalith.module-manifest.v2.json', 'hexalith.test-environment.v1.json', 'hexalith.test-result.v1.json')) {
+            $schemaEntry = $archive.GetEntry("tools/net10.0/any/schemas/$schemaName")
+            if ($null -eq $schemaEntry) { throw "The module tool package omitted its $schemaName schema." }
+            $schemaReader = [IO.StreamReader]::new($schemaEntry.Open())
+            try { $packagedSchema = $schemaReader.ReadToEnd() }
+            finally { $schemaReader.Dispose() }
+            $expectedSchema = [IO.File]::ReadAllText((Join-Path $repositoryRoot "schemas/$schemaName"))
+            if ($packagedSchema -cne $expectedSchema) { throw "The packed $schemaName schema differs from its source contract." }
+        }
         $toolingEntry = $archive.GetEntry('tools/net10.0/any/Hexalith.Builds.Tooling.dll')
         if ($null -eq $toolingEntry) { throw 'The installed tool omitted its catalog-bearing tooling assembly.' }
         $toolingPath = Join-Path $consumerRoot 'catalog-probe/Hexalith.Builds.Tooling.dll'
         $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($toolingPath))
         [IO.Compression.ZipFileExtensions]::ExtractToFile($toolingEntry, $toolingPath)
         $toolingAssembly = [Reflection.Assembly]::LoadFrom($toolingPath)
+        foreach ($schemaName in @('hexalith.test-environment.v1.json', 'hexalith.test-result.v1.json')) {
+            $schemaStream = $toolingAssembly.GetManifestResourceStream("Hexalith.Builds.Tooling.TestEnvironment.$schemaName")
+            if ($null -eq $schemaStream) { throw "The installed tooling omitted its embedded $schemaName schema." }
+            $schemaReader = [IO.StreamReader]::new($schemaStream)
+            try { $embeddedSchema = $schemaReader.ReadToEnd() }
+            finally { $schemaReader.Dispose() }
+            $expectedSchema = [IO.File]::ReadAllText((Join-Path $repositoryRoot "schemas/$schemaName"))
+            if ($embeddedSchema -cne $expectedSchema) { throw "The installed embedded $schemaName schema differs from its source contract." }
+        }
         $catalogStream = $toolingAssembly.GetManifestResourceStream('Hexalith.Builds.Tooling.Manifest.platform-version-catalog.json')
         if ($null -eq $catalogStream) { throw 'The installed tool omitted its embedded version catalog.' }
         $catalogReader = [IO.StreamReader]::new($catalogStream)
