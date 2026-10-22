@@ -95,4 +95,26 @@ public sealed class CompositionDaprComponentRendererTests
             CompositionTestFiles.Delete(root);
         }
     }
+
+    /// <summary>Verifies private direct-host paths round-trip as escaped YAML scalars.</summary>
+    [Fact]
+    public void DirectConfigurationSharesThePlanRendererAndEscapesPrivateRegistryPaths()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root);
+            CompositionDaprComponentRenderer.RenderConfiguration("hexalith-g4-" + plan.RunId, Path.GetDirectoryName(plan.DaprConfigPath)!)
+                .ShouldBe(CompositionDaprComponentRenderer.RenderConfiguration(plan));
+            string directory = Path.Combine(root, "private \"quoted\" path");
+            string document = CompositionDaprComponentRenderer.RenderConfiguration("direct", directory);
+            string scalar = document.Split('\n').Single(line => line.Contains("connectionString:", StringComparison.Ordinal)).Split("connectionString: ")[1];
+            System.Text.Json.JsonSerializer.Deserialize<string>(scalar).ShouldBe(Path.Combine(directory, "name-resolution.db").Replace('\\', '/'));
+            document.ShouldNotContain("localhost:6379");
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
 }

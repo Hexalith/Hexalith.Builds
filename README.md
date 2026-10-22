@@ -209,6 +209,30 @@ Run the catalog, consumer, and exception validators documented in
 [`Tools/README.md`](Tools/README.md) before integrating a catalog or wrapper
 change.
 
+## Test environment contract consumption
+
+The Tooling `Hexalith.Builds.Tooling.TestEnvironment` namespace provides
+`TestEnvironmentContractReader.ReadDescriptor(path)` and `ReadResult(path)`.
+They validate strict UTF-8 JSON against the embedded
+[`hexalith.test-environment.v1`](schemas/hexalith.test-environment.v1.json) and
+[`hexalith.test-result.v1`](schemas/hexalith.test-result.v1.json) schemas, returning
+a detached `JsonElement` or atomic metadata-only diagnostics (`HXT101`–`HXT107`).
+Both require policy `hexalith.platform.candidate-and-attachment-policy.v1`.
+Unsupported versions name the supported version for the requested document kind.
+Reads are offline, bounded to 1 MiB and 64 levels, reject duplicate keys and unknown
+properties, preserve omitted versus explicit holds, and verify effective timing.
+The CLI package includes both schemas under `tools/net10.0/any/schemas/`.
+
+Platform owns the canonical contract schemas and lifecycle semantics; these
+mirrors support independent consumption. The
+[descriptor and result samples](test/fixtures/module/test-environment-v1/) are
+fictional contract examples, with unavailable producers explicitly
+`not-yet-populated`; they grant no runtime qualification. Populated tool,
+candidate, gate, loaded-artifact and completion fields remain claims to verify
+under the policy. Successful reads never provision resources, authenticate
+evidence, admit attachments or migrate the existing native handoff/internal run
+records. Lifecycle and candidate adoption belong to downstream work.
+
 ## G-4 Local Tools
 
 This repository owns two repository-scoped .NET tools. They are the only public

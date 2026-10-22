@@ -1,0 +1,129 @@
+{
+  "schema": "hexalith.test-result.v1",
+  "policyId": "hexalith.platform.candidate-and-attachment-policy.v1",
+  "bindings": {
+    "run": {
+      "runId": "sample-owner-run",
+      "attemptId": "sample-attempt-1",
+      "attemptSequence": 1,
+      "ownerRunId": "sample-owner-run",
+      "environmentId": "sample-environment",
+      "role": "owner"
+    },
+    "tool": {
+      "state": "not-yet-populated"
+    },
+    "candidate": {
+      "state": "not-yet-populated"
+    },
+    "decision": {
+      "state": "not-yet-populated"
+    },
+    "reuseLineage": {
+      "state": "not-yet-populated"
+    },
+    "environment": {
+      "composition": {
+        "id": "sample-reference-composition",
+        "contentIdentity": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "mode": "source",
+      "executionContext": {
+        "kind": "local"
+      },
+      "catalog": {
+        "commit": "2222222222222222222222222222222222222222",
+        "instanceId": "sample-run-catalog"
+      },
+      "isolation": {
+        "state": "populated",
+        "syntheticTenantId": "sample-synthetic-tenant",
+        "dataIsolationId": "sample-data",
+        "resourceScopeId": "sample-environment",
+        "catalogScopeId": "sample-run-catalog"
+      },
+      "resources": [
+        {
+          "resourceId": "eventstore",
+          "moduleId": "Hexalith.EventStore",
+          "endpoints": [
+            {
+              "name": "http",
+              "protocol": "http",
+              "uri": "http://127.0.0.1:18080"
+            }
+          ]
+        }
+      ],
+      "readiness": {
+        "state": "populated",
+        "status": "ready",
+        "observedAt": "2026-10-22T12:00:10Z",
+        "resources": [
+          {
+            "resourceId": "eventstore",
+            "status": "ready",
+            "observedAt": "2026-10-22T12:00:10Z",
+            "diagnosticIds": []
+          }
+        ]
+      },
+      "startupTasks": {
+        "state": "populated",
+        "tasks": []
+      }
+    },
+    "artifacts": {
+      "expected": {
+        "state": "not-yet-populated"
+      },
+      "loaded": {
+        "state": "not-yet-populated"
+      }
+    },
+    "suite": {
+      "declared": {
+        "state": "not-yet-populated"
+      },
+      "completion": {
+        "state": "not-yet-populated"
+      }
+    },
+    "attachments": {
+      "state": "populated",
+      "holds": []
+    },
+    "deadlines": {
+      "startup": {
+        "state": "populated",
+        "origin": "environment-requested",
+        "originAt": "2026-10-22T12:00:00Z",
+        "effectiveSeconds": 600,
+        "expiresAt": "2026-10-22T12:10:00Z",
+        "actualDurationSeconds": 10,
+        "override": {
+          "state": "not-overridden"
+        }
+      },
+      "execution": {
+        "state": "not-declared"
+      }
+    }
+  },
+  "diagnostics": [],
+  "terminal": {
+    "outcome": "passed",
+    "recordedAt": "2026-10-22T12:00:30Z",
+    "cause": "tests-completed",
+    "diagnosticIds": []
+  },
+  "termination": {
+    "state": "not-yet-populated"
+  },
+  "retention": {
+    "state": "not-yet-populated"
+  },
+  "cleanup": {
+    "state": "not-yet-populated"
+  }
+}

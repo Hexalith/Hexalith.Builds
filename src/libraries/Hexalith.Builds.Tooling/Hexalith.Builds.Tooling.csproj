@@ -26,9 +26,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../../../schemas/hexalith.check-suite.v1.json" LogicalName="Hexalith.Builds.Tooling.CheckSuites.hexalith.check-suite.v1.json" />
+    <EmbeddedResource Include="../../../schemas/hexalith.check-invocation.v1.json" LogicalName="Hexalith.Builds.Tooling.CheckSuites.hexalith.check-invocation.v1.json" />
+    <EmbeddedResource Include="../../../schemas/hexalith.check-result.v1.json" LogicalName="Hexalith.Builds.Tooling.CheckSuites.hexalith.check-result.v1.json" />
     <EmbeddedResource Include="../../../schemas/hexalith.release-records.v1.json" LogicalName="Hexalith.Builds.Tooling.ReleaseRecords.hexalith.release-records.v1.json" />
     <EmbeddedResource Include="../../../schemas/hexalith.module-run-evidence.v1.json" LogicalName="Hexalith.Builds.Tooling.RunEvidence.hexalith.module-run-evidence.v1.json" />
     <EmbeddedResource Include="../../../schemas/hexalith.module-manifest.v2.json" LogicalName="Hexalith.Builds.Tooling.Manifest.hexalith.module-manifest.v2.json" />
+    <EmbeddedResource Include="../../../schemas/hexalith.test-environment.v1.json" LogicalName="Hexalith.Builds.Tooling.TestEnvironment.hexalith.test-environment.v1.json" />
+    <EmbeddedResource Include="../../../schemas/hexalith.test-result.v1.json" LogicalName="Hexalith.Builds.Tooling.TestEnvironment.hexalith.test-result.v1.json" />
     <EmbeddedResource Include="Workspace/SourceMapping.props" LogicalName="Hexalith.Builds.Tooling.Workspace.SourceMapping.props" />
     <EmbeddedResource Include="Workspace/SourceMapping.targets" LogicalName="Hexalith.Builds.Tooling.Workspace.SourceMapping.targets" />
   </ItemGroup>
