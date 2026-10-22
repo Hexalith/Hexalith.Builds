@@ -61,7 +61,7 @@ public static class WorkspaceRootResolver
                 throw Failure("HXW001", $"Manifest '{manifest}' physically escapes active module '{standalone}' or is unavailable.", manifest);
             }
 
-            string identity = Path.GetFileName(standalone.TrimEnd(Path.DirectorySeparatorChar));
+            string identity = StandaloneIdentity(manifest, standalone, cancellationToken);
             PlatformIdentityFinding missing = PlatformIdentityResolver.NoGit(standalone);
             return mode == WorkspaceMode.Package
                 ? throw new WorkspaceMappingException(PlatformIdentityResolver.Diagnostics([missing], warning: false))
@@ -102,11 +102,13 @@ public static class WorkspaceRootResolver
 
         IReadOnlyList<string> references = await ReadDirectReferencesAsync(root, cancellationToken).ConfigureAwait(false);
         bool missingPlatformReference = false;
+        bool platformRepository = false;
         if (!references.Contains("references/Hexalith.Platform", StringComparer.Ordinal))
         {
             CompositionProcessResult marker = await GitWorkspaceProcess.RunAsync(root, cancellationToken, "ls-tree", "-z", "HEAD", "--", "hexalith-platform.json").ConfigureAwait(false);
             missingPlatformReference = !marker.Started || marker.TimedOut || marker.OutputTruncated || marker.ExitCode != 0
                 || !PlatformIdentityResolver.IsRegularBlob(marker.Output, "hexalith-platform.json");
+            platformRepository = !missingPlatformReference;
         }
 
         string relativeManifest = declaredManifest.Replace('\\', '/');
@@ -123,7 +125,11 @@ public static class WorkspaceRootResolver
         }
 
         string activeRoot = activeReference is null ? root : Path.Combine(root, activeReference.Replace('/', Path.DirectorySeparatorChar));
-        string activeIdentity = Path.GetFileName(activeRoot);
+
+        // A Platform-owned deployment declaration does not identify the Platform repository itself.
+        string activeIdentity = activeReference is null && !platformRepository
+            ? StandaloneIdentity(manifest, activeRoot, cancellationToken)
+            : Path.GetFileName(activeRoot);
         if (!RepositoryPathResolver.TryResolvePathWithinRoot(root, Path.GetRelativePath(root, activeRoot), out _))
         {
             throw Failure("HXW001", $"Active module '{activeIdentity}' escapes active root '{root}': '{activeRoot}'.", activeRoot);
@@ -423,6 +429,24 @@ public static class WorkspaceRootResolver
         string relative = Path.GetRelativePath(physicalRoot, physicalManifest).Replace('\\', '/');
         return relative != ".." && !relative.StartsWith("../", StringComparison.Ordinal)
             && !relative.StartsWith("references/", FilesystemPathRules.Comparison(root));
+    }
+
+    private static string StandaloneIdentity(string manifest, string root, CancellationToken cancellationToken)
+    {
+        string fallback = Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar));
+        if (!PlatformManifestCommand.IsV2(manifest))
+        {
+            return fallback;
+        }
+
+        PlatformManifestValidationResult validation = PlatformManifestValidator.Validate([manifest], cancellationToken);
+        if (!validation.IsValid)
+        {
+            throw new WorkspaceMappingException(validation.Diagnostics);
+        }
+
+        string? module = PlatformManifestCommand.ActiveModule(validation.Declarations);
+        return module is null ? fallback : CompositionDeclarationClosure.Repository(module);
     }
 
     /// <summary>Fails on the missing Platform reference while other source-mode findings stay warnings.</summary>

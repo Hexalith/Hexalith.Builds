@@ -237,9 +237,13 @@ the outermost Git superproject containing
 the manifest once, selects the active module and every direct
 `references/*` entry in that root's `.gitmodules`, and writes the resulting
 mapping to the run workspace (`source-mapping/mapping.json`) and `plan.json`.
-Until a declared module identity is available, the active root identity is its
-checkout directory name. That name determines generated mapping property names
-and the source/package duplicate identity prefix.
+A standalone root with one validated v2 owner uses that declaration's canonical
+repository identity, even when its checkout directory is renamed. Its source path
+remains the actual active checkout. Legacy and multi-module declarations retain
+the checkout directory identity; no arbitrary module is selected. Invalid v2
+owners and identity collisions refuse before reference initialization. The resolved
+identity determines generated mapping property names and the source/package
+duplicate identity prefix.
 Both modes require each declared direct reference to have exactly one staged
 Git gitlink. Package mode checks out the active module if its manifest is in a
 direct reference, while other package-origin references stay uninitialized.

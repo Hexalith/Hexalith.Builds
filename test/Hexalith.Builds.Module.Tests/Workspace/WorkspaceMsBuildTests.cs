@@ -2056,6 +2056,60 @@ public sealed class WorkspaceMsBuildTests
         }
     }
 
+    /// <summary>Verifies resolver-produced canonical identity catches direct and restored transitive copies despite a renamed root.</summary>
+    /// <param name="name">The checkout name.</param>
+    /// <param name="transitive">Whether the duplicate arrives through a wrapper package.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("renamed-owner", false)]
+    [InlineData("renamed-owner", true)]
+    [InlineData("Hexalith", false)]
+    [InlineData("Hexalith", true)]
+    public async Task ResolvedStandaloneIdentityRejectsPackageCopiesAsync(string name, bool transitive)
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, name);
+            _ = Directory.CreateDirectory(active);
+            string manifest = WorkspaceRootResolverTests.WriteStandaloneDeclaration(active, "parties");
+            SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            mapping.ActiveModule.ShouldBe("Hexalith.Parties");
+            string feed = Path.Combine(root, "feed");
+            _ = Directory.CreateDirectory(feed);
+            File.WriteAllText(Path.Combine(root, "NuGet.Config"), "<configuration><packageSources><clear /><add key=\"local\" value=\"" + feed + "\" /></packageSources></configuration>");
+            string packageRoot = Path.Combine(root, "package");
+            _ = Directory.CreateDirectory(packageRoot);
+            string package = WriteProject(packageRoot, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Hexalith.Parties.Contracts</PackageId><Version>1.0.0</Version></PropertyGroup></Project>");
+            CompositionProcessResult packed = await RunPlainDotnetAsync(root, "pack", package, "-o", feed, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+            packed.ExitCode.ShouldBe(0, packed.Output);
+            string selected = "Hexalith.Parties.Contracts";
+            if (transitive)
+            {
+                string wrapperRoot = Path.Combine(root, "wrapper");
+                _ = Directory.CreateDirectory(wrapperRoot);
+                string wrapper = WriteProject(wrapperRoot, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Hexalith.Unrelated</PackageId><Version>1.0.0</Version></PropertyGroup><ItemGroup><PackageReference Include=\"Hexalith.Parties.Contracts\" Version=\"1.0.0\" /></ItemGroup></Project>");
+                CompositionProcessResult wrapped = await RunPlainDotnetAsync(root, "pack", wrapper, "-o", feed, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+                wrapped.ExitCode.ShouldBe(0, wrapped.Output);
+                selected = "Hexalith.Unrelated";
+            }
+            string project = WriteProject(active, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"" + selected + "\" Version=\"1.0.0\" /></ItemGroup></Project>");
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "build", project, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+            result.ExitCode.ShouldNotBe(0, result.Output);
+            result.Output.ShouldContain("HXW005");
+            result.Output.ShouldContain("Hexalith.Parties");
+            result.Output.ShouldContain(active);
+            result.Output.ShouldContain("Hexalith.Parties.Contracts/1.0.0");
+            if (transitive) File.Exists(Path.Combine(active, "obj", "project.assets.json")).ShouldBeTrue("an unrelated wrapper must pass the direct prefix guard before its restored duplicate refuses");
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
     private static SourceMapping Mapping(string root, WorkspaceMode mode) => new(
         mode,
         root,

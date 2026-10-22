@@ -7,7 +7,9 @@ namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
 using System.Globalization;
 using System.Text;
+using System.Text.Json.Nodes;
 
+using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
 
@@ -1217,6 +1219,157 @@ public sealed class WorkspaceRootResolverTests
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    /// <summary>Verifies standalone declaration identity survives canonical, renamed and broad-prefix checkout names in either mode.</summary>
+    /// <param name="mode">The selected mode.</param>
+    /// <param name="name">The actual checkout name.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData(WorkspaceMode.Source, "Hexalith.Parties")]
+    [InlineData(WorkspaceMode.Package, "Hexalith.Parties")]
+    [InlineData(WorkspaceMode.Source, "renamed-owner")]
+    [InlineData(WorkspaceMode.Package, "renamed-owner")]
+    [InlineData(WorkspaceMode.Source, "Hexalith")]
+    [InlineData(WorkspaceMode.Package, "Hexalith")]
+    public async Task StandaloneV2UsesValidatedOwnerIdentityAsync(WorkspaceMode mode, string name)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string root = Path.Combine(fixture.Directory, name);
+        Directory.Move(fixture.Checkout, root);
+        string manifest = WriteStandaloneDeclaration(root, "parties");
+
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, mode, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        mapping.Root.ShouldBe(root);
+        mapping.ActiveModule.ShouldBe("Hexalith.Parties");
+        mapping.Entries.ShouldContain(new SourceMappingEntry("Hexalith.Parties", "source", root));
+        mapping.Entries.ShouldNotContain(entry => entry.Identity == name && name != "Hexalith.Parties");
+    }
+
+    /// <summary>Verifies a Platform-owned deployment declaration cannot replace the committed Platform workspace identity.</summary>
+    /// <param name="mode">The selected mode.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData(WorkspaceMode.Source)]
+    [InlineData(WorkspaceMode.Package)]
+    public async Task PlatformOwnedSingleModuleDeclarationPreservesWorkspaceIdentityAsync(WorkspaceMode mode)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string platform = Path.Combine(fixture.Directory, "platform");
+        _ = await WorkspaceGitFixture.RunGitAsync(platform, "-c", "protocol.file.allow=always", "submodule", "add", new Uri(Path.Combine(fixture.Directory, "dependency")).AbsoluteUri, "references/Hexalith.Timesheets").ConfigureAwait(true);
+        string manifest = Path.Combine(platform, "eng", "timesheets-deployment", "hexalith.module-manifest.v2.json");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(manifest)!);
+        File.Move(WriteStandaloneDeclaration(platform, "timesheets"), manifest);
+        _ = await WorkspaceGitFixture.RunGitAsync(platform, "add", ".").ConfigureAwait(true);
+        _ = await WorkspaceGitFixture.RunGitAsync(platform, "commit", "-m", "add deployment fixture").ConfigureAwait(true);
+        PlatformManifestValidationResult validation = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+        validation.IsValid.ShouldBeTrue(string.Join("; ", validation.Diagnostics.Select(diagnostic => diagnostic.Message)));
+
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, mode, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        mapping.ActiveModule.ShouldBe("platform");
+        mapping.PlatformIdentity!.IsPlatformRepository.ShouldBeTrue();
+        mapping.Entries.ShouldContain(new SourceMappingEntry("platform", "source", platform));
+        mapping.Entries.Single(entry => entry.Identity == "Hexalith.Timesheets").ShouldBe(mode == WorkspaceMode.Source
+            ? new SourceMappingEntry("Hexalith.Timesheets", "source", Path.Combine(platform, "references", "Hexalith.Timesheets"))
+            : new SourceMappingEntry("Hexalith.Timesheets", "package", null));
+    }
+
+    /// <summary>Verifies legacy and valid multi-module documents retain their existing directory identity.</summary>
+    /// <param name="mode">The selected mode.</param>
+    /// <param name="multiple">Whether the declaration contains multiple owners.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData(WorkspaceMode.Source, false)]
+    [InlineData(WorkspaceMode.Package, false)]
+    [InlineData(WorkspaceMode.Source, true)]
+    [InlineData(WorkspaceMode.Package, true)]
+    public async Task StandaloneWithoutUniqueV2OwnerKeepsDirectoryIdentityAsync(WorkspaceMode mode, bool multiple)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string manifest = fixture.Manifest;
+        if (multiple)
+        {
+            manifest = WriteStandaloneDeclaration(fixture.Checkout, "parties");
+            JsonNode document = JsonNode.Parse(File.ReadAllText(manifest))!;
+            JsonNode second = JsonNode.Parse(document["modules"]![0]!.ToJsonString().Replace("parties", "other", StringComparison.Ordinal))!;
+            document["modules"]!.AsArray().Add(second);
+            File.WriteAllText(manifest, document.ToJsonString());
+        }
+
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, mode, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        mapping.ActiveModule.ShouldBe("checkout");
+        mapping.Entries.ShouldContain(new SourceMappingEntry("checkout", "source", fixture.Checkout));
+    }
+
+    /// <summary>Verifies invalid declarations and canonical identity collisions fail before initializing references.</summary>
+    /// <param name="mode">The selected mode.</param>
+    /// <param name="collision">Whether the declared identity collides with a direct reference.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData(WorkspaceMode.Source, false)]
+    [InlineData(WorkspaceMode.Package, false)]
+    [InlineData(WorkspaceMode.Source, true)]
+    [InlineData(WorkspaceMode.Package, true)]
+    public async Task InvalidOrCollidingStandaloneV2RefusesBeforeCheckoutAsync(WorkspaceMode mode, bool collision)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        string manifest = WriteStandaloneDeclaration(fixture.Checkout, collision ? "dep" : "INVALID");
+
+        WorkspaceMappingException failure = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(manifest, mode, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        failure.Diagnostics.ShouldContain(diagnostic => collision ? diagnostic.RuleId == "HXW002" && diagnostic.Message.Contains("Hexalith.Dep", StringComparison.Ordinal) : diagnostic.Source == manifest && diagnostic.Field!.Contains("moduleId", StringComparison.Ordinal));
+        foreach (string reference in new[] { "Hexalith.Dep", "Hexalith.Builds", "Hexalith.Platform" })
+        {
+            File.Exists(Path.Combine(fixture.Checkout, "references", reference, ".git")).ShouldBeFalse();
+        }
+    }
+
+    /// <summary>Verifies the supported non-Git source fallback uses validated identity and retains package refusal.</summary>
+    /// <param name="name">The actual standalone directory name.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("Hexalith.Parties")]
+    [InlineData("renamed-owner")]
+    public async Task NonGitStandaloneV2UsesDeclaredIdentityAsync(string name)
+    {
+        string parent = Path.Combine(Path.GetTempPath(), "hexalith-standalone-" + Guid.NewGuid().ToString("N"));
+        string root = Path.Combine(parent, name);
+        _ = Directory.CreateDirectory(root);
+        try
+        {
+            string manifest = WriteStandaloneDeclaration(root, "parties");
+            CompositionProcessResult unavailable = new(false, -1, string.Empty, false);
+            SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Source, unavailable, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            mapping.ActiveModule.ShouldBe("Hexalith.Parties");
+            mapping.Entries.ShouldBe([new SourceMappingEntry("Hexalith.Parties", "source", root)]);
+            mapping.HasGit.ShouldBeFalse();
+            WorkspaceMappingException failure = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Package, unavailable, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+            failure.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("Git", StringComparison.Ordinal));
+            _ = WriteStandaloneDeclaration(root, "INVALID");
+            WorkspaceMappingException invalid = await Should.ThrowAsync<WorkspaceMappingException>(() => WorkspaceRootResolver.ResolveAsync(manifest, WorkspaceMode.Source, unavailable, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+            invalid.Diagnostics.ShouldContain(diagnostic => diagnostic.Field!.Contains("moduleId", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(parent, true);
+        }
+    }
+
+    /// <summary>Writes a valid owner declaration and its physical task prerequisites.</summary>
+    /// <param name="root">The fixture root.</param>
+    /// <param name="module">The declared owner.</param>
+    /// <returns>The declaration path.</returns>
+    internal static string WriteStandaloneDeclaration(string root, string module)
+    {
+        string fixture = File.ReadAllText(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "test/fixtures/module/platform/valid.json"));
+        string manifest = Path.Combine(root, "module.json");
+        File.WriteAllText(Path.Combine(root, "Hexalith.Builds.slnx"), "<Solution />");
+        File.WriteAllText(Path.Combine(root, "README.md"), "synthetic prerequisite");
+        File.WriteAllText(manifest, fixture.Replace("sample", module, StringComparison.Ordinal));
+        return manifest;
     }
 
     private static string GitCommand(string directory) => "git -C '" + directory + "'";
