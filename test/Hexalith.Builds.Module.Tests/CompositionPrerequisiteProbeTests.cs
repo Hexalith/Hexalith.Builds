@@ -70,7 +70,7 @@ public sealed class CompositionPrerequisiteProbeTests
         string root = CompositionTestFiles.CreateDirectory();
         try
         {
-            string home = CompositionTestFiles.CreateDaprHome(root, "1.18.2", "1.18.2");
+            string home = CompositionTestFiles.CreateDaprHome(root, "1.18.0", CompositionToolchainPins.DaprRuntimeVersion);
 
             CompositionPrerequisiteResult result = await CompositionPrerequisiteProbe.ProbeAsync(
                 home,

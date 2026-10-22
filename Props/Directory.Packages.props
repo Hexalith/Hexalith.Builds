@@ -18,8 +18,8 @@
     <HexalithAspireHostingDaprVersion>13.6.1-beta.935</HexalithAspireHostingDaprVersion>
     <HexalithAspireHostingDaprVersion Condition="'$(MSBuildProjectName)' == 'Hexalith.Folders.Aspire'">13.0.0</HexalithAspireHostingDaprVersion>
     <HexalithAspireAppHostSdkVersion>13.6.1</HexalithAspireAppHostSdkVersion>
-    <HexalithDaprRuntimeVersion>1.18.2</HexalithDaprRuntimeVersion>
-    <HexalithDaprCliVersion>1.18.0</HexalithDaprCliVersion>
+    <HexalithDaprRuntimeVersion>1.18.7</HexalithDaprRuntimeVersion>
+    <HexalithDaprCliVersion>1.18.2</HexalithDaprCliVersion>
     <HexalithRedisImage>docker.io/library/redis</HexalithRedisImage>
     <HexalithRedisImageTag>7.4-alpine</HexalithRedisImageTag>
     <HexalithRedisImageDigest>sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf</HexalithRedisImageDigest>

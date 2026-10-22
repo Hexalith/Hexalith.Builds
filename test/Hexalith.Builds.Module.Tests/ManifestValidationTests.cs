@@ -236,6 +236,7 @@ public sealed class ManifestValidationTests
     [InlineData("eventStoreVersion", "3.125.1")]
     [InlineData("eventStoreVersion", "3.126.0")]
     [InlineData("frontComposerVersion", "4.6.0")]
+    [InlineData("daprRuntimeVersion", "1.18.2")]
     public void LoadManifestWithHistoricalPackagePinFailsBeforeComposition(string field, string version)
     {
         string directory = CreateFixtureDirectory();
@@ -521,7 +522,7 @@ public sealed class ManifestValidationTests
                 platform = new
                 {
                     eventStoreVersion = SupportedPlatformPins.EventStoreVersion,
-                    daprRuntimeVersion = "1.18.2",
+                    daprRuntimeVersion = SupportedPlatformPins.DaprRuntimeVersion,
                     daprSdkVersion = "1.18.10",
                     frontComposerVersion = "4.7.0",
                 },
@@ -596,7 +597,7 @@ public sealed class ManifestValidationTests
           ],
           "platform": {
             "eventStoreVersion": "{{SupportedPlatformPins.EventStoreVersion}}",
-            "daprRuntimeVersion": "1.18.2",
+            "daprRuntimeVersion": "{{SupportedPlatformPins.DaprRuntimeVersion}}",
             "daprSdkVersion": "1.18.10",
             "frontComposerVersion": "4.7.0"
           },

@@ -23,7 +23,7 @@ public sealed class RuntimePrerequisiteGateTests
     [Fact]
     public void ApprovedExceptionTupleIsAvailable()
     {
-        RuntimePrerequisiteCheck result = RuntimePrerequisiteGate.Check(CreateManifest("1.18.2", "1.18.10"));
+        RuntimePrerequisiteCheck result = RuntimePrerequisiteGate.Check(CreateManifest(SupportedPlatformPins.DaprRuntimeVersion, "1.18.10"));
 
         result.IsAvailable.ShouldBeTrue();
         result.Diagnostic.ShouldBeNull();
