@@ -167,7 +167,7 @@ public sealed class ModuleRunnerReviewRegressionTests
         output.ToString().ShouldContain("HXT008");
     }
 
-    /// <summary>Bounds root mapping, regular mapping and startup before any native child can run.</summary>
+    /// <summary>Bounds root mapping, regular mapping and startup by the original startup deadline before any native child can run.</summary>
     /// <param name="phase">The deliberately stalled phase.</param>
     /// <returns>The finite refusal assertion.</returns>
     [Theory]
@@ -178,10 +178,12 @@ public sealed class ModuleRunnerReviewRegressionTests
     {
         using PlatformManifestTestWorkspace workspace = new();
         Declare(workspace, lifetime: 1);
+        workspace.Change("modules.0.lifecycle.startup", "{\"override\":{\"timeoutSeconds\":1,\"justification\":\"Explicit finite fixture budget\"}}");
         int checks = 0;
         int starts = 0;
         CompositionEngineOptions options = Options(workspace.Root) with
         {
+            ReadinessTimeout = TimeSpan.FromSeconds(1),
             SourceMapping = null,
             RootManifestCheckOverride = (_, token) =>
             {
@@ -209,8 +211,8 @@ public sealed class ModuleRunnerReviewRegressionTests
         await using ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
         Stopwatch elapsed = Stopwatch.StartNew();
         int exit = await ExecuteAsync(workspace.Save(), options, output).ConfigureAwait(true);
-        exit.ShouldBe(4, output.ToString());
-        output.ToString().ShouldContain("HXT007");
+        exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.ToString());
+        output.ToString().ShouldContain(phase == "early-mapping" ? "HXR021" : "HXR025");
         checks.ShouldBe(1);
         starts.ShouldBe(phase == "startup" ? 1 : 0);
         elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(3));

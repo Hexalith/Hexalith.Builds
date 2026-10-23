@@ -78,11 +78,14 @@ public sealed class PlatformModelCatalogTests
         string assembly = await PlatformManifestCommand.BuildModelAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         File.Exists(assembly).ShouldBeTrue();
-        foreach ((string directory, string version) in new[] { (modelDirectory, "13.6.0-preview.1"), (dependencyDirectory, "13.0.0") })
+        string intermediate = Path.Combine(workspace, "build", "platform-model", "obj");
+        foreach ((string directory, string projectName, string version) in new[] { (modelDirectory, "Hexalith.Platform.Composition", "13.6.0-preview.1"), (dependencyDirectory, "Hexalith.Folders.Aspire", "13.0.0") })
         {
             string[] observed = await File.ReadAllLinesAsync(Path.Combine(directory, "observed-catalog.txt"), TestContext.Current.CancellationToken).ConfigureAwait(true);
             observed.ShouldBe([mode == WorkspaceMode.Source ? "Debug" : "Release", version, "Hexalith.Dep=1.0.0", "CommunityToolkit.Aspire.Hosting.Dapr=" + version]);
-            using System.Text.Json.JsonDocument assets = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(directory, "obj", "project.assets.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+            string marker = Path.DirectorySeparatorChar + projectName + Path.DirectorySeparatorChar;
+            string assetsPath = Directory.GetFiles(intermediate, "project.assets.json", SearchOption.AllDirectories).Single(path => path.Contains(marker, StringComparison.Ordinal));
+            using System.Text.Json.JsonDocument assets = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(assetsPath, TestContext.Current.CancellationToken).ConfigureAwait(true));
             assets.RootElement.GetProperty("libraries").TryGetProperty("Hexalith.Dep/1.0.0", out _).ShouldBeTrue();
             assets.RootElement.GetProperty("project").GetProperty("restore").GetProperty("centralPackageVersionsManagementEnabled").GetBoolean().ShouldBeTrue();
             assets.RootElement.GetProperty("project").GetProperty("frameworks").GetProperty("net10.0").GetProperty("dependencies").GetProperty("Hexalith.Dep").GetProperty("versionCentrallyManaged").GetBoolean().ShouldBeTrue();
