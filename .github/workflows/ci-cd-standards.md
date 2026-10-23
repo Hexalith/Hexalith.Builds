@@ -236,6 +236,13 @@ commit after the change that alters those composites merges.
         languages: csharp
   ```
 
+- The optional `config-file` input selects a CodeQL configuration from the caller
+  checkout (for example `./.github/codeql/codeql-config.yml`). Its default is an
+  empty string, which preserves CodeQL's default configuration. The file path is
+  relative to the caller workspace, rather than this reusable workflow's repository.
+  C# `paths` and `paths-ignore` settings apply when using `build-mode: none`;
+  preserve active source coverage when excluding archived source copies.
+
 - Pull requests run **dependency review** to block newly introduced vulnerable
   or non-compliant dependencies:
 
