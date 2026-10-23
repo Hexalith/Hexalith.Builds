@@ -13,6 +13,7 @@
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.29.8</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.10.1</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.5.2</HexalithPartiesVersion>
+    <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">1.6.0</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.0</HexalithProjectsVersion>
     <!-- Folders.Aspire is a stable public package; all other consumers retain the preview integration. -->
     <HexalithAspireHostingDaprVersion>13.6.1-beta.935</HexalithAspireHostingDaprVersion>
@@ -95,6 +96,7 @@
     <PackageVersion Include="Hexalith.Memories.Client.Rest" Version="$(HexalithMemoriesVersion)" />
     <PackageVersion Include="Hexalith.Memories.Contracts" Version="$(HexalithMemoriesVersion)" />
     <PackageVersion Include="Hexalith.Parties.AdminPortal" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Parties.Aspire" Version="$(HexalithPartiesAspireVersion)" />
     <PackageVersion Include="Hexalith.Parties.Client" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.ConsumerPortal" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.Contracts" Version="$(HexalithPartiesVersion)" />
