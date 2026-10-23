@@ -725,7 +725,7 @@ try {
         $relativePath = 'qualification-evidence/packaged-test-evidence.json'
         $path = Join-Path $PackageDirectory $relativePath
         $evidence = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
-        $evidence.topology.platform.eventStoreVersion = '3.126.0'
+        $evidence.topology.platform.eventStoreVersion = '3.126.1'
         $content = ($evidence | ConvertTo-Json -Depth 12) + "`n"
         Set-EvidenceContentAndRefreshInventory -Inventory $Inventory -PackageDirectory $PackageDirectory `
             -RelativePath $relativePath -Content $content
