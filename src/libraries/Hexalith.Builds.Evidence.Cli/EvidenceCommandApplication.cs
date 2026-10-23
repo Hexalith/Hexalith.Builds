@@ -46,6 +46,7 @@ internal static class EvidenceCommandApplication
     {
         RootCommand rootCommand = new("Validates deterministic Hexalith readiness evidence.");
         rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput));
+        rootCommand.Subcommands.Add(CheckSuiteCommands.Create(standardOutput));
         return rootCommand;
     }
 

@@ -7,6 +7,7 @@ namespace Hexalith.Builds.Tooling.Runtime;
 
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 
 /// <summary>
 /// Renders the per-run Dapr state store, pub/sub, and configuration documents. No module supplies them.
@@ -76,18 +77,29 @@ public static class CompositionDaprComponentRenderer
     public static string RenderConfiguration(CompositionRunPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        string registry = Path.Combine(Path.GetDirectoryName(plan.DaprConfigPath)!, "name-resolution.db").Replace('\\', '/');
+        return RenderConfiguration("hexalith-g4-" + plan.RunId, Path.GetDirectoryName(plan.DaprConfigPath)!);
+    }
+
+    /// <summary>Renders the same private SQLite discovery for a directly composed host.</summary>
+    /// <param name="configurationName">The configuration identity.</param>
+    /// <param name="directory">The private runtime directory that owns the registry.</param>
+    /// <returns>The YAML configuration document.</returns>
+    public static string RenderConfiguration(string configurationName, string directory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(configurationName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+        string registry = Path.Combine(Path.GetFullPath(directory), "name-resolution.db").Replace('\\', '/');
         return Lines(
             "apiVersion: dapr.io/v1alpha1",
             "kind: Configuration",
             "metadata:",
-            $"  name: hexalith-g4-{plan.RunId}",
+            $"  name: {configurationName}",
             "spec:",
             "  nameResolution:",
             "    component: \"sqlite\"",
             "    version: \"v1\"",
             "    configuration:",
-            $"      connectionString: \"{registry}\"");
+            $"      connectionString: {JsonSerializer.Serialize(registry)}");
     }
 
     /// <summary>

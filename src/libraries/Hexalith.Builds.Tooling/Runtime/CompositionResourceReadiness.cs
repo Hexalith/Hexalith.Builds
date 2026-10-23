@@ -16,6 +16,15 @@ public sealed record CompositionResourceReadiness(string Name, string Kind, stri
     /// <summary>Gets the last short readiness result or error.</summary>
     public string? Detail { get; init; }
 
+    /// <summary>Gets the observed owning module.</summary>
+    public string? ModuleId { get; init; }
+
+    /// <summary>Gets allocated endpoints observed from Aspire.</summary>
+    public IReadOnlyList<CompositionResourceEndpoint> Endpoints { get; init; } = [];
+
+    /// <summary>Gets the actual observation time.</summary>
+    public DateTimeOffset? ObservedAt { get; init; }
+
     /// <summary>Gets the project process id exposed for debugger attach. It is not a readiness signal.</summary>
     public int? ProcessId { get; init; }
 }

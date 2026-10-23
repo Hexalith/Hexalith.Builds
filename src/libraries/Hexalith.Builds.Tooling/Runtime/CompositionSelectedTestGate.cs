@@ -13,6 +13,7 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
     private readonly CancellationTokenSource _stop;
     private readonly CompositionRunPlan _plan;
     private readonly CompositionTestObservation? _observation;
+    private readonly DateTimeOffset? _executionDeadline;
     private readonly Lock _sync = new();
     private readonly TimeProvider _clock;
     private readonly Func<CancellationToken, Task> _delay;
@@ -28,6 +29,7 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
     internal CompositionSelectedTestGate(CompositionRunSession session, CancellationToken cancellationToken, TimeProvider? clock = null, Func<CancellationToken, Task>? delay = null)
     {
         _plan = session.Plan;
+        _executionDeadline = _plan.ExecutionTiming?.DeadlineUtc ?? _plan.SelectedTest?.ExecutionDeadlineUtc;
         _observation = session.Readiness.TestObservation;
         _clock = clock ?? TimeProvider.System;
         _delay = delay ?? (token => Task.Delay(TimeSpan.FromMinutes(5), token));
@@ -165,7 +167,7 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
         if (enabled)
         {
             _stop.Token.ThrowIfCancellationRequested();
-            if (_plan.SelectedTest is null || now >= _plan.SelectedTest.ExecutionDeadlineUtc)
+            if (_plan.SelectedTest is null || now >= _executionDeadline)
             {
                 throw new InvalidDataException("The selected execution deadline has expired.");
             }
@@ -197,16 +199,16 @@ internal sealed class CompositionSelectedTestGate : IAsyncDisposable
             }
         }
         else if (state != "enabled" || profile.GetString() != _observation.ProfileHash || currentExpiry <= 0
-            || _plan.SelectedTest is null || currentExpiry > _plan.SelectedTest.ExecutionDeadlineUtc.ToUnixTimeMilliseconds()
+            || _plan.SelectedTest is null || currentExpiry > _executionDeadline!.Value.ToUnixTimeMilliseconds()
             || (enabled && (currentExpiry <= now.ToUnixTimeMilliseconds() || currentExpiry > now.AddMinutes(15).AddSeconds(5).ToUnixTimeMilliseconds())))
         {
             throw new InvalidDataException("The selected gate ownership or expiry changed.");
         }
 
         DateTimeOffset expiry = now.AddMinutes(10);
-        if (_plan.SelectedTest is { } selected && expiry > selected.ExecutionDeadlineUtc)
+        if (_executionDeadline is { } deadline && expiry > deadline)
         {
-            expiry = selected.ExecutionDeadlineUtc;
+            expiry = deadline;
         }
 
         byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(new { schemaVersion = 1, state = enabled ? "enabled" : "disabled", profileSha256 = enabled ? _observation.ProfileHash : string.Empty, expiresUtcMs = enabled ? expiry.ToUnixTimeMilliseconds() : 0 });

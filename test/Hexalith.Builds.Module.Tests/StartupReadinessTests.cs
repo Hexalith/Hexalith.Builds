@@ -329,12 +329,12 @@ public sealed class StartupReadinessTests
         }
 
         using PlatformManifestTestWorkspace workspace = new();
-        CompositionTestFiles.WriteScript(Path.Combine(workspace.Root, "slow.sh"), "sleep 60\n");
+        CompositionTestFiles.WriteScript(Path.Combine(workspace.Root, "slow.sh"), "touch task-started\nsleep 60\n");
         workspace.Change("modules.0.lifecycle.tasks.0.executable", "\"slow.sh\"");
         string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionEngine engine = new(Options(workspace.Root, appHost) with
         {
-            ReadinessTimeout = TimeSpan.FromSeconds(8),
+            ReadinessTimeout = TimeSpan.FromSeconds(15),
             SourceMapping = Mapping(workspace.Root),
             PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
         });
@@ -343,6 +343,7 @@ public sealed class StartupReadinessTests
         CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
         stopwatch.Stop();
 
+        File.Exists(Path.Combine(workspace.Root, "task-started")).ShouldBeTrue("The fixture must reach the task phase before testing its deadline diagnostic.");
         result.Session.ShouldBeNull();
         result.Result.Outcome.RuleId.ShouldBe("HXR021");
         result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("within the readiness bound", StringComparison.Ordinal));
@@ -351,7 +352,7 @@ public sealed class StartupReadinessTests
         CompositionRunState state = (await engine.StateStore.TryReadAsync(result.RunId!, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
         using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(state.DiagnosticsPath!, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
         summary.RootElement.GetProperty("failingTask").ValueKind.ShouldBe(JsonValueKind.Null);
-        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(20));
+        stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(30));
     }
 
     /// <summary>Verifies the task's local deadline returns expiry rather than a nonzero-exit failure.</summary>

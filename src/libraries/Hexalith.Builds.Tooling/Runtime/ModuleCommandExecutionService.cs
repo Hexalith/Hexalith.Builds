@@ -63,6 +63,7 @@ public static class ModuleCommandExecutionService
     /// <param name="runId">The optional run identity to tear down.</param>
     /// <param name="compositionOptions">The optional runner-owned composition settings.</param>
     /// <param name="mode">The tool-selected build mode.</param>
+    /// <param name="profiles">Optional ordered batch profile names from the same manifest.</param>
     /// <returns>The stable process exit code.</returns>
     public static async Task<int> ExecuteAsync(
         ModuleInvocationCommand command,
@@ -76,23 +77,15 @@ public static class ModuleCommandExecutionService
         string? descriptorChildEntryAssemblyPath = null,
         string? runId = null,
         CompositionEngineOptions? compositionOptions = null,
-        WorkspaceMode mode = WorkspaceMode.Source)
+        WorkspaceMode mode = WorkspaceMode.Source,
+        IReadOnlyList<string>? profiles = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         ArgumentNullException.ThrowIfNull(writer);
 
         DateTimeOffset startedUtc = DateTimeOffset.UtcNow;
         using ModuleTestExecutionBudget? testBudget = command == ModuleInvocationCommand.Test ? new ModuleTestExecutionBudget(cancellationToken) : null;
-        if (testBudget is not null && PlatformManifestCommand.IsV2(manifestPath))
-        {
-            PlatformManifestValidationResult provisional = PlatformManifestValidator.Validate([manifestPath], cancellationToken);
-            if (provisional.IsValid && ModuleTestSelection.Select(provisional.Declarations!, profile, manifestPath, startedUtc) is { } provisionalTest)
-            {
-                testBudget.Restrict(provisionalTest.ExecutionTimeoutSeconds);
-            }
-        }
-
-        using CompositionStartupRequest? startupRequest = PersistsAfterExit(command)
+        using CompositionStartupRequest? startupRequest = PersistsAfterExit(command) || command == ModuleInvocationCommand.Test
             ? new CompositionStartupRequest(startedUtc, compositionOptions?.ReadinessTimeout ?? TimeSpan.FromSeconds(SupportedPlatformManifestSchemas.DefaultStartupTimeoutSeconds), cancellationToken)
             : null;
         if (startupRequest is not null && (compositionOptions is not null || descriptorChildEntryAssemblyPath is not null))
@@ -143,9 +136,15 @@ public static class ModuleCommandExecutionService
                 }
             }
 
+            if (profiles is { Count: > 1 } && (command != ModuleInvocationCommand.Test || !PlatformManifestCommand.IsV2(manifestPath)))
+            {
+                ToolCommandResult incompatible = PlatformRefusal("HXC002", "Repeated profiles require compatible declared suites from one v2 manifest.", ToolExitCode.UsageOrManifest);
+                return await WriteResultAsync(incompatible.Status, incompatible.Outcome, incompatible.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None).ConfigureAwait(false);
+            }
+
             if (PlatformManifestCommand.IsV2(manifestPath))
             {
-                return await ExecutePlatformAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, testBudget, startupRequest?.Token, cancellationToken).ConfigureAwait(false);
+                return await ExecutePlatformAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, testBudget, startupRequest?.Deadline, startupRequest?.Token, profiles, cancellationToken).ConfigureAwait(false);
             }
 
             ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
@@ -1024,7 +1023,9 @@ public static class ModuleCommandExecutionService
         WorkspaceMode mode,
         SourceMapping? preResolvedMapping,
         ModuleTestExecutionBudget? testBudget,
+        CompositionEffectiveDeadline? startupDeadline,
         CancellationToken? startupToken,
+        IReadOnlyList<string>? profiles,
         CancellationToken cancellationToken)
     {
         if (command != ModuleInvocationCommand.Test)
@@ -1034,6 +1035,19 @@ public static class ModuleCommandExecutionService
 
         PlatformManifestValidationResult validation = PlatformManifestValidator.Validate([manifestPath], cancellationToken);
         ModuleTestSelection? selected = null;
+        IReadOnlyList<string> requestedProfiles = profiles ?? [];
+        if (requestedProfiles.Count == 0 && profile is not null)
+        {
+            requestedProfiles = [profile];
+        }
+
+        IReadOnlyList<ModuleTestSelection> selections = validation.IsValid ? ModuleTestSelection.SelectBatch(validation.Declarations!, requestedProfiles, manifestPath, startedUtc) : [];
+        if (selections.Count > 1 && !string.IsNullOrWhiteSpace(evidencePath))
+        {
+            ToolCommandResult unsupported = PlatformRefusal("HXC002", "Legacy module-run evidence export supports one declared suite only. Run the batch without --evidence; inspected entry reports remain in owned diagnostics.", ToolExitCode.UsageOrManifest);
+            return await WriteResultAsync(unsupported.Status, unsupported.Outcome, unsupported.Diagnostics, format, writer, command, manifestPath, null, profile, filter, null, startedUtc, CancellationToken.None).ConfigureAwait(false);
+        }
+
         ToolCommandResult result;
         NativeTestExecutionResult? native = null;
         ModuleTestRunRecord? record = null;
@@ -1042,10 +1056,11 @@ public static class ModuleCommandExecutionService
             result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest), validation.Diagnostics);
         }
         else if (filter is not null || runId is not null
-                || (selected = ModuleTestSelection.Select(validation.Declarations!, profile, manifestPath, startedUtc)) is null
+                || (compositionOptions?.SourceMapping is { } suppliedMapping && suppliedMapping.Mode != mode)
+                || (selected = selections.Count == 0 ? null : selections[0]) is null
                 || selected.Mode != (mode == WorkspaceMode.Source ? "source" : "package"))
         {
-            result = PlatformRefusal("HXC002", "Select one declared test using --profile and its declared mode. Filters, attachment, and hosted reuse are unsupported.", ToolExitCode.UsageOrManifest);
+            result = PlatformRefusal("HXC002", "Select compatible declared suites using repeated --profile values and their declared mode. Filters, attachment, and hosted reuse are unsupported.", ToolExitCode.UsageOrManifest);
         }
         else if (descriptorChildEntryAssemblyPath is null)
         {
@@ -1054,7 +1069,7 @@ public static class ModuleCommandExecutionService
         else
         {
             CompositionEngineOptions options = compositionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath);
-            testBudget!.Restrict(selected.ExecutionTimeoutSeconds);
+            ArgumentNullException.ThrowIfNull(testBudget);
             CompositionEngine? engine = null;
             bool ci = options.ContinuousIntegrationOverride ?? (string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase));
@@ -1062,6 +1077,8 @@ public static class ModuleCommandExecutionService
             options = options with
             {
                 SelectedTest = selected,
+                SelectedTests = selections,
+                StartupRequestedAtUtc = startedUtc,
                 SelectedExecutionOwnerToken = cancellationToken,
                 RetainOnFailure = retain,
                 PersistAfterParentExit = PersistsAfterExit(command) || retain,
@@ -1073,12 +1090,22 @@ public static class ModuleCommandExecutionService
             long? startupStoppingTimestamp = null;
             try
             {
-                testBudget.Token.ThrowIfCancellationRequested();
-                SourceMapping mapping = preResolvedMapping ?? options.SourceMapping ?? await (options.MappingResolverOverride?.Invoke(manifestPath, mode, testBudget.Token) ?? WorkspaceRootResolver.ResolveAsync(manifestPath, mode, testBudget.Token)).ConfigureAwait(false);
-                testBudget.Token.ThrowIfCancellationRequested();
+                (startupToken ?? cancellationToken).ThrowIfCancellationRequested();
+                SourceMapping mapping = preResolvedMapping ?? options.SourceMapping ?? await (options.MappingResolverOverride?.Invoke(manifestPath, mode, startupToken ?? cancellationToken) ?? WorkspaceRootResolver.ResolveAsync(manifestPath, mode, startupToken ?? cancellationToken)).ConfigureAwait(false);
+                (startupToken ?? cancellationToken).ThrowIfCancellationRequested();
                 options = options with { SourceMapping = mapping };
                 engine = new CompositionEngine(options);
-                CompositionStartResult started = await (options.SelectedPlatformStartOverride?.Invoke(manifestPath, selected!, testBudget.Token) ?? options.PlatformStartOverride?.Invoke(manifestPath, testBudget.Token) ?? engine.StartAsync(manifestPath, testBudget.Token)).ConfigureAwait(false);
+                try
+                {
+                    TestEnvironment.TestEnvironmentDescriptorWriter.ValidatePreProvisioning(startupDeadline is { IsOverride: true } ? startupDeadline : CompositionStartupDeadlineResolver.Resolve(validation.Declarations, options.ReadinessTimeout));
+                }
+                catch (InvalidDataException invalid)
+                {
+                    result = PlatformRefusal("HXC002", invalid.Message, ToolExitCode.UsageOrManifest);
+                    return await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None).ConfigureAwait(false);
+                }
+
+                CompositionStartResult started = await (options.SelectedPlatformStartOverride?.Invoke(manifestPath, selected!, startupToken ?? cancellationToken) ?? options.PlatformStartOverride?.Invoke(manifestPath, startupToken ?? cancellationToken) ?? engine.StartAsync(manifestPath, startupToken ?? cancellationToken)).ConfigureAwait(false);
                 session = started.Session;
                 startupStoppingTimestamp = started.StoppingTimestamp;
                 ownedRunId = session?.RunId ?? started.RunId;
@@ -1091,16 +1118,35 @@ public static class ModuleCommandExecutionService
                     }
                     else
                     {
-                        native = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests(selected.Entry, selected.Executor), manifestPath, testBudget.Token, options.NativeDotnetCommand ?? "dotnet", selected).ConfigureAwait(false);
-                        result = native.Result with { RunId = ownedRunId, Diagnostics = [.. started.Result.Diagnostics, .. native.Result.Diagnostics] };
+                        testBudget.Activate(selections.Sum(entry => entry.ExecutionTimeoutSeconds));
+                        List<ToolDiagnostic> batchDiagnostics = [.. started.Result.Diagnostics];
+                        foreach (ModuleTestSelection entry in selections)
+                        {
+                            selected = entry;
+                            native = null;
+                            options = options with { SelectedTest = entry, StopTimeout = TimeSpan.FromSeconds(entry.StopTimeoutSeconds) };
+                            engine = new CompositionEngine(options);
+                            session.Plan = session.Plan with { SelectedTest = entry, SelectedTests = selections, ExecutionTiming = null };
+                            session.Readiness = session.Readiness with { SelectedTest = entry };
+                            native = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests(entry.Entry, entry.Executor), manifestPath, testBudget.Token, options.NativeDotnetCommand ?? "dotnet", entry, Path.Combine(options.StateDirectory, "diagnostics", session.RunId)).ConfigureAwait(false);
+                            batchDiagnostics.AddRange(native.Result.Diagnostics);
+                            result = native.Result with { RunId = ownedRunId, Diagnostics = [.. batchDiagnostics] };
+                            if (result.Outcome.ExitCode != ToolExitCode.Success)
+                            {
+                                break;
+                            }
+                        }
                     }
                 }
             }
             catch (OperationCanceledException)
             {
-                result = cancellationToken.IsCancellationRequested
-                    ? PlatformRefusal("HXC130", "The owner withdrew the selected execution.", ToolExitCode.Cancelled) with { Status = "withdrawn", RunId = ownedRunId }
-                    : PlatformRefusal("HXT007", "The selected execution exhausted its original finite lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
+                result = (cancellationToken.IsCancellationRequested, startupToken?.IsCancellationRequested == true && session?.Plan.ExecutionTiming is null) switch
+                {
+                    (true, _) => PlatformRefusal("HXC130", "The owner withdrew the selected execution.", ToolExitCode.Cancelled) with { Status = "withdrawn", RunId = ownedRunId },
+                    (false, true) => PlatformRefusal("HXR025", "The environment exhausted its startup deadline before execution.", ToolExitCode.TopologyOrLifecycle) with { RunId = ownedRunId },
+                    _ => PlatformRefusal("HXT007", "The selected execution exhausted its finite execution lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId },
+                };
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {

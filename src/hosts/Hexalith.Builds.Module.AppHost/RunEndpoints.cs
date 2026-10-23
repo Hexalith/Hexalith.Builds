@@ -48,4 +48,21 @@ internal static class RunEndpoints
             await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken).ConfigureAwait(false);
         }
     }
+
+    /// <summary>Captures only endpoints actually allocated by the running orchestrator.</summary>
+    /// <param name="resource">The observed resource.</param>
+    /// <returns>The observed endpoint set.</returns>
+    /// <exception cref="InvalidDataException">A healthy resource still lacks an allocated endpoint.</exception>
+    internal static IReadOnlyList<Hexalith.Builds.Tooling.Runtime.CompositionResourceEndpoint> Observe(IResource resource)
+    {
+        if (resource is not IResourceWithEndpoints network)
+        {
+            return [];
+        }
+
+        EndpointReference[] endpoints = [.. network.GetEndpoints()];
+        return endpoints.Any(endpoint => !endpoint.IsAllocated)
+            ? throw new InvalidDataException("A healthy resource has an unallocated endpoint.")
+            : [.. endpoints.Select(endpoint => new Hexalith.Builds.Tooling.Runtime.CompositionResourceEndpoint(endpoint.EndpointName, new Uri(endpoint.Url).Scheme, new Uri(endpoint.Url)))];
+    }
 }

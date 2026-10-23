@@ -35,12 +35,12 @@ public sealed class CompositionRunSession
     /// <summary>
     /// Gets the metadata-only run plan.
     /// </summary>
-    public CompositionRunPlan Plan { get; }
+    public CompositionRunPlan Plan { get; internal set; }
 
     /// <summary>
     /// Gets the validated readiness document.
     /// </summary>
-    public CompositionReadiness Readiness { get; }
+    public CompositionReadiness Readiness { get; internal set; }
 
     /// <summary>
     /// Gets the per-run development signing key. It is never serialized or written to retained output.

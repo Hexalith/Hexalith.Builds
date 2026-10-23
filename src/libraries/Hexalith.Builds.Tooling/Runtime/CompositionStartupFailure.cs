@@ -31,6 +31,9 @@ public sealed record CompositionStartupFailure(
     /// <summary>Gets the startup task that failed, when one did.</summary>
     public string? FailingTask { get; init; }
 
+    /// <summary>Gets the managed exclusive-resource owner that blocked this environment.</summary>
+    public string? BlockingRunId { get; init; }
+
     /// <summary>
     /// Gets the failure document path in a run workspace.
     /// </summary>

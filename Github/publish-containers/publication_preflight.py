@@ -859,11 +859,18 @@ def _github_version_observations(
 
 def _nuget_version_observation(package_id):
     normalized = urllib.parse.quote(package_id.lower(), safe="")
-    document = _read_json_response(
-        f"https://api.nuget.org/v3-flatcontainer/{normalized}/index.json",
-        {"Accept": "application/json"},
-        "version-floor-unavailable",
-    )
+    try:
+        document = _read_json_response(
+            f"https://api.nuget.org/v3-flatcontainer/{normalized}/index.json",
+            {"Accept": "application/json"},
+            "version-floor-unavailable",
+        )
+    except PreflightError as error:
+        # A package introduced by this release has no NuGet version index yet.
+        # Only its authoritative 404 is absence; every other lookup failure stays blocking.
+        if isinstance(error.__cause__, urllib.error.HTTPError) and error.__cause__.code == 404:
+            return {"kind": "nuget", "identity": package_id, "versions": []}
+        raise
     versions = document.get("versions") if isinstance(document, dict) else None
     if not isinstance(versions, list):
         _fail("version-floor-invalid", "NuGet version response is malformed.")

@@ -134,6 +134,18 @@ public static class CompositionPortAllocator
         }
     }
 
+    /// <summary>Probes and durably claims one runner-owned allocation before launch.</summary>
+    /// <param name="moduleCount">The module slot count.</param>
+    /// <param name="runId">The owning run.</param>
+    /// <param name="stateDirectory">The runner claim store.</param>
+    /// <returns>The claimed proposed ports; allocation probes themselves are not reservations.</returns>
+    public static CompositionRunPorts AllocateOwned(int moduleCount, string runId, string stateDirectory)
+    {
+        CompositionRunPorts ports = Allocate(moduleCount);
+        new CompositionResourceClaimStore(stateDirectory).Acquire(runId, ports.ToList().Select(port => "tcp:127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture)));
+        return ports;
+    }
+
     private static (int Minimum, int MaximumExclusive) CandidateRange()
     {
         if (!OperatingSystem.IsLinux())

@@ -167,7 +167,7 @@ public sealed class ModuleRunnerReviewRegressionTests
         output.ToString().ShouldContain("HXT008");
     }
 
-    /// <summary>Bounds root mapping, regular mapping and startup before any native child can run.</summary>
+    /// <summary>Bounds root mapping, regular mapping and startup by the original startup deadline before any native child can run.</summary>
     /// <param name="phase">The deliberately stalled phase.</param>
     /// <returns>The finite refusal assertion.</returns>
     [Theory]
@@ -178,10 +178,12 @@ public sealed class ModuleRunnerReviewRegressionTests
     {
         using PlatformManifestTestWorkspace workspace = new();
         Declare(workspace, lifetime: 1);
+        workspace.Change("modules.0.lifecycle.startup", "{\"override\":{\"timeoutSeconds\":1,\"justification\":\"Explicit finite fixture budget\"}}");
         int checks = 0;
         int starts = 0;
         CompositionEngineOptions options = Options(workspace.Root) with
         {
+            ReadinessTimeout = TimeSpan.FromSeconds(1),
             SourceMapping = null,
             RootManifestCheckOverride = (_, token) =>
             {
@@ -209,8 +211,8 @@ public sealed class ModuleRunnerReviewRegressionTests
         await using ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
         Stopwatch elapsed = Stopwatch.StartNew();
         int exit = await ExecuteAsync(workspace.Save(), options, output).ConfigureAwait(true);
-        exit.ShouldBe(4, output.ToString());
-        output.ToString().ShouldContain("HXT007");
+        exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.ToString());
+        output.ToString().ShouldContain(phase == "early-mapping" ? "HXR021" : "HXR025");
         checks.ShouldBe(1);
         starts.ShouldBe(phase == "startup" ? 1 : 0);
         elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(3));
@@ -267,6 +269,7 @@ public sealed class ModuleRunnerReviewRegressionTests
             _ => "utf-8",
         };
         script += "p.write_text(payload+" + System.Text.Json.JsonSerializer.Serialize(suffix) + ", encoding='" + encoding + "')\n";
+        script += "pathlib.Path('child-started').write_text('started')\n";
         if (scenario == "token-hang")
         {
             script += "time.sleep(60)\n";
@@ -280,14 +283,16 @@ public sealed class ModuleRunnerReviewRegressionTests
         string manifest = workspace.Save();
         ModuleTestSelection selected = Select(manifest);
         using Process appHost = new();
-        CompositionRunSession session = Session(workspace.Root, selected, appHost);
+        CompositionRunSession session = await SessionAsync(workspace.Root, manifest, selected, appHost).ConfigureAwait(true);
         using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        Task<NativeTestExecutionResult> execution = NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests("runner.py", "python3"), manifest, owner.Token, selection: selected);
         if (scenario == "token-hang")
         {
-            owner.CancelAfter(TimeSpan.FromMilliseconds(300));
+            await Task.WhenAll(execution, CancelAfterChildReportAsync(Path.Combine(workspace.Root, "child-started"), owner)).ConfigureAwait(true);
         }
 
-        NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests("runner.py", "python3"), manifest, owner.Token, selection: selected).ConfigureAwait(true);
+        NativeTestExecutionResult result = await execution.ConfigureAwait(true);
+        File.Exists(Path.Combine(workspace.Root, "child-started")).ShouldBeTrue();
         if (scenario is "utf16-safe" or "utf16-failed")
         {
             result.Result.Outcome.ExitCode.ShouldBe(scenario == "utf16-safe" ? ToolExitCode.Success : ToolExitCode.ProductOrTest);
@@ -296,6 +301,7 @@ public sealed class ModuleRunnerReviewRegressionTests
         else
         {
             result.Result.Outcome.ExitCode.ShouldNotBe(ToolExitCode.Success);
+            result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == (scenario == "malformed" ? "HXT002" : "HXT008"));
             result.ReportBytes.ShouldBeNull();
         }
 
@@ -325,16 +331,27 @@ public sealed class ModuleRunnerReviewRegressionTests
             "oversize" => "p.write_bytes(b'x' * " + (SelectedNativeTestReport.MaximumBytes + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) + ")",
             _ => "os.mkfifo(p)",
         };
-        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "import os, pathlib\np=pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH'])\n" + body + "\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "import os, pathlib\np=pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH'])\n" + body + "\npathlib.Path('child-started').write_text('started')\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
         string manifest = workspace.Save();
         ModuleTestSelection selected = Select(manifest);
         using Process appHost = new();
-        CompositionRunSession session = Session(workspace.Root, selected, appHost);
+        CompositionRunSession session = await SessionAsync(workspace.Root, manifest, selected, appHost).ConfigureAwait(true);
         Stopwatch elapsed = Stopwatch.StartNew();
         NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selected).ConfigureAwait(true);
         result.Result.Outcome.ExitCode.ShouldNotBe(ToolExitCode.Success);
         result.ReportBytes.ShouldBeNull();
         elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(3));
+        File.Exists(Path.Combine(workspace.Root, "child-started")).ShouldBeTrue();
+        string rawReport = Path.Combine(session.Plan.Workspace, "native-tests", "native.trx");
+        if (scenario == "parent-link")
+        {
+            new DirectoryInfo(Path.GetDirectoryName(rawReport)!).LinkTarget.ShouldBe(foreign);
+        }
+        else
+        {
+            Path.Exists(rawReport).ShouldBeFalse();
+        }
+
         (await File.ReadAllTextAsync(sentinel, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("unchanged foreign sentinel");
     }
 
@@ -455,13 +472,14 @@ public sealed class ModuleRunnerReviewRegressionTests
     {
         using PlatformManifestTestWorkspace workspace = new();
         Declare(workspace);
-        await File.AppendAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "\nraise SystemExit(" + (fails ? "7" : "0") + ")\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.AppendAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "\npathlib.Path('child-started').write_text('started')\nraise SystemExit(" + (fails ? "7" : "0") + ")\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string manifest = workspace.Save();
         using Process appHost = new();
         using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         CompositionEngineOptions options = Options(workspace.Root) with
         {
             ContinuousIntegrationOverride = true,
-            SelectedPlatformStartOverride = (_, selected, _) => Task.FromResult(new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), CompositionTestFiles.RunId, Session(workspace.Root, selected, appHost))),
+            SelectedPlatformStartOverride = async (_, selected, _) => new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), CompositionTestFiles.RunId, await SessionAsync(workspace.Root, manifest, selected, appHost).ConfigureAwait(true)),
             PlatformDownOverride = async (_, _) =>
             {
                 await owner.CancelAsync().ConfigureAwait(true);
@@ -470,13 +488,20 @@ public sealed class ModuleRunnerReviewRegressionTests
         };
         StringWriter output = new();
         await using ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
-        int exit = await ExecuteAsync(workspace.Save(), options, output, owner.Token, "evidence/result.json").ConfigureAwait(true);
+        int exit = await ExecuteAsync(manifest, options, output, owner.Token, "evidence/result.json").ConfigureAwait(true);
+        File.Exists(Path.Combine(workspace.Root, "child-started")).ShouldBeTrue();
         exit.ShouldBe(fails ? 4 : 0, output.ToString());
         byte[] bytes = await File.ReadAllBytesAsync(Path.Combine(workspace.Root, "evidence/result.json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
         ModuleRunEvidenceArtifactValidator.TryValidate(bytes, out _).ShouldBeTrue(Encoding.UTF8.GetString(bytes));
         ModuleTestRunRecord record = (await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId, "selected-test.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
         record.TerminalStatus.ShouldBe(fails ? "failed" : "completed");
         record.TerminalOutcome.ExitCode.ShouldBe(fails ? ToolExitCode.ProductOrTest : ToolExitCode.Success);
+        record.ReportHash.ShouldNotBeNullOrWhiteSpace();
+        ModuleRunTestCounts counts = record.TestCounts.ShouldNotBeNull();
+        counts.Reported.ShouldBeTrue();
+        counts.Total.ShouldBe(1);
+        counts.Passed.ShouldBe(1);
+        counts.Failed.ShouldBe(0);
     }
 
     /// <summary>Selected evidence binds inputs, counts, hashes and terminal identities coherently.</summary>
@@ -559,10 +584,29 @@ public sealed class ModuleRunnerReviewRegressionTests
 
     private static ModuleTestSelection Select(string manifest, DateTimeOffset? request = null) => ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, request ?? DateTimeOffset.UtcNow).ShouldNotBeNull();
 
-    private static CompositionRunSession Session(string root, ModuleTestSelection selected, Process appHost)
+    private static async Task CancelAfterChildReportAsync(string marker, CancellationTokenSource owner)
+    {
+        using CancellationTokenSource startup = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        startup.CancelAfter(TimeSpan.FromSeconds(3));
+        try
+        {
+            while (!File.Exists(marker))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(10), startup.Token).ConfigureAwait(true);
+            }
+        }
+        finally
+        {
+            await owner.CancelAsync().ConfigureAwait(true);
+        }
+    }
+
+    private static async Task<CompositionRunSession> SessionAsync(string root, string manifest, ModuleTestSelection selected, Process appHost)
     {
         CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { SelectedTest = selected, SourceMapping = Mapping(root), Modules = [], UiMarkers = [] };
-        return new CompositionRunSession(plan, new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), "private-signing-key-value", appHost);
+        plan = await TestEnvironmentProvisioningFixture.PrepareAsync(plan, manifest, root).ConfigureAwait(true);
+        CompositionReadiness readiness = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), selected.ModuleId);
+        return new CompositionRunSession(plan, readiness, "private-signing-key-value", appHost);
     }
 
     private static void Declare(PlatformManifestTestWorkspace workspace, int lifetime = 30, int stop = 2)

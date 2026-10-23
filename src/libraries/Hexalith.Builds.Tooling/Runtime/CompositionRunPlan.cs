@@ -62,6 +62,9 @@ public sealed record CompositionRunPlan(
     /// <summary>Gets the content hash of the v2 declaration that the command selected.</summary>
     public string? PlatformDeclarationHash { get; init; }
 
+    /// <summary>Gets the immutable authoritative composition closure content identity.</summary>
+    public string? CompositionContentIdentity { get; init; }
+
     /// <summary>Gets the selected v2 module identity.</summary>
     public string? PlatformActiveModule { get; init; }
 
@@ -99,6 +102,21 @@ public sealed record CompositionRunPlan(
 
     /// <summary>Gets the immutable selected module-owned test binding, when present.</summary>
     public ModuleTestSelection? SelectedTest { get; init; }
+
+    /// <summary>Gets the immutable compatible batch selections.</summary>
+    public IReadOnlyList<ModuleTestSelection> SelectedTests { get; init; } = [];
+
+    /// <summary>Gets the actual execution activation, persisted before the child starts.</summary>
+    public ModuleTestExecutionTiming? ExecutionTiming { get; init; }
+
+    /// <summary>Gets the runner-issued environment identity.</summary>
+    public string EnvironmentId { get; init; } = Guid.NewGuid().ToString("N");
+
+    /// <summary>Gets the runner-issued attempt identity, distinct from the run.</summary>
+    public string AttemptId { get; init; } = Guid.NewGuid().ToString("N");
+
+    /// <summary>Gets the runner-owned claim state directory for child allocation.</summary>
+    public string? ResourceClaimStateDirectory { get; init; }
 
     /// <summary>Gets a value indicating whether local selected-test failures retain surviving resources until explicit down.</summary>
     public bool RetainOnFailure { get; init; }

@@ -254,6 +254,43 @@
                   "integer",
                   "null"
                 ]
+              },
+              "moduleId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "endpoints": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "protocol",
+                    "uri"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "protocol": {
+                      "type": "string"
+                    },
+                    "uri": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                }
               }
             }
           }
@@ -369,6 +406,57 @@
             "null"
           ],
           "pattern": "^[A-F0-9]{64}$"
+        },
+        "selections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/properties/selectedTestRun/properties/selection"
+          }
+        },
+        "executionTiming": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "startedAtUtc",
+            "deadlineUtc",
+            "effectiveSeconds",
+            "configurationContentIdentity",
+            "credentialExpiryUtc",
+            "actualDurationSeconds"
+          ],
+          "properties": {
+            "startedAtUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "deadlineUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "effectiveSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 14400
+            },
+            "configurationContentIdentity": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "credentialExpiryUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "actualDurationSeconds": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
         }
       }
     },

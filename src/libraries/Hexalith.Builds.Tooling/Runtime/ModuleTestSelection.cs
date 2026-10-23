@@ -17,10 +17,10 @@ using Hexalith.Builds.Tooling.Manifest;
 /// <param name="Entry">The module-relative entry file.</param>
 /// <param name="ManifestHash">The selected declaration bytes.</param>
 /// <param name="EntryHash">The selected entry bytes.</param>
-/// <param name="ExecutionTimeoutSeconds">The lifetime from the initial request.</param>
+/// <param name="ExecutionTimeoutSeconds">The execution limit after readiness.</param>
 /// <param name="StopTimeoutSeconds">The separate stopping bound.</param>
 /// <param name="RequestedAtUtc">The initial request time.</param>
-/// <param name="ExecutionDeadlineUtc">The absolute expiry, never renewed.</param>
+/// <param name="ExecutionDeadlineUtc">The legacy selection expiry; actual execution is recorded separately.</param>
 /// <param name="CredentialExpiryUtc">The whole-second JWT expiry rounded up by less than one second from the execution expiry.</param>
 /// <param name="Mode">The declared execution mode.</param>
 public sealed record ModuleTestSelection(
@@ -96,6 +96,35 @@ public sealed record ModuleTestSelection(
         return matches.Count == 1 ? matches[0] : null;
     }
 
+    /// <summary>Selects a compatible batch from one manifest before resources are allocated.</summary>
+    /// <param name="declarations">The validated owner declarations.</param>
+    /// <param name="names">The requested names in execution order.</param>
+    /// <param name="manifestPath">The single declaring manifest.</param>
+    /// <param name="requestedAt">The immutable request time.</param>
+    /// <returns>All selections, or an empty list for missing, duplicate or incompatible entries.</returns>
+    internal static IReadOnlyList<ModuleTestSelection> SelectBatch(IReadOnlyList<PlatformModuleDeclaration> declarations, IReadOnlyList<string> names, string manifestPath, DateTimeOffset requestedAt)
+    {
+        if (names.Count == 0 || names.Distinct(StringComparer.Ordinal).Count() != names.Count)
+        {
+            return [];
+        }
+
+        List<ModuleTestSelection> selections = [];
+        foreach (string name in names)
+        {
+            ModuleTestSelection? selected = Select(declarations, name, manifestPath, requestedAt);
+            if (selected is null || (selections.Count > 0 && !Compatible(selections[0], selected)))
+            {
+                return [];
+            }
+
+            selections.Add(selected);
+        }
+
+        long combinedSeconds = selections.Sum(selection => (long)selection.ExecutionTimeoutSeconds);
+        return combinedSeconds <= (uint.MaxValue - 1L) / 1000 ? selections : [];
+    }
+
     /// <summary>Rejects symlinks, nested repositories and dependency-owned files.</summary>
     /// <param name="root">The module repository root.</param>
     /// <param name="entry">The repository-relative entry.</param>
@@ -140,6 +169,11 @@ public sealed record ModuleTestSelection(
             return false;
         }
     }
+
+    private static bool Compatible(ModuleTestSelection first, ModuleTestSelection next) =>
+        first.ModuleId == next.ModuleId && first.Mode == next.Mode && first.ManifestHash == next.ManifestHash
+        && first.DaprRuntimeVersion == next.DaprRuntimeVersion
+        && (first is { ModuleId: "memories", Name: "functional-retention" }) == (next is { ModuleId: "memories", Name: "functional-retention" });
 
     private static string Hash(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 }
