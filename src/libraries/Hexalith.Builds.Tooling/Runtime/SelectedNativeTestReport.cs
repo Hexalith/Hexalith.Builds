@@ -223,6 +223,46 @@ internal static class SelectedNativeTestReport
         }
     }
 
+    /// <summary>Checks that an existing file and its parents stay within the owned, link-free workspace.</summary>
+    /// <param name="path">The file to inspect.</param>
+    /// <param name="workspace">The owned root.</param>
+    /// <returns>Whether the file can be opened under the owned-path policy.</returns>
+    internal static bool IsOwnedRegularPath(string path, string workspace) =>
+        IsOwnedParent(path, workspace) && File.Exists(path) && new FileInfo(path).LinkTarget is null
+        && (File.GetAttributes(path) & (FileAttributes.Directory | FileAttributes.Device | FileAttributes.ReparsePoint)) == 0;
+
+    /// <summary>Checks owned parents without following links, including destinations not created yet.</summary>
+    /// <param name="path">The source or destination file.</param>
+    /// <param name="workspace">The owned root.</param>
+    /// <returns>Whether every existing parent through the owned root is a regular directory.</returns>
+    internal static bool IsOwnedParent(string path, string workspace)
+    {
+        string root = Path.GetFullPath(workspace);
+        string relative = Path.GetRelativePath(root, path);
+        if (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative))
+        {
+            return false;
+        }
+
+        DirectoryInfo? current = new(Path.GetDirectoryName(path)!);
+        while (current is not null)
+        {
+            if (current.LinkTarget is not null || (current.Exists && (current.Attributes & (FileAttributes.ReparsePoint | FileAttributes.Device)) != 0))
+            {
+                return false;
+            }
+
+            if (current.FullName == root)
+            {
+                return true;
+            }
+
+            current = current.Parent;
+        }
+
+        return false;
+    }
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "SYSLIB1054:Use LibraryImportAttribute instead of DllImportAttribute", Justification = "This small nonblocking Unix open does not require enabling unsafe generated code.")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2101:Specify marshaling for P/Invoke string arguments", Justification = "Unix open requires UTF-8 bytes, explicitly marshaled as LPUTF8Str.")]
@@ -255,38 +295,6 @@ internal static class SelectedNativeTestReport
 
         byte[]? sanitized = NativeTestReportRedactor.Redact(bytes);
         return sanitized is null ? Refused("HXT002") : (NativeTestReportLoader.LoadBytes(path, sanitized), sanitized);
-    }
-
-    private static bool IsOwnedRegularPath(string path, string workspace) =>
-        IsOwnedParent(path, workspace) && File.Exists(path) && new FileInfo(path).LinkTarget is null
-        && (File.GetAttributes(path) & (FileAttributes.Directory | FileAttributes.Device | FileAttributes.ReparsePoint)) == 0;
-
-    private static bool IsOwnedParent(string path, string workspace)
-    {
-        string root = Path.GetFullPath(workspace);
-        string relative = Path.GetRelativePath(root, path);
-        if (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative))
-        {
-            return false;
-        }
-
-        DirectoryInfo? current = new(Path.GetDirectoryName(path)!);
-        while (current is not null)
-        {
-            if (current.LinkTarget is not null || (current.Attributes & (FileAttributes.ReparsePoint | FileAttributes.Device)) != 0)
-            {
-                return false;
-            }
-
-            if (current.FullName == root)
-            {
-                return true;
-            }
-
-            current = current.Parent;
-        }
-
-        return false;
     }
 
     private static bool ContainsEncodedSecret(byte[] bytes, IReadOnlyList<string> secrets)

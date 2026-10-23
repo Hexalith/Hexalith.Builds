@@ -30,8 +30,13 @@ public static class TestEnvironmentDescriptorWriter
         ModuleTestExecutionTiming timing = plan.ExecutionTiming ?? throw new InvalidDataException("Execution must be activated before handoff.");
         SourceMapping mapping = plan.SourceMapping ?? throw new InvalidDataException("The resolved mapping is unavailable.");
         ValidatePreProvisioning(plan.EffectiveDeadline ?? throw new InvalidDataException("The startup deadline is unavailable."));
+        if (ready.Resources.Any(resource => string.IsNullOrWhiteSpace(resource.ModuleId)))
+        {
+            throw new InvalidDataException("Every composed resource requires explicit declaration ownership. Shared runner infrastructure requires an actual selected Platform declaration.");
+        }
+
         if (!plan.IsPlatformComposition || selected.Mode != (mapping.Mode == WorkspaceMode.Source ? "source" : "package") || ready.RunId != plan.RunId || ready.ObservedAt is null
-            || ready.Resources.Count == 0 || ready.Resources.Any(resource => resource.State != "Healthy" || resource.ObservedAt is null || string.IsNullOrWhiteSpace(resource.ModuleId))
+            || ready.Resources.Count == 0 || ready.Resources.Any(resource => resource.State != "Healthy" || resource.ObservedAt is null)
             || ready.Resources.Select(resource => resource.Name).Distinct(StringComparer.Ordinal).Count() != ready.Resources.Count
             || !ready.Resources.Any(resource => resource.Endpoints.Any(endpoint => endpoint.Uri == ready.EventStoreEndpoint))
             || plan.AttemptId == plan.RunId || plan.EnvironmentId == plan.RunId
@@ -58,8 +63,26 @@ public static class TestEnvironmentDescriptorWriter
             throw new InvalidDataException("Required startup tasks have not all passed.");
         }
 
-        CatalogVersionSnapshot catalog = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(plan.Workspace, "source-mapping", "catalog-versions.json"));
-        IReadOnlyList<PlatformModuleDeclaration> closure = CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(mapping, plan.PlatformDeclarationPaths) { ActiveModule = plan.PlatformActiveModule });
+        CatalogVersionSnapshot catalog;
+        IReadOnlyList<PlatformModuleDeclaration> closure;
+        try
+        {
+            catalog = CatalogVersionMaterializer.ReadVerifiedSnapshot(mapping, mapping.ContentHash, Path.Combine(plan.Workspace, "source-mapping", "catalog-versions.json"));
+        }
+        catch (Exception exception) when (exception is InvalidDataException or IOException or UnauthorizedAccessException or JsonException)
+        {
+            throw new InvalidDataException("Verified catalog identity is unavailable or inconsistent.");
+        }
+
+        try
+        {
+            closure = CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(mapping, plan.PlatformDeclarationPaths) { ActiveModule = plan.PlatformActiveModule });
+        }
+        catch (Exception exception) when (exception is InvalidDataException or IOException or UnauthorizedAccessException or JsonException)
+        {
+            throw new InvalidDataException("Composition or suite sources changed before handoff.");
+        }
+
         string composition = CompositionIdentity(closure, selected);
         if (composition != plan.CompositionContentIdentity || !selected.MatchesSource(plan.PlatformDeclarationPaths[0]))
         {

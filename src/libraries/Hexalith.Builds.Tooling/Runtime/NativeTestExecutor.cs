@@ -253,21 +253,26 @@ internal static class NativeTestExecutor
             if (archiveDirectory is not null)
             {
                 string durableEntry = Path.Combine(archiveDirectory, "entries", identity);
-                await ArchiveAsync(durableEntry).ConfigureAwait(false);
-                await WriteSnapshotAsync(Path.Combine(archiveDirectory, "test-environment.json"), descriptorSnapshot, processingToken).ConfigureAwait(false);
-                await WriteSnapshotAsync(Path.Combine(archiveDirectory, "execution-timing.json"), timingBytes, processingToken).ConfigureAwait(false);
+                await ArchiveAsync(durableEntry, archiveDirectory).ConfigureAwait(false);
+                await WriteSnapshotAsync(Path.Combine(archiveDirectory, "test-environment.json"), archiveDirectory, descriptorSnapshot, processingToken).ConfigureAwait(false);
+                await WriteSnapshotAsync(Path.Combine(archiveDirectory, "execution-timing.json"), archiveDirectory, timingBytes, processingToken).ConfigureAwait(false);
             }
 
-            await WriteSnapshotAsync(Path.Combine(session.Plan.Workspace, "execution-timing.json"), timingBytes, processingToken).ConfigureAwait(false);
-            await ArchiveAsync(entry).ConfigureAwait(false);
+            await WriteSnapshotAsync(Path.Combine(session.Plan.Workspace, "execution-timing.json"), session.Plan.Workspace, timingBytes, processingToken).ConfigureAwait(false);
+            await ArchiveAsync(entry, session.Plan.Workspace).ConfigureAwait(false);
 
-            async Task ArchiveAsync(string directory)
+            async Task ArchiveAsync(string directory, string ownedRoot)
             {
-                await WriteSnapshotAsync(Path.Combine(directory, "test-environment.json"), descriptorSnapshot, processingToken).ConfigureAwait(false);
-                await WriteSnapshotAsync(Path.Combine(directory, "execution-timing.json"), timingBytes, processingToken).ConfigureAwait(false);
+                await WriteSnapshotAsync(Path.Combine(directory, "test-environment.json"), ownedRoot, descriptorSnapshot, processingToken).ConfigureAwait(false);
+                await WriteSnapshotAsync(Path.Combine(directory, "execution-timing.json"), ownedRoot, timingBytes, processingToken).ConfigureAwait(false);
                 if (inspected.ReportBytes is { } reportBytes)
                 {
-                    await WriteSnapshotAsync(Path.Combine(directory, _reportFileName), reportBytes, processingToken).ConfigureAwait(false);
+                    await WriteSnapshotAsync(Path.Combine(directory, _reportFileName), ownedRoot, reportBytes, processingToken).ConfigureAwait(false);
+                }
+
+                if (inspected.ObservationBytes is { } observationBytes)
+                {
+                    await WriteSnapshotAsync(Path.Combine(directory, "functional-observations.json"), ownedRoot, observationBytes, processingToken).ConfigureAwait(false);
                 }
             }
         }
@@ -318,7 +323,11 @@ internal static class NativeTestExecutor
 
             descriptorSnapshot = Encoding.UTF8.GetBytes(validated.Document!.Value.GetRawText());
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException)
+        catch (InvalidDataException exception)
+        {
+            return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest, exception.Message);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
         {
             return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
         }
@@ -328,6 +337,8 @@ internal static class NativeTestExecutor
         string results = Path.Combine(session.Plan.Workspace, "native-tests");
         CompositionWorkspace.CreatePrivateDirectory(results);
         string reportPath = Path.Combine(results, _reportFileName);
+        string observationPath = Path.Combine(results, "functional-observations.json");
+        File.Delete(observationPath);
         if (File.Exists(reportPath))
         {
             File.Delete(reportPath);
@@ -399,7 +410,6 @@ internal static class NativeTestExecutor
         }
 
         (NativeTestReportLoadResult report, byte[]? bytes) = await SelectedNativeTestReport.ReadAsync(reportPath, session.Plan.Workspace, handoffSecrets, processing.Token).ConfigureAwait(false);
-        string observationPath = Path.Combine(results, "functional-observations.json");
         bool requiresObservations = selection is { ModuleId: "memories", Name: "functional-retention" } || File.Exists(observationPath);
         byte[]? observations = requiresObservations
             ? await SelectedNativeTestReport.ReadObservationsAsync(observationPath, session.Plan.Workspace, session.Plan.RunId, handoffSecrets, processing.Token).ConfigureAwait(false)
@@ -440,11 +450,13 @@ internal static class NativeTestExecutor
         return await ArchiveSelectedAsync(inspected, session, descriptorSnapshot, archiveDirectory, processing.Token).ConfigureAwait(false);
     }
 
-    private static async Task WriteSnapshotAsync(string path, byte[] bytes, CancellationToken cancellationToken)
+    private static async Task WriteSnapshotAsync(string path, string ownedRoot, byte[] bytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        EnsureOwnedDestination();
         string directory = Path.GetDirectoryName(path)!;
         CompositionWorkspace.CreatePrivateDirectory(directory);
+        EnsureOwnedDestination();
         string temporary = Path.Combine(directory, ".archive-" + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
@@ -461,13 +473,23 @@ internal static class NativeTestExecutor
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+            EnsureOwnedDestination();
             File.Move(temporary, path, overwrite: true);
         }
         finally
         {
-            if (File.Exists(temporary))
+            if (SelectedNativeTestReport.IsOwnedParent(temporary, ownedRoot) && File.Exists(temporary))
             {
                 File.Delete(temporary);
+            }
+        }
+
+        void EnsureOwnedDestination()
+        {
+            if (!SelectedNativeTestReport.IsOwnedParent(path, ownedRoot) || new FileInfo(path).LinkTarget is not null
+                || (File.Exists(path) && !SelectedNativeTestReport.IsOwnedRegularPath(path, ownedRoot)))
+            {
+                throw new IOException("The selected archive destination is outside its owned, link-free directory.");
             }
         }
     }
@@ -501,9 +523,9 @@ internal static class NativeTestExecutor
                 .Concat(element.Nodes().OfType<XText>().Select(node => node.Value)));
     }
 
-    private static NativeTestExecutionResult Failed(string ruleId, ToolPhase phase, ToolFailureCategory category, ToolExitCode exitCode)
+    private static NativeTestExecutionResult Failed(string ruleId, ToolPhase phase, ToolFailureCategory category, ToolExitCode exitCode, string? message = null)
     {
-        ToolDiagnostic diagnostic = new(ruleId, phase, category, MessageFor(ruleId), "nativeTests", HintFor(ruleId));
+        ToolDiagnostic diagnostic = new(ruleId, phase, category, message ?? MessageFor(ruleId), "nativeTests", HintFor(ruleId));
         return new NativeTestExecutionResult(
             new ToolCommandResult(
                 exitCode == ToolExitCode.PrerequisiteUnavailable ? "unavailable" : "failed",

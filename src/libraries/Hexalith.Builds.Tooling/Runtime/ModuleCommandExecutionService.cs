@@ -770,11 +770,6 @@ public static class ModuleCommandExecutionService
                 startedUtc,
                 cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && testBudget?.Token.IsCancellationRequested == true)
-        {
-            ToolCommandResult expired = PlatformRefusal("HXT007", "The selected execution exhausted its original finite lifetime during setup.", ToolExitCode.ProductOrTest);
-            return await WriteResultAsync(expired.Status, expired.Outcome, expired.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None).ConfigureAwait(false);
-        }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             if (session is not null && engine is not null)
@@ -1041,7 +1036,8 @@ public static class ModuleCommandExecutionService
             requestedProfiles = [profile];
         }
 
-        IReadOnlyList<ModuleTestSelection> selections = validation.IsValid ? ModuleTestSelection.SelectBatch(validation.Declarations!, requestedProfiles, manifestPath, startedUtc) : [];
+        string? selectionRefusal = null;
+        IReadOnlyList<ModuleTestSelection> selections = validation.IsValid ? ModuleTestSelection.SelectBatch(validation.Declarations!, requestedProfiles, manifestPath, startedUtc, out selectionRefusal) : [];
         if (selections.Count > 1 && !string.IsNullOrWhiteSpace(evidencePath))
         {
             ToolCommandResult unsupported = PlatformRefusal("HXC002", "Legacy module-run evidence export supports one declared suite only. Run the batch without --evidence; inspected entry reports remain in owned diagnostics.", ToolExitCode.UsageOrManifest);
@@ -1060,7 +1056,21 @@ public static class ModuleCommandExecutionService
                 || (selected = selections.Count == 0 ? null : selections[0]) is null
                 || selected.Mode != (mode == WorkspaceMode.Source ? "source" : "package"))
         {
-            result = PlatformRefusal("HXC002", "Select compatible declared suites using repeated --profile values and their declared mode. Filters, attachment, and hosted reuse are unsupported.", ToolExitCode.UsageOrManifest);
+            string reason = selectionRefusal ?? "The selected suite mode does not match the requested execution mode.";
+            if (filter is not null)
+            {
+                reason = "Declared suites do not support filters.";
+            }
+            else if (runId is not null)
+            {
+                reason = "Declared suites require a fresh environment; attachment is unsupported.";
+            }
+            else if (compositionOptions?.SourceMapping is { } supplied && supplied.Mode != mode)
+            {
+                reason = "The supplied source mapping does not match the requested execution mode.";
+            }
+
+            result = PlatformRefusal("HXC002", reason, ToolExitCode.UsageOrManifest);
         }
         else if (descriptorChildEntryAssemblyPath is null)
         {
@@ -1118,11 +1128,14 @@ public static class ModuleCommandExecutionService
                     }
                     else
                     {
-                        testBudget.Activate(selections.Sum(entry => entry.ExecutionTimeoutSeconds));
+                        testBudget.Activate(checked((int)ModuleTestSelection.CombinedBudgetSeconds(selections)));
                         List<ToolDiagnostic> batchDiagnostics = [.. started.Result.Diagnostics];
+                        List<string> attemptedEntries = [];
+                        string? failedEntry = null;
                         foreach (ModuleTestSelection entry in selections)
                         {
                             selected = entry;
+                            attemptedEntries.Add(entry.Name);
                             native = null;
                             options = options with { SelectedTest = entry, StopTimeout = TimeSpan.FromSeconds(entry.StopTimeoutSeconds) };
                             engine = new CompositionEngine(options);
@@ -1133,20 +1146,36 @@ public static class ModuleCommandExecutionService
                             result = native.Result with { RunId = ownedRunId, Diagnostics = [.. batchDiagnostics] };
                             if (result.Outcome.ExitCode != ToolExitCode.Success)
                             {
+                                failedEntry = entry.Name;
                                 break;
                             }
+                        }
+
+                        if (selections.Count > 1)
+                        {
+                            string notAttempted = string.Join(", ", selections.Skip(attemptedEntries.Count).Select(entry => entry.Name));
+                            ToolDiagnostic entries = new("HXI002", ToolPhase.Test, ToolFailureCategory.None, $"Batch entries attempted: {string.Join(", ", attemptedEntries)}; failed: {failedEntry ?? "none"}; not attempted: {(notAttempted.Length == 0 ? "none" : notAttempted)}.", "profiles");
+                            result = result with { Diagnostics = [.. result.Diagnostics, entries] };
                         }
                     }
                 }
             }
             catch (OperationCanceledException)
             {
-                result = (cancellationToken.IsCancellationRequested, startupToken?.IsCancellationRequested == true && session?.Plan.ExecutionTiming is null) switch
+                if (!cancellationToken.IsCancellationRequested && startupToken?.IsCancellationRequested == true && session?.Plan.ExecutionTiming is null)
                 {
-                    (true, _) => PlatformRefusal("HXC130", "The owner withdrew the selected execution.", ToolExitCode.Cancelled) with { Status = "withdrawn", RunId = ownedRunId },
-                    (false, true) => PlatformRefusal("HXR025", "The environment exhausted its startup deadline before execution.", ToolExitCode.TopologyOrLifecycle) with { RunId = ownedRunId },
-                    _ => PlatformRefusal("HXT007", "The selected execution exhausted its finite execution lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId },
-                };
+                    engine ??= new CompositionEngine(options);
+                    CompositionStartResult expired = await engine.ReportSetupTimeoutAsync(startedUtc, startupDeadline ?? CompositionStartupDeadlineResolver.Resolve(validation.Declarations, options.ReadinessTimeout)).ConfigureAwait(false);
+                    result = expired.Result;
+                    ownedRunId = expired.RunId;
+                    startupStoppingTimestamp = expired.StoppingTimestamp;
+                }
+                else
+                {
+                    result = cancellationToken.IsCancellationRequested
+                        ? PlatformRefusal("HXC130", "The owner withdrew the selected execution.", ToolExitCode.Cancelled) with { Status = "withdrawn", RunId = ownedRunId }
+                        : PlatformRefusal("HXT007", "The selected execution exhausted its finite execution lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
+                }
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {
@@ -1183,7 +1212,7 @@ public static class ModuleCommandExecutionService
                     string initialDisposition = retain && !passed && !withdrawn ? "retained" : "unknown";
                     record = session is null
                         ? await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(options.StateDirectory, "diagnostics", ownedRunId, "selected-test.json"), stopping.Token).ConfigureAwait(false)
-                        : await engine!.RecordTestOutcomeAsync(ownedRunId, session.Readiness.Resources, result, initialDisposition, new CompositionRunResources([], [], Unverified: true), stopping.Token, native, waitForLock: false).ConfigureAwait(false);
+                        : await engine!.RecordTestOutcomeAsync(ownedRunId, session.Readiness.Resources, result, initialDisposition, new CompositionRunResources([], [], Unverified: true), stopping.Token, native, waitForLock: false, executionTiming: session.Plan.ExecutionTiming).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
                 {
@@ -1231,7 +1260,7 @@ public static class ModuleCommandExecutionService
                     record = record with { ResourceDisposition = disposition, RemainingResources = down.Remaining };
                     try
                     {
-                        record = await engine!.RecordTestOutcomeAsync(record.RunId, record.Resources, result, disposition, down.Remaining, stopping.Token, native, waitForLock: false).ConfigureAwait(false);
+                        record = await engine!.RecordTestOutcomeAsync(record.RunId, record.Resources, result, disposition, down.Remaining, stopping.Token, native, waitForLock: false, executionTiming: session?.Plan.ExecutionTiming).ConfigureAwait(false);
                     }
                     catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
                     {

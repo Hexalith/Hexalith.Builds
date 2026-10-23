@@ -8,6 +8,7 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -94,7 +95,10 @@ public sealed class ModuleRunnerReviewRegressionTests
                 if (scenario == "timeout")
                 {
                     observedToken.IsCancellationRequested.ShouldBeTrue();
-                    Stopwatch.GetElapsedTime(stoppingAt).ShouldBeLessThan(TimeSpan.FromSeconds(1.5));
+
+                    // Synchronous OS process-tree termination may outlast the cancelled timer.
+                    // A renewed processing allowance would incorrectly publish a fresh run state.
+                    File.Exists(engine.StateStore.PathFor(plan.RunId)).ShouldBeFalse("The exhausted original stopping token must prevent later durable state writes.");
                 }
 
                 if (scenario is "io" or "timeout")
@@ -178,10 +182,12 @@ public sealed class ModuleRunnerReviewRegressionTests
     {
         using PlatformManifestTestWorkspace workspace = new();
         Declare(workspace, lifetime: 1);
+        workspace.Change("modules.0.lifecycle.startup", "{\"override\":{\"timeoutSeconds\":1,\"justification\":\"Bounded setup regression\"}}");
         int checks = 0;
         int starts = 0;
         CompositionEngineOptions options = Options(workspace.Root) with
         {
+            ReadinessTimeout = TimeSpan.FromSeconds(1),
             SourceMapping = null,
             RootManifestCheckOverride = (_, token) =>
             {
@@ -209,12 +215,15 @@ public sealed class ModuleRunnerReviewRegressionTests
         await using ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
         Stopwatch elapsed = Stopwatch.StartNew();
         int exit = await ExecuteAsync(workspace.Save(), options, output).ConfigureAwait(true);
-        exit.ShouldBe(4, output.ToString());
-        output.ToString().ShouldContain("HXT007");
+        exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.ToString());
+        output.ToString().ShouldContain("HXR021");
         checks.ShouldBe(1);
         starts.ShouldBe(phase == "startup" ? 1 : 0);
         elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(3));
-        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+        string[] summaries = Directory.GetFiles(Path.Combine(options.StateDirectory, "diagnostics"), "summary.json", SearchOption.AllDirectories);
+        _ = summaries.ShouldHaveSingleItem();
+        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(summaries[0], TestContext.Current.CancellationToken).ConfigureAwait(true));
+        summary.RootElement.GetProperty("durationSeconds").GetDouble().ShouldBeGreaterThan(0);
     }
 
     /// <summary>Inspects cancellation output and actual XML encodings before any redaction or retention.</summary>
@@ -236,7 +245,7 @@ public sealed class ModuleRunnerReviewRegressionTests
         using PlatformManifestTestWorkspace workspace = new();
         Declare(workspace);
         const string report = "<TestRun><ResultSummary outcome='Completed'><Counters total='1' passed='1' failed='0'/></ResultSummary>";
-        string script = "import os, pathlib, time\np=pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH'])\n";
+        string script = "import os, pathlib, time\n(pathlib.Path(__file__).parent / 'child-ran').write_text('yes')\np=pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH'])\n";
         string suffix = scenario switch
         {
             "utf16-password" => "<Output>password=hunter22</Output></TestRun>",
@@ -280,14 +289,29 @@ public sealed class ModuleRunnerReviewRegressionTests
         string manifest = workspace.Save();
         ModuleTestSelection selected = Select(manifest);
         using Process appHost = new();
-        CompositionRunSession session = Session(workspace.Root, selected, appHost);
+        CompositionRunSession session = await SessionAsync(workspace.Root, selected, appHost).ConfigureAwait(true);
         using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        Task cancellation = Task.CompletedTask;
         if (scenario == "token-hang")
         {
-            owner.CancelAfter(TimeSpan.FromMilliseconds(300));
+            owner.CancelAfter(TimeSpan.FromSeconds(10));
+            cancellation = Task.Run(
+                async () =>
+                {
+                    while (!File.Exists(Path.Combine(workspace.Root, "child-ran")))
+                    {
+                        await Task.Delay(10, owner.Token).ConfigureAwait(false);
+                    }
+
+                    await Task.Delay(100, owner.Token).ConfigureAwait(false);
+                    await owner.CancelAsync().ConfigureAwait(false);
+                },
+                TestContext.Current.CancellationToken);
         }
 
         NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests("runner.py", "python3"), manifest, owner.Token, selection: selected).ConfigureAwait(true);
+        await cancellation.ConfigureAwait(true);
+        File.Exists(Path.Combine(workspace.Root, "child-ran")).ShouldBeTrue();
         if (scenario is "utf16-safe" or "utf16-failed")
         {
             result.Result.Outcome.ExitCode.ShouldBe(scenario == "utf16-safe" ? ToolExitCode.Success : ToolExitCode.ProductOrTest);
@@ -329,7 +353,7 @@ public sealed class ModuleRunnerReviewRegressionTests
         string manifest = workspace.Save();
         ModuleTestSelection selected = Select(manifest);
         using Process appHost = new();
-        CompositionRunSession session = Session(workspace.Root, selected, appHost);
+        CompositionRunSession session = await SessionAsync(workspace.Root, selected, appHost).ConfigureAwait(true);
         Stopwatch elapsed = Stopwatch.StartNew();
         NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selected).ConfigureAwait(true);
         result.Result.Outcome.ExitCode.ShouldNotBe(ToolExitCode.Success);
@@ -461,7 +485,7 @@ public sealed class ModuleRunnerReviewRegressionTests
         CompositionEngineOptions options = Options(workspace.Root) with
         {
             ContinuousIntegrationOverride = true,
-            SelectedPlatformStartOverride = (_, selected, _) => Task.FromResult(new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), CompositionTestFiles.RunId, Session(workspace.Root, selected, appHost))),
+            SelectedPlatformStartOverride = async (_, selected, _) => new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), CompositionTestFiles.RunId, await SessionAsync(workspace.Root, selected, appHost).ConfigureAwait(true)),
             PlatformDownOverride = async (_, _) =>
             {
                 await owner.CancelAsync().ConfigureAwait(true);
@@ -490,6 +514,12 @@ public sealed class ModuleRunnerReviewRegressionTests
     [InlineData("counts")]
     [InlineData("report")]
     [InlineData("artifact")]
+    [InlineData("execution-deadline")]
+    [InlineData("execution-seconds")]
+    [InlineData("execution-configuration")]
+    [InlineData("execution-start")]
+    [InlineData("credential-expiry")]
+    [InlineData("credential-invalid")]
     public void ConflictingSelectedEvidenceIsRejected(string mutation)
     {
         using PlatformManifestTestWorkspace workspace = new();
@@ -498,8 +528,9 @@ public sealed class ModuleRunnerReviewRegressionTests
         ModuleTestSelection selected = Select(manifest);
         ModuleRunTestCounts counts = new(true, 1, 1, 0, 0);
         const string reportPath = "evidence/native.trx";
+        ModuleTestExecutionTiming execution = ModuleTestExecutionTiming.Start(selected, DateTimeOffset.UtcNow);
         string hash = new('A', 64);
-        ModuleTestRunRecord record = new(CompositionTestFiles.RunId, CompositionTestFiles.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "removed", new CompositionRunResources([], [])) { ReportHash = hash, TestCounts = counts };
+        ModuleTestRunRecord record = new(CompositionTestFiles.RunId, CompositionTestFiles.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "removed", new CompositionRunResources([], [])) { ReportHash = hash, TestCounts = counts, ExecutionTiming = execution };
         ModuleRunEvidence evidence = ModuleRunEvidenceFactory.Create(ModuleInvocationCommand.Test, manifest, null, "verify", null, new ToolCommandResult("completed", ToolOutcome.Passed(), []), selected.RequestedAtUtc, DateTimeOffset.UtcNow, record.RunId, testCounts: counts, artifactHashes: new Dictionary<string, string> { [reportPath] = hash }) with { SelectedTestRun = record };
         evidence = evidence with { Invocation = evidence.Invocation with { Profile = "verify" } };
         byte[] valid = ModuleRunEvidenceWriter.SerializeCanonical(evidence);
@@ -515,6 +546,15 @@ public sealed class ModuleRunnerReviewRegressionTests
             case "manifest": root["invocation"].ShouldNotBeNull()["manifestHash"] = new string('B', 64); break;
             case "counts": root["testCounts"].ShouldNotBeNull()["total"] = 2; root["testCounts"].ShouldNotBeNull()["passed"] = 2; break;
             case "report": run["reportHash"] = new string('B', 64); break;
+            case "execution-deadline": run["executionTiming"]!["deadlineUtc"] = execution.DeadlineUtc.AddSeconds(1); break;
+            case "execution-seconds": run["executionTiming"]!["effectiveSeconds"] = selected.ExecutionTimeoutSeconds + 1; break;
+            case "execution-configuration": run["executionTiming"]!["configurationContentIdentity"] = "sha256:" + new string('f', 64); break;
+            case "execution-start":
+                run["executionTiming"]!["startedAtUtc"] = selected.RequestedAtUtc.AddSeconds(-1);
+                run["executionTiming"]!["deadlineUtc"] = selected.RequestedAtUtc.AddSeconds(selected.ExecutionTimeoutSeconds - 1);
+                break;
+            case "credential-expiry": run["executionTiming"]!["credentialExpiryUtc"] = execution.CredentialExpiryUtc.AddSeconds(1); break;
+            case "credential-invalid": run["executionTiming"]!["credentialExpiryUtc"] = "not-a-date"; break;
             default: root["artifactHashes"].ShouldNotBeNull()[reportPath] = new string('B', 64); break;
         }
 
@@ -559,10 +599,11 @@ public sealed class ModuleRunnerReviewRegressionTests
 
     private static ModuleTestSelection Select(string manifest, DateTimeOffset? request = null) => ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, request ?? DateTimeOffset.UtcNow).ShouldNotBeNull();
 
-    private static CompositionRunSession Session(string root, ModuleTestSelection selected, Process appHost)
+    private static async Task<CompositionRunSession> SessionAsync(string root, ModuleTestSelection selected, Process appHost)
     {
-        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { SelectedTest = selected, SourceMapping = Mapping(root), Modules = [], UiMarkers = [] };
-        return new CompositionRunSession(plan, new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), "private-signing-key-value", appHost);
+        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(root) with { SelectedTest = selected, Modules = [], UiMarkers = [] }, Path.Combine(root, "manifest.json"), root).ConfigureAwait(true);
+        CompositionReadiness readiness = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), selected.ModuleId);
+        return new CompositionRunSession(plan, readiness, "private-signing-key-value", appHost);
     }
 
     private static void Declare(PlatformManifestTestWorkspace workspace, int lifetime = 30, int stop = 2)

@@ -97,15 +97,29 @@ public sealed class CompositionResourceClaimStoreTests
                 string root = args[0], owner = args[1], mode = args[2], signal = args[3];
                 var store = new CompositionResourceClaimStore(root);
                 if (mode == "hold") { store.Acquire(owner, Held()); return 9; }
+                if (mode == "allocate") { var ports = CompositionPortAllocator.AllocateOwned(16, owner, root); File.WriteAllText(signal, System.Text.Json.JsonSerializer.Serialize(ports.ToList())); return 0; }
                 while (!File.Exists(signal)) await Task.Delay(5);
                 try { store.Acquire(owner, ["cross-process-exclusive"]); return 0; }
                 catch (CompositionResourceClaimConflictException conflict) { Console.WriteLine(conflict.OwnerRunId); return 23; }
                 IEnumerable<string> Held() { File.WriteAllText(signal, "transaction held"); Thread.Sleep(Timeout.Infinite); yield return "never-published"; }
                 """,
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
-            CompositionProcessResult build = await CompositionProcess.RunAsync(CompositionProcess.CreateStartInfo("dotnet", ["build", Path.Combine(project, "child.csproj"), "-c", "Debug", "-m:1", "--nologo", "-v:q"], project, null), TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionProcessResult build = await CompositionProcess.RunAsync(CompositionProcess.CreateStartInfo("dotnet", ["build", Path.Combine(project, "child.csproj"), "-c", "Debug", "-m:1", "-nodeReuse:false", "-p:UseSharedCompilation=false", "--nologo", "-v:q"], project, null), TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken).ConfigureAwait(true);
             build.ExitCode.ShouldBe(0, build.Output);
             string executable = Path.Combine(project, "bin", "Debug", "net10.0", "child.dll");
+            HashSet<int> allocated = [];
+            for (int allocation = 0; allocation < 12; allocation++)
+            {
+                string receipt = Path.Combine(root, "ports-" + allocation.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".json");
+                using Process allocator = Process.Start(CompositionProcess.CreateStartInfo("dotnet", [executable, root, CompositionRunPlanFactory.NewRunId(), "allocate", receipt], project, null))!;
+                await allocator.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                allocator.ExitCode.ShouldBe(0);
+                int[] ports = JsonSerializer.Deserialize<int[]>(await File.ReadAllTextAsync(receipt, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+                ports.ShouldNotContain(port => allocated.Contains(port));
+                allocated.UnionWith(ports);
+            }
+
+            new CompositionResourceClaimStore(root).ClaimedPorts().ShouldBe(allocated, ignoreOrder: true);
             string[] owners = [CompositionRunPlanFactory.NewRunId(), CompositionRunPlanFactory.NewRunId()];
             string signal = Path.Combine(root, "contend");
             using Process first = Process.Start(CompositionProcess.CreateStartInfo("dotnet", [executable, root, owners[0], "contend", signal], project, null))!;
@@ -119,7 +133,10 @@ public sealed class CompositionResourceClaimStoreTests
             foreach (string path in Directory.GetFiles(Path.Combine(root, "claims"), "*.json"))
             {
                 using JsonDocument complete = JsonDocument.Parse(await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true));
-                complete.RootElement.GetProperty("OwnerRunId").GetString().ShouldBe(winner);
+                if (complete.RootElement.GetProperty("ResourceId").GetString() == "cross-process-exclusive")
+                {
+                    complete.RootElement.GetProperty("OwnerRunId").GetString().ShouldBe(winner);
+                }
             }
 
             string held = Path.Combine(root, "held");

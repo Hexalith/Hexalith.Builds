@@ -489,7 +489,7 @@ internal static class ModuleRunEvidenceArtifactValidator
         IReadOnlyList<Runtime.ModuleTestSelection> selections = record.Selections.Count == 0 ? [record.Selection] : record.Selections;
         return timing.StartedAtUtc >= record.Selection.RequestedAtUtc && timing.StartedAtUtc <= record.TerminalAtUtc
             && timing.DeadlineUtc - timing.StartedAtUtc == TimeSpan.FromSeconds(timing.EffectiveSeconds)
-            && selected.GetProperty("executionTiming").GetProperty("credentialExpiryUtc").GetDateTimeOffset() == timing.CredentialExpiryUtc
+            && selected.GetProperty("executionTiming").GetProperty("credentialExpiryUtc").TryGetDateTimeOffset(out DateTimeOffset credentialExpiry) && credentialExpiry == timing.CredentialExpiryUtc
             && selections.Any(entry => timing.EffectiveSeconds == entry.ExecutionTimeoutSeconds
                 && Runtime.ModuleTestExecutionTiming.Start(entry, timing.StartedAtUtc).ConfigurationContentIdentity == timing.ConfigurationContentIdentity)
             && selections.Select(entry => entry.Name).Distinct(StringComparer.Ordinal).Count() == selections.Count

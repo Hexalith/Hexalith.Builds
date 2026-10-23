@@ -103,9 +103,27 @@ public sealed record ModuleTestSelection(
     /// <param name="requestedAt">The immutable request time.</param>
     /// <returns>All selections, or an empty list for missing, duplicate or incompatible entries.</returns>
     internal static IReadOnlyList<ModuleTestSelection> SelectBatch(IReadOnlyList<PlatformModuleDeclaration> declarations, IReadOnlyList<string> names, string manifestPath, DateTimeOffset requestedAt)
+        => SelectBatch(declarations, names, manifestPath, requestedAt, out _);
+
+    /// <summary>Selects entries with a stable metadata-only refusal reason.</summary>
+    /// <param name="declarations">The validated declarations.</param>
+    /// <param name="names">The ordered entry names.</param>
+    /// <param name="manifestPath">The declaration source.</param>
+    /// <param name="requestedAt">The immutable request time.</param>
+    /// <param name="refusal">The constant reason when selection fails.</param>
+    /// <returns>The compatible entries or an empty list.</returns>
+    internal static IReadOnlyList<ModuleTestSelection> SelectBatch(IReadOnlyList<PlatformModuleDeclaration> declarations, IReadOnlyList<string> names, string manifestPath, DateTimeOffset requestedAt, out string? refusal)
     {
-        if (names.Count == 0 || names.Distinct(StringComparer.Ordinal).Count() != names.Count)
+        refusal = null;
+        if (names.Count == 0)
         {
+            refusal = "Select at least one declared suite using --profile.";
+            return [];
+        }
+
+        if (names.Distinct(StringComparer.Ordinal).Count() != names.Count)
+        {
+            refusal = "A declared suite cannot occur more than once in a batch.";
             return [];
         }
 
@@ -113,17 +131,35 @@ public sealed record ModuleTestSelection(
         foreach (string name in names)
         {
             ModuleTestSelection? selected = Select(declarations, name, manifestPath, requestedAt);
-            if (selected is null || (selections.Count > 0 && !Compatible(selections[0], selected)))
+            if (selected is null)
             {
+                refusal = "A selected suite is missing, ambiguous, or its source binding is unavailable.";
+                return [];
+            }
+
+            if (selections.Count > 0 && !Compatible(selections[0], selected))
+            {
+                refusal = "Selected suites have incompatible mode, composition, runtime, or resource requirements.";
                 return [];
             }
 
             selections.Add(selected);
         }
 
-        long combinedSeconds = selections.Sum(selection => (long)selection.ExecutionTimeoutSeconds);
-        return combinedSeconds <= (uint.MaxValue - 1L) / 1000 ? selections : [];
+        if (CombinedBudgetSeconds(selections) > (uint.MaxValue - 1L) / 1000)
+        {
+            refusal = "The combined batch execution and stopping allowances exceed the supported finite limit.";
+            return [];
+        }
+
+        return selections;
     }
+
+    /// <summary>Includes each entry's finite processing and stopping allowance in the overall execution bound.</summary>
+    /// <param name="selections">The ordered compatible entries.</param>
+    /// <returns>The finite combined seconds.</returns>
+    internal static long CombinedBudgetSeconds(IReadOnlyList<ModuleTestSelection> selections) =>
+        selections.Sum(selection => (long)selection.ExecutionTimeoutSeconds + selection.StopTimeoutSeconds);
 
     /// <summary>Rejects symlinks, nested repositories and dependency-owned files.</summary>
     /// <param name="root">The module repository root.</param>
