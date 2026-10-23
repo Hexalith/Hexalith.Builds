@@ -117,4 +117,16 @@ public sealed class CompositionDaprComponentRendererTests
             CompositionTestFiles.Delete(root);
         }
     }
+
+    /// <summary>Verifies a configuration name cannot end its plain YAML scalar or inject keys.</summary>
+    /// <param name="configurationName">The refused configuration name.</param>
+    [Theory]
+    [InlineData("x\n  nameResolution: {}")]
+    [InlineData("name: value")]
+    [InlineData("name#comment")]
+    [InlineData("\"quoted\"")]
+    [InlineData("-leading")]
+    public void DirectConfigurationRefusesNamesThatAreNotPlainScalars(string configurationName)
+        => Should.Throw<ArgumentException>(() => CompositionDaprComponentRenderer.RenderConfiguration(configurationName, Path.GetTempPath()))
+            .ParamName.ShouldBe("configurationName");
 }
