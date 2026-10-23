@@ -282,7 +282,7 @@ public sealed class ModuleRunnerReviewRegressionTests
         string manifest = workspace.Save();
         ModuleTestSelection selected = Select(manifest);
         using Process appHost = new();
-        CompositionRunSession session = Session(workspace.Root, selected, appHost);
+        CompositionRunSession session = await SessionAsync(workspace.Root, manifest, selected, appHost).ConfigureAwait(true);
         using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         if (scenario == "token-hang")
         {
@@ -331,7 +331,7 @@ public sealed class ModuleRunnerReviewRegressionTests
         string manifest = workspace.Save();
         ModuleTestSelection selected = Select(manifest);
         using Process appHost = new();
-        CompositionRunSession session = Session(workspace.Root, selected, appHost);
+        CompositionRunSession session = await SessionAsync(workspace.Root, manifest, selected, appHost).ConfigureAwait(true);
         Stopwatch elapsed = Stopwatch.StartNew();
         NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selected).ConfigureAwait(true);
         result.Result.Outcome.ExitCode.ShouldNotBe(ToolExitCode.Success);
@@ -458,12 +458,13 @@ public sealed class ModuleRunnerReviewRegressionTests
         using PlatformManifestTestWorkspace workspace = new();
         Declare(workspace);
         await File.AppendAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "\nraise SystemExit(" + (fails ? "7" : "0") + ")\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string manifest = workspace.Save();
         using Process appHost = new();
         using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         CompositionEngineOptions options = Options(workspace.Root) with
         {
             ContinuousIntegrationOverride = true,
-            SelectedPlatformStartOverride = (_, selected, _) => Task.FromResult(new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), CompositionTestFiles.RunId, Session(workspace.Root, selected, appHost))),
+            SelectedPlatformStartOverride = async (_, selected, _) => new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), CompositionTestFiles.RunId, await SessionAsync(workspace.Root, manifest, selected, appHost).ConfigureAwait(true)),
             PlatformDownOverride = async (_, _) =>
             {
                 await owner.CancelAsync().ConfigureAwait(true);
@@ -472,7 +473,7 @@ public sealed class ModuleRunnerReviewRegressionTests
         };
         StringWriter output = new();
         await using ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
-        int exit = await ExecuteAsync(workspace.Save(), options, output, owner.Token, "evidence/result.json").ConfigureAwait(true);
+        int exit = await ExecuteAsync(manifest, options, output, owner.Token, "evidence/result.json").ConfigureAwait(true);
         exit.ShouldBe(fails ? 4 : 0, output.ToString());
         byte[] bytes = await File.ReadAllBytesAsync(Path.Combine(workspace.Root, "evidence/result.json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
         ModuleRunEvidenceArtifactValidator.TryValidate(bytes, out _).ShouldBeTrue(Encoding.UTF8.GetString(bytes));
@@ -561,10 +562,11 @@ public sealed class ModuleRunnerReviewRegressionTests
 
     private static ModuleTestSelection Select(string manifest, DateTimeOffset? request = null) => ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, request ?? DateTimeOffset.UtcNow).ShouldNotBeNull();
 
-    private static CompositionRunSession Session(string root, ModuleTestSelection selected, Process appHost)
+    private static async Task<CompositionRunSession> SessionAsync(string root, string manifest, ModuleTestSelection selected, Process appHost)
     {
-        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { SelectedTest = selected, SourceMapping = Mapping(root), Modules = [], UiMarkers = [] };
-        return new CompositionRunSession(plan, new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), "private-signing-key-value", appHost);
+        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(root) with { SelectedTest = selected, Modules = [], UiMarkers = [] }, manifest, root).ConfigureAwait(false);
+        CompositionReadiness readiness = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), selected.ModuleId);
+        return new CompositionRunSession(plan, readiness, "private-signing-key-value", appHost);
     }
 
     private static void Declare(PlatformManifestTestWorkspace workspace, int lifetime = 30, int stop = 2)
