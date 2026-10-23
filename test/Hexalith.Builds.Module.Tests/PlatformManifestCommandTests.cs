@@ -57,6 +57,45 @@ public sealed class PlatformManifestCommandTests
         }
     }
 
+    /// <summary>Verifies SDK token keys succeed while malformed keys retain both precise CLI diagnostics.</summary>
+    /// <param name="format">The public diagnostic format.</param>
+    /// <returns>The assertion task.</returns>
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task AppApiTokenKeysPreserveStrictCliDiagnosticsAsync(string format)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.integration.secrets.0.configurationKey", "\"APP_API_TOKEN\"");
+        workspace.Change("modules.0.runtime.extensions.0.configurationInputs.0.key", "\"APP_API_TOKEN\"");
+        workspace.Change("modules.0.runtime.extensions.0.configurationInputs.0.source", "\"secret\"");
+        workspace.Change("modules.0.runtime.extensions.0.configurationInputs.0.reference", "\"provider-access\"");
+        string manifest = workspace.Save();
+        string original = await File.ReadAllTextAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", "--manifest", manifest, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(0, output.ToString());
+            output.ToString().ShouldContain("validated");
+            output.ToString().ShouldNotContain("HXP002");
+            if (format == "json")
+            {
+                using JsonDocument result = JsonDocument.Parse(output.ToString());
+                AssertPassedOutcome(result.RootElement);
+                result.RootElement.GetProperty("diagnostics").GetArrayLength().ShouldBe(0);
+            }
+        }
+
+        (await File.ReadAllTextAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(original);
+        workspace.Change("modules.0.integration.secrets.0.configurationKey", "\"APP_API_TOKEN\\n\"");
+        workspace.Change("modules.0.runtime.extensions.0.configurationInputs.0.key", "\"APP_API_TOKEN\\n\"");
+        manifest = workspace.Save();
+        await AssertInvalidAsync(manifest, "modules[0].integration.secrets[0].configurationKey", format, "HXP002").ConfigureAwait(true);
+        await AssertInvalidAsync(manifest, "modules[0].runtime.extensions[0].configurationInputs[0].key", format, "HXP002").ConfigureAwait(true);
+    }
+
     /// <summary>Verifies repeatable manifests aggregate duplicate identities in both output formats.</summary>
     /// <param name="format">The diagnostic output format.</param>
     /// <returns>A task that completes after the command.</returns>

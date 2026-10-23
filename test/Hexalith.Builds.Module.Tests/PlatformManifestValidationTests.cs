@@ -42,6 +42,89 @@ public sealed class PlatformManifestValidationTests
         SupportedPlatformManifestSchemas.Eligible.ShouldBe(["hexalith.module-manifest.v2"]);
     }
 
+    /// <summary>Verifies SDK configuration keys and colon paths pass both schemas without rewriting.</summary>
+    /// <param name="key">The exact configuration key consumed by the SDK.</param>
+    [Theory]
+    [InlineData("A")]
+    [InlineData("APP_API_TOKEN")]
+    [InlineData("app_api_token")]
+    [InlineData("App1:APP_API_TOKEN")]
+    [InlineData("Settings_1:Token_2")]
+    [InlineData("Authentication:JwtBearer:SigningKey")]
+    public void ConfigurationKeysPassPublishedAndEmbeddedSchemasUnchanged(string key)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.integration.secrets.0.configurationKey", JsonSerializer.Serialize(key));
+        workspace.Change("modules.0.runtime.extensions.0.configurationInputs.0.key", JsonSerializer.Serialize(key));
+        string manifest = workspace.Save();
+        using JsonDocument input = JsonDocument.Parse(File.ReadAllText(manifest));
+        PublishedSchema().Evaluate(input.RootElement).IsValid.ShouldBeTrue();
+        PlatformManifestValidationResult result = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+        result.Diagnostics.ShouldBeEmpty();
+        JsonElement module = result.Declarations.ShouldNotBeNull().Single().Declaration;
+        module.GetProperty("integration").GetProperty("secrets")[0].GetProperty("configurationKey").GetString().ShouldBe(key);
+        module.GetProperty("runtime").GetProperty("extensions")[0].GetProperty("configurationInputs")[0].GetProperty("key").GetString().ShouldBe(key);
+    }
+
+    /// <summary>Verifies underscore support preserves strict segment syntax in both key fields.</summary>
+    /// <param name="key">The malformed configuration key.</param>
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData(" APP_API_TOKEN")]
+    [InlineData("APP_API_TOKEN ")]
+    [InlineData("1APP_API_TOKEN")]
+    [InlineData("_APP_API_TOKEN")]
+    [InlineData("APP_API_TOKEN_")]
+    [InlineData("APP__API_TOKEN")]
+    [InlineData("APP-API-TOKEN")]
+    [InlineData("App.Token")]
+    [InlineData("App/Token")]
+    [InlineData("App=Token")]
+    [InlineData("App\\Token")]
+    [InlineData(":APP_API_TOKEN")]
+    [InlineData("APP_API_TOKEN:")]
+    [InlineData("App::APP_API_TOKEN")]
+    [InlineData("App:1Token")]
+    [InlineData("App:_Token")]
+    [InlineData("App:Token_")]
+    [InlineData("App:Token__Value")]
+    [InlineData("App:Tökén")]
+    [InlineData("APP_API_TOKEN\u2028")]
+    public void MalformedConfigurationKeysFailBothSchemasWithExactDiagnostics(string key) =>
+        AssertConfigurationKeyRejected(key, PublishedSchema());
+
+    /// <summary>Verifies every C0, DEL and C1 control remains forbidden, including trailing newlines.</summary>
+    [Fact]
+    public void ConfigurationKeysRejectControlCharacters()
+    {
+        JsonSchema schema = PublishedSchema();
+        foreach (int control in Enumerable.Range(0, 32).Concat(Enumerable.Range(127, 33)))
+        {
+            AssertConfigurationKeyRejected("APP_API_TOKEN" + (char)control, schema);
+            AssertConfigurationKeyRejected("App:" + (char)control + "Token", schema);
+        }
+    }
+
+    /// <summary>Verifies both fields keep the inclusive 256-character limit.</summary>
+    /// <param name="length">The complete configuration key length.</param>
+    [Theory]
+    [InlineData(256)]
+    [InlineData(257)]
+    public void ConfigurationKeyLengthBoundaryAppliesToBothFields(int length)
+    {
+        const string prefix = "App:APP_API_TOKEN";
+        string key = prefix + new string('A', length - prefix.Length);
+        if (length > 256)
+        {
+            AssertConfigurationKeyRejected(key, PublishedSchema());
+        }
+        else
+        {
+            ConfigurationKeysPassPublishedAndEmbeddedSchemasUnchanged(key);
+        }
+    }
+
     /// <summary>Optional Dapr bindings reject unknown receivers and incomplete HTTP permissions atomically.</summary>
     /// <param name="path">The optional field.</param>
     /// <param name="json">The invalid binding.</param>
@@ -827,6 +910,31 @@ public sealed class PlatformManifestValidationTests
         result.IsValid.ShouldBeFalse();
         result.Declarations.ShouldBeNull();
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == ruleId && diagnostic.Field == field);
+    }
+
+    private static void AssertConfigurationKeyRejected(string key, JsonSchema schema)
+    {
+        (string Path, string Field)[] fields =
+        [
+            ("modules.0.integration.secrets.0.configurationKey", "modules[0].integration.secrets[0].configurationKey"),
+            ("modules.0.runtime.extensions.0.configurationInputs.0.key", "modules[0].runtime.extensions[0].configurationInputs[0].key"),
+        ];
+        foreach ((string path, string field) in fields)
+        {
+            using PlatformManifestTestWorkspace workspace = new();
+            workspace.Change(path, JsonSerializer.Serialize(key));
+            string manifest = workspace.Save();
+            using JsonDocument input = JsonDocument.Parse(File.ReadAllText(manifest));
+            schema.Evaluate(input.RootElement).IsValid.ShouldBeFalse();
+            PlatformManifestValidationResult result = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+            result.IsValid.ShouldBeFalse();
+            result.Declarations.ShouldBeNull();
+            ToolDiagnostic diagnostic = result.Diagnostics.ShouldHaveSingleItem();
+            diagnostic.RuleId.ShouldBe("HXP002");
+            diagnostic.Source.ShouldBe(Path.GetRelativePath(Directory.GetCurrentDirectory(), manifest).Replace('\\', '/'));
+            diagnostic.Field.ShouldBe(field);
+            diagnostic.Message.ShouldBe("Use a nonblank value matching the schema's declared format and length.");
+        }
     }
 
     private static JsonSchema PublishedSchema() => JsonSchema.FromFile(Path.Combine(PlatformManifestTestWorkspace.RepositoryRoot, "schemas/hexalith.module-manifest.v2.json"), new BuildOptions { SchemaRegistry = new SchemaRegistry() });

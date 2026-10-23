@@ -502,6 +502,11 @@ Platform [domain-module enrollment guide](https://github.com/Hexalith/Hexalith.P
 
 The strict [Draft 2020-12 schema](schemas/hexalith.module-manifest.v2.json)
 defines all five groups: identity, runtime, surfaces, integration and lifecycle.
+Configuration keys preserve SDK spelling, including `APP_API_TOKEN` in secret
+bindings and extension configuration inputs. Keys contain colon-separated
+segments starting with an ASCII letter; single underscores may separate
+alphanumeric words. Empty segments, whitespace and control characters are
+rejected, and the complete key remains limited to 256 characters.
 Unused capabilities use empty collections. Runtime replicas default to one;
 startup defaults to 600 seconds (ten minutes). Overrides require a positive
 finite duration and a nonblank justification. Required servers need usable
