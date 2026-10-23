@@ -12,7 +12,7 @@
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">1.0.0</HexalithMcpCliVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.29.8</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.10.1</HexalithTenantsVersion>
-    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.5.2</HexalithPartiesVersion>
+    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.6.0</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">1.6.0</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.0</HexalithProjectsVersion>
     <!-- Folders.Aspire is a stable public package; all other consumers retain the preview integration. -->
