@@ -18,6 +18,7 @@ VALIDATOR_PATH = SCRIPT_DIRECTORY / "oci_registry_validator.py"
 SOURCE_SHA = "d" * 40
 RELEASE_VERSION = "3.76.1"
 REPOSITORY = "Hexalith/Hexalith.EventStore"
+CREATED = "2024-02-29T23:59:59Z"
 
 
 def compact_json(value):
@@ -60,11 +61,27 @@ def build_capture(root, mutation):
             ),
             "org.opencontainers.image.revision": SOURCE_SHA,
             "org.opencontainers.image.version": RELEASE_VERSION,
+            "org.opencontainers.image.created": CREATED,
+            "org.opencontainers.artifact.created": CREATED,
         }
         if mutation == "truncated-url-label" and architecture == "amd64":
             labels["org.opencontainers.image.source"] = "https"
         if mutation == "missing-revision-label" and architecture == "arm64":
             labels.pop("org.opencontainers.image.revision")
+        if mutation == "missing-created-label" and architecture == "amd64":
+            labels.pop("org.opencontainers.image.created")
+        if mutation == "missing-artifact-created-label" and architecture == "arm64":
+            labels.pop("org.opencontainers.artifact.created")
+        if mutation == "truncated-created-label" and architecture == "amd64":
+            labels["org.opencontainers.image.created"] = "2024-02-29T23"
+        if mutation == "different-child-created-label" and architecture == "arm64":
+            labels["org.opencontainers.artifact.created"] = "2024-03-01T00:00:00Z"
+        if mutation == "invalid-created-date" and architecture == "amd64":
+            labels["org.opencontainers.image.created"] = labels["org.opencontainers.artifact.created"] = "2023-02-29T00:00:00Z"
+        if mutation == "different-child-created-pair" and architecture == "arm64":
+            labels["org.opencontainers.image.created"] = labels["org.opencontainers.artifact.created"] = "2024-03-01T00:00:00Z"
+        if mutation == "consistent-wrong-publisher-created":
+            labels["org.opencontainers.image.created"] = labels["org.opencontainers.artifact.created"] = "2024-03-01T00:00:00Z"
         config = {"architecture": architecture, "os": os_name, "config": {"Labels": labels}}
         if mutation == "child-config-mismatch" and architecture == "amd64":
             config["architecture"] = "arm64"
@@ -357,11 +374,16 @@ class OciRegistryValidatorTests(unittest.TestCase):
                 )
 
     def test_exact_provenance_labels_are_required_in_both_raw_child_configs(self):
-        expected = self.validator.expected_provenance_labels(REPOSITORY, SOURCE_SHA, RELEASE_VERSION)
+        expected = self.validator.expected_provenance_labels(REPOSITORY, SOURCE_SHA, RELEASE_VERSION, CREATED)
         for mutation, expected_result in (
             ("none", "pass"),
             ("truncated-url-label", "provenance-label-mismatch"),
             ("missing-revision-label", "provenance-label-mismatch"),
+            ("missing-created-label", "invalid-release-identity"),
+            ("missing-artifact-created-label", "provenance-label-mismatch"),
+            ("truncated-created-label", "invalid-release-identity"),
+            ("different-child-created-label", "provenance-label-mismatch"),
+            ("consistent-wrong-publisher-created", "provenance-label-mismatch"),
         ):
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary_directory:
                 capture_root = Path(temporary_directory)
@@ -373,6 +395,28 @@ class OciRegistryValidatorTests(unittest.TestCase):
                     with self.assertRaises(self.validator.ValidationError) as context:
                         self.validator.validate_capture(capture_root, expected)
                     self.assertEqual(expected_result, context.exception.code)
+
+    def test_legacy_three_argument_reader_still_requires_calendar_and_equal_created_labels(self):
+        expected = self.validator.expected_provenance_labels(REPOSITORY, SOURCE_SHA, RELEASE_VERSION)
+        for mutation in ["none", "missing-created-label", "missing-artifact-created-label", "truncated-created-label", "invalid-created-date", "different-child-created-pair"]:
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                build_capture(root, mutation)
+                if mutation == "none":
+                    evidence = self.validator.validate_capture(root, expected)
+                    self.assertTrue(all(child["provenance_labels"]["org.opencontainers.image.created"] == CREATED for child in evidence["children"]))
+                else:
+                    with self.assertRaises(self.validator.ValidationError):
+                        self.validator.validate_capture(root, expected)
+
+    def test_created_identity_rejects_impossible_or_noncanonical_instants(self):
+        for created in ["2023-02-29T23:59:59Z", "1900-02-29T00:00:00Z", "2024-04-31T00:00:00Z",
+                        "0000-01-01T00:00:00Z", "2024-01-01T24:00:00Z", "2024-01-01T00:00:00+00:00", ""]:
+            with self.subTest(created=created), self.assertRaises(self.validator.ValidationError):
+                self.validator.expected_provenance_labels(REPOSITORY, SOURCE_SHA, RELEASE_VERSION, created)
+        for created in [CREATED, "2000-02-29T00:00:00Z", "2026-04-30T12:34:56Z"]:
+            self.assertEqual(self.validator.expected_provenance_labels(REPOSITORY, SOURCE_SHA, RELEASE_VERSION, created)
+                             ["org.opencontainers.image.created"], created)
 
 
 if __name__ == "__main__":

@@ -208,6 +208,7 @@ for index in "${!container_projects[@]}"; do
     --repository "$release_repository" \
     --source-sha "$source_sha" \
     --version "$version" \
+    --created "$provenance_created" \
     --evidence-directory "$mapping_evidence"
   "$smoke" \
     --image "${registry}/${repository}:${version}" \
