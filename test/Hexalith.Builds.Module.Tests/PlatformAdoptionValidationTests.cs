@@ -41,6 +41,31 @@ public sealed class PlatformAdoptionValidationTests
         PlatformAdoptionValidator.Scope.ShouldContain("SM-2 remains separately unverified");
     }
 
+    /// <summary>Verifies SDK token enrollment passes without hiding independent source findings.</summary>
+    /// <returns>The assertion task.</returns>
+    [Fact]
+    public async Task AppApiTokenDeclarationPassesWithIndependentAdoptionFailuresAsync()
+    {
+        using PlatformAdoptionTestWorkspace workspace = await PlatformAdoptionTestWorkspace.CreateAsync().ConfigureAwait(true);
+        JsonNode manifest = JsonNode.Parse(await File.ReadAllTextAsync(workspace.Manifest, TestContext.Current.CancellationToken).ConfigureAwait(true))!;
+        manifest["modules"]![0]!["integration"]!["secrets"]![0]!["configurationKey"] = "APP_API_TOKEN";
+        manifest["modules"]![0]!["runtime"]!["extensions"]![0]!["configurationInputs"]![0]!["key"] = "APP_API_TOKEN";
+        manifest["modules"]![0]!["runtime"]!["extensions"]![0]!["configurationInputs"]![0]!["source"] = "secret";
+        manifest["modules"]![0]!["runtime"]!["extensions"]![0]!["configurationInputs"]![0]!["reference"] = "provider-access";
+        workspace.Write("module.json", manifest.ToJsonString());
+        workspace.Write("Directory.Build.props", "<Project><PropertyGroup><HexalithEventStoreFromSource Condition=\"Exists('local.csproj')\">true</HexalithEventStoreFromSource></PropertyGroup></Project>");
+        workspace.Write("src/Consumer.cs", "[Topic(\"pubsub\", \"events\")] public void Receive() {}");
+        await workspace.TrackAsync().ConfigureAwait(true);
+
+        PlatformAdoptionValidationResult report = await workspace.ValidateAsync().ConfigureAwait(true);
+        report.IsValid.ShouldBeFalse();
+        report.Rows.Select(row => row.Requirement).Distinct().Count().ShouldBe(9);
+        report.Rows.Single(row => row.Requirement == "declaration").Passed.ShouldBeTrue();
+        report.Rows.ShouldContain(row => row.Requirement == "dependency-selectors" && !row.Passed);
+        report.Rows.ShouldContain(row => row.Requirement == "dapr-subscriptions" && !row.Passed);
+        report.Diagnostics.ShouldNotContain(diagnostic => diagnostic.RuleId == "HXP002");
+    }
+
     /// <summary>Verifies one or more independent failures still produce every static requirement.</summary>
     /// <param name="mutation">The input mutation.</param>
     /// <param name="requirement">The expected failing requirement.</param>

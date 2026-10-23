@@ -54,6 +54,16 @@
     },
     {
       "kind": "apphost-sdk",
+      "owner": "Hexalith.McpCli",
+      "path": "tests/Hexalith.McpCli.AppHost/Hexalith.McpCli.AppHost.csproj",
+      "id": "Aspire.AppHost.Sdk",
+      "version": "13.6.3",
+      "rationale": "NuGet CPM cannot provide an MSBuild project SDK resolver version.",
+      "alignmentRule": "exact-catalog-package",
+      "catalogPackage": "Aspire.Hosting"
+    },
+    {
+      "kind": "apphost-sdk",
       "owner": "Hexalith.Memories",
       "path": "src/Hexalith.Memories.AppHost/Hexalith.Memories.AppHost.csproj",
       "id": "Aspire.AppHost.Sdk",

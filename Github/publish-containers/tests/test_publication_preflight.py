@@ -910,6 +910,58 @@ class PublicationPreflightTests(unittest.TestCase):
                 )
             self.assertEqual("destination-probe-failure", context.exception.code)
 
+    def test_new_nuget_package_404_has_no_prior_versions(self):
+        url = "https://api.nuget.org/v3-flatcontainer/hexalith.fixture.aspire/index.json"
+        absent = urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+        with mock.patch.object(self.validator.URL_OPENER, "open", side_effect=absent) as request:
+            observation = self.validator._nuget_version_observation("Hexalith.Fixture.Aspire")
+        self.assertEqual({"kind": "nuget", "identity": "Hexalith.Fixture.Aspire", "versions": []}, observation)
+        self.assertEqual(url, request.call_args.args[0].full_url)
+        self.assertIsNone(request.call_args.args[0].get_header("Authorization"))
+        self.assertEqual(30, request.call_args.kwargs["timeout"])
+        evidence = self.validator.validate_version_floor("1.0.0", [observation])
+        self.assertEqual("1.0.0", evidence["candidate"])
+        # Destination absence is still an independent, mandatory publication check.
+        with self.assertRaises(self.validator.PreflightError) as failure:
+            self.validator.validate_destination_absence(
+                ["Hexalith.Fixture.Aspire"], "1.0.0", "registry.example.test/fixture",
+                lambda *_: 200, 1,
+            )
+        self.assertEqual("version-collision", failure.exception.code)
+
+    def test_nuget_version_lookup_errors_remain_blocking_and_private(self):
+        private = "private-token-and-response"
+        errors = [urllib.error.HTTPError("https://private.invalid/" + private, status, private, {}, None)
+                  for status in (400, 401, 403, 429, 500, 503)]
+        errors.extend([urllib.error.URLError(private), TimeoutError(private)])
+        for error in errors:
+            with self.subTest(error=type(error).__name__, status=getattr(error, "code", None)):
+                with mock.patch.object(self.validator.URL_OPENER, "open", side_effect=error):
+                    with self.assertRaises(self.validator.PreflightError) as failure:
+                        self.validator._nuget_version_observation("Hexalith.Fixture.Aspire")
+                self.assertEqual("version-floor-unavailable", failure.exception.code)
+                self.assertNotIn(private, str(failure.exception))
+
+    def test_existing_nuget_versions_and_invalid_documents_are_not_absence(self):
+        response = mock.MagicMock()
+        response.__enter__.return_value.status = 200
+        with mock.patch.object(self.validator.URL_OPENER, "open", return_value=response):
+            response.__enter__.return_value.read.return_value = b'{"versions":["1.0.0"]}'
+            observation = self.validator._nuget_version_observation("Hexalith.Fixture.Aspire")
+            self.assertEqual(["1.0.0"], observation["versions"])
+            with self.assertRaises(self.validator.PreflightError) as failure:
+                self.validator.validate_version_floor("1.0.0", [observation])
+            self.assertEqual("version-not-newer", failure.exception.code)
+            for document in (b'null', b'{}', b'{"versions":null}'):
+                response.__enter__.return_value.read.return_value = document
+                with self.subTest(document=document), self.assertRaises(self.validator.PreflightError) as failure:
+                    self.validator._nuget_version_observation("Hexalith.Fixture.Aspire")
+                self.assertEqual("version-floor-invalid", failure.exception.code)
+            response.__enter__.return_value.read.return_value = b'private-invalid-json'
+            with self.assertRaises(self.validator.PreflightError) as failure:
+                self.validator._nuget_version_observation("Hexalith.Fixture.Aspire")
+            self.assertEqual("version-floor-unavailable", failure.exception.code)
+
     def test_corrective_version_must_be_stable_and_newer_than_every_destination(self):
         observations = [
             {"kind": "github-release", "identity": "Hexalith/Fixture", "versions": ["3.95.0"]},

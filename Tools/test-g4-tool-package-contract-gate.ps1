@@ -157,8 +157,10 @@ try {
     }
 
     $fixtureBuildPath = Join-Path $testRoot 'fixture-build.ps1'
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../schemas/hexalith.module-manifest.v2.json') `
-        -Destination (Join-Path $testRoot 'platform-schema.json')
+    foreach ($schemaName in @('hexalith.module-manifest.v2.json', 'hexalith.test-environment.v1.json', 'hexalith.test-result.v1.json')) {
+        Copy-Item -LiteralPath (Join-Path $PSScriptRoot "../schemas/$schemaName") `
+            -Destination (Join-Path $testRoot $schemaName)
+    }
     Copy-Item -LiteralPath $catalogToolingAssembly -Destination (Join-Path $testRoot 'Hexalith.Builds.Tooling.dll')
     [IO.File]::WriteAllText($fixtureBuildPath, @'
 param([string] $Version, [string] $OutputDirectory, [switch] $DeferInventory)
@@ -169,10 +171,12 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
     if ($id -ceq 'Hexalith.Builds.Module.Cli') {
         $archive = [IO.Compression.ZipFile]::Open($packagePath, [IO.Compression.ZipArchiveMode]::Create)
         try {
-            $entry = $archive.CreateEntry('tools/net10.0/any/schemas/hexalith.module-manifest.v2.json')
-            $writer = [IO.StreamWriter]::new($entry.Open())
-            try { $writer.Write([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'platform-schema.json'))) }
-            finally { $writer.Dispose() }
+            foreach ($schemaName in @('hexalith.module-manifest.v2.json', 'hexalith.test-environment.v1.json', 'hexalith.test-result.v1.json')) {
+                $entry = $archive.CreateEntry("tools/net10.0/any/schemas/$schemaName")
+                $writer = [IO.StreamWriter]::new($entry.Open())
+                try { $writer.Write([IO.File]::ReadAllText((Join-Path $PSScriptRoot $schemaName))) }
+                finally { $writer.Dispose() }
+            }
             $null = [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, (Join-Path $PSScriptRoot 'Hexalith.Builds.Tooling.dll'), 'tools/net10.0/any/Hexalith.Builds.Tooling.dll')
         }
         finally { $archive.Dispose() }

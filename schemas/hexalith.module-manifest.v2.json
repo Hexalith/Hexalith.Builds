@@ -37,10 +37,11 @@
       "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?![\\s\\S])"
     },
     "configurationKey": {
+      "description": "Colon-separated configuration segments start with an ASCII letter and contain alphanumeric words separated by single underscores, preserving SDK keys such as APP_API_TOKEN.",
       "type": "string",
       "minLength": 1,
       "maxLength": 256,
-      "pattern": "^[A-Za-z][A-Za-z0-9]*(?::[A-Za-z][A-Za-z0-9]*)*(?![\\s\\S])"
+      "pattern": "^[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*(?::[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*)*(?![\\s\\S])"
     },
     "repositoryPath": {
       "type": "string",
