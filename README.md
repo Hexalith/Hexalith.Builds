@@ -220,8 +220,12 @@ a detached `JsonElement` or atomic metadata-only diagnostics (`HXT101`–`HXT107
 Both require policy `hexalith.platform.candidate-and-attachment-policy.v1`.
 Unsupported versions name the supported version for the requested document kind.
 Reads are offline, bounded to 1 MiB and 64 levels, reject duplicate keys and unknown
-properties, preserve omitted versus explicit holds, and verify effective timing.
+properties, preserve omitted versus explicit holds, and verify effective timing
+and attached outcomes against their own hold.
 The CLI package includes both schemas under `tools/net10.0/any/schemas/`.
+Tooling is not published as a standalone package: the reader runs inside the
+installed `hexalith-module` tool, and module fixtures that validate descriptors
+themselves use the published schemas.
 
 Platform owns the canonical contract schemas and lifecycle semantics; these
 mirrors support independent consumption. The

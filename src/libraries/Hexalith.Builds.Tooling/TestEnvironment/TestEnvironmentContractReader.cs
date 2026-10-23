@@ -117,9 +117,9 @@ public static class TestEnvironmentContractReader
                 return Refuse("HXT104", version, "$", "The document violates the contract shape, integer encoding or document-local identity/reference bindings.");
             }
 
-            if (!HasConsistentTiming(root.GetProperty("bindings")))
+            if (!HasConsistentTiming(root.GetProperty("bindings")) || !HasConsistentAttachedOutcome(root))
             {
-                return Refuse("HXT107", version, "$", "Preserve hold requests and immutable acceptance/expiry bindings, and independent effective deadline origins and justified overrides.");
+                return Refuse("HXT107", version, "$", "Preserve hold requests, immutable acceptance/expiry bindings and attached outcomes, and independent effective deadline origins and justified overrides.");
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -218,6 +218,41 @@ public static class TestEnvironmentContractReader
         }
 
         return true;
+    }
+
+    private static bool HasConsistentAttachedOutcome(JsonElement root)
+    {
+        JsonElement bindings = root.GetProperty("bindings");
+        JsonElement run = bindings.GetProperty("run");
+        JsonElement attachments = bindings.GetProperty("attachments");
+        if (!root.TryGetProperty("terminal", out JsonElement terminal)
+            || StringValue(run, "role") != "attached"
+            || StringValue(attachments, "state") != "populated")
+        {
+            return true;
+        }
+
+        string? runId = StringValue(run, "runId");
+        JsonElement hold = attachments.GetProperty("holds").EnumerateArray().First(item => StringValue(item, "attachedRunId") == runId);
+        string? cause = StringValue(terminal, "cause");
+
+        // Expiry is exclusive and the runner's record decides it: only hold expiry is recorded at or after expiresAt.
+        if ((Timestamp(terminal, "recordedAt") >= Timestamp(hold, "expiresAt")) != (cause == "hold-expired"))
+        {
+            return false;
+        }
+
+        JsonElement end = hold.GetProperty("end");
+        if (StringValue(end, "state") != "ended")
+        {
+            return true;
+        }
+
+        string? reason = StringValue(end, "reason");
+        string? withdrawalCause = reason == "expired" ? "hold-expired" : reason;
+        return reason == "terminal-outcome"
+            ? StringValue(terminal, "outcome") != "withdrawn"
+            : cause == withdrawalCause;
     }
 
     private static bool HasPlainIntegers(JsonElement value) => value.ValueKind switch

@@ -140,7 +140,12 @@ public sealed class TestEnvironmentContractReaderTests
     /// <param name="json">The replacement JSON, or the missing sentinel.</param>
     [Theory]
     [InlineData(false, "bindings.run.runId", "<missing>")]
+    [InlineData(false, "bindings.decision", "<missing>")]
+    [InlineData(true, "cleanup", "<missing>")]
+    [InlineData(true, "terminal", "<missing>")]
     [InlineData(true, "bindings.environment.catalog.commit", "\"main\"")]
+    [InlineData(true, "bindings.environment.composition.contentIdentity", "\"1.2.3\"")]
+    [InlineData(false, "bindings.environment.composition.contentIdentity", "\"sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"")]
     [InlineData(false, "bindings.environment.mode", "\"hosted\"")]
     [InlineData(true, "bindings.environment.resources", "{}")]
     [InlineData(false, "bindings.environment.resources", "[{\"resourceId\":\"api\",\"moduleId\":\"module\",\"endpoints\":[{\"name\":\"http\",\"protocol\":\"http\",\"uri\":\"relative\"}]}]")]
@@ -150,6 +155,8 @@ public sealed class TestEnvironmentContractReaderTests
     [InlineData(true, "bindings.artifacts.loaded", "{\"state\":\"populated\",\"items\":[{}]}")]
     [InlineData(false, "bindings.suite.declared", "{\"state\":\"populated\"}")]
     [InlineData(true, "bindings.reuseLineage", "{\"state\":\"populated\",\"producingRunId\":\"run\",\"producingDecisionId\":\"decision\",\"reuseAllowed\":true,\"sourceRunIds\":[],\"sourceDecisionIds\":[]}")]
+    [InlineData(false, "bindings.reuseLineage", "{\"state\":\"populated\",\"producingRunId\":\"run\",\"producingDecisionId\":\"decision\",\"reuseAllowed\":false,\"sourceRunIds\":[\"earlier-run\"],\"sourceDecisionIds\":[]}")]
+    [InlineData(true, "bindings.deadlines.startup.override", "{\"state\":\"declared\",\"requestedSeconds\":600,\"justification\":\" \"}")]
     [InlineData(false, "bindings.deadlines.startup.originAt", "\"2026-10-22T12:00:00+00:00\"")]
     [InlineData(true, "bindings.deadlines.startup.originAt", "\"2026-02-30T12:00:00Z\"")]
     [InlineData(false, "private-input-key", "\"private-input-value\"")]
@@ -181,7 +188,7 @@ public sealed class TestEnvironmentContractReaderTests
             {
                 "failed" => "test-failure",
                 "cancelled" => "run-cancelled",
-                "withdrawn" => "hold-expired",
+                "withdrawn" => "owner-cancelled",
                 _ => "tests-completed",
             };
             if (outcome == "withdrawn")
@@ -480,7 +487,7 @@ public sealed class TestEnvironmentContractReaderTests
         AssertRefused(Read(sample, result), "HXT104");
     }
 
-    /// <summary>Identifiers exclude control characters at either boundary as well as internally.</summary>
+    /// <summary>Identifiers exclude control characters at any position and whitespace at either boundary.</summary>
     /// <param name="identity">The invalid identity.</param>
     [Theory]
     [InlineData("\u0000sample")]
@@ -490,7 +497,9 @@ public sealed class TestEnvironmentContractReaderTests
     [InlineData("\u0080sample")]
     [InlineData("sample\u009f")]
     [InlineData("sam\u001fple")]
-    public void BoundaryControlCharactersAreRefusedForBothContracts(string identity)
+    [InlineData(" sample")]
+    [InlineData("sample ")]
+    public void BoundaryControlCharactersAndWhitespaceAreRefusedForBothContracts(string identity)
     {
         foreach (bool result in new[] { false, true })
         {
@@ -578,6 +587,67 @@ public sealed class TestEnvironmentContractReaderTests
                 AssertRefused(read, "HXT107");
             }
         }
+    }
+
+    /// <summary>An attached run's first outcome agrees with its own exclusive hold expiry and recorded hold end.</summary>
+    /// <param name="outcome">The terminal outcome.</param>
+    /// <param name="cause">The terminal cause.</param>
+    /// <param name="recordedAt">The first terminal outcome time.</param>
+    /// <param name="endReason">The own hold-end reason, or null for an active hold.</param>
+    /// <param name="valid">Whether the outcome agrees with the hold.</param>
+    [Theory]
+    [InlineData("passed", "tests-completed", "2026-10-22T12:30:00Z", null, false)]
+    [InlineData("passed", "tests-completed", "2026-10-22T12:30:00Z", "expired", false)]
+    [InlineData("failed", "test-failure", "2026-10-22T12:10:00Z", "expired", false)]
+    [InlineData("passed", "tests-completed", "2026-10-22T12:05:00Z", null, false)]
+    [InlineData("passed", "tests-completed", "2026-10-22T12:02:00Z", "owner-cancelled", false)]
+    [InlineData("withdrawn", "hold-expired", "2026-10-22T12:01:00Z", null, false)]
+    [InlineData("withdrawn", "hold-expired", "2026-10-22T12:05:00Z", "terminal-outcome", false)]
+    [InlineData("withdrawn", "owner-cancelled", "2026-10-22T12:05:00Z", null, false)]
+    [InlineData("withdrawn", "developer-stop", "2026-10-22T12:01:00Z", "owner-cancelled", false)]
+    [InlineData("passed", "tests-completed", "2026-10-22T12:04:59.9999999Z", null, true)]
+    [InlineData("passed", "tests-completed", "2026-10-22T12:01:00Z", "terminal-outcome", true)]
+    [InlineData("cancelled", "run-cancelled", "2026-10-22T12:01:00Z", "terminal-outcome", true)]
+    [InlineData("withdrawn", "hold-expired", "2026-10-22T12:05:00Z", null, true)]
+    [InlineData("withdrawn", "hold-expired", "2026-10-22T12:05:00Z", "expired", true)]
+    [InlineData("withdrawn", "owner-cancelled", "2026-10-22T12:01:00Z", "owner-cancelled", true)]
+    public void AttachedOutcomeAgreesWithItsOwnHold(string outcome, string cause, string recordedAt, string? endReason, bool valid)
+    {
+        JsonObject sample = Sample(true);
+        Attach(sample);
+        sample["terminal"]!["outcome"] = outcome;
+        sample["terminal"]!["cause"] = cause;
+        sample["terminal"]!["recordedAt"] = recordedAt;
+        if (endReason is not null)
+        {
+            string endedAt = endReason == "expired" ? "2026-10-22T12:05:00Z" : "2026-10-22T12:01:00Z";
+            sample["bindings"]!["attachments"]!["holds"]![0]!["end"] = new JsonObject { ["state"] = "ended", ["reason"] = endReason, ["endedAt"] = endedAt };
+        }
+
+        Schema(true).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeTrue();
+        TestEnvironmentContractReadResult read = Read(sample, true);
+        if (valid)
+        {
+            read.IsValid.ShouldBeTrue();
+            read.Document!.Value.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe(outcome);
+        }
+        else
+        {
+            AssertRefused(read, "HXT107");
+        }
+    }
+
+    /// <summary>An owner's own outcome is independent of the holds of runs attached to its environment.</summary>
+    [Fact]
+    public void OwnerOutcomeIsIndependentOfAttachedHolds()
+    {
+        JsonObject sample = Sample(true);
+        JsonObject hold = AddHold(sample, 300);
+        hold["end"] = new JsonObject { ["state"] = "ended", ["reason"] = "expired", ["endedAt"] = "2026-10-22T12:05:00Z" };
+        sample["terminal"]!["recordedAt"] = "2026-10-22T12:30:00Z";
+        TestEnvironmentContractReadResult read = Read(sample, true);
+        read.IsValid.ShouldBeTrue();
+        read.Document!.Value.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("passed");
     }
 
     /// <summary>Endpoint selection refuses duplicate resource IDs and duplicate names within one resource.</summary>
@@ -683,6 +753,11 @@ public sealed class TestEnvironmentContractReaderTests
             Attach(sample);
             sample["terminal"]!["outcome"] = outcome;
             sample["terminal"]!["cause"] = cause;
+            if (cause == "hold-expired")
+            {
+                sample["terminal"]!["recordedAt"] = "2026-10-22T12:05:00Z";
+            }
+
             bool valid = outcome == expectedOutcome;
             Schema(true).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBe(valid);
             TestEnvironmentContractReadResult read = Read(sample, true);
