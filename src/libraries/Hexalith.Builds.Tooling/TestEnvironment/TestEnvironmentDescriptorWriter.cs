@@ -32,7 +32,7 @@ public static class TestEnvironmentDescriptorWriter
         ValidatePreProvisioning(plan.EffectiveDeadline ?? throw new InvalidDataException("The startup deadline is unavailable."));
         if (ready.Resources.Any(resource => string.IsNullOrWhiteSpace(resource.ModuleId)))
         {
-            throw new InvalidDataException("Every composed resource requires explicit declaration ownership. Shared runner infrastructure requires an actual selected Platform declaration.");
+            throw new InvalidDataException("Every composed resource requires explicit declaration ownership. Shared runner infrastructure requires the selected module's declaration.");
         }
 
         if (!plan.IsPlatformComposition || selected.Mode != (mapping.Mode == WorkspaceMode.Source ? "source" : "package") || ready.RunId != plan.RunId || ready.ObservedAt is null

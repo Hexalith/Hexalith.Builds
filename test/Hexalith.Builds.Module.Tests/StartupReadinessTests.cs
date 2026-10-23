@@ -298,19 +298,32 @@ public sealed class StartupReadinessTests
         CompositionTestFiles.WriteScript(Path.Combine(workspace.Root, "check.sh"), "[ \"$1\" = \"expected\" ] || exit 1\nexit 0\n");
         workspace.Change("modules.0.lifecycle.tasks.0.executable", "\"check.sh\"");
         workspace.Change("modules.0.lifecycle.tasks.0.arguments", "[\"expected\"]");
+        workspace.Change("modules.0.tests", "[{\"name\":\"verify\",\"executor\":\"python3\",\"entry\":\"runner.py\",\"reportFormat\":\"trx\",\"executionTimeoutSeconds\":120,\"stopTimeoutSeconds\":5,\"mode\":\"source\"}]");
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "# suite identity fixture", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string manifest = workspace.Save();
+        ModuleTestSelection selected = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        SourceMapping mapping = Mapping(workspace.Root);
+        IReadOnlyList<PlatformModuleDeclaration> closure = CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(mapping, [manifest]) { ActiveModule = selected.ModuleId });
+        string expectedIdentity = Hexalith.Builds.Tooling.TestEnvironment.TestEnvironmentDescriptorWriter.CompositionIdentity(closure, selected);
         string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionEngine engine = new(Options(workspace.Root, appHost) with
         {
-            SourceMapping = Mapping(workspace.Root),
+            SelectedTest = selected,
+            ReadinessTimeout = TimeSpan.FromSeconds(600),
+            SourceMapping = mapping,
             PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
         });
 
-        CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionStartResult result = await engine.StartAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true);
         try
         {
             string? failure = result.Result.Diagnostics.Count == 0 ? null : result.Result.Diagnostics[0].Message;
             result.IsReady.ShouldBeTrue(failure);
-            CompositionStartupTaskResult task = result.Session!.Readiness.StartupTaskResults.ShouldHaveSingleItem();
+            result.Session!.Plan.SelectedTest.ShouldBe(selected);
+            result.Session.Plan.CompositionContentIdentity.ShouldBe(expectedIdentity);
+            CompositionRunPlan persisted = (await CompositionDocumentStore.TryReadAsync<CompositionRunPlan>(Path.Combine(result.Session.Plan.Workspace, "plan.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            persisted.CompositionContentIdentity.ShouldBe(expectedIdentity);
+            CompositionStartupTaskResult task = result.Session.Readiness.StartupTaskResults.ShouldHaveSingleItem();
             task.TaskId.ShouldBe("sample/verify");
             task.Status.ShouldBe("passed");
             _ = task.StartedAt.ShouldNotBeNull();
@@ -752,6 +765,55 @@ public sealed class StartupReadinessTests
         result.Result.Outcome.RuleId.ShouldBe("HXR021");
         result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("diagnostics='", StringComparison.Ordinal));
         Directory.Exists(Path.Combine(workspace.Root, "workspaces", result.RunId!)).ShouldBeFalse();
+    }
+
+    /// <summary>Selected startup cancellation during model preparation preserves timeout diagnostics.</summary>
+    /// <returns>The startup classification, summary and absence of a test child assertions.</returns>
+    [Fact]
+    public async Task SelectedStartupTokenExpiresDuringModelBuildAndPreservesSummaryAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost uses POSIX tools.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Change("modules.0.tests", "[{\"name\":\"verify\",\"executor\":\"python3\",\"entry\":\"runner.py\",\"reportFormat\":\"trx\",\"executionTimeoutSeconds\":120,\"stopTimeoutSeconds\":5,\"mode\":\"source\"}]");
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "raise AssertionError('No test child may run')", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string manifest = workspace.Save();
+        ModuleTestSelection selected = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using CancellationTokenSource startup = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        bool modelStarted = false;
+        CompositionEngine engine = new(Options(workspace.Root, appHost) with
+        {
+            SourceMapping = Mapping(workspace.Root),
+            SelectedTest = selected,
+            ReadinessTimeout = TimeSpan.FromSeconds(600),
+            SelectedExecutionOwnerToken = TestContext.Current.CancellationToken,
+            PlatformModelBuildOverride = async (_, _, token) =>
+            {
+                modelStarted = true;
+                startup.CancelAfter(TimeSpan.FromMilliseconds(100));
+                await Task.Delay(TimeSpan.FromSeconds(30), token).ConfigureAwait(false);
+                return appHost;
+            },
+        });
+        Stopwatch elapsed = Stopwatch.StartNew();
+        CompositionStartResult result = await engine.StartAsync(manifest, startup.Token).ConfigureAwait(true);
+        modelStarted.ShouldBeTrue(string.Join(" | ", result.Result.Diagnostics.Select(diagnostic => diagnostic.Message)));
+        startup.IsCancellationRequested.ShouldBeTrue();
+        TestContext.Current.CancellationToken.IsCancellationRequested.ShouldBeFalse();
+        elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(8));
+        result.Session.ShouldBeNull();
+        result.Result.Outcome.RuleId.ShouldBe("HXR021");
+        result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.RuleId == "HXC130");
+        result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("diagnostics='", StringComparison.Ordinal));
+        CompositionRunState state = (await engine.StateStore.TryReadAsync(result.RunId!, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(state.DiagnosticsPath!, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        summary.RootElement.GetProperty("durationSeconds").GetDouble().ShouldBeGreaterThan(0);
+        Directory.Exists(state.Workspace).ShouldBeFalse();
+        engine.StateStore.Claims.ClaimedPorts().ShouldBeEmpty();
     }
 
     /// <summary>Verifies task selection retains executable validation causes if a path cannot be resolved.</summary>

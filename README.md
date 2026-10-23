@@ -423,9 +423,10 @@ channel. Missing catalog identity or invalid observations refuse handoff;
 unsupported descriptor ABIs still refuse. Unavailable candidate, loaded-artifact
 and qualification proof stays `not-yet-populated`, and schema validity grants no
 acceptance credit. Every resource needs explicit declaration ownership; shared
-runner infrastructure requires an actual selected Platform declaration. A
-closure missing that attribution refuses handoff with the prerequisite in its
-diagnostic.
+runner infrastructure belongs to the active selected module's declaration, or
+the selected suite's declaring module when no active module is set. Servers and
+Memories stores retain their declaring owners. A closure missing explicit
+attribution refuses handoff with the prerequisite in its diagnostic.
 
 Batch archives under `entries/<entry-name-sha256>/` are authoritative for each
 entry. Top-level `test-environment.json` and `execution-timing.json` are

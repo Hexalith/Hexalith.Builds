@@ -203,7 +203,7 @@ public sealed partial class TestEnvironmentProvisioningTests
 
         if (scenario == "module-owner")
         {
-            result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message == "Every composed resource requires explicit declaration ownership. Shared runner infrastructure requires an actual selected Platform declaration.");
+            result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message == "Every composed resource requires explicit declaration ownership. Shared runner infrastructure requires the selected module's declaration.");
         }
 
         if (scenario == "catalog")

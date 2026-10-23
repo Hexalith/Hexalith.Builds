@@ -192,7 +192,7 @@ public sealed partial class TestEnvironmentProvisioningTests
         Declare(workspace);
         string manifest = workspace.Save();
         IReadOnlyList<ModuleTestSelection> selections = ModuleTestSelection.SelectBatch(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, ["first", "second"], manifest, DateTimeOffset.UtcNow);
-        CompositionEngineOptions options = Options(workspace.Root) with { SelectedTest = selections[0], SelectedTests = selections };
+        CompositionEngineOptions options = Options(workspace.Root) with { SelectedTest = selections[1], SelectedTests = selections };
         CompositionEngine engine = new(options);
         string runWorkspace = Path.Combine(options.WorkspaceRoot, CompositionTestFiles.RunId);
         CompositionWorkspace.CreatePrivateDirectory(runWorkspace);
@@ -207,15 +207,19 @@ public sealed partial class TestEnvironmentProvisioningTests
             await File.WriteAllTextAsync(hostile, "forged", TestContext.Current.CancellationToken).ConfigureAwait(true);
         }
 
-        ModuleTestExecutionTiming timing = ModuleTestExecutionTiming.Start(selections[0], DateTimeOffset.UtcNow);
+        CompositionRunState state = new(CompositionRunState.SupportedSchema, CompositionTestFiles.RunId, CompositionRunStatus.Ready, selections[0].ManifestHash, runWorkspace, null, null, null, DateTimeOffset.UtcNow) { SelectedTest = selections[0] };
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestExecutionTiming timing = ModuleTestExecutionTiming.Start(selections[1], DateTimeOffset.UtcNow);
         ModuleTestRunRecord recorded = (await engine.RecordTestOutcomeAsync(CompositionTestFiles.RunId, [], new("completed", ToolOutcome.Passed(), []), "unknown", new([], []), TestContext.Current.CancellationToken, executionTiming: timing).WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        recorded.Selection.ShouldBe(selections[1]);
         recorded.ExecutionTiming.ShouldBe(timing);
-        CompositionRunState state = new(CompositionRunState.SupportedSchema, CompositionTestFiles.RunId, CompositionRunStatus.Ready, selections[0].ManifestHash, runWorkspace, null, null, null, DateTimeOffset.UtcNow) { SelectedTest = selections[0], TestRun = recorded };
+        state = state with { TestRun = recorded };
         await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
         File.Delete(hostile);
         CompositionEngine cleanup = new(Options(workspace.Root));
         _ = await cleanup.RecordTestOutcomeAsync(CompositionTestFiles.RunId, [], new("withdrawn", ToolOutcome.Passed(), []), "removed", new([], []), TestContext.Current.CancellationToken).ConfigureAwait(true);
         ModuleTestRunRecord retained = (await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId, "selected-test.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        retained.Selection.ShouldBe(selections[1]);
         retained.Selections.ShouldBe(selections);
         retained.ExecutionTiming.ShouldBe(timing);
     }
