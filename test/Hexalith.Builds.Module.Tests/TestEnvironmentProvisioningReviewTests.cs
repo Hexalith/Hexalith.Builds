@@ -278,8 +278,8 @@ public sealed partial class TestEnvironmentProvisioningTests
         }
     }
 
-    /// <summary>Each sequential entry retains its already-inspected functional observations with its report.</summary>
-    /// <returns>The two real child and both archive-destination assertions.</returns>
+    /// <summary>Each sequential entry retains its already-inspected functional observations with its report, and the workspace keeps the last entry's measured timing.</summary>
+    /// <returns>The two real child, both archive-destination and workspace timing assertions.</returns>
     [Fact]
     public async Task BatchArchivesEachEntriesInspectedFunctionalObservationsAsync()
     {
@@ -317,6 +317,9 @@ public sealed partial class TestEnvironmentProvisioningTests
                 File.Exists(Path.Combine(archive, "native.trx")).ShouldBeTrue();
             }
         }
+
+        (await File.ReadAllBytesAsync(Path.Combine(options.WorkspaceRoot, CompositionTestFiles.RunId, "execution-timing.json"), TestContext.Current.CancellationToken).ConfigureAwait(true))
+            .ShouldBe(await File.ReadAllBytesAsync(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId, "execution-timing.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
     }
 
     /// <summary>A child-created startup-task FIFO cannot block terminal metadata recording or renew its stopping bound.</summary>
