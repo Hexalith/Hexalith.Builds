@@ -438,8 +438,10 @@ an additive change that is forward-incompatible with validators embedding the
 prior closed v1 schema: pinned validators must move with this tool. Earlier
 artifacts remain supported by the current validator.
 
-Managed exclusive listener claims are atomic across runner processes. A conflict
-returns `HXR031` naming the blocking run; independent environments coexist. Port
+Managed exclusive listener claims are atomic across runner processes. When a
+claim conflicts, the runner allocates fresh ports and retries, up to 64
+attempts; only if every attempt conflicts does the run fail with `HXR031`
+naming the last blocking run. Independent environments coexist. Port
 probes are not operating-system reservations. Claims are released only after the
 existing ownership-limited cleanup verifies that the owning resources are gone.
 `down --run-id <owner>` continues to target only that run.

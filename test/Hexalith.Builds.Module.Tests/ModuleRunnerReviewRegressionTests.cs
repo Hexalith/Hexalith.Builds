@@ -526,6 +526,8 @@ public sealed class ModuleRunnerReviewRegressionTests
     [InlineData("execution-seconds")]
     [InlineData("execution-configuration")]
     [InlineData("execution-start")]
+    [InlineData("execution-enlarged")]
+    [InlineData("execution-after-terminal")]
     [InlineData("credential-expiry")]
     [InlineData("credential-invalid")]
     public void ConflictingSelectedEvidenceIsRejected(string mutation)
@@ -560,6 +562,17 @@ public sealed class ModuleRunnerReviewRegressionTests
             case "execution-start":
                 run["executionTiming"]!["startedAtUtc"] = selected.RequestedAtUtc.AddSeconds(-1);
                 run["executionTiming"]!["deadlineUtc"] = selected.RequestedAtUtc.AddSeconds(selected.ExecutionTimeoutSeconds - 1);
+                break;
+            case "execution-enlarged":
+                run["executionTiming"]!["effectiveSeconds"] = selected.ExecutionTimeoutSeconds + 1;
+                run["executionTiming"]!["deadlineUtc"] = execution.DeadlineUtc.AddSeconds(1);
+                run["executionTiming"]!["credentialExpiryUtc"] = execution.CredentialExpiryUtc.AddSeconds(1);
+                break;
+            case "execution-after-terminal":
+                ModuleTestExecutionTiming late = ModuleTestExecutionTiming.Start(selected, record.TerminalAtUtc.AddSeconds(1));
+                run["executionTiming"]!["startedAtUtc"] = late.StartedAtUtc;
+                run["executionTiming"]!["deadlineUtc"] = late.DeadlineUtc;
+                run["executionTiming"]!["credentialExpiryUtc"] = late.CredentialExpiryUtc;
                 break;
             case "credential-expiry": run["executionTiming"]!["credentialExpiryUtc"] = execution.CredentialExpiryUtc.AddSeconds(1); break;
             case "credential-invalid": run["executionTiming"]!["credentialExpiryUtc"] = "not-a-date"; break;

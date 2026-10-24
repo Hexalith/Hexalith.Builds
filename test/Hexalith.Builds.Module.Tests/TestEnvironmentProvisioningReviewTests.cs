@@ -183,8 +183,8 @@ public sealed partial class TestEnvironmentProvisioningTests
         arguments[marker + 1].ShouldBe(Path.Combine(session.Plan.Workspace, "test-builds"));
     }
 
-    /// <summary>Outcome recording ignores child timing files and cleanup preserves batch membership.</summary>
-    /// <returns>The durable clock and membership assertions.</returns>
+    /// <summary>Outcome recording ignores child timing files, persists the last entry for later stopping, and cleanup preserves batch membership.</summary>
+    /// <returns>The durable clock, persisted selection and membership assertions.</returns>
     [Fact]
     public async Task TerminalTimingNeverReadsChildFileAndDownKeepsMembershipAsync()
     {
@@ -213,8 +213,12 @@ public sealed partial class TestEnvironmentProvisioningTests
         ModuleTestRunRecord recorded = (await engine.RecordTestOutcomeAsync(CompositionTestFiles.RunId, [], new("completed", ToolOutcome.Passed(), []), "unknown", new([], []), TestContext.Current.CancellationToken, executionTiming: timing).WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
         recorded.Selection.ShouldBe(selections[1]);
         recorded.ExecutionTiming.ShouldBe(timing);
-        state = state with { TestRun = recorded };
-        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        // A kept batch is stopped later by `down`, whose teardown bound reads the persisted selection.
+        CompositionRunState persisted = (await engine.StateStore.TryReadAsync(CompositionTestFiles.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        persisted.SelectedTest.ShouldBe(selections[1]);
+        persisted.SelectedTest!.StopTimeoutSeconds.ShouldBe(4);
+        persisted.TestRun.ShouldNotBeNull().Selection.ShouldBe(selections[1]);
         File.Delete(hostile);
         CompositionEngine cleanup = new(Options(workspace.Root));
         _ = await cleanup.RecordTestOutcomeAsync(CompositionTestFiles.RunId, [], new("withdrawn", ToolOutcome.Passed(), []), "removed", new([], []), TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -355,6 +359,26 @@ public sealed partial class TestEnvironmentProvisioningTests
             // Release a regressed blocking open so a failing test cannot leave a worker behind.
             _ = await CompositionProcess.RunAsync(CompositionProcess.CreateStartInfo("python3", ["-c", "import errno,os,sys\ntry:\n fd=os.open(sys.argv[1],os.O_WRONLY|os.O_NONBLOCK); os.write(fd,b'{}'); os.close(fd)\nexcept OSError as e:\n if e.errno != errno.ENXIO: raise", fifo], workspace.Root, null), TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken).ConfigureAwait(true);
         }
+    }
+
+    /// <summary>A regular startup-task result document is retained byte-for-byte with the terminal metadata.</summary>
+    /// <returns>The retained startup-task assertions.</returns>
+    [Fact]
+    public async Task TerminalMetadataRetainsRegularStartupTaskResultsAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        Declare(workspace);
+        string manifest = workspace.Save();
+        ModuleTestSelection selection = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "first", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        CompositionEngineOptions options = Options(workspace.Root) with { SelectedTest = selection };
+        CompositionEngine engine = new(options);
+        string runWorkspace = Path.Combine(options.WorkspaceRoot, CompositionTestFiles.RunId);
+        CompositionWorkspace.CreatePrivateDirectory(runWorkspace);
+        const string results = "[{\"taskId\":\"seed\",\"status\":\"passed\"}]";
+        await File.WriteAllTextAsync(Path.Combine(runWorkspace, "startup-task-results.json"), results, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord record = (await engine.RecordTestOutcomeAsync(CompositionTestFiles.RunId, [], new("completed", ToolOutcome.Passed(), []), "unknown", new([], []), TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        record.TerminalStatus.ShouldBe("completed");
+        (await File.ReadAllTextAsync(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId, "startup-task-results.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(results);
     }
 
     private static CompositionEngineOptions ReadyOptions(string root, string manifest, Process appHost) => Options(root) with

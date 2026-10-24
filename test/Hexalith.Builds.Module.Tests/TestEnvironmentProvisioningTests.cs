@@ -90,7 +90,17 @@ public sealed partial class TestEnvironmentProvisioningTests
             TestEnvironmentContractReader.ReadDescriptor(Path.Combine(entry, "test-environment.json"), TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
             byte[] bytes = await File.ReadAllBytesAsync(Path.Combine(entry, "native.trx"), TestContext.Current.CancellationToken).ConfigureAwait(true);
             System.Text.Encoding.UTF8.GetString(bytes).ShouldContain("total=\"" + (name == "first" ? "1" : "2") + "\"");
+            ModuleTestExecutionTiming timing = (await CompositionDocumentStore.TryReadAsync<ModuleTestExecutionTiming>(Path.Combine(entry, "execution-timing.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            timing.EffectiveSeconds.ShouldBe(1);
+            (timing.DeadlineUtc - timing.StartedAtUtc).ShouldBe(TimeSpan.FromSeconds(1));
+            timing.StartedAtUtc.ShouldBe(name == "first" ? firstStart : secondStart);
+            timing.ActualDurationSeconds.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(0.15);
+            timing.ActualDurationSeconds.Value.ShouldBeLessThan(timing.EffectiveSeconds + 1);
         }
+
+        string last = Path.Combine(diagnostics, "entries", Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("second"))));
+        (await File.ReadAllBytesAsync(Path.Combine(diagnostics, "execution-timing.json"), TestContext.Current.CancellationToken).ConfigureAwait(true))
+            .ShouldBe(await File.ReadAllBytesAsync(Path.Combine(last, "execution-timing.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
     }
 
     /// <summary>Incompatible runtime requirements and invalid names refuse before environment startup.</summary>
@@ -420,6 +430,10 @@ public sealed partial class TestEnvironmentProvisioningTests
             assert bindings['environment']['readiness']['status'] == 'ready'
             assert all(t['status'] == 'passed' for t in bindings['environment']['startupTasks']['tasks'])
             assert bindings['deadlines']['execution']['effectiveSeconds'] == 1
+            timing = json.loads((path.parent / 'execution-timing.json').read_text())
+            assert timing['actualDurationSeconds'] is None and timing['effectiveSeconds'] == 1
+            assert timing['configurationContentIdentity'] == bindings['deadlines']['execution']['configurationContentIdentity']
+            assert datetime.datetime.fromisoformat(timing['startedAtUtc']) == datetime.datetime.fromisoformat(bindings['deadlines']['execution']['originAt'].replace('Z', '+00:00'))
             assert datetime.datetime.fromisoformat(os.environ['HEXALITH_G4_EXECUTION_DEADLINE_UTC']) == datetime.datetime.fromisoformat(bindings['deadlines']['execution']['expiresAt'].replace('Z', '+00:00'))
             token_payload = os.environ['HEXALITH_G4_ACCESS_TOKEN'].split('.')[1]
             claims = json.loads(base64.urlsafe_b64decode(token_payload + '=' * (-len(token_payload) % 4)))
