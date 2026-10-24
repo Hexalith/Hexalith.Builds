@@ -428,6 +428,39 @@ the selected suite's declaring module when no active module is set. Servers and
 Memories stores retain their declaring owners. A closure missing explicit
 attribution refuses handoff with the prerequisite in its diagnostic.
 
+Local declared suites apply the same lifecycle policy in source and package
+modes: success automatically removes owned resources; test/startup failures and
+startup/execution timeouts retain surviving resources until explicit cleanup.
+Owner cancellation records `cancelled` and cleans up unless an earlier failure
+already established retention. The first outcome, cause and UTC time are committed
+before cleanup or optional archival and survive later cancellation and retries.
+CI keeps its existing cleanup policy.
+
+```sh
+hexalith-module list --output human
+hexalith-module list --output json
+hexalith-module down --run-id <owner-run-id> --output json
+```
+
+Listing reads durable owner/environment/attempt identities and creation times,
+independently of current manifests. It reports failed owners, retention, pending
+cleanup and recorded startup/execution deadlines. Legacy unknowns stay unavailable;
+attachments are empty and admission/hold information is explicitly unsupported.
+Exact cleanup accepts an omitted, missing or changed manifest, removes only the
+requested owner's resources and claims, and can be retried safely. Incomplete
+cleanup exposes exact known container/process/workspace/claim leftovers and
+explicit discovery uncertainty.
+
+Validated `hexalith.test-result.v1` results live at
+`<state-directory>/diagnostics/<run-id>/test-result.json`, outside deleted run
+workspaces. The default state directory is the current user's local application
+data directory under `hexalith-builds/g4-runs`. Classified diagnostics and inspected
+native reports remain beside the result. A partial startup result preserves issued
+identities and independent startup deadlines, with unavailable catalog, readiness,
+endpoint and artifact proof explicitly unpopulated. Cleanup and retention advance
+without replacing the first terminal outcome. These local results remain diagnostic
+and grant no candidate acceptance or package runtime qualification.
+
 Batch archives under `entries/<entry-name-sha256>/` are authoritative for each
 entry. Top-level `test-environment.json` and `execution-timing.json` are
 replaced for each entry and describe the last archived entry.

@@ -236,7 +236,36 @@ public static class ModuleRunEvidenceWriter
         if (evidence.SelectedTestRun is not null)
         {
             writer.WritePropertyName("selectedTestRun");
-            JsonSerializer.Serialize(writer, evidence.SelectedTestRun, _selectedTestJsonOptions);
+            Runtime.ModuleTestRunRecord record = evidence.SelectedTestRun;
+            Runtime.CompositionRunResources remaining = record.RemainingResources;
+
+            // The legacy export has no workspace/claim vocabulary; disclose their presence as uncertainty.
+            JsonSerializer.Serialize(
+                writer,
+                new
+                {
+                    record.RunId,
+                    record.OwnerId,
+                    record.Selection,
+                    record.SourceMappingHash,
+                    record.DeclaredPlatformCommit,
+                    record.CheckoutPlatformCommit,
+                    record.ObservedCandidateHash,
+                    record.ObservedBackendIdentity,
+                    record.QualificationCredit,
+                    record.Resources,
+                    record.TerminalStatus,
+                    record.TerminalOutcome,
+                    record.TerminalAtUtc,
+                    record.ResourceDisposition,
+                    remainingResources = new { remaining.ContainerIds, remaining.ProcessIds, unverified = remaining.Unverified || remaining.WorkspaceIds.Count > 0 || remaining.ClaimIds.Count > 0, remaining.IsEmpty },
+                    record.ObservationHash,
+                    record.ExecutionTiming,
+                    record.Selections,
+                    record.ReportHash,
+                    record.TestCounts,
+                },
+                _selectedTestJsonOptions);
         }
 
         writer.WriteString("finalStatus", evidence.FinalStatus);

@@ -171,19 +171,10 @@ public static class TestEnvironmentDescriptorWriter
         _ = ExecutionContext();
     }
 
-    private static bool SafeEndpoint(CompositionResourceEndpoint endpoint) => endpoint.Uri.IsAbsoluteUri
-        && Uri.CheckHostName(endpoint.Uri.Host) != UriHostNameType.Unknown
-        && (endpoint.Uri.IsLoopback || endpoint.Uri.Host == "localhost")
-        && endpoint.Uri.UserInfo.Length == 0 && endpoint.Uri.Query.Length == 0 && endpoint.Uri.Fragment.Length == 0
-        && !ManifestSecretDetector.ContainsSecret(endpoint.Uri.AbsoluteUri);
-
-    private static string Utc(DateTimeOffset value) => value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
-
-    private static bool ValidIdentity(string? value) => value is { Length: > 0 and <= 2048 } && value == value.Trim()
-        && !value.Any(character => character is <= '\u001f' or (>= '\u007f' and <= '\u009f'))
-        && !ManifestSecretDetector.ContainsSecret(value);
-
-    private static object ExecutionContext()
+    /// <summary>Captures actual supported execution context without inventing CI metadata.</summary>
+    /// <returns>The local or complete actual CI identity.</returns>
+    /// <exception cref="InvalidDataException">Actual CI metadata is incomplete or unsupported.</exception>
+    internal static object ExecutionContext()
     {
         bool github = string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase);
         bool ci = github || string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
@@ -205,4 +196,16 @@ public static class TestEnvironmentDescriptorWriter
             ? throw new InvalidDataException("Declared suite handoff supports local execution or complete actual GitHub Actions metadata: repository, run ID, positive attempt, job, runner OS and a github-hosted or self-hosted runner environment are required.")
             : new { kind = "ci", repository, workflowRunId = run, workflowAttempt = attempt, jobId = job, runnerKind, operatingSystem = os, disposable = runner == "github-hosted" };
     }
+
+    private static bool SafeEndpoint(CompositionResourceEndpoint endpoint) => endpoint.Uri.IsAbsoluteUri
+        && Uri.CheckHostName(endpoint.Uri.Host) != UriHostNameType.Unknown
+        && (endpoint.Uri.IsLoopback || endpoint.Uri.Host == "localhost")
+        && endpoint.Uri.UserInfo.Length == 0 && endpoint.Uri.Query.Length == 0 && endpoint.Uri.Fragment.Length == 0
+        && !ManifestSecretDetector.ContainsSecret(endpoint.Uri.AbsoluteUri);
+
+    private static string Utc(DateTimeOffset value) => value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+
+    private static bool ValidIdentity(string? value) => value is { Length: > 0 and <= 2048 } && value == value.Trim()
+        && !value.Any(character => character is <= '\u001f' or (>= '\u007f' and <= '\u009f'))
+        && !ManifestSecretDetector.ContainsSecret(value);
 }

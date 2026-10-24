@@ -70,6 +70,40 @@ public static class ToolDiagnosticFormatter
             AppendEscaped(builder, result.AdoptionScope ?? string.Empty);
         }
 
+        if (result.Environments is not null)
+        {
+            foreach (Runtime.CompositionRunListingEntry environment in result.Environments)
+            {
+                _ = builder.Append('\n').Append("owner=").Append(environment.OwnerRunId);
+                AppendField(builder, "environment", environment.EnvironmentId ?? "unavailable");
+                AppendField(builder, "attempt", environment.AttemptId ?? "unavailable");
+                AppendField(builder, "age-seconds", environment.AgeSeconds?.ToString("F0", CultureInfo.InvariantCulture) ?? "unavailable");
+                AppendField(builder, "retention", environment.Retention);
+                AppendField(builder, "cleanup", environment.Cleanup);
+                AppendField(builder, "failed-runs", string.Join(",", environment.FailureRunIds));
+                AppendField(builder, "attachments", environment.AttachmentInformation);
+                AppendField(builder, "startup-deadline", environment.StartupDeadlineUtc?.ToString("O", CultureInfo.InvariantCulture) ?? "unavailable");
+                AppendField(builder, "execution-deadline", environment.ExecutionDeadlineUtc?.ToString("O", CultureInfo.InvariantCulture) ?? "unavailable");
+                AppendField(builder, "hold-deadline", "unavailable");
+            }
+        }
+
+        if (result.RemainingResources is { } remaining)
+        {
+            foreach (string id in remaining.ResourceIds)
+            {
+                _ = builder.Append('\n').Append("leftover=");
+                AppendEscaped(builder, id);
+            }
+
+            if (remaining.Unverified)
+            {
+                _ = builder.Append('\n').Append("discovery=unverified");
+                AppendField(builder, "failures", string.Join(",", remaining.DiscoveryFailures));
+            }
+        }
+
+        AppendField(builder, "test-result", result.TestResultPath);
         return builder.ToString();
     }
 

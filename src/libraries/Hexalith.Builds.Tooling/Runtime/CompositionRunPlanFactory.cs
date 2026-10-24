@@ -21,6 +21,20 @@ public static class CompositionRunPlanFactory
     /// <returns>The run identity.</returns>
     public static string NewRunId() => Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
 
+    /// <summary>Issues stable request identities before any run-owned workspace or service is provisioned.</summary>
+    /// <param name="runId">The new owner run identity.</param>
+    /// <param name="workspace">The exact owner workspace.</param>
+    /// <param name="manifestHash">The immutable declaration fingerprint.</param>
+    /// <param name="requestedAt">The original environment request.</param>
+    /// <returns>The initial durable state.</returns>
+    public static CompositionRunState CreateInitialState(string runId, string workspace, string manifestHash, DateTimeOffset requestedAt) =>
+        new(CompositionRunState.SupportedSchema, runId, CompositionRunStatus.Starting, manifestHash, workspace, null, null, null, requestedAt)
+        {
+            CreatedAt = requestedAt,
+            AttemptId = NewRunId(),
+            EnvironmentId = NewRunId(),
+        };
+
     /// <summary>
     /// Determines whether a value is a well-formed run identity.
     /// </summary>

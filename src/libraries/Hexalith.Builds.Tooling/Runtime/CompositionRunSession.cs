@@ -47,6 +47,12 @@ public sealed class CompositionRunSession
     /// </summary>
     public string SigningKey { get; }
 
+    /// <summary>Gets or sets the immutable validated pre-launch handoff held outside child-writable storage.</summary>
+    internal System.Text.Json.JsonElement? EnvironmentBindings { get; set; }
+
+    /// <summary>Gets or sets the first runner-observed stopping origin, independently of outcome publication.</summary>
+    internal long? StoppingTimestamp { get; set; }
+
     /// <summary>
     /// Gets the AppHost process.
     /// </summary>

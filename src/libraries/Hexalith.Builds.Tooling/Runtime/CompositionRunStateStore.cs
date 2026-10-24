@@ -72,12 +72,21 @@ public sealed class CompositionRunStateStore(string directory)
     public async Task<IReadOnlyList<CompositionRunState>> FindByManifestHashAsync(string manifestHash, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestHash);
+        return [.. (await EnumerateAsync(cancellationToken).ConfigureAwait(false)).Where(state => string.Equals(state.ManifestHash, manifestHash, StringComparison.Ordinal))];
+    }
+
+    /// <summary>Enumerates validated tracked states without loading declarations or recomputing identity.</summary>
+    /// <param name="cancellationToken">The enumeration cancellation.</param>
+    /// <returns>Durable states ordered by owner identity.</returns>
+    /// <exception cref="IOException">Tracked state is invalid or unreadable; absence is never substituted.</exception>
+    public async Task<IReadOnlyList<CompositionRunState>> EnumerateAsync(CancellationToken cancellationToken = default)
+    {
         if (!System.IO.Directory.Exists(Directory))
         {
             return [];
         }
 
-        List<CompositionRunState> matches = [];
+        List<CompositionRunState> states = [];
         foreach (string path in System.IO.Directory.EnumerateFiles(Directory, "*.json", SearchOption.TopDirectoryOnly))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -88,19 +97,19 @@ public sealed class CompositionRunStateStore(string directory)
             }
 
             CompositionRunState? state = await TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
-            if (state is null || !string.Equals(state.Schema, CompositionRunState.SupportedSchema, StringComparison.Ordinal)
-                || !string.Equals(state.RunId, runId, StringComparison.Ordinal))
+            if (state is null || state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId
+                || !Path.IsPathFullyQualified(state.Workspace) || !Enum.IsDefined(state.Status)
+                || (state.TestRun is { } test && (test.TerminalOutcome is null || test.RemainingResources is null || test.Resources is null || test.Selection is null))
+                || (state.AttemptId is not null && (!CompositionRunPlanFactory.IsRunId(state.AttemptId) || state.AttemptId == runId))
+                || (state.EnvironmentId is not null && (!CompositionRunPlanFactory.IsRunId(state.EnvironmentId) || state.EnvironmentId == runId)))
             {
                 throw new IOException("Runner-owned run state cannot be verified.");
             }
 
-            if (string.Equals(state.ManifestHash, manifestHash, StringComparison.Ordinal))
-            {
-                matches.Add(state);
-            }
+            states.Add(state);
         }
 
-        return [.. matches.OrderBy(state => state.RunId, StringComparer.Ordinal)];
+        return [.. states.OrderBy(state => state.RunId, StringComparer.Ordinal)];
     }
 
     /// <summary>
@@ -114,11 +123,16 @@ public sealed class CompositionRunStateStore(string directory)
         try
         {
             File.Delete(path);
+            _ = File.GetAttributes(path);
+            return false;
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
             return true;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return !File.Exists(path);
+            return false;
         }
     }
 }

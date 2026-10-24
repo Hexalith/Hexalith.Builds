@@ -71,7 +71,30 @@ internal static class ModuleCommandApplication
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Down, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Test, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput, operationStarted));
+        rootCommand.Subcommands.Add(CreateListCommand(standardOutput, compositionOptions, operationStarted));
         return rootCommand;
+    }
+
+    private static Command CreateListCommand(TextWriter output, CompositionEngineOptions? options, Action<Task<int>> operationStarted)
+    {
+        Command command = new("list", "Lists tracked runner-owned environments and their recorded disposition.");
+        Option<string> format = new("--output") { DefaultValueFactory = _ => "human" };
+        _ = format.AcceptOnlyFromAmong("human", "json");
+        command.Options.Add(format);
+        command.SetAction((parsed, token) =>
+        {
+            Task<int> execution = ExecuteAsync(token);
+            operationStarted(execution);
+            return execution;
+
+            async Task<int> ExecuteAsync(CancellationToken cancellation)
+            {
+                ToolCommandResult result = await CompositionRunListing.ReadAsync(new CompositionRunStateStore(options?.StateDirectory ?? CompositionRunStateStore.DefaultDirectory()), DateTimeOffset.UtcNow, cancellation).ConfigureAwait(false);
+                await ToolDiagnosticFormatter.WriteAsync(output, result, ParseOutputFormat(parsed.GetValue(format)), CancellationToken.None).ConfigureAwait(false);
+                return (int)result.Outcome.ExitCode;
+            }
+        });
+        return command;
     }
 
     private static Command CreateValidateCommand(TextWriter standardOutput, Action<Task<int>> operationStarted)
@@ -161,7 +184,7 @@ internal static class ModuleCommandApplication
         Command commandDefinition = new(CommandName(command), CommandDescription(command));
         Option<string> manifestOption = new("--manifest")
         {
-            Required = true,
+            Required = command != ModuleInvocationCommand.Down,
         };
         Option<string[]> profileOption = new("--profile")
         {
@@ -204,9 +227,14 @@ internal static class ModuleCommandApplication
                 mode = WorkspaceMode.Package;
             }
 
+            if (command == ModuleInvocationCommand.Down && string.IsNullOrWhiteSpace(parseResult.GetValue(manifestOption)) && string.IsNullOrWhiteSpace(parseResult.GetValue(runIdOption)))
+            {
+                return ToolCommandHost.WriteParseFailureAsync(standardOutput, ParseOutputFormat(parseResult.GetValue(outputOption)));
+            }
+
             Task<int> execution = ModuleCommandExecutionService.ExecuteAsync(
                 command,
-                parseResult.GetValue(manifestOption)!,
+                parseResult.GetValue(manifestOption) ?? "unused-manifest-for-exact-run",
                 parseResult.GetValue(profileOption)?.FirstOrDefault(),
                 parseResult.GetValue(filterOption),
                 parseResult.GetValue(evidenceOption),

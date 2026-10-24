@@ -34,6 +34,7 @@ internal static class NativeTestExecutor
     /// <param name="dotnetCommand">The native dotnet command; tests may supply a local process double.</param>
     /// <param name="selection">The optional v2 binding; legacy native tests retain their existing limit.</param>
     /// <param name="archiveDirectory">The optional durable owned diagnostic directory outside the child workspace.</param>
+    /// <param name="onOutcome">The runner callback that commits the observed terminal result before optional archives.</param>
     /// <returns>A result that passes only for a zero native exit and a passing native report.</returns>
     public static async Task<NativeTestExecutionResult> ExecuteAsync(
         CompositionRunSession session,
@@ -42,7 +43,8 @@ internal static class NativeTestExecutor
         CancellationToken cancellationToken,
         string dotnetCommand = "dotnet",
         ModuleTestSelection? selection = null,
-        string? archiveDirectory = null)
+        string? archiveDirectory = null,
+        Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(tests);
@@ -50,7 +52,7 @@ internal static class NativeTestExecutor
 
         if (selection is not null)
         {
-            return await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, archiveDirectory, cancellationToken).ConfigureAwait(false);
+            return await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, archiveDirectory, onOutcome, cancellationToken).ConfigureAwait(false);
         }
 
         string root = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));
@@ -231,7 +233,7 @@ internal static class NativeTestExecutor
         }
 
         ToolDiagnostic withdrawn = new("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The owner or execution deadline stopped the native test.", "cancellation");
-        return new NativeTestExecutionResult(new ToolCommandResult("withdrawn", ToolOutcome.Passed().Fail(withdrawn.Phase, withdrawn.Category, withdrawn.RuleId, ToolExitCode.Cancelled), [withdrawn]), null, null);
+        return new NativeTestExecutionResult(new ToolCommandResult("cancelled", ToolOutcome.Passed().Fail(withdrawn.Phase, withdrawn.Category, withdrawn.RuleId, ToolExitCode.Cancelled), [withdrawn]), null, null);
     }
 
     /// <summary>Archives only pre-launch descriptor and inspected report snapshots within the existing processing bound.</summary>
@@ -294,7 +296,7 @@ internal static class NativeTestExecutor
         return inspected;
     }
 
-    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, CancellationToken cancellationToken)
+    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome, CancellationToken cancellationToken)
     {
         if (tests.Project != selection.Entry || tests.Platform != selection.Executor || !selection.MatchesSource(manifestPath)
             || session.Plan.SelectedTest != selection || session.Readiness.RunId != session.Plan.RunId
@@ -322,6 +324,7 @@ internal static class NativeTestExecutor
             }
 
             descriptorSnapshot = Encoding.UTF8.GetBytes(validated.Document!.Value.GetRawText());
+            session.EnvironmentBindings = validated.Document.Value.GetProperty("bindings").Clone();
         }
         catch (InvalidDataException exception)
         {
@@ -397,7 +400,38 @@ internal static class NativeTestExecutor
         }
 
         long stoppingTimestamp = firstStop == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : firstStop;
-        await gate.DisposeAsync().ConfigureAwait(false);
+        session.StoppingTimestamp ??= stoppingTimestamp;
+        try
+        {
+            // Cancellation, timeout and a nonzero process exit are causal before report/closure diagnostics.
+            if (onOutcome is not null && (cancelled || process.TimedOut || process.ExitCode != 0))
+            {
+                using CancellationTokenSource immediate = new();
+                TimeSpan remaining = TimeSpan.FromSeconds(selection.StopTimeoutSeconds) - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp);
+                if (remaining > TimeSpan.Zero)
+                {
+                    immediate.CancelAfter(remaining);
+                }
+                else
+                {
+                    await immediate.CancelAsync().ConfigureAwait(false);
+                }
+
+                NativeTestExecutionResult first = Failed("HXT007", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
+                if (cancelled || gate.Failed)
+                {
+                    first = SelectedInterruption(cancelled);
+                }
+
+                first = first with { StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
+                await onOutcome(first, immediate.Token).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            await gate.DisposeAsync().ConfigureAwait(false);
+        }
+
         TimeSpan processingRemaining = TimeSpan.FromSeconds(Math.Min(selection.StopTimeoutSeconds, 30)) - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp);
         using CancellationTokenSource processing = new();
         if (processingRemaining > TimeSpan.Zero)
@@ -446,7 +480,12 @@ internal static class NativeTestExecutor
 
         timing = timing with { ActualDurationSeconds = Math.Max(0, (DateTimeOffset.UtcNow - timing.StartedAtUtc).TotalSeconds - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp).TotalSeconds) };
         session.Plan = session.Plan with { ExecutionTiming = timing };
-        NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, StoppingTimestamp = stoppingTimestamp };
+        NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
+        if (onOutcome is not null)
+        {
+            await onOutcome(inspected, processing.Token).ConfigureAwait(false);
+        }
+
         return await ArchiveSelectedAsync(inspected, session, descriptorSnapshot, archiveDirectory, processing.Token).ConfigureAwait(false);
     }
 

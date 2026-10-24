@@ -43,6 +43,24 @@ public sealed record ModuleTestRunRecord(
     /// <summary>Gets the content hash of bounded inspected detailed native observations, when present.</summary>
     public string? ObservationHash { get; init; }
 
+    /// <summary>Gets immutable pre-launch descriptor bindings held by the runner.</summary>
+    public System.Text.Json.JsonElement? EnvironmentBindings { get; init; }
+
+    /// <summary>Gets the canonical first outcome cause.</summary>
+    public string? TerminalCause { get; init; }
+
+    /// <summary>Gets a value indicating whether local failure retention was established by the first outcome.</summary>
+    public bool FailureRetained { get; init; }
+
+    /// <summary>Gets the latest cleanup disposition.</summary>
+    public string CleanupDisposition { get; init; } = "not-requested";
+
+    /// <summary>Gets the cleanup attempt identity, when cleanup was requested.</summary>
+    public string? CleanupAttemptId { get; init; }
+
+    /// <summary>Gets classified metadata-only rule identities observed through later stopping and archival.</summary>
+    public IReadOnlyList<string> DiagnosticRuleIds { get; init; } = [];
+
     /// <summary>Gets actual execution activation and duration, independent of source selection.</summary>
     public ModuleTestExecutionTiming? ExecutionTiming { get; init; }
 

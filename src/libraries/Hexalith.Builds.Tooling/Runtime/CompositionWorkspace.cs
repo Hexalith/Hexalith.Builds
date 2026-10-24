@@ -48,12 +48,18 @@ public static class CompositionWorkspace
         {
             try
             {
-                if (!Directory.Exists(path))
+                cancellationToken.ThrowIfCancellationRequested();
+                FileAttributes attributes = File.GetAttributes(path);
+                if ((attributes & FileAttributes.ReparsePoint) != 0 || (attributes & FileAttributes.Directory) == 0)
                 {
-                    return true;
+                    return false;
                 }
 
                 Directory.Delete(path, recursive: true);
+                return true;
+            }
+            catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+            {
                 return true;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -62,6 +68,6 @@ public static class CompositionWorkspace
             }
         }
 
-        return !Directory.Exists(path);
+        return false;
     }
 }

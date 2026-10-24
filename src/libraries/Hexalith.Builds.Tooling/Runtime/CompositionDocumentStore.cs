@@ -41,36 +41,8 @@ public static class CompositionDocumentStore
     /// <param name="document">The document.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task that completes once the document is in place.</returns>
-    public static async Task WriteAsync<T>(string path, T document, CancellationToken cancellationToken)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        string directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
-        CompositionWorkspace.CreatePrivateDirectory(directory);
-        string temporary = Path.Combine(directory, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
-        try
-        {
-            FileStreamOptions options = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write, Options = FileOptions.Asynchronous };
-            if (!OperatingSystem.IsWindows())
-            {
-                options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-            }
-
-            FileStream stream = new(temporary, options);
-            await using (stream.ConfigureAwait(false))
-            {
-                await stream.WriteAsync(new UTF8Encoding(false).GetBytes(Serialize(document)), cancellationToken).ConfigureAwait(false);
-            }
-
-            File.Move(temporary, path, overwrite: true);
-        }
-        finally
-        {
-            if (File.Exists(temporary))
-            {
-                File.Delete(temporary);
-            }
-        }
-    }
+    public static Task WriteAsync<T>(string path, T document, CancellationToken cancellationToken)
+        => WriteBytesAsync(path, new UTF8Encoding(false).GetBytes(Serialize(document)), cancellationToken);
 
     /// <summary>
     /// Reads a document, returning null when it is absent, unreadable, or malformed.
@@ -90,15 +62,54 @@ public static class CompositionDocumentStore
                 return null;
             }
 
-            FileStream stream = File.OpenRead(path);
+            FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(path);
             await using (stream.ConfigureAwait(false))
             {
-                return await JsonSerializer.DeserializeAsync<T>(stream, SerializerOptions, cancellationToken).ConfigureAwait(false);
+                return !stream.CanSeek || stream.Length > 4 * 1024 * 1024
+                    ? null
+                    : await JsonSerializer.DeserializeAsync<T>(stream, SerializerOptions, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
         {
             return null;
+        }
+    }
+
+    /// <summary>Publishes complete artifact bytes using a private temporary file and atomic rename.</summary>
+    /// <param name="path">The destination.</param>
+    /// <param name="bytes">The inspected bytes.</param>
+    /// <param name="cancellationToken">The existing publication allowance.</param>
+    /// <returns>The atomic publication task.</returns>
+    internal static async Task WriteBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        string directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
+        CompositionWorkspace.CreatePrivateDirectory(directory);
+        string temporary = Path.Combine(directory, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            FileStreamOptions options = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write, Options = FileOptions.Asynchronous };
+            if (!OperatingSystem.IsWindows())
+            {
+                options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            }
+
+            FileStream stream = new(temporary, options);
+            await using (stream.ConfigureAwait(false))
+            {
+                await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            File.Move(temporary, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
         }
     }
 }

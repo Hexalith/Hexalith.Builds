@@ -892,10 +892,12 @@ public static class ModuleCommandExecutionService
         PersistedProfileDefinition? completedPersistedProfile = null,
         NativeTestExecutionResult? nativeTests = null,
         string? nativePlatform = null,
-        ModuleTestRunRecord? selectedTestRun = null)
+        ModuleTestRunRecord? selectedTestRun = null,
+        CompositionRunResources? remainingResources = null,
+        string? testResultPath = null)
     {
         IReadOnlyList<ToolDiagnostic> warnings = _identityWarnings.Value ?? [];
-        ToolCommandResult result = new(status, outcome, [.. warnings, .. diagnostics]) { RunId = runId };
+        ToolCommandResult result = new(status, outcome, [.. warnings, .. diagnostics]) { RunId = runId, RemainingResources = remainingResources, TestResultPath = testResultPath };
         if (!string.IsNullOrWhiteSpace(evidencePath))
         {
             ModuleRunTestCounts? testCounts = null;
@@ -1000,7 +1002,7 @@ public static class ModuleCommandExecutionService
                 : (await engine.DownAsync(runId, cancellationToken).ConfigureAwait(false)).Result with { RunId = runId };
         }
 
-        return await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, ModuleInvocationCommand.Down, manifestPath, null, null, null, evidencePath, startedUtc, CancellationToken.None, runId, runId).ConfigureAwait(false);
+        return await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, ModuleInvocationCommand.Down, manifestPath, null, null, null, evidencePath, startedUtc, CancellationToken.None, runId, runId, remainingResources: result.RemainingResources, testResultPath: result.TestResultPath).ConfigureAwait(false);
     }
 
     private static async Task<int> ExecutePlatformAsync(
@@ -1047,6 +1049,7 @@ public static class ModuleCommandExecutionService
         ToolCommandResult result;
         NativeTestExecutionResult? native = null;
         ModuleTestRunRecord? record = null;
+        string? durableResultPath = null;
         if (!validation.IsValid)
         {
             result = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest), validation.Diagnostics);
@@ -1083,7 +1086,7 @@ public static class ModuleCommandExecutionService
             CompositionEngine? engine = null;
             bool ci = options.ContinuousIntegrationOverride ?? (string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase));
-            bool retain = selected is not null && mode == WorkspaceMode.Source && !ci;
+            bool retain = selected is not null && !ci;
             options = options with
             {
                 SelectedTest = selected,
@@ -1119,6 +1122,19 @@ public static class ModuleCommandExecutionService
                 session = started.Session;
                 startupStoppingTimestamp = started.StoppingTimestamp;
                 ownedRunId = session?.RunId ?? started.RunId;
+                if (session is not null && await engine.StateStore.TryReadAsync(session.RunId, CancellationToken.None).ConfigureAwait(false) is null)
+                {
+                    CompositionRunState issued = CompositionRunPlanFactory.CreateInitialState(session.RunId, session.Plan.Workspace, selected!.ManifestHash, startedUtc) with
+                    {
+                        AttemptId = session.Plan.AttemptId,
+                        EnvironmentId = session.Plan.EnvironmentId,
+                        SelectedTest = selected,
+                        RetainOnFailure = retain,
+                        ExecutionContext = System.Text.Json.JsonSerializer.SerializeToElement(TestEnvironment.TestEnvironmentDescriptorWriter.ExecutionContext()),
+                    };
+                    await engine.StateStore.WriteAsync(issued, CancellationToken.None).ConfigureAwait(false);
+                }
+
                 result = started.Result with { RunId = ownedRunId };
                 if (selected is not null && result.Outcome.ExitCode == ToolExitCode.Success)
                 {
@@ -1141,7 +1157,16 @@ public static class ModuleCommandExecutionService
                             engine = new CompositionEngine(options);
                             session.Plan = session.Plan with { SelectedTest = entry, SelectedTests = selections, ExecutionTiming = null };
                             session.Readiness = session.Readiness with { SelectedTest = entry };
-                            native = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests(entry.Entry, entry.Executor), manifestPath, testBudget.Token, options.NativeDotnetCommand ?? "dotnet", entry, Path.Combine(options.StateDirectory, "diagnostics", session.RunId)).ConfigureAwait(false);
+                            session.StoppingTimestamp = null;
+                            native = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests(entry.Entry, entry.Executor), manifestPath, testBudget.Token, options.NativeDotnetCommand ?? "dotnet", entry, Path.Combine(options.StateDirectory, "diagnostics", session.RunId), async (observed, token) =>
+                            {
+                                if (entry == selections[^1] || observed.Result.Outcome.ExitCode != ToolExitCode.Success)
+                                {
+                                    string disposition = retain && observed.Result.Outcome.ExitCode is not (ToolExitCode.Success or ToolExitCode.Cancelled) ? "retained" : "unknown";
+                                    string? cause = observed.TerminalCause;
+                                    record = await engine.RecordTestOutcomeAsync(session.RunId, session.Readiness.Resources, observed.Result, disposition, new CompositionRunResources([], [], Unverified: true), token, observed, executionTiming: session.Plan.ExecutionTiming, environmentBindings: session.EnvironmentBindings, terminalCause: cause, testObservation: session.Readiness.TestObservation).ConfigureAwait(false);
+                                }
+                            }).ConfigureAwait(false);
                             batchDiagnostics.AddRange(native.Result.Diagnostics);
                             result = native.Result with { RunId = ownedRunId, Diagnostics = [.. batchDiagnostics] };
                             if (result.Outcome.ExitCode != ToolExitCode.Success)
@@ -1173,7 +1198,7 @@ public static class ModuleCommandExecutionService
                 else
                 {
                     result = cancellationToken.IsCancellationRequested
-                        ? PlatformRefusal("HXC130", "The owner withdrew the selected execution.", ToolExitCode.Cancelled) with { Status = "withdrawn", RunId = ownedRunId }
+                        ? PlatformRefusal("HXC130", "The owner cancelled the selected execution.", ToolExitCode.Cancelled) with { Status = "cancelled", RunId = ownedRunId }
                         : PlatformRefusal("HXT007", "The selected execution exhausted its finite execution lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
                 }
             }
@@ -1189,7 +1214,7 @@ public static class ModuleCommandExecutionService
 
             using CancellationTokenSource stopping = new();
             TimeSpan stopRemaining = TimeSpan.FromSeconds(selected!.StopTimeoutSeconds);
-            if ((native?.StoppingTimestamp ?? startupStoppingTimestamp) is long stoppingAt)
+            if ((native?.StoppingTimestamp ?? session?.StoppingTimestamp ?? startupStoppingTimestamp) is long stoppingAt)
             {
                 stopRemaining -= System.Diagnostics.Stopwatch.GetElapsedTime(stoppingAt);
             }
@@ -1212,9 +1237,9 @@ public static class ModuleCommandExecutionService
                     string initialDisposition = retain && !passed && !withdrawn ? "retained" : "unknown";
                     record = session is null
                         ? await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(options.StateDirectory, "diagnostics", ownedRunId, "selected-test.json"), stopping.Token).ConfigureAwait(false)
-                        : await engine!.RecordTestOutcomeAsync(ownedRunId, session.Readiness.Resources, result, initialDisposition, new CompositionRunResources([], [], Unverified: true), stopping.Token, native, waitForLock: false, executionTiming: session.Plan.ExecutionTiming).ConfigureAwait(false);
+                        : await engine!.RecordTestOutcomeAsync(ownedRunId, session.Readiness.Resources, result, initialDisposition, new CompositionRunResources([], [], Unverified: true), stopping.Token, native, waitForLock: false, executionTiming: session.Plan.ExecutionTiming, environmentBindings: session.EnvironmentBindings, testObservation: session.Readiness.TestObservation).ConfigureAwait(false);
                 }
-                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+                catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
                 {
                     result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "The selected run result could not be durably retained.", "evidence"));
                     passed = false;
@@ -1225,11 +1250,25 @@ public static class ModuleCommandExecutionService
             {
                 result = result with { Status = record.TerminalStatus, Outcome = record.TerminalOutcome };
                 passed = false;
-                withdrawn = record.TerminalStatus == "withdrawn";
+                withdrawn = record.TerminalStatus is "cancelled" or "withdrawn";
             }
 
+            if (record is { FailureRetained: true, CleanupDisposition: "not-requested" } && ownedRunId is not null)
+            {
+                try
+                {
+                    CompositionRunResources survivors = await engine!.ObserveOwnedResourcesAsync(ownedRunId, stopping.Token).ConfigureAwait(false);
+                    record = await engine.RecordTestOutcomeAsync(ownedRunId, record.Resources, result, "retained", survivors, stopping.Token, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
+                {
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Retained resources could not be fully recorded.", "evidence"));
+                }
+            }
+
+            bool retentionEstablished = record?.FailureRetained == true || (record is null && retain && !passed && !withdrawn);
             bool cleanup = session is not null && !(PersistsAfterExit(command) && passed)
-                && !(retain && !passed && !withdrawn);
+                && !retentionEstablished && record?.CleanupDisposition != "complete";
             if (cleanup)
             {
                 CompositionDownResult down;
@@ -1260,9 +1299,9 @@ public static class ModuleCommandExecutionService
                     record = record with { ResourceDisposition = disposition, RemainingResources = down.Remaining };
                     try
                     {
-                        record = await engine!.RecordTestOutcomeAsync(record.RunId, record.Resources, result, disposition, down.Remaining, stopping.Token, native, waitForLock: false, executionTiming: session?.Plan.ExecutionTiming).ConfigureAwait(false);
+                        record = await engine!.RecordTestOutcomeAsync(record.RunId, record.Resources, result, disposition, down.Remaining, stopping.Token, native, waitForLock: false, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings, cleanupDisposition: cleanupResult.Outcome.ExitCode == ToolExitCode.Success && down.Remaining.IsEmpty ? "complete" : "incomplete", cleanupAttemptId: record.CleanupAttemptId ?? CompositionRunPlanFactory.NewRunId()).ConfigureAwait(false);
                     }
-                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+                    catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
                     {
                         result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "The selected cleanup result could not be durably retained.", "evidence"));
                     }
@@ -1270,7 +1309,13 @@ public static class ModuleCommandExecutionService
             }
         }
 
-        return await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None, result.RunId, runId, nativeTests: native, nativePlatform: selected?.Executor, selectedTestRun: record).ConfigureAwait(false);
+        if (record is not null)
+        {
+            string candidatePath = Path.Combine(compositionOptions?.StateDirectory ?? CompositionRunStateStore.DefaultDirectory(), "diagnostics", record.RunId, "test-result.json");
+            durableResultPath = File.Exists(candidatePath) ? candidatePath : null;
+        }
+
+        return await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None, result.RunId, runId, nativeTests: native, nativePlatform: selected?.Executor, selectedTestRun: record, remainingResources: record?.RemainingResources, testResultPath: durableResultPath).ConfigureAwait(false);
     }
 
     private static ToolCommandResult PlatformRefusal(string ruleId, string message, ToolExitCode exit)

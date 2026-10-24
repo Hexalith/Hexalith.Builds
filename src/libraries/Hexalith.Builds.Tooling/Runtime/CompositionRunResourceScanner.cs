@@ -31,7 +31,10 @@ public sealed class CompositionRunResourceScanner(string dockerCommand)
         }
 
         IReadOnlyList<string>? containers = await FindContainersAsync(runId, cancellationToken).ConfigureAwait(false);
-        return new CompositionRunResources(containers ?? [], FindProcesses(runId), Unverified: containers is null);
+        return new CompositionRunResources(containers ?? [], FindProcesses(runId), Unverified: containers is null || !OperatingSystem.IsLinux())
+        {
+            DiscoveryFailures = [.. containers is null ? new string[] { "containers" } : [], .. !OperatingSystem.IsLinux() ? new string[] { "processes" } : []],
+        };
     }
 
     /// <summary>
@@ -42,27 +45,38 @@ public sealed class CompositionRunResourceScanner(string dockerCommand)
     /// <returns>The resources still present after the bound.</returns>
     public async Task<CompositionRunResources> RemoveAsync(string runId, CancellationToken cancellationToken)
     {
-        CompositionRunResources remaining = await FindAsync(runId, cancellationToken).ConfigureAwait(false);
-        for (int attempt = 0; attempt < 5 && !remaining.IsEmpty; attempt++)
+        CompositionRunResources remaining = new([], [], true);
+        try
         {
-            foreach (int processId in remaining.ProcessIds)
-            {
-                TryKill(processId);
-            }
-
-            if (remaining.ContainerIds.Count > 0)
-            {
-                _ = await CompositionProcess.RunAsync(
-                    CompositionProcess.CreateStartInfo(dockerCommand, ["rm", "--force", "--volumes", .. remaining.ContainerIds], null, null),
-                    _dockerTimeout,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
             remaining = await FindAsync(runId, cancellationToken).ConfigureAwait(false);
-        }
+            for (int attempt = 0; attempt < 5 && !remaining.IsEmpty; attempt++)
+            {
+                foreach (int processId in remaining.ProcessIds)
+                {
+                    TryKill(processId);
+                }
 
-        return remaining;
+                if (remaining.ContainerIds.Count > 0)
+                {
+                    _ = await CompositionProcess.RunAsync(
+                        CompositionProcess.CreateStartInfo(dockerCommand, ["rm", "--force", "--volumes", .. remaining.ContainerIds], null, null),
+                        _dockerTimeout,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+                CompositionRunResources observed = await FindAsync(runId, cancellationToken).ConfigureAwait(false);
+                remaining = observed.DiscoveryFailures.Contains("containers", StringComparer.Ordinal)
+                    ? observed with { ContainerIds = remaining.ContainerIds }
+                    : observed;
+            }
+
+            return remaining;
+        }
+        catch (Exception exception) when (exception is OperationCanceledException or IOException or UnauthorizedAccessException)
+        {
+            return remaining with { Unverified = true, DiscoveryFailures = [.. remaining.DiscoveryFailures, "cleanup-verification"] };
+        }
     }
 
     private static IReadOnlyList<int> FindProcesses(string runId)
@@ -151,8 +165,9 @@ public sealed class CompositionRunResourceScanner(string dockerCommand)
                 null),
             _dockerTimeout,
             cancellationToken).ConfigureAwait(false);
-        return result.Started && result.ExitCode == 0 && !result.TimedOut
-            ? [.. result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Order(StringComparer.Ordinal)]
+        string[] ids = result.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return result.Started && result.ExitCode == 0 && !result.TimedOut && ids.All(id => id.Length is >= 12 and <= 64 && id.All(char.IsAsciiHexDigit))
+            ? [.. ids.Order(StringComparer.Ordinal)]
             : null;
     }
 }

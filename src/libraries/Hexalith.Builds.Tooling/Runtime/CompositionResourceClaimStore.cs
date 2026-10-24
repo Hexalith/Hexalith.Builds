@@ -118,11 +118,40 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
         return ports;
     }
 
+    /// <summary>Lists exact claim file identities whose durable owner is this run.</summary>
+    /// <param name="runId">The owner identity.</param>
+    /// <returns>The owned claim identities.</returns>
+    /// <exception cref="IOException">An existing claim's owner cannot be verified.</exception>
+    public IReadOnlyList<string> FindOwned(string runId)
+    {
+        if (!Directory.Exists(_directory))
+        {
+            return [];
+        }
+
+        List<string> owned = [];
+        foreach (string path in Directory.EnumerateFiles(_directory, "*.json"))
+        {
+            string owner = ReadOwner(path) ?? throw new IOException("Managed claim ownership cannot be verified.");
+            if (owner == runId)
+            {
+                owned.Add("claim:" + Path.GetFileNameWithoutExtension(path));
+            }
+        }
+
+        return [.. owned.Order(StringComparer.Ordinal)];
+    }
+
     private static string? ReadOwner(string path)
     {
         try
         {
-            using FileStream stream = File.OpenRead(path);
+            using FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(path);
+            if (!stream.CanSeek || stream.Length > 64 * 1024)
+            {
+                return null;
+            }
+
             string? owner = JsonSerializer.Deserialize<CompositionResourceClaim>(stream)?.OwnerRunId;
             return CompositionRunPlanFactory.IsRunId(owner) ? owner : null;
         }

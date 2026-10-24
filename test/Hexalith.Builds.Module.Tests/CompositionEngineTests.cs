@@ -188,6 +188,52 @@ public sealed class CompositionEngineTests
         Directory.GetDirectories(options.WorkspaceRoot).ShouldBeEmpty();
     }
 
+    /// <summary>An allocated declared owner records mapping refusal as a retained startup failure rather than an orphaned Starting state.</summary>
+    /// <param name="declared">Whether a declared suite owns the allocated environment.</param>
+    /// <returns>The durable first outcome and exact cleanup assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AllocatedMappingFailurePreservesDeclaredOutcomeAndLegacyCleanupAsync(bool declared)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngineOptions options = CreateOptions(workspace.Root) with
+        {
+            AppHostAssemblyPath = typeof(CompositionEngine).Assembly.Location,
+            AspirePackagesRoot = CompositionTestFiles.CreateAspirePackages(workspace.Root).Root,
+            SourceMapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root),
+            DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+            DockerCommand = CompositionTestFiles.CreateStubDocker(workspace.Root),
+            ReadinessTimeout = TimeSpan.FromSeconds(600),
+            SelectedTest = declared ? selected : null,
+            RetainOnFailure = declared,
+            PlatformModelBuildOverride = (_, _, _) => throw new WorkspaceMappingException("Verified catalog inputs are unavailable."),
+        };
+        CompositionEngine engine = new(options);
+        CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.PrerequisiteUnavailable);
+        if (!declared)
+        {
+            result.RunId.ShouldBeNull();
+            (await engine.StateStore.EnumerateAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeEmpty();
+            Directory.GetDirectories(options.WorkspaceRoot).ShouldBeEmpty();
+            return;
+        }
+
+        string runId = result.RunId.ShouldNotBeNull();
+        CompositionRunState state = (await engine.StateStore.TryReadAsync(runId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        state.Status.ShouldBe(CompositionRunStatus.Failed);
+        state.TestRun.ShouldNotBeNull().FailureRetained.ShouldBeTrue();
+        Directory.Exists(state.Workspace).ShouldBeTrue();
+        string path = Path.Combine(options.StateDirectory, "diagnostics", runId, "test-result.json");
+        Hexalith.Builds.Tooling.TestEnvironment.TestEnvironmentContractReadResult terminal = Hexalith.Builds.Tooling.TestEnvironment.TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        terminal.IsValid.ShouldBeTrue();
+        terminal.Document!.Value.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("startup-failure");
+        (await engine.DownAsync(runId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+        Directory.Exists(state.Workspace).ShouldBeFalse();
+    }
+
     /// <summary>
     /// Verifies unavailable prerequisites return <c>HXR01x</c> with exit code 2 and create no run state or workspace.
     /// </summary>
@@ -432,10 +478,10 @@ public sealed class CompositionEngineTests
             CompositionEngine engine = new(CreateOptions(root) with { DockerCommand = docker });
             const string otherRunId = "fedcba9876543210fedcba9876543210";
             await engine.StateStore.WriteAsync(
-                new CompositionRunState(CompositionRunState.SupportedSchema, CompositionTestFiles.RunId, CompositionRunStatus.Failed, "A", "w", null, null, "HXR021", DateTimeOffset.UnixEpoch),
+                new CompositionRunState(CompositionRunState.SupportedSchema, CompositionTestFiles.RunId, CompositionRunStatus.Failed, "A", Path.Combine(root, "workspaces", CompositionTestFiles.RunId), null, null, "HXR021", DateTimeOffset.UnixEpoch),
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
             await engine.StateStore.WriteAsync(
-                new CompositionRunState(CompositionRunState.SupportedSchema, otherRunId, CompositionRunStatus.Ready, "B", "w", null, null, null, DateTimeOffset.UnixEpoch),
+                new CompositionRunState(CompositionRunState.SupportedSchema, otherRunId, CompositionRunStatus.Ready, "B", Path.Combine(root, "workspaces", otherRunId), null, null, null, DateTimeOffset.UnixEpoch),
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
             string workspace = Path.Combine(root, "workspaces", CompositionTestFiles.RunId);
             _ = Directory.CreateDirectory(workspace);
@@ -899,7 +945,7 @@ public sealed class CompositionEngineTests
                 CompositionTestFiles.RunId,
                 CompositionRunStatus.Ready,
                 "A",
-                "w",
+                Path.Combine(Path.GetDirectoryName(engine.StateStore.Directory)!, "workspaces", CompositionTestFiles.RunId),
                 processId,
                 startedAt,
                 null,

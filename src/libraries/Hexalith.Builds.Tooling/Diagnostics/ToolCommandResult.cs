@@ -31,4 +31,16 @@ public sealed record ToolCommandResult(
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? RunId { get; init; }
+
+    /// <summary>Gets exact known leftovers and explicit discovery uncertainty.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Runtime.CompositionRunResources? RemainingResources { get; init; }
+
+    /// <summary>Gets the tracked environments for a read-only list command.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<Runtime.CompositionRunListingEntry>? Environments { get; init; }
+
+    /// <summary>Gets the durable v1 result location, when one was published.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? TestResultPath { get; init; }
 }

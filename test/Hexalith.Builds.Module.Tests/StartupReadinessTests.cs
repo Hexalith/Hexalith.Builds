@@ -12,6 +12,7 @@ using Hexalith.Builds.ModuleTool.Cli;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
+using Hexalith.Builds.Tooling.TestEnvironment;
 using Hexalith.Builds.Tooling.Workspace;
 
 using Shouldly;
@@ -247,9 +248,12 @@ public sealed class StartupReadinessTests
     }
 
     /// <summary>Verifies a startup task that fails before the deadline is named and diagnostics survive teardown.</summary>
+    /// <param name="selected">Whether a declared suite requires a durable v1 terminal result.</param>
     /// <returns>The task-failure assertion.</returns>
-    [Fact]
-    public async Task StartupTaskFailureNamesTheTaskAndPreservesDiagnosticsAsync()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StartupTaskFailureNamesTheTaskAndPreservesDiagnosticsAsync(bool selected)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -259,10 +263,20 @@ public sealed class StartupReadinessTests
         using PlatformManifestTestWorkspace workspace = new();
         CompositionTestFiles.WriteScript(Path.Combine(workspace.Root, "fail.sh"), "exit 1");
         workspace.Change("modules.0.lifecycle.tasks.0.executable", "\"fail.sh\"");
+        ModuleTestSelection? suite = null;
+        if (selected)
+        {
+            workspace.Change("modules.0.tests", "[{\"name\":\"verify\",\"executor\":\"python3\",\"entry\":\"runner.py\",\"reportFormat\":\"trx\",\"executionTimeoutSeconds\":30,\"stopTimeoutSeconds\":5,\"mode\":\"source\"}]");
+            await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "raise AssertionError('No test child may run')", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string manifest = workspace.Save();
+            suite = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow);
+        }
+
         string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionEngine engine = new(Options(workspace.Root, appHost) with
         {
-            ReadinessTimeout = TimeSpan.FromSeconds(60),
+            ReadinessTimeout = TimeSpan.FromSeconds(selected ? 600 : 60),
+            SelectedTest = suite,
             SourceMapping = Mapping(workspace.Root),
             PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
         });
@@ -275,13 +289,28 @@ public sealed class StartupReadinessTests
         _ = result.RunId.ShouldNotBeNull();
         Directory.Exists(Path.Combine(workspace.Root, "workspaces", result.RunId)).ShouldBeFalse();
         CompositionRunState? state = await engine.StateStore.TryReadAsync(result.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        _ = state.ShouldNotBeNull();
-        _ = state.DiagnosticsPath.ShouldNotBeNull();
-        File.Exists(Path.Combine(state.DiagnosticsPath, "summary.json")).ShouldBeTrue();
-        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(state.DiagnosticsPath, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        string diagnosticsPath = Path.Combine(engine.StateStore.Directory, "diagnostics", result.RunId);
+        if (selected)
+        {
+            state.ShouldBeNull();
+        }
+        else
+        {
+            state.ShouldNotBeNull().DiagnosticsPath.ShouldBe(diagnosticsPath);
+        }
+
+        File.Exists(Path.Combine(diagnosticsPath, "summary.json")).ShouldBeTrue();
+        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(diagnosticsPath, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        summary.RootElement.GetProperty("effectiveDeadlineSeconds").GetDouble().ShouldBe(selected ? 600 : 60);
+        summary.RootElement.GetProperty("durationSeconds").GetDouble().ShouldBeGreaterThan(0);
         summary.RootElement.GetProperty("failingTask").GetString().ShouldBe("sample/verify");
         result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("failed before", StringComparison.Ordinal));
         result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Message.Contains("deadline elapsed", StringComparison.Ordinal));
+        if (selected)
+        {
+            JsonElement terminal = CleanedStartupResult(diagnosticsPath, result.RunId, suite!, "startup-failure", 600);
+            terminal.GetProperty("terminal").GetProperty("recordedAt").GetDateTimeOffset().ShouldBeLessThan(suite!.RequestedAtUtc.AddSeconds(600));
+        }
     }
 
     /// <summary>Verifies a per-start task becomes ready only when its arguments are supplied.</summary>
@@ -386,10 +415,30 @@ public sealed class StartupReadinessTests
         result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("within the readiness bound", StringComparison.Ordinal));
         result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("startup task '", StringComparison.Ordinal) && diagnostic.Message.Contains("had not finished", StringComparison.Ordinal), string.Join(" | ", result.Result.Diagnostics.Select(diagnostic => diagnostic.Message)));
         result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Message.Contains("failed before", StringComparison.Ordinal));
-        CompositionRunState state = (await engine.StateStore.TryReadAsync(result.RunId!, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
-        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(state.DiagnosticsPath!, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        string runId = result.RunId.ShouldNotBeNull();
+        CompositionRunState? state = await engine.StateStore.TryReadAsync(runId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string diagnosticsPath = Path.Combine(engine.StateStore.Directory, "diagnostics", runId);
+        if (selected)
+        {
+            state.ShouldBeNull();
+        }
+        else
+        {
+            state.ShouldNotBeNull().DiagnosticsPath.ShouldBe(diagnosticsPath);
+        }
+
+        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(diagnosticsPath, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        summary.RootElement.GetProperty("effectiveDeadlineSeconds").GetDouble().ShouldBe(15);
+        summary.RootElement.GetProperty("effectiveDeadlineIsOverride").GetBoolean().ShouldBe(selected);
+        summary.RootElement.GetProperty("durationSeconds").GetDouble().ShouldBeGreaterThan(0);
+        Directory.Exists(Path.Combine(workspace.Root, "workspaces", runId)).ShouldBeFalse();
         summary.RootElement.GetProperty("failingTask").ValueKind.ShouldBe(JsonValueKind.Null);
         stopwatch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(30));
+        if (selected)
+        {
+            JsonElement terminal = CleanedStartupResult(diagnosticsPath, runId, suite!, "startup-timeout", 15, declaredOverride: true);
+            terminal.GetProperty("terminal").GetProperty("recordedAt").GetDateTimeOffset().ShouldBeGreaterThanOrEqualTo(suite!.RequestedAtUtc.AddSeconds(15));
+        }
     }
 
     /// <summary>Verifies the task's local deadline returns expiry rather than a nonzero-exit failure.</summary>
@@ -663,7 +712,7 @@ public sealed class StartupReadinessTests
                 DockerCommand = CompositionTestFiles.CreateStubDocker(root),
             });
             await engine.StateStore.WriteAsync(
-                new CompositionRunState(CompositionRunState.SupportedSchema, CompositionTestFiles.RunId, CompositionRunStatus.Ready, "A", "w", null, null, null, DateTimeOffset.UnixEpoch),
+                new CompositionRunState(CompositionRunState.SupportedSchema, CompositionTestFiles.RunId, CompositionRunStatus.Ready, "A", Path.Combine(root, "workspaces", CompositionTestFiles.RunId), null, null, null, DateTimeOffset.UnixEpoch),
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
 
             CompositionDownResult unknown = await engine.DownAsync(unknownRun, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -809,10 +858,15 @@ public sealed class StartupReadinessTests
         result.Result.Outcome.RuleId.ShouldBe("HXR021");
         result.Result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.RuleId == "HXC130");
         result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message.Contains("diagnostics='", StringComparison.Ordinal));
-        CompositionRunState state = (await engine.StateStore.TryReadAsync(result.RunId!, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
-        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(state.DiagnosticsPath!, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        string runId = result.RunId.ShouldNotBeNull();
+        (await engine.StateStore.TryReadAsync(runId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeNull();
+        string diagnosticsPath = Path.Combine(engine.StateStore.Directory, "diagnostics", runId);
+        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(diagnosticsPath, "summary.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
         summary.RootElement.GetProperty("durationSeconds").GetDouble().ShouldBeGreaterThan(0);
-        Directory.Exists(state.Workspace).ShouldBeFalse();
+        summary.RootElement.GetProperty("effectiveDeadlineSeconds").GetDouble().ShouldBe(600);
+        JsonElement terminal = CleanedStartupResult(diagnosticsPath, runId, selected, "startup-timeout", 600);
+        terminal.GetProperty("terminal").GetProperty("recordedAt").GetDateTimeOffset().ShouldBeLessThan(selected.RequestedAtUtc.AddSeconds(600));
+        Directory.Exists(Path.Combine(workspace.Root, "workspaces", runId)).ShouldBeFalse();
         engine.StateStore.Claims.ClaimedPorts().ShouldBeEmpty();
     }
 
@@ -908,6 +962,25 @@ public sealed class StartupReadinessTests
         {
             CompositionTestFiles.Delete(root);
         }
+    }
+
+    private static JsonElement CleanedStartupResult(string diagnosticsPath, string runId, ModuleTestSelection selected, string cause, int effectiveSeconds, bool declaredOverride = false)
+    {
+        TestEnvironmentContractReadResult terminal = TestEnvironmentContractReader.ReadResult(Path.Combine(diagnosticsPath, "test-result.json"), TestContext.Current.CancellationToken);
+        terminal.IsValid.ShouldBeTrue(string.Join(",", terminal.Diagnostics.Select(diagnostic => diagnostic.RuleId + ":" + diagnostic.Field)));
+        JsonElement document = terminal.Document!.Value;
+        document.GetProperty("bindings").GetProperty("run").GetProperty("runId").GetString().ShouldBe(runId);
+        document.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("failed");
+        document.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe(cause);
+        document.GetProperty("cleanup").GetProperty("disposition").GetString().ShouldBe("complete");
+        document.GetProperty("cleanup").GetProperty("leftoverResourceIds").GetArrayLength().ShouldBe(0);
+        JsonElement startup = document.GetProperty("bindings").GetProperty("deadlines").GetProperty("startup");
+        startup.GetProperty("originAt").GetDateTimeOffset().ShouldBe(selected.RequestedAtUtc);
+        startup.GetProperty("effectiveSeconds").GetInt32().ShouldBe(effectiveSeconds);
+        startup.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(selected.RequestedAtUtc.AddSeconds(effectiveSeconds));
+        startup.GetProperty("override").GetProperty("state").GetString().ShouldBe(declaredOverride ? "declared" : "not-overridden");
+        document.GetProperty("bindings").GetProperty("deadlines").GetProperty("execution").GetProperty("state").GetString().ShouldBe("not-yet-populated");
+        return document;
     }
 
     private static PlatformModuleDeclaration Declaration(string json) =>
