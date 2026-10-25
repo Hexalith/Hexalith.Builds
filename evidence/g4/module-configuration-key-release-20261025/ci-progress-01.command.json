@@ -1,0 +1,14 @@
+{
+  "command": [
+    "gh",
+    "run",
+    "view",
+    "40181532245",
+    "--repo",
+    "Hexalith/Hexalith.Builds",
+    "--json",
+    "status,conclusion,jobs,url,headSha"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T09:39:56.817931+00:00"
+}

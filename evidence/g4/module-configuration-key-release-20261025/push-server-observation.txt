@@ -1,0 +1,12 @@
+remote: Bypassed rule violations for refs/heads/main:        
+remote: 
+remote: - Changes must be made through a pull request.        
+remote: 
+remote: - 3 of 3 required status checks are expected.        
+remote: 
+remote: 
+remote: GitHub found 1 vulnerability on Hexalith/Hexalith.Builds's default branch (1 high). To find out more, visit:        
+remote:      https://github.com/Hexalith/Hexalith.Builds/security/dependabot/37        
+remote: 
+To https://github.com/Hexalith/Hexalith.Builds.git
+   8eb5646..c81e691  main -> main

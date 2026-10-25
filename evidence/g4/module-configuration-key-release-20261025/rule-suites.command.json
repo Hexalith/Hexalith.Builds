@@ -1,0 +1,9 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/rulesets/rule-suites?ref=refs%2Fheads%2Fmain&per_page=10"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T09:39:55.953396+00:00"
+}

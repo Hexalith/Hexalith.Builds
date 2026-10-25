@@ -1,0 +1,9 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/rulesets?includes_parents=true"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T09:39:55.169394+00:00"
+}
