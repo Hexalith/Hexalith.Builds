@@ -239,7 +239,7 @@ public static class ModuleRunEvidenceWriter
             Runtime.ModuleTestRunRecord record = evidence.SelectedTestRun;
             Runtime.CompositionRunResources remaining = record.RemainingResources;
 
-            // The legacy export has no workspace/claim vocabulary; disclose their presence as uncertainty.
+            // Retain exact owned leftovers as well as discovery uncertainty in legacy exports.
             JsonSerializer.Serialize(
                 writer,
                 new
@@ -258,7 +258,7 @@ public static class ModuleRunEvidenceWriter
                     record.TerminalOutcome,
                     record.TerminalAtUtc,
                     record.ResourceDisposition,
-                    remainingResources = new { remaining.ContainerIds, remaining.ProcessIds, unverified = remaining.Unverified || remaining.WorkspaceIds.Count > 0 || remaining.ClaimIds.Count > 0, remaining.IsEmpty },
+                    remainingResources = new { remaining.ContainerIds, remaining.ProcessIds, remaining.WorkspaceIds, remaining.ClaimIds, remaining.DiscoveryFailures, remaining.Unverified, remaining.IsEmpty },
                     record.ObservationHash,
                     record.ExecutionTiming,
                     record.Selections,

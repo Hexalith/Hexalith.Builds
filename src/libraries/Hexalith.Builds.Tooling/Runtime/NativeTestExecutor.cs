@@ -35,6 +35,7 @@ internal static class NativeTestExecutor
     /// <param name="selection">The optional v2 binding; legacy native tests retain their existing limit.</param>
     /// <param name="archiveDirectory">The optional durable owned diagnostic directory outside the child workspace.</param>
     /// <param name="onOutcome">The runner callback that commits the observed terminal result before optional archives.</param>
+    /// <param name="ownerCancellationToken">The owner cancellation, distinct from the execution lifetime.</param>
     /// <returns>A result that passes only for a zero native exit and a passing native report.</returns>
     public static async Task<NativeTestExecutionResult> ExecuteAsync(
         CompositionRunSession session,
@@ -44,7 +45,8 @@ internal static class NativeTestExecutor
         string dotnetCommand = "dotnet",
         ModuleTestSelection? selection = null,
         string? archiveDirectory = null,
-        Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome = null)
+        Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome = null,
+        CancellationToken? ownerCancellationToken = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(tests);
@@ -52,7 +54,7 @@ internal static class NativeTestExecutor
 
         if (selection is not null)
         {
-            return await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, archiveDirectory, onOutcome, cancellationToken).ConfigureAwait(false);
+            return await ExecuteSelectedAsync(session, tests, manifestPath, selection, dotnetCommand, archiveDirectory, onOutcome, ownerCancellationToken ?? cancellationToken, cancellationToken).ConfigureAwait(false);
         }
 
         string root = ManifestPathValidator.FindRepositoryRoot(Path.GetFullPath(manifestPath));
@@ -286,8 +288,6 @@ internal static class NativeTestExecutor
             {
                 Result = prior with
                 {
-                    Status = prior.Outcome.ExitCode == ToolExitCode.Success ? "failed" : prior.Status,
-                    Outcome = prior.Outcome.Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.EvidenceSchemaOrPolicy),
                     Diagnostics = [.. prior.Diagnostics, diagnostic],
                 },
             };
@@ -296,7 +296,7 @@ internal static class NativeTestExecutor
         return inspected;
     }
 
-    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome, CancellationToken cancellationToken)
+    private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome, CancellationToken ownerCancellationToken, CancellationToken cancellationToken)
     {
         if (tests.Project != selection.Entry || tests.Platform != selection.Executor || !selection.MatchesSource(manifestPath)
             || session.Plan.SelectedTest != selection || session.Readiness.RunId != session.Plan.RunId
@@ -391,7 +391,7 @@ internal static class NativeTestExecutor
         }
         catch (OperationCanceledException)
         {
-            cancelled = cancellationToken.IsCancellationRequested;
+            cancelled = ownerCancellationToken.IsCancellationRequested;
             process = new CompositionProcessResult(true, -1, string.Empty, true);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException or KeyNotFoundException or System.ComponentModel.Win32Exception)
@@ -406,16 +406,9 @@ internal static class NativeTestExecutor
             // Cancellation, timeout and a nonzero process exit are causal before report/closure diagnostics.
             if (onOutcome is not null && (cancelled || process.TimedOut || process.ExitCode != 0))
             {
-                using CancellationTokenSource immediate = new();
-                TimeSpan remaining = TimeSpan.FromSeconds(selection.StopTimeoutSeconds) - System.Diagnostics.Stopwatch.GetElapsedTime(stoppingTimestamp);
-                if (remaining > TimeSpan.Zero)
-                {
-                    immediate.CancelAfter(remaining);
-                }
-                else
-                {
-                    await immediate.CancelAsync().ConfigureAwait(false);
-                }
+                // Committing an observed outcome has its own finite metadata allowance. It never
+                // changes the original stopping timestamp or renews execution, archival or cleanup.
+                using CancellationTokenSource immediate = new(TimeSpan.FromSeconds(5));
 
                 NativeTestExecutionResult first = Failed("HXT007", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
                 if (cancelled || gate.Failed)
@@ -483,7 +476,8 @@ internal static class NativeTestExecutor
         NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
         if (onOutcome is not null)
         {
-            await onOutcome(inspected, processing.Token).ConfigureAwait(false);
+            using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
+            await onOutcome(inspected, recording.Token).ConfigureAwait(false);
         }
 
         return await ArchiveSelectedAsync(inspected, session, descriptorSnapshot, archiveDirectory, processing.Token).ConfigureAwait(false);

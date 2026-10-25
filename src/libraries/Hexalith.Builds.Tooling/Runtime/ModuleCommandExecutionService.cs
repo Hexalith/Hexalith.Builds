@@ -976,6 +976,11 @@ public static class ModuleCommandExecutionService
             }
         }
 
+        if (selectedTestRun is not null)
+        {
+            result = result with { Status = selectedTestRun.TerminalStatus, Outcome = selectedTestRun.TerminalOutcome };
+        }
+
         await ToolDiagnosticFormatter.WriteAsync(
             writer,
             result,
@@ -996,8 +1001,8 @@ public static class ModuleCommandExecutionService
             options ??= CompositionCommandOptions.Create(runnerAssembly ?? typeof(ModuleCommandExecutionService).Assembly.Location);
             CompositionEngine engine = new(options);
             CompositionRunState? state = await engine.StateStore.TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
-            string expectedWorkspace = Path.GetFullPath(Path.Combine(options.WorkspaceRoot, runId));
-            result = state is not null && (state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId || Path.GetFullPath(state.Workspace) != expectedWorkspace)
+            string expectedWorkspace = Path.Combine(Path.GetFullPath(options.WorkspaceRoot), runId);
+            result = state is not null && (state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId || (state.Workspace is not null && state.Workspace != expectedWorkspace))
                 ? PlatformRefusal("HXR024", "The recorded run does not match the requested owned identity.", ToolExitCode.UsageOrManifest)
                 : (await engine.DownAsync(runId, cancellationToken).ConfigureAwait(false)).Result with { RunId = runId };
         }
@@ -1122,7 +1127,8 @@ public static class ModuleCommandExecutionService
                 session = started.Session;
                 startupStoppingTimestamp = started.StoppingTimestamp;
                 ownedRunId = session?.RunId ?? started.RunId;
-                if (session is not null && await engine.StateStore.TryReadAsync(session.RunId, CancellationToken.None).ConfigureAwait(false) is null)
+                bool ownerAvailable = true;
+                if (session is not null)
                 {
                     CompositionRunState issued = CompositionRunPlanFactory.CreateInitialState(session.RunId, session.Plan.Workspace, selected!.ManifestHash, startedUtc) with
                     {
@@ -1132,10 +1138,13 @@ public static class ModuleCommandExecutionService
                         RetainOnFailure = retain,
                         ExecutionContext = System.Text.Json.JsonSerializer.SerializeToElement(TestEnvironment.TestEnvironmentDescriptorWriter.ExecutionContext()),
                     };
-                    await engine.StateStore.WriteAsync(issued, CancellationToken.None).ConfigureAwait(false);
+                    using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
+                    ownerAvailable = await engine.EnsureIssuedStateAsync(issued, recording.Token).ConfigureAwait(false);
                 }
 
-                result = started.Result with { RunId = ownedRunId };
+                result = ownerAvailable
+                    ? started.Result with { RunId = ownedRunId }
+                    : PlatformRefusal("HXC130", "Exact cleanup already claimed this owner.", ToolExitCode.Cancelled) with { Status = "cancelled", RunId = ownedRunId };
                 if (selected is not null && result.Outcome.ExitCode == ToolExitCode.Success)
                 {
                     if (session is null)
@@ -1158,7 +1167,15 @@ public static class ModuleCommandExecutionService
                             session.Plan = session.Plan with { SelectedTest = entry, SelectedTests = selections, ExecutionTiming = null };
                             session.Readiness = session.Readiness with { SelectedTest = entry };
                             session.StoppingTimestamp = null;
-                            native = await NativeTestExecutor.ExecuteAsync(session, new PersistedProfileNativeTests(entry.Entry, entry.Executor), manifestPath, testBudget.Token, options.NativeDotnetCommand ?? "dotnet", entry, Path.Combine(options.StateDirectory, "diagnostics", session.RunId), async (observed, token) =>
+                            native = await NativeTestExecutor.ExecuteAsync(
+                                session,
+                                new PersistedProfileNativeTests(entry.Entry, entry.Executor),
+                                manifestPath,
+                                testBudget.Token,
+                                options.NativeDotnetCommand ?? "dotnet",
+                                entry,
+                                Path.Combine(options.StateDirectory, "diagnostics", session.RunId),
+                                async (observed, token) =>
                             {
                                 if (entry == selections[^1] || observed.Result.Outcome.ExitCode != ToolExitCode.Success)
                                 {
@@ -1166,7 +1183,8 @@ public static class ModuleCommandExecutionService
                                     string? cause = observed.TerminalCause;
                                     record = await engine.RecordTestOutcomeAsync(session.RunId, session.Readiness.Resources, observed.Result, disposition, new CompositionRunResources([], [], Unverified: true), token, observed, executionTiming: session.Plan.ExecutionTiming, environmentBindings: session.EnvironmentBindings, terminalCause: cause, testObservation: session.Readiness.TestObservation).ConfigureAwait(false);
                                 }
-                            }).ConfigureAwait(false);
+                            },
+                                ownerCancellationToken: cancellationToken).ConfigureAwait(false);
                             batchDiagnostics.AddRange(native.Result.Diagnostics);
                             result = native.Result with { RunId = ownedRunId, Diagnostics = [.. batchDiagnostics] };
                             if (result.Outcome.ExitCode != ToolExitCode.Success)
@@ -1246,10 +1264,23 @@ public static class ModuleCommandExecutionService
                 }
             }
 
-            if (record is { TerminalOutcome.ExitCode: not ToolExitCode.Success })
+            if (record is null && ownedRunId is not null && engine is not null)
+            {
+                try
+                {
+                    using CancellationTokenSource recovery = new(TimeSpan.FromSeconds(5));
+                    record = await engine.ReadCommittedOutcomeAsync(ownedRunId, recovery.Token).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+                {
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "The committed first observation could not be recovered.", "evidence"));
+                }
+            }
+
+            if (record is not null)
             {
                 result = result with { Status = record.TerminalStatus, Outcome = record.TerminalOutcome };
-                passed = false;
+                passed = record.TerminalOutcome.ExitCode == ToolExitCode.Success;
                 withdrawn = record.TerminalStatus is "cancelled" or "withdrawn";
             }
 

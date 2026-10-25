@@ -20,7 +20,8 @@ public static class CompositionRunListing
         ArgumentNullException.ThrowIfNull(store);
         try
         {
-            IReadOnlyList<CompositionRunState> states = await store.EnumerateAsync(cancellationToken).ConfigureAwait(false);
+            bool incomplete = false;
+            IReadOnlyList<CompositionRunState> states = await store.EnumerateAsync(() => incomplete = true, cancellationToken).ConfigureAwait(false);
             IReadOnlyList<CompositionRunListingEntry> entries = [.. states.Select(state => new CompositionRunListingEntry(
                 state.RunId,
                 state.EnvironmentId,
@@ -36,13 +37,18 @@ public static class CompositionRunListing
                 "unavailable-admission-unsupported",
                 null,
                 state.RemainingResources ?? state.TestRun?.RemainingResources)),];
-            return new ToolCommandResult("completed", ToolOutcome.Passed(), []) { Environments = entries };
+            return (incomplete ? Incomplete() : new ToolCommandResult("completed", ToolOutcome.Passed(), [])) with { Environments = entries };
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            ToolDiagnostic diagnostic = new("HXR024", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "Tracked environment metadata cannot be verified; listing is incomplete.", "state");
-            return new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [diagnostic]);
+            return Incomplete();
         }
+    }
+
+    private static ToolCommandResult Incomplete()
+    {
+        ToolDiagnostic diagnostic = new("HXR024", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "Tracked environment metadata cannot be verified; listing is incomplete.", "state");
+        return new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [diagnostic]);
     }
 
     private static string Retention(CompositionRunState state) => state.TestRun switch

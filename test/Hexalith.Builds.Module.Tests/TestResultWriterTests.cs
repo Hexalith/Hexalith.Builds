@@ -46,6 +46,7 @@ public sealed class TestResultWriterTests
         JsonElement document = result.Document!.Value;
         document.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe(outcome);
         document.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe(cause);
+        document.GetProperty("bindings").GetProperty("environment").GetProperty("resources").GetProperty("state").GetString().ShouldBe("not-yet-populated");
         document.GetProperty("bindings").GetProperty("environment").GetProperty("catalog").GetProperty("state").GetString().ShouldBe("not-yet-populated");
         document.GetProperty("bindings").GetProperty("deadlines").GetProperty("execution").GetProperty("state").GetString().ShouldBe("not-yet-populated");
         foreach (JsonElement reference in document.GetProperty("diagnostics").EnumerateArray())

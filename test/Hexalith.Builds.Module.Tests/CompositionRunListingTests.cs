@@ -56,6 +56,8 @@ public sealed class CompositionRunListingTests
             output.ToString().ShouldContain(state.EnvironmentId!);
             output.ToString().ShouldContain(state.AttemptId!);
             output.ToString().ShouldContain("incomplete");
+            output.ToString().ShouldContain("workspace:" + state.RunId);
+            output.ToString().ShouldContain("unverified");
             output.ToString().ShouldContain("unavailable");
             if (format == "json")
             {
@@ -77,8 +79,36 @@ public sealed class CompositionRunListingTests
         await File.WriteAllTextAsync(store.PathFor(state.RunId), "{invalid credential=do-not-echo}", TestContext.Current.CancellationToken).ConfigureAwait(true);
         ToolCommandResult result = await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
         result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
-        result.Environments.ShouldBeNull();
+        result.Environments.ShouldBeEmpty();
         result.Diagnostics.Single().Message.ShouldNotContain("do-not-echo");
+    }
+
+    /// <summary>One invalid owner does not hide verified peers or permit duplicate issued identities.</summary>
+    /// <param name="duplicate">Whether valid JSON reuses the environment identity for the attempt.</param>
+    /// <returns>The incomplete listing and preserved valid peer assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task InvalidEntryDoesNotHideVerifiedPeerAsync(bool duplicate)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (_, CompositionRunState valid) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionRunStateStore store = new(Path.Combine(workspace.Root, "state"));
+        await store.WriteAsync(valid, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string corrupt = CompositionRunPlanFactory.NewRunId();
+        if (duplicate)
+        {
+            await store.WriteAsync(valid with { RunId = corrupt, AttemptId = valid.EnvironmentId }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        else
+        {
+            await File.WriteAllTextAsync(store.PathFor(corrupt), "{invalid}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        ToolCommandResult result = await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
+        result.Environments.ShouldNotBeNull().Single().OwnerRunId.ShouldBe(valid.RunId);
+        result.Diagnostics.Single().Message.ShouldContain("listing is incomplete");
     }
 
     /// <summary>Well-formed JSON with a null required nested lifecycle value returns the structured incomplete refusal.</summary>
@@ -93,7 +123,66 @@ public sealed class CompositionRunListingTests
         await store.WriteAsync(state with { TestRun = record }, TestContext.Current.CancellationToken).ConfigureAwait(true);
         ToolCommandResult result = await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
         result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
-        result.Environments.ShouldBeNull();
+        result.Environments.ShouldBeEmpty();
         result.Diagnostics.Single().Message.ShouldContain("listing is incomplete");
+    }
+
+    /// <summary>Nested terminal identities cannot borrow another owner while healthy peers stay visible.</summary>
+    /// <param name="field">The nested owner identity to corrupt.</param>
+    /// <returns>The incomplete listing with the healthy peer.</returns>
+    [Theory]
+    [InlineData("run")]
+    [InlineData("owner")]
+    public async Task ForeignNestedTerminalIdentityPreservesHealthyPeerAsync(string field)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState healthy) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionRunStateStore store = new(Path.Combine(workspace.Root, "state"));
+        await store.WriteAsync(healthy, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string invalidId = CompositionRunPlanFactory.NewRunId();
+        CompositionRunState invalid = CompositionRunPlanFactory.CreateInitialState(invalidId, Path.Combine(workspace.Root, invalidId), selected.ManifestHash, selected.RequestedAtUtc);
+        ModuleTestRunRecord terminal = new(field == "run" ? healthy.RunId : invalidId, field == "owner" ? healthy.RunId : invalidId, selected, null, null, null, null, null, false, [], "failed", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.ProductOrTest, "HXT007", ToolExitCode.ProductOrTest), DateTimeOffset.UtcNow, "retained", new CompositionRunResources([], []));
+        await store.WriteAsync(invalid with { TestRun = terminal }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ToolCommandResult listed = await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        listed.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
+        listed.Environments.ShouldNotBeNull().Single().OwnerRunId.ShouldBe(healthy.RunId);
+    }
+
+    /// <summary>Persisted terminal disposition is rendered consistently in both actual CLI formats.</summary>
+    /// <param name="retention">The expected retention classification.</param>
+    /// <returns>The human and parsed JSON retention assertions.</returns>
+    [Theory]
+    [InlineData("failure-retained")]
+    [InlineData("released")]
+    [InlineData("not-retained")]
+    [InlineData("unavailable")]
+    public async Task CliListingClassifiesPersistedRetentionAsync(string retention)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected);
+        bool failure = retention is "failure-retained" or "released";
+        string disposition = retention == "failure-retained" ? "retained" : "removed";
+        string cleanup = retention == "released" ? "complete" : "not-requested";
+        ToolOutcome outcome = failure ? ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.ProductOrTest, "HXT007", ToolExitCode.ProductOrTest) : ToolOutcome.Passed();
+        ModuleTestRunRecord terminal = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], failure ? "failed" : "completed", outcome, DateTimeOffset.UtcNow, disposition, new CompositionRunResources([], [])) { FailureRetained = failure, CleanupDisposition = cleanup };
+        state = state with { TestRun = terminal, CreatedAt = retention == "unavailable" ? null : state.CreatedAt, CleanupDisposition = cleanup };
+        await new CompositionRunStateStore(options.StateDirectory).WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        foreach (string format in new[] { "human", "json" })
+        {
+            StringWriter output = new();
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
+            int exit = await ModuleCommandApplication.InvokeAsync(["list", "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken, compositionOptions: options).ConfigureAwait(true);
+            exit.ShouldBe(0, output.ToString());
+            if (format == "json")
+            {
+                using JsonDocument document = JsonDocument.Parse(output.ToString());
+                document.RootElement.GetProperty("environments")[0].GetProperty("retention").GetString().ShouldBe(retention);
+            }
+            else
+            {
+                output.ToString().ShouldContain("retention=" + retention);
+            }
+        }
     }
 }

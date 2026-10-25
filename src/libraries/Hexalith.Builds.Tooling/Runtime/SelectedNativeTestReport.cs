@@ -194,10 +194,11 @@ internal static class SelectedNativeTestReport
 
     /// <summary>Opens a held read handle without following links or blocking on a replaced Unix FIFO.</summary>
     /// <param name="path">The caller-validated owned path.</param>
+    /// <param name="respectSharing">Whether an existing exclusive writer must refuse this read.</param>
     /// <returns>The held stream, whose seekability and positive length the caller must check.</returns>
     /// <exception cref="IOException">The path could not be opened safely.</exception>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The returned FileStream owns the SafeFileHandle; constructor failure disposes it explicitly.")]
-    internal static FileStream OpenWithoutBlocking(string path)
+    internal static FileStream OpenWithoutBlocking(string path, bool respectSharing = false)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -214,7 +215,9 @@ internal static class SelectedNativeTestReport
         SafeFileHandle handle = new(descriptor, ownsHandle: true);
         try
         {
-            return new FileStream(handle, FileAccess.Read, 8192, isAsync: false);
+            return respectSharing && Flock(descriptor, 1 | 4) != 0
+                ? throw new IOException("Runner metadata is exclusively held.")
+                : new FileStream(handle, FileAccess.Read, 8192, isAsync: false);
         }
         catch
         {
@@ -268,6 +271,11 @@ internal static class SelectedNativeTestReport
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2101:Specify marshaling for P/Invoke string arguments", Justification = "Unix open requires UTF-8 bytes, explicitly marshaled as LPUTF8Str.")]
     [DllImport("libc", EntryPoint = "open", SetLastError = true, BestFitMapping = false, ThrowOnUnmappableChar = true)]
     private static extern int Open([MarshalAs(UnmanagedType.LPUTF8Str)] string path, int flags);
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "SYSLIB1054:Use LibraryImportAttribute instead of DllImportAttribute", Justification = "This nonblocking Unix sharing check uses the existing safe descriptor without generated unsafe code.")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
+    [DllImport("libc", EntryPoint = "flock", SetLastError = true)]
+    private static extern int Flock(int descriptor, int operation);
 
     private static (NativeTestReportLoadResult Report, byte[]? Bytes) Inspect(string path, byte[] bytes, IReadOnlyList<string> secrets)
     {

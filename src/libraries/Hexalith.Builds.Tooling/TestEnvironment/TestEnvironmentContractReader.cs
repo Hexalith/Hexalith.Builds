@@ -351,7 +351,8 @@ public static class TestEnvironmentContractReader
         JsonElement bindings = root.GetProperty("bindings");
         JsonElement environment = bindings.GetProperty("environment");
         HashSet<string> resources = new(StringComparer.Ordinal);
-        foreach (JsonElement resource in environment.GetProperty("resources").EnumerateArray())
+        JsonElement resourceBinding = environment.GetProperty("resources");
+        foreach (JsonElement resource in resourceBinding.ValueKind == JsonValueKind.Array ? resourceBinding.EnumerateArray() : Enumerable.Empty<JsonElement>())
         {
             if (!resources.Add(resource.GetProperty("resourceId").GetString()!))
             {
@@ -368,7 +369,7 @@ public static class TestEnvironmentContractReader
 
         JsonElement readiness = environment.GetProperty("readiness");
         if (StringValue(readiness, "state") == "populated"
-            && (!HasUniqueIds(readiness.GetProperty("resources"), "resourceId")
+            && (resourceBinding.ValueKind != JsonValueKind.Array || !HasUniqueIds(readiness.GetProperty("resources"), "resourceId")
                 || readiness.GetProperty("resources").EnumerateArray().Any(item => !resources.Contains(StringValue(item, "resourceId")!))))
         {
             return false;

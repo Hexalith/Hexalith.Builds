@@ -1481,10 +1481,17 @@
           "$ref": "#/$defs/isolation"
         },
         "resources": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/resource"
-          }
+          "oneOf": [
+            {
+              "$ref": "#/$defs/unpopulated"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/resource"
+              }
+            }
+          ]
         },
         "readiness": {
           "$ref": "#/$defs/readiness"

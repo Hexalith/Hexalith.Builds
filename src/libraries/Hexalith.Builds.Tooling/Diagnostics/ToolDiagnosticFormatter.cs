@@ -85,6 +85,15 @@ public static class ToolDiagnosticFormatter
                 AppendField(builder, "startup-deadline", environment.StartupDeadlineUtc?.ToString("O", CultureInfo.InvariantCulture) ?? "unavailable");
                 AppendField(builder, "execution-deadline", environment.ExecutionDeadlineUtc?.ToString("O", CultureInfo.InvariantCulture) ?? "unavailable");
                 AppendField(builder, "hold-deadline", "unavailable");
+                if (environment.RemainingResources is { } leftovers)
+                {
+                    AppendField(builder, "leftovers", string.Join(",", leftovers.ResourceIds));
+                    if (leftovers.Unverified)
+                    {
+                        AppendField(builder, "discovery", "unverified");
+                        AppendField(builder, "discovery-failures", string.Join(",", leftovers.DiscoveryFailures));
+                    }
+                }
             }
         }
 

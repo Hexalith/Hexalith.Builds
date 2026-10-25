@@ -232,7 +232,7 @@ public static class TestResultWriter
                 ["isolation"] = Unavailable(),
 
                 // Ownership and endpoints not validated at handoff remain explicitly unobserved.
-                ["resources"] = new JsonArray(),
+                ["resources"] = Unavailable(),
                 ["readiness"] = Unavailable(),
                 ["startupTasks"] = Unavailable(),
             },

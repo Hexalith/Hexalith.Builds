@@ -79,38 +79,8 @@ public sealed class CompositionRunStateStore(string directory)
     /// <param name="cancellationToken">The enumeration cancellation.</param>
     /// <returns>Durable states ordered by owner identity.</returns>
     /// <exception cref="IOException">Tracked state is invalid or unreadable; absence is never substituted.</exception>
-    public async Task<IReadOnlyList<CompositionRunState>> EnumerateAsync(CancellationToken cancellationToken = default)
-    {
-        if (!System.IO.Directory.Exists(Directory))
-        {
-            return [];
-        }
-
-        List<CompositionRunState> states = [];
-        foreach (string path in System.IO.Directory.EnumerateFiles(Directory, "*.json", SearchOption.TopDirectoryOnly))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            string runId = Path.GetFileNameWithoutExtension(path);
-            if (!CompositionRunPlanFactory.IsRunId(runId))
-            {
-                throw new IOException("Runner-owned run state has an invalid identity.");
-            }
-
-            CompositionRunState? state = await TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
-            if (state is null || state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId
-                || !Path.IsPathFullyQualified(state.Workspace) || !Enum.IsDefined(state.Status)
-                || (state.TestRun is { } test && (test.TerminalOutcome is null || test.RemainingResources is null || test.Resources is null || test.Selection is null))
-                || (state.AttemptId is not null && (!CompositionRunPlanFactory.IsRunId(state.AttemptId) || state.AttemptId == runId))
-                || (state.EnvironmentId is not null && (!CompositionRunPlanFactory.IsRunId(state.EnvironmentId) || state.EnvironmentId == runId)))
-            {
-                throw new IOException("Runner-owned run state cannot be verified.");
-            }
-
-            states.Add(state);
-        }
-
-        return [.. states.OrderBy(state => state.RunId, StringComparer.Ordinal)];
-    }
+    public Task<IReadOnlyList<CompositionRunState>> EnumerateAsync(CancellationToken cancellationToken = default)
+        => EnumerateAsync(null, cancellationToken);
 
     /// <summary>
     /// Deletes one run state best-effort.
@@ -134,5 +104,64 @@ public sealed class CompositionRunStateStore(string directory)
         {
             return false;
         }
+    }
+
+    /// <summary>Checks that recorded resource collections can be consumed without inventing missing observations.</summary>
+    /// <param name="resources">The optional recorded observation.</param>
+    /// <returns>Whether every represented collection is present.</returns>
+    internal static bool ValidResources(CompositionRunResources? resources) => resources is null
+        || (resources.ContainerIds?.All(id => id is not null) == true
+            && resources.ProcessIds is not null && resources.WorkspaceIds?.All(id => id is not null) == true
+            && resources.ClaimIds?.All(id => id is not null) == true && resources.DiscoveryFailures is not null);
+
+    /// <summary>Enumerates verified states while optionally reporting individual unreadable entries.</summary>
+    /// <param name="onInvalid">Receives each unverifiable entry; absence preserves strict enumeration.</param>
+    /// <param name="cancellationToken">The enumeration cancellation.</param>
+    /// <returns>The verified states.</returns>
+    /// <exception cref="IOException">An entry is invalid and no incomplete-list observer is provided.</exception>
+    internal async Task<IReadOnlyList<CompositionRunState>> EnumerateAsync(Action? onInvalid, CancellationToken cancellationToken)
+    {
+        if (!System.IO.Directory.Exists(Directory))
+        {
+            return [];
+        }
+
+        List<CompositionRunState> states = [];
+        foreach (string path in System.IO.Directory.EnumerateFiles(Directory, "*.json", SearchOption.TopDirectoryOnly))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string runId = Path.GetFileNameWithoutExtension(path);
+            if (!CompositionRunPlanFactory.IsRunId(runId))
+            {
+                if (onInvalid is null)
+                {
+                    throw new IOException("Runner-owned run state has an invalid identity.");
+                }
+
+                onInvalid();
+                continue;
+            }
+
+            CompositionRunState? state = await TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
+            if (state is null || state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId
+                || string.IsNullOrEmpty(state.Workspace) || !Path.IsPathFullyQualified(state.Workspace) || !Enum.IsDefined(state.Status)
+                || !ValidResources(state.RemainingResources)
+                || (state.TestRun is { } test && (test.RunId != runId || test.OwnerId != runId || test.TerminalOutcome is null || test.RemainingResources is null || !ValidResources(test.RemainingResources) || test.Resources is null || test.Selection is null))
+                || (state.AttemptId is not null && (!CompositionRunPlanFactory.IsRunId(state.AttemptId) || state.AttemptId == runId || state.AttemptId == state.EnvironmentId))
+                || (state.EnvironmentId is not null && (!CompositionRunPlanFactory.IsRunId(state.EnvironmentId) || state.EnvironmentId == runId)))
+            {
+                if (onInvalid is null)
+                {
+                    throw new IOException("Runner-owned run state cannot be verified.");
+                }
+
+                onInvalid();
+                continue;
+            }
+
+            states.Add(state);
+        }
+
+        return [.. states.OrderBy(state => state.RunId, StringComparer.Ordinal)];
     }
 }

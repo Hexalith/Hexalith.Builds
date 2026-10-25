@@ -380,6 +380,24 @@
             },
             "isEmpty": {
               "type": "boolean"
+            },
+            "workspaceIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "claimIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "discoveryFailures": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         },

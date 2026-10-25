@@ -190,11 +190,13 @@ public sealed class CompositionEngineTests
 
     /// <summary>An allocated declared owner records mapping refusal as a retained startup failure rather than an orphaned Starting state.</summary>
     /// <param name="declared">Whether a declared suite owns the allocated environment.</param>
+    /// <param name="deletionFails">Whether the refused workspace became a peer link.</param>
     /// <returns>The durable first outcome and exact cleanup assertions.</returns>
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AllocatedMappingFailurePreservesDeclaredOutcomeAndLegacyCleanupAsync(bool declared)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task AllocatedMappingFailurePreservesDeclaredOutcomeAndLegacyCleanupAsync(bool declared, bool deletionFails)
     {
         using PlatformManifestTestWorkspace workspace = new();
         (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
@@ -208,11 +210,34 @@ public sealed class CompositionEngineTests
             ReadinessTimeout = TimeSpan.FromSeconds(600),
             SelectedTest = declared ? selected : null,
             RetainOnFailure = declared,
-            PlatformModelBuildOverride = (_, _, _) => throw new WorkspaceMappingException("Verified catalog inputs are unavailable."),
+            PlatformModelBuildOverride = async (_, prepared, token) =>
+            {
+                if (deletionFails)
+                {
+                    string peer = Path.Combine(workspace.Root, "peer");
+                    CompositionWorkspace.CreatePrivateDirectory(peer);
+                    await File.WriteAllTextAsync(Path.Combine(peer, "data"), "peer-sentinel", token).ConfigureAwait(false);
+                    Directory.Delete(prepared, true);
+                    Directory.CreateSymbolicLink(prepared, peer).LinkTarget.ShouldBe(peer);
+                }
+
+                throw new WorkspaceMappingException("Verified catalog inputs are unavailable.");
+            },
         };
         CompositionEngine engine = new(options);
         CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
         result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.PrerequisiteUnavailable);
+        if (deletionFails)
+        {
+            string retained = result.RunId.ShouldNotBeNull();
+            CompositionRunState retry = (await engine.StateStore.TryReadAsync(retained, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            retry.CleanupDisposition.ShouldBe("incomplete");
+            result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXW009");
+            (await File.ReadAllTextAsync(Path.Combine(workspace.Root, "peer", "data"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("peer-sentinel");
+            Directory.Delete(retry.Workspace);
+            return;
+        }
+
         if (!declared)
         {
             result.RunId.ShouldBeNull();

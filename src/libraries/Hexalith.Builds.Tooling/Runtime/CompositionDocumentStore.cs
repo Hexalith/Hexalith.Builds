@@ -76,6 +76,42 @@ public static class CompositionDocumentStore
         }
     }
 
+    /// <summary>Reads durable metadata without treating an unreadable existing document as absent.</summary>
+    /// <typeparam name="T">The document type.</typeparam>
+    /// <param name="path">The absolute document path.</param>
+    /// <param name="cancellationToken">The recording allowance.</param>
+    /// <returns>The document, or null only when no document exists.</returns>
+    /// <exception cref="IOException">The existing document cannot be verified.</exception>
+    internal static async Task<T?> ReadIfExistsAsync<T>(string path, CancellationToken cancellationToken)
+        where T : class
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if ((File.GetAttributes(path) & (FileAttributes.Directory | FileAttributes.ReparsePoint)) != 0)
+            {
+                throw new IOException("Runner metadata cannot be verified.");
+            }
+
+            FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(path, respectSharing: true);
+            await using (stream.ConfigureAwait(false))
+            {
+                return !stream.CanSeek || stream.Length > 4 * 1024 * 1024
+                    ? throw new IOException("Runner metadata cannot be verified.")
+                    : (await JsonSerializer.DeserializeAsync<T>(stream, SerializerOptions, cancellationToken).ConfigureAwait(false)
+                        ?? throw new IOException("Runner metadata cannot be verified."));
+            }
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return null;
+        }
+        catch (Exception exception) when (exception is JsonException or NotSupportedException)
+        {
+            throw new IOException("Runner metadata cannot be verified.", exception);
+        }
+    }
+
     /// <summary>Publishes complete artifact bytes using a private temporary file and atomic rename.</summary>
     /// <param name="path">The destination.</param>
     /// <param name="bytes">The inspected bytes.</param>

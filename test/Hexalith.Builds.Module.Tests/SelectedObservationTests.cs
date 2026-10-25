@@ -357,7 +357,7 @@ public sealed class SelectedObservationTests
         ((int)internalFailure.Result.Outcome.ExitCode).ShouldBe(3);
         internalFailure.Result.Outcome.RuleId.ShouldBe("HXT009");
         NativeTestExecutionResult withdrawn = NativeTestExecutor.SelectedInterruption(true);
-        withdrawn.Result.Status.ShouldBe("withdrawn");
+        withdrawn.Result.Status.ShouldBe("cancelled");
         ((int)withdrawn.Result.Outcome.ExitCode).ShouldBe(130);
         withdrawn.Result.Outcome.RuleId.ShouldBe("HXC130");
     }

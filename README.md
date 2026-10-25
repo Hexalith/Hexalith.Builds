@@ -436,6 +436,12 @@ already established retention. The first outcome, cause and UTC time are committ
 before cleanup or optional archival and survive later cancellation and retries.
 CI keeps its existing cleanup policy.
 
+Command terminal status and outcome preserve the first recorded observation.
+Later archive or cleanup errors remain in diagnostics and cleanup disposition.
+An exhausted stopping allowance does not suppress the finite metadata commit or
+renew the execution, archive or cleanup allowance. Unreadable existing outcomes
+refuse replacement.
+
 ```sh
 hexalith-module list --output human
 hexalith-module list --output json
@@ -450,6 +456,9 @@ Exact cleanup accepts an omitted, missing or changed manifest, removes only the
 requested owner's resources and claims, and can be retried safely. Incomplete
 cleanup exposes exact known container/process/workspace/claim leftovers and
 explicit discovery uncertainty.
+Valid listing rows remain visible alongside an incomplete-list diagnostic when
+another state file is corrupt. Both output formats include known leftovers, and
+explicit down returns the durable result path.
 
 Validated `hexalith.test-result.v1` results live at
 `<state-directory>/diagnostics/<run-id>/test-result.json`, outside deleted run

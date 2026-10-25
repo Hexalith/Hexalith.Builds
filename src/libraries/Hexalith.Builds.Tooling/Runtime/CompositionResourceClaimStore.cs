@@ -25,10 +25,38 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
         ArgumentOutOfRangeException.ThrowIfEqual(CompositionRunPlanFactory.IsRunId(runId), false);
         CompositionWorkspace.CreatePrivateDirectory(_directory);
         using FileStream transaction = OpenTransaction();
+        string[] requested = [.. resourceIds.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        string ownerDirectory = Path.Combine(_directory, "owners");
+        CompositionWorkspace.CreatePrivateDirectory(ownerDirectory);
+        string receipt = Path.Combine(ownerDirectory, runId + ".json");
+        string[] prior = ReadReceipt(runId);
+        string[] identities = [.. prior.Concat(requested.Select(resource => Path.GetFileNameWithoutExtension(PathFor(resource)))).Distinct(StringComparer.Ordinal)];
+        string receiptTemporary = Path.Combine(ownerDirectory, "." + Guid.NewGuid().ToString("N") + ".tmp");
+        try
+        {
+            FileStreamOptions receiptOptions = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write };
+            if (!OperatingSystem.IsWindows())
+            {
+                receiptOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            }
+
+            using (FileStream stream = new(receiptTemporary, receiptOptions))
+            {
+                JsonSerializer.Serialize(stream, identities);
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Move(receiptTemporary, receipt, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(receiptTemporary);
+        }
+
         List<string> acquired = [];
         try
         {
-            foreach (string resourceId in resourceIds.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
+            foreach (string resourceId in requested)
             {
                 ArgumentException.ThrowIfNullOrWhiteSpace(resourceId);
                 string path = PathFor(resourceId);
@@ -121,21 +149,30 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
     /// <summary>Lists exact claim file identities whose durable owner is this run.</summary>
     /// <param name="runId">The owner identity.</param>
     /// <returns>The owned claim identities.</returns>
-    /// <exception cref="IOException">An existing claim's owner cannot be verified.</exception>
+    /// <exception cref="IOException">A claim recorded for this run cannot be verified.</exception>
     public IReadOnlyList<string> FindOwned(string runId)
     {
+        ArgumentOutOfRangeException.ThrowIfEqual(CompositionRunPlanFactory.IsRunId(runId), false);
         if (!Directory.Exists(_directory))
         {
             return [];
         }
 
         List<string> owned = [];
+        string[] recorded = ReadReceipt(runId);
+        HashSet<string> expected = new(recorded, StringComparer.Ordinal);
         foreach (string path in Directory.EnumerateFiles(_directory, "*.json"))
         {
-            string owner = ReadOwner(path) ?? throw new IOException("Managed claim ownership cannot be verified.");
+            string identity = Path.GetFileNameWithoutExtension(path);
+            string? owner = ReadOwner(path);
+            if (owner is null && expected.Contains(identity))
+            {
+                throw new IOException("Managed claim ownership cannot be verified.");
+            }
+
             if (owner == runId)
             {
-                owned.Add("claim:" + Path.GetFileNameWithoutExtension(path));
+                owned.Add("claim:" + identity);
             }
         }
 
@@ -158,6 +195,34 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
             return null;
+        }
+    }
+
+    private string[] ReadReceipt(string runId)
+    {
+        string receipt = Path.Combine(_directory, "owners", runId + ".json");
+        try
+        {
+            _ = File.GetAttributes(receipt);
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return [];
+        }
+
+        try
+        {
+            using FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(receipt, respectSharing: true);
+            string[] identities = stream.CanSeek && stream.Length <= 64 * 1024
+                ? JsonSerializer.Deserialize<string[]>(stream) ?? throw new IOException("Claim receipt cannot be verified.")
+                : throw new IOException("Claim receipt cannot be verified.");
+            return identities.All(identity => identity is { Length: 64 } && identity.All(char.IsAsciiHexDigit))
+                ? identities
+                : throw new IOException("Claim receipt cannot be verified.");
+        }
+        catch (JsonException exception)
+        {
+            throw new IOException("Claim receipt cannot be verified.", exception);
         }
     }
 

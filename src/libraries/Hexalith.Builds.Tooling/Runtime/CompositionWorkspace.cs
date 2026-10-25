@@ -68,6 +68,18 @@ public static class CompositionWorkspace
             }
         }
 
-        return false;
+        try
+        {
+            _ = File.GetAttributes(path);
+            return false;
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 }

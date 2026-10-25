@@ -25,12 +25,14 @@ public sealed class LocalRunLifecycleTests
     /// <param name="mode">The selected local mode.</param>
     /// <param name="fails">Whether the real native child fails.</param>
     /// <param name="archiveFails">Whether optional archival fails after the first observed pass.</param>
+    /// <param name="cleanupFails">Whether deletion remains incomplete after the first observed pass.</param>
     /// <returns>The output, result and workspace assertions.</returns>
     [Theory]
-    [InlineData("source", false, false)]
-    [InlineData("source", true, false)]
-    [InlineData("source", false, true)]
-    public async Task NativeOutcomeControlsLocalCleanupAsync(string mode, bool fails, bool archiveFails)
+    [InlineData("source", false, false, false)]
+    [InlineData("source", true, false, false)]
+    [InlineData("source", false, true, false)]
+    [InlineData("source", false, false, true)]
+    public async Task NativeOutcomeControlsLocalCleanupAsync(string mode, bool fails, bool archiveFails, bool cleanupFails)
     {
         using PlatformManifestTestWorkspace workspace = new();
         (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace, mode);
@@ -75,6 +77,12 @@ public sealed class LocalRunLifecycleTests
             PlatformDownOverride = (_, _) =>
             {
                 cleanups++;
+                if (cleanupFails)
+                {
+                    ToolDiagnostic failedCleanup = new("HXR023", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Owned deletion remains incomplete.", "down");
+                    return Task.FromResult(new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(failedCleanup.Phase, failedCleanup.Category, failedCleanup.RuleId, ToolExitCode.TopologyOrLifecycle), [failedCleanup]), new CompositionRunResources([], [], true) { WorkspaceIds = ["workspace:" + session!.RunId] }));
+                }
+
                 Directory.Delete(session!.Plan.Workspace, true);
                 return Task.FromResult(new CompositionDownResult(new ToolCommandResult("completed", ToolOutcome.Passed(), []), new CompositionRunResources([], [])));
             },
@@ -82,7 +90,7 @@ public sealed class LocalRunLifecycleTests
         StringWriter output = new();
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
         int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, manifest, "verify", null, null, ToolOutputFormat.Json, output, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options, mode: artifactMode).ConfigureAwait(true);
-        int expectedExit = archiveFails ? 6 : 0;
+        int expectedExit = 0;
         if (fails)
         {
             expectedExit = 4;
@@ -90,14 +98,20 @@ public sealed class LocalRunLifecycleTests
 
         exit.ShouldBe(expectedExit, output.ToString());
         cleanups.ShouldBe(fails ? 0 : 1);
-        Directory.Exists(session!.Plan.Workspace).ShouldBe(fails);
+        Directory.Exists(session!.Plan.Workspace).ShouldBe(fails || cleanupFails);
         string resultPath = Path.Combine(options.StateDirectory, "diagnostics", session.RunId, "test-result.json");
         TestEnvironmentContractReadResult result = TestEnvironmentContractReader.ReadResult(resultPath, TestContext.Current.CancellationToken);
         result.IsValid.ShouldBeTrue(output.ToString());
         JsonElement document = result.Document!.Value;
         document.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe(fails ? "failed" : "passed");
         document.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe(fails ? "failure-retained" : "not-retained");
-        document.GetProperty("cleanup").GetProperty("disposition").GetString().ShouldBe(fails ? "not-requested" : "complete");
+        string expectedCleanup = (fails, cleanupFails) switch
+        {
+            (true, _) => "not-requested",
+            (_, true) => "incomplete",
+            _ => "complete",
+        };
+        document.GetProperty("cleanup").GetProperty("disposition").GetString().ShouldBe(expectedCleanup);
         using JsonDocument original = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(workspace.Root, "original-descriptor.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
         JsonElement originalBindings = original.RootElement.GetProperty("bindings");
         JsonElement retainedBindings = document.GetProperty("bindings");
@@ -658,6 +672,14 @@ public sealed class LocalRunLifecycleTests
                 token.ThrowIfCancellationRequested();
                 CompositionReadiness ready = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), "sample");
                 session = new CompositionRunSession(plan, ready, "private-signing-key", appHost);
+                CompositionRunState issued = CompositionRunPlanFactory.CreateInitialState(plan.RunId, plan.Workspace, selection.ManifestHash, selection.RequestedAtUtc) with
+                {
+                    SelectedTest = selection,
+                    AttemptId = plan.AttemptId,
+                    EnvironmentId = plan.EnvironmentId,
+                    ExecutionContext = JsonSerializer.SerializeToElement(new { kind = "local" }),
+                };
+                await new CompositionRunStateStore(Path.Combine(workspace.Root, "state")).WriteAsync(issued, token).ConfigureAwait(false);
                 return new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), plan.RunId, session);
             },
             PlatformDownOverride = async (_, token) =>

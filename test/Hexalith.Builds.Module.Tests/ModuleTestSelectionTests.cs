@@ -97,8 +97,8 @@ public sealed class ModuleTestSelectionTests
     [InlineData("entry-drift", 4, 0, "retained")]
     [InlineData("manifest-drift", 4, 0, "retained")]
     [InlineData("ci-failure", 4, 1, "removed")]
-    [InlineData("cleanup-throws", 3, 1, "unknown")]
-    [InlineData("cleanup-unverified", 3, 1, "unknown")]
+    [InlineData("cleanup-throws", 0, 1, "unknown")]
+    [InlineData("cleanup-unverified", 0, 1, "unknown")]
     [InlineData("cancel", 130, 1, "removed")]
     [InlineData("timeout", 4, 0, "retained")]
     public async Task PythonCommandBindsRealReportAndCleanupAsync(string scenario, int expectedExit, int expectedCleanup, string disposition)
@@ -180,6 +180,15 @@ public sealed class ModuleTestSelectionTests
         int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, manifest, profile, null, "evidence/result.json", ToolOutputFormat.Json, writer, owner.Token, "child.dll", compositionOptions: options).ConfigureAwait(true);
         exit.ShouldBe(expectedExit, writer.ToString());
         cleanups.ShouldBe(expectedCleanup);
+        if (scenario is "cleanup-throws" or "cleanup-unverified")
+        {
+            writer.ToString().ShouldContain("HXR023");
+            using JsonDocument command = JsonDocument.Parse(writer.ToString());
+            JsonElement terminal = Hexalith.Builds.Tooling.TestEnvironment.TestEnvironmentContractReader.ReadResult(command.RootElement.GetProperty("testResultPath").GetString()!, TestContext.Current.CancellationToken).Document!.Value;
+            terminal.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("passed");
+            terminal.GetProperty("cleanup").GetProperty("disposition").GetString().ShouldBe("incomplete");
+        }
+
         byte[] evidence = await File.ReadAllBytesAsync(Path.Combine(workspace.Root, "evidence/result.json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
         ModuleRunEvidenceArtifactValidator.TryValidate(evidence, out _).ShouldBeTrue(System.Text.Encoding.UTF8.GetString(evidence));
         using JsonDocument document = JsonDocument.Parse(evidence);

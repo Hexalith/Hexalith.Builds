@@ -269,7 +269,8 @@ public sealed partial class TestEnvironmentProvisioningTests
         using Process host = new();
         CompositionRunSession session = (await ReadyOptions(workspace.Root, manifest, host).SelectedPlatformStartOverride!(manifest, selection, TestContext.Current.CancellationToken).ConfigureAwait(true)).Session!;
         NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(session, new(selection.Entry, selection.Executor), manifest, TestContext.Current.CancellationToken, selection: selection, archiveDirectory: Path.Combine(workspace.Root, "durable")).ConfigureAwait(true);
-        result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.EvidenceSchemaOrPolicy);
+        result.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+        result.Result.Status.ShouldBe("completed");
         result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXT008");
         File.Exists(Path.Combine(workspace.Root, "children.jsonl")).ShouldBeTrue();
         foreach (string name in names)
