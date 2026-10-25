@@ -1,0 +1,5 @@
+fix(module): qualify corrected CLI release source
+
+Record the first push governance deviation and require the corrected
+Module CLI release source to pass the protected pull-request path.
+Preserve exact-SHA CI and complete release qualification gates.

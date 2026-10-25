@@ -42,3 +42,32 @@ exact resulting current `main` SHA before the governed release dispatch.
 No release-source, qualification, publication or protected-environment gate
 changes are authorized. The evidence directory retains the server observation
 and API results, including the real bypass classification.
+
+## Concurrent current-tip source confirmation
+
+While push CI for `36e7e4852ea15f54e8299d57607335c8f5435b73` was
+running, separate user work advanced main to
+`0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274` through commits
+`aece012d053df4e9b22d9ff8af424272456ad806`,
+`984c4d50205d00b5238c1cf19e93b232c3282c22`, and
+`0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274`. The previous candidate CI run
+`40181805558` was superseded and cancelled; retain that result rather than
+crediting the completed Python/CodeQL jobs as successful full CI.
+The activity API records a main push by `jpiquot` at 09:49:30 UTC, and rule
+suite `4709505883` classifies that external push as bypass. It is separate
+from this release continuation and remains disclosed in its own evidence.
+
+Preserve the incoming runtime outcome-retention and cleanup code. A
+byte-for-byte comparison of 372 release-bound inputs confirmed no changes
+to release workflows, qualifier/publisher scripts, tracked control fixtures,
+module configuration-key schema, source package/runtime catalog, lockfile or
+SDK pin. The concurrent test-environment/result schema changes must be
+measured from the eventual published package against the final source SHA.
+The raw diff hygiene check reported CRLF line endings in the existing
+run-evidence schema; the CRLF-aware check passed without changing its bytes.
+
+This source-confirmation successor must again pass a focused PR's exact-head
+required app checks and a normal squash merge. Only the resulting current
+main SHA with successful push CI may be manually released. The existing
+protected environment, complete qualification and hashed publisher still
+apply. No new semantic trigger is required beyond the existing fixes.

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "git",
+    "diff",
+    "--check",
+    "36e7e4852ea15f54e8299d57607335c8f5435b73..0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274"
+  ],
+  "exitCode": 2,
+  "observedAtUtc": "2026-10-25T09:53:02.883290+00:00"
+}

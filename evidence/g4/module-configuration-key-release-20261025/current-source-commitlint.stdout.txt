@@ -1,0 +1,7 @@
+⧗   --- input ---
+docs(module): confirm current release source
+
+Record the concurrent main advance and cancelled candidate CI.
+Preserve the incoming runtime changes and qualify the current source
+through required pull-request checks and exact-SHA push CI.
+✔   found 0 problems, 0 warnings
