@@ -1,0 +1,5 @@
+fix(module): release corrected configuration keys
+
+Publish the committed APP_API_TOKEN schema correction and installed-tool
+qualification through the governed release workflow. Preserve existing
+adoption observations and Platform acceptance boundaries.
