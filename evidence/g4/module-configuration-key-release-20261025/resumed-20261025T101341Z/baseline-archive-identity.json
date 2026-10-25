@@ -1,0 +1,19 @@
+{
+  "observedAtUtc": "2026-10-25T10:16:31.142046+00:00",
+  "archive": "baseline.json.gz",
+  "archiveSha256": "aa94de153df023daf7e9d9f5f3c60b9371ca06fd7e707b8a6f7a2fe29b08a2aa",
+  "uncompressedSha256": "b2d5bc4e69a7d7030c7fa0324c1dca3f3a9c06e7d128998a903cc1b0a3dfb4ee",
+  "uncompressedSizeBytes": 2594767,
+  "readable": "baseline-readable.json",
+  "readableSha256": "364fb9629f718d86b5e2c776c9af30287c6a3376405b0dbb1441c13f1dcc337b",
+  "roundTripEquivalent": true,
+  "sonarDiagnosis": {
+    "requiredCheckId": 121140722116,
+    "rule": "json:S6418",
+    "findingCount": 509,
+    "components": [
+      "Hexalith_Hexalith.Builds:evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/baseline.json"
+    ],
+    "meaning": "All values flagged under auth/token path-shaped JSON keys are inventory SHA-256 digests. The readable representation gives path and sha256 separate fields, with the original observation bytes retained exactly in the gzip archive. No rule, gate or scanning configuration changes."
+  }
+}

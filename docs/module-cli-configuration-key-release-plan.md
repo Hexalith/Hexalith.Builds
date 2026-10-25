@@ -71,3 +71,32 @@ required app checks and a normal squash merge. Only the resulting current
 main SHA with successful push CI may be manually released. The existing
 protected environment, complete qualification and hashed publisher still
 apply. No new semantic trigger is required beyond the existing fixes.
+
+## Resumed governed release
+
+The user instructed this continuation to resume after the external-activity
+pause. The fresh resumed entry is Conversations
+`8444207001d6ad3cd197c2ffba519317effa8b37`, Builds
+`142b06e6d05c94b55ac35e587450c35fcac87590`, and Platform
+`b9cf0e78c42ca8bfe1aa5488cc4340c238887acb`, all clean main trees.
+The [resumed entry inventory](../evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/baseline.json.gz)
+records their complete tracked file hashes and indexed gitlinks. Preserve these
+current pins/gitlinks and every earlier external-source/deviation observation.
+
+Establish a successor through a normal squash PR after all required exact-head
+Codacy, SonarCloud and commitlint app checks succeed. Record the successful
+merge rule suite, require successful push CI at the exact resulting current main
+SHA, then dispatch the existing protected release. No dependency update, gate
+change, bypass, deployment or Platform acceptance is authorized. Existing fix
+and feature commits provide semantic-release effects; let it select the version.
+
+The earlier progress records remain historical paused-attempt observations.
+Only actual complete qualification, hashed publication and a fresh restore from
+the publication feed can supply release and released-artifact handoff credit.
+
+The first resumed inventory JSON used file paths as object keys. SonarCloud
+`json:S6418` treated the SHA-256 values beside auth/token-shaped paths as
+secrets. Preserve the exact original observation in `baseline.json.gz`, with
+its uncompressed identity and a verified equivalent `baseline-readable.json`
+whose rows label `path` and `sha256` separately. This changes only the evidence
+representation; required analysis and release gates remain unchanged.

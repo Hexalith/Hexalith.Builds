@@ -1,0 +1,7 @@
+⧗   --- input ---
+docs(module): resume governed CLI release
+
+Record the resumed entry and preserve prior source observations.
+Require the normal squash PR path, exact-SHA push CI and complete
+protected release qualification before fresh feed measurements.
+✔   found 0 problems, 0 warnings
