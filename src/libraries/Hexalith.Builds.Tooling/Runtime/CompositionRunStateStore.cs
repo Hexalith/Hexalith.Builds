@@ -121,7 +121,15 @@ public sealed class CompositionRunStateStore(string directory)
     internal static bool ValidOutcome(ModuleTestRunRecord record, string runId) => record.RunId == runId && record.OwnerId == runId
         && record.TerminalOutcome is not null && record.Selection is not null && record.Resources?.All(resource => resource is not null) == true
         && record.RemainingResources is not null && ValidResources(record.RemainingResources)
-        && record.DiagnosticRuleIds is not null && record.LaterDiagnosticRuleIds is not null;
+        && record.DiagnosticRuleIds is not null && record.LaterDiagnosticRuleIds is not null
+        && ValidCleanup(record.CleanupDisposition, record.RemainingResources);
+
+    /// <summary>Checks represented cleanup states and rejects completed cleanup without verified absence.</summary>
+    /// <param name="disposition">The represented cleanup state.</param>
+    /// <param name="resources">The latest available cleanup observation.</param>
+    /// <returns>Whether the demonstrated cleanup invariants hold.</returns>
+    internal static bool ValidCleanup(string disposition, CompositionRunResources? resources) => disposition is "not-requested" or "pending" or "in-progress" or "incomplete"
+        || (disposition == "complete" && resources is not null && ValidResources(resources) && resources.IsEmpty);
 
     /// <summary>Enumerates verified states while optionally reporting individual unreadable entries.</summary>
     /// <param name="onInvalid">Receives each unverifiable entry; absence preserves strict enumeration.</param>
@@ -155,6 +163,7 @@ public sealed class CompositionRunStateStore(string directory)
             if (state is null || state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId
                 || string.IsNullOrEmpty(state.Workspace) || !Path.IsPathFullyQualified(state.Workspace) || !Enum.IsDefined(state.Status)
                 || !ValidResources(state.RemainingResources)
+                || !ValidCleanup(state.CleanupDisposition, state.RemainingResources ?? state.TestRun?.RemainingResources)
                 || (state.TestRun is { } test && !ValidOutcome(test, runId))
                 || (state.AttemptId is not null && (!CompositionRunPlanFactory.IsRunId(state.AttemptId) || state.AttemptId == runId || state.AttemptId == state.EnvironmentId))
                 || (state.EnvironmentId is not null && (!CompositionRunPlanFactory.IsRunId(state.EnvironmentId) || state.EnvironmentId == runId)))

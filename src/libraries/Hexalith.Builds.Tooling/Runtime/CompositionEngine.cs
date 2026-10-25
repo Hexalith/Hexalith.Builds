@@ -686,6 +686,24 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             bool completing = cleanupDisposition == "complete";
             if (record.CleanupDisposition != "complete")
             {
+                if (remaining.Unverified)
+                {
+                    CompositionRunResources known = record.RemainingResources;
+                    remaining = remaining with
+                    {
+                        ContainerIds = [.. remaining.ContainerIds.Concat(known.ContainerIds).Distinct(StringComparer.Ordinal)],
+                        ProcessIds = [.. remaining.ProcessIds.Concat(known.ProcessIds).Distinct()],
+                        WorkspaceIds = [.. remaining.WorkspaceIds.Concat(known.WorkspaceIds).Distinct(StringComparer.Ordinal)],
+                        ClaimIds = [.. remaining.ClaimIds.Concat(known.ClaimIds).Distinct(StringComparer.Ordinal)],
+                    };
+                }
+
+                if (cleanupDisposition == "complete" && !remaining.IsEmpty)
+                {
+                    cleanupDisposition = "incomplete";
+                    completing = false;
+                }
+
                 record = record with { ResourceDisposition = disposition, RemainingResources = remaining, CleanupDisposition = cleanupDisposition ?? record.CleanupDisposition, CleanupAttemptId = cleanupAttemptId ?? record.CleanupAttemptId };
             }
 
@@ -826,7 +844,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
         try
         {
-            return resources with { WorkspaceIds = Directory.Exists(WorkspaceFor(runId)) ? ["workspace:" + runId] : [], ClaimIds = StateStore.Claims.FindOwned(runId) };
+            bool unverifiedClaims = false;
+            IReadOnlyList<string> claims = StateStore.Claims.FindOwned(runId, () => unverifiedClaims = true);
+            return resources with { WorkspaceIds = Directory.Exists(WorkspaceFor(runId)) ? ["workspace:" + runId] : [], ClaimIds = claims, Unverified = resources.Unverified || unverifiedClaims, DiscoveryFailures = [.. resources.DiscoveryFailures, .. unverifiedClaims ? new[] { "claims" } : []] };
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
@@ -1860,7 +1880,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         IReadOnlyList<string> claims = [];
         try
         {
-            claims = StateStore.Claims.FindOwned(runId);
+            bool unverifiedClaims = false;
+            claims = StateStore.Claims.FindOwned(runId, () => unverifiedClaims = true);
+            if (unverifiedClaims)
+            {
+                failures.Add("claims");
+            }
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
@@ -2148,7 +2173,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            // A locked pre-start artifact stays visible as incomplete state rather than being reported removed.
+            // Unselected diagnostic archives may remain after a fully cleaned pre-start refusal.
         }
     }
 

@@ -148,22 +148,31 @@ public sealed class ModuleRunnerReviewRegressionTests
         Stopwatch.GetElapsedTime(started).ShouldBeLessThan(TimeSpan.FromSeconds(2));
     }
 
-    /// <summary>Post-startup bookkeeping consumes the startup's existing stopping allowance.</summary>
-    /// <returns>The exhausted-budget refusal assertion.</returns>
+    /// <summary>Terminal metadata remains readable after stopping expires without repeating resource cleanup.</summary>
+    /// <returns>The original outcome, successful metadata read and absent resource-retry assertions.</returns>
     [Fact]
     public async Task FailedStartupDoesNotRenewStoppingBudgetAsync()
     {
         using PlatformManifestTestWorkspace workspace = new();
         Declare(workspace, stop: 1);
         CompositionEngineOptions options = Options(workspace.Root);
+        DateTimeOffset terminalAt = default;
+        int cleanupAttempts = 0;
         options = options with
         {
             SelectedPlatformStartOverride = async (_, selection, token) =>
             {
                 ToolOutcome failure = ToolOutcome.Passed().Fail(ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "HXR021", ToolExitCode.TopologyOrLifecycle);
-                ModuleTestRunRecord record = new(CompositionTestFiles.RunId, CompositionTestFiles.RunId, selection, null, null, null, null, null, false, [], "failed", failure, DateTimeOffset.UtcNow, "unknown", new CompositionRunResources([], [], Unverified: true));
+                terminalAt = DateTimeOffset.UtcNow;
+                ModuleTestRunRecord record = new(CompositionTestFiles.RunId, CompositionTestFiles.RunId, selection, null, null, null, null, null, false, [], "failed", failure, terminalAt, "unknown", new CompositionRunResources([], [], Unverified: true));
                 await CompositionDocumentStore.WriteAsync(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId, "selected-test.json"), record, token).ConfigureAwait(true);
-                return new CompositionStartResult(new ToolCommandResult("failed", failure, []), CompositionTestFiles.RunId, null) { StoppingTimestamp = Stopwatch.GetTimestamp() - (2 * Stopwatch.Frequency) };
+                ToolOutcome later = ToolOutcome.Passed().Fail(ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "HXR023", ToolExitCode.TopologyOrLifecycle);
+                return new CompositionStartResult(new ToolCommandResult("failed", later, []), CompositionTestFiles.RunId, null) { StoppingTimestamp = Stopwatch.GetTimestamp() - (2 * Stopwatch.Frequency) };
+            },
+            PlatformDownOverride = (_, _) =>
+            {
+                cleanupAttempts++;
+                throw new InvalidOperationException("Startup resource stopping must not be repeated.");
             },
         };
         StringWriter output = new();
@@ -171,7 +180,12 @@ public sealed class ModuleRunnerReviewRegressionTests
         int exit = await ExecuteAsync(workspace.Save(), options, output).ConfigureAwait(true);
         exit.ShouldBe(3, output.ToString());
         output.ToString().ShouldContain("HXR021");
-        output.ToString().ShouldContain("HXT008");
+        output.ToString().ShouldNotContain("HXT008");
+        cleanupAttempts.ShouldBe(0);
+        using JsonDocument result = JsonDocument.Parse(output.ToString());
+        result.RootElement.GetProperty("outcome").GetProperty("ruleId").GetString().ShouldBe("HXR021");
+        ModuleTestRunRecord retained = (await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId, "selected-test.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        retained.TerminalAtUtc.ShouldBe(terminalAt);
     }
 
     /// <summary>Bounds root mapping, regular mapping and startup by the original startup deadline before any native child can run.</summary>

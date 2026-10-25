@@ -22,11 +22,18 @@ public static class TestResultWriter
     /// <param name="cancellationToken">The existing recording budget.</param>
     /// <returns>The absolute result location.</returns>
     /// <exception cref="InvalidDataException">The known observations cannot form a valid contract.</exception>
+    /// <exception cref="IOException">The destination no longer satisfies the owned-path policy.</exception>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Published content identities require lowercase SHA-256 hexadecimal.")]
     public static async Task<string> WriteAsync(string directory, CompositionRunState state, ModuleTestRunRecord record, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(record);
+        string ownedResult = Path.GetFullPath(Path.Combine(directory, "test-result.json"));
+        if (!SelectedNativeTestReport.IsOwnedParent(ownedResult, directory) || new FileInfo(ownedResult).LinkTarget is not null)
+        {
+            throw new IOException("The terminal result destination is outside the owned path policy.");
+        }
+
         if (state.RunId != record.RunId || state.AttemptId is null || state.EnvironmentId is null || state.CreatedAt is null)
         {
             throw new InvalidDataException("Original run identities are unavailable.");
@@ -99,7 +106,7 @@ public static class TestResultWriter
         string hash = Convert.ToHexStringLower(SHA256.HashData(retainedDiagnostic));
         string diagnosticIdentity = "sha256:" + hash;
         string diagnosticReference = "lifecycle-" + hash + ".json";
-        await CompositionDocumentStore.WriteAsync(Path.Combine(directory, diagnosticReference), diagnostic, cancellationToken).ConfigureAwait(false);
+        await NativeTestExecutor.WriteSnapshotAsync(Path.Combine(directory, diagnosticReference), directory, retainedDiagnostic, cancellationToken).ConfigureAwait(false);
         List<object> diagnostics = [new { id = "lifecycle", classification = "internal", redacted = true, reference = diagnosticReference, contentIdentity = diagnosticIdentity }];
         if (record.ReportHash is not null)
         {
@@ -147,7 +154,7 @@ public static class TestResultWriter
         string temporary = Path.Combine(directory, ".result-validation-" + Guid.NewGuid().ToString("N") + ".json");
         try
         {
-            await CompositionDocumentStore.WriteAsync(temporary, document, cancellationToken).ConfigureAwait(false);
+            await NativeTestExecutor.WriteSnapshotAsync(temporary, directory, System.Text.Encoding.UTF8.GetBytes(CompositionDocumentStore.Serialize(document)), cancellationToken).ConfigureAwait(false);
             TestEnvironmentContractReadResult validated = TestEnvironmentContractReader.ReadResult(temporary, cancellationToken);
             if (!validated.IsValid)
             {
@@ -155,11 +162,19 @@ public static class TestResultWriter
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+            if (!SelectedNativeTestReport.IsOwnedRegularPath(temporary, directory) || !SelectedNativeTestReport.IsOwnedParent(path, directory) || new FileInfo(path).LinkTarget is not null)
+            {
+                throw new IOException("The terminal result destination changed outside ownership.");
+            }
+
             File.Move(temporary, path, overwrite: true);
         }
         finally
         {
-            File.Delete(temporary);
+            if (SelectedNativeTestReport.IsOwnedParent(temporary, directory) && new FileInfo(temporary).LinkTarget is null)
+            {
+                File.Delete(temporary);
+            }
         }
 
         return path;
@@ -205,7 +220,7 @@ public static class TestResultWriter
 
         if (!exists)
         {
-            await CompositionDocumentStore.WriteBytesAsync(target, bytes, cancellationToken).ConfigureAwait(false);
+            await NativeTestExecutor.WriteSnapshotAsync(target, directory, bytes, cancellationToken).ConfigureAwait(false);
         }
     }
 

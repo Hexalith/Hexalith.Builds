@@ -13,24 +13,42 @@ using System.Text.Json;
 /// <param name="stateDirectory">The runner's state directory.</param>
 public sealed class CompositionResourceClaimStore(string stateDirectory)
 {
+    private const int _maximumBytes = 64 * 1024;
+
     private readonly string _directory = Path.Combine(Path.GetFullPath(stateDirectory), "claims");
 
     /// <summary>Claims the complete exclusive set, rolling back only this acquisition on conflict.</summary>
     /// <param name="runId">The owning run.</param>
     /// <param name="resourceIds">The actual exclusive identities.</param>
     /// <exception cref="CompositionResourceClaimConflictException">Another managed run owns a resource.</exception>
+    /// <exception cref="ArgumentException">The requested observation exceeds the bounded claim or receipt format.</exception>
     public void Acquire(string runId, IEnumerable<string> resourceIds)
     {
         ArgumentNullException.ThrowIfNull(resourceIds);
         ArgumentOutOfRangeException.ThrowIfEqual(CompositionRunPlanFactory.IsRunId(runId), false);
+        string[] requested = [.. resourceIds.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        foreach (string resource in requested)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(resource);
+            if (JsonSerializer.SerializeToUtf8Bytes(new CompositionResourceClaim(resource, runId)).Length > _maximumBytes)
+            {
+                throw new ArgumentException("The exclusive resource observation exceeds the readable claim bound.", nameof(resourceIds));
+            }
+        }
+
         CompositionWorkspace.CreatePrivateDirectory(_directory);
         using FileStream transaction = OpenTransaction();
-        string[] requested = [.. resourceIds.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
         string ownerDirectory = Path.Combine(_directory, "owners");
-        CompositionWorkspace.CreatePrivateDirectory(ownerDirectory);
         string receipt = Path.Combine(ownerDirectory, runId + ".json");
         string[] prior = ReadReceipt(runId);
         string[] identities = [.. prior.Concat(requested.Select(resource => Path.GetFileNameWithoutExtension(PathFor(resource)))).Distinct(StringComparer.Ordinal)];
+        byte[] receiptBytes = JsonSerializer.SerializeToUtf8Bytes(identities);
+        if (receiptBytes.Length > _maximumBytes)
+        {
+            throw new ArgumentException("The complete exclusive set exceeds the readable receipt bound.", nameof(resourceIds));
+        }
+
+        CompositionWorkspace.CreatePrivateDirectory(ownerDirectory);
         string receiptTemporary = Path.Combine(ownerDirectory, "." + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
@@ -42,7 +60,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
 
             using (FileStream stream = new(receiptTemporary, receiptOptions))
             {
-                JsonSerializer.Serialize(stream, identities);
+                stream.Write(receiptBytes);
                 stream.Flush(flushToDisk: true);
             }
 
@@ -150,29 +168,58 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
     /// <param name="runId">The owner identity.</param>
     /// <returns>The owned claim identities.</returns>
     /// <exception cref="IOException">A claim recorded for this run cannot be verified.</exception>
-    public IReadOnlyList<string> FindOwned(string runId)
+    public IReadOnlyList<string> FindOwned(string runId) => FindOwned(runId, () => throw new IOException("Managed claim ownership cannot be verified."));
+
+    /// <summary>Returns receipt-bound identities while exposing unverifiable claim paths without discarding them.</summary>
+    /// <param name="runId">The exact owning run.</param>
+    /// <param name="onUnverified">Reports each unresolved recorded path.</param>
+    /// <returns>Known owned claim identities and unresolved receipt-bound paths.</returns>
+    internal IReadOnlyList<string> FindOwned(string runId, Action onUnverified)
     {
         ArgumentOutOfRangeException.ThrowIfEqual(CompositionRunPlanFactory.IsRunId(runId), false);
+        ArgumentNullException.ThrowIfNull(onUnverified);
         if (!Directory.Exists(_directory))
         {
             return [];
         }
 
-        List<string> owned = [];
+        HashSet<string> owned = new(StringComparer.Ordinal);
         string[] recorded = ReadReceipt(runId);
         HashSet<string> expected = new(recorded, StringComparer.Ordinal);
-        foreach (string path in Directory.EnumerateFiles(_directory, "*.json"))
+        IEnumerable<string> paths = Directory.EnumerateFileSystemEntries(_directory, "*.json")
+            .Concat(recorded.Select(identity => Path.Combine(_directory, identity + ".json"))).Distinct(StringComparer.Ordinal);
+        foreach (string path in paths)
         {
             string identity = Path.GetFileNameWithoutExtension(path);
-            string? owner = ReadOwner(path);
-            if (owner is null && expected.Contains(identity))
+            FileAttributes attributes;
+            try
             {
-                throw new IOException("Managed claim ownership cannot be verified.");
+                attributes = File.GetAttributes(path);
+            }
+            catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+            {
+                continue;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                if (expected.Contains(identity))
+                {
+                    _ = owned.Add("claim:" + identity);
+                    onUnverified();
+                }
+
+                continue;
             }
 
-            if (owner == runId)
+            string? owner = (attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint)) == 0 ? ReadOwner(path) : null;
+            if (owner == runId || (owner is null && expected.Contains(identity)))
             {
-                owned.Add("claim:" + identity);
+                _ = owned.Add("claim:" + identity);
+            }
+
+            if (owner is null && expected.Contains(identity))
+            {
+                onUnverified();
             }
         }
 
@@ -184,7 +231,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
         try
         {
             using FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(path);
-            if (!stream.CanSeek || stream.Length > 64 * 1024)
+            if (!stream.CanSeek || stream.Length > _maximumBytes)
             {
                 return null;
             }
@@ -213,7 +260,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
         try
         {
             using FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(receipt, respectSharing: true);
-            string[] identities = stream.CanSeek && stream.Length <= 64 * 1024
+            string[] identities = stream.CanSeek && stream.Length <= _maximumBytes
                 ? JsonSerializer.Deserialize<string[]>(stream) ?? throw new IOException("Claim receipt cannot be verified.")
                 : throw new IOException("Claim receipt cannot be verified.");
             return identities.All(identity => identity is { Length: 64 } && identity.All(char.IsAsciiHexDigit))

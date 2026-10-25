@@ -1172,6 +1172,7 @@ public static class ModuleCommandExecutionService
                             session.Plan = session.Plan with { SelectedTest = entry, SelectedTests = selections, ExecutionTiming = null };
                             session.Readiness = session.Readiness with { SelectedTest = entry };
                             session.StoppingTimestamp = null;
+                            session.FirstObservedOutcome = null;
                             native = await NativeTestExecutor.ExecuteAsync(
                                 session,
                                 new PersistedProfileNativeTests(entry.Entry, entry.Executor),
@@ -1230,7 +1231,14 @@ public static class ModuleCommandExecutionService
                 result = PlatformRefusal("HXT007", "The owned execution failed; inspect retained diagnostics.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
             }
 
-            if (selected is not null && result.Status is "cancelled" or "withdrawn" && !cancellationToken.IsCancellationRequested)
+            if (native is null && session?.FirstObservedOutcome is { } observedOutcome)
+            {
+                native = observedOutcome;
+                ToolDiagnostic retry = new("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "The first native observation requires a durable recording retry.", "evidence");
+                result = observedOutcome.Result with { RunId = ownedRunId, Diagnostics = [.. observedOutcome.Result.Diagnostics, retry] };
+            }
+
+            if (selected is not null && result.Status is "cancelled" or "withdrawn" && !cancellationToken.IsCancellationRequested && native?.TerminalCause is null)
             {
                 result = PlatformRefusal("HXT007", "The selected execution exhausted its original finite lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
             }
@@ -1258,9 +1266,10 @@ public static class ModuleCommandExecutionService
                 try
                 {
                     string initialDisposition = retain && !passed && !withdrawn ? "retained" : "unknown";
+                    using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
                     record = session is null
-                        ? await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(options.StateDirectory, "diagnostics", ownedRunId, "selected-test.json"), stopping.Token).ConfigureAwait(false)
-                        : await engine!.RecordTestOutcomeAsync(ownedRunId, session.Readiness.Resources, result, initialDisposition, new CompositionRunResources([], [], Unverified: true), stopping.Token, native, waitForLock: false, executionTiming: session.Plan.ExecutionTiming, environmentBindings: session.EnvironmentBindings, testObservation: session.Readiness.TestObservation).ConfigureAwait(false);
+                        ? await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(options.StateDirectory, "diagnostics", ownedRunId, "selected-test.json"), recording.Token).ConfigureAwait(false)
+                        : await engine!.RecordTestOutcomeAsync(ownedRunId, session.Readiness.Resources, result, initialDisposition, new CompositionRunResources([], [], Unverified: true), recording.Token, native, waitForLock: false, executionTiming: session.Plan.ExecutionTiming, environmentBindings: session.EnvironmentBindings, terminalCause: native?.TerminalCause, testObservation: session.Readiness.TestObservation, archiveMetadata: false).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
                 {
@@ -1315,9 +1324,21 @@ public static class ModuleCommandExecutionService
             {
                 using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
                 string published = Path.Combine(options.StateDirectory, "diagnostics", record.RunId, "test-result.json");
-                TestEnvironment.TestEnvironmentContractReadResult publication = TestEnvironment.TestEnvironmentContractReader.ReadResult(published, metadata.Token);
+                TestEnvironment.TestEnvironmentContractReadResult? publication = null;
+                try
+                {
+                    if (SelectedNativeTestReport.IsOwnedRegularPath(published, Path.GetDirectoryName(published)!))
+                    {
+                        publication = TestEnvironment.TestEnvironmentContractReader.ReadResult(published, metadata.Token);
+                    }
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
+                {
+                    // Failed inspection leaves cleanup pending and preserves the committed outcome.
+                }
+
                 string expectedOutcome = record.TerminalOutcome.ExitCode == ToolExitCode.Success ? "passed" : "cancelled";
-                bool matchingPublication = publication.IsValid
+                bool matchingPublication = publication?.IsValid == true
                     && publication.Document!.Value.GetProperty("bindings").GetProperty("run").GetProperty("runId").GetString() == record.RunId
                     && publication.Document.Value.GetProperty("bindings").GetProperty("run").GetProperty("attemptId").GetString() == session!.Plan.AttemptId
                     && publication.Document.Value.GetProperty("bindings").GetProperty("run").GetProperty("environmentId").GetString() == session.Plan.EnvironmentId

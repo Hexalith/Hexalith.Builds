@@ -53,6 +53,9 @@ public sealed class CompositionRunSession
     /// <summary>Gets or sets the first runner-observed stopping origin, independently of outcome publication.</summary>
     internal long? StoppingTimestamp { get; set; }
 
+    /// <summary>Gets or sets the first runner-held causal observation for retry after callback failure.</summary>
+    internal NativeTestExecutionResult? FirstObservedOutcome { get; set; }
+
     /// <summary>
     /// Gets the AppHost process.
     /// </summary>

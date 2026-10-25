@@ -296,6 +296,57 @@ internal static class NativeTestExecutor
         return inspected;
     }
 
+    /// <summary>Publishes held bytes through an owned destination and cleans temporary files only within that owner.</summary>
+    /// <param name="path">The owned destination.</param>
+    /// <param name="ownedRoot">The trusted owner directory.</param>
+    /// <param name="bytes">The validated held snapshot.</param>
+    /// <param name="cancellationToken">The existing publication allowance.</param>
+    /// <returns>The bounded atomic publication.</returns>
+    /// <exception cref="IOException">The destination is outside the owned path policy.</exception>
+    internal static async Task WriteSnapshotAsync(string path, string ownedRoot, byte[] bytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        EnsureOwnedDestination();
+        string directory = Path.GetDirectoryName(path)!;
+        CompositionWorkspace.CreatePrivateDirectory(directory);
+        EnsureOwnedDestination();
+        string temporary = Path.Combine(directory, ".archive-" + Guid.NewGuid().ToString("N") + ".tmp");
+        try
+        {
+            FileStreamOptions options = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write, Options = FileOptions.Asynchronous };
+            if (!OperatingSystem.IsWindows())
+            {
+                options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            }
+
+            FileStream stream = new(temporary, options);
+            await using (stream.ConfigureAwait(false))
+            {
+                await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            EnsureOwnedDestination();
+            File.Move(temporary, path, overwrite: true);
+        }
+        finally
+        {
+            if (SelectedNativeTestReport.IsOwnedParent(temporary, ownedRoot) && File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
+        }
+
+        void EnsureOwnedDestination()
+        {
+            if (!SelectedNativeTestReport.IsOwnedParent(path, ownedRoot) || new FileInfo(path).LinkTarget is not null
+                || (File.Exists(path) && !SelectedNativeTestReport.IsOwnedRegularPath(path, ownedRoot)))
+            {
+                throw new IOException("The selected archive destination is outside its owned, link-free directory.");
+            }
+        }
+    }
+
     private static async Task<NativeTestExecutionResult> ExecuteSelectedAsync(CompositionRunSession session, PersistedProfileNativeTests tests, string manifestPath, ModuleTestSelection selection, string dotnetCommand, string? archiveDirectory, Func<NativeTestExecutionResult, CancellationToken, Task>? onOutcome, CancellationToken ownerCancellationToken, CancellationToken cancellationToken)
     {
         if (tests.Project != selection.Entry || tests.Platform != selection.Executor || !selection.MatchesSource(manifestPath)
@@ -415,13 +466,16 @@ internal static class NativeTestExecutor
                 // changes the original stopping timestamp or renews execution, archival or cleanup.
                 using CancellationTokenSource immediate = new(TimeSpan.FromSeconds(5));
 
-                NativeTestExecutionResult first = Failed("HXT007", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
+                NativeTestExecutionResult first = process.Started
+                    ? Failed("HXT007", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest)
+                    : Failed("HXR030", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, ToolExitCode.PrerequisiteUnavailable);
                 if (cancelled || gate.Failed)
                 {
                     first = SelectedInterruption(cancelled);
                 }
 
                 first = first with { StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
+                session.FirstObservedOutcome ??= first;
                 await onOutcome(first, immediate.Token).ConfigureAwait(false);
             }
         }
@@ -481,55 +535,12 @@ internal static class NativeTestExecutor
         NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
         if (onOutcome is not null)
         {
+            session.FirstObservedOutcome ??= inspected;
             using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
             await onOutcome(inspected, recording.Token).ConfigureAwait(false);
         }
 
         return await ArchiveSelectedAsync(inspected, session, descriptorSnapshot, archiveDirectory, processing.Token).ConfigureAwait(false);
-    }
-
-    private static async Task WriteSnapshotAsync(string path, string ownedRoot, byte[] bytes, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        EnsureOwnedDestination();
-        string directory = Path.GetDirectoryName(path)!;
-        CompositionWorkspace.CreatePrivateDirectory(directory);
-        EnsureOwnedDestination();
-        string temporary = Path.Combine(directory, ".archive-" + Guid.NewGuid().ToString("N") + ".tmp");
-        try
-        {
-            FileStreamOptions options = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write, Options = FileOptions.Asynchronous };
-            if (!OperatingSystem.IsWindows())
-            {
-                options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-            }
-
-            FileStream stream = new(temporary, options);
-            await using (stream.ConfigureAwait(false))
-            {
-                await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            EnsureOwnedDestination();
-            File.Move(temporary, path, overwrite: true);
-        }
-        finally
-        {
-            if (SelectedNativeTestReport.IsOwnedParent(temporary, ownedRoot) && File.Exists(temporary))
-            {
-                File.Delete(temporary);
-            }
-        }
-
-        void EnsureOwnedDestination()
-        {
-            if (!SelectedNativeTestReport.IsOwnedParent(path, ownedRoot) || new FileInfo(path).LinkTarget is not null
-                || (File.Exists(path) && !SelectedNativeTestReport.IsOwnedRegularPath(path, ownedRoot)))
-            {
-                throw new IOException("The selected archive destination is outside its owned, link-free directory.");
-            }
-        }
     }
 
     private static bool ContainsRetainedSecret(byte[] reportBytes, IReadOnlyList<string> handoffSecrets)

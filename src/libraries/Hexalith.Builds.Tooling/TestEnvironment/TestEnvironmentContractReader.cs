@@ -11,6 +11,7 @@ using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
+using Hexalith.Builds.Tooling.Runtime;
 
 using Json.Schema;
 
@@ -70,7 +71,7 @@ public static class TestEnvironmentContractReader
         try
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(path);
-            using FileStream stream = File.OpenRead(path);
+            using FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(path, respectSharing: true);
             if (!stream.CanSeek || stream.Length > MaximumDocumentBytes)
             {
                 return Refuse("HXT105", version, "$", "Supply a seekable UTF-8 JSON file at or below 1 MiB.");
