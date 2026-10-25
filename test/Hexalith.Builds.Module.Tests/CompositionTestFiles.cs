@@ -365,6 +365,15 @@ internal static class CompositionTestFiles
             + "if (mode == \"foreign\") { File.WriteAllText(Path.Combine(Path.GetDirectoryName(plan)!, \"readiness.json\"), "
             + System.Text.Json.JsonSerializer.Serialize(readiness) + "); }\n"
             + """
+            if (mode.StartsWith("claim-conflict", StringComparison.Ordinal))
+            {
+                using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan));
+                var run = document.RootElement;
+                File.WriteAllText(Path.Combine(run.GetProperty("workspace").GetString()!, "startup-failure.json"), System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    schema = "hexalith.g4-startup-failure.v1", runId = run.GetProperty("runId").GetString(), ruleId = "HXR031", resource = "resources", appId = "-", status = "exclusive-resource-held", blockingRunId = mode == "claim-conflict" ? new string('f', 32) : "invalid-owner",
+                }));
+            }
             if (mode.StartsWith("unsafe-", StringComparison.Ordinal) || mode == "diagnostics-io")
             {
                 using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(plan));

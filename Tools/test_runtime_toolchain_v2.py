@@ -15,6 +15,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 
+if not __debug__:
+    raise SystemExit("G6-EVIDENCE-TESTS-INVALID: optimized Python disables required assertions")
+
+
 TOOLS = Path(__file__).resolve().parent
 FIXTURES = TOOLS.parent / "test/fixtures/runtime-toolchain-v2"
 PROVENANCE_SHA256 = "f75bf867e002b981fa0d66781ecd6dd3d806d9846578f13dc1eaff86d250a168"
@@ -547,9 +551,20 @@ def run_controls() -> int:
             write(paths["eventstore-capture-validation"], receipt)
             return {"schema": "hexalith.runtime-toolchain-evidence.v2", "baseline": {"path": baseline_path.relative_to(root).as_posix(), "sha256": API.sha256(baseline_path)}, "capturedUtc": "2026-10-01T12:00:00Z", "repositories": copy.deepcopy(repos), "artifacts": [{"kind": kind, "path": path.relative_to(root).as_posix(), "sha256": API.sha256(path)} for kind, path in paths.items()], "observedVersions": baseline["tuple"], "testCounts": {"qualification": {"selectors": 1, "total": 1, "passed": 1, "failed": 0, "skipped": 0}, "support": {"selectors": 21, "total": 33, "passed": 33, "failed": 0, "skipped": 0}}, "approval": API.baseline_approval(baseline), "status": "pending", "technicalValidity": True, "usableAsPrerequisite": False, "closure": {"committed": True, "sourceManifestSha256": API.manifest_digest(source)}, "acceptance": None, "containment": baseline["containment"], "rollback": baseline["rollback"]}
         packet_path = root / "packet.json"
-        def validate(packet):
+        def validate(packet, candidate=True):
             write(packet_path, packet)
-            CURRENT.validate_packet(api, root, packet_path, baseline_path, baseline, True)
+            CURRENT.validate_packet(api, root, packet_path, baseline_path, baseline, candidate)
+
+        def reviewed_digest(packet):
+            reviewed = copy.deepcopy(packet)
+            reviewed.update(status="pending", acceptance=None, usableAsPrerequisite=False)
+            return hashlib.sha256((json.dumps(reviewed, ensure_ascii=False, indent=2) + "\n").encode()).hexdigest()
+
+        def accept(packet):
+            packet.update(status="accepted", usableAsPrerequisite=True, acceptance={
+                "approvedBy": "Jérôme Piquot", "approvedAtUtc": "2026-10-01T12:01:00Z",
+                "decision": "accept", "reviewedPacketSha256": reviewed_digest(packet)})
+            return packet
         def mutate_artifact(packet, kind, edit):
             document = API.read_json(paths[kind])
             edit(document)
@@ -635,11 +650,7 @@ def run_controls() -> int:
         with patch.object(CURRENT, "source_manifest", return_value=source), patch.object(CURRENT, "inventory", return_value=consumers):
             validate(restore())
             # A named accepted packet can follow metadata-only evidence/acceptance commits.
-            accepted = restore()
-            reviewed_hash = hashlib.sha256((json.dumps(accepted, ensure_ascii=False, indent=2) + "\n").encode()).hexdigest()
-            accepted.update(status="accepted", usableAsPrerequisite=True, acceptance={
-                "approvedBy": "Jérôme Piquot", "approvedAtUtc": "2026-10-01T12:01:00Z",
-                "decision": "accept", "reviewedPacketSha256": reviewed_hash})
+            accepted = accept(restore())
             fake_head[0] = "b" * 40
             fake_metadata[0] = True
             write(packet_path, accepted)
@@ -654,17 +665,28 @@ def run_controls() -> int:
             fake_dirty[0] = False
             fake_metadata[0] = False
             fake_head[0] = revision
+            candidate_only = {"pending usability", "pending acceptance", "unauthorized status"}
             for label, mutation in mutations:
-                fake_dirty[0] = False
-                packet = restore()
-                mutation(packet)
-                try:
-                    validate(packet)
-                except API.ValidationError:
-                    count += 1
-                else:
-                    raise AssertionError("Current mutation was accepted: " + label)
-    print(f"G6-CURRENT-MUTATIONS-PASSED: {count} controls plus accepted metadata-commit positive control; historical captures used only as hermetic fixtures")
+                # These three controls specifically contradict pending-mode metadata.
+                # Every common mutation must be rejected in both independently valid modes.
+                for candidate in ((True,) if label in candidate_only else (True, False)):
+                    fake_dirty[0] = False
+                    packet = restore()
+                    if not candidate:
+                        packet = accept(packet)
+                    mutation(packet)
+                    if not candidate:
+                        # Bind the changed packet so a stale acceptance hash cannot mask
+                        # a missing semantic check for the mutation under examination.
+                        packet["acceptance"]["reviewedPacketSha256"] = reviewed_digest(packet)
+                    try:
+                        validate(packet, candidate)
+                    except API.ValidationError:
+                        pass
+                    else:
+                        raise AssertionError(f"Current mutation was accepted: {label} ({candidate=})")
+                count += 1
+    print(f"G6-CURRENT-MUTATIONS-PASSED: {count} logical controls, shared packet mutations in both modes, plus accepted metadata-commit positive control; historical captures used only as hermetic fixtures")
     return count
 
 

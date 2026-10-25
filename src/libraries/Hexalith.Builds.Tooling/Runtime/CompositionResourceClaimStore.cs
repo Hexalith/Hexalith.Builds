@@ -92,6 +92,32 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
         }
     }
 
+    /// <summary>Returns the currently claimed TCP ports, including allocations not yet bound by their owners.</summary>
+    /// <returns>The managed loopback port exclusions.</returns>
+    public IReadOnlySet<int> ClaimedPorts()
+    {
+        if (!Directory.Exists(_directory))
+        {
+            return new HashSet<int>();
+        }
+
+        using FileStream transaction = OpenTransaction();
+        HashSet<int> ports = [];
+        foreach (string path in Directory.EnumerateFiles(_directory, "*.json"))
+        {
+            using FileStream stream = File.OpenRead(path);
+            string? resource = JsonSerializer.Deserialize<CompositionResourceClaim>(stream)?.ResourceId;
+            const string prefix = "tcp:127.0.0.1:";
+            if (resource?.StartsWith(prefix, StringComparison.Ordinal) == true
+                && int.TryParse(resource.AsSpan(prefix.Length), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int port))
+            {
+                _ = ports.Add(port);
+            }
+        }
+
+        return ports;
+    }
+
     private static string? ReadOwner(string path)
     {
         try

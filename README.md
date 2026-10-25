@@ -388,9 +388,10 @@ the same manifest and agree on mode, composition graph and profile-specific
 runtime/resources. Missing, duplicate or incompatible selections refuse before
 services start. Legacy `--evidence` export supports a single entry only: a batch
 with that option refuses before provisioning because the legacy format has only
-one timing/report/count set. Normal batches retain each inspected entry report in
-owned diagnostics without claiming future suite-completion proof. Source mode
-builds Debug assets; package mode keeps the existing Release and pinned catalog boundaries.
+one timing/report/count set. Normal batches retain each inspected entry report
+in owned diagnostics without claiming future suite-completion proof. Source mode
+builds Debug assets; package mode keeps the existing Release and pinned catalog
+boundaries.
 
 Startup defaults to 600 seconds from the environment request, including mapping
 and builds. Valid justified declaration overrides use that same original clock.
@@ -398,29 +399,49 @@ Selected suite handoff refuses a caller fallback other than 600 seconds before
 provisioning unless the authoritative declarations supply an existing justified
 startup override. Actual execution context is also checked before provisioning:
 local execution and complete GitHub Actions metadata are supported; other or
-incomplete CI context refuses with the missing-context requirements.
-Every resource must be healthy and every required per-start verification task
-must pass before execution starts. Execution activates separately after readiness:
-each entry receives its declared execution limit, and the batch has the sum of
-those limits. Final stopping and cleanup use the active entry's declared stop
-limit and original stopping timestamp. Each entry's validated pre-launch
-descriptor and inspected native report are archived durably without rereading
-child-writable paths or renewing that stopping budget. `execution-timing.json` records activation and the immutable absolute
-expiry before launching the child; retries never renew an active expiry. Selected service and test builds use run-private output paths. The
-legacy selection timestamps and source hashes remain immutable evidence bindings.
+incomplete CI context refuses with the missing-context requirements. Every
+resource must be healthy and every required per-start verification task must
+pass before execution starts. Execution activates separately after readiness:
+each entry receives its declared execution limit, and the batch bound includes
+the sum of execution and stopping/processing allowances. Final stopping and
+cleanup use the active entry's declared stop limit and original stopping
+timestamp. Each entry's validated pre-launch descriptor and inspected native
+report are archived durably without rereading child-writable paths or renewing
+that stopping budget. `execution-timing.json` records activation and the
+immutable absolute expiry before launching the child; retries never renew an
+active expiry. Selected service and test builds use run-private output paths.
+The legacy selection timestamps and source hashes remain immutable evidence
+bindings.
 
 Tests receive absolute `HEXALITH_TEST_ENVIRONMENT_PATH` pointing to private
 `test-environment.json`, validated with `TestEnvironmentContractReader` before
 handoff. It contains credential-free observed endpoints, real run/attempt/owner/
-environment identities, authoritative composition content, verified catalog commit
-and run instance, synthetic isolation, readiness, startup tasks and independent
-deadlines. Credentials remain in the existing separate private channel. Missing
-catalog identity or invalid observations refuse handoff; unsupported descriptor
-ABIs still refuse. Unavailable candidate, loaded-artifact and qualification proof
-stays `not-yet-populated`, and schema validity grants no acceptance credit.
+environment identities, authoritative composition content, verified catalog
+commit and run instance, synthetic isolation, readiness, startup tasks and
+independent deadlines. Credentials remain in the existing separate private
+channel. Missing catalog identity or invalid observations refuse handoff;
+unsupported descriptor ABIs still refuse. Unavailable candidate, loaded-artifact
+and qualification proof stays `not-yet-populated`, and schema validity grants no
+acceptance credit. Every resource needs explicit declaration ownership; shared
+runner infrastructure belongs to the active selected module's declaration, or
+the selected suite's declaring module when no active module is set. Servers and
+Memories stores retain their declaring owners. A closure missing explicit
+attribution refuses handoff with the prerequisite in its diagnostic.
 
-Managed exclusive listener claims are atomic across runner processes. A conflict
-returns `HXR031` naming the blocking run; independent environments coexist. Port
+Batch archives under `entries/<entry-name-sha256>/` are authoritative for each
+entry. Top-level `test-environment.json` and `execution-timing.json` are
+replaced for each entry and describe the last archived entry.
+
+The closed `hexalith.module-run-evidence.v1` schema now adds `selections`,
+`executionTiming`, and resource ownership/observation/endpoint fields. This is
+an additive change that is forward-incompatible with validators embedding the
+prior closed v1 schema: pinned validators must move with this tool. Earlier
+artifacts remain supported by the current validator.
+
+Managed exclusive listener claims are atomic across runner processes. When a
+claim conflicts, the runner allocates fresh ports and retries, up to 64
+attempts; only if every attempt conflicts does the run fail with `HXR031`
+naming the last blocking run. Independent environments coexist. Port
 probes are not operating-system reservations. Claims are released only after the
 existing ownership-limited cleanup verifies that the owning resources are gone.
 `down --run-id <owner>` continues to target only that run.

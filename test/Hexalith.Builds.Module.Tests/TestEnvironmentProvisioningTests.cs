@@ -22,7 +22,7 @@ using Xunit;
 
 /// <summary>Verifies credential-free descriptor handoff and independent startup/execution clocks.</summary>
 [Collection(nameof(PlatformManifestTestGrouping))]
-public sealed class TestEnvironmentProvisioningTests
+public sealed partial class TestEnvironmentProvisioningTests
 {
     /// <summary>Delayed readiness preserves each sequential entry's full execution budget and one environment identity.</summary>
     /// <returns>The command, descriptor, activation and batch assertions.</returns>
@@ -90,13 +90,24 @@ public sealed class TestEnvironmentProvisioningTests
             TestEnvironmentContractReader.ReadDescriptor(Path.Combine(entry, "test-environment.json"), TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
             byte[] bytes = await File.ReadAllBytesAsync(Path.Combine(entry, "native.trx"), TestContext.Current.CancellationToken).ConfigureAwait(true);
             System.Text.Encoding.UTF8.GetString(bytes).ShouldContain("total=\"" + (name == "first" ? "1" : "2") + "\"");
+            ModuleTestExecutionTiming timing = (await CompositionDocumentStore.TryReadAsync<ModuleTestExecutionTiming>(Path.Combine(entry, "execution-timing.json"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            timing.EffectiveSeconds.ShouldBe(1);
+            (timing.DeadlineUtc - timing.StartedAtUtc).ShouldBe(TimeSpan.FromSeconds(1));
+            timing.StartedAtUtc.ShouldBe(name == "first" ? firstStart : secondStart);
+            timing.ActualDurationSeconds.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(0.15);
+            timing.ActualDurationSeconds.Value.ShouldBeLessThan(timing.EffectiveSeconds + 1);
         }
+
+        string last = Path.Combine(diagnostics, "entries", Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("second"))));
+        (await File.ReadAllBytesAsync(Path.Combine(diagnostics, "execution-timing.json"), TestContext.Current.CancellationToken).ConfigureAwait(true))
+            .ShouldBe(await File.ReadAllBytesAsync(Path.Combine(last, "execution-timing.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
     }
 
     /// <summary>Incompatible runtime requirements and invalid names refuse before environment startup.</summary>
     /// <param name="scenario">The incompatible selection.</param>
     /// <returns>The refusal assertions.</returns>
     [Theory]
+    [InlineData("mode")]
     [InlineData("runtime")]
     [InlineData("duplicate")]
     [InlineData("missing")]
@@ -104,6 +115,14 @@ public sealed class TestEnvironmentProvisioningTests
     {
         using PlatformManifestTestWorkspace workspace = new();
         Declare(workspace);
+        if (scenario == "mode")
+        {
+            workspace.Change("modules.0.tests.1.mode", "\"package\"");
+            workspace.Change("modules.0.tests.1.executor", "\"vstest\"");
+            workspace.Change("modules.0.tests.1.entry", "\"suite.csproj\"");
+            await File.WriteAllTextAsync(Path.Combine(workspace.Root, "suite.csproj"), "<Project />", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
         if (scenario == "runtime")
         {
             workspace.Change("modules.0.tests.1.daprRuntimeVersion", "\"1.18.1\"");
@@ -137,7 +156,11 @@ public sealed class TestEnvironmentProvisioningTests
     [InlineData("catalog")]
     [InlineData("unhealthy")]
     [InlineData("owner")]
+    [InlineData("module-owner")]
     [InlineData("endpoint")]
+    [InlineData("endpoint-userinfo")]
+    [InlineData("endpoint-query")]
+    [InlineData("endpoint-fragment")]
     [InlineData("task")]
     [InlineData("source-drift")]
     [InlineData("dependency-drift")]
@@ -157,7 +180,20 @@ public sealed class TestEnvironmentProvisioningTests
             case "catalog": File.Delete(Path.Combine(plan.Workspace, "source-mapping", "catalog-versions.json")); break;
             case "unhealthy": readiness = readiness with { Resources = [readiness.Resources[0] with { State = "Unhealthy" }] }; break;
             case "owner": readiness = readiness with { RunId = CompositionRunPlanFactory.NewRunId() }; break;
-            case "endpoint": readiness = readiness with { Resources = [readiness.Resources[0] with { Endpoints = [new("http", "http", new Uri("http://hosted.example.com/"))] }] }; break;
+            case "module-owner": readiness = readiness with { Resources = [readiness.Resources[0] with { ModuleId = null }] }; break;
+            case "endpoint":
+            case "endpoint-userinfo":
+            case "endpoint-query":
+            case "endpoint-fragment":
+                string unsafeUri = scenario switch
+                {
+                    "endpoint-userinfo" => "http://user:secret@127.0.0.1:20013/",
+                    "endpoint-query" => "http://127.0.0.1:20013/?value=secret",
+                    "endpoint-fragment" => "http://127.0.0.1:20013/#secret",
+                    _ => "http://hosted.example.com/",
+                };
+                readiness = readiness with { Resources = [readiness.Resources[0] with { Endpoints = [.. readiness.Resources[0].Endpoints, new("unsafe", "http", new Uri(unsafeUri))] }] };
+                break;
             case "task": plan = plan with { StartupTasks = [new("sample", "required-verify", "missing", [])] }; break;
             case "source-drift": await File.AppendAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "\n# drift", TestContext.Current.CancellationToken).ConfigureAwait(true); break;
             case "dependency-drift": await File.AppendAllTextAsync(Path.Combine(workspace.Root, "references", "Hexalith.EventStore", "module", "hexalith.module-manifest.v2.json"), " ", TestContext.Current.CancellationToken).ConfigureAwait(true); break;
@@ -170,6 +206,26 @@ public sealed class TestEnvironmentProvisioningTests
         using Process appHost = new();
         NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(new CompositionRunSession(plan, readiness, "private-fixture-signing-key", appHost), new PersistedProfileNativeTests(selection.Entry, selection.Executor), manifest, TestContext.Current.CancellationToken, selection: selection).ConfigureAwait(true);
         result.Result.Outcome.ExitCode.ShouldNotBe(ToolExitCode.Success);
+        if (scenario.StartsWith("endpoint", StringComparison.Ordinal))
+        {
+            result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message == "An observed endpoint is invalid or unsafe.");
+        }
+
+        if (scenario == "module-owner")
+        {
+            result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message == "Every composed resource requires explicit declaration ownership. Shared runner infrastructure requires the selected module's declaration.");
+        }
+
+        if (scenario == "catalog")
+        {
+            result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message == "Verified catalog identity is unavailable or inconsistent.");
+        }
+
+        if (scenario == "task")
+        {
+            result.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.Message == "Required startup tasks have not all passed.");
+        }
+
         File.Exists(Path.Combine(workspace.Root, "children.jsonl")).ShouldBeFalse();
     }
 
@@ -363,7 +419,7 @@ public sealed class TestEnvironmentProvisioningTests
              {"name":"second","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":1,"stopTimeoutSeconds":4,"mode":"source"}]
             """);
         File.WriteAllText(Path.Combine(workspace.Root, "runner.py"), """
-            import os, json, pathlib, time
+            import os, json, pathlib, time, base64, datetime
             path = pathlib.Path(os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'])
             assert path.is_absolute()
             descriptor = json.loads(path.read_text())
@@ -374,6 +430,16 @@ public sealed class TestEnvironmentProvisioningTests
             assert bindings['environment']['readiness']['status'] == 'ready'
             assert all(t['status'] == 'passed' for t in bindings['environment']['startupTasks']['tasks'])
             assert bindings['deadlines']['execution']['effectiveSeconds'] == 1
+            timing = json.loads((path.parent / 'execution-timing.json').read_text())
+            assert timing['actualDurationSeconds'] is None and timing['effectiveSeconds'] == 1
+            assert timing['configurationContentIdentity'] == bindings['deadlines']['execution']['configurationContentIdentity']
+            assert datetime.datetime.fromisoformat(timing['startedAtUtc']) == datetime.datetime.fromisoformat(bindings['deadlines']['execution']['originAt'].replace('Z', '+00:00'))
+            assert datetime.datetime.fromisoformat(os.environ['HEXALITH_G4_EXECUTION_DEADLINE_UTC']) == datetime.datetime.fromisoformat(bindings['deadlines']['execution']['expiresAt'].replace('Z', '+00:00'))
+            token_payload = os.environ['HEXALITH_G4_ACCESS_TOKEN'].split('.')[1]
+            claims = json.loads(base64.urlsafe_b64decode(token_payload + '=' * (-len(token_payload) % 4)))
+            expiry = datetime.datetime.fromisoformat(bindings['deadlines']['execution']['expiresAt'].replace('Z', '+00:00')).timestamp()
+            assert claims['exp'] >= expiry and claims['exp'] - expiry < 1
+            assert int(datetime.datetime.fromisoformat(os.environ['HEXALITH_G4_CREDENTIAL_EXPIRY_UTC']).timestamp()) == claims['exp']
             with (pathlib.Path(__file__).parent / 'children.jsonl').open('a') as output:
                 output.write(json.dumps({'name':os.environ['HEXALITH_G4_TEST_NAME'],'environment':bindings['run']['environmentId'],'started':bindings['deadlines']['execution']['originAt']}) + '\n')
             time.sleep(0.15)

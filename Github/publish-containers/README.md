@@ -95,3 +95,12 @@ hidden release-evidence directory on success or partial failure.
 |-------|----------|-------------|
 | `container-projects` | Yes | Newline-separated `project.csproj\|repository` mappings. Fails when blank. |
 | `builds-execution-sha` | Yes | Exact approved Builds commit used for the reusable workflow, action, and helper bytes. |
+
+The publisher binds its one UTC created instant through `--created`. Both
+`org.opencontainers.image.created` and `org.opencontainers.artifact.created`
+are mandatory in every child, must be real Gregorian dates at UTC second
+precision, and must equal that instant. The three-argument
+`expected_provenance_labels(repository, source_sha, version)` reader API remains
+supported: graph validation still requires both created labels, validates their
+calendar dates, and rejects disagreement between labels or platforms. Readers
+that know the publisher instant may supply the fourth argument to bind it too.

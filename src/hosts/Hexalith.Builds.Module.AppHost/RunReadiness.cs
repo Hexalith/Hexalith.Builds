@@ -455,16 +455,12 @@ internal static class RunReadiness
         return resources;
     }
 
-    private static string OwningModule(IResource resource, IEnumerable<IResource> resources)
+    private static string? OwningModule(IResource resource, IEnumerable<IResource> resources)
     {
         string name = resource.Name.EndsWith("-dapr-cli", StringComparison.Ordinal) ? resource.Name[..^"-dapr-cli".Length] : resource.Name;
         IResource owner = resources.FirstOrDefault(candidate => candidate.Name == name) ?? resource;
-        IResourceAnnotation? annotation = owner.Annotations.FirstOrDefault(candidate => candidate.GetType().Name == "PlatformServerAnnotation");
-        object? binding = annotation?.GetType().GetProperty("Binding")?.GetValue(annotation);
-        object? module = binding?.GetType().GetProperty("Module")?.GetValue(binding);
-        return module?.GetType().GetProperty("Declaration")?.GetValue(module) is System.Text.Json.JsonElement declaration
-            ? declaration.GetProperty("identity").GetProperty("moduleId").GetString()!
-            : "platform";
+        IResourceAnnotation? annotation = owner.Annotations.FirstOrDefault(candidate => candidate.GetType().Name == "PlatformResourceOwnerAnnotation");
+        return annotation?.GetType().GetProperty("ModuleId")?.GetValue(annotation) as string;
     }
 
     private static int? TryProcessId(ResourceNotificationService notifications, string resourceName) =>

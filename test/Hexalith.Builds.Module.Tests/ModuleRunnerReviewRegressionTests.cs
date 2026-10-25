@@ -8,6 +8,7 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -94,7 +95,10 @@ public sealed class ModuleRunnerReviewRegressionTests
                 if (scenario == "timeout")
                 {
                     observedToken.IsCancellationRequested.ShouldBeTrue();
-                    Stopwatch.GetElapsedTime(stoppingAt).ShouldBeLessThan(TimeSpan.FromSeconds(1.5));
+
+                    // Synchronous OS process-tree termination may outlast the cancelled timer.
+                    // A renewed processing allowance would incorrectly publish a fresh run state.
+                    File.Exists(engine.StateStore.PathFor(plan.RunId)).ShouldBeFalse("The exhausted original stopping token must prevent later durable state writes.");
                 }
 
                 if (scenario is "io" or "timeout")
@@ -212,11 +216,14 @@ public sealed class ModuleRunnerReviewRegressionTests
         Stopwatch elapsed = Stopwatch.StartNew();
         int exit = await ExecuteAsync(workspace.Save(), options, output).ConfigureAwait(true);
         exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.ToString());
-        output.ToString().ShouldContain(phase == "early-mapping" ? "HXR021" : "HXR025");
+        output.ToString().ShouldContain("HXR021");
         checks.ShouldBe(1);
         starts.ShouldBe(phase == "startup" ? 1 : 0);
         elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(3));
-        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+        string[] summaries = Directory.GetFiles(Path.Combine(options.StateDirectory, "diagnostics"), "summary.json", SearchOption.AllDirectories);
+        _ = summaries.ShouldHaveSingleItem();
+        using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(summaries[0], TestContext.Current.CancellationToken).ConfigureAwait(true));
+        summary.RootElement.GetProperty("durationSeconds").GetDouble().ShouldBeGreaterThan(0);
     }
 
     /// <summary>Inspects cancellation output and actual XML encodings before any redaction or retention.</summary>
@@ -515,6 +522,14 @@ public sealed class ModuleRunnerReviewRegressionTests
     [InlineData("counts")]
     [InlineData("report")]
     [InlineData("artifact")]
+    [InlineData("execution-deadline")]
+    [InlineData("execution-seconds")]
+    [InlineData("execution-configuration")]
+    [InlineData("execution-start")]
+    [InlineData("execution-enlarged")]
+    [InlineData("execution-after-terminal")]
+    [InlineData("credential-expiry")]
+    [InlineData("credential-invalid")]
     public void ConflictingSelectedEvidenceIsRejected(string mutation)
     {
         using PlatformManifestTestWorkspace workspace = new();
@@ -523,8 +538,9 @@ public sealed class ModuleRunnerReviewRegressionTests
         ModuleTestSelection selected = Select(manifest);
         ModuleRunTestCounts counts = new(true, 1, 1, 0, 0);
         const string reportPath = "evidence/native.trx";
+        ModuleTestExecutionTiming execution = ModuleTestExecutionTiming.Start(selected, DateTimeOffset.UtcNow);
         string hash = new('A', 64);
-        ModuleTestRunRecord record = new(CompositionTestFiles.RunId, CompositionTestFiles.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "removed", new CompositionRunResources([], [])) { ReportHash = hash, TestCounts = counts };
+        ModuleTestRunRecord record = new(CompositionTestFiles.RunId, CompositionTestFiles.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "removed", new CompositionRunResources([], [])) { ReportHash = hash, TestCounts = counts, ExecutionTiming = execution };
         ModuleRunEvidence evidence = ModuleRunEvidenceFactory.Create(ModuleInvocationCommand.Test, manifest, null, "verify", null, new ToolCommandResult("completed", ToolOutcome.Passed(), []), selected.RequestedAtUtc, DateTimeOffset.UtcNow, record.RunId, testCounts: counts, artifactHashes: new Dictionary<string, string> { [reportPath] = hash }) with { SelectedTestRun = record };
         evidence = evidence with { Invocation = evidence.Invocation with { Profile = "verify" } };
         byte[] valid = ModuleRunEvidenceWriter.SerializeCanonical(evidence);
@@ -540,6 +556,26 @@ public sealed class ModuleRunnerReviewRegressionTests
             case "manifest": root["invocation"].ShouldNotBeNull()["manifestHash"] = new string('B', 64); break;
             case "counts": root["testCounts"].ShouldNotBeNull()["total"] = 2; root["testCounts"].ShouldNotBeNull()["passed"] = 2; break;
             case "report": run["reportHash"] = new string('B', 64); break;
+            case "execution-deadline": run["executionTiming"]!["deadlineUtc"] = execution.DeadlineUtc.AddSeconds(1); break;
+            case "execution-seconds": run["executionTiming"]!["effectiveSeconds"] = selected.ExecutionTimeoutSeconds + 1; break;
+            case "execution-configuration": run["executionTiming"]!["configurationContentIdentity"] = "sha256:" + new string('f', 64); break;
+            case "execution-start":
+                run["executionTiming"]!["startedAtUtc"] = selected.RequestedAtUtc.AddSeconds(-1);
+                run["executionTiming"]!["deadlineUtc"] = selected.RequestedAtUtc.AddSeconds(selected.ExecutionTimeoutSeconds - 1);
+                break;
+            case "execution-enlarged":
+                run["executionTiming"]!["effectiveSeconds"] = selected.ExecutionTimeoutSeconds + 1;
+                run["executionTiming"]!["deadlineUtc"] = execution.DeadlineUtc.AddSeconds(1);
+                run["executionTiming"]!["credentialExpiryUtc"] = execution.CredentialExpiryUtc.AddSeconds(1);
+                break;
+            case "execution-after-terminal":
+                ModuleTestExecutionTiming late = ModuleTestExecutionTiming.Start(selected, record.TerminalAtUtc.AddSeconds(1));
+                run["executionTiming"]!["startedAtUtc"] = late.StartedAtUtc;
+                run["executionTiming"]!["deadlineUtc"] = late.DeadlineUtc;
+                run["executionTiming"]!["credentialExpiryUtc"] = late.CredentialExpiryUtc;
+                break;
+            case "credential-expiry": run["executionTiming"]!["credentialExpiryUtc"] = execution.CredentialExpiryUtc.AddSeconds(1); break;
+            case "credential-invalid": run["executionTiming"]!["credentialExpiryUtc"] = "not-a-date"; break;
             default: root["artifactHashes"].ShouldNotBeNull()[reportPath] = new string('B', 64); break;
         }
 

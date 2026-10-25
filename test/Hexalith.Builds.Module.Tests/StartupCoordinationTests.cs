@@ -98,6 +98,7 @@ public sealed class StartupCoordinationTests
     [Theory]
     [InlineData("run", "v1")]
     [InlineData("debug", "v1")]
+    [InlineData("test", "v1")]
     [InlineData("run", "v2")]
     [InlineData("debug", "v2")]
     public async Task MappingConsumesOriginalDefaultDeadlineAsync(string command, string kind)
@@ -128,7 +129,10 @@ public sealed class StartupCoordinationTests
         await using (output.ConfigureAwait(true))
         {
             Stopwatch elapsed = Stopwatch.StartNew();
-            int exit = await ModuleCommandApplication.InvokeAsync([command, "--manifest", manifest, "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
+            string[] arguments = command == "test"
+                ? [command, "--manifest", manifest, "--profile", "full", "--output", "json"]
+                : [command, "--manifest", manifest, "--output", "json"];
+            int exit = await ModuleCommandApplication.InvokeAsync(arguments, output, TextWriter.Null, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
             exit.ShouldBe((int)ToolExitCode.TopologyOrLifecycle, output.ToString());
             elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(7));
             mappingCancelled.ShouldBeTrue();

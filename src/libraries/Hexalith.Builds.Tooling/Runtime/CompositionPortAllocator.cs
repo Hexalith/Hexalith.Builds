@@ -34,18 +34,25 @@ public static class CompositionPortAllocator
 
     private static readonly Queue<int> _handedOutOrder = new();
 
+    /// <summary>Allocates every run-scoped port while preserving the existing caller ABI.</summary>
+    /// <param name="moduleCount">The number of module HTTP endpoints.</param>
+    /// <param name="includeSecondEventStore">Whether to include the second EventStore.</param>
+    /// <returns>The proposed ports.</returns>
+    public static CompositionRunPorts Allocate(int moduleCount, bool includeSecondEventStore = false) => Allocate(moduleCount, includeSecondEventStore, null);
+
     /// <summary>
     /// Allocates every run-scoped port.
     /// </summary>
     /// <param name="moduleCount">The number of module HTTP endpoints to allocate.</param>
     /// <param name="includeSecondEventStore">Whether to allocate a second EventStore HTTP endpoint and sidecar.</param>
+    /// <param name="excludedPorts">Managed or persisted ports unavailable even when no socket is bound.</param>
     /// <returns>The allocated ports.</returns>
     /// <exception cref="InvalidOperationException">Not enough free loopback ports are available.</exception>
     [System.Diagnostics.CodeAnalysis.SuppressMessage(
         "Reliability",
         "CA2000:Dispose objects before losing scope",
         Justification = "Every retained probe listener is disposed in the enclosing finally; failed binds are disposed in the catch.")]
-    public static CompositionRunPorts Allocate(int moduleCount, bool includeSecondEventStore = false)
+    public static CompositionRunPorts Allocate(int moduleCount, bool includeSecondEventStore, IReadOnlySet<int>? excludedPorts)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(moduleCount);
         lock (_gate)
@@ -73,7 +80,7 @@ public static class CompositionPortAllocator
 
                     listeners.Add(listener);
                     int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-                    if (!_handedOut.Contains(port))
+                    if (!_handedOut.Contains(port) && excludedPorts?.Contains(port) != true)
                     {
                         ports.Add(port);
                     }
@@ -134,16 +141,38 @@ public static class CompositionPortAllocator
         }
     }
 
+    /// <summary>Probes and durably claims an independent allocation while preserving existing callers.</summary>
+    /// <param name="moduleCount">The number of module slots.</param>
+    /// <param name="runId">The owner run.</param>
+    /// <param name="stateDirectory">The claim store.</param>
+    /// <returns>The claimed ports.</returns>
+    public static CompositionRunPorts AllocateOwned(int moduleCount, string runId, string stateDirectory) => AllocateOwned(moduleCount, runId, stateDirectory, false);
+
     /// <summary>Probes and durably claims one runner-owned allocation before launch.</summary>
     /// <param name="moduleCount">The module slot count.</param>
     /// <param name="runId">The owning run.</param>
     /// <param name="stateDirectory">The runner claim store.</param>
+    /// <param name="includeSecondEventStore">Whether the legacy graph needs a second EventStore allocation.</param>
     /// <returns>The claimed proposed ports; allocation probes themselves are not reservations.</returns>
-    public static CompositionRunPorts AllocateOwned(int moduleCount, string runId, string stateDirectory)
+    /// <exception cref="InvalidOperationException">No independent finite allocation is available.</exception>
+    internal static CompositionRunPorts AllocateOwned(int moduleCount, string runId, string stateDirectory, bool includeSecondEventStore)
     {
-        CompositionRunPorts ports = Allocate(moduleCount);
-        new CompositionResourceClaimStore(stateDirectory).Acquire(runId, ports.ToList().Select(port => "tcp:127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture)));
-        return ports;
+        CompositionResourceClaimStore claims = new(stateDirectory);
+        for (int attempt = 0; attempt < 64; attempt++)
+        {
+            CompositionRunPorts ports = Allocate(moduleCount, includeSecondEventStore, claims.ClaimedPorts());
+            try
+            {
+                claims.Acquire(runId, ports.ToList().Select(port => "tcp:127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture)));
+                return ports;
+            }
+            catch (CompositionResourceClaimConflictException) when (attempt < 63)
+            {
+                // Another process claimed a proposed port since the exclusion snapshot; allocate afresh.
+            }
+        }
+
+        throw new InvalidOperationException("No independent runner port allocation is available.");
     }
 
     private static (int Minimum, int MaximumExclusive) CandidateRange()

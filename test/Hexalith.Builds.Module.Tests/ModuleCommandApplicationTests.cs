@@ -61,6 +61,44 @@ public sealed class ModuleCommandApplicationTests
         }
         """;
 
+    /// <summary>Repeated profiles outside a v2 test refuse before allocating services.</summary>
+    /// <param name="command">The requested command.</param>
+    /// <param name="v2">Whether to use a v2 declaration.</param>
+    /// <returns>The usage refusal and absence of startup assertions.</returns>
+    [Theory]
+    [InlineData("run", false)]
+    [InlineData("run", true)]
+    [InlineData("test", false)]
+    public async Task RepeatedProfilesRequireV2TestBeforeStartupAsync(string command, bool v2)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string manifest = workspace.Save();
+        if (!v2)
+        {
+            await File.WriteAllTextAsync(manifest, _manifestJson, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        int starts = 0;
+        CompositionEngineOptions options = new("unused.dll", typeof(ModuleCommandApplication).Assembly.Location)
+        {
+            StateDirectory = Path.Combine(workspace.Root, "state"),
+            WorkspaceRoot = Path.Combine(workspace.Root, "runs"),
+            PlatformStartOverride = (_, _) =>
+            {
+                starts++;
+                throw new InvalidOperationException("Invalid repeated profiles started services.");
+            },
+        };
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+        int exit = await ModuleCommandApplication.InvokeAsync([command, "--manifest", manifest, "--profile", "full", "--profile", "other", "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken, compositionOptions: options).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.UsageOrManifest, output.ToString());
+        output.ToString().ShouldContain("HXC002");
+        starts.ShouldBe(0);
+        Directory.Exists(options.StateDirectory).ShouldBeFalse();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+    }
+
     /// <summary>
     /// Verifies manifest validation completes before any runtime lifecycle phase.
     /// </summary>

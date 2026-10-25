@@ -277,12 +277,14 @@ public sealed class AppHostRunnerValidationTests
 
     /// <summary>Verifies successful real readiness records launcher ids, results, deadline and the final progress snapshot.</summary>
     /// <param name="processId">The Aspire process property representation.</param>
+    /// <param name="moduleId">The explicit attribution, or unavailable ownership.</param>
     /// <returns>The readiness document assertions.</returns>
     [Theory]
-    [InlineData(4242)]
-    [InlineData(4242L)]
-    [InlineData("4242")]
-    public async Task HealthyReadinessWritesMetadataAndFinalProgressAsync(object processId)
+    [InlineData(4242, "declared-owner")]
+    [InlineData(4242L, "declared-owner")]
+    [InlineData("4242", "declared-owner")]
+    [InlineData(4242, null)]
+    public async Task HealthyReadinessWritesMetadataAndFinalProgressAsync(object processId, string? moduleId)
     {
         string root = CompositionTestFiles.CreateDirectory();
         try
@@ -296,27 +298,42 @@ public sealed class AppHostRunnerValidationTests
             };
             IDistributedApplicationBuilder builder = CreateBuilder();
             ExecutableResource resource = builder.AddExecutable("eventstore", "unused", root).WithHttpEndpoint(port: 32123).Resource;
+            if (moduleId is not null)
+            {
+                resource.Annotations.Add(new PlatformResourceOwnerAnnotation(moduleId));
+            }
+
+            ExecutableResource sidecar = builder.AddExecutable("eventstore-dapr-cli", "unused", root).Resource;
             EndpointAnnotation endpoint = resource.Annotations.OfType<EndpointAnnotation>().Single();
             endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, "127.0.0.1", 32123);
             await using DistributedApplication app = builder.Build();
             ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
             await PublishAsync(notifications, resource, HealthStatus.Healthy, processId).ConfigureAwait(true);
+            await PublishAsync(notifications, sidecar, HealthStatus.Healthy, processId).ConfigureAwait(true);
 
             using CancellationTokenSource readyBound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
             readyBound.CancelAfter(TimeSpan.FromSeconds(5));
             (await RunReadiness.WaitAndWriteAsync(app, plan, readyBound.Token).ConfigureAwait(true)).ShouldBeTrue();
 
             CompositionReadiness readiness = (await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(plan.ReadinessPath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
-            CompositionResourceReadiness ready = readiness.Resources.Single();
+            CompositionResourceReadiness ready = readiness.Resources.Single(resource => resource.Name == "eventstore");
             ready.ProcessId.ShouldBe(4242);
             ready.Detail.ShouldBe("module-ready");
+            ready.ModuleId.ShouldBe(moduleId);
+            _ = ready.ObservedAt.ShouldNotBeNull();
+            _ = readiness.ObservedAt.ShouldNotBeNull();
+            CompositionResourceEndpoint observed = ready.Endpoints.ShouldHaveSingleItem();
+            observed.Name.ShouldBe("http");
+            observed.Protocol.ShouldBe("http");
+            observed.Uri.ShouldBe(new Uri("http://127.0.0.1:32123/"));
+            readiness.Resources.Single(resource => resource.Name == "eventstore-dapr-cli").ModuleId.ShouldBe(moduleId);
             readiness.EffectiveDeadlineSeconds.ShouldBe(1200);
             readiness.EffectiveDeadlineIsOverride.ShouldBeTrue();
             readiness.EffectiveDeadlineJustification.ShouldBe("replay required");
             readiness.EffectiveDeadlineModuleId.ShouldBe("sample");
             CompositionReadinessProgress progress = (await CompositionDocumentStore.TryReadAsync<CompositionReadinessProgress>(CompositionReadinessProgress.PathFor(plan.Workspace), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
-            progress.Resources.Single().State.ShouldBe("Healthy");
-            progress.Resources.Single().ProcessId.ShouldBe(4242);
+            progress.Resources.ShouldAllBe(resource => resource.State == "Healthy");
+            progress.Resources.Single(resource => resource.Name == "eventstore").ProcessId.ShouldBe(4242);
         }
         finally
         {

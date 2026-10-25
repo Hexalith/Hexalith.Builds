@@ -235,6 +235,7 @@ public sealed class ManifestValidationTests
     [InlineData("eventStoreVersion", "3.120.0")]
     [InlineData("eventStoreVersion", "3.125.1")]
     [InlineData("eventStoreVersion", "3.126.0")]
+    [InlineData("eventStoreVersion", "3.126.1")]
     [InlineData("frontComposerVersion", "4.6.0")]
     [InlineData("daprRuntimeVersion", "1.18.2")]
     public void LoadManifestWithHistoricalPackagePinFailsBeforeComposition(string field, string version)

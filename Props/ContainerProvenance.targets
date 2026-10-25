@@ -13,6 +13,18 @@
     <ContainerProvenanceDocumentationUrl Condition="'$(ContainerProvenanceDocumentationUrl)' == ''">$(ContainerProvenanceRepositoryUrl)/blob/$(ContainerProvenanceSourceSha)/README.md</ContainerProvenanceDocumentationUrl>
   </PropertyGroup>
 
+  <Target Name="ValidateContainerProvenanceCreated"
+          BeforeTargets="RebindContainerProvenanceLabels;_PublishSingleContainer"
+          Condition="'$(EnableContainer)' == 'true' and '$(ContainerProvenanceSourceSha)' != '' and '$(ContainerProvenanceReleaseVersion)' != ''">
+    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(ContainerProvenanceCreated)', '\A(?!0000)[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z\z')) != 'true'"
+           Text="ContainerProvenanceCreated must be an exact UTC RFC 3339 second with a real calendar date." />
+    <PropertyGroup>
+      <_ContainerProvenanceDaysInMonth>$([System.DateTime]::DaysInMonth($([System.Int32]::Parse($(ContainerProvenanceCreated.Substring(0, 4)))), $([System.Int32]::Parse($(ContainerProvenanceCreated.Substring(5, 2))))))</_ContainerProvenanceDaysInMonth>
+    </PropertyGroup>
+    <Error Condition="$([System.Int32]::Parse($(ContainerProvenanceCreated.Substring(8, 2)))) &gt; $(_ContainerProvenanceDaysInMonth)"
+           Text="ContainerProvenanceCreated must contain a real calendar date." />
+  </Target>
+
   <Target Name="RebindContainerProvenanceLabels"
           BeforeTargets="_PublishSingleContainer"
           Condition="'$(EnableContainer)' == 'true' and '$(ContainerProvenanceSourceSha)' != '' and '$(ContainerProvenanceReleaseVersion)' != '' and '$(ContainerProvenanceCreated)' != ''">

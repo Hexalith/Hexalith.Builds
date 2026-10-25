@@ -84,10 +84,19 @@ public static class CompositionDaprComponentRenderer
     /// <param name="configurationName">The configuration identity.</param>
     /// <param name="directory">The private runtime directory that owns the registry.</param>
     /// <returns>The YAML configuration document.</returns>
+    /// <exception cref="ArgumentException">The configuration name is not a plain resource name.</exception>
     public static string RenderConfiguration(string configurationName, string directory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(configurationName);
         ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+
+        // The name is written as a plain YAML scalar, so refuse anything that could end it or add keys.
+        if (!char.IsAsciiLetterOrDigit(configurationName[0])
+            || configurationName.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not '-' and not '.'))
+        {
+            throw new ArgumentException("A Dapr configuration name must contain only ASCII letters, digits, '-' and '.', starting with a letter or digit.", nameof(configurationName));
+        }
+
         string registry = Path.Combine(Path.GetFullPath(directory), "name-resolution.db").Replace('\\', '/');
         return Lines(
             "apiVersion: dapr.io/v1alpha1",

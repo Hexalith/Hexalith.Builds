@@ -3,6 +3,7 @@
 
 import argparse
 import base64
+from datetime import datetime
 import hashlib
 import json
 import os
@@ -281,13 +282,18 @@ def _validate_labels(config, expected_labels):
     labels = image_config.get("Labels") if isinstance(image_config, dict) else None
     if not isinstance(labels, dict):
         _fail("provenance-labels-missing", "Image config has no provenance labels.")
-    for name, expected in expected_labels.items():
+    created = _validate_created(labels.get("org.opencontainers.image.created"))
+    if labels.get("org.opencontainers.artifact.created") != created:
+        _fail("provenance-label-mismatch", "Image and artifact created labels must match exactly.")
+    required_labels = {**expected_labels, "org.opencontainers.image.created": expected_labels.get("org.opencontainers.image.created", created),
+                       "org.opencontainers.artifact.created": expected_labels.get("org.opencontainers.artifact.created", created)}
+    for name, expected in required_labels.items():
         if labels.get(name) != expected:
             _fail(
                 "provenance-label-mismatch",
                 f"Image config label {name} does not match the exact release identity.",
             )
-    return {name: labels[name] for name in expected_labels}
+    return {name: labels[name] for name in required_labels}
 
 
 def _validate_child(descriptor, response, body, config_resolver, expected_labels=None):
@@ -366,6 +372,8 @@ def _validate_graph(tag_response, immutable_resolver, child_resolver, config_res
                 expected_labels,
             )
         )
+    if expected_labels is not None and len({child["provenance_labels"]["org.opencontainers.image.created"] for child in children}) != 1:
+        _fail("provenance-label-mismatch", "All child image configs must share the same exact created instant.")
     order = {platform: index for index, platform in enumerate(REQUIRED_PLATFORMS)}
     children.sort(key=lambda child: order[child["platform"]])
     return {
@@ -493,8 +501,21 @@ def validate_registry(image, username, api_key, expected_labels=None):
     )
 
 
-def expected_provenance_labels(repository, source_sha, version):
-    """Return the exact five-label release identity expected in every child config."""
+def _validate_created(created):
+    """Require a canonical real Gregorian UTC instant for every provenance consumer."""
+    if not isinstance(created, str) or re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z", created) is None:
+        _fail("invalid-release-identity", "Created instant must be an exact UTC RFC 3339 second.")
+    try:
+        datetime.strptime(created, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError as error:
+        raise ValidationError("invalid-release-identity", "Created instant must be a real calendar date.") from error
+    return created
+
+
+def expected_provenance_labels(repository, source_sha, version, created=None):
+    """Return release labels; legacy readers still require matching valid created labels in the graph."""
+    if created is not None:
+        _validate_created(created)
     if GITHUB_REPOSITORY_PATTERN.fullmatch(repository or "") is None:
         _fail("invalid-release-identity", "GitHub repository identity is invalid.")
     if SOURCE_SHA_PATTERN.fullmatch(source_sha or "") is None:
@@ -502,13 +523,16 @@ def expected_provenance_labels(repository, source_sha, version):
     if TAG_PATTERN.fullmatch(version or "") is None:
         _fail("invalid-release-identity", "Release version must be plain SemVer.")
     repository_url = f"https://github.com/{repository}"
-    return {
+    labels = {
         "org.opencontainers.image.source": repository_url,
         "org.opencontainers.image.url": f"{repository_url}/releases/tag/v{version}",
         "org.opencontainers.image.documentation": f"{repository_url}/blob/{source_sha}/README.md",
         "org.opencontainers.image.revision": source_sha,
         "org.opencontainers.image.version": version,
     }
+    if created is not None:
+        labels.update({"org.opencontainers.image.created": created, "org.opencontainers.artifact.created": created})
+    return labels
 
 
 def write_evidence(evidence_directory, image, evidence):
@@ -555,6 +579,7 @@ def main():
     parser.add_argument("--repository", required=True)
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--version", required=True)
+    parser.add_argument("--created", required=True)
     parser.add_argument("--evidence-directory", required=True, type=workspace_output_directory)
     arguments = parser.parse_args()
     try:
@@ -566,6 +591,7 @@ def main():
                 arguments.repository,
                 arguments.source_sha,
                 arguments.version,
+                arguments.created,
             ),
         )
         document = write_evidence(arguments.evidence_directory, arguments.image, evidence)

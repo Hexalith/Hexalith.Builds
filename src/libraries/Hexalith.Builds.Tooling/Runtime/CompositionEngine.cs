@@ -306,7 +306,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 runId,
                 workspace,
                 prerequisites.DaprHome!,
-                CompositionPortAllocator.Allocate(Math.Max(1, modules.Count), !platformComposition && _options.EnableSecondEventStoreInstance),
+                CompositionPortAllocator.AllocateOwned(Math.Max(1, modules.Count), runId, _options.StateDirectory, !platformComposition && _options.EnableSecondEventStoreInstance),
                 modules,
                 markers,
                 _options.SourceMapping,
@@ -328,7 +328,6 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 McpCliToolPath = mcpCliTool,
             };
 
-            StateStore.Claims.Acquire(runId, plan.Ports.ToList().Select(port => "tcp:127.0.0.1:" + port.ToString(System.Globalization.CultureInfo.InvariantCulture)));
             await CompositionDaprComponentRenderer.WriteAsync(plan, startupBound.Token).ConfigureAwait(false);
             string planPath = Path.Combine(workspace, "plan.json");
             await CompositionDocumentStore.WriteAsync(planPath, plan, startupBound.Token).ConfigureAwait(false);
@@ -385,7 +384,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
 
             await WriteStateAsync(runId, CompositionRunStatus.Starting, manifestHash, appHost.Id, StartTime(appHost), startupBound.Token).ConfigureAwait(false);
-            return await WaitForReadinessAsync(plan, appHost, signingKey, manifestHash, requestedAt, deadline, deadlineUtc, null, cancellationToken).ConfigureAwait(false);
+            return await WaitForReadinessAsync(plan, appHost, signingKey, manifestHash, requestedAt, deadline, deadlineUtc, null, _options.SelectedExecutionOwnerToken ?? cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -532,8 +531,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <param name="cancellationToken">The durable write token.</param>
     /// <param name="native">The optional safe native test report.</param>
     /// <param name="waitForLock">Whether non-stopping callers may wait briefly for the outcome lock.</param>
+    /// <param name="executionTiming">The runner-held execution observation; child-writable timing files are never reread.</param>
     /// <returns>The first terminal record.</returns>
-    internal async Task<ModuleTestRunRecord?> RecordTestOutcomeAsync(string runId, IReadOnlyList<CompositionResourceReadiness> resources, ToolCommandResult result, string disposition, CompositionRunResources remaining, CancellationToken cancellationToken, NativeTestExecutionResult? native = null, bool waitForLock = true)
+    internal async Task<ModuleTestRunRecord?> RecordTestOutcomeAsync(string runId, IReadOnlyList<CompositionResourceReadiness> resources, ToolCommandResult result, string disposition, CompositionRunResources remaining, CancellationToken cancellationToken, NativeTestExecutionResult? native = null, bool waitForLock = true, ModuleTestExecutionTiming? executionTiming = null)
     {
         CompositionRunState? state = await StateStore.TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
         ModuleTestSelection? selection = _options.SelectedTest ?? state?.SelectedTest;
@@ -559,10 +559,10 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             CompositionReadiness? observed = await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(Path.Combine(WorkspaceFor(runId), "readiness.json"), cancellationToken).ConfigureAwait(false);
             CompositionTestObservation? identity = observed?.RunId == runId && observed.TestObservation?.RunId == runId ? observed.TestObservation : null;
             ModuleTestRunRecord record = prior ?? new ModuleTestRunRecord(runId, runId, selection, _options.SourceMapping?.ContentHash, _options.SourceMapping?.PlatformIdentity?.Commit, _options.SourceMapping?.PlatformIdentity?.CheckoutCommit, identity?.ObservedCandidateHash, identity?.ObservedBackendIdentity, false, resources, result.Status, result.Outcome, DateTimeOffset.UtcNow, disposition, remaining);
-            record = record with { ResourceDisposition = disposition, RemainingResources = remaining, Resources = resources.Count > 0 ? resources : record.Resources, Selections = _options.SelectedTests, ExecutionTiming = await CompositionDocumentStore.TryReadAsync<ModuleTestExecutionTiming>(Path.Combine(WorkspaceFor(runId), "execution-timing.json"), cancellationToken).ConfigureAwait(false) ?? record.ExecutionTiming };
+            record = record with { ResourceDisposition = disposition, RemainingResources = remaining, Resources = resources.Count > 0 ? resources : record.Resources, Selections = _options.SelectedTests.Count > 0 ? _options.SelectedTests : record.Selections, ExecutionTiming = executionTiming ?? record.ExecutionTiming };
             await CompositionDocumentStore.WriteAsync(path, record, cancellationToken).ConfigureAwait(false);
             CompositionWorkspace.CreatePrivateDirectory(directory);
-            CopySelectedMetadata(WorkspaceFor(runId), directory);
+            await CopySelectedMetadataAsync(WorkspaceFor(runId), directory, cancellationToken).ConfigureAwait(false);
             if (native?.ReportBytes is { } reportBytes)
             {
                 await File.WriteAllBytesAsync(Path.Combine(directory, "native.trx"), reportBytes, cancellationToken).ConfigureAwait(false);
@@ -769,7 +769,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         && value.Length <= maximumLength
         && value.All(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '/' or '.' or ':' or ';' or '=' or ' ');
 
-    private static void CopySelectedMetadata(string workspace, string destination)
+    private static async Task CopySelectedMetadataAsync(string workspace, string destination, CancellationToken cancellationToken)
     {
         foreach ((string source, string name) in new[]
         {
@@ -781,17 +781,35 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         {
             try
             {
-                if (File.Exists(source))
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!SelectedNativeTestReport.IsOwnedRegularPath(source, workspace))
                 {
-                    byte[] bytes = File.ReadAllBytes(source);
+                    continue;
+                }
+
+                FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(source);
+                await using (stream.ConfigureAwait(false))
+                {
+                    long length = stream.CanSeek ? stream.Length : 0;
+                    if (length is <= 0 or > 4194304)
+                    {
+                        continue;
+                    }
+
+                    byte[] bytes = new byte[(int)length];
+                    await stream.ReadExactlyAsync(bytes, cancellationToken).ConfigureAwait(false);
                     using System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(bytes);
                     if (SafeMetadata(document.RootElement))
                     {
-                        File.WriteAllBytes(Path.Combine(destination, name), bytes);
+                        await File.WriteAllBytesAsync(Path.Combine(destination, name), bytes, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException or System.Text.Json.JsonException)
             {
                 // An absent, unreadable or unsafe observation is never invented.
             }
@@ -1022,7 +1040,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 if (!tasksCompleted)
                 {
                     (string? failingTask, bool deadlineElapsed, string? expired) = await CompositionStartupTasks.RunOwnedDetailedAsync(plan.StartupTasks, deadlineUtc, plan.RunId, cancellationToken, taskResults).ConfigureAwait(false);
-                    await CompositionDocumentStore.WriteAsync(Path.Combine(plan.Workspace, "startup-task-results.json"), taskResults, cancellationToken).ConfigureAwait(false);
+                    await CompositionDocumentStore.WriteAsync(Path.Combine(plan.Workspace, "startup-task-results.json"), taskResults, CancellationToken.None).ConfigureAwait(false);
                     if (deadlineElapsed)
                     {
                         expiredTask = expired;
@@ -1287,7 +1305,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         DateTimeOffset? retainedStart = retainedPid is null ? null : StartTime(appHost!);
         if (_options.SelectedTest is not null)
         {
-            CopySelectedMetadata(WorkspaceFor(runId), diagnosticsPath);
+            await CopySelectedMetadataAsync(WorkspaceFor(runId), diagnosticsPath, boundToken).ConfigureAwait(false);
         }
 
         (CompositionRunResources remaining, bool workspaceRemoved) = retained
