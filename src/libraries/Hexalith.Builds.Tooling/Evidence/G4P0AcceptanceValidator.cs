@@ -197,6 +197,7 @@ internal static class G4P0AcceptanceValidator
             || !string.Equals(command, "dotnet tool run " + summary.Command, StringComparison.Ordinal)
             || !string.Equals(summary.FinalStatus, finalStatus, StringComparison.Ordinal)
             || summary.ExitCode != exitCode
+            || (finalStatus == "completed" && !summary.CleanupVerified)
             || !string.Equals(summary.ManifestPath, fixture.GetProperty("manifestPath").GetString(), StringComparison.Ordinal)
             || !string.Equals(summary.ManifestHash, fixture.GetProperty("manifestSha256").GetString(), StringComparison.OrdinalIgnoreCase))
         {

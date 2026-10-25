@@ -372,6 +372,108 @@ public sealed class TestEnvironmentContractReaderTests
         _ = Should.Throw<OperationCanceledException>(() => TestEnvironmentContractReader.ReadDescriptor("unused", cancellation.Token));
     }
 
+    /// <summary>Both public readers reject final-component links while accepting the unchanged regular target.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FinalComponentSymlinksRefuseAtomically(bool result)
+    {
+        string directory = Directory.CreateTempSubdirectory("hexalith-contract-link-").FullName;
+        try
+        {
+            string target = Path.Combine(directory, "target.json");
+            string link = Path.Combine(directory, "link.json");
+            File.WriteAllText(target, Sample(result).ToJsonString());
+            try
+            {
+                _ = File.CreateSymbolicLink(link, target);
+            }
+            catch (Exception exception) when (OperatingSystem.IsWindows() && exception is IOException or UnauthorizedAccessException)
+            {
+                Assert.Skip("This Windows host cannot create the symbolic-link fixture; native Windows runtime qualification is still required.");
+            }
+
+            TestEnvironmentContractReadResult linked = result
+                ? TestEnvironmentContractReader.ReadResult(link, TestContext.Current.CancellationToken)
+                : TestEnvironmentContractReader.ReadDescriptor(link, TestContext.Current.CancellationToken);
+            AssertRefused(linked, "HXT106");
+            TestEnvironmentContractReadResult regular = result
+                ? TestEnvironmentContractReader.ReadResult(target, TestContext.Current.CancellationToken)
+                : TestEnvironmentContractReader.ReadDescriptor(target, TestContext.Current.CancellationToken);
+            regular.IsValid.ShouldBeTrue();
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    /// <summary>An exclusive writer refuses both public readers without hiding a valid document after release.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ExclusiveLocksRefuseUntilReleased(bool result)
+    {
+        string path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(path, Sample(result).ToJsonString());
+            using (FileStream held = new(path, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                TestEnvironmentContractReadResult locked = result
+                    ? TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken)
+                    : TestEnvironmentContractReader.ReadDescriptor(path, TestContext.Current.CancellationToken);
+                AssertRefused(locked, "HXT106");
+            }
+
+            TestEnvironmentContractReadResult released = result
+                ? TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken)
+                : TestEnvironmentContractReader.ReadDescriptor(path, TestContext.Current.CancellationToken);
+            released.IsValid.ShouldBeTrue();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    /// <summary>Unavailable resources cannot claim populated readiness, including an observed empty readiness set.</summary>
+    /// <param name="result">Whether to read a terminal result.</param>
+    /// <param name="populatedReadiness">Whether readiness claims an observed empty set.</param>
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void UnavailableResourcesRequireUnavailableReadiness(bool result, bool populatedReadiness)
+    {
+        JsonObject sample = Sample(result);
+        JsonNode environment = sample["bindings"]!["environment"]!;
+        environment["resources"] = new JsonObject { ["state"] = "not-yet-populated" };
+        if (populatedReadiness)
+        {
+            environment["readiness"]!["resources"] = new JsonArray();
+        }
+        else
+        {
+            environment["readiness"] = new JsonObject { ["state"] = "not-yet-populated" };
+        }
+
+        Schema(result).Evaluate(JsonSerializer.SerializeToElement(sample), new EvaluationOptions { RequireFormatValidation = true }).IsValid.ShouldBeTrue();
+        TestEnvironmentContractReadResult read = Read(sample, result);
+        if (populatedReadiness)
+        {
+            AssertRefused(read, "HXT104");
+        }
+        else
+        {
+            read.IsValid.ShouldBeTrue();
+            _ = read.Document.ShouldNotBeNull();
+        }
+    }
+
     /// <summary>All structured reserved bindings can be populated later under the same v1 version.</summary>
     /// <param name="result">Whether to read a terminal result.</param>
     /// <param name="kind">Candidate PR, release or explicitly diagnostic baseline.</param>

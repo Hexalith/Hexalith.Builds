@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.Tooling.Runtime;
 
+using Hexalith.Builds.Tooling.Diagnostics;
+
 /// <summary>
 /// Stores metadata-only run state in a per-user directory, keyed by run identity.
 /// </summary>
@@ -112,14 +114,31 @@ public sealed class CompositionRunStateStore(string directory)
     internal static bool ValidResources(CompositionRunResources? resources) => resources is null
         || (resources.ContainerIds?.All(id => id is not null) == true
             && resources.ProcessIds is not null && resources.WorkspaceIds?.All(id => id is not null) == true
-            && resources.ClaimIds?.All(id => id is not null) == true && resources.DiscoveryFailures is not null);
+            && resources.ClaimIds?.All(id => id is not null) == true && resources.DiscoveryFailures?.All(failure => failure is not null) == true
+            && (resources.Unverified || resources.DiscoveryFailures.Count == 0));
+
+    /// <summary>Rejects missing or null readiness entries before restoring tracked state.</summary>
+    /// <param name="state">The tracked owner state.</param>
+    /// <returns>Whether the represented readiness collection is safe to consume.</returns>
+    internal static bool ValidReadiness(CompositionRunState state) => !state.ReadinessResults.IsDefault
+        && state.ReadinessResults.All(resource => resource is not null);
 
     /// <summary>Validates a committed terminal observation before any nested resource is consumed.</summary>
     /// <param name="record">The recorded observation.</param>
     /// <param name="runId">The enclosing owner identity.</param>
     /// <returns>Whether required observations and their ownership agree.</returns>
     internal static bool ValidOutcome(ModuleTestRunRecord record, string runId) => record.RunId == runId && record.OwnerId == runId
-        && record.TerminalOutcome is not null && record.Selection is not null && record.Resources?.All(resource => resource is not null) == true
+        && record.TerminalOutcome is not null && Enum.IsDefined(record.TerminalOutcome.ExitCode)
+        && Enum.IsDefined(record.TerminalOutcome.Phase) && Enum.IsDefined(record.TerminalOutcome.Category)
+        && record.TerminalStatus switch
+        {
+            "completed" => record.TerminalOutcome.ExitCode == ToolExitCode.Success,
+            "failed" => record.TerminalOutcome.ExitCode is not (ToolExitCode.Success or ToolExitCode.Cancelled),
+            "unavailable" => record.TerminalOutcome.ExitCode == ToolExitCode.PrerequisiteUnavailable,
+            "cancelled" or "withdrawn" => record.TerminalOutcome.ExitCode == ToolExitCode.Cancelled,
+            _ => false,
+        }
+        && record.Selection is not null && record.Resources?.All(resource => resource is not null) == true
         && record.RemainingResources is not null && ValidResources(record.RemainingResources)
         && record.DiagnosticRuleIds is not null && record.LaterDiagnosticRuleIds is not null
         && ValidCleanup(record.CleanupDisposition, record.RemainingResources);
@@ -136,9 +155,16 @@ public sealed class CompositionRunStateStore(string directory)
     /// <param name="cancellationToken">The enumeration cancellation.</param>
     /// <returns>The verified states.</returns>
     /// <exception cref="IOException">An entry is invalid and no incomplete-list observer is provided.</exception>
-    internal async Task<IReadOnlyList<CompositionRunState>> EnumerateAsync(Action? onInvalid, CancellationToken cancellationToken)
+    internal async Task<IReadOnlyList<CompositionRunState>> EnumerateAsync(Action<string>? onInvalid, CancellationToken cancellationToken)
     {
-        if (!System.IO.Directory.Exists(Directory))
+        try
+        {
+            if ((File.GetAttributes(Directory) & FileAttributes.Directory) == 0)
+            {
+                throw new IOException("Runner-owned state storage is not a directory.");
+            }
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
         {
             return [];
         }
@@ -155,14 +181,14 @@ public sealed class CompositionRunStateStore(string directory)
                     throw new IOException("Runner-owned run state has an invalid identity.");
                 }
 
-                onInvalid();
+                onInvalid(runId);
                 continue;
             }
 
             CompositionRunState? state = await TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
             if (state is null || state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId
                 || string.IsNullOrEmpty(state.Workspace) || !Path.IsPathFullyQualified(state.Workspace) || !Enum.IsDefined(state.Status)
-                || !ValidResources(state.RemainingResources)
+                || !ValidReadiness(state) || !ValidResources(state.RemainingResources)
                 || !ValidCleanup(state.CleanupDisposition, state.RemainingResources ?? state.TestRun?.RemainingResources)
                 || (state.TestRun is { } test && !ValidOutcome(test, runId))
                 || (state.AttemptId is not null && (!CompositionRunPlanFactory.IsRunId(state.AttemptId) || state.AttemptId == runId || state.AttemptId == state.EnvironmentId))
@@ -173,7 +199,7 @@ public sealed class CompositionRunStateStore(string directory)
                     throw new IOException("Runner-owned run state cannot be verified.");
                 }
 
-                onInvalid();
+                onInvalid(runId);
                 continue;
             }
 

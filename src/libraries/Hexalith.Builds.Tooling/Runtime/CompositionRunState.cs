@@ -51,9 +51,6 @@ public sealed record CompositionRunState(
     /// <summary>Gets the original independent startup deadline.</summary>
     public DateTimeOffset? StartupDeadlineUtc { get; init; }
 
-    /// <summary>Gets the recorded composition content identity when resolved.</summary>
-    public string? CompositionContentIdentity { get; init; }
-
     /// <summary>Gets a value indicating whether this owner applies local failure retention.</summary>
     public bool RetainOnFailure { get; init; }
 

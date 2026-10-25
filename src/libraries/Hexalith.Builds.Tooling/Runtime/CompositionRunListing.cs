@@ -20,8 +20,8 @@ public static class CompositionRunListing
         ArgumentNullException.ThrowIfNull(store);
         try
         {
-            bool incomplete = false;
-            IReadOnlyList<CompositionRunState> states = await store.EnumerateAsync(() => incomplete = true, cancellationToken).ConfigureAwait(false);
+            HashSet<string> unverifiableOwners = new(StringComparer.Ordinal);
+            IReadOnlyList<CompositionRunState> states = await store.EnumerateAsync(runId => unverifiableOwners.Add(runId), cancellationToken).ConfigureAwait(false);
             List<CompositionRunListingEntry> entries = [];
             foreach (CompositionRunState tracked in states)
             {
@@ -31,21 +31,21 @@ public static class CompositionRunListing
                     ModuleTestRunRecord? committed = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestRunRecord>(Path.Combine(directory, "selected-test.json"), cancellationToken).ConfigureAwait(false);
                     if (committed is not null && !CompositionRunStateStore.ValidOutcome(committed, tracked.RunId))
                     {
-                        incomplete = true;
+                        _ = unverifiableOwners.Add(tracked.RunId);
                         continue;
                     }
 
                     CompositionRunState state = committed is null ? tracked : tracked with { TestRun = committed, CleanupDisposition = committed.CleanupDisposition, RemainingResources = committed.RemainingResources };
                     if (committed?.CleanupDisposition == "complete" && tracked.CleanupDisposition != "complete")
                     {
-                        incomplete = true;
+                        _ = unverifiableOwners.Add(tracked.RunId);
                         state = state with { CleanupDisposition = "incomplete", RemainingResources = committed.RemainingResources with { Unverified = true, DiscoveryFailures = [.. committed.RemainingResources.DiscoveryFailures, "state-finalization"] } };
                     }
 
                     ModuleTestExecutionTiming? timing = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestExecutionTiming>(Path.Combine(directory, "execution-activation.json"), cancellationToken).ConfigureAwait(false) ?? state.TestRun?.ExecutionTiming;
                     if (timing is not null && (timing.EffectiveSeconds <= 0 || timing.DeadlineUtc - timing.StartedAtUtc != TimeSpan.FromSeconds(timing.EffectiveSeconds)))
                     {
-                        incomplete = true;
+                        _ = unverifiableOwners.Add(tracked.RunId);
                         continue;
                     }
 
@@ -67,11 +67,11 @@ public static class CompositionRunListing
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
                 {
-                    incomplete = true;
+                    _ = unverifiableOwners.Add(tracked.RunId);
                 }
             }
 
-            return (incomplete ? Incomplete() : new ToolCommandResult("completed", ToolOutcome.Passed(), [])) with { Environments = entries };
+            return (unverifiableOwners.Count > 0 ? Incomplete(unverifiableOwners) : new ToolCommandResult("completed", ToolOutcome.Passed(), [])) with { Environments = entries };
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
         {
@@ -79,9 +79,11 @@ public static class CompositionRunListing
         }
     }
 
-    private static ToolCommandResult Incomplete()
+    private static ToolCommandResult Incomplete(IEnumerable<string>? unverifiableOwners = null)
     {
-        ToolDiagnostic diagnostic = new("HXR024", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "Tracked environment metadata cannot be verified; listing is incomplete.", "state");
+        string[] ownerIds = [.. (unverifiableOwners ?? []).Where(CompositionRunPlanFactory.IsRunId).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        string owners = ownerIds.Length == 0 ? string.Empty : " Unverifiable owner run IDs: " + string.Join(", ", ownerIds) + ".";
+        ToolDiagnostic diagnostic = new("HXR024", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "Tracked environment metadata cannot be verified; listing is incomplete." + owners, "state");
         return new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [diagnostic]);
     }
 

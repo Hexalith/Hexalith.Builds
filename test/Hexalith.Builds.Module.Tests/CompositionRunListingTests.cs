@@ -67,6 +67,36 @@ public sealed class CompositionRunListingTests
         }
     }
 
+    /// <summary>A missing state root is empty; an existing file at that root is an incomplete listing.</summary>
+    /// <param name="existingFile">Whether the configured root is an existing file.</param>
+    /// <returns>The confirmed-absence or structured storage-refusal assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StateRootAbsenceAndNonDirectoryAreDistinguishedAsync(bool existingFile)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string path = Path.Combine(workspace.Root, "state");
+        if (existingFile)
+        {
+            await File.WriteAllTextAsync(path, "state root is a file", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        ToolCommandResult listed = await CompositionRunListing.ReadAsync(new CompositionRunStateStore(path), DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (existingFile)
+        {
+            listed.Status.ShouldBe("failed");
+            listed.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
+            listed.Diagnostics.Single().RuleId.ShouldBe("HXR024");
+            (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("state root is a file");
+        }
+        else
+        {
+            listed.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+            listed.Environments.ShouldBeEmpty();
+        }
+    }
+
     /// <summary>Corrupt tracked metadata refuses instead of silently reporting an empty list.</summary>
     /// <returns>The incomplete discovery refusal.</returns>
     [Fact]
@@ -81,6 +111,7 @@ public sealed class CompositionRunListingTests
         result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
         result.Environments.ShouldBeEmpty();
         result.Diagnostics.Single().Message.ShouldNotContain("do-not-echo");
+        result.Diagnostics.Single().Message.ShouldContain(state.RunId);
     }
 
     /// <summary>One invalid owner does not hide verified peers or permit duplicate issued identities.</summary>
@@ -109,6 +140,7 @@ public sealed class CompositionRunListingTests
         result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
         result.Environments.ShouldNotBeNull().Single().OwnerRunId.ShouldBe(valid.RunId);
         result.Diagnostics.Single().Message.ShouldContain("listing is incomplete");
+        result.Diagnostics.Single().Message.ShouldContain(corrupt);
     }
 
     /// <summary>Well-formed JSON with a null required nested lifecycle value returns the structured incomplete refusal.</summary>
@@ -125,6 +157,38 @@ public sealed class CompositionRunListingTests
         result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
         result.Environments.ShouldBeEmpty();
         result.Diagnostics.Single().Message.ShouldContain("listing is incomplete");
+    }
+
+    /// <summary>Unverifiable committed outcomes and activation metadata identify the exact owner while preserving peers.</summary>
+    /// <param name="observation">The invalid durable observation.</param>
+    /// <returns>The actionable owner diagnostic and healthy peer assertions.</returns>
+    [Theory]
+    [InlineData("outcome")]
+    [InlineData("activation")]
+    public async Task UnverifiableObservationNamesOwnerAsync(string observation)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionRunStateStore store = new(Path.Combine(workspace.Root, "state"));
+        await store.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string peer = CompositionRunPlanFactory.NewRunId();
+        await store.WriteAsync(state with { RunId = peer }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string directory = Path.Combine(store.Directory, "diagnostics", state.RunId);
+        if (observation == "outcome")
+        {
+            ModuleTestRunRecord invalid = new(state.RunId, peer, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "unknown", new CompositionRunResources([], []));
+            await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "selected-test.json"), invalid, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        else
+        {
+            ModuleTestExecutionTiming invalid = ModuleTestExecutionTiming.Start(selected, DateTimeOffset.UtcNow) with { EffectiveSeconds = 0 };
+            await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "execution-activation.json"), invalid, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        ToolCommandResult listed = await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        listed.Environments.ShouldNotBeNull().Single().OwnerRunId.ShouldBe(peer);
+        listed.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
+        listed.Diagnostics.Single().Message.ShouldContain(state.RunId);
     }
 
     /// <summary>Nested terminal identities cannot borrow another owner while healthy peers stay visible.</summary>

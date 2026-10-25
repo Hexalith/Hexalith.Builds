@@ -1111,6 +1111,7 @@ public static class ModuleCommandExecutionService
             CompositionRunSession? session = null;
             string? ownedRunId = null;
             long? startupStoppingTimestamp = null;
+            string? fallbackTerminalCause = null;
             try
             {
                 (startupToken ?? cancellationToken).ThrowIfCancellationRequested();
@@ -1221,6 +1222,7 @@ public static class ModuleCommandExecutionService
                 }
                 else
                 {
+                    fallbackTerminalCause = cancellationToken.IsCancellationRequested ? "run-cancelled" : "execution-timeout";
                     result = cancellationToken.IsCancellationRequested
                         ? PlatformRefusal("HXC130", "The owner cancelled the selected execution.", ToolExitCode.Cancelled) with { Status = "cancelled", RunId = ownedRunId }
                         : PlatformRefusal("HXT007", "The selected execution exhausted its finite execution lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
@@ -1269,7 +1271,7 @@ public static class ModuleCommandExecutionService
                     using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
                     record = session is null
                         ? await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(options.StateDirectory, "diagnostics", ownedRunId, "selected-test.json"), recording.Token).ConfigureAwait(false)
-                        : await engine!.RecordTestOutcomeAsync(ownedRunId, session.Readiness.Resources, result, initialDisposition, new CompositionRunResources([], [], Unverified: true), recording.Token, native, waitForLock: false, executionTiming: session.Plan.ExecutionTiming, environmentBindings: session.EnvironmentBindings, terminalCause: native?.TerminalCause, testObservation: session.Readiness.TestObservation, archiveMetadata: false).ConfigureAwait(false);
+                        : await engine!.RecordTestOutcomeAsync(ownedRunId, session.Readiness.Resources, result, initialDisposition, new CompositionRunResources([], [], Unverified: true), recording.Token, native, waitForLock: false, executionTiming: session.Plan.ExecutionTiming, environmentBindings: session.EnvironmentBindings, terminalCause: native?.TerminalCause ?? fallbackTerminalCause, testObservation: session.Readiness.TestObservation, archiveMetadata: false).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
                 {
@@ -1302,8 +1304,9 @@ public static class ModuleCommandExecutionService
             {
                 try
                 {
-                    CompositionRunResources survivors = await engine!.ObserveOwnedResourcesAsync(ownedRunId, stopping.Token).ConfigureAwait(false);
-                    record = await engine.RecordTestOutcomeAsync(ownedRunId, record.Resources, result, "retained", survivors, stopping.Token, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings).ConfigureAwait(false);
+                    using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
+                    CompositionRunResources survivors = await engine!.ObserveOwnedResourcesAsync(ownedRunId, metadata.Token).ConfigureAwait(false);
+                    record = await engine.RecordTestOutcomeAsync(ownedRunId, record.Resources, result, "retained", survivors, metadata.Token, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings, archiveMetadata: false).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
                 {
@@ -1565,10 +1568,10 @@ public static class ModuleCommandExecutionService
                 ToolFailureCategory.EvidencePolicy,
                 diagnostic.RuleId,
                 ToolExitCode.EvidenceSchemaOrPolicy);
-            return new ToolCommandResult("failed", evidenceOutcome, [diagnostic]) { RunId = result.RunId };
+            return result with { Status = "failed", Outcome = evidenceOutcome, Diagnostics = [.. result.Diagnostics, diagnostic] };
         }
 
-        return new ToolCommandResult(result.Status, result.Outcome, [.. result.Diagnostics, diagnostic]) { RunId = result.RunId };
+        return result with { Diagnostics = [.. result.Diagnostics, diagnostic] };
     }
 
     /// <summary>

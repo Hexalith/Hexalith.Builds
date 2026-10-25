@@ -61,12 +61,22 @@ public sealed class CompositionResourceClaimStoreTests
             CompositionResourceClaimStore owner = new(root);
             CompositionResourceClaimStore peer = new(root);
             owner.Acquire(first, ["tcp:127.0.0.1:12345"]);
+            string rejected = CompositionRunPlanFactory.NewRunId();
+            _ = Should.Throw<CompositionResourceClaimConflictException>(() => peer.Acquire(rejected, ["tcp:127.0.0.1:12345"]));
+            File.Exists(Path.Combine(root, "claims", "owners", rejected + ".json")).ShouldBeFalse();
+            peer.FindOwned(rejected).ShouldBeEmpty();
             peer.Acquire(second, ["tcp:127.0.0.1:12346"]);
             CompositionResourceClaimConflictException conflict = Should.Throw<CompositionResourceClaimConflictException>(() => peer.Acquire(second, ["a-new-exclusive-resource", "tcp:127.0.0.1:12345"]));
             conflict.OwnerRunId.ShouldBe(first);
             conflict.Message.ShouldContain(first);
+            string receiptPath = Path.Combine(root, "claims", "owners", second + ".json");
+            string[] expected = JsonSerializer.Deserialize<string[]>(File.ReadAllText(receiptPath)).ShouldNotBeNull();
+            expected.Length.ShouldBe(1);
+            peer.FindOwned(second).ShouldBe(["claim:" + expected[0]]);
             owner.Acquire(first, ["a-new-exclusive-resource"]);
             peer.ReleaseOwned(second);
+            File.Exists(receiptPath).ShouldBeFalse();
+            peer.FindOwned(second).ShouldBeEmpty();
             peer.Acquire(second, ["tcp:127.0.0.1:12346"]);
             Should.Throw<CompositionResourceClaimConflictException>(() => peer.Acquire(second, ["tcp:127.0.0.1:12345"])).OwnerRunId.ShouldBe(first);
             owner.ReleaseOwned(first);
@@ -96,12 +106,11 @@ public sealed class CompositionResourceClaimStoreTests
                 using Hexalith.Builds.Tooling.Runtime;
                 string root = args[0], owner = args[1], mode = args[2], signal = args[3];
                 var store = new CompositionResourceClaimStore(root);
-                if (mode == "hold") { store.Acquire(owner, Held()); return 9; }
+                if (mode == "hold") { using var held = new FileStream(Path.Combine(root, "claims", "transaction.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); File.WriteAllText(signal, "transaction held"); Thread.Sleep(Timeout.Infinite); return 9; }
                 if (mode == "allocate") { var ports = CompositionPortAllocator.AllocateOwned(16, owner, root); File.WriteAllText(signal, System.Text.Json.JsonSerializer.Serialize(ports.ToList())); return 0; }
                 while (!File.Exists(signal)) await Task.Delay(5);
                 try { store.Acquire(owner, ["cross-process-exclusive"]); return 0; }
                 catch (CompositionResourceClaimConflictException conflict) { Console.WriteLine(conflict.OwnerRunId); return 23; }
-                IEnumerable<string> Held() { File.WriteAllText(signal, "transaction held"); Thread.Sleep(Timeout.Infinite); yield return "never-published"; }
                 """,
                 TestContext.Current.CancellationToken).ConfigureAwait(true);
             CompositionProcessResult build = await CompositionProcess.RunAsync(CompositionProcess.CreateStartInfo("dotnet", ["build", Path.Combine(project, "child.csproj"), "-c", "Debug", "-m:1", "-nodeReuse:false", "-p:UseSharedCompilation=false", "--nologo", "-v:q"], project, null), TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken).ConfigureAwait(true);

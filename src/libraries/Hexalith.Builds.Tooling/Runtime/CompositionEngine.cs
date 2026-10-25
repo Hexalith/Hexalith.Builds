@@ -1175,13 +1175,13 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         state is { Schema: CompositionRunState.SupportedSchema } && state.RunId == runId && state.Workspace == WorkspaceFor(runId)
         && (state.AttemptId is null || (CompositionRunPlanFactory.IsRunId(state.AttemptId) && state.AttemptId != runId && state.AttemptId != state.EnvironmentId))
         && (state.EnvironmentId is null || (CompositionRunPlanFactory.IsRunId(state.EnvironmentId) && state.EnvironmentId != runId))
-        && CompositionRunStateStore.ValidResources(state.RemainingResources)
+        && CompositionRunStateStore.ValidReadiness(state) && CompositionRunStateStore.ValidResources(state.RemainingResources)
         && (state.TestRun is null || ValidOutcome(state.TestRun, runId));
 
     private async Task<CompositionRunState?> ReadOwnedStateAsync(string runId, CancellationToken cancellationToken)
     {
         CompositionRunState? active = await StateStore.TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
-        if (active is not null && (!CompositionRunStateStore.ValidResources(active.RemainingResources) || (active.TestRun is { } activeTerminal && !ValidOutcome(activeTerminal, runId))))
+        if (active is not null && (!CompositionRunStateStore.ValidReadiness(active) || !CompositionRunStateStore.ValidResources(active.RemainingResources) || (active.TestRun is { } activeTerminal && !ValidOutcome(activeTerminal, runId))))
         {
             throw new IOException("Recorded resource ownership cannot be verified.");
         }
@@ -1254,7 +1254,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
         string attemptId = CompositionRunPlanFactory.NewRunId();
         string directory = DiagnosticsDirectory(runId);
-        if (state?.SelectedTest is not null)
+        if (state is not null)
         {
             // This marker survives state/workspace deletion and prevents late callbacks restoring retention.
             try
@@ -1265,7 +1265,10 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             {
                 bookkeeping.Add(RecordingFailure());
             }
+        }
 
+        if (state?.SelectedTest is not null)
+        {
             ToolDiagnostic cancelled = Diagnostic("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The owned test run was stopped.", "down", null);
             ToolCommandResult terminal = new("cancelled", ToolOutcome.Passed().Fail(cancelled.Phase, cancelled.Category, cancelled.RuleId, ToolExitCode.Cancelled), [cancelled]);
             try
@@ -1773,6 +1776,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             : await TearDownAsync(runId, appHost, boundToken).ConfigureAwait(false);
         bool clean = remaining.IsEmpty && workspaceRemoved;
         string ruleId = clean || retained ? located[0].RuleId : "HXR023";
+        string observedCleanup = clean ? "complete" : "incomplete";
         try
         {
             await WriteStateAsync(
@@ -1783,7 +1787,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 retainedStart,
                 boundToken,
                 ruleId,
-                new CompositionRunRecord((DateTimeOffset.UtcNow - requestedAt).TotalSeconds, resources, deadline, diagnosticsPath, ProjectProcessIds(resources))).ConfigureAwait(false);
+                new CompositionRunRecord((DateTimeOffset.UtcNow - requestedAt).TotalSeconds, resources, deadline, diagnosticsPath, ProjectProcessIds(resources)),
+                cleanupDisposition: _options.SelectedTest is null && !retained ? observedCleanup : null,
+                remainingResources: remaining).ConfigureAwait(false);
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
@@ -2218,7 +2224,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         DateTimeOffset? startedAt,
         CancellationToken cancellationToken,
         string? ruleId = null,
-        CompositionRunRecord? record = null)
+        CompositionRunRecord? record = null,
+        string? cleanupDisposition = null,
+        CompositionRunResources? remainingResources = null)
     {
         CompositionRunState? previous = await StateStore.TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
         ModuleTestRunRecord? terminal = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestRunRecord>(Path.Combine(DiagnosticsDirectory(runId), "selected-test.json"), cancellationToken).ConfigureAwait(false);
@@ -2246,8 +2254,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 StartupDeadlineUtc = previous?.StartupDeadlineUtc,
                 RetainOnFailure = previous?.RetainOnFailure ?? _options.RetainOnFailure,
                 TestRun = previous?.TestRun,
-                CleanupDisposition = previous?.CleanupDisposition ?? "not-requested",
-                RemainingResources = previous?.RemainingResources,
+                CleanupDisposition = cleanupDisposition ?? previous?.CleanupDisposition ?? "not-requested",
+                RemainingResources = remainingResources ?? previous?.RemainingResources,
                 SelectedTest = _options.SelectedTest,
                 StartupDurationSeconds = record?.DurationSeconds,
                 ReadinessResults = record is null ? [] : [.. record.ReadinessResults],

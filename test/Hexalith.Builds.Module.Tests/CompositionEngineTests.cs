@@ -722,6 +722,8 @@ public sealed class CompositionEngineTests
             _ = state.ShouldNotBeNull();
             state.Status.ShouldBe(CompositionRunStatus.Failed);
             state.RuleId.ShouldBe(expectedRuleId);
+            state.CleanupDisposition.ShouldBe("complete");
+            state.RemainingResources.ShouldNotBeNull().IsEmpty.ShouldBeTrue();
             state.AppHostProcessId.ShouldBeNull();
             (await engine.Scanner.FindAsync(result.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).IsEmpty.ShouldBeTrue();
         }
@@ -766,6 +768,10 @@ public sealed class CompositionEngineTests
             _ = state.ShouldNotBeNull();
             state.Status.ShouldBe(CompositionRunStatus.Failed);
             state.RuleId.ShouldBe("HXR023");
+            state.CleanupDisposition.ShouldBe("incomplete");
+            state.RemainingResources.ShouldNotBeNull().DiscoveryFailures.ShouldContain("containers");
+            ToolCommandResult listing = await CompositionRunListing.ReadAsync(engine.StateStore, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            listing.Environments.ShouldNotBeNull().Single().Cleanup.ShouldBe("incomplete");
         }
         finally
         {

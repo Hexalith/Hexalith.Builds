@@ -1036,7 +1036,8 @@ internal static class ReadinessEvidenceValidator
         else if (string.Equals(status, "passed", StringComparison.Ordinal))
         {
             if (!string.Equals(artifactSummary.FinalStatus, "completed", StringComparison.Ordinal)
-                || artifactSummary.ExitCode != (int)ToolExitCode.Success)
+                || artifactSummary.ExitCode != (int)ToolExitCode.Success
+                || !artifactSummary.CleanupVerified)
             {
                 AddDiagnostic(diagnostics, document, "HXE149", ToolFailureCategory.EvidencePolicy, "evidence_artifact", row, rowKey);
             }

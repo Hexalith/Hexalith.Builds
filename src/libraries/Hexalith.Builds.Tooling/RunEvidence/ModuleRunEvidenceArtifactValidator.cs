@@ -172,6 +172,9 @@ internal static class ModuleRunEvidenceArtifactValidator
             JsonElement fixtureHashElement = invocation.GetProperty("fixtureHash");
             JsonElement filterHashElement = invocation.GetProperty("filterHash");
             JsonElement testCounts = root.GetProperty("testCounts");
+            bool cleanupVerified = !root.TryGetProperty("selectedTestRun", out JsonElement selected)
+                || (selected.GetProperty("resourceDisposition").GetString() == "removed"
+                    && selected.GetProperty("remainingResources").GetProperty("isEmpty").GetBoolean());
             summary = new ModuleRunEvidenceArtifactSummary(
                 root.GetProperty("finalStatus").GetString()!,
                 exitCode,
@@ -184,7 +187,8 @@ internal static class ModuleRunEvidenceArtifactValidator
                 filterHashElement.ValueKind == JsonValueKind.String ? filterHashElement.GetString() : null,
                 testCounts.GetProperty("reported").GetBoolean(),
                 testCounts.GetProperty("passed").GetInt32(),
-                testCounts.GetProperty("failed").GetInt32());
+                testCounts.GetProperty("failed").GetInt32(),
+                cleanupVerified);
             return true;
         }
         catch (JsonException)

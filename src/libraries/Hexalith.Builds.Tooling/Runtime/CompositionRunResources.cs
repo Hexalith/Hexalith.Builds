@@ -16,7 +16,7 @@ public sealed record CompositionRunResources(IReadOnlyList<string> ContainerIds,
     /// <summary>
     /// Gets a value indicating whether nothing tagged with the run remains. An unverifiable listing is never empty.
     /// </summary>
-    public bool IsEmpty => !Unverified && ContainerIds.Count == 0 && ProcessIds.Count == 0 && WorkspaceIds.Count == 0 && ClaimIds.Count == 0;
+    public bool IsEmpty => !Unverified && DiscoveryFailures is { Count: 0 } && ContainerIds.Count == 0 && ProcessIds.Count == 0 && WorkspaceIds.Count == 0 && ClaimIds.Count == 0;
 
     /// <summary>Gets owned workspaces whose deletion has not been verified.</summary>
     public IReadOnlyList<string> WorkspaceIds { get; init; } = [];

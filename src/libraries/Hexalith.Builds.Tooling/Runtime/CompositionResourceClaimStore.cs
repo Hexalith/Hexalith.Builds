@@ -38,8 +38,6 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
 
         CompositionWorkspace.CreatePrivateDirectory(_directory);
         using FileStream transaction = OpenTransaction();
-        string ownerDirectory = Path.Combine(_directory, "owners");
-        string receipt = Path.Combine(ownerDirectory, runId + ".json");
         string[] prior = ReadReceipt(runId);
         string[] identities = [.. prior.Concat(requested.Select(resource => Path.GetFileNameWithoutExtension(PathFor(resource)))).Distinct(StringComparer.Ordinal)];
         byte[] receiptBytes = JsonSerializer.SerializeToUtf8Bytes(identities);
@@ -48,28 +46,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
             throw new ArgumentException("The complete exclusive set exceeds the readable receipt bound.", nameof(resourceIds));
         }
 
-        CompositionWorkspace.CreatePrivateDirectory(ownerDirectory);
-        string receiptTemporary = Path.Combine(ownerDirectory, "." + Guid.NewGuid().ToString("N") + ".tmp");
-        try
-        {
-            FileStreamOptions receiptOptions = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write };
-            if (!OperatingSystem.IsWindows())
-            {
-                receiptOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-            }
-
-            using (FileStream stream = new(receiptTemporary, receiptOptions))
-            {
-                stream.Write(receiptBytes);
-                stream.Flush(flushToDisk: true);
-            }
-
-            File.Move(receiptTemporary, receipt, overwrite: true);
-        }
-        finally
-        {
-            File.Delete(receiptTemporary);
-        }
+        WriteReceipt(runId, receiptBytes);
 
         List<string> acquired = [];
         try
@@ -118,12 +95,22 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
                 File.Delete(path);
             }
 
+            if (prior.Length == 0)
+            {
+                DeleteReceipt(runId);
+            }
+            else
+            {
+                WriteReceipt(runId, JsonSerializer.SerializeToUtf8Bytes(prior));
+            }
+
             throw;
         }
     }
 
     /// <summary>Releases only claims whose durable owner matches a verified cleaned run.</summary>
     /// <param name="runId">The cleaned owning run.</param>
+    /// <exception cref="IOException">A receipt-bound claim remains or its ownership cannot be verified.</exception>
     public void ReleaseOwned(string runId)
     {
         if (!Directory.Exists(_directory))
@@ -136,6 +123,13 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
         {
             File.Delete(path);
         }
+
+        if (FindOwned(runId).Count != 0)
+        {
+            throw new IOException("Recorded claims remain after ownership-limited release.");
+        }
+
+        DeleteReceipt(runId);
     }
 
     /// <summary>Returns the currently claimed TCP ports, including allocations not yet bound by their owners.</summary>
@@ -242,6 +236,46 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
             return null;
+        }
+    }
+
+    private void DeleteReceipt(string runId)
+    {
+        try
+        {
+            File.Delete(Path.Combine(_directory, "owners", runId + ".json"));
+        }
+        catch (DirectoryNotFoundException)
+        {
+            // An absent receipt directory verifies there is no receipt left to remove.
+        }
+    }
+
+    private void WriteReceipt(string runId, byte[] receiptBytes)
+    {
+        string ownerDirectory = Path.Combine(_directory, "owners");
+        string receipt = Path.Combine(ownerDirectory, runId + ".json");
+        CompositionWorkspace.CreatePrivateDirectory(ownerDirectory);
+        string receiptTemporary = Path.Combine(ownerDirectory, "." + Guid.NewGuid().ToString("N") + ".tmp");
+        try
+        {
+            FileStreamOptions receiptOptions = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write };
+            if (!OperatingSystem.IsWindows())
+            {
+                receiptOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            }
+
+            using (FileStream stream = new(receiptTemporary, receiptOptions))
+            {
+                stream.Write(receiptBytes);
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Move(receiptTemporary, receipt, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(receiptTemporary);
         }
     }
 

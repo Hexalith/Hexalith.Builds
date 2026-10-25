@@ -227,7 +227,8 @@ internal static class ModuleCommandApplication
                 mode = WorkspaceMode.Package;
             }
 
-            if (command == ModuleInvocationCommand.Down && string.IsNullOrWhiteSpace(parseResult.GetValue(manifestOption)) && string.IsNullOrWhiteSpace(parseResult.GetValue(runIdOption)))
+            if (command == ModuleInvocationCommand.Down && string.IsNullOrWhiteSpace(parseResult.GetValue(manifestOption))
+                && (string.IsNullOrWhiteSpace(parseResult.GetValue(runIdOption)) || !string.IsNullOrWhiteSpace(parseResult.GetValue(evidenceOption))))
             {
                 return ToolCommandHost.WriteParseFailureAsync(standardOutput, ParseOutputFormat(parseResult.GetValue(outputOption)));
             }

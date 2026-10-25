@@ -27,13 +27,15 @@ public sealed class LocalRunLifecycleTests
     /// <param name="fails">Whether the real native child fails.</param>
     /// <param name="archiveFails">Whether optional archival fails after the first observed pass.</param>
     /// <param name="cleanupFails">Whether deletion remains incomplete after the first observed pass.</param>
+    /// <param name="evidenceFails">Whether the optional evidence destination is blocked.</param>
     /// <returns>The output, result and workspace assertions.</returns>
     [Theory]
-    [InlineData("source", false, false, false)]
-    [InlineData("source", true, false, false)]
-    [InlineData("source", false, true, false)]
-    [InlineData("source", false, false, true)]
-    public async Task NativeOutcomeControlsLocalCleanupAsync(string mode, bool fails, bool archiveFails, bool cleanupFails)
+    [InlineData("source", false, false, false, false)]
+    [InlineData("source", true, false, false, false)]
+    [InlineData("source", false, true, false, false)]
+    [InlineData("source", false, false, true, false)]
+    [InlineData("source", false, false, true, true)]
+    public async Task NativeOutcomeControlsLocalCleanupAsync(string mode, bool fails, bool archiveFails, bool cleanupFails, bool evidenceFails)
     {
         using PlatformManifestTestWorkspace workspace = new();
         (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace, mode);
@@ -90,7 +92,12 @@ public sealed class LocalRunLifecycleTests
         };
         StringWriter output = new();
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
-        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, manifest, "verify", null, null, ToolOutputFormat.Json, output, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options, mode: artifactMode).ConfigureAwait(true);
+        if (evidenceFails)
+        {
+            _ = Directory.CreateDirectory(Path.Combine(workspace.Root, "evidence", "result.json"));
+        }
+
+        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, manifest, "verify", null, evidenceFails ? "evidence/result.json" : null, ToolOutputFormat.Json, output, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options, mode: artifactMode).ConfigureAwait(true);
         int expectedExit = 0;
         if (fails)
         {
@@ -120,6 +127,20 @@ public sealed class LocalRunLifecycleTests
         JsonElement.DeepEquals(retainedBindings.GetProperty("run"), originalBindings.GetProperty("run")).ShouldBeTrue();
         JsonElement.DeepEquals(retainedBindings.GetProperty("deadlines").GetProperty("startup"), originalBindings.GetProperty("deadlines").GetProperty("startup")).ShouldBeTrue();
         retainedBindings.GetProperty("deadlines").GetProperty("execution").GetProperty("originAt").GetString().ShouldBe(originalBindings.GetProperty("deadlines").GetProperty("execution").GetProperty("originAt").GetString());
+        if (fails)
+        {
+            await AssertRetainedWorkspaceAsync(options, session.RunId, document).ConfigureAwait(true);
+        }
+
+        if (evidenceFails)
+        {
+            using JsonDocument rendered = JsonDocument.Parse(output.ToString());
+            rendered.RootElement.GetProperty("testResultPath").GetString().ShouldBe(resultPath);
+            rendered.RootElement.GetProperty("remainingResources").GetProperty("workspaceIds").EnumerateArray().Select(id => id.GetString()).ShouldContain("workspace:" + session.RunId);
+            rendered.RootElement.GetProperty("diagnostics").EnumerateArray().Select(diagnostic => diagnostic.GetProperty("ruleId").GetString()).ShouldContain("HXR023");
+            rendered.RootElement.GetProperty("diagnostics").GetArrayLength().ShouldBeGreaterThan(1);
+        }
+
         string diagnostics = await File.ReadAllTextAsync(resultPath, TestContext.Current.CancellationToken).ConfigureAwait(true);
         diagnostics.ShouldNotContain("private-lifecycle-signing-key");
     }
@@ -195,9 +216,12 @@ public sealed class LocalRunLifecycleTests
     }
 
     /// <summary>Failed discovery retains exact claims and retry metadata while peer ownership remains untouched.</summary>
+    /// <param name="format">The public output format.</param>
     /// <returns>The incomplete output, peer and idempotent retry assertions.</returns>
-    [Fact]
-    public async Task DiscoveryFailureReportsClaimsAndRetryPreservesPeerAsync()
+    [Theory]
+    [InlineData("human")]
+    [InlineData("json")]
+    public async Task DiscoveryFailureReportsClaimsAndRetryPreservesPeerAsync(string format)
     {
         using PlatformManifestTestWorkspace workspace = new();
         (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
@@ -222,9 +246,21 @@ public sealed class LocalRunLifecycleTests
             _ = (await engine.StateStore.TryReadAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
             StringWriter output = new();
             await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
-            _ = await ModuleCommandApplication.InvokeAsync(["down", "--run-id", state.RunId, "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken, compositionOptions: options).ConfigureAwait(true);
+            _ = await ModuleCommandApplication.InvokeAsync(["down", "--run-id", state.RunId, "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken, compositionOptions: options).ConfigureAwait(true);
             output.ToString().ShouldContain("claim:");
             output.ToString().ShouldContain("unverified");
+            string resultPath = Path.Combine(options.StateDirectory, "diagnostics", state.RunId, "test-result.json");
+            if (format == "json")
+            {
+                using JsonDocument rendered = JsonDocument.Parse(output.ToString());
+                rendered.RootElement.GetProperty("testResultPath").GetString().ShouldBe(resultPath);
+            }
+            else
+            {
+                output.ToString().ShouldContain("test-result=" + resultPath);
+                output.ToString().ShouldContain("leftover=claim:");
+            }
+
             _ = CompositionTestFiles.CreateStubDocker(workspace.Root);
             CompositionDownResult retried = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
             retried.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
@@ -644,6 +680,7 @@ public sealed class LocalRunLifecycleTests
         result.IsValid.ShouldBeTrue(output.ToString());
         result.Document!.Value.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe("failure-retained");
         result.Document.Value.GetProperty("bindings").GetProperty("environment").GetProperty("catalog").GetProperty("state").GetString().ShouldBe("not-yet-populated");
+        await AssertRetainedWorkspaceAsync(options, session.RunId, result.Document.Value).ConfigureAwait(true);
         Directory.Exists(session.Plan.Workspace).ShouldBeTrue();
         Directory.Exists(Path.Combine(session.Plan.Workspace, "native-tests")).ShouldBeFalse();
     }
@@ -759,6 +796,169 @@ public sealed class LocalRunLifecycleTests
         down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
         down.Remaining.ContainerIds.ShouldContain(container);
         down.Remaining.Unverified.ShouldBeTrue();
+    }
+
+    /// <summary>Exact down interrupts readiness and prelaunch for declared and ordinary owner invocations.</summary>
+    /// <param name="declared">Whether this is a selected declared suite.</param>
+    /// <param name="beforeLaunch">Whether cleanup claims the owner before AppHost launch.</param>
+    /// <returns>The bounded cancellation, successful cleanup and no-resurrection assertions.</returns>
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task ConcurrentDownCancelsStartingOwnerAsync(bool declared, bool beforeLaunch)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        string manifest = workspace.Save();
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, beforeLaunch ? "blocked-preflight" : "never", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        TaskCompletionSource<string> building = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            AppHostAssemblyPath = appHost,
+            SelectedTest = declared ? selected : null,
+            AspireCommand = CompositionTestFiles.CreateAspire(workspace.Root),
+            DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+            SourceMapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root),
+            ReadinessTimeout = TimeSpan.FromSeconds(600),
+            StopTimeout = TimeSpan.FromSeconds(5),
+            PlatformModelBuildOverride = (_, runWorkspace, _) =>
+            {
+                building.SetResult(Path.GetFileName(runWorkspace));
+                return Task.FromResult(appHost);
+            },
+        };
+        CompositionEngine engine = new(options);
+        using CancellationTokenSource testBound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        testBound.CancelAfter(TimeSpan.FromSeconds(30));
+        Task<CompositionStartResult> starting = engine.StartAsync(manifest, testBound.Token);
+        string runId = await building.Task.WaitAsync(testBound.Token).ConfigureAwait(true);
+        string runtimeStarted = Path.Combine(Path.GetDirectoryName(appHost)!, "runtime-started");
+        try
+        {
+            string startupCheckpoint = beforeLaunch ? Path.Combine(Path.GetDirectoryName(appHost)!, "preflight-started") : runtimeStarted;
+            while (!File.Exists(startupCheckpoint))
+            {
+                await Task.Delay(10, testBound.Token).ConfigureAwait(true);
+            }
+
+            Task<CompositionDownResult> stopping = engine.DownAsync(runId, testBound.Token);
+            while (!File.Exists(Path.Combine(options.StateDirectory, "diagnostics", runId, "cleanup-request.json")))
+            {
+                await Task.Delay(10, testBound.Token).ConfigureAwait(true);
+            }
+
+            await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(appHost)!, "release-preflight"), "continue", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionStartResult started = await starting.WaitAsync(testBound.Token).ConfigureAwait(true);
+            started.Result.Status.ShouldBe("cancelled", JsonSerializer.Serialize(started.Result));
+            started.Result.Outcome.RuleId.ShouldBe("HXC130");
+            started.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Cancelled);
+            CompositionDownResult down = await stopping.WaitAsync(testBound.Token).ConfigureAwait(true);
+            down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, JsonSerializer.Serialize(down));
+            Directory.Exists(Path.Combine(options.WorkspaceRoot, runId)).ShouldBeFalse();
+            File.Exists(engine.StateStore.PathFor(runId)).ShouldBeFalse();
+            if (beforeLaunch)
+            {
+                File.Exists(runtimeStarted).ShouldBeFalse();
+            }
+
+            if (declared)
+            {
+                JsonElement result = TestEnvironmentContractReader.ReadResult(Path.Combine(options.StateDirectory, "diagnostics", runId, "test-result.json"), testBound.Token).Document!.Value;
+                result.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("cancelled");
+                result.GetProperty("cleanup").GetProperty("disposition").GetString().ShouldBe("complete");
+            }
+        }
+        finally
+        {
+            await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(appHost)!, "release-preflight"), "continue", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            await testBound.CancelAsync().ConfigureAwait(true);
+            _ = await starting.ConfigureAwait(true);
+            _ = await engine.DownAsync(runId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>A retained failure's known survivors are recorded after the resource-stopping allowance expires.</summary>
+    /// <returns>The retained result, stable outcome and discoverable workspace assertions.</returns>
+    [Fact]
+    public async Task RetainedSurvivorsAreRecordedAfterStoppingBudgetExpiresAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            ContinuousIntegrationOverride = false,
+            SourceMapping = new SourceMapping(WorkspaceMode.Source, workspace.Root, "sample", [new("sample", "source", workspace.Root)], false),
+        };
+        CompositionEngine engine = new(options);
+        CompositionWorkspace.CreatePrivateDirectory(state.Workspace);
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord first = (await engine.RecordTestOutcomeAsync(state.RunId, [], Failure("HXR021"), "retained", new CompositionRunResources([], [], true), TestContext.Current.CancellationToken, terminalCause: "startup-timeout").ConfigureAwait(true)).ShouldNotBeNull();
+        string optionalArchive = Path.Combine(options.StateDirectory, "diagnostics", state.RunId, "selected-plan.json");
+        const string archiveSentinel = "{\"observation\":\"prior-archive\"}";
+        await File.WriteAllTextAsync(optionalArchive, archiveSentinel, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(state.Workspace, "plan.json"), "{\"observation\":\"late-optional-copy\"}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        options = options with
+        {
+            SelectedPlatformStartOverride = (_, _, _) => Task.FromResult(new CompositionStartResult(Failure("HXR021"), state.RunId, null) { StoppingTimestamp = Stopwatch.GetTimestamp() - (10 * Stopwatch.Frequency) }),
+        };
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+        int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, workspace.Save(), "verify", null, null, ToolOutputFormat.Json, output, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.ProductOrTest);
+        JsonElement result = TestEnvironmentContractReader.ReadResult(Path.Combine(options.StateDirectory, "diagnostics", state.RunId, "test-result.json"), TestContext.Current.CancellationToken).Document!.Value;
+        result.GetProperty("terminal").GetProperty("recordedAt").GetDateTimeOffset().ShouldBe(first.TerminalAtUtc);
+        result.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("startup-timeout");
+        await AssertRetainedWorkspaceAsync(options, state.RunId, result).ConfigureAwait(true);
+        output.ToString().ShouldNotContain("HXT008");
+        (await File.ReadAllTextAsync(optionalArchive, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(archiveSentinel);
+    }
+
+    /// <summary>The known execution-lifetime fallback remains a timeout before native activation can return.</summary>
+    /// <returns>The timeout cause and failure-retained result assertions.</returns>
+    [Fact]
+    public async Task ExhaustedExecutionLifetimeBeforeNativeReturnRecordsTimeoutCauseAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        string manifest = workspace.Save();
+        using Process appHost = new();
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            ContinuousIntegrationOverride = false,
+            WorkspaceRoot = Path.Combine(workspace.Root, "workspace"),
+            SourceMapping = new SourceMapping(WorkspaceMode.Source, workspace.Root, "sample", [new("sample", "source", workspace.Root)], false),
+            SelectedPlatformStartOverride = async (_, selection, _) =>
+            {
+                CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selection }, manifest, workspace.Root).ConfigureAwait(false);
+                CompositionReadiness ready = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), "sample");
+                return new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), plan.RunId, new CompositionRunSession(plan, ready, "private-key", appHost));
+            },
+        };
+        using CancellationTokenSource expired = new();
+        await expired.CancelAsync().ConfigureAwait(true);
+        using ModuleTestExecutionBudget budget = new(expired.Token);
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+        System.Reflection.MethodInfo execute = typeof(ModuleCommandExecutionService).GetMethod("ExecutePlatformAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).ShouldNotBeNull();
+        Task<int> invocation = (Task<int>)execute.Invoke(null, [ModuleInvocationCommand.Test, manifest, "verify", null, null, selected.RequestedAtUtc, ToolOutputFormat.Json, output, "child.dll", null, options, WorkspaceMode.Source, options.SourceMapping, budget, null, null, null, TestContext.Current.CancellationToken])!;
+        (await invocation.ConfigureAwait(true)).ShouldBe((int)ToolExitCode.ProductOrTest, output.ToString());
+        using JsonDocument rendered = JsonDocument.Parse(output.ToString());
+        rendered.RootElement.TryGetProperty("testResultPath", out JsonElement resultPath).ShouldBeTrue(output.ToString());
+        JsonElement result = TestEnvironmentContractReader.ReadResult(resultPath.GetString()!, TestContext.Current.CancellationToken).Document!.Value;
+        result.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("execution-timeout");
+        result.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe("failure-retained");
+    }
+
+    private static async Task AssertRetainedWorkspaceAsync(CompositionEngineOptions options, string runId, JsonElement result)
+    {
+        string expected = "workspace:" + runId;
+        result.GetProperty("retention").GetProperty("retainedResourceIds").EnumerateArray().Select(id => id.GetString()).ShouldContain(expected);
+        result.GetProperty("cleanup").GetProperty("leftoverResourceIds").EnumerateArray().Select(id => id.GetString()).ShouldContain(expected);
+        ToolCommandResult listing = await CompositionRunListing.ReadAsync(new CompositionRunStateStore(options.StateDirectory), DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        listing.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+        listing.Environments.ShouldNotBeNull().Single(entry => entry.OwnerRunId == runId).RemainingResources.ShouldNotBeNull().WorkspaceIds.ShouldContain(expected);
     }
 
     private static ToolCommandResult Failure(string rule) => new("failed", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.ProductOrTest, rule, ToolExitCode.ProductOrTest), []);

@@ -190,6 +190,100 @@ public sealed class LocalRunCommittedReviewTests
         File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeTrue();
     }
 
+    /// <summary>Null tracked readiness entries refuse down and listing before any teardown or result restoration.</summary>
+    /// <returns>The structured refusals and preserved owner assertions.</returns>
+    [Fact]
+    public async Task NullTrackedReadinessReturnsStructuredUncertaintyAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        CompositionWorkspace.CreatePrivateDirectory(state.Workspace);
+        await engine.StateStore.WriteAsync(state with { ReadinessResults = [null!] }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionDownResult down = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        down.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR023");
+        down.Remaining.Unverified.ShouldBeTrue();
+        ToolCommandResult listed = await CompositionRunListing.ReadAsync(engine.StateStore, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        listed.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
+        listed.Diagnostics.Single().RuleId.ShouldBe("HXR024");
+        listed.Diagnostics.Single().Message.ShouldContain(state.RunId);
+        Directory.Exists(state.Workspace).ShouldBeTrue();
+        File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeTrue();
+    }
+
+    /// <summary>A discovery failure cannot establish verified emptiness or complete durable cleanup.</summary>
+    /// <returns>The contradictory observation, refusal and retry-state assertions.</returns>
+    [Fact]
+    public async Task DiscoveryFailuresPreventCompleteCleanupAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        CompositionRunResources contradictory = new([], []) { DiscoveryFailures = ["containers"] };
+        contradictory.IsEmpty.ShouldBeFalse();
+        CompositionRunStateStore.ValidResources(contradictory).ShouldBeFalse();
+        CompositionWorkspace.CreatePrivateDirectory(state.Workspace);
+        await engine.StateStore.WriteAsync(state with { CleanupDisposition = "complete", RemainingResources = contradictory }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionDownResult down = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        down.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR023");
+        down.Remaining.Unverified.ShouldBeTrue();
+        ToolCommandResult listed = await CompositionRunListing.ReadAsync(engine.StateStore, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        listed.Diagnostics.Single().RuleId.ShouldBe("HXR024");
+        Directory.Exists(state.Workspace).ShouldBeTrue();
+        File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeTrue();
+    }
+
+    /// <summary>Undefined terminal enums and unsupported status/exit pairs never become restored command outcomes.</summary>
+    /// <param name="fault">The malformed durable terminal field.</param>
+    /// <returns>The atomic listing, restoration and exact-down refusal assertions.</returns>
+    [Theory]
+    [InlineData("exit-code")]
+    [InlineData("phase")]
+    [InlineData("category")]
+    [InlineData("completed-with-failure")]
+    [InlineData("failed-with-success")]
+    [InlineData("failed-with-cancelled")]
+    [InlineData("unavailable-with-success")]
+    [InlineData("unavailable-with-failure")]
+    [InlineData("cancelled-with-failure")]
+    [InlineData("withdrawn-with-failure")]
+    [InlineData("unknown-status")]
+    public async Task MalformedTerminalMetadataRefusesRestorationAsync(string fault)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        CompositionWorkspace.CreatePrivateDirectory(state.Workspace);
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord terminal = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "failed", Failed().Outcome, DateTimeOffset.UtcNow, "retained", new CompositionRunResources([], []));
+        CompositionRunStateStore.ValidOutcome(terminal, state.RunId).ShouldBeTrue();
+        terminal = fault switch
+        {
+            "exit-code" => terminal with { TerminalOutcome = terminal.TerminalOutcome with { ExitCode = (ToolExitCode)999 } },
+            "phase" => terminal with { TerminalOutcome = terminal.TerminalOutcome with { Phase = (ToolPhase)999 } },
+            "category" => terminal with { TerminalOutcome = terminal.TerminalOutcome with { Category = (ToolFailureCategory)999 } },
+            "completed-with-failure" => terminal with { TerminalStatus = "completed" },
+            "failed-with-success" => terminal with { TerminalOutcome = ToolOutcome.Passed() },
+            "failed-with-cancelled" => terminal with { TerminalOutcome = new ToolOutcome(ToolExitCode.Cancelled, ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "HXC130") },
+            "unavailable-with-success" => terminal with { TerminalStatus = "unavailable", TerminalOutcome = ToolOutcome.Passed() },
+            "unavailable-with-failure" => terminal with { TerminalStatus = "unavailable" },
+            "cancelled-with-failure" => terminal with { TerminalStatus = "cancelled" },
+            "withdrawn-with-failure" => terminal with { TerminalStatus = "withdrawn" },
+            _ => terminal with { TerminalStatus = "private-input-status" },
+        };
+        string committed = Path.Combine(engine.StateStore.Directory, "diagnostics", state.RunId, "selected-test.json");
+        await CompositionDocumentStore.WriteAsync(committed, terminal, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await Should.ThrowAsync<IOException>(() => engine.ReadCommittedOutcomeAsync(state.RunId, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        ToolCommandResult listed = await CompositionRunListing.ReadAsync(engine.StateStore, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        listed.Diagnostics.Single().RuleId.ShouldBe("HXR024");
+        JsonSerializer.Serialize(listed.Diagnostics).ShouldNotContain("private-input-status");
+        CompositionDownResult down = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        down.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR023");
+        down.Remaining.Unverified.ShouldBeTrue();
+        Directory.Exists(state.Workspace).ShouldBeTrue();
+        File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeTrue();
+    }
+
     /// <summary>Supported-host discovery can verify empty cleanup, while failed process inspection remains retryable.</summary>
     /// <param name="verified">Whether the native process observation completed.</param>
     /// <returns>The exact scanner uncertainty classification.</returns>

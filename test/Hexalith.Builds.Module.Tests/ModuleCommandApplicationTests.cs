@@ -128,9 +128,12 @@ public sealed class ModuleCommandApplicationTests
     /// <summary>
     /// Verifies parser failures use the stable JSON diagnostics contract instead of parser-owned output.
     /// </summary>
+    /// <param name="command">The command whose target is missing.</param>
     /// <returns>A task that completes after the assertion.</returns>
-    [Fact]
-    public async Task MissingRequiredOptionWritesStableJsonUsageDiagnosticAsync()
+    [Theory]
+    [InlineData("run")]
+    [InlineData("down")]
+    public async Task MissingRequiredOptionWritesStableJsonUsageDiagnosticAsync(string command)
     {
         StringWriter standardOutput = new();
         await using (standardOutput.ConfigureAwait(true))
@@ -139,7 +142,7 @@ public sealed class ModuleCommandApplicationTests
             await using (standardError.ConfigureAwait(true))
             {
                 int exitCode = await ModuleCommandApplication.InvokeAsync(
-                    ["run", "--output", "json"],
+                    [command, "--output", "json"],
                     standardOutput,
                     standardError,
                     TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -150,6 +153,18 @@ public sealed class ModuleCommandApplicationTests
                 standardError.ToString().ShouldBeEmpty();
             }
         }
+    }
+
+    /// <summary>Exact cleanup evidence requires the actual manifest invocation context.</summary>
+    /// <returns>The structured usage refusal before any cleanup or export.</returns>
+    [Fact]
+    public async Task ExactDownEvidenceWithoutManifestRefusesAsync()
+    {
+        StringWriter output = new();
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+        int exit = await ModuleCommandApplication.InvokeAsync(["down", "--run-id", CompositionTestFiles.RunId, "--evidence", "evidence/down.json", "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
+        output.ToString().ShouldContain("HXC001");
     }
 
     /// <summary>

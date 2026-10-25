@@ -20,6 +20,7 @@ namespace Hexalith.Builds.Tooling.RunEvidence;
 /// <param name="TestsReported">Whether a supported test runner supplied a report.</param>
 /// <param name="TestsPassed">The passed test count.</param>
 /// <param name="TestsFailed">The failed test count.</param>
+/// <param name="CleanupVerified">Whether any selected environment has verified complete resource removal.</param>
 internal sealed record ModuleRunEvidenceArtifactSummary(
     string FinalStatus,
     int ExitCode,
@@ -32,4 +33,5 @@ internal sealed record ModuleRunEvidenceArtifactSummary(
     string? FilterHash,
     bool TestsReported,
     int TestsPassed,
-    int TestsFailed);
+    int TestsFailed,
+    bool CleanupVerified);
