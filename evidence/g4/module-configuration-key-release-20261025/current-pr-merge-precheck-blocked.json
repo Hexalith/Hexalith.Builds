@@ -1,0 +1,9 @@
+{
+  "observedAtUtc": "2026-10-25T09:56:18.065237+00:00",
+  "condition": "Expected remote main to remain at the inspected concurrent tip before normal PR squash merge",
+  "expectedMain": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274",
+  "actualMain": "80a810de3d3b789f4a1340e12d5232cee9bda0fe",
+  "precheckResult": "failed assertion before merge command construction/execution",
+  "remoteWriteByThisAttempt": false,
+  "nextStep": "Read-only/local evidence only while concurrent pushall activity settles. No release dispatch until a compliant source path is established."
+}

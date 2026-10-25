@@ -1,0 +1,9 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/actions/workflows/ci.yml/runs?head_sha=80a810de3d3b789f4a1340e12d5232cee9bda0fe&event=push&per_page=100"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T09:56:18.064605+00:00"
+}

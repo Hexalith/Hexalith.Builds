@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "py_compile",
+    "/tmp/module-cli-release-20261025-2gbedle5/probe-published-artifact.py",
+    "/tmp/module-cli-release-20261025-2gbedle5/record-progress.py"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T09:59:49.488871+00:00",
+  "limitation": "Syntax only; no feed artifact, restore or product probe executed."
+}

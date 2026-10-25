@@ -1,0 +1,89 @@
+{
+  "observedAtUtc": "2026-10-25T09:59:48.914991+00:00",
+  "state": "blocked-pending-concurrent-source-stability",
+  "latestObservedMain": "a9013c541a3cb8e127d84a3723966dfe11eeab82",
+  "latestObservedPushCi": {
+    "id": 40182696227,
+    "result": "queued",
+    "conclusion": null,
+    "sourceObservation": "final-observed-ci-20261025T095850Z.json"
+  },
+  "governance": [
+    {
+      "sha": "c81e691f5cb3be7590c99a3bfc1518d2d899fd6c",
+      "actor": "this release continuation",
+      "ruleSuite": 4709439980,
+      "result": "bypass",
+      "disposition": "Deviation disclosed. Not released."
+    },
+    {
+      "sha": "36e7e4852ea15f54e8299d57607335c8f5435b73",
+      "actor": "normal PR134 squash by this release continuation",
+      "ruleSuite": 4709465424,
+      "result": "pass",
+      "ci": 40181805558,
+      "ciResult": "cancelled after external main advance",
+      "disposition": "Not released."
+    },
+    {
+      "sha": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274",
+      "actor": "separate concurrent user work",
+      "ruleSuite": 4709505883,
+      "result": "bypass",
+      "disposition": "39-file runtime change preserved; 372 release-bound inputs identical."
+    },
+    {
+      "sha": "80a810de3d3b789f4a1340e12d5232cee9bda0fe",
+      "actor": "external pushall merge of PR135 branch",
+      "ruleSuite": 4709538966,
+      "result": "bypass",
+      "ruleFailure": "Merge commits are not allowed in this repository.",
+      "requiredStatusChecks": "pass",
+      "disposition": "Remote-tip precheck failed before planned normal merge API call. Not released."
+    }
+  ],
+  "pending": {
+    "normalRequiredPrSourcePath": "pending after concurrent pushall completes",
+    "successfulExactCurrentShaPushCi": "pending",
+    "releaseDispatch": "not-run",
+    "protectedEnvironmentApproval": "not-run",
+    "fullReleaseQualification": "not-run",
+    "semanticReleaseVersion": "not-selected",
+    "publishedInventory": "not-produced",
+    "freshFeedRestore": "not-run",
+    "publishedArtifactIdentity": "not-measured",
+    "ordinaryHumanJson": "not-run for a published successor",
+    "adoptionHumanJson": "not-run for a published successor; prior failures retained unchanged",
+    "malformedKeyControls": "not-run for a published successor",
+    "releasedArtifactPlatformHandoff": "not-created",
+    "independentReview": "pending"
+  },
+  "preparedHarness": {
+    "python": "probe-published-artifact.py",
+    "resources": "inspect-published-resources.ps1",
+    "validation": "Python syntax checked only; never run against a substitute artifact"
+  },
+  "preservationEvidence": "preservation-20261025T095948Z.json",
+  "authority": {
+    "story16_1RuntimeHold": "ACTIVE",
+    "runtimeEntryAllowed": false,
+    "deploymentPerformed": false,
+    "platformAcceptanceClaimed": false,
+    "pinEditsByThisContinuation": false,
+    "indexedGitlinkEditsByThisContinuation": false,
+    "observedExternalIndexedGitlinkChanges": [
+      {
+        "path": "references/Hexalith.Builds",
+        "before": {
+          "mode": "160000",
+          "revision": "8eb5646fac69c5d3f42257c6bfdcd04158ac50ea"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "657bcfaa0addd4f8ca94448bc3d8b9eed5193a00"
+        }
+      }
+    ],
+    "attribution": "This continuation performs Git mutations only inside Builds. Shared workspace changes outside those recorded actions are retained and not reverted."
+  }
+}

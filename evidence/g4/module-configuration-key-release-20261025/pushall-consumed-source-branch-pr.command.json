@@ -1,0 +1,14 @@
+{
+  "command": [
+    "gh",
+    "pr",
+    "view",
+    "135",
+    "--repo",
+    "Hexalith/Hexalith.Builds",
+    "--json",
+    "state,headRefOid,mergeCommit,mergedAt,mergedBy,statusCheckRollup,title,body,url"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T09:56:17.537035+00:00"
+}

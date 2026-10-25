@@ -1,0 +1,283 @@
+{
+  "observedAtUtc": "2026-10-25T09:59:48.914991+00:00",
+  "baselineSha256": "612fa25ecbabd86a49a268af5a3b44ab8ca3007214c35738af45f3ab2ca6be43",
+  "repositories": {
+    "Conversations": {
+      "head": "3fa50842227ecbbe68a77f10ce68743ac000e26a",
+      "entryHead": "957df69d50f4ab56c6c924b7a61237338413c21c",
+      "trackedEntryFileCount": 4207,
+      "changedEntryFiles": [],
+      "indexedGitlinksUnchanged": false,
+      "indexedGitlinkChanges": [
+        {
+          "path": "references/Hexalith.Builds",
+          "before": {
+            "mode": "160000",
+            "revision": "8eb5646fac69c5d3f42257c6bfdcd04158ac50ea"
+          },
+          "after": {
+            "mode": "160000",
+            "revision": "657bcfaa0addd4f8ca94448bc3d8b9eed5193a00"
+          }
+        }
+      ],
+      "indexedGitlinks": {
+        "references/Hexalith.AI.Tools": {
+          "mode": "160000",
+          "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d"
+        },
+        "references/Hexalith.Builds": {
+          "mode": "160000",
+          "revision": "657bcfaa0addd4f8ca94448bc3d8b9eed5193a00"
+        },
+        "references/Hexalith.Commons": {
+          "mode": "160000",
+          "revision": "1663028fb6d9f46a0bf17919edeb21bb99be1587"
+        },
+        "references/Hexalith.EventStore": {
+          "mode": "160000",
+          "revision": "5be0c309f457d0af1f169bc591609fb4be6473ce"
+        },
+        "references/Hexalith.Folders": {
+          "mode": "160000",
+          "revision": "3287af1d5d0befb4a288bab2f35eafbaa10de0ec"
+        },
+        "references/Hexalith.FrontComposer": {
+          "mode": "160000",
+          "revision": "80782afc7fc2fd33ee365d4601cb6b5e91d215fa"
+        },
+        "references/Hexalith.McpCli": {
+          "mode": "160000",
+          "revision": "8962e2f2570459dbea2976f789b468aa5c6353c6"
+        },
+        "references/Hexalith.Memories": {
+          "mode": "160000",
+          "revision": "98383a95b36638399f7e48b29dd009ab6125be2d"
+        },
+        "references/Hexalith.Parties": {
+          "mode": "160000",
+          "revision": "0455c28a8604bf68d7065d36977c1c2ccf13e2e7"
+        },
+        "references/Hexalith.Platform": {
+          "mode": "160000",
+          "revision": "1b7a00381794bb7ecf40caf643c63c50758a81eb"
+        },
+        "references/Hexalith.Projects": {
+          "mode": "160000",
+          "revision": "6d327ca427ada949892aa70bbba1498d43284a71"
+        },
+        "references/Hexalith.Tenants": {
+          "mode": "160000",
+          "revision": "14133e96d2c5efb13270580f920133079707398b"
+        }
+      },
+      "status": "## main...origin/main\n M _bmad-output/implementation-artifacts/spec-release-corrected-module-cli.md\n M references/Hexalith.Builds\n M references/Hexalith.EventStore\n M references/Hexalith.Folders\n M references/Hexalith.Memories\n M references/Hexalith.Parties\n M references/Hexalith.Platform\n M references/Hexalith.Projects",
+      "recentHistory": "3fa50842227ecbbe68a77f10ce68743ac000e26a fix: release\n957df69d50f4ab56c6c924b7a61237338413c21c build: sync Builds after merging origin/main\ncb7d8f2094c87493a717b3c2b883cdcae67c9224 build: sync local changes via /pushall\n053d95e941c86ca469a4965a39b162294b74c485 fix: epic 16\n8925c9fef46026d53d15478e2a744b3604c38a98 fix: close five deferred record evidence gaps"
+    },
+    "Builds": {
+      "head": "a9013c541a3cb8e127d84a3723966dfe11eeab82",
+      "entryHead": "8eb5646fac69c5d3f42257c6bfdcd04158ac50ea",
+      "trackedEntryFileCount": 2088,
+      "changedEntryFiles": [
+        "README.md",
+        "schemas/hexalith.module-run-evidence.v1.json",
+        "schemas/hexalith.test-environment.v1.json",
+        "schemas/hexalith.test-result.v1.json",
+        "src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandResult.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs",
+        "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceWriter.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionDocumentStore.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionResourceClaimStore.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunPlanFactory.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunResourceScanner.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunResources.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunSession.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunState.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunStateStore.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionWorkspace.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleTestRunRecord.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestExecutionResult.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestExecutor.cs",
+        "src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedNativeTestReport.cs",
+        "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestEnvironmentContractReader.cs",
+        "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestEnvironmentDescriptorWriter.cs",
+        "test/Hexalith.Builds.Module.Tests/CompositionEngineTests.cs",
+        "test/Hexalith.Builds.Module.Tests/ModuleTestSelectionTests.cs",
+        "test/Hexalith.Builds.Module.Tests/SelectedObservationTests.cs",
+        "test/Hexalith.Builds.Module.Tests/StartupReadinessTests.cs",
+        "test/Hexalith.Builds.Module.Tests/TestEnvironmentProvisioningReviewTests.cs"
+      ],
+      "indexedGitlinksUnchanged": true,
+      "indexedGitlinkChanges": [],
+      "indexedGitlinks": {
+        "references/Hexalith.AI.Tools": {
+          "mode": "160000",
+          "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d"
+        }
+      },
+      "status": "## main...origin/main\n?? docs/module-cli-configuration-key-release-progress.md\n?? evidence/g4/module-configuration-key-release-20261025/current-main-before-merge.json\n?? evidence/g4/module-configuration-key-release-20261025/current-main-before-merge.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/current-pr-before-merge.json\n?? evidence/g4/module-configuration-key-release-20261025/current-pr-before-merge.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/current-pr-merge-precheck-blocked.json\n?? evidence/g4/module-configuration-key-release-20261025/current-pr-merged.json\n?? evidence/g4/module-configuration-key-release-20261025/current-pr-required-checks-before-merge.json\n?? evidence/g4/module-configuration-key-release-20261025/current-pr-required-checks-before-merge.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/current-rule-suites-after-merge.json\n?? evidence/g4/module-configuration-key-release-20261025/current-source-pr-create.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/current-source-pr-create.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/current-source-push.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/current-source-push.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/final-observed-ci-20261025T095850Z.json\n?? evidence/g4/module-configuration-key-release-20261025/final-observed-ci-20261025T095850Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/final-observed-main-20261025T095850Z.json\n?? evidence/g4/module-configuration-key-release-20261025/final-observed-main-20261025T095850Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/final-source-commit-20261025T095921Z.json\n?? evidence/g4/module-configuration-key-release-20261025/final-source-commit-20261025T095921Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/preservation-20261025T095808Z.json\n?? evidence/g4/module-configuration-key-release-20261025/progress-20261025T095808Z.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-activity.command.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-activity.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-activity.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-ci.command.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-ci.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-ci.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-commit.command.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-commit.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-commit.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-pr.command.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-pr.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-pr.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-rule-suite.command.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-rule-suite.json\n?? evidence/g4/module-configuration-key-release-20261025/pushall-consumed-source-branch-rule-suite.stderr.txt",
+      "recentHistory": "a9013c541a3cb8e127d84a3723966dfe11eeab82 build: sync local changes via /pushall\n80a810de3d3b789f4a1340e12d5232cee9bda0fe build: merge origin/fix/module-cli-release-current-source into main via /pushall\n657bcfaa0addd4f8ca94448bc3d8b9eed5193a00 docs(module): confirm current release source\n0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274 fix(tooling): harden local run outcome retention and cleanup\n984c4d50205d00b5238c1cf19e93b232c3282c22 feat(tooling): apply local run outcome retention and cleanup rules"
+    },
+    "Platform": {
+      "head": "b9cf0e78c42ca8bfe1aa5488cc4340c238887acb",
+      "entryHead": "1b7a00381794bb7ecf40caf643c63c50758a81eb",
+      "trackedEntryFileCount": 9060,
+      "changedEntryFiles": [],
+      "indexedGitlinksUnchanged": false,
+      "indexedGitlinkChanges": [
+        {
+          "path": "references/Hexalith.Builds",
+          "before": {
+            "mode": "160000",
+            "revision": "d434d4a789661c48aaad3ddfba42f383240e8a1a"
+          },
+          "after": {
+            "mode": "160000",
+            "revision": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274"
+          }
+        }
+      ],
+      "indexedGitlinks": {
+        "references/Hexalith.AI.Tools": {
+          "mode": "160000",
+          "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d"
+        },
+        "references/Hexalith.Agents": {
+          "mode": "160000",
+          "revision": "4cc1da1c8d3ff66496326b556287488153d8f3ff"
+        },
+        "references/Hexalith.Builds": {
+          "mode": "160000",
+          "revision": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274"
+        },
+        "references/Hexalith.ChatBot": {
+          "mode": "160000",
+          "revision": "b92e5090313011913bd12ec3241e9f07bae7f16f"
+        },
+        "references/Hexalith.Commons": {
+          "mode": "160000",
+          "revision": "1663028fb6d9f46a0bf17919edeb21bb99be1587"
+        },
+        "references/Hexalith.Conversations": {
+          "mode": "160000",
+          "revision": "8925c9fef46026d53d15478e2a744b3604c38a98"
+        },
+        "references/Hexalith.EventStore": {
+          "mode": "160000",
+          "revision": "5be0c309f457d0af1f169bc591609fb4be6473ce"
+        },
+        "references/Hexalith.Folders": {
+          "mode": "160000",
+          "revision": "283861849cd8ee76c5b074cc522803af42cfbe17"
+        },
+        "references/Hexalith.FrontComposer": {
+          "mode": "160000",
+          "revision": "80782afc7fc2fd33ee365d4601cb6b5e91d215fa"
+        },
+        "references/Hexalith.McpCli": {
+          "mode": "160000",
+          "revision": "8962e2f2570459dbea2976f789b468aa5c6353c6"
+        },
+        "references/Hexalith.Memories": {
+          "mode": "160000",
+          "revision": "7e9ca2c214b3e912a4a55b2c57c5d4d492920897"
+        },
+        "references/Hexalith.Parties": {
+          "mode": "160000",
+          "revision": "1ef274ea0471643d83f924147e85ac8326cf6a47"
+        },
+        "references/Hexalith.PolymorphicSerializations": {
+          "mode": "160000",
+          "revision": "221ac4592ba908ae7661ba1fa9e2d1fcc23baee0"
+        },
+        "references/Hexalith.Projects": {
+          "mode": "160000",
+          "revision": "f02481c2aa65ccc6d13f7fa71eb3a884503337ba"
+        },
+        "references/Hexalith.Tenants": {
+          "mode": "160000",
+          "revision": "14133e96d2c5efb13270580f920133079707398b"
+        },
+        "references/Hexalith.Timesheets": {
+          "mode": "160000",
+          "revision": "6fe2d21c132a4dcc286fdeb0d6b6e84db50c3c77"
+        },
+        "references/Hexalith.Works": {
+          "mode": "160000",
+          "revision": "d46166d8cc038ec28ecb4bbdf989684eb746adc1"
+        }
+      },
+      "status": "## main...origin/main",
+      "recentHistory": "b9cf0e78c42ca8bfe1aa5488cc4340c238887acb build: advance the Hexalith.Builds gitlink after main sync\n1b7a00381794bb7ecf40caf643c63c50758a81eb build: sync local changes via /pushall\n7600292aa7dce6ad710b81b54e996d40daa55e49 build: update EventStore submodule pointer\n3775b5668fb9eac408e351893f133663045b87da feat(custody): complete Dapr lifecycle foundation\ncfd8de08ec39fbaa90faeb5fdb5f4b3eca31b927 fix: complete story 2.5 local run lifecycle review"
+    }
+  },
+  "protectedInputs": {
+    "Conversations/.config/dotnet-tools.json": {
+      "beforeSha256": "5d72a022a9416cb753da75cda1b0f1945fd938c065521fd9946aaa525fe048da",
+      "afterSha256": "5d72a022a9416cb753da75cda1b0f1945fd938c065521fd9946aaa525fe048da",
+      "unchanged": true
+    },
+    "Conversations/module/hexalith.module-manifest.v2.json": {
+      "beforeSha256": "0bed1c297c9c9d78fdb8f37197ac5f71d829191c0535fdd78e4034aaa017bdf0",
+      "afterSha256": "0bed1c297c9c9d78fdb8f37197ac5f71d829191c0535fdd78e4034aaa017bdf0",
+      "unchanged": true
+    },
+    "Conversations/_bmad-output/implementation-artifacts/spec-16-1-persist-tenant-access-projection-state-and-prove-convergence.md": {
+      "beforeSha256": "2fc0e6a91abb2bef9e8df4d4176c86305693719e1ff311bf0ffad7b69b79be14",
+      "afterSha256": "2fc0e6a91abb2bef9e8df4d4176c86305693719e1ff311bf0ffad7b69b79be14",
+      "unchanged": true
+    },
+    "Conversations/_bmad-output/implementation-artifacts/sprint-status.yaml": {
+      "beforeSha256": "18744a7ddbf62ed1b02050fb644630f95ca1c80e6be497fa75cc00d3c73df500",
+      "afterSha256": "18744a7ddbf62ed1b02050fb644630f95ca1c80e6be497fa75cc00d3c73df500",
+      "unchanged": true
+    },
+    "Platform/.config/dotnet-tools.json": {
+      "beforeSha256": "5d72a022a9416cb753da75cda1b0f1945fd938c065521fd9946aaa525fe048da",
+      "afterSha256": "5d72a022a9416cb753da75cda1b0f1945fd938c065521fd9946aaa525fe048da",
+      "unchanged": true
+    },
+    "Platform/hexalith-platform.json": {
+      "beforeSha256": "3ba6c30a8d602bbc3216f0a4f9f90fb9e1f2e11ea985b4fb5058c3611149fb23",
+      "afterSha256": "3ba6c30a8d602bbc3216f0a4f9f90fb9e1f2e11ea985b4fb5058c3611149fb23",
+      "unchanged": true
+    }
+  },
+  "historicalObservations": {
+    "Conversations": {
+      "comparedFileCount": 19,
+      "changedFiles": [],
+      "unchanged": true
+    },
+    "Builds": {
+      "comparedFileCount": 53,
+      "changedFiles": [],
+      "unchanged": true
+    }
+  },
+  "authority": {
+    "story16_1RuntimeHold": "ACTIVE",
+    "runtimeEntryAllowed": false,
+    "deploymentPerformed": false,
+    "platformAcceptanceClaimed": false,
+    "pinEditsByThisContinuation": false,
+    "indexedGitlinkEditsByThisContinuation": false,
+    "observedExternalIndexedGitlinkChanges": [
+      {
+        "path": "references/Hexalith.Builds",
+        "before": {
+          "mode": "160000",
+          "revision": "8eb5646fac69c5d3f42257c6bfdcd04158ac50ea"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "657bcfaa0addd4f8ca94448bc3d8b9eed5193a00"
+        }
+      }
+    ],
+    "attribution": "This continuation performs Git mutations only inside Builds. Shared workspace changes outside those recorded actions are retained and not reverted."
+  }
+}
