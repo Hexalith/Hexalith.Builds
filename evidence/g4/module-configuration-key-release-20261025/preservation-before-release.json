@@ -1,0 +1,158 @@
+{
+  "observedAtUtc": "2026-10-25T09:47:34.578646+00:00",
+  "baselineSha256": "612fa25ecbabd86a49a268af5a3b44ab8ca3007214c35738af45f3ab2ca6be43",
+  "repositories": {
+    "Conversations": {
+      "head": "957df69d50f4ab56c6c924b7a61237338413c21c",
+      "trackedEntryFileCount": 4207,
+      "changedEntryFiles": [],
+      "indexedGitlinksUnchanged": true,
+      "indexedGitlinks": {
+        "references/Hexalith.AI.Tools": {
+          "mode": "160000",
+          "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d"
+        },
+        "references/Hexalith.Builds": {
+          "mode": "160000",
+          "revision": "8eb5646fac69c5d3f42257c6bfdcd04158ac50ea"
+        },
+        "references/Hexalith.Commons": {
+          "mode": "160000",
+          "revision": "1663028fb6d9f46a0bf17919edeb21bb99be1587"
+        },
+        "references/Hexalith.EventStore": {
+          "mode": "160000",
+          "revision": "5be0c309f457d0af1f169bc591609fb4be6473ce"
+        },
+        "references/Hexalith.Folders": {
+          "mode": "160000",
+          "revision": "3287af1d5d0befb4a288bab2f35eafbaa10de0ec"
+        },
+        "references/Hexalith.FrontComposer": {
+          "mode": "160000",
+          "revision": "80782afc7fc2fd33ee365d4601cb6b5e91d215fa"
+        },
+        "references/Hexalith.McpCli": {
+          "mode": "160000",
+          "revision": "8962e2f2570459dbea2976f789b468aa5c6353c6"
+        },
+        "references/Hexalith.Memories": {
+          "mode": "160000",
+          "revision": "98383a95b36638399f7e48b29dd009ab6125be2d"
+        },
+        "references/Hexalith.Parties": {
+          "mode": "160000",
+          "revision": "0455c28a8604bf68d7065d36977c1c2ccf13e2e7"
+        },
+        "references/Hexalith.Platform": {
+          "mode": "160000",
+          "revision": "1b7a00381794bb7ecf40caf643c63c50758a81eb"
+        },
+        "references/Hexalith.Projects": {
+          "mode": "160000",
+          "revision": "6d327ca427ada949892aa70bbba1498d43284a71"
+        },
+        "references/Hexalith.Tenants": {
+          "mode": "160000",
+          "revision": "14133e96d2c5efb13270580f920133079707398b"
+        }
+      }
+    },
+    "Builds": {
+      "head": "36e7e4852ea15f54e8299d57607335c8f5435b73",
+      "trackedEntryFileCount": 2088,
+      "changedEntryFiles": [],
+      "indexedGitlinksUnchanged": true,
+      "indexedGitlinks": {
+        "references/Hexalith.AI.Tools": {
+          "mode": "160000",
+          "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d"
+        }
+      }
+    },
+    "Platform": {
+      "head": "1b7a00381794bb7ecf40caf643c63c50758a81eb",
+      "trackedEntryFileCount": 9060,
+      "changedEntryFiles": [],
+      "indexedGitlinksUnchanged": true,
+      "indexedGitlinks": {
+        "references/Hexalith.AI.Tools": {
+          "mode": "160000",
+          "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d"
+        },
+        "references/Hexalith.Agents": {
+          "mode": "160000",
+          "revision": "4cc1da1c8d3ff66496326b556287488153d8f3ff"
+        },
+        "references/Hexalith.Builds": {
+          "mode": "160000",
+          "revision": "d434d4a789661c48aaad3ddfba42f383240e8a1a"
+        },
+        "references/Hexalith.ChatBot": {
+          "mode": "160000",
+          "revision": "b92e5090313011913bd12ec3241e9f07bae7f16f"
+        },
+        "references/Hexalith.Commons": {
+          "mode": "160000",
+          "revision": "1663028fb6d9f46a0bf17919edeb21bb99be1587"
+        },
+        "references/Hexalith.Conversations": {
+          "mode": "160000",
+          "revision": "8925c9fef46026d53d15478e2a744b3604c38a98"
+        },
+        "references/Hexalith.EventStore": {
+          "mode": "160000",
+          "revision": "5be0c309f457d0af1f169bc591609fb4be6473ce"
+        },
+        "references/Hexalith.Folders": {
+          "mode": "160000",
+          "revision": "283861849cd8ee76c5b074cc522803af42cfbe17"
+        },
+        "references/Hexalith.FrontComposer": {
+          "mode": "160000",
+          "revision": "80782afc7fc2fd33ee365d4601cb6b5e91d215fa"
+        },
+        "references/Hexalith.McpCli": {
+          "mode": "160000",
+          "revision": "8962e2f2570459dbea2976f789b468aa5c6353c6"
+        },
+        "references/Hexalith.Memories": {
+          "mode": "160000",
+          "revision": "7e9ca2c214b3e912a4a55b2c57c5d4d492920897"
+        },
+        "references/Hexalith.Parties": {
+          "mode": "160000",
+          "revision": "1ef274ea0471643d83f924147e85ac8326cf6a47"
+        },
+        "references/Hexalith.PolymorphicSerializations": {
+          "mode": "160000",
+          "revision": "221ac4592ba908ae7661ba1fa9e2d1fcc23baee0"
+        },
+        "references/Hexalith.Projects": {
+          "mode": "160000",
+          "revision": "f02481c2aa65ccc6d13f7fa71eb3a884503337ba"
+        },
+        "references/Hexalith.Tenants": {
+          "mode": "160000",
+          "revision": "14133e96d2c5efb13270580f920133079707398b"
+        },
+        "references/Hexalith.Timesheets": {
+          "mode": "160000",
+          "revision": "6fe2d21c132a4dcc286fdeb0d6b6e84db50c3c77"
+        },
+        "references/Hexalith.Works": {
+          "mode": "160000",
+          "revision": "d46166d8cc038ec28ecb4bbdf989684eb746adc1"
+        }
+      }
+    }
+  },
+  "authority": {
+    "story16_1RuntimeHold": "ACTIVE",
+    "runtimeEntryAllowed": false,
+    "deploymentPerformed": false,
+    "platformAcceptanceClaimed": false,
+    "pinChanges": false,
+    "indexedGitlinkChanges": false
+  }
+}
