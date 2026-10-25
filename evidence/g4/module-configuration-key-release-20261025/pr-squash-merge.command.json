@@ -1,0 +1,19 @@
+{
+  "command": [
+    "gh",
+    "pr",
+    "merge",
+    "134",
+    "--repo",
+    "Hexalith/Hexalith.Builds",
+    "--squash",
+    "--match-head-commit",
+    "219d48a3baba27ba3ec7a1c457b0667dc825d195",
+    "--subject",
+    "fix(module): qualify corrected CLI release source",
+    "--body-file",
+    "/tmp/module-cli-release-20261025-2gbedle5/squash-body.txt"
+  ],
+  "observedAtUtc": "2026-10-25T09:43:11.679719+00:00",
+  "exitCode": 0
+}

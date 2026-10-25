@@ -1,0 +1,36 @@
+schemas/hexalith.module-run-evidence.v1.json:383: trailing whitespace.
++            },
+schemas/hexalith.module-run-evidence.v1.json:384: trailing whitespace.
++            "workspaceIds": {
+schemas/hexalith.module-run-evidence.v1.json:385: trailing whitespace.
++              "type": "array",
+schemas/hexalith.module-run-evidence.v1.json:386: trailing whitespace.
++              "items": {
+schemas/hexalith.module-run-evidence.v1.json:387: trailing whitespace.
++                "type": "string"
+schemas/hexalith.module-run-evidence.v1.json:388: trailing whitespace.
++              }
+schemas/hexalith.module-run-evidence.v1.json:389: trailing whitespace.
++            },
+schemas/hexalith.module-run-evidence.v1.json:390: trailing whitespace.
++            "claimIds": {
+schemas/hexalith.module-run-evidence.v1.json:391: trailing whitespace.
++              "type": "array",
+schemas/hexalith.module-run-evidence.v1.json:392: trailing whitespace.
++              "items": {
+schemas/hexalith.module-run-evidence.v1.json:393: trailing whitespace.
++                "type": "string"
+schemas/hexalith.module-run-evidence.v1.json:394: trailing whitespace.
++              }
+schemas/hexalith.module-run-evidence.v1.json:395: trailing whitespace.
++            },
+schemas/hexalith.module-run-evidence.v1.json:396: trailing whitespace.
++            "discoveryFailures": {
+schemas/hexalith.module-run-evidence.v1.json:397: trailing whitespace.
++              "type": "array",
+schemas/hexalith.module-run-evidence.v1.json:398: trailing whitespace.
++              "items": {
+schemas/hexalith.module-run-evidence.v1.json:399: trailing whitespace.
++                "type": "string"
+schemas/hexalith.module-run-evidence.v1.json:400: trailing whitespace.
++              }
