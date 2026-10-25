@@ -1,0 +1,90 @@
+{
+  "source": "e171c5a788eab183b32683431b084198c9b8d373",
+  "run": 40192040716,
+  "entries": [
+    {
+      "log": "Build and test/32_Test Hexalith.Builds.Module.Tests.txt",
+      "summaryLines": [
+        "2026-10-25T12:34:23.4097674Z Test run summary: Passed!",
+        "2026-10-25T12:34:23.4101061Z   total: 2116",
+        "2026-10-25T12:34:23.4101279Z   failed: 0",
+        "2026-10-25T12:34:23.4101519Z   succeeded: 2113",
+        "2026-10-25T12:34:23.4101752Z   skipped: 3",
+        "2026-10-25T12:34:23.4101997Z   duration: 6m 20s 465ms"
+      ],
+      "skipObservations": [
+        "2026-10-25T12:29:52.7372190Z skipped Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceAppHostTests.PlatformPlanDelegatesToThePinnedModelAsync",
+        "2026-10-25T12:29:52.7383251Z   This integration assertion requires the enclosing Platform checkout.",
+        "2026-10-25T12:29:52.7385919Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)",
+        "2026-10-25T12:29:56.3367208Z skipped Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceMsBuildTests.RootDeclaredCommonsLibraryCandidateSelectsSourceAsync",
+        "2026-10-25T12:29:56.3371888Z   This repository is not inside the Platform root with its Commons checkout.",
+        "2026-10-25T12:29:56.3372954Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)",
+        "2026-10-25T12:30:09.6705886Z skipped Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceMsBuildTests.RootDeclaredEventStoreCandidatesExcludeArchivedEvidenceAsync",
+        "2026-10-25T12:30:09.6718792Z   This repository is not inside the Platform root with its EventStore checkout.",
+        "2026-10-25T12:30:09.6720515Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)"
+      ]
+    },
+    {
+      "log": "Build and test/33_Test Hexalith.Builds.Evidence.Tests.txt",
+      "summaryLines": [
+        "2026-10-25T12:34:29.8304430Z Test run summary: Passed!",
+        "2026-10-25T12:34:29.8307284Z   total: 178",
+        "2026-10-25T12:34:29.8307494Z   failed: 0",
+        "2026-10-25T12:34:29.8307745Z   succeeded: 178",
+        "2026-10-25T12:34:29.8307962Z   skipped: 0",
+        "2026-10-25T12:34:29.8308186Z   duration: 4s 277ms"
+      ],
+      "skipObservations": []
+    },
+    {
+      "log": "Build and test/34_Test Hexalith.Builds.Tooling.IntegrationTests.txt",
+      "summaryLines": [
+        "2026-10-25T12:34:33.0754429Z Test run summary: Passed!",
+        "2026-10-25T12:34:33.0757573Z   total: 13",
+        "2026-10-25T12:34:33.0757767Z   failed: 0",
+        "2026-10-25T12:34:33.0757949Z   succeeded: 1",
+        "2026-10-25T12:34:33.0758128Z   skipped: 12",
+        "2026-10-25T12:34:33.0758268Z   duration: 521ms"
+      ],
+      "skipObservations": [
+        "2026-10-25T12:34:32.8961999Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.LivePersistedRunTests.FrontComposerHostShowsBothBoundedContextsAsync",
+        "2026-10-25T12:34:32.8963759Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.8977694Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.8981043Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.LivePersistedRunTests.AuthenticatedCommandsPersistEventsAtExpectedSequenceAsync(domain: \"p0-inventory\", commandType: \"ReserveStock\", eventType: \"Hexalith.Builds.P0Fixture.Inventory.StockReserved\")",
+        "2026-10-25T12:34:32.8982304Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.8983342Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.8984873Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.LivePersistedRunTests.AuthenticatedCommandsPersistEventsAtExpectedSequenceAsync(domain: \"p0-orders\", commandType: \"PlaceOrder\", eventType: \"Hexalith.Builds.P0Fixture.Orders.OrderPlaced\")",
+        "2026-10-25T12:34:32.8986000Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.8986863Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.8989428Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.LivePersistedRunTests.IdentityRejectsAnonymousForeignKeyAndForeignTenantAsync",
+        "2026-10-25T12:34:32.8990724Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.8992159Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.9002081Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.LivePersistedRunTests.EventStoreInvokesModulesThroughDaprSidecarsAsync",
+        "2026-10-25T12:34:32.9003588Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.9004812Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.9030061Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.LiveRunIsolationTests.ConcurrentRunsAreIsolatedAndDownOfOneLeavesTheOtherHealthyAsync",
+        "2026-10-25T12:34:32.9031508Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.9033052Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.9050692Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.LivePublicCommandTests.RunDownAndTestUseRunScopedLiveCompositionAsync",
+        "2026-10-25T12:34:32.9052075Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.9053652Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.9062371Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.LiveCancellationTests.CancellingMidStartupLeavesNoProcessOrContainerAsync",
+        "2026-10-25T12:34:32.9063761Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.9065025Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.9081218Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.LiveLifecycleTests.RunStartsHealthyCarriesRunIdentityAndStopsAsync",
+        "2026-10-25T12:34:32.9082477Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.9083873Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.9090778Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.LiveLifecycleTests.DownLeavesNothingTaggedAndIsIdempotentAsync",
+        "2026-10-25T12:34:32.9091990Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.9093356Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.9105093Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.PackagedPersistedProfileTests.InstalledToolPassesPersistedProfileWithNativeReportAsync(profile: \"full\", platform: \"vstest\")",
+        "2026-10-25T12:34:32.9106518Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.9107810Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)",
+        "2026-10-25T12:34:32.9109334Z skipped Hexalith.Builds.Tooling.IntegrationTests.Live.PackagedPersistedProfileTests.InstalledToolPassesPersistedProfileWithNativeReportAsync(profile: \"full-mtp\", platform: \"mtp\")",
+        "2026-10-25T12:34:32.9110972Z   Live G-4 composition is opt-in: set HEXALITH_G4_LIVE=1 and HEXALITH_DAPR_HOME to a verified Dapr CLI 1.18.2 / runtime 1.18.7 home with Docker available, and install an Aspire CLI 13.6.3. A skipped live test is not passing evidence.",
+        "2026-10-25T12:34:32.9111954Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll (net10.0|x64)"
+      ]
+    }
+  ],
+  "qualificationBoundary": "Successful configured Builds CI. Existing Platform-context skips are explicit; no Platform composition or runtime qualification is claimed. Release eligibility still requires the protected full qualification inventory."
+}

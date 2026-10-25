@@ -1,0 +1,53 @@
+{
+  "observedAtUtc": "2026-10-25T14:43:44.417047+00:00",
+  "commands": {
+    "remote-main-commit": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/commits/0c735503728e18de93937b1495abebcfa6e33f9a"
+      ],
+      "exitCode": 0
+    },
+    "remote-main-compare": {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/compare/e171c5a788eab183b32683431b084198c9b8d373...0c735503728e18de93937b1495abebcfa6e33f9a"
+      ],
+      "exitCode": 0
+    },
+    "remote-release-refs": {
+      "command": [
+        "git",
+        "-C",
+        "references/Hexalith.Builds",
+        "ls-remote",
+        "origin",
+        "refs/heads/main",
+        "refs/tags/v4.38.0",
+        "refs/tags/v4.38.0^{}"
+      ],
+      "exitCode": 0
+    }
+  },
+  "publishedTagSource": "e171c5a788eab183b32683431b084198c9b8d373",
+  "localQualifiedCheckout": "e171c5a788eab183b32683431b084198c9b8d373",
+  "remoteMain": "0c735503728e18de93937b1495abebcfa6e33f9a",
+  "aheadBy": 2,
+  "changedPaths": [
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionProcessEnvironmentReader.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionResourceClaimStore.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunSession.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunStateStore.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestExecutor.cs",
+    "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestEnvironmentContractReader.cs",
+    "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestResultWriter.cs",
+    "test/Hexalith.Builds.Module.Tests/CompositionNativeProcessDiscoveryTests.cs",
+    "test/Hexalith.Builds.Module.Tests/LocalRunReviewCorrectionTests.cs",
+    "test/Hexalith.Builds.Module.Tests/ModuleRunnerReviewRegressionTests.cs"
+  ],
+  "disposition": "Later external main advance is preserved remotely. No fetch/merge/reset/push is performed. Existing release evidence qualifies tagged4.38.0/e171 only; later runtime source is outside this handoff and has no qualification claim here."
+}

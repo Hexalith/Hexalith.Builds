@@ -1,0 +1,60 @@
+{
+  "assembly": "/tmp/module-cli-published-20261025-axd3an1l/Hexalith.Builds.Tooling.dll",
+  "informationalVersion": "4.38.0+e171c5a788eab183b32683431b084198c9b8d373",
+  "resources": [
+    {
+      "name": "Hexalith.Builds.Tooling.CheckSuites.hexalith.check-invocation.v1.json",
+      "file": "Hexalith.Builds.Tooling.CheckSuites.hexalith.check-invocation.v1.json",
+      "sha256": "9d16a729e2e4914cc88dcda6945296c0132a03708577f4378d2a8dc287fe2cba",
+      "sizeBytes": 3738
+    },
+    {
+      "name": "Hexalith.Builds.Tooling.CheckSuites.hexalith.check-result.v1.json",
+      "file": "Hexalith.Builds.Tooling.CheckSuites.hexalith.check-result.v1.json",
+      "sha256": "76cdc496c518791a593ecf2a69b3fdd0dded266c611b1f59c23dc6edee8d5a0f",
+      "sizeBytes": 3602
+    },
+    {
+      "name": "Hexalith.Builds.Tooling.CheckSuites.hexalith.check-suite.v1.json",
+      "file": "Hexalith.Builds.Tooling.CheckSuites.hexalith.check-suite.v1.json",
+      "sha256": "3498bc1dd1646f9ca8808536448366bb69e7078d2a4c0bc96f3671d146d26a44",
+      "sizeBytes": 3749
+    },
+    {
+      "name": "Hexalith.Builds.Tooling.Manifest.hexalith.module-manifest.v2.json",
+      "file": "Hexalith.Builds.Tooling.Manifest.hexalith.module-manifest.v2.json",
+      "sha256": "06d6804f3b111e803edd0d9142b03f36df344e26e2d71e50e2291fe15039daa4",
+      "sizeBytes": 29840
+    },
+    {
+      "name": "Hexalith.Builds.Tooling.Manifest.platform-version-catalog.json",
+      "file": "Hexalith.Builds.Tooling.Manifest.platform-version-catalog.json",
+      "sha256": "b44390bdb569e2d9b909c0473092f3ae0f768b95b7bed37d06905ca648ed1ead",
+      "sizeBytes": 539
+    },
+    {
+      "name": "Hexalith.Builds.Tooling.ReleaseRecords.hexalith.release-records.v1.json",
+      "file": "Hexalith.Builds.Tooling.ReleaseRecords.hexalith.release-records.v1.json",
+      "sha256": "0609f1331d13d6ac7fa8a65dfaaafe546957eb453ef1c5acedb6847f323d97f5",
+      "sizeBytes": 44381
+    },
+    {
+      "name": "Hexalith.Builds.Tooling.RunEvidence.hexalith.module-run-evidence.v1.json",
+      "file": "Hexalith.Builds.Tooling.RunEvidence.hexalith.module-run-evidence.v1.json",
+      "sha256": "a8f34fe1b9bc15b1794015b5d8babbc070b3096947d46716c52351397447b54f",
+      "sizeBytes": 17555
+    },
+    {
+      "name": "Hexalith.Builds.Tooling.TestEnvironment.hexalith.test-environment.v1.json",
+      "file": "Hexalith.Builds.Tooling.TestEnvironment.hexalith.test-environment.v1.json",
+      "sha256": "bf1e46acc773991037daaae20dff1d815faf4af13ab7887d88339609607ff357",
+      "sizeBytes": 37361
+    },
+    {
+      "name": "Hexalith.Builds.Tooling.TestEnvironment.hexalith.test-result.v1.json",
+      "file": "Hexalith.Builds.Tooling.TestEnvironment.hexalith.test-result.v1.json",
+      "sha256": "9773678febac38025fae837154341d9036ce8aa94e66b0d30c7e15ee668d7e39",
+      "sizeBytes": 46488
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "observedAtUtc": "2026-10-25T13:55:05.000124+00:00",
+  "attempt": "published-artifact-01",
+  "result": "stopped at supplemental raw nuspec byte-equality assertion before declaration/adoption/malformed probes",
+  "firstHarnessSha256": "2b4ca0c20bb7f3997e592a062d2200c7b1d3a016c6cab1080cf414047540c615",
+  "successorHarnessSha256": "0de7b814bfd3384b656c33f704e943034edf3806796ba026d08578cdc3acaf5e",
+  "archiveSha256": "4a7a58f42fdc44ae84269c4909975741d2d275ae7c9cd76268c25950b57a0c8a",
+  "feedSha256": "6fa07e2c603eb3c39e3967fc9fa1ce16eff2f511a66f63a2502a86cae0353d90",
+  "archiveSizeBytes": 899,
+  "feedSizeBytes": 896,
+  "archiveUtf8Bom": true,
+  "feedUtf8Bom": false,
+  "remainingBytesIdentical": true,
+  "disposition": "Preserve original attempt; use fresh cache/output for successor and require identical bytes after optional UTF-8 BOM plus exact repository metadata identity. Spec source/schema/validation/release gates unchanged."
+}

@@ -1,0 +1,212 @@
+{
+  "reviewedAtUtc": "2026-10-25T14:31:58.867646+00:00",
+  "source": "e171c5a788eab183b32683431b084198c9b8d373",
+  "diff": "/tmp/module-cli-release-review-cnjdhb__/release-content.diff",
+  "layers": [
+    "blind-hunter",
+    "edge-case-hunter",
+    "verification-gap"
+  ],
+  "findings": [
+    {
+      "id": "B1",
+      "verdict": "high",
+      "route": "defer",
+      "evidence": "Concurrent cleanup can pass the single EnsureIssuedStateAsync check and release its provisioning lease before ExecuteSelectedAsync writes/recreates the workspace and starts a child. The selected gate has no cleanup-marker/provisioning lease. Static interleaving confirmed; no new Platform qualification.",
+      "incomingOrigin": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274",
+      "group": "late-native-launch"
+    },
+    {
+      "id": "B2",
+      "verdict": "medium",
+      "route": "defer",
+      "evidence": "RunCoreAsync records a first timestamp, kills/waits, then throws on the current caller cancellation token. NativeTestExecutor samples owner cancellation afterwards, so a later cancellation can replace the earlier timeout cause.",
+      "incomingOrigin": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274",
+      "group": "late-timeout-cause"
+    },
+    {
+      "id": "B3",
+      "verdict": "high",
+      "route": "defer",
+      "evidence": "Windows invalid OpenProcess and macOS errors1/13 return null without setting Verified=false. No independent ownership exclusion protects an owned process that becomes inaccessible. Actual-host behavior remains unqualified.",
+      "incomingOrigin": "6e40ea5f6243391bea80084b8ddd695df58fb1ff",
+      "group": "nonlinux-discovery-uncertainty"
+    },
+    {
+      "id": "B4",
+      "verdict": "high",
+      "route": "defer",
+      "evidence": "Linux scanner returns(FindProcesses(runId),true), while absent /proc and read exceptions yield no observed processes. The caller can treat this incomplete scan as verified absence and release claims.",
+      "incomingOrigin": "6e40ea5f6243391bea80084b8ddd695df58fb1ff",
+      "group": "linux-discovery-uncertainty"
+    },
+    {
+      "id": "B5",
+      "verdict": "medium",
+      "route": "defer",
+      "evidence": "ValidResources checks nonnull collections only; ResourceIds and listing serialize containerIds directly. Reviewer reported fake-secret echo on same-source Debug CLI; original stream capture was not retained, so source inspection and reviewer testimony are distinguished.",
+      "incomingOrigin": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274",
+      "group": "persisted-metadata-validation"
+    },
+    {
+      "id": "B6",
+      "verdict": "medium",
+      "route": "defer",
+      "evidence": "CreateListCommand awaits ReadAsync without the OperationCanceledException mapping present in validation; enumeration checks cancellation per file. Reported SIGINT repro returned exit1 with empty streams.",
+      "incomingOrigin": "984c4d50205d00b5238c1cf19e93b232c3282c22",
+      "group": "list-cancellation"
+    },
+    {
+      "id": "B7",
+      "verdict": "medium",
+      "route": "defer",
+      "evidence": "Acquire has no receipt-length admission bound; ReadReceipt rejects over64KiB. Retained reviewer fixture is67,001 bytes and ReleaseOwned leaves the receipt. Public Acquire has no identity-count guard.",
+      "incomingOrigin": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274",
+      "group": "claim-receipt-bound"
+    },
+    {
+      "id": "B8",
+      "verdict": "false",
+      "route": "reject",
+      "evidence": "Reviewer retracted the concrete lifecycle expansion claim after the1MiB validated-descriptor guard was identified. An unrestricted generic writer alone does not demonstrate the claimed reachable oversized lifecycle record. No new guard is justified.",
+      "incomingOrigin": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274",
+      "group": null
+    },
+    {
+      "id": "B9",
+      "verdict": "maybe-false",
+      "route": "defer",
+      "evidence": "Atomic rename and absence of an explicit stable-storage barrier are confirmed; whether the current promise includes machine/power-loss durability and a reachable lost-terminal-record case were not established. If true impact is medium; settle with an explicit crash contract and fault-injected storage test.",
+      "incomingOrigin": "984c4d50205d00b5238c1cf19e93b232c3282c22",
+      "group": "storage-durability-unverified"
+    },
+    {
+      "id": "B10",
+      "verdict": "medium",
+      "route": "defer",
+      "evidence": "Native Windows/macOS discovery is exercised only through injected/synthetic tests in the Ubuntu lanes. Actual-host ownership/cleanup verification is missing; same root coverage gap as G1.",
+      "incomingOrigin": "6e40ea5f6243391bea80084b8ddd695df58fb1ff",
+      "group": "native-host-verification"
+    },
+    {
+      "id": "B11",
+      "verdict": "low",
+      "route": "reject",
+      "evidence": "The cited file is explicitly the failed historical collector attempt, with original temporary inputs preserved. No supported current replay calls it. Parameterizing/duplicating that capture adds a new helper interface for an uncommon archival replay; actual artifact probe03 already accepts explicit repository/version/output/inventory arguments. Clarify its historical status in the handoff without rewriting it.",
+      "incomingOrigin": null,
+      "group": null
+    },
+    {
+      "id": "E1",
+      "verdict": "medium",
+      "route": "defer",
+      "evidence": "Batch loop resets ExecutionTiming but not EnvironmentBindings; a descriptor refusal returns before assigning new bindings. TestResultWriter checks owner/attempt/environment only. Retained same-source unit repro contains second selection with first execution/catalog bindings.",
+      "incomingOrigin": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274",
+      "group": "batch-stale-bindings"
+    },
+    {
+      "id": "G1",
+      "verdict": "medium",
+      "route": "defer",
+      "evidence": "Pre-verified gap: source/reference searches and actual CI platforms show no native Windows/macOS reader exercise; override/ContainsEntry tests do not cover discovery or cleanup. Same coverage root cause as B10.",
+      "incomingOrigin": "6e40ea5f6243391bea80084b8ddd695df58fb1ff",
+      "group": "native-host-verification"
+    }
+  ],
+  "groups": [
+    {
+      "id": "late-native-launch",
+      "findings": [
+        "B1"
+      ],
+      "route": "defer",
+      "reason": "Incoming/pre-existing runtime implementation, not caused by configuration-key release/measurement changes; retain separate owner work and existing runtime hold."
+    },
+    {
+      "id": "late-timeout-cause",
+      "findings": [
+        "B2"
+      ],
+      "route": "defer",
+      "reason": "Incoming/pre-existing runtime implementation, not caused by configuration-key release/measurement changes; retain separate owner work and existing runtime hold."
+    },
+    {
+      "id": "nonlinux-discovery-uncertainty",
+      "findings": [
+        "B3"
+      ],
+      "route": "defer",
+      "reason": "Incoming/pre-existing runtime implementation, not caused by configuration-key release/measurement changes; retain separate owner work and existing runtime hold."
+    },
+    {
+      "id": "linux-discovery-uncertainty",
+      "findings": [
+        "B4"
+      ],
+      "route": "defer",
+      "reason": "Incoming/pre-existing runtime implementation, not caused by configuration-key release/measurement changes; retain separate owner work and existing runtime hold."
+    },
+    {
+      "id": "persisted-metadata-validation",
+      "findings": [
+        "B5"
+      ],
+      "route": "defer",
+      "reason": "Incoming/pre-existing runtime implementation, not caused by configuration-key release/measurement changes; retain separate owner work and existing runtime hold."
+    },
+    {
+      "id": "list-cancellation",
+      "findings": [
+        "B6"
+      ],
+      "route": "defer",
+      "reason": "Incoming/pre-existing runtime implementation, not caused by configuration-key release/measurement changes; retain separate owner work and existing runtime hold."
+    },
+    {
+      "id": "claim-receipt-bound",
+      "findings": [
+        "B7"
+      ],
+      "route": "defer",
+      "reason": "Incoming/pre-existing runtime implementation, not caused by configuration-key release/measurement changes; retain separate owner work and existing runtime hold."
+    },
+    {
+      "id": "storage-durability-unverified",
+      "findings": [
+        "B9"
+      ],
+      "route": "defer",
+      "reason": "Incoming/pre-existing runtime implementation, not caused by configuration-key release/measurement changes; retain separate owner work and existing runtime hold."
+    },
+    {
+      "id": "native-host-verification",
+      "findings": [
+        "B10",
+        "G1"
+      ],
+      "route": "defer",
+      "reason": "Incoming/pre-existing runtime implementation, not caused by configuration-key release/measurement changes; retain separate owner work and existing runtime hold."
+    },
+    {
+      "id": "batch-stale-bindings",
+      "findings": [
+        "E1"
+      ],
+      "route": "defer",
+      "reason": "Incoming/pre-existing runtime implementation, not caused by configuration-key release/measurement changes; retain separate owner work and existing runtime hold."
+    }
+  ],
+  "rejected": [
+    "B8",
+    "B11"
+  ],
+  "releaseAndConfigurationEvidenceResult": "PASS",
+  "adoptionResult": {
+    "passed": 6,
+    "failed": 18,
+    "allFailuresRetained": true
+  },
+  "runtimeAcceptance": "not granted",
+  "sourceEditsMadeByReview": false,
+  "deferredGroupCount": 10
+}

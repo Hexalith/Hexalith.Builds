@@ -1,0 +1,14 @@
+{
+  "command": [
+    "/tmp/module-cli-published-20261025-qgbj6e5x/tool/hexalith-module",
+    "validate",
+    "--manifest",
+    "/tmp/module-cli-published-20261025-qgbj6e5x/invalid-0-0.json",
+    "--output",
+    "json"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/conversations",
+  "exitCode": 1,
+  "observedAtUtc": "2026-10-25T13:56:27.386550+00:00",
+  "stdoutSha256": "a14e8eb43e81224834ccf9ed07723acf37c276889f2b2db07350f00789d4b338"
+}

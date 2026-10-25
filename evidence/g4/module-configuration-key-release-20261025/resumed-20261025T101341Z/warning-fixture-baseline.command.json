@@ -1,0 +1,17 @@
+{
+  "command": [
+    "dotnet",
+    "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll",
+    "-automated",
+    "sync",
+    "-failSkips",
+    "-parallel",
+    "none",
+    "-method",
+    "Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.PublicSourceWarningAppearsOnSuccessAsync"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:05:50.294198+00:00",
+  "source": "unchanged68e65f2023eca117a2aa08a022ee33d8f4c34a44",
+  "testStartupAllowanceSeconds": 5
+}

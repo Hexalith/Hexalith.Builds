@@ -1,0 +1,11 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/git/ref/tags/v4.38.0"
+  ],
+  "observedAtUtc": "2026-10-25T13:52:42.453231+00:00",
+  "exitCode": 0,
+  "stdoutSha256": "94ac06ec528dde8827257d95ee76223f4e0d2bc6d6cf3863d2d3b46852b9aea0",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "git",
+    "status",
+    "--short",
+    "--branch"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T11:16:40.280840+00:00"
+}

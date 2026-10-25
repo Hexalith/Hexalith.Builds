@@ -1,0 +1,714 @@
+{
+  "identity": "identity.json",
+  "ordinary": {
+    "humanExit": 0,
+    "jsonExit": 0,
+    "diagnostics": []
+  },
+  "adoption": {
+    "humanExit": 1,
+    "jsonExit": 1,
+    "rows": [
+      {
+        "requirement": "workspace",
+        "passed": true,
+        "file": ".git",
+        "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+      },
+      {
+        "requirement": "declaration",
+        "passed": true,
+        "file": "module/hexalith.module-manifest.v2.json",
+        "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+      },
+      {
+        "requirement": "references",
+        "passed": true,
+        "file": ".gitmodules",
+        "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+      },
+      {
+        "requirement": "gitlinks",
+        "passed": false,
+        "file": "references/Hexalith.Builds",
+        "reason": "Required source 'Hexalith.Builds' at '/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds' is unavailable: Package-origin checkout HEAD 'e171c5a788eab183b32683431b084198c9b8d373' does not match the root's staged gitlink '68e65f2023eca117a2aa08a022ee33d8f4c34a44'. Restore the staged gitlink with git -C '/home/administrator/projects/hexalith/conversations' submodule update --checkout -- ':(literal)references/Hexalith.Builds', or deinitialize the stale checkout before retrying."
+      },
+      {
+        "requirement": "nested-references",
+        "passed": true,
+        "file": ".gitmodules",
+        "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+      },
+      {
+        "requirement": "tool-pin",
+        "passed": true,
+        "file": ".config/dotnet-tools.json",
+        "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+      },
+      {
+        "requirement": "hosting-inventory",
+        "passed": true,
+        "file": "module/hosting-inventory.json",
+        "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "Directory.Build.props",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "Directory.Packages.props",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "src/Hexalith.Conversations.AppHost/Hexalith.Conversations.AppHost.csproj",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "src/Hexalith.Conversations.Client/Hexalith.Conversations.Client.csproj",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "src/Hexalith.Conversations.Contracts/Hexalith.Conversations.Contracts.csproj",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "src/Hexalith.Conversations.Server/Hexalith.Conversations.Server.csproj",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "src/Hexalith.Conversations/Hexalith.Conversations.csproj",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "tests/Hexalith.Conversations.AppHost.Tests/Hexalith.Conversations.AppHost.Tests.csproj",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "tests/Hexalith.Conversations.Contracts.Tests/ContractPackageInventoryTest.cs",
+        "reason": "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "tests/Hexalith.Conversations.Contracts.Tests/Hexalith.Conversations.Contracts.Tests.csproj",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "tests/Hexalith.Conversations.IntegrationTests/Hexalith.Conversations.IntegrationTests.csproj",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "tests/Hexalith.Conversations.Server.Tests/Hexalith.Conversations.Server.Tests.csproj",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "tests/Hexalith.Conversations.Tests/Hexalith.Conversations.Tests.csproj",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dependency-selectors",
+        "passed": false,
+        "file": "tests/fixtures/Hexalith.Conversations.MinimalModule/Directory.Build.props",
+        "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+      },
+      {
+        "requirement": "dapr-subscriptions",
+        "passed": false,
+        "file": "src/Hexalith.Conversations.Server/Projections/ConversationProjectionReadModelKeys.cs",
+        "reason": "Literal Dapr component name; obtain the name from the declared configuration key."
+      },
+      {
+        "requirement": "dapr-subscriptions",
+        "passed": false,
+        "file": "tests/Hexalith.Conversations.IntegrationTests/Projections/ConversationGatewayLiveFixture.cs",
+        "reason": "Literal Dapr component name; obtain the name from the declared configuration key."
+      },
+      {
+        "requirement": "dapr-subscriptions",
+        "passed": false,
+        "file": "tests/Hexalith.Conversations.IntegrationTests/Projections/ConversationProjectionReadStorePopulationLiveTests.cs",
+        "reason": "Literal Dapr component name; obtain the name from the declared configuration key."
+      }
+    ],
+    "diagnostics": [
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "Required source 'Hexalith.Builds' at '/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds' is unavailable: Package-origin checkout HEAD 'e171c5a788eab183b32683431b084198c9b8d373' does not match the root's staged gitlink '68e65f2023eca117a2aa08a022ee33d8f4c34a44'. Restore the staged gitlink with git -C '/home/administrator/projects/hexalith/conversations' submodule update --checkout -- ':(literal)references/Hexalith.Builds', or deinitialize the stale checkout before retrying.",
+        "field": "gitlinks",
+        "hint": null,
+        "source": "references/Hexalith.Builds",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "Directory.Build.props",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "Directory.Packages.props",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "src/Hexalith.Conversations.AppHost/Hexalith.Conversations.AppHost.csproj",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "src/Hexalith.Conversations.Client/Hexalith.Conversations.Client.csproj",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "src/Hexalith.Conversations.Contracts/Hexalith.Conversations.Contracts.csproj",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "src/Hexalith.Conversations.Server/Hexalith.Conversations.Server.csproj",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "src/Hexalith.Conversations/Hexalith.Conversations.csproj",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "tests/Hexalith.Conversations.AppHost.Tests/Hexalith.Conversations.AppHost.Tests.csproj",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "tests/Hexalith.Conversations.Contracts.Tests/ContractPackageInventoryTest.cs",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "tests/Hexalith.Conversations.Contracts.Tests/Hexalith.Conversations.Contracts.Tests.csproj",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "tests/Hexalith.Conversations.IntegrationTests/Hexalith.Conversations.IntegrationTests.csproj",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "tests/Hexalith.Conversations.Server.Tests/Hexalith.Conversations.Server.Tests.csproj",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "tests/Hexalith.Conversations.Tests/Hexalith.Conversations.Tests.csproj",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs.",
+        "field": "dependency-selectors",
+        "hint": null,
+        "source": "tests/fixtures/Hexalith.Conversations.MinimalModule/Directory.Build.props",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "Literal Dapr component name; obtain the name from the declared configuration key.",
+        "field": "dapr-subscriptions",
+        "hint": null,
+        "source": "src/Hexalith.Conversations.Server/Projections/ConversationProjectionReadModelKeys.cs",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "Literal Dapr component name; obtain the name from the declared configuration key.",
+        "field": "dapr-subscriptions",
+        "hint": null,
+        "source": "tests/Hexalith.Conversations.IntegrationTests/Projections/ConversationGatewayLiveFixture.cs",
+        "location": null,
+        "row": null
+      },
+      {
+        "ruleId": "HXA001",
+        "phase": "Manifest",
+        "category": "Manifest",
+        "message": "Literal Dapr component name; obtain the name from the declared configuration key.",
+        "field": "dapr-subscriptions",
+        "hint": null,
+        "source": "tests/Hexalith.Conversations.IntegrationTests/Projections/ConversationProjectionReadStorePopulationLiveTests.cs",
+        "location": null,
+        "row": null
+      }
+    ],
+    "humanJsonRowsEqual": true,
+    "predecessorRowsEqual": false,
+    "differences": {
+      "removed": [
+        {
+          "requirement": "gitlinks",
+          "passed": true,
+          "file": ".gitmodules",
+          "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+        }
+      ],
+      "added": [
+        {
+          "requirement": "gitlinks",
+          "passed": false,
+          "file": "references/Hexalith.Builds",
+          "reason": "Required source 'Hexalith.Builds' at '/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds' is unavailable: Package-origin checkout HEAD 'e171c5a788eab183b32683431b084198c9b8d373' does not match the root's staged gitlink '68e65f2023eca117a2aa08a022ee33d8f4c34a44'. Restore the staged gitlink with git -C '/home/administrator/projects/hexalith/conversations' submodule update --checkout -- ':(literal)references/Hexalith.Builds', or deinitialize the stale checkout before retrying."
+        }
+      ]
+    }
+  },
+  "malformedControls": [
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "c9e91820990f6dd06933d2c0bef9732ec1ccbb5335cd5151b0bf4091bb8383dc",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "c9e91820990f6dd06933d2c0bef9732ec1ccbb5335cd5151b0bf4091bb8383dc",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": " ",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "bc25ad66519950a1b24c6da0dd08702f5d545fab6f84369f5c582c6a5432eb0c",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": " ",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "bc25ad66519950a1b24c6da0dd08702f5d545fab6f84369f5c582c6a5432eb0c",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "1TOKEN",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "6e91e105dada3cc47765482333c0543a213efb3db42f7a29880e61cb14aba154",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "1TOKEN",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "6e91e105dada3cc47765482333c0543a213efb3db42f7a29880e61cb14aba154",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "_TOKEN",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "d3327743fe096b64b6199cb6199da6628a59132013b543238da6ea5b7b7e2382",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "_TOKEN",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "d3327743fe096b64b6199cb6199da6628a59132013b543238da6ea5b7b7e2382",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "TOKEN_",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "907f8c563ac2e8f6f4051b5267829a5b6594cd7e427ccf42f7cb1b2dcc0a5ac5",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "TOKEN_",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "907f8c563ac2e8f6f4051b5267829a5b6594cd7e427ccf42f7cb1b2dcc0a5ac5",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "APP__API_TOKEN",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "6bcc23f674e5d1318034f816299ca45822c0a5b3d034e71549fd3ba7cb97775e",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "APP__API_TOKEN",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "6bcc23f674e5d1318034f816299ca45822c0a5b3d034e71549fd3ba7cb97775e",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "App::Token",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "6be5d8118edb69ed8733f239cef82d370452b39eabf9df4539b39403049ea281",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "App::Token",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "6be5d8118edb69ed8733f239cef82d370452b39eabf9df4539b39403049ea281",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "APP_API_TOKEN\n",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "05976c4c8da1ab6b693331fcf400e6fcf3a2c90c9b6e3a60b25013567a855a88",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "APP_API_TOKEN\n",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "05976c4c8da1ab6b693331fcf400e6fcf3a2c90c9b6e3a60b25013567a855a88",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "4481a1f016cafa07e9d22614eea43c0a827760a8b667e731fce67d6dae611afd",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].integration.secrets[1].configurationKey",
+      "key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "4481a1f016cafa07e9d22614eea43c0a827760a8b667e731fce67d6dae611afd",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "d82d68b116f3e1140aa2436d1c2dca7b6d7952b490773dc78c582b0bb0de828e",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "d82d68b116f3e1140aa2436d1c2dca7b6d7952b490773dc78c582b0bb0de828e",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": " ",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "7d299beda0fa04396fa7198f81521bab6220b3152a75ba11439ccd73702a9f65",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": " ",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "7d299beda0fa04396fa7198f81521bab6220b3152a75ba11439ccd73702a9f65",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "1TOKEN",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "d4028d2b64fce926f712b7e1d140a7346766b0044c8df96b68662e890943d2e4",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "1TOKEN",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "d4028d2b64fce926f712b7e1d140a7346766b0044c8df96b68662e890943d2e4",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "_TOKEN",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "7b80c3f858eeae427f9c3c525d77ef7468c9206adc7edbfef8c0be4cb0884ea9",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "_TOKEN",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "7b80c3f858eeae427f9c3c525d77ef7468c9206adc7edbfef8c0be4cb0884ea9",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "TOKEN_",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "2244fe3e5054e5e207c682fea3bb258ccd7e14521fbf038a2c2277781ed8dbeb",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "TOKEN_",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "2244fe3e5054e5e207c682fea3bb258ccd7e14521fbf038a2c2277781ed8dbeb",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "APP__API_TOKEN",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "16fdac2ad1340261282c831e7f57d608085358d38e365aae63f27ac6d2603937",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "APP__API_TOKEN",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "16fdac2ad1340261282c831e7f57d608085358d38e365aae63f27ac6d2603937",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "App::Token",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "1c0396e702a1a2725335d7866568ddca27b2d233c073beb0d9c553b204171658",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "App::Token",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "1c0396e702a1a2725335d7866568ddca27b2d233c073beb0d9c553b204171658",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "APP_API_TOKEN\n",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "cb0f503d3bd6ce7ae70fb763c31f4127f8332f7dec6d1c009f699db13351034b",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "APP_API_TOKEN\n",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "cb0f503d3bd6ce7ae70fb763c31f4127f8332f7dec6d1c009f699db13351034b",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "format": "human",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "7d6a4b1511bc187bbfd297746f5909feef40e1044ae91fd2a793d427e62a2596",
+      "unchanged": true
+    },
+    {
+      "field": "modules[0].runtime.extensions[0].configurationInputs[12].key",
+      "key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "format": "json",
+      "exitCode": 1,
+      "ruleId": "HXP002",
+      "inputSha256": "7d6a4b1511bc187bbfd297746f5909feef40e1044ae91fd2a793d427e62a2596",
+      "unchanged": true
+    }
+  ],
+  "manifestSha256Before": "0bed1c297c9c9d78fdb8f37197ac5f71d829191c0535fdd78e4034aaa017bdf0",
+  "manifestSha256After": "0bed1c297c9c9d78fdb8f37197ac5f71d829191c0535fdd78e4034aaa017bdf0",
+  "authority": {
+    "story16_1RuntimeHold": "ACTIVE",
+    "runtimeEntryAllowed": false,
+    "deploymentPerformed": false,
+    "platformAcceptanceClaimed": false,
+    "pinChanges": false,
+    "indexedGitlinkChanges": false
+  }
+}

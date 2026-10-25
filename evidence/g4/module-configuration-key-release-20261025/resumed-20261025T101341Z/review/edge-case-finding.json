@@ -1,0 +1,8 @@
+[
+  {
+    "location": "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestExecutor.cs:324-336",
+    "trigger_condition": "A later batch entry refuses descriptor creation after an earlier entry populated EnvironmentBindings.",
+    "guard_snippet": "session.EnvironmentBindings = null; // Reset before validating each selected entry.",
+    "potential_consequence": "The later failure publishes the earlier entry's execution deadline and obsolete catalog proof."
+  }
+]

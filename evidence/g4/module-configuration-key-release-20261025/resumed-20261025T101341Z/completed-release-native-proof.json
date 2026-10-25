@@ -1,0 +1,88 @@
+{
+  "observedAtUtc": "2026-10-25T13:54:23.879110+00:00",
+  "runId": 40193969210,
+  "releaseSha": "e171c5a788eab183b32683431b084198c9b8d373",
+  "qualificationRuns": [
+    {
+      "version": "0.0.0-ci.451",
+      "nativeLogEntry": "Release/29_Qualify G-4 tool source and Release packages.txt",
+      "sourceValidation": "actual distinct per-project Release DLL executions observed",
+      "projects": [
+        {
+          "project": "Hexalith.Builds.Evidence.Tests",
+          "assembly": "/home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll",
+          "total": 178,
+          "failed": 0,
+          "succeeded": 178,
+          "skipped": 0
+        },
+        {
+          "project": "Hexalith.Builds.Module.Tests",
+          "assembly": "/home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll",
+          "total": 2116,
+          "failed": 0,
+          "succeeded": 2113,
+          "skipped": 3
+        },
+        {
+          "project": "Hexalith.Builds.Tooling.IntegrationTests",
+          "assembly": "/home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll",
+          "total": 13,
+          "failed": 0,
+          "succeeded": 1,
+          "skipped": 12
+        }
+      ],
+      "skipsFile": "release-native-skips-0.0.0-ci.451.txt"
+    },
+    {
+      "version": "4.38.0",
+      "nativeLogEntry": "Release/34_Create Release.txt",
+      "sourceValidation": "actual distinct per-project Release DLL executions observed",
+      "projects": [
+        {
+          "project": "Hexalith.Builds.Evidence.Tests",
+          "assembly": "/home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll",
+          "total": 178,
+          "failed": 0,
+          "succeeded": 178,
+          "skipped": 0
+        },
+        {
+          "project": "Hexalith.Builds.Module.Tests",
+          "assembly": "/home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll",
+          "total": 2116,
+          "failed": 0,
+          "succeeded": 2113,
+          "skipped": 3
+        },
+        {
+          "project": "Hexalith.Builds.Tooling.IntegrationTests",
+          "assembly": "/home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll",
+          "total": 13,
+          "failed": 0,
+          "succeeded": 1,
+          "skipped": 12
+        }
+      ],
+      "skipsFile": "release-native-skips-4.38.0.txt"
+    }
+  ],
+  "publishedPackages": [
+    {
+      "id": "Hexalith.Builds.Evidence.Cli",
+      "version": "4.38.0",
+      "remoteSignedSha256": "97B3D8BA2FD8BCB2D425B4880DC05D48C53F98A5806101C39D2B6CF905EA161D",
+      "qualifiedInventorySha256": "133459784EB1E57D30C4378AC09E994DFB207309C04D41283A653235075113C7",
+      "nativeLine": "2026-10-25T13:43:39.8716579Z Verified remote 'Hexalith.Builds.Evidence.Cli' '4.38.0' SHA-256 97B3D8BA2FD8BCB2D425B4880DC05D48C53F98A5806101C39D2B6CF905EA161D (qualified local SHA-256 133459784EB1E57D30C4378AC09E994DFB207309C04D41283A653235075113C7)."
+    },
+    {
+      "id": "Hexalith.Builds.Module.Cli",
+      "version": "4.38.0",
+      "remoteSignedSha256": "F352D3E0F03F21DBFE42C89ADB7A8765CB073A2351281ACAA3CF304235426AB1",
+      "qualifiedInventorySha256": "27BA93BC935E711703600F4978BF98E1DF3A51DFB34A3D27236B110F177E969D",
+      "nativeLine": "2026-10-25T13:51:04.1269260Z Verified remote 'Hexalith.Builds.Module.Cli' '4.38.0' SHA-256 F352D3E0F03F21DBFE42C89ADB7A8765CB073A2351281ACAA3CF304235426AB1 (qualified local SHA-256 27BA93BC935E711703600F4978BF98E1DF3A51DFB34A3D27236B110F177E969D)."
+    }
+  ],
+  "scope": "Three Platform-context Module skips and12 opt-in live Integration skips per full lane earn no Platform/live-runtime credit."
+}

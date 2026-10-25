@@ -1,0 +1,25 @@
+{
+  "manifestSha256": "b98fad129962599ae881ee20297421edcc2d7340af473eebdd7e4783c4557c59",
+  "declaredRows": 647,
+  "verifiedRows": 647,
+  "mismatches": [],
+  "snapshotMapping": [
+    {
+      "original": "_bmad-output/implementation-artifacts/spec-release-corrected-module-cli.md",
+      "snapshot": "references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/review/pre-review-snapshots/pre-review-spec.md",
+      "sha256": "9e491944a20db4adf38ff9af8b1cc8ff8ce289e1257ccdb5500f0fc51ef5067c"
+    },
+    {
+      "original": "references/Hexalith.Builds/docs/module-cli-configuration-key-release-progress.md",
+      "snapshot": "references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/review/pre-review-snapshots/pre-review-module-cli-configuration-key-release-progress.md",
+      "sha256": "522d66b826fa8795d3e6f4a5a885f13ba33502439f7227855f472fba92476290"
+    },
+    {
+      "original": "references/Hexalith.Builds/docs/module-cli-configuration-key-released-artifact-handoff.md",
+      "snapshot": "references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/review/pre-review-snapshots/pre-review-module-cli-configuration-key-released-artifact-handoff.md",
+      "sha256": "69388b20dc85b41981e9f59043ee3e6a733c88a675846940fbd33cf03a3a8b6d"
+    }
+  ],
+  "reason": "Review status/document changes get additive successors; original implementation identities remain reproducible.",
+  "note": "All647 implementation rows verified. Later review edits use these preserved snapshots and a new final manifest."
+}

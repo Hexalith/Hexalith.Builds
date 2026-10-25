@@ -1,0 +1,746 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.dev/schemas/hexalith.module-run-evidence.v1.json",
+  "title": "Hexalith module run evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "runId",
+    "timestamps",
+    "environment",
+    "invocation",
+    "topology",
+    "phaseOutcomes",
+    "testCounts",
+    "artifactHashes",
+    "finalStatus",
+    "outcome",
+    "volatileFields"
+  ],
+  "properties": {
+    "schema": {
+      "const": "hexalith.module-run-evidence.v1"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$"
+    },
+    "timestamps": {
+      "$ref": "#/$defs/timestamps"
+    },
+    "environment": {
+      "$ref": "#/$defs/environment"
+    },
+    "invocation": {
+      "$ref": "#/$defs/invocation"
+    },
+    "topology": {
+      "$ref": "#/$defs/topology"
+    },
+    "phaseOutcomes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/phaseOutcome"
+      }
+    },
+    "testCounts": {
+      "$ref": "#/$defs/testCounts"
+    },
+    "artifactHashes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[A-F0-9]{64}$"
+      }
+    },
+    "finalStatus": {
+      "enum": [
+        "completed",
+        "failed",
+        "unavailable",
+        "cancelled",
+        "withdrawn"
+      ]
+    },
+    "outcome": {
+      "$ref": "#/$defs/outcome"
+    },
+    "volatileFields": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "persistedAssertions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "selectedTestRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runId",
+        "ownerId",
+        "selection",
+        "sourceMappingHash",
+        "declaredPlatformCommit",
+        "checkoutPlatformCommit",
+        "observedCandidateHash",
+        "observedBackendIdentity",
+        "qualificationCredit",
+        "resources",
+        "terminalStatus",
+        "terminalOutcome",
+        "terminalAtUtc",
+        "resourceDisposition",
+        "remainingResources",
+        "reportHash",
+        "testCounts"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "selection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "moduleId",
+            "name",
+            "executor",
+            "entry",
+            "manifestHash",
+            "entryHash",
+            "executionTimeoutSeconds",
+            "stopTimeoutSeconds",
+            "requestedAtUtc",
+            "executionDeadlineUtc",
+            "credentialExpiryUtc",
+            "mode"
+          ],
+          "properties": {
+            "moduleId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "executor": {
+              "enum": [
+                "python3",
+                "vstest",
+                "mtp"
+              ]
+            },
+            "entry": {
+              "type": "string"
+            },
+            "manifestHash": {
+              "type": "string",
+              "pattern": "^[A-F0-9]{64}$"
+            },
+            "entryHash": {
+              "type": "string",
+              "pattern": "^[A-F0-9]{64}$"
+            },
+            "executionTimeoutSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 14400
+            },
+            "stopTimeoutSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 900
+            },
+            "requestedAtUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "executionDeadlineUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "credentialExpiryUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "mode": {
+              "enum": [
+                "source",
+                "package"
+              ]
+            },
+            "daprRuntimeVersion": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+            }
+          }
+        },
+        "sourceMappingHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "declaredPlatformCommit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "checkoutPlatformCommit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observedCandidateHash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "observedBackendIdentity": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "qualificationCredit": {
+          "const": false
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "kind",
+              "state",
+              "detail",
+              "processId"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "detail": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "processId": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "moduleId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "endpoints": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "protocol",
+                    "uri"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "protocol": {
+                      "type": "string"
+                    },
+                    "uri": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "terminalStatus": {
+          "enum": [
+            "completed",
+            "failed",
+            "unavailable",
+            "cancelled",
+            "withdrawn"
+          ]
+        },
+        "terminalOutcome": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "exitCode",
+            "phase",
+            "category",
+            "ruleId"
+          ],
+          "properties": {
+            "exitCode": {
+              "enum": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                130
+              ]
+            },
+            "phase": {
+              "type": "integer"
+            },
+            "category": {
+              "type": "integer"
+            },
+            "ruleId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "terminalAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "resourceDisposition": {
+          "enum": [
+            "retained",
+            "removed",
+            "remaining",
+            "unknown"
+          ]
+        },
+        "remainingResources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "containerIds",
+            "processIds",
+            "unverified",
+            "isEmpty"
+          ],
+          "properties": {
+            "containerIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "processIds": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "unverified": {
+              "type": "boolean"
+            },
+            "isEmpty": {
+              "type": "boolean"
+            },
+            "workspaceIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "claimIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "discoveryFailures": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "reportHash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-F0-9]{64}$"
+        },
+        "testCounts": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/testCounts"
+            }
+          ]
+        },
+        "observationHash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-F0-9]{64}$"
+        },
+        "selections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/properties/selectedTestRun/properties/selection"
+          }
+        },
+        "executionTiming": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "startedAtUtc",
+            "deadlineUtc",
+            "effectiveSeconds",
+            "configurationContentIdentity",
+            "credentialExpiryUtc",
+            "actualDurationSeconds"
+          ],
+          "properties": {
+            "startedAtUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "deadlineUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "effectiveSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 14400
+            },
+            "configurationContentIdentity": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "credentialExpiryUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "actualDurationSeconds": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "expectedSequences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "timestamps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startedUtc",
+        "completedUtc"
+      ],
+      "properties": {
+        "startedUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completedUtc": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repositoryRevision",
+        "repositoryDirtyMarker",
+        "sdkVersion",
+        "operatingSystem",
+        "toolVersion"
+      ],
+      "properties": {
+        "repositoryRevision": {
+          "type": "string"
+        },
+        "repositoryDirtyMarker": {
+          "enum": [
+            "clean",
+            "dirty",
+            "unknown"
+          ]
+        },
+        "sdkVersion": {
+          "type": "string"
+        },
+        "operatingSystem": {
+          "type": "string"
+        },
+        "toolVersion": {
+          "type": "string"
+        }
+      }
+    },
+    "invocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "manifestPath",
+        "manifestHash",
+        "profile",
+        "fixturePath",
+        "fixtureHash",
+        "filterHash"
+      ],
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "manifestPath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "manifestHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "profile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fixturePath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fixtureHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "filterHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modules",
+        "platform"
+      ],
+      "properties": {
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "domain",
+              "applicationId",
+              "resourceId",
+              "descriptorAssembly"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "domain": {
+                "type": "string"
+              },
+              "applicationId": {
+                "type": "string"
+              },
+              "resourceId": {
+                "type": "string"
+              },
+              "descriptorAssembly": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "platform": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "eventStoreVersion": {
+              "type": "string"
+            },
+            "daprRuntimeVersion": {
+              "type": "string"
+            },
+            "daprSdkVersion": {
+              "type": "string"
+            },
+            "frontComposerVersion": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "phaseOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "category",
+        "ruleId"
+      ],
+      "properties": {
+        "phase": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "ruleId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "testCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reported",
+        "total",
+        "passed",
+        "failed",
+        "skipped"
+      ],
+      "properties": {
+        "reported": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exitCode",
+        "phase",
+        "category",
+        "ruleId"
+      ],
+      "properties": {
+        "exitCode": {
+          "enum": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            130
+          ]
+        },
+        "phase": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "ruleId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

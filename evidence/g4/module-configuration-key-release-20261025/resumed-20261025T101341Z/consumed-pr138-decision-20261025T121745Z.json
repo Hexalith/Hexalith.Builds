@@ -1,0 +1,22 @@
+{
+  "observedAtUtc": "2026-10-25T12:17:46.529529+00:00",
+  "sourceBase": "68e65f2023eca117a2aa08a022ee33d8f4c34a44",
+  "proposalSourceSha256": "e660d0d5f664bdc9b734658e1f73a006acfc859d2bbf244576a1a6584d412fe1",
+  "proposalPatchSha256": "9ef49c2032f898c693e75ac0403cf496e6eb8bdb078c3d6ea4b88eafd94ea28e",
+  "proposalArchives": [
+    "warning-fixture-local-proposal.cs.gz",
+    "warning-fixture-local-proposal.patch.gz"
+  ],
+  "proposalMatchedExactlyBeforeUndo": true,
+  "proposalFocusedEvidence": "18 tests passed on the local two-fixture proposal, not an exact proof for incoming source",
+  "incomingSource": "e171c5a788eab183b32683431b084198c9b8d373",
+  "incomingPr": 138,
+  "incomingMergeRuleSuite": 4710425344,
+  "incomingMergeRuleResult": "pass",
+  "incomingDifference": "Only the warning-success fixture changes its literal five-second startup allowance to thirty seconds; all assertions and native-handoff fixture stay unchanged.",
+  "decision": "Consume the already-compliant fix; avoid a duplicate PR/source write and unnecessary CI reset. Only the verified local proposal delta was reverted, preserving docs/evidence.",
+  "commitMessagePinnedValidationExitCode": 0,
+  "exactSourceFocusedChecks": "pending after fresh Debug build",
+  "exactSourcePushCi": 40192040716,
+  "releaseDispatch": "pending successful exact-current-SHA CI"
+}

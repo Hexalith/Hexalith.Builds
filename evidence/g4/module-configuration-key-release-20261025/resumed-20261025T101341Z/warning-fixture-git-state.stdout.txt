@@ -1,0 +1,3 @@
+## main...origin/main
+ M docs/module-cli-configuration-key-release-progress.md
+ M test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs

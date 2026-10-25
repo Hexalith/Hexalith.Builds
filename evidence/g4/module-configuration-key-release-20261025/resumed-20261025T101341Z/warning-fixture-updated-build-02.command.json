@@ -1,0 +1,15 @@
+{
+  "command": [
+    "dotnet",
+    "build",
+    "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj",
+    "--configuration",
+    "Debug",
+    "--no-restore",
+    "-p:GeneratePackageOnBuild=false",
+    "-m:1"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:10:21.968762+00:00",
+  "previousAttempt": "RCS1181 required an XML documentation comment for the new fixture field; corrected without a rule change."
+}

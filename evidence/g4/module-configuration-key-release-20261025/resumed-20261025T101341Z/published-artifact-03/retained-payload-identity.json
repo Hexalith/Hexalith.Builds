@@ -1,0 +1,12 @@
+{
+  "observedAtUtc": "2026-10-25T13:59:06.375662+00:00",
+  "signedPackage": "evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/retained-payload/hexalith.builds.module.cli.4.38.0.nupkg",
+  "signedPackageSha256": "f352d3e0f03f21dbfe42c89adb7a8765cb073a2351281acaa3cf304235426ab1",
+  "toolingAssembly": "evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/retained-payload/Hexalith.Builds.Tooling.dll",
+  "toolingAssemblySha256": "0266257a74c1dbc49407c61b07d90f7c95b806d937ea4f338b98bf8d128256fd",
+  "retainedMalformedInputFiles": 18,
+  "sourcePropsGitBlobSha256": "553796eef36f2789f60bb47bc8902b5fb9f1df5b3a942cde7f0523768bf1d2a1",
+  "sourcePropsCheckoutFilteredSha256": "c43f62b33c765e28519b6c72058c6317649ec53963d7cbe7f0d0ddabb3898375",
+  "sourcePropsCheckoutFiltering": "Props/Directory.Packages.props text eol=crlf; Git blob and checkout hashes are separate identities",
+  "sourcePropsGitBlobObjectId": "b31e9a952317c0c62a1bf518208e1a2cef2a19e2"
+}

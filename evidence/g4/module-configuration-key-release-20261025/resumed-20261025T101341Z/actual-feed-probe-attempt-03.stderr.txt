@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/probe-published-artifact-03.py", line 235, in <module>
+    main()
+    ~~~~^^
+  File "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/probe-published-artifact-03.py", line 228, in main
+    assert predecessor_equal and human_json_equal, 'Adoption difference requires triage; all malformed-key probes have been retained'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Adoption difference requires triage; all malformed-key probes have been retained

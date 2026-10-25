@@ -1,0 +1,1126 @@
+[
+  {
+    "file": "Hexalith.Builds.Module.Cli.nuspec",
+    "sha256": "4a7a58f42fdc44ae84269c4909975741d2d275ae7c9cd76268c25950b57a0c8a"
+  },
+  {
+    "file": "README.md",
+    "sha256": "6171ca3d5d7e9475e89e6af39800ed4536f4e1bf5874fbf496adf30c3b184677"
+  },
+  {
+    "file": "[Content_Types].xml",
+    "sha256": "29107f65942e0e2d3125b36bc0466a363796c71a520399f019dd1242c8f40040"
+  },
+  {
+    "file": "_rels/.rels",
+    "sha256": "81bd491b30706bf85d645805cbe0fcf0e14cc7d4b47ea5c4e27db147ed610421"
+  },
+  {
+    "file": "icon.png",
+    "sha256": "4cd931759caa30083f6885fdd5b4835757d0c3a53b4b9f2520b1e6b6957206eb"
+  },
+  {
+    "file": "package/services/metadata/core-properties/nuget.psmdcp",
+    "sha256": "29c11be23f0128ba4838f26efe6fb2635c8f02e531a7c35acebd1a67f614669c"
+  },
+  {
+    "file": "tools/net10.0/any/DotnetToolSettings.xml",
+    "sha256": "54d3823e6b43ceb0528859096415c0cfe54e7d2ace67a34afb591527a28b3c02"
+  },
+  {
+    "file": "tools/net10.0/any/Hexalith.Builds.Module.Cli.deps.json",
+    "sha256": "bd37289eed736b8566af5ca9aeeeddd7b219d0c8febf211b2e3ed2fe116a5096"
+  },
+  {
+    "file": "tools/net10.0/any/Hexalith.Builds.Module.Cli.dll",
+    "sha256": "6798dce33fc2531079f312f8fda542df77dedcde8d30341cd4493f381acd1f54"
+  },
+  {
+    "file": "tools/net10.0/any/Hexalith.Builds.Module.Cli.pdb",
+    "sha256": "5ac1f2fae562c38ebdc1327a803db318faa217eb999e20ab582b8c5d3233a6db"
+  },
+  {
+    "file": "tools/net10.0/any/Hexalith.Builds.Module.Cli.runtimeconfig.json",
+    "sha256": "9950d4583cfc9a106857c0d5b8a75b53e8774852b57b80bc3823a74d44a4d87f"
+  },
+  {
+    "file": "tools/net10.0/any/Hexalith.Builds.Module.Cli.xml",
+    "sha256": "1643482025fc9b41baa6eeb42d84ac27ab61ba929c298022a45dd048102047db"
+  },
+  {
+    "file": "tools/net10.0/any/Hexalith.Builds.Tooling.dll",
+    "sha256": "0266257a74c1dbc49407c61b07d90f7c95b806d937ea4f338b98bf8d128256fd"
+  },
+  {
+    "file": "tools/net10.0/any/Hexalith.Builds.Tooling.pdb",
+    "sha256": "56db7301d8f4a5f3d1656a0490dbee7a3d3d41a1aa7a04e0779beb57175e6afb"
+  },
+  {
+    "file": "tools/net10.0/any/Hexalith.Builds.Tooling.xml",
+    "sha256": "973a4b24d44fdb7f499fbdb60f79f26392c658d072a9b677003aea4e444dc9c8"
+  },
+  {
+    "file": "tools/net10.0/any/Humanizer.dll",
+    "sha256": "2769ed8265b691a5482c72506ed274dc52446fa1641997a8c12c66f5b9263d39"
+  },
+  {
+    "file": "tools/net10.0/any/Json.More.dll",
+    "sha256": "80b6cd50331fa2ded4fbacdbf80dcedd2b142dee679df227c30299d2a3c3840f"
+  },
+  {
+    "file": "tools/net10.0/any/JsonPointer.Net.dll",
+    "sha256": "4d7ce7739bc0bf8df69778f4545c390a6c06fd11c8f583ae166f0fdc6e9c3123"
+  },
+  {
+    "file": "tools/net10.0/any/JsonSchema.Net.dll",
+    "sha256": "5eca1875cdf54faf841fb14353b7f3cbbb345e26de6458ff01888a1c0e578fa2"
+  },
+  {
+    "file": "tools/net10.0/any/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+    "sha256": "842fc19802a761e49c65b0e90b2c68bc6868b989145da5ac6ca30b766e2658f2"
+  },
+  {
+    "file": "tools/net10.0/any/Microsoft.Extensions.Logging.Abstractions.dll",
+    "sha256": "03e916b9c5f91717b67c790325d4e5dd2debe81d8e403928806ba1d430ea7147"
+  },
+  {
+    "file": "tools/net10.0/any/NuGet.Versioning.dll",
+    "sha256": "fc2f75a7a5f3be9b4c3dcfc21644b871bb5a41ada8615c92d778713d2a310670"
+  },
+  {
+    "file": "tools/net10.0/any/RESPite.dll",
+    "sha256": "ec60961494a640b0faff3447afe14c90f5bd27e53f5ab0b4284b34cae717f4fa"
+  },
+  {
+    "file": "tools/net10.0/any/StackExchange.Redis.dll",
+    "sha256": "e14460fe50cd699b34c75b9a8b10cdb79c2ed68f4088879afa2e073b7afba502"
+  },
+  {
+    "file": "tools/net10.0/any/System.CommandLine.dll",
+    "sha256": "cd7fa6b61988d3151ef5764a59978c3fef9090dc58ef40323cc134aa31bbc410"
+  },
+  {
+    "file": "tools/net10.0/any/System.IO.Hashing.dll",
+    "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5"
+  },
+  {
+    "file": "tools/net10.0/any/YamlDotNet.dll",
+    "sha256": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a"
+  },
+  {
+    "file": "tools/net10.0/any/cs/System.CommandLine.resources.dll",
+    "sha256": "cbdc17ac2fc65ca6fbea34870247700f69d7ab1b8f7134cd664ae4ffb25d83f1"
+  },
+  {
+    "file": "tools/net10.0/any/de/System.CommandLine.resources.dll",
+    "sha256": "700c70cf9f9da6056f49bc8a2d09f6ffabe4832cd79b67d74f5a60e7b46150cb"
+  },
+  {
+    "file": "tools/net10.0/any/es/System.CommandLine.resources.dll",
+    "sha256": "14baee330015d955cc6d76027c34cc7d6b970563bdc1605cb7d10034156b6430"
+  },
+  {
+    "file": "tools/net10.0/any/fr/System.CommandLine.resources.dll",
+    "sha256": "e5f6c5440095f9b8da3622cc463711cc5ddb8e531d205928c66dfd953ecf4fbb"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Aspire.Hosting.AppHost.dll",
+    "sha256": "dccaa8f1be8532a9545b5f6bcf889743cb323c834ef77df25a284ee0684b225f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Aspire.Hosting.Keycloak.dll",
+    "sha256": "282bd117dbd7f4c605e3fef5d6a9189057a57c4d32b8d4cc743c6e20d30cff77"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Aspire.Hosting.Redis.dll",
+    "sha256": "5aa8b0ce84a62895ac6a1f907ea13b8e0464dae16b7278fb8d49033fafa60597"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Aspire.Hosting.dll",
+    "sha256": "86507650b7d1ecb6765f5cf46092327a53635bba1eef5e98c4207844ff31cd3b"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/CommunityToolkit.Aspire.Hosting.Dapr.dll",
+    "sha256": "7763ba9497ce1e91100a694a265daec1c7ec069094f8bcf74cc1a8f15b8b0996"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Fractions.dll",
+    "sha256": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Google.Protobuf.dll",
+    "sha256": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Grpc.AspNetCore.Server.ClientFactory.dll",
+    "sha256": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Grpc.AspNetCore.Server.dll",
+    "sha256": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Grpc.Core.Api.dll",
+    "sha256": "16b1ff898b9a2c1ffac0e22035c8280728967e7041bfe8a382bcb1f99a9a530b"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Grpc.Net.Client.dll",
+    "sha256": "71454959f95469ea1a4abfbbb2ccb71487f6bfe50714277e73d2f7665c89244e"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Grpc.Net.ClientFactory.dll",
+    "sha256": "52a981845704edf969120f10e6a0a65fce858adf45412b5c10571a1b07222380"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Grpc.Net.Common.dll",
+    "sha256": "2fe0acf1042d43af95cc33f610a5c7d4d70ae65e3d5f4ce8707a3e2bf95df823"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/HealthChecks.Redis.dll",
+    "sha256": "3ce9e611ecd44219f4bed786d665712759583b87a1bb9228355e9161ce7ffa52"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/HealthChecks.Uris.dll",
+    "sha256": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hex1b.dll",
+    "sha256": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost",
+    "sha256": "c4855169b18c991ab5b24c8f89a9c8506b5ea8c54909928b03918a7f617f4b90"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.deps.json",
+    "sha256": "6efafa9ea940f24e2d01648766a4005d7a247e10a2966400c32b583007b53649"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.dll",
+    "sha256": "712bccd88bcce9fb92c7c6147eded8af6b514363ec5548a22f9e87f7e7f2669d"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.pdb",
+    "sha256": "23882ffb39f1b1a2d46489d58ed78e06a6a9e9c3b622d943c989a03b0ab52eaf"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.runtimeconfig.json",
+    "sha256": "f8bd1713a3691d58eb332a71675f129385b91e852b66e7b6761cae1f34d4efd2"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.xml",
+    "sha256": "b9f1434721bc97057cadd7c0d165b5b0362ae6e83cfc8916bbb1b210ca4cd419"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.dll",
+    "sha256": "0266257a74c1dbc49407c61b07d90f7c95b806d937ea4f338b98bf8d128256fd"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.pdb",
+    "sha256": "56db7301d8f4a5f3d1656a0490dbee7a3d3d41a1aa7a04e0779beb57175e6afb"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.xml",
+    "sha256": "973a4b24d44fdb7f499fbdb60f79f26392c658d072a9b677003aea4e444dc9c8"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Hexalith.EventStore.Aspire.dll",
+    "sha256": "8c9418926bda7d438e72fe9b083d648909d117305f8ae181b163426603866c38"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Humanizer.dll",
+    "sha256": "2769ed8265b691a5482c72506ed274dc52446fa1641997a8c12c66f5b9263d39"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Json.More.dll",
+    "sha256": "80b6cd50331fa2ded4fbacdbf80dcedd2b142dee679df227c30299d2a3c3840f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/JsonPointer.Net.dll",
+    "sha256": "4d7ce7739bc0bf8df69778f4545c390a6c06fd11c8f583ae166f0fdc6e9c3123"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/JsonSchema.Net.dll",
+    "sha256": "5eca1875cdf54faf841fb14353b7f3cbbb345e26de6458ff01888a1c0e578fa2"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/KubernetesClient.dll",
+    "sha256": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/MessagePack.Annotations.dll",
+    "sha256": "1e51e087987bc857e55863eb4e986c2f2f0bf17230eb2c243e5dc25c34e7cf86"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/MessagePack.dll",
+    "sha256": "a7f8d30a8e6f4a1b445bf6752621a4a7b1f4ff11f5d4dc62dba0d8d7d6995e36"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Microsoft.Extensions.AI.Abstractions.dll",
+    "sha256": "a3216886dec2b2528b2d7212c438d21c3d6de2061b500bd2ea505a41f896f8d3"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Microsoft.NET.StringTools.dll",
+    "sha256": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Microsoft.VisualStudio.Threading.dll",
+    "sha256": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Microsoft.VisualStudio.Validation.dll",
+    "sha256": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Microsoft.Win32.SystemEvents.dll",
+    "sha256": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ModelContextProtocol.Core.dll",
+    "sha256": "80757dd4fde30eaed2d99849915c5642d2428487059c711373690a3336caa9b4"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ModelContextProtocol.dll",
+    "sha256": "45c63242855e574fd6bdb35aad7d6e4af16b67517e20a775b6d19103fad38c63"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Nerdbank.MessagePack.dll",
+    "sha256": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Nerdbank.Streams.dll",
+    "sha256": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Newtonsoft.Json.dll",
+    "sha256": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/NuGet.Versioning.dll",
+    "sha256": "fc2f75a7a5f3be9b4c3dcfc21644b871bb5a41ada8615c92d778713d2a310670"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+    "sha256": "dfaab1ecfb87773ccef2737aafbf1eb22a9f074c44e9fdd31947702da59234bc"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/OpenTelemetry.Api.dll",
+    "sha256": "bd75bbab25a4bf769727ec6c17457d4bf189a8c2c70034e5c212ae345132591d"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+    "sha256": "65fb06071dcda27215f1dd42d6c8de8cc98691cef0225b36c8fb22f995fd1759"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/OpenTelemetry.Extensions.Hosting.dll",
+    "sha256": "442d9c18f5cc9ffa65e3f486874f01b375866854b0ad08e40e6367139eb9b35a"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/OpenTelemetry.dll",
+    "sha256": "63fb9724258d4a1ac76c7ddffc2e0b18ee5125a1c8ff4b242a570a3410c97fc6"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Polly.Core.dll",
+    "sha256": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/PolyType.dll",
+    "sha256": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/QRCoder.dll",
+    "sha256": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/RESPite.dll",
+    "sha256": "ec60961494a640b0faff3447afe14c90f5bd27e53f5ab0b4284b34cae717f4fa"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/Semver.dll",
+    "sha256": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/StackExchange.Redis.dll",
+    "sha256": "e14460fe50cd699b34c75b9a8b10cdb79c2ed68f4088879afa2e073b7afba502"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/StreamJsonRpc.dll",
+    "sha256": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/System.Drawing.Common.dll",
+    "sha256": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/System.IO.Hashing.dll",
+    "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/YamlDotNet.dll",
+    "sha256": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/ByteAether.Ulid.dll",
+    "sha256": "fc4f3d99e88023ffbd37eea2941ddd81f604611fc967fedb116a4daaf9ae4590"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Actors.AspNetCore.dll",
+    "sha256": "c7deffe0f4b6c754fff3935a42ad378d729e85b277da853fbc8924790482d8b0"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Actors.dll",
+    "sha256": "98d77fb28b39fe6832e06cb2bd66d58024b9587411b04965da385909f32a9dfa"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.AspNetCore.dll",
+    "sha256": "4db46444a22bbfd473e0f132139d943cec95e3637cdbf61077d88e618a48213d"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Client.dll",
+    "sha256": "cc7b8e629416c52be2569d7610c5c830b19ba690d4f54300ffdee901dec99115"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Common.dll",
+    "sha256": "9c10b91825371c10e469e91627080414bde4e8fa5acd894a2dbe398af03e1893"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Protos.dll",
+    "sha256": "659938b9475b4951bd49086a66d8ad24f89ac6c1c33d6888adfefb8420edf03c"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/FluentValidation.DependencyInjectionExtensions.dll",
+    "sha256": "32385a476b65365d0f9de1819cd1f46d155d1f46beea68176603cf341b29a797"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/FluentValidation.dll",
+    "sha256": "07373bb5527d6d96908c60962102c9c1339b363c4ee8ad62277eb2ffc6387df4"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Google.Api.CommonProtos.dll",
+    "sha256": "329cf0f2b66c5cbf675321f0d6b33c17d1092e5761f32d3d2c1307a110c0dbbd"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Google.Protobuf.dll",
+    "sha256": "e9b892ac667931162ffefa411ef8dc3eae777d634d8bfe8beddc28b1de95a612"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Core.Api.dll",
+    "sha256": "5674c1203706b5a261e8bbd3499147d94fc80b5f077bf45f9934ca28a9c8574b"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Net.Client.dll",
+    "sha256": "f884d8444feb888656cbb7de87ee8f53a50811329bb32c6e7a7a81cb1de008ef"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Net.Common.dll",
+    "sha256": "fdff383bbd8e5015f3c4aaaa7508b769228f33c92ba14fec4e59d35c5d78e6ae"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Reflection.dll",
+    "sha256": "87795d17c1385e7c05469c447ad8eecc883c3c71b4804319c5918a5a490c8d57"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost",
+    "sha256": "71ca8164dbca2c6d4fa095762e3067fa6d8e63a80c8c8dfca1ed66f455d994c5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.deps.json",
+    "sha256": "13f15dd52248f3c3fb2286d250a35f4ca28db2b31a2a63047a888d7dbb79e634"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll",
+    "sha256": "76b97ecb89e2cfa8399b249f99815c67cdfb594c6e62c1907fe1d9efe78cde37"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.pdb",
+    "sha256": "b60cd4c51ae7cc5cd9061939ded109bd8561db9c322583d89f0747ac3e2991b0"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.runtimeconfig.json",
+    "sha256": "f71b4c67b5233a19be9131b5fe4b45fe7829997cf2b42e762d6baa037da93863"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.staticwebassets.endpoints.json",
+    "sha256": "eb6525c892afda953a2560f151f9c5e5bc6e79ef6741d886488ac450262c91e3"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.xml",
+    "sha256": "492425b8a76e3e26b652c5a3faf2e957aa0337cfa836edcb36793abac8618e90"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Commons.UniqueIds.dll",
+    "sha256": "73db021277a5c3cc2af66a0ac117d108ec2b9f1708199984880772a575018b8e"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Admin.Abstractions.dll",
+    "sha256": "815b9dc633924ad97b177790cd81b811f71761eb12ca9428b34ae8678231d7bc"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Client.dll",
+    "sha256": "76a124b807ec76a909f6c50b6f339e2c126d7c6a0a257718d69aab491b103550"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Contracts.dll",
+    "sha256": "8cf0c4d99a44f7046bfe33fc0c6efb522896f3d456e4d9f827528050f4a003eb"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.DomainService.dll",
+    "sha256": "bdb751c80304edd03d9e669f07117f964039423db192d8db398c8e4d74d09112"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Gateway.dll",
+    "sha256": "dfdd12b677300378ecabd77e789e16971389b088ea4214e119d7ffe0f1f8a6c2"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Server.dll",
+    "sha256": "8b555eccbc0a220feb8dc093afac91a0f6d74d7020e1415bb0aeb555bddee85d"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.ServiceDefaults.dll",
+    "sha256": "c9f45435683571b689cf3f79902916a1a57aef6ad98e4eddc98965ae1304157a"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/MediatR.Contracts.dll",
+    "sha256": "c2601304aa9d15c51a543e1c3300368c64ac38633e7277bb835a04f68ddf6a61"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/MediatR.dll",
+    "sha256": "856b8a06d82033415ffef0edcac5f38256f1ef0336dbc372609f75b82a333d97"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/MessagePack.Annotations.dll",
+    "sha256": "1e51e087987bc857e55863eb4e986c2f2f0bf17230eb2c243e5dc25c34e7cf86"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/MessagePack.dll",
+    "sha256": "a7f8d30a8e6f4a1b445bf6752621a4a7b1f4ff11f5d4dc62dba0d8d7d6995e36"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.Authentication.JwtBearer.dll",
+    "sha256": "6aa38a3d01cc3e9bfd6ee5cc7c882f4d0399cfb807e52f19ff458f355a31851b"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.OpenApi.dll",
+    "sha256": "ed704f63de95981f91ded8d0cc7642ad73c455b54e741b18dd42e9e44e60c51f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll",
+    "sha256": "10ccc62ca65bc2e202fa5d8b1714093c6320cc6a8dcef164c3656047cb609991"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Bcl.Cryptography.dll",
+    "sha256": "91c6bab93638c268569a38bc87770a5e3ef9932676f5b7a6d47aef4208062925"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.AmbientMetadata.Application.dll",
+    "sha256": "aa3fbb981085778df80185ba391253467c363d069308ca5e12213d7a7e689377"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Compliance.Abstractions.dll",
+    "sha256": "e4df4358dd2dd57be430a9e7f220bc49bef26ab00007c732605c0defc207e065"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.DependencyInjection.AutoActivation.dll",
+    "sha256": "050802eb79c8d7ce48f40c89753ddca2a68ec1b7e6a6d646a810cd87cd8e9f78"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Diagnostics.ExceptionSummarization.dll",
+    "sha256": "6ae3665434f016222e9d75a54a44a62d01c412ef63b5d7462c3a22ad9757c4d8"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Http.Diagnostics.dll",
+    "sha256": "56da1ed94fe5551db5b67292820634136fe8b6d991626288aebdce7ee25400ee"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Http.Resilience.dll",
+    "sha256": "b28b929922d42b1c979ee403f454387f4522bf973c149753f5300ae959d70531"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Resilience.dll",
+    "sha256": "e7cee26992c26c4484b62da5663601456f7af2c9c10e8da4e47ec0df3b078aa4"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.ServiceDiscovery.Abstractions.dll",
+    "sha256": "58ac3be03e3c4ae03486b8ec619ca769bf94befd38f432d61b32b1fba8d7d193"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.ServiceDiscovery.dll",
+    "sha256": "3646d627b519e017c3392219b17416b04377c815a918248a503557fd40db9e0a"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Telemetry.Abstractions.dll",
+    "sha256": "57af8ce079eb3bcec63fd176f1034012f8199c44d38f10168438cc78364a9030"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Telemetry.dll",
+    "sha256": "cca41d630de69f9afda79cff76c26976c87ee28aec216cba63c2e81241b8f7f5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Abstractions.dll",
+    "sha256": "46f14d67dfc1894eb24d80282895526db25a854af227eee2fa06a0383fd09e4c"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.JsonWebTokens.dll",
+    "sha256": "b48515aeaa4a8fadc5fcacb45978c808a4d5bbffaf74f8894cc57c0769a9fb9e"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Logging.dll",
+    "sha256": "90b6fa70f28a3b7711fe95aa30a0c5551f1e6aa28565187aa7b3681194215c84"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+    "sha256": "cf37440c96bd178f2676867b77fa651df001b56b2f42be99b08e5226b3ab4918"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Protocols.dll",
+    "sha256": "dd8823215cada7e1c7fe5d2a3b06395fb906baa5f79ec00411ad6a1f80585f60"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Tokens.dll",
+    "sha256": "84409b8c3a52313fe4f4f621fce39544f42074109e870ac2631e627c8b70210f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.NET.StringTools.dll",
+    "sha256": "e51c8678fd602a21c249b369e833966019935132476f9434da896bef808ba3b1"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.OpenApi.dll",
+    "sha256": "838f23fd0b01bba85157a5bd279847213579786c80b4141b390fef39ad385c12"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+    "sha256": "dfaab1ecfb87773ccef2737aafbf1eb22a9f074c44e9fdd31947702da59234bc"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Api.dll",
+    "sha256": "bd75bbab25a4bf769727ec6c17457d4bf189a8c2c70034e5c212ae345132591d"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+    "sha256": "65fb06071dcda27215f1dd42d6c8de8cc98691cef0225b36c8fb22f995fd1759"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Extensions.Hosting.dll",
+    "sha256": "442d9c18f5cc9ffa65e3f486874f01b375866854b0ad08e40e6367139eb9b35a"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.AspNetCore.dll",
+    "sha256": "369897ccfe1a4483ab92c09aa1846d562c1353afd93ee103ada4e638bcdfbce5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.Http.dll",
+    "sha256": "bdd562d21bc152308cd5935394038551137adef50068eb41ab2ca7a820987287"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.Runtime.dll",
+    "sha256": "5d222223d95be5d1507a5d581a2eebd268b46dfaca0d73b1724b16c8fe25558a"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.dll",
+    "sha256": "63fb9724258d4a1ac76c7ddffc2e0b18ee5125a1c8ff4b242a570a3410c97fc6"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.Core.dll",
+    "sha256": "37762ea6fcf05154685b0a616461705c837c2f07d98e4037dc3a0e4b4c186ea5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.Extensions.dll",
+    "sha256": "8adac7a20cd056b9a8623efb6e6f9b99a82e18d3c7b7f6c788f7fc4b20ce5f18"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.RateLimiting.dll",
+    "sha256": "afe3042cd4062438857d42880623845f32575375f460fd1ac07f705ea0211804"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/RESPite.dll",
+    "sha256": "ec60961494a640b0faff3447afe14c90f5bd27e53f5ab0b4284b34cae717f4fa"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/StackExchange.Redis.dll",
+    "sha256": "e14460fe50cd699b34c75b9a8b10cdb79c2ed68f4088879afa2e073b7afba502"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/Swashbuckle.AspNetCore.SwaggerUI.dll",
+    "sha256": "049dd9177dc6789b95b566b4c7f5b896af9ee7fbf8ba2507a44d7339a22316ef"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/System.IO.Hashing.dll",
+    "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/System.IdentityModel.Tokens.Jwt.dll",
+    "sha256": "593c82287b671e9cceefaf10c51df96793f6db30f9cfa60daabaaf80474670bf"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/EventStoreHost/appsettings.json",
+    "sha256": "19c310f519fe5777df466ba19e3703c34ef0965a9cc9017e16ac1307402e5a3e"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Fluxor.Blazor.Web.dll",
+    "sha256": "e05df290ff01c96ff09de7e92eac3f82fa5e4f5cf89096319e5f12b6e34beb65"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Fluxor.dll",
+    "sha256": "f9b73d7c618dee8cd124a56e9d73d02267702d1591e993fb465b7276b834cd39"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost",
+    "sha256": "e5195c51044a037a2b829fca62e7ba50e462b65ed65c858225401f779cf7ac72"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.deps.json",
+    "sha256": "7ce6c84e79cb3b4daf2fc5658005cc58920ff6406bc0c578fd6e02fb91ba1874"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.dll",
+    "sha256": "99c0e14cbba654d73d9d06309523de2f277e360449235dc8b0a23e87e2cd7112"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.pdb",
+    "sha256": "d9da878e4451f7287a7f32b5c6295baa4a0e7e68bd4c45625e4c1673f770fd30"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.runtimeconfig.json",
+    "sha256": "f71b4c67b5233a19be9131b5fe4b45fe7829997cf2b42e762d6baa037da93863"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.staticwebassets.endpoints.json",
+    "sha256": "72b1144131b808c86a444ce7d1f30038966a6b52e1717d11031877cc42b4fef3"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.staticwebassets.runtime.json",
+    "sha256": "aa9de81ad8395d81b2bf294d6cce43f62ed4a6eda5427b98b31fffe48547b107"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.xml",
+    "sha256": "544aa10972d4c36a61cb5af9ae86dc0c2840e70ff0816e46484f387c1da59cc5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Contracts.UI.dll",
+    "sha256": "b4be74c8903c6d66f940532fb995a426349ffc98658b67697201a9597e391365"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Contracts.dll",
+    "sha256": "c0934428656918777de11bce8b10c6544e8ff037213223112ba0be02cc297d4d"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Shell.dll",
+    "sha256": "bfec1ca1de0650d80a9a5e98f8557c1e890d7ec15732e25eaf7338fd3ac91f42"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.Authentication.OpenIdConnect.dll",
+    "sha256": "b0b139e6396b5b473513e3abc50d5007009a7e38d3b0b27663cede04211e5c65"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.Http.Connections.Client.dll",
+    "sha256": "774836d9ac97adbf5624f686a03bbc1306d780c7cb6f524e5be343135720f3be"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.SignalR.Client.Core.dll",
+    "sha256": "38412214f0c67f1bded26ba59e33612e7c16850d74e72000cfb6f68775e71453"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.SignalR.Client.dll",
+    "sha256": "c6f8b0db98b630d8d4edd1e79654e1ddf9fce9340804f90ae11278ffa5a9bca5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.Bcl.Cryptography.dll",
+    "sha256": "91c6bab93638c268569a38bc87770a5e3ef9932676f5b7a6d47aef4208062925"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Color.dll",
+    "sha256": "951a7c6e090c45094cad4b1f21c495faaa0ead726521640579140a097f20ca76"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Filled.dll",
+    "sha256": "9006678810eb5709719ccbc8d4c3c197f13b67afc33c0d4de0d75f0a74323552"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Light.dll",
+    "sha256": "76c071e504c643107a474aee7cc1cfc8b452cf9b082e4b9f33cec4d0497c3c96"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.dll",
+    "sha256": "ea2d135a4a8f33b92aebb359bd2a03b14002fedc44f2d0015220a09fa3b98bde"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.dll",
+    "sha256": "709e7efee1a530a2832022f8e382828c29807b1c29aa1bc93ffd50126bf1b997"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.dll",
+    "sha256": "82718d81e3d28d7a8b80bfb6a543390678ab136bfc4af02af11f55101d613964"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Abstractions.dll",
+    "sha256": "46f14d67dfc1894eb24d80282895526db25a854af227eee2fa06a0383fd09e4c"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.JsonWebTokens.dll",
+    "sha256": "b48515aeaa4a8fadc5fcacb45978c808a4d5bbffaf74f8894cc57c0769a9fb9e"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Logging.dll",
+    "sha256": "90b6fa70f28a3b7711fe95aa30a0c5551f1e6aa28565187aa7b3681194215c84"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+    "sha256": "cf37440c96bd178f2676867b77fa651df001b56b2f42be99b08e5226b3ab4918"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Protocols.dll",
+    "sha256": "dd8823215cada7e1c7fe5d2a3b06395fb906baa5f79ec00411ad6a1f80585f60"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Tokens.dll",
+    "sha256": "84409b8c3a52313fe4f4f621fce39544f42074109e870ac2631e627c8b70210f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/NUlid.dll",
+    "sha256": "6f867f7716683b6b48a67877d616ae3805955eab5b2ec92f0e74b49fae467de7"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/System.IdentityModel.Tokens.Jwt.dll",
+    "sha256": "593c82287b671e9cceefaf10c51df96793f6db30f9cfa60daabaaf80474670bf"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/System.Reactive.dll",
+    "sha256": "e8070137fc07efeb8fd00e1607a096c7718ee1814c6b2032e4cb865f5cf042a9"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/bin/UiHost/fr/fr/Hexalith.FrontComposer.Shell.resources.dll",
+    "sha256": "fa4dd8c7940d607370d1d79071da460408d9a3e722dee934331bf7fc783360e5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/cs/cs/Aspire.Hosting.resources.dll",
+    "sha256": "94e11bffea97c46160c42b9cabe4df9725f2527b8fe6b4f495b01e0fb2bd5e86"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/cs/cs/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "53fa0540b7787d2702df6526dd9df68b1a44575c66ff007f3e11b1e2b528330e"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/cs/cs/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "830b54077b4f3febe75ed87aa163eb49fb58362c61be5ca26cf42d4e13c51f3c"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/cs/cs/StreamJsonRpc.resources.dll",
+    "sha256": "5115a8c09c591d1caa16359b5a45eccece63d9c337e703d89c05a69264ba291b"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/de/de/Aspire.Hosting.resources.dll",
+    "sha256": "987c4abb3929ddcf4c0bddd12c2cae7d5012eded2a6cf258939e117f793d82ab"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/de/de/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "0a68bd16faed213eb7bf17025b25125c6aaee5b86a545449afe297632a503853"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/de/de/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "fd7edef2b3f30903f2c287c49d62cb3394f9656fd82ff1c98eb122ad62a04a56"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/de/de/StreamJsonRpc.resources.dll",
+    "sha256": "01e2c454d751b89aba08d4270ca00d8e07fa8af861650ecd704481ce06b87b24"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/es/es/Aspire.Hosting.resources.dll",
+    "sha256": "87baeef90190d07629d44ad9bdf55b29401261c6d90df2455ebc8ec84dcfedf2"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/es/es/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "7fc33931e5c544e89ce8d767781a729a7be21c60e559294ef693fa249034b066"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/es/es/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "c40129bf64177dbfbd79bf977e11d46f2888c20c3e807336a36dac82370f6d83"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/es/es/StreamJsonRpc.resources.dll",
+    "sha256": "bacf7fadae7361e00f097dcafbe9a4a759f4346f364676389304a688fdb3b636"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/fr/fr/Aspire.Hosting.resources.dll",
+    "sha256": "fb16b030be9fad78e87389ed2be55b557c136c4457a9a9d4cdcf7a0359c49d6c"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/fr/fr/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "abe294e2c7ecf00f3632b83f61e19538b8b9531e6289b5d84992bc447f29783e"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/fr/fr/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "e56fe93ab669c22850389bdb685bbc45317d962849cc683d412bc9e8ad637740"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/fr/fr/StreamJsonRpc.resources.dll",
+    "sha256": "99ee72e2ea1de18367345b83884d0aa8c4192f98f2f3fb6b50bdbbebd6960afc"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/it/it/Aspire.Hosting.resources.dll",
+    "sha256": "e483cbad9360b0f108ce8353cd6433101537a894826b017ec62fa8685c936564"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/it/it/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "c6d1c91560f9914f36ff52d9a2704f44255adfd88a2c57ccd44fce62603667a7"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/it/it/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "8918618aaf356bf03333f62507ed4b2511c98850388c3856afe970c41672fae0"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/it/it/StreamJsonRpc.resources.dll",
+    "sha256": "31741ef214310f03ec256b3dd8643e5d4151c9123bd6994bb8f53381ca348244"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ja/ja/Aspire.Hosting.resources.dll",
+    "sha256": "7fff4b35b08477344de36d63f57d13624c95f61ad5141f022b177b71d3b077c0"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ja/ja/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "e375ebb7fe0f6807371dd42f09671b4eafcab6a1464851af68b8fd14494067c9"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ja/ja/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "89963143a49c629f52776c88715544a8a53b12f1f6c7b4cd6c686d0751ea0d5b"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ja/ja/StreamJsonRpc.resources.dll",
+    "sha256": "36897272170334ea43284e4f7c8f908e170bc1f082e9612528787ca03ae9e7ce"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ko/ko/Aspire.Hosting.resources.dll",
+    "sha256": "eee628b8cf412b479ca281c7ba5c260cf1138173acbf1fcc615772e40d3c62ec"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ko/ko/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "6fda6bb4822f56356cd446ef30750319552780ea28434b741cc35bf3d8111010"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ko/ko/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "a2be5cbddafa74c4d64b6cb46e60a64b151d46056566e3fc39b810e431cf047f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ko/ko/StreamJsonRpc.resources.dll",
+    "sha256": "53ce6c7e88dd7228d968fc26ff7cbf35bcdc81ee88275ca2325eaf8feffe47bc"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/pl/pl/Aspire.Hosting.resources.dll",
+    "sha256": "5c4d29cb248a168361b310c52a8ec7cfdbe193d093e7ab5e64eec4327410115f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/pl/pl/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "c2d599b82424ac6961d568f411a01e366b359ac3c167ab2fce74c5e2c96c1ca6"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/pl/pl/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "f77bd918ee6d7e3dfade1bbbf192fdd0fcd4f2ceb6296d14775f235f1562aea5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/pl/pl/StreamJsonRpc.resources.dll",
+    "sha256": "2e3d2bc745170f9b323711bf584b56246a6b9e4235e5e1dcac2ce83b7a9a1e1f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/projects/EventStore/Host.csproj",
+    "sha256": "a03945c7044bee30586a80d9a8326dd4a60f58363ee2af1e9ea1abef21810827"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/projects/EventStore/Placeholder.cs",
+    "sha256": "070c86886f8d246ad4932af47d8f20fe9d4180861d856019b0bfe1e025c94954"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/projects/Ui/Host.csproj",
+    "sha256": "16813c251a95d259e4efdc622466412cea00ced7766b18af13f920619a7f5943"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/projects/Ui/Placeholder.cs",
+    "sha256": "070c86886f8d246ad4932af47d8f20fe9d4180861d856019b0bfe1e025c94954"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/pt-BR/pt-BR/Aspire.Hosting.resources.dll",
+    "sha256": "836fd612c7d349870d563ce65038189ae64f609dafc70e4bb2426ba249c9860e"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/pt-BR/pt-BR/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "432ba5ed5c1f37436ec28d4f4b37b622cee3c833bdb01b44b6cf9fe255a445e5"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/pt-BR/pt-BR/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "656bcea3398e47aff8e86741bfb097940b589f52ebca2236ec104129d0d3014d"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/pt-BR/pt-BR/StreamJsonRpc.resources.dll",
+    "sha256": "990e5f544dd810cc9af2921cd4809c45a4c216697d9a5c4bd22d42700f57d8fc"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ru/ru/Aspire.Hosting.resources.dll",
+    "sha256": "ef9ddfaf66e902ab34507eb2c71fb8960d3993aef776592d9a5d683f124ffc3f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ru/ru/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "ff177fd4f159895d050fd7a19c4632b8e69792e79ef181f3aa1af9ae6c770f21"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ru/ru/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "db19d56c8e725fc91182ffc75c3803c5d6ca9f0dc6d99d695cbf4e30acc56fce"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/ru/ru/StreamJsonRpc.resources.dll",
+    "sha256": "5a32d75f02d6de17cfabe4f1f7fe57191a5549fcc11d5975fe77427826b38dea"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/linux-arm64/native/runtimes/linux-arm64/native/libhex1binterop.so",
+    "sha256": "285d3f2994da13cc31bd29e757d34adca86c9777248a9898f57eef44368e84fc"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/linux-x64/native/runtimes/linux-x64/native/libhex1binterop.so",
+    "sha256": "1f06a0d471c52fc72b7d3e2e526a30d8b10cf758acdf3e8225407c96352ebf06"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/osx-arm64/native/runtimes/osx-arm64/native/libhex1binterop.dylib",
+    "sha256": "334610a7054265032e7d9643192a6d5d9a46e27adb2e6b09f0e841034bff8e0c"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/osx-x64/native/runtimes/osx-x64/native/libhex1binterop.dylib",
+    "sha256": "ec65750845a042c78802d59c3790135e283bb9a5a20032ac64e28e14120246c0"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/unix/lib/net6.0/runtimes/unix/lib/net6.0/System.Drawing.Common.dll",
+    "sha256": "89ea595ccb1fd1384480c1e30bd487c92af5d06d3b06f295323eff601acd9019"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/win-arm64/native/arm64/runtimes/win-arm64/native/arm64/OpenConsole.exe",
+    "sha256": "ed7622fd0d3bedc9ab9f122f5e58edf0def9e7999224f52dd395ba9f54edbe09"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/win-arm64/native/runtimes/win-arm64/native/conpty.dll",
+    "sha256": "db3d173640b172bafd42d5b541b638a9aeec1c7d0e40dd636bf02822a32c912c"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/win-arm64/native/runtimes/win-arm64/native/hex1bpty.exe",
+    "sha256": "50375f34089d1562f5bbec9caed634203e42aaf0205e0573e4cfe1a2815b0bf2"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/win-x64/native/arm64/runtimes/win-x64/native/arm64/OpenConsole.exe",
+    "sha256": "ed7622fd0d3bedc9ab9f122f5e58edf0def9e7999224f52dd395ba9f54edbe09"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/win-x64/native/runtimes/win-x64/native/conpty.dll",
+    "sha256": "39fba2713e2495117b1591ae8c32a3b904bea7aa66069cf7815e2844c76d75d8"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/win-x64/native/runtimes/win-x64/native/hex1bpty.exe",
+    "sha256": "64b4fed87df4d22ac3a41d3456403cdc809b5bb1b3080bc43a52e032ea57a16d"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/win-x64/native/x64/runtimes/win-x64/native/x64/OpenConsole.exe",
+    "sha256": "b7fd936c2668b87b9ecf7b3366dc6568afc1c6f981874cba3e955a1c35cf8160"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/win/lib/net10.0/runtimes/win/lib/net10.0/System.Diagnostics.EventLog.Messages.dll",
+    "sha256": "8caf8d059ed75d232cdcc63c4d95164029b5dcf5f27cca7abad81f534db1648f"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/win/lib/net6.0/runtimes/win/lib/net6.0/Microsoft.Win32.SystemEvents.dll",
+    "sha256": "142cce4ed8ac9da22d69c38a6f22738abfb22090dc9313e8b58e6f91978e89af"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/runtimes/win/lib/net6.0/runtimes/win/lib/net6.0/System.Drawing.Common.dll",
+    "sha256": "4d3001697df50cca54f32ed2dbbd1f3f415b48d5d756b1bf9500a43ae9b68da0"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/tr/tr/Aspire.Hosting.resources.dll",
+    "sha256": "3dcbc531240febe27750f59e172e1c966d1f30c37b77638f5a3de1a2e6650c7c"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/tr/tr/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "cfd3afd4bd9b0d7f6f782370ca460f3333bb2ebf7db4977e6d2af22a47b71dd9"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/tr/tr/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "620295974b05a36b268169cd94b39f99848224f7774b9748db014c2a2d027073"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/tr/tr/StreamJsonRpc.resources.dll",
+    "sha256": "1df15719aa69c7915028419f93bdb27cf8814f1ea6455e6d4f23dc110d81f1f1"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Aspire.Hosting.resources.dll",
+    "sha256": "3ece4b71c4db375face5ca117e3577bf0bff4a9be2e55fbd11e4a7457529a1c4"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "ef07ef11562297acd78ee9ec7a21bee4b9fb0f4255794f87ccff0970f9f3ccb4"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "158f33332fa83a4c01f136482305a1d7d7feffa626fb082d65bfef4a0ce493a3"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/StreamJsonRpc.resources.dll",
+    "sha256": "0c3a6e2b27cd768f6b94b9ffcd86097811f2be89583bef4f1bb24fd81a18fd47"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Aspire.Hosting.resources.dll",
+    "sha256": "f4ca3d605c370560e9cad3d57b88e1469775c2eeb1ad806163945fa93cc9cb0a"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Microsoft.VisualStudio.Threading.resources.dll",
+    "sha256": "d0d594d3590ad804b8a9d5f0b23306864c7e8870ce9a445ef6990597d0ad20ab"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Microsoft.VisualStudio.Validation.resources.dll",
+    "sha256": "8a3bffea88dc96fca9c307a9a8843a20fe1c7cafc2534b1cb95d688f07b6dbfd"
+  },
+  {
+    "file": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/StreamJsonRpc.resources.dll",
+    "sha256": "23e40ffa7c609dbb2b79e8fc38b7097d9d9d9a86f9a03abfd744e5f6bc8330a0"
+  },
+  {
+    "file": "tools/net10.0/any/it/System.CommandLine.resources.dll",
+    "sha256": "aa50352d5f620a367424667686c911920151caad488feeb5f164907e5bdf4302"
+  },
+  {
+    "file": "tools/net10.0/any/ja/System.CommandLine.resources.dll",
+    "sha256": "03b776128e35fb4a9e7d805b9287f909efcd43aa15fb528b9906425f4ddca692"
+  },
+  {
+    "file": "tools/net10.0/any/ko/System.CommandLine.resources.dll",
+    "sha256": "e6d7be1a37f6bf7c4d430a5d41e8b9b5754f78d03d6a6fbd6d28810bfeb384a3"
+  },
+  {
+    "file": "tools/net10.0/any/pl/System.CommandLine.resources.dll",
+    "sha256": "e7016042e574008295a73a9a8e198fc34b2a59f02870bac704580bd008c937d6"
+  },
+  {
+    "file": "tools/net10.0/any/pt-BR/System.CommandLine.resources.dll",
+    "sha256": "47fbe8b10efb04ae1aa52482b1b9a99a72fcfda9250a3ba373a766cb5c0470c1"
+  },
+  {
+    "file": "tools/net10.0/any/ru/System.CommandLine.resources.dll",
+    "sha256": "23b196ee9a4bc73aed9a991eb93c02e8f3fac43f25e79a82aa97a2e0df48a623"
+  },
+  {
+    "file": "tools/net10.0/any/schemas/hexalith.module-manifest.v2.json",
+    "sha256": "06d6804f3b111e803edd0d9142b03f36df344e26e2d71e50e2291fe15039daa4"
+  },
+  {
+    "file": "tools/net10.0/any/schemas/hexalith.test-environment.v1.json",
+    "sha256": "bf1e46acc773991037daaae20dff1d815faf4af13ab7887d88339609607ff357"
+  },
+  {
+    "file": "tools/net10.0/any/schemas/hexalith.test-result.v1.json",
+    "sha256": "9773678febac38025fae837154341d9036ce8aa94e66b0d30c7e15ee668d7e39"
+  },
+  {
+    "file": "tools/net10.0/any/tr/System.CommandLine.resources.dll",
+    "sha256": "674eac7ecf7bd32f55b2476cd4d30af356fb4895cbf4a57ca854c46b109e3cd3"
+  },
+  {
+    "file": "tools/net10.0/any/zh-Hans/System.CommandLine.resources.dll",
+    "sha256": "c15c5336cdc3fe8e06540026721e746bbaef677894cd3cc01ad4dcc6cb61be31"
+  },
+  {
+    "file": "tools/net10.0/any/zh-Hant/System.CommandLine.resources.dll",
+    "sha256": "f9800562a563fbf626e5f2a4baf962524d395a843bf8489ce727513a4a9400c8"
+  }
+]

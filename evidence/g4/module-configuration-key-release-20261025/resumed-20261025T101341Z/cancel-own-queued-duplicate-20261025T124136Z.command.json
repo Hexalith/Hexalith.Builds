@@ -1,0 +1,12 @@
+{
+  "command": [
+    "gh",
+    "run",
+    "cancel",
+    "40193995250",
+    "--repo",
+    "Hexalith/Hexalith.Builds"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:41:38.358929+00:00"
+}

@@ -1,0 +1,19 @@
+{
+  "observedAtUtc": "2026-10-25T11:16:39.897291+00:00",
+  "userWriterPause": "explicit confirmation remains effective; no new permission needed",
+  "previousSource": "6e40ea5f6243391bea80084b8ddd695df58fb1ff",
+  "previousPushCi": 40185980339,
+  "previousCiConclusion": "cancelled after source supersession; full metadata/jobs/logs retained",
+  "source": "68e65f2023eca117a2aa08a022ee33d8f4c34a44",
+  "incomingPr": 137,
+  "incomingRuleSuite": 4710053318,
+  "incomingRuleResult": "pass",
+  "changedFiles": [
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs"
+  ],
+  "sourceDelta": "HXW006 pre-start refusal releases provisioning lock and removes the empty state/diagnostics directory. Exact diff retained.",
+  "currentPushCi": 40187992999,
+  "decision": "Continue existing governed current-main route when exact-SHA CI succeeds; no unnecessary source-confirmation or trigger commit. No gate altered or bypassed.",
+  "inheritedRuntimePolicyDelta": "external-runtime-validator-delta-20261025T105102Z.json",
+  "publishedFeedWork": "not-run; pending complete current-SHA CI and full protected release qualification"
+}

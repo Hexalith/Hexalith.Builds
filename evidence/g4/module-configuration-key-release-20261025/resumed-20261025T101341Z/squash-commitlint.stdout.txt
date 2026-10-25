@@ -1,0 +1,7 @@
+⧗   --- input ---
+docs(module): resume governed CLI release
+
+Record clean resumed entries and retain prior source observations.
+Label readable inventory hash rows and preserve original bytes.
+Require exact-SHA CI and full protected release qualification.
+✔   found 0 problems, 0 warnings

@@ -1,0 +1,16 @@
+{
+  "observedAtUtc": "2026-10-25T10:52:48.335585+00:00",
+  "userInstruction": "Other Builds writes are paused; continue.",
+  "source": "6e40ea5f6243391bea80084b8ddd695df58fb1ff",
+  "ciRun": 40185980339,
+  "decision": "Use the existing stable current main through the governed exact-SHA CI, protected approval, full qualification and hashed publisher. No new source-only PR or semantic-trigger commit is necessary.",
+  "basis": "The frozen spec and existing verify-g4-release-source.sh require allowed branch, exact current tip and successful exact-SHA push CI. Existing committed fix/feature work supplies semantic-release effects. The release source guard does not require a new PR for every externally advanced baseline.",
+  "externalGovernance": "Incoming source 6e40ea5 rule suite 4709861214 is bypass and remains disclosed; no historical branch-compliance claim is made. This continuation does not alter or bypass any rule. PR136 normal squash source 7144b803 passed suite4709709500; its superseded CI remains cancelled.",
+  "runtimePolicyDelta": "external-runtime-validator-delta-20261025T105102Z.json",
+  "scopeLimitation": "The 372 unchanged-input proof excludes compiled runtime/validators. Complete current-source CI and full qualification remain mandatory.",
+  "sourceEditNeeded": false,
+  "newSourcePrNeeded": false,
+  "releaseDispatch": "pending successful exact-SHA push CI",
+  "protectedApproval": "pending",
+  "publication": "pending"
+}

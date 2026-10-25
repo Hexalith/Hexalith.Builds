@@ -1,0 +1,62 @@
+{
+  "observedAtUtc": "2026-10-25T10:47:47.458007+00:00",
+  "state": "waiting for explicit source-write freeze confirmation",
+  "resumedEntry": {
+    "Conversations": "8444207001d6ad3cd197c2ffba519317effa8b37",
+    "Builds": "142b06e6d05c94b55ac35e587450c35fcac87590",
+    "Platform": "b9cf0e78c42ca8bfe1aa5488cc4340c238887acb"
+  },
+  "normalPr": {
+    "number": 136,
+    "source": "7144b8031b95a65982d78b3eb381e10c00b55cbe",
+    "ruleSuite": 4709709500,
+    "ruleResult": "pass",
+    "requiredExactHeadChecks": "Codacy56611, SonarCloud12526, commitlint15368 passed at 549d937fe27507d10143c56fd15ba56e4d96ee82"
+  },
+  "sonarEvidenceCorrection": {
+    "firstCheck": 121140722116,
+    "firstResult": "failure",
+    "findingCount": 509,
+    "rule": "json:S6418",
+    "findingScope": "new resumed inventory path keys with SHA-256 values",
+    "resolution": "original bytes preserved in baseline.json.gz; equivalent explicit path/sha256 rows; unchanged gate passed at successor head"
+  },
+  "supersession": {
+    "source": "6e40ea5f6243391bea80084b8ddd695df58fb1ff",
+    "pushTimeUtc": "2026-10-25T10:44:01Z",
+    "commit": "build: sync local changes via /pushall",
+    "ruleSuite": 4709861214,
+    "ruleResult": "bypass",
+    "changedFiles": 19,
+    "previousExactShaCi": 40184369318,
+    "previousCiResult": "cancelled",
+    "previousCiCompletedUtc": "2026-10-25T10:44:38Z",
+    "previousCiLogs": "131387-byte retained archive",
+    "previousCiRecordedErrors": "cancellation only; no recorded test failure",
+    "newCi": 40185980339,
+    "newCiLastObservedStatus": "in_progress",
+    "releaseBoundInputsCompared": 372,
+    "releaseBoundInputChanges": []
+  },
+  "preservation": "preservation-at-supersession-20261025T104747Z.json",
+  "pending": {
+    "normalCurrentSourcePrPath": "pending after other Builds writes are paused",
+    "successfulExactCurrentShaCi": "pending",
+    "releaseDispatch": "not-run",
+    "protectedApproval": "not-run",
+    "fullReleaseQualification": "not-run",
+    "semanticReleaseVersion": "not-selected",
+    "publicationInventory": "not-produced",
+    "freshFeedRestore": "not-run",
+    "publishedArtifactProbes": "not-run",
+    "releasedArtifactPlatformHandoff": "not-created",
+    "independentReview": "pending"
+  },
+  "authority": {
+    "runtimeHold": "ACTIVE",
+    "deploymentPerformed": false,
+    "platformAcceptanceClaimed": false,
+    "pinsOrIndexedGitlinksEditedByThisContinuation": false,
+    "remoteWritesAfterSupersession": false
+  }
+}

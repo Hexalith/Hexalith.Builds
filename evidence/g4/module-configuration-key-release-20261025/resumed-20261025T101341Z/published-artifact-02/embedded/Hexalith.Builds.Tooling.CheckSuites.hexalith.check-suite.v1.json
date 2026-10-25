@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.com/schemas/hexalith.check-suite.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "suiteId",
+    "version",
+    "module",
+    "owner",
+    "source",
+    "runtime",
+    "entrypoint",
+    "payload",
+    "checks"
+  ],
+  "properties": {
+    "schema": {
+      "const": "hexalith.check-suite.v1"
+    },
+    "suiteId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]{0,127}(?![\\s\\S])"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?![\\s\\S])"
+    },
+    "module": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]{0,127}(?![\\s\\S])"
+    },
+    "owner": {
+      "type": "string",
+      "pattern": "^@[A-Za-z0-9][A-Za-z0-9-]{0,38}(?![\\s\\S])"
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*(?![\\s\\S])",
+      "maxLength": 256
+    },
+    "runtime": {
+      "const": "python3"
+    },
+    "entrypoint": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*(?![\\s\\S])",
+      "maxLength": 256
+    },
+    "payload": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*(?![\\s\\S])",
+        "maxLength": 256
+      },
+      "uniqueItems": true
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "surface",
+          "kind",
+          "assertion",
+          "environments",
+          "timeoutSeconds",
+          "effect",
+          "tenancy"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]{0,127}(?![\\s\\S])"
+          },
+          "surface": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]{0,127}(?![\\s\\S])"
+          },
+          "kind": {
+            "enum": [
+              "e2e",
+              "smoke"
+            ]
+          },
+          "assertion": {
+            "enum": [
+              "positive",
+              "denial"
+            ]
+          },
+          "environments": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 256,
+            "items": {
+              "enum": [
+                "staging",
+                "production"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "timeoutSeconds": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3600,
+            "multipleOf": 1
+          },
+          "cadenceSeconds": {
+            "type": "number",
+            "minimum": 60,
+            "maximum": 86400,
+            "multipleOf": 1
+          },
+          "effect": {
+            "enum": [
+              "read",
+              "synthetic-write"
+            ]
+          },
+          "tenancy": {
+            "enum": [
+              "existing-synthetic",
+              "run-scoped-synthetic"
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "smoke"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "cadenceSeconds"
+              ]
+            },
+            "else": {
+              "not": {
+                "required": [
+                  "cadenceSeconds"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "uniqueItems": true
+    }
+  }
+}

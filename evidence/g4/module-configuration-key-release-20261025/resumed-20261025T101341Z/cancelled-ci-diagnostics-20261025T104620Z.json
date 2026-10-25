@@ -1,0 +1,14 @@
+[
+  {
+    "file": "1_Build and test.txt",
+    "lines": [
+      "2026-10-25T10:44:34.4513700Z ##[error]The operation was canceled."
+    ]
+  },
+  {
+    "file": "Build and test/32_Test Hexalith.Builds.Module.Tests.txt",
+    "lines": [
+      "2026-10-25T10:44:34.4513658Z ##[error]The operation was canceled."
+    ]
+  }
+]

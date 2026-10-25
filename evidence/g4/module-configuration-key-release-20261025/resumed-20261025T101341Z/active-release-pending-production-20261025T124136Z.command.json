@@ -1,0 +1,9 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/actions/runs/40193969210/pending_deployments"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:41:39.608625+00:00"
+}

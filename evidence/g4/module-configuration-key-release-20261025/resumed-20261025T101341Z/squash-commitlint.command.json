@@ -1,0 +1,12 @@
+{
+  "command": [
+    "node_modules/.bin/commitlint",
+    "--config",
+    "commitlint.config.mjs",
+    "--edit",
+    "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/squash-message.txt",
+    "--verbose"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T10:20:25.666205+00:00"
+}

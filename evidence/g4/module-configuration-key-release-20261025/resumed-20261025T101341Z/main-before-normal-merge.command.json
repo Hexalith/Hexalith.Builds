@@ -1,0 +1,9 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/git/ref/heads/main"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T10:20:23.510419+00:00"
+}

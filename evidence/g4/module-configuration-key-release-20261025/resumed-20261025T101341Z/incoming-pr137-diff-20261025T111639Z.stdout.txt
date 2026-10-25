@@ -1,0 +1,106 @@
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs b/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs
+index d8e3df6..ca403f8 100644
+--- a/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs
++++ b/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs
+@@ -60,6 +60,17 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+         string manifestHash = string.Empty;
+         try
+         {
++            async Task<CompositionStartResult> RefuseUnstartedAsync(IReadOnlyList<ToolDiagnostic> diagnostics, ToolExitCode exit, string status = "failed")
++            {
++                if (provisioningLease is not null)
++                {
++                    await provisioningLease.DisposeAsync().ConfigureAwait(false);
++                    provisioningLease = null;
++                }
++
++                return await RefusePreparedRunAsync(runId, preparedWorkspace, manifestHash, requestedAt, deadline, diagnostics, exit, status).ConfigureAwait(false);
++            }
++
+             cancellationToken.ThrowIfCancellationRequested();
+             bool platformComposition = PlatformManifestCommand.IsV2(manifestPath);
+             PlatformManifestValidationResult? platformDeclarations = platformComposition ? PlatformManifestValidator.Validate([manifestPath], cancellationToken) : null;
+@@ -244,7 +255,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+                         descriptorExit = ToolExitCode.TopologyOrLifecycle;
+                     }
+ 
+-                    return await RefusePreparedRunAsync(runId, preparedWorkspace, manifestHash, requestedAt, deadline, descriptors.Diagnostics, descriptorExit, unavailable ? "unavailable" : "failed").ConfigureAwait(false);
++                    return await RefuseUnstartedAsync(descriptors.Diagnostics, descriptorExit, unavailable ? "unavailable" : "failed").ConfigureAwait(false);
+                 }
+ 
+                 (modules, markers) = CompositionRunPlanFactory.Bind(manifest, descriptors);
+@@ -263,7 +274,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+                                 unmapped.ProjectPath,
+                                 "Use a project in the active module or a mapped source root."),
+                         ];
+-                        return await RefusePreparedRunAsync(runId, preparedWorkspace, manifestHash, requestedAt, deadline, unmappedDiagnostics, ToolExitCode.TopologyOrLifecycle).ConfigureAwait(false);
++                        return await RefuseUnstartedAsync(unmappedDiagnostics, ToolExitCode.TopologyOrLifecycle).ConfigureAwait(false);
+                     }
+                 }
+             }
+@@ -274,14 +285,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+                 PlatformManifestValidationResult current = PlatformManifestValidator.Validate([manifestPath], startupBound.Token);
+                 if (!current.IsValid)
+                 {
+-                    return await RefusePreparedRunAsync(runId, preparedWorkspace, manifestHash, requestedAt, deadline, current.Diagnostics, ToolExitCode.UsageOrManifest).ConfigureAwait(false);
++                    return await RefuseUnstartedAsync(current.Diagnostics, ToolExitCode.UsageOrManifest).ConfigureAwait(false);
+                 }
+ 
+                 string checkedHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, startupBound.Token).ConfigureAwait(false)));
+                 if (!string.Equals(manifestHash, checkedHash, StringComparison.Ordinal))
+                 {
+                     IReadOnlyList<ToolDiagnostic> changed = [Diagnostic("HXP020", ToolPhase.Manifest, ToolFailureCategory.Manifest, $"Platform declaration '{manifestPath}' changed while the run plan was being prepared.", manifestPath, "Retry with a stable declaration file.")];
+-                    return await RefusePreparedRunAsync(runId, preparedWorkspace, manifestHash, requestedAt, deadline, changed, ToolExitCode.UsageOrManifest).ConfigureAwait(false);
++                    return await RefuseUnstartedAsync(changed, ToolExitCode.UsageOrManifest).ConfigureAwait(false);
+                 }
+             }
+ 
+@@ -2094,7 +2105,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+         if (runId is not null)
+         {
+             bool removed = !reported.Any(diagnostic => diagnostic.RuleId == "HXW009") && StateStore.Delete(runId);
+-            if (!removed)
++            if (removed)
++            {
++                RemoveUnstartedStateDirectory(runId);
++            }
++            else
+             {
+                 using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
+                 CompositionRunState? state = await ReadOwnedStateAsync(runId, metadata.Token).ConfigureAwait(false);
+@@ -2108,6 +2123,35 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+         return Failed(status, exit, reported, runId);
+     }
+ 
++    /// <summary>Removes diagnostics left by a refusal that never started resources, including an empty state root.</summary>
++    /// <param name="runId">The refused run identity.</param>
++    private void RemoveUnstartedStateDirectory(string runId)
++    {
++        try
++        {
++            string diagnostics = DiagnosticsDirectory(runId);
++            if (Directory.Exists(diagnostics))
++            {
++                Directory.Delete(diagnostics, recursive: true);
++            }
++
++            string? diagnosticsRoot = Path.GetDirectoryName(diagnostics);
++            if (diagnosticsRoot is not null && Directory.Exists(diagnosticsRoot) && !Directory.EnumerateFileSystemEntries(diagnosticsRoot).Any())
++            {
++                Directory.Delete(diagnosticsRoot);
++            }
++
++            if (Directory.Exists(StateStore.Directory) && !Directory.EnumerateFileSystemEntries(StateStore.Directory).Any())
++            {
++                Directory.Delete(StateStore.Directory);
++            }
++        }
++        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
++        {
++            // A locked pre-start artifact stays visible as incomplete state rather than being reported removed.
++        }
++    }
++
+     private async Task<CompositionRunState> InitializeStateAsync(string runId, string manifestHash, DateTimeOffset requestedAt, CompositionEffectiveDeadline deadline, CancellationToken cancellationToken)
+     {
+         string directory = DiagnosticsDirectory(runId);

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "git",
+    "log",
+    "-5",
+    "--oneline"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T11:16:40.286390+00:00"
+}

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "git",
+    "merge",
+    "--ff-only",
+    "origin/main"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T10:20:31.494630+00:00"
+}

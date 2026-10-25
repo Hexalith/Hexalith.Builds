@@ -1,0 +1,12 @@
+{
+  "observedAtUtc": "2026-10-25T13:57:25.995996+00:00",
+  "inventorySha256": "1405abc0e1476e8b41d275f46369d2034a0e761154b42d39c85acc33ae595786",
+  "sourceRevision": "e171c5a788eab183b32683431b084198c9b8d373",
+  "result": "FAIL",
+  "meaning": "Extra verifier assumed published manifest covers all tracked files; no qualified byte mismatch.",
+  "missingFromAllTrackedAssumption": [
+    "package-consumer/.config/dotnet-tools.json"
+  ],
+  "byteMismatches": [],
+  "productGateFailure": false
+}

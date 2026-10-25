@@ -1,0 +1,47 @@
+[
+  {
+    "file": "1_CodeQL _ analyze.txt",
+    "lines": [
+      "2026-10-25T10:16:39.5445813Z Cache restored successfully",
+      "2026-10-25T10:16:39.5468028Z Downloaded overlay-base database in cache with key codeql-overlay-base-database-1-f88318d53218aadd-csharp-2.27.3-142b06e6d05c94b55ac35e587450c35fcac87590-40183347252-1",
+      "2026-10-25T10:16:39.9107610Z ##[error]The operation was canceled.",
+      "2026-10-25T10:16:39.9385323Z Post job cleanup.",
+      "2026-10-25T10:16:40.3929127Z Existing job run UUID is ca35a023-19bb-490a-918c-5f4314e687aa.",
+      "2026-10-25T10:16:40.3984719Z ##[warning]Debugging artifacts are unavailable since the 'init' Action failed before it could produce any.",
+      "2026-10-25T10:16:40.3986001Z CodeQL job status was unknown.",
+      "2026-10-25T10:16:40.4231935Z Sending status report for init-post step.",
+      "2026-10-25T10:16:40.8523132Z Status report sent for init-post step.",
+      "2026-10-25T10:16:40.9001884Z Post job cleanup."
+    ]
+  },
+  {
+    "file": "2_Python contract tests.txt",
+    "lines": [
+      "2026-10-25T10:16:02.8794926Z   PYTHONDONTWRITEBYTECODE: 1",
+      "2026-10-25T10:16:02.8795329Z ##[endgroup]",
+      "2026-10-25T10:17:21.1662423Z ##[error]The operation was canceled.",
+      "2026-10-25T10:17:21.1875796Z Post job cleanup.",
+      "2026-10-25T10:17:21.1880236Z ##[start-action display=Setup .NET from global.json;id=__698db8e2-0e8d-471e-9fc9-99a7b9f152e1.__actions_setup-dotnet]",
+      "2026-10-25T10:17:21.1882772Z ##[end-action id=__698db8e2-0e8d-471e-9fc9-99a7b9f152e1.__actions_setup-dotnet;outcome=skipped;conclusion=skipped;duration_ms=0]",
+      "2026-10-25T10:17:21.1984723Z Post job cleanup.",
+      "2026-10-25T10:17:21.3124775Z [command]/usr/bin/git version",
+      "2026-10-25T10:17:21.3184709Z git version 2.55.0",
+      "2026-10-25T10:17:21.3285677Z Temporarily overriding HOME='/home/runner/work/_temp/c4855176-2d15-4c96-96cb-9fdde6df09c6' before making global git config changes"
+    ]
+  },
+  {
+    "file": "3_Build and test.txt",
+    "lines": [
+      "2026-10-25T10:16:09.4757235Z ##[endgroup]",
+      "2026-10-25T10:16:51.0453283Z Package version audit validation passed for 307 packages, 151 families, and 1 source(s).",
+      "2026-10-25T10:16:51.1406045Z ##[error]The operation was canceled.",
+      "2026-10-25T10:16:51.1607499Z Post job cleanup.",
+      "2026-10-25T10:16:51.1611516Z ##[start-action display=Setup .NET from global.json;id=__bacf78d7-8ee9-4968-ae2b-91e8de45db4b.__actions_setup-dotnet]",
+      "2026-10-25T10:16:51.1613894Z ##[end-action id=__bacf78d7-8ee9-4968-ae2b-91e8de45db4b.__actions_setup-dotnet;outcome=skipped;conclusion=skipped;duration_ms=0]",
+      "2026-10-25T10:16:51.1700631Z Post job cleanup.",
+      "2026-10-25T10:16:51.2597150Z [command]/usr/bin/git version",
+      "2026-10-25T10:16:51.2649550Z git version 2.55.0",
+      "2026-10-25T10:16:51.2687692Z Temporarily overriding HOME='/home/runner/work/_temp/d7688a31-fe8e-4fac-a92f-8620e0411367' before making global git config changes"
+    ]
+  }
+]

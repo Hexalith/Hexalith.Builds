@@ -1,0 +1,46 @@
+{
+  "observedAtUtc": "2026-10-25T12:13:36.708630+00:00",
+  "failedGate": {
+    "run": 40187992999,
+    "source": "68e65f2023eca117a2aa08a022ee33d8f4c34a44",
+    "test": "WorkspaceCommandModeTests.PublicSourceWarningAppearsOnSuccessAsync(format: json)",
+    "expectedExitCode": 0,
+    "actualExitCode": 3,
+    "actualRule": "HXR021",
+    "testStartupAllowanceSeconds": 5,
+    "testSummary": {
+      "total": 2116,
+      "succeeded": 2112,
+      "failed": 1,
+      "skipped": 3
+    },
+    "failureLogs": "failed-current-ci-logs-20261025T120118Z.zip"
+  },
+  "localBaseline": {
+    "buildExitCode": 0,
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "methodCases": 2,
+    "failed": 0,
+    "skipped": 0,
+    "result": "unchanged case passed locally in both formats; CI failure remains the native reproduction of the timing-sensitive issue"
+  },
+  "diagnosis": {
+    "facts": "The test requests real startup of portable toolchain executables, descriptor-child processes and a ready fake AppHost, under a five-second total deadline from the public command request. Its purpose asserts successful HXW011 warning rendering, not readiness expiration.",
+    "inference": "The short success-fixture allowance is load-sensitive on the shared CI runner; the recorded HXR021 is consistent with setup exhausting that fixture allowance. No deterministic production warning regression was observed locally."
+  },
+  "change": {
+    "file": "test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs",
+    "methods": [
+      "PublicSourceWarningAppearsOnSuccessAsync",
+      "PublicTestCarriesResolvedHashIntoNativeProcessAsync"
+    ],
+    "testStartupAllowanceSeconds": 30,
+    "scope": "shared finite allowance only for the two real-process ready/success fixtures",
+    "assertionsPreserved": true,
+    "captureOnlyFixturesUnchanged": true,
+    "productionAndGateDiffExitCode": 0,
+    "negativeControlBoundsUnchanged": true
+  },
+  "verification": "focused post-change checks pending; no release/gate success claimed before their native results and fresh exact-SHA CI"
+}

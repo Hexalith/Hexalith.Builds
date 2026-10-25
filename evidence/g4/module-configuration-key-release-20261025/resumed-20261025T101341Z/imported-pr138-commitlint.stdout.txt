@@ -1,0 +1,7 @@
+⧗   --- input ---
+test(module): give public source-warning startup enough time
+
+The success case budgets five seconds for descriptor compilation and probes.
+On the loaded CI runner that work exceeds the budget and the json case fails
+before the fake AppHost can report healthy.
+✔   found 0 problems, 0 warnings

@@ -1,0 +1,27 @@
+{
+  "url": "https://api.nuget.org/v3/registration5-gz-semver2/hexalith.builds.module.cli/4.38.0.json",
+  "headers": {
+    "Date": "Sun, 25 Oct 2026 13:56:48 GMT",
+    "Content-Type": "application/json",
+    "Content-Length": "355",
+    "Connection": "close",
+    "Cache-Control": "no-store",
+    "Content-Encoding": "gzip",
+    "Last-Modified": "Sun, 25 Oct 2026 13:52:32 GMT",
+    "ETag": "0x8DF329F37680A60",
+    "x-ms-request-id": "c854586d-701e-0027-4d88-64aa33000000",
+    "x-ms-version": "2009-09-19",
+    "x-ms-lease-status": "unlocked",
+    "x-ms-blob-type": "BlockBlob",
+    "Access-Control-Expose-Headers": "x-ms-request-id,Server,x-ms-version,Content-Type,Content-Encoding,Cache-Control,ETag,Last-Modified,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding",
+    "Access-Control-Allow-Origin": "*",
+    "x-azure-ref": "20261025T135647Z-16d77f5c6dcvlr84hC1PAR55fg00000008dg000000009v1t",
+    "x-fd-int-roxy-purgeid": "0",
+    "X-Cache": "PRIVATE_NOSTORE",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "X-Content-Type-Options": "nosniff",
+    "Accept-Ranges": "bytes"
+  },
+  "sha256": "9f32ab8509675e13ef62021bd3141e54fc1937d7ca0de8802ccceb1bf5dbee7f",
+  "observedAtUtc": "2026-10-25T13:56:47.922025+00:00"
+}

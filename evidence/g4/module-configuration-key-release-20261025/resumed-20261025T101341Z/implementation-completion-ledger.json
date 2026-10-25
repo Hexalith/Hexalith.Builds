@@ -1,0 +1,58 @@
+{
+  "observedAtUtc": "2026-10-25T14:02:26.074350+00:00",
+  "implementationState": "complete-ready-for-independent-review",
+  "release": {
+    "version": "4.38.0",
+    "sha": "e171c5a788eab183b32683431b084198c9b8d373",
+    "tag": "v4.38.0",
+    "ci": 40192040716,
+    "run": 40193969210,
+    "conclusion": "success",
+    "identity": "published-release-identity.json",
+    "inventory": "g4-tool-package-inventory.json",
+    "nativeProof": "completed-release-native-proof.json"
+  },
+  "actualFeedMeasurement": {
+    "attempt": "published-artifact-03",
+    "nativeCommandCount": 44,
+    "verifiedRawCommandStreams": 88,
+    "identity": "published-artifact-03/identity.json",
+    "results": "published-artifact-03/results.json",
+    "nativeWrapperExitCode": 1,
+    "classification": "Final predecessor-equality assertion detected one new checkout/index adoption failure after all required native observations; raw result is preserved.",
+    "triage": "actual-feed-measurement-triage.json",
+    "ordinaryHumanJsonExits": [
+      0,
+      0
+    ],
+    "malformedControls": 36,
+    "adoption": {
+      "humanJsonExits": [
+        1,
+        1
+      ],
+      "passed": 6,
+      "failed": 18,
+      "all17HistoricalFailuresRetained": true,
+      "newGitlinkFailure": true
+    }
+  },
+  "handoff": "docs/module-cli-configuration-key-released-artifact-handoff.md",
+  "preservation": "final-preservation-20261025T140137Z.json",
+  "parentVerification": "parent-verification/scoped-fixture-verification.json",
+  "trackedBuildsDelta": "M docs/module-cli-configuration-key-release-progress.md",
+  "stagedFiles": [],
+  "productionAndTestSourceMatchesRelease": true,
+  "pending": [
+    "Independent bmad-build workflow review"
+  ],
+  "authority": {
+    "story16_1RuntimeHold": "ACTIVE",
+    "applicationDeploymentPerformed": false,
+    "platformQualificationClaimed": false,
+    "pinEditsByThisContinuation": false,
+    "indexedGitlinkEditsByThisContinuation": false,
+    "externalConversationsIndexChangeRetained": "ed53473e commits68e65f2 after resumed142b06e; no repair"
+  },
+  "historicalDeviation": "Initial direct main pushc81e691 bypassed rules; preserved/disclosed; no release from that SHA. Subsequent exact final source used normal PR138 and all full release gates."
+}

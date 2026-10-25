@@ -1,0 +1,12 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/actions/jobs/121170731185/logs"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:42:56.918202+00:00",
+  "source": "e171c5a788eab183b32683431b084198c9b8d373",
+  "jobId": 121170731185,
+  "jobConclusion": "success"
+}

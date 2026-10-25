@@ -1,0 +1,27 @@
+{
+  "url": "https://api.nuget.org/v3/index.json",
+  "headers": {
+    "Date": "Sun, 25 Oct 2026 13:56:47 GMT",
+    "Content-Type": "application/json",
+    "Content-Length": "9272",
+    "Connection": "close",
+    "Vary": "Accept-Encoding",
+    "Cache-Control": "max-age=21600, must-revalidate",
+    "Last-Modified": "Wed, 08 Jan 2025 01:22:54 GMT",
+    "ETag": "0x8DD2F82FA585D1E",
+    "x-ms-request-id": "aec90a1a-101e-0031-44a7-615ce4000000",
+    "x-ms-version": "2009-09-19",
+    "x-ms-lease-status": "unlocked",
+    "x-ms-blob-type": "BlockBlob",
+    "Access-Control-Expose-Headers": "x-ms-request-id,Server,x-ms-version,Content-Type,Cache-Control,ETag,Last-Modified,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding",
+    "Access-Control-Allow-Origin": "*",
+    "x-azure-ref": "20261025T135647Z-16d77f5c6dc966wchC1PAR1n7s00000008pg00000000088c",
+    "x-fd-int-roxy-purgeid": "0",
+    "X-Cache": "TCP_HIT",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "X-Content-Type-Options": "nosniff",
+    "Accept-Ranges": "bytes"
+  },
+  "sha256": "cea4d74624be767e0569c891597c0e6f5329f19f6c9b7fcf8b8c9e9f4933a4bb",
+  "observedAtUtc": "2026-10-25T13:56:47.748512+00:00"
+}
