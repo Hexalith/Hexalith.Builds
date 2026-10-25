@@ -19,6 +19,7 @@ using Shouldly;
 using Xunit;
 
 /// <summary>Guards the reviewed first-outcome, exact-owner cleanup and diagnostic custody defects.</summary>
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class LocalRunLifecycleReviewTests
 {
     /// <summary>An unreadable first outcome cannot be replaced with a later success.</summary>

@@ -185,4 +185,51 @@ public sealed class CompositionRunListingTests
             }
         }
     }
+
+    /// <summary>Both CLI formats show activation's exact deadline, independent of selection and startup expiry.</summary>
+    /// <param name="activated">Whether the runner has observed actual execution activation.</param>
+    /// <returns>The exact deadline or explicit unavailable rendering assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CliListingShowsIndependentExecutionActivationAsync(bool activated)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected);
+        CompositionRunStateStore store = new(options.StateDirectory);
+        await store.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestExecutionTiming timing = ModuleTestExecutionTiming.Start(selected, selected.RequestedAtUtc.AddMinutes(2));
+        timing.DeadlineUtc.ShouldNotBe(selected.ExecutionDeadlineUtc);
+        timing.DeadlineUtc.ShouldNotBe(state.StartupDeadlineUtc.ShouldNotBeNull());
+        if (activated)
+        {
+            await CompositionDocumentStore.WriteAsync(Path.Combine(store.Directory, "diagnostics", state.RunId, "execution-activation.json"), timing, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        foreach (string format in new[] { "human", "json" })
+        {
+            StringWriter output = new();
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
+            (await ModuleCommandApplication.InvokeAsync(["list", "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken, compositionOptions: options).ConfigureAwait(true)).ShouldBe(0);
+            if (format == "json")
+            {
+                using JsonDocument document = JsonDocument.Parse(output.ToString());
+                JsonElement deadline = document.RootElement.GetProperty("environments")[0].GetProperty("executionDeadlineUtc");
+                if (activated)
+                {
+                    deadline.GetDateTimeOffset().ShouldBe(timing.DeadlineUtc);
+                }
+                else
+                {
+                    deadline.ValueKind.ShouldBe(JsonValueKind.Null);
+                }
+            }
+            else
+            {
+                output.ToString().ShouldContain("execution-deadline=" + (activated ? timing.DeadlineUtc.ToString("O", System.Globalization.CultureInfo.InvariantCulture) : "unavailable"));
+                output.ToString().ShouldNotContain("execution-deadline=" + selected.ExecutionDeadlineUtc.ToString("O", System.Globalization.CultureInfo.InvariantCulture));
+            }
+        }
+    }
 }

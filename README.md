@@ -434,7 +434,9 @@ startup/execution timeouts retain surviving resources until explicit cleanup.
 Owner cancellation records `cancelled` and cleans up unless an earlier failure
 already established retention. The first outcome, cause and UTC time are committed
 before cleanup or optional archival and survive later cancellation and retries.
-CI keeps its existing cleanup policy.
+Automatic deletion requires a reader-valid durable terminal result. If publication
+fails, the owner stays discoverable with pending cleanup; repair the result path
+and retry exact cleanup. CI keeps its existing cleanup policy.
 
 Command terminal status and outcome preserve the first recorded observation.
 Later archive or cleanup errors remain in diagnostics and cleanup disposition.
@@ -450,7 +452,9 @@ hexalith-module down --run-id <owner-run-id> --output json
 
 Listing reads durable owner/environment/attempt identities and creation times,
 independently of current manifests. It reports failed owners, retention, pending
-cleanup and recorded startup/execution deadlines. Legacy unknowns stay unavailable;
+cleanup and recorded startup/execution deadlines. Execution activation is persisted
+before child launch, so running suites expose their actual independent deadline.
+Legacy unknowns stay unavailable;
 attachments are empty and admission/hold information is explicitly unsupported.
 Exact cleanup accepts an omitted, missing or changed manifest, removes only the
 requested owner's resources and claims, and can be retried safely. Incomplete

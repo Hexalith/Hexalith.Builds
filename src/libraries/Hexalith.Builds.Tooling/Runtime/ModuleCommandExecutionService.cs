@@ -942,6 +942,11 @@ public static class ModuleCommandExecutionService
                 }
             }
 
+            if (selectedTestRun is not null)
+            {
+                result = result with { Status = selectedTestRun.TerminalStatus, Outcome = selectedTestRun.TerminalOutcome };
+            }
+
             ModuleRunEvidence evidence = ModuleRunEvidenceFactory.Create(
                 command,
                 manifestPath,
@@ -1300,6 +1305,39 @@ public static class ModuleCommandExecutionService
             bool retentionEstablished = record?.FailureRetained == true || (record is null && retain && !passed && !withdrawn);
             bool cleanup = session is not null && !(PersistsAfterExit(command) && passed)
                 && !retentionEstablished && record?.CleanupDisposition != "complete";
+            if (cleanup && !ci && record is null)
+            {
+                cleanup = false;
+                result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Automatic cleanup remains pending because the first terminal result could not be retained; retry down for this owner.", "evidence"));
+            }
+
+            if (cleanup && !ci && record is not null)
+            {
+                using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
+                string published = Path.Combine(options.StateDirectory, "diagnostics", record.RunId, "test-result.json");
+                TestEnvironment.TestEnvironmentContractReadResult publication = TestEnvironment.TestEnvironmentContractReader.ReadResult(published, metadata.Token);
+                string expectedOutcome = record.TerminalOutcome.ExitCode == ToolExitCode.Success ? "passed" : "cancelled";
+                bool matchingPublication = publication.IsValid
+                    && publication.Document!.Value.GetProperty("bindings").GetProperty("run").GetProperty("runId").GetString() == record.RunId
+                    && publication.Document.Value.GetProperty("bindings").GetProperty("run").GetProperty("attemptId").GetString() == session!.Plan.AttemptId
+                    && publication.Document.Value.GetProperty("bindings").GetProperty("run").GetProperty("environmentId").GetString() == session.Plan.EnvironmentId
+                    && publication.Document.Value.GetProperty("terminal").GetProperty("outcome").GetString() == expectedOutcome
+                    && publication.Document.Value.GetProperty("terminal").GetProperty("recordedAt").GetDateTimeOffset() == record.TerminalAtUtc;
+                if (!matchingPublication)
+                {
+                    cleanup = false;
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Automatic cleanup is pending until a valid terminal result is durably retained; retry down for this owner.", "evidence"));
+                    try
+                    {
+                        record = await engine!.RecordTestOutcomeAsync(record.RunId, record.Resources, result, record.ResourceDisposition, record.RemainingResources, metadata.Token, waitForLock: false, cleanupDisposition: "pending", cleanupAttemptId: record.CleanupAttemptId ?? CompositionRunPlanFactory.NewRunId()).ConfigureAwait(false);
+                    }
+                    catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
+                    {
+                        // The committed pending observation and active owner remain discoverable for explicit retry.
+                    }
+                }
+            }
+
             if (cleanup)
             {
                 CompositionDownResult down;
@@ -1330,7 +1368,8 @@ public static class ModuleCommandExecutionService
                     record = record with { ResourceDisposition = disposition, RemainingResources = down.Remaining };
                     try
                     {
-                        record = await engine!.RecordTestOutcomeAsync(record.RunId, record.Resources, result, disposition, down.Remaining, stopping.Token, native, waitForLock: false, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings, cleanupDisposition: cleanupResult.Outcome.ExitCode == ToolExitCode.Success && down.Remaining.IsEmpty ? "complete" : "incomplete", cleanupAttemptId: record.CleanupAttemptId ?? CompositionRunPlanFactory.NewRunId()).ConfigureAwait(false);
+                        using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
+                        record = await engine!.RecordTestOutcomeAsync(record.RunId, record.Resources, result, disposition, down.Remaining, metadata.Token, waitForLock: false, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings, cleanupDisposition: cleanupResult.Outcome.ExitCode == ToolExitCode.Success && down.Remaining.IsEmpty ? "complete" : "incomplete", cleanupAttemptId: record.CleanupAttemptId ?? CompositionRunPlanFactory.NewRunId(), archiveMetadata: false).ConfigureAwait(false);
                     }
                     catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
                     {

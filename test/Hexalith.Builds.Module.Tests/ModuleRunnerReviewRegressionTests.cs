@@ -23,6 +23,7 @@ using Shouldly;
 using Xunit;
 
 /// <summary>Offline regressions for the reviewed selected-runner boundaries.</summary>
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class ModuleRunnerReviewRegressionTests
 {
     /// <summary>The actual readiness-deadline tail shares its stopping bound through observation failures and inert child cleanup.</summary>
@@ -96,9 +97,11 @@ public sealed class ModuleRunnerReviewRegressionTests
                 {
                     observedToken.IsCancellationRequested.ShouldBeTrue();
 
-                    // Synchronous OS process-tree termination may outlast the cancelled timer.
-                    // A renewed processing allowance would incorrectly publish a fresh run state.
-                    File.Exists(engine.StateStore.PathFor(plan.RunId)).ShouldBeFalse("The exhausted original stopping token must prevent later durable state writes.");
+                    // Resource stopping still uses its exhausted clock; terminal metadata has its own finite allowance.
+                    string resultPath = Path.Combine(options.StateDirectory, "diagnostics", plan.RunId, "test-result.json");
+                    Hexalith.Builds.Tooling.TestEnvironment.TestEnvironmentContractReadResult terminal = Hexalith.Builds.Tooling.TestEnvironment.TestEnvironmentContractReader.ReadResult(resultPath, TestContext.Current.CancellationToken);
+                    terminal.IsValid.ShouldBeTrue(JsonSerializer.Serialize(result.Result));
+                    terminal.Document!.Value.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("startup-timeout");
                 }
 
                 if (scenario is "io" or "timeout")

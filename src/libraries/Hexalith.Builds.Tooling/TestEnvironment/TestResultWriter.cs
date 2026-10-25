@@ -89,7 +89,8 @@ public static class TestResultWriter
             cleanup,
             discoveryUnverified = record.RemainingResources.Unverified,
             discoveryFailures = record.RemainingResources.DiscoveryFailures.Where(category => category is "containers" or "processes" or "cleanup-verification" or "runtime-resources" or "workspaces-or-claims" or "claim-release" or "claims" or "ownership" or "state-finalization").Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
-            ruleIds = record.DiagnosticRuleIds,
+            ruleIds = record.DiagnosticRuleIds.Concat(record.LaterDiagnosticRuleIds).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
+            terminalRuleIds = record.DiagnosticRuleIds,
         });
 
         // Content-addressed diagnostics remain immutable across result updates and retries.

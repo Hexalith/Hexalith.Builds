@@ -61,6 +61,9 @@ public sealed record ModuleTestRunRecord(
     /// <summary>Gets classified metadata-only rule identities observed through later stopping and archival.</summary>
     public IReadOnlyList<string> DiagnosticRuleIds { get; init; } = [];
 
+    /// <summary>Gets later archive and cleanup diagnostics without changing the first terminal rules.</summary>
+    public IReadOnlyList<string> LaterDiagnosticRuleIds { get; init; } = [];
+
     /// <summary>Gets actual execution activation and duration, independent of source selection.</summary>
     public ModuleTestExecutionTiming? ExecutionTiming { get; init; }
 

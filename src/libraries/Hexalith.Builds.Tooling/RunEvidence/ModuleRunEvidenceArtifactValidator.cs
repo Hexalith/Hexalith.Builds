@@ -478,7 +478,6 @@ internal static class ModuleRunEvidenceArtifactValidator
             || selected.GetProperty("remainingResources").GetProperty("isEmpty").GetBoolean() != record.RemainingResources.IsEmpty;
         return !invalid && IsSelectedBindingCoherent(root, record!) && (root.GetProperty("finalStatus").GetString() != "completed"
             || (record!.TerminalStatus == "completed" && record.TerminalOutcome.ExitCode == Diagnostics.ToolExitCode.Success
-                && record.ResourceDisposition == "removed" && record.RemainingResources.IsEmpty
                 && record.ReportHash is not null && record.TestCounts is { Total: > 0, Failed: 0, Skipped: 0 } counts
                 && counts.Passed == counts.Total));
     }

@@ -309,6 +309,11 @@ internal static class NativeTestExecutor
 
         ModuleTestExecutionTiming timing = session.Plan.ExecutionTiming ?? ModuleTestExecutionTiming.Start(selection, DateTimeOffset.UtcNow);
         session.Plan = session.Plan with { ExecutionTiming = timing };
+        if (archiveDirectory is not null)
+        {
+            await WriteSnapshotAsync(Path.Combine(archiveDirectory, "execution-activation.json"), archiveDirectory, Encoding.UTF8.GetBytes(CompositionDocumentStore.Serialize(timing)), cancellationToken).ConfigureAwait(false);
+        }
+
         await CompositionDocumentStore.WriteAsync(Path.Combine(session.Plan.Workspace, "execution-timing.json"), timing, cancellationToken).ConfigureAwait(false);
         await CompositionDocumentStore.WriteAsync(Path.Combine(session.Plan.Workspace, "plan.json"), session.Plan, cancellationToken).ConfigureAwait(false);
         await CompositionDocumentStore.WriteAsync(session.Plan.ReadinessPath, session.Readiness, cancellationToken).ConfigureAwait(false);

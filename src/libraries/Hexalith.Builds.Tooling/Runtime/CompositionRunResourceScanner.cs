@@ -16,6 +16,9 @@ public sealed class CompositionRunResourceScanner(string dockerCommand)
 {
     private static readonly TimeSpan _dockerTimeout = TimeSpan.FromSeconds(60);
 
+    /// <summary>Gets an internal exact-process discovery seam for supported-host verification.</summary>
+    internal Func<string, CancellationToken, (IReadOnlyList<int> ProcessIds, bool Verified)>? ProcessDiscoveryOverride { get; init; }
+
     /// <summary>
     /// Lists every resource still tagged with the run identity.
     /// </summary>
@@ -31,9 +34,11 @@ public sealed class CompositionRunResourceScanner(string dockerCommand)
         }
 
         IReadOnlyList<string>? containers = await FindContainersAsync(runId, cancellationToken).ConfigureAwait(false);
-        return new CompositionRunResources(containers ?? [], FindProcesses(runId), Unverified: containers is null || !OperatingSystem.IsLinux())
+        (IReadOnlyList<int> processes, bool verified) = ProcessDiscoveryOverride?.Invoke(runId, cancellationToken)
+            ?? (OperatingSystem.IsLinux() ? (FindProcesses(runId), true) : CompositionProcessEnvironmentReader.Find(runId, cancellationToken));
+        return new CompositionRunResources(containers ?? [], processes, Unverified: containers is null || !verified)
         {
-            DiscoveryFailures = [.. containers is null ? new string[] { "containers" } : [], .. !OperatingSystem.IsLinux() ? new string[] { "processes" } : []],
+            DiscoveryFailures = [.. containers is null ? new string[] { "containers" } : [], .. !verified ? new string[] { "processes" } : []],
         };
     }
 
@@ -66,9 +71,11 @@ public sealed class CompositionRunResourceScanner(string dockerCommand)
 
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
                 CompositionRunResources observed = await FindAsync(runId, cancellationToken).ConfigureAwait(false);
-                remaining = observed.DiscoveryFailures.Contains("containers", StringComparer.Ordinal)
-                    ? observed with { ContainerIds = remaining.ContainerIds }
-                    : observed;
+                remaining = observed with
+                {
+                    ContainerIds = observed.DiscoveryFailures.Contains("containers", StringComparer.Ordinal) ? [.. observed.ContainerIds.Concat(remaining.ContainerIds).Distinct(StringComparer.Ordinal)] : observed.ContainerIds,
+                    ProcessIds = observed.DiscoveryFailures.Contains("processes", StringComparer.Ordinal) ? [.. observed.ProcessIds.Concat(remaining.ProcessIds).Distinct()] : observed.ProcessIds,
+                };
             }
 
             return remaining;

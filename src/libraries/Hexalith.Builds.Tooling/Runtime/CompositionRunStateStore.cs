@@ -114,6 +114,15 @@ public sealed class CompositionRunStateStore(string directory)
             && resources.ProcessIds is not null && resources.WorkspaceIds?.All(id => id is not null) == true
             && resources.ClaimIds?.All(id => id is not null) == true && resources.DiscoveryFailures is not null);
 
+    /// <summary>Validates a committed terminal observation before any nested resource is consumed.</summary>
+    /// <param name="record">The recorded observation.</param>
+    /// <param name="runId">The enclosing owner identity.</param>
+    /// <returns>Whether required observations and their ownership agree.</returns>
+    internal static bool ValidOutcome(ModuleTestRunRecord record, string runId) => record.RunId == runId && record.OwnerId == runId
+        && record.TerminalOutcome is not null && record.Selection is not null && record.Resources?.All(resource => resource is not null) == true
+        && record.RemainingResources is not null && ValidResources(record.RemainingResources)
+        && record.DiagnosticRuleIds is not null && record.LaterDiagnosticRuleIds is not null;
+
     /// <summary>Enumerates verified states while optionally reporting individual unreadable entries.</summary>
     /// <param name="onInvalid">Receives each unverifiable entry; absence preserves strict enumeration.</param>
     /// <param name="cancellationToken">The enumeration cancellation.</param>
@@ -146,7 +155,7 @@ public sealed class CompositionRunStateStore(string directory)
             if (state is null || state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId
                 || string.IsNullOrEmpty(state.Workspace) || !Path.IsPathFullyQualified(state.Workspace) || !Enum.IsDefined(state.Status)
                 || !ValidResources(state.RemainingResources)
-                || (state.TestRun is { } test && (test.RunId != runId || test.OwnerId != runId || test.TerminalOutcome is null || test.RemainingResources is null || !ValidResources(test.RemainingResources) || test.Resources is null || test.Selection is null))
+                || (state.TestRun is { } test && !ValidOutcome(test, runId))
                 || (state.AttemptId is not null && (!CompositionRunPlanFactory.IsRunId(state.AttemptId) || state.AttemptId == runId || state.AttemptId == state.EnvironmentId))
                 || (state.EnvironmentId is not null && (!CompositionRunPlanFactory.IsRunId(state.EnvironmentId) || state.EnvironmentId == runId)))
             {

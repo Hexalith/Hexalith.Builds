@@ -19,9 +19,10 @@ using Shouldly;
 using Xunit;
 
 /// <summary>Guards retry ownership and first-observation recovery at lifecycle publication boundaries.</summary>
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class LocalRunFollowupTests
 {
-    /// <summary>A failed final publication restores a listed retry owner after active state was deleted.</summary>
+    /// <summary>A failed final publication keeps its listed retry owner continuously discoverable.</summary>
     /// <returns>The discoverable retry and successful later cleanup assertions.</returns>
     [Fact]
     public async Task CompletedPublicationFailureRestoresDiscoverableTrackingAsync()
@@ -33,12 +34,12 @@ public sealed class LocalRunFollowupTests
         _ = await engine.RecordTestOutcomeAsync(state.RunId, [], Failed(), "retained", new CompositionRunResources([], []), TestContext.Current.CancellationToken).ConfigureAwait(true);
         string path = Path.Combine(engine.StateStore.Directory, "diagnostics", state.RunId, "test-result.json");
         CompositionTestFiles.WriteScript(Path.Combine(workspace.Root, "stub-docker"), $"if [ \"$1\" = ps ]; then rm -f '{path}'; mkdir -p '{path}'; fi; exit 0");
-        TaskCompletionSource<bool> deleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        bool deleted = false;
         using FileSystemWatcher watcher = new(engine.StateStore.Directory, state.RunId + ".json") { EnableRaisingEvents = true };
-        watcher.Deleted += (_, _) => _ = deleted.TrySetResult(true);
+        watcher.Deleted += (_, _) => deleted = true;
         CompositionDownResult down = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
         down.Result.Outcome.ExitCode.ShouldNotBe(ToolExitCode.Success);
-        (await deleted.Task.WaitAsync(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBeTrue();
+        deleted.ShouldBeFalse("Tracking must remain discoverable until durable completion publication succeeds.");
         CompositionRunState retry = (await engine.StateStore.TryReadAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
         retry.CleanupDisposition.ShouldBe("incomplete");
         ToolCommandResult listed = await CompositionRunListing.ReadAsync(engine.StateStore, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -167,9 +168,12 @@ public sealed class LocalRunFollowupTests
     }
 
     /// <summary>A committed pass remains authoritative when every optional result publication throws.</summary>
+    /// <param name="ci">Whether the existing CI cleanup policy applies.</param>
     /// <returns>The recovered first pass, cleanup decision and visible recording failure.</returns>
-    [Fact]
-    public async Task CommandRecoversCommittedPassAfterOptionalRecordingFailureAsync()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CommandRecoversCommittedPassAfterOptionalRecordingFailureAsync(bool ci)
     {
         using PlatformManifestTestWorkspace workspace = new();
         (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
@@ -189,7 +193,7 @@ public sealed class LocalRunFollowupTests
             SelectedTest = null,
             WorkspaceRoot = Path.Combine(workspace.Root, "workspace"),
             SourceMapping = new SourceMapping(WorkspaceMode.Source, workspace.Root, "sample", [new("sample", "source", workspace.Root)], false),
-            ContinuousIntegrationOverride = false,
+            ContinuousIntegrationOverride = ci,
             SelectedPlatformStartOverride = async (_, entry, token) =>
             {
                 CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = entry }, manifest, workspace.Root).ConfigureAwait(false);
@@ -209,12 +213,21 @@ public sealed class LocalRunFollowupTests
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
         int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, manifest, "verify", null, null, ToolOutputFormat.Json, output, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options).ConfigureAwait(true);
         exit.ShouldBe(0, output.ToString());
-        cleanups.ShouldBe(1);
+        cleanups.ShouldBe(ci ? 1 : 0);
         _ = session.ShouldNotBeNull();
         ModuleTestRunRecord terminal = (await new CompositionEngine(options).ReadCommittedOutcomeAsync(session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
         terminal.TerminalOutcome.ExitCode.ShouldBe(ToolExitCode.Success);
         terminal.FailureRetained.ShouldBeFalse();
         output.ToString().ShouldContain("HXT008");
+        Directory.Exists(session.Plan.Workspace).ShouldBe(!ci);
+        terminal.CleanupDisposition.ShouldBe(ci ? "incomplete" : "pending");
+        ToolCommandResult listed = await CompositionRunListing.ReadAsync(new CompositionRunStateStore(options.StateDirectory), DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        listed.Environments.ShouldNotBeNull().Single().Cleanup.ShouldBe(ci ? "incomplete" : "pending");
+        string resultPath = Path.Combine(options.StateDirectory, "diagnostics", session.RunId, "test-result.json");
+        TestEnvironmentContractReader.ReadResult(resultPath, TestContext.Current.CancellationToken).IsValid.ShouldBeFalse();
+        Directory.Delete(resultPath);
+        (await new CompositionEngine(options).DownAsync(session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+        TestEnvironmentContractReader.ReadResult(resultPath, TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
         Directory.Exists(session.Plan.Workspace).ShouldBeFalse();
     }
 

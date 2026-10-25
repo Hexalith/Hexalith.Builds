@@ -19,6 +19,7 @@ using Shouldly;
 using Xunit;
 
 /// <summary>Exercises first outcomes, local retention, exact cleanup, retry and cross-process races.</summary>
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class LocalRunLifecycleTests
 {
     /// <summary>Observed success cleans and failures retain survivors before optional archival.</summary>

@@ -22,21 +22,55 @@ public static class CompositionRunListing
         {
             bool incomplete = false;
             IReadOnlyList<CompositionRunState> states = await store.EnumerateAsync(() => incomplete = true, cancellationToken).ConfigureAwait(false);
-            IReadOnlyList<CompositionRunListingEntry> entries = [.. states.Select(state => new CompositionRunListingEntry(
-                state.RunId,
-                state.EnvironmentId,
-                state.AttemptId,
-                state.CreatedAt,
-                state.CreatedAt is { } created ? Math.Max(0, (observedAt - created).TotalSeconds) : null,
-                state.TestRun?.TerminalOutcome.ExitCode is not (null or ToolExitCode.Success or ToolExitCode.Cancelled) ? [state.RunId] : [],
-                Retention(state),
-                state.CleanupDisposition,
-                state.StartupDeadlineUtc,
-                state.TestRun?.ExecutionTiming?.DeadlineUtc,
-                [],
-                "unavailable-admission-unsupported",
-                null,
-                state.RemainingResources ?? state.TestRun?.RemainingResources)),];
+            List<CompositionRunListingEntry> entries = [];
+            foreach (CompositionRunState tracked in states)
+            {
+                try
+                {
+                    string directory = Path.Combine(store.Directory, "diagnostics", tracked.RunId);
+                    ModuleTestRunRecord? committed = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestRunRecord>(Path.Combine(directory, "selected-test.json"), cancellationToken).ConfigureAwait(false);
+                    if (committed is not null && !CompositionRunStateStore.ValidOutcome(committed, tracked.RunId))
+                    {
+                        incomplete = true;
+                        continue;
+                    }
+
+                    CompositionRunState state = committed is null ? tracked : tracked with { TestRun = committed, CleanupDisposition = committed.CleanupDisposition, RemainingResources = committed.RemainingResources };
+                    if (committed?.CleanupDisposition == "complete" && tracked.CleanupDisposition != "complete")
+                    {
+                        incomplete = true;
+                        state = state with { CleanupDisposition = "incomplete", RemainingResources = committed.RemainingResources with { Unverified = true, DiscoveryFailures = [.. committed.RemainingResources.DiscoveryFailures, "state-finalization"] } };
+                    }
+
+                    ModuleTestExecutionTiming? timing = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestExecutionTiming>(Path.Combine(directory, "execution-activation.json"), cancellationToken).ConfigureAwait(false) ?? state.TestRun?.ExecutionTiming;
+                    if (timing is not null && (timing.EffectiveSeconds <= 0 || timing.DeadlineUtc - timing.StartedAtUtc != TimeSpan.FromSeconds(timing.EffectiveSeconds)))
+                    {
+                        incomplete = true;
+                        continue;
+                    }
+
+                    entries.Add(new CompositionRunListingEntry(
+                        state.RunId,
+                        state.EnvironmentId,
+                        state.AttemptId,
+                        state.CreatedAt,
+                        state.CreatedAt is { } created ? Math.Max(0, (observedAt - created).TotalSeconds) : null,
+                        state.TestRun?.TerminalOutcome.ExitCode is not (null or ToolExitCode.Success or ToolExitCode.Cancelled) ? [state.RunId] : [],
+                        Retention(state),
+                        state.CleanupDisposition,
+                        state.StartupDeadlineUtc,
+                        timing?.DeadlineUtc,
+                        [],
+                        "unavailable-admission-unsupported",
+                        null,
+                        state.RemainingResources ?? state.TestRun?.RemainingResources));
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+                {
+                    incomplete = true;
+                }
+            }
+
             return (incomplete ? Incomplete() : new ToolCommandResult("completed", ToolOutcome.Passed(), [])) with { Environments = entries };
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)

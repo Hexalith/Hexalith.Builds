@@ -263,6 +263,11 @@ public sealed partial class TestEnvironmentProvisioningTests
             _ => "root / 'durable' / 'entries' / identity / 'test-environment.json'",
         };
         string script = "\nimport hashlib\nroot = pathlib.Path(__file__).parent\nidentity = hashlib.sha256(os.environ['HEXALITH_G4_TEST_NAME'].encode()).hexdigest()\nlink = " + link + "\nlink.parent.mkdir(parents=True, exist_ok=True)\nlink.symlink_to(root / 'outside'" + (target == "durable-file" ? " / 'test-environment.json'" : string.Empty) + ", target_is_directory=" + (target == "durable-file" ? "False" : "True") + ")\n";
+        if (target == "durable-root")
+        {
+            script = script.Replace("link.symlink_to", "import shutil\nif link.exists(): shutil.rmtree(link)\nlink.symlink_to", StringComparison.Ordinal);
+        }
+
         await File.AppendAllTextAsync(Path.Combine(workspace.Root, "runner.py"), script, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string manifest = workspace.Save();
         ModuleTestSelection selection = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "first", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();

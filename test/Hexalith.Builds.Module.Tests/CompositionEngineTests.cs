@@ -963,6 +963,52 @@ public sealed class CompositionEngineTests
         }
     }
 
+    /// <summary>Final manifest refusal after owner issuance preserves the selected outcome or finalizes ordinary tracking.</summary>
+    /// <param name="declared">Whether a selected suite owns this preparation.</param>
+    /// <returns>The issued identity, terminal record and resource-disposition assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FinalManifestRefusalFinalizesIssuedOwnerAsync(bool declared)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngineOptions options = CreateOptions(workspace.Root) with
+        {
+            AppHostAssemblyPath = typeof(CompositionEngine).Assembly.Location,
+            AspirePackagesRoot = CompositionTestFiles.CreateAspirePackages(workspace.Root).Root,
+            SourceMapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root),
+            DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+            DockerCommand = CompositionTestFiles.CreateStubDocker(workspace.Root),
+            ReadinessTimeout = TimeSpan.FromSeconds(600),
+            SelectedTest = declared ? selected : null,
+            RetainOnFailure = declared,
+            PlatformModelBuildOverride = (_, _, _) =>
+            {
+                workspace.Change("modules.0.identity.moduleId", "\"invalid module identity\"");
+                _ = workspace.Save();
+                return Task.FromResult(typeof(CompositionEngine).Assembly.Location);
+            },
+        };
+        CompositionEngine engine = new(options);
+        CompositionStartResult result = await engine.StartAsync(workspace.Save(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.Result.Outcome.ExitCode.ShouldNotBe(ToolExitCode.Success);
+        string runId = result.RunId.ShouldNotBeNull();
+        if (declared)
+        {
+            ModuleTestRunRecord terminal = (await engine.ReadCommittedOutcomeAsync(runId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            terminal.TerminalCause.ShouldBe("startup-failure");
+            terminal.FailureRetained.ShouldBeTrue();
+            _ = (await engine.StateStore.TryReadAsync(runId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull().TestRun.ShouldNotBeNull();
+            Hexalith.Builds.Tooling.TestEnvironment.TestEnvironmentContractReader.ReadResult(Path.Combine(options.StateDirectory, "diagnostics", runId, "test-result.json"), TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+        }
+        else
+        {
+            File.Exists(engine.StateStore.PathFor(runId)).ShouldBeFalse();
+            Directory.Exists(Path.Combine(options.WorkspaceRoot, runId)).ShouldBeFalse();
+        }
+    }
+
     private static Task WriteRecordedStateAsync(CompositionEngine engine, int processId, DateTimeOffset startedAt) =>
         engine.StateStore.WriteAsync(
             new CompositionRunState(
