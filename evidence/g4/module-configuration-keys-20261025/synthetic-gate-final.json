@@ -1,0 +1,15 @@
+{
+  "command": [
+    "pwsh",
+    "-NoProfile",
+    "-File",
+    "./Tools/test-g4-tool-package-contract-gate.ps1"
+  ],
+  "startedAtUtc": "2026-10-25T09:23:45.974298+00:00",
+  "finishedAtUtc": "2026-10-25T09:25:53.564662+00:00",
+  "elapsedSeconds": 127.596,
+  "exitCode": 0,
+  "output": "evidence/g4/module-configuration-keys-20261025/synthetic-gate-final.combined.txt",
+  "outputSha256": "bf95f87fa4160b3d1e0248aacf8f9be29b0697ad8336f464bbd5f8eca7fb95dd",
+  "capture": "combined stdout/stderr"
+}

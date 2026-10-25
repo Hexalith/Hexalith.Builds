@@ -48,6 +48,8 @@ incorrectly accepted malformed keys, wrong diagnostic fields and input mutation.
 
 The additive [measurement record](../evidence/g4/module-configuration-keys-20261025/results.json)
 binds package/source/input identities, command logs and preservation checks.
+The additive [completion observation](../evidence/g4/module-configuration-keys-20261025/completion-results.json)
+retains final review checks and discloses concurrent Git activity after measurement.
 The local version is `0.0.0-app-api-token.20261025`; it deliberately provides no
 Platform acceptance claim. Its informational revision describes the existing
 source base, with the qualification-script working-tree changes recorded separately.
@@ -163,3 +165,20 @@ These are **future steps requiring authorization**, not actions performed here.
 
 No release, deployment, Git staging/commit/push, accepted pin or gitlink update,
 Platform acceptance assertion, or runtime-hold transition is part of this fix.
+
+## Concurrent workspace activity
+
+During final checks, a separate `/pushall` operation committed the tested Builds
+scripts and part of these observations at
+`6f3bafa4170c90ab3be1d5531995b44cbe9a3b5a`, then advanced ten Conversations
+root gitlinks, including Builds, at
+`cb7d8f2094c87493a717b3c2b883cdcae67c9224`. This session
+performed no Git mutation and does not undo or authorize that separate activity.
+All 4,206 pre-existing Conversations file contents still match the before
+inventory. The unchanged-gitlink PASS describes the earlier measurement time;
+the final workspace has separately advanced dependencies. The committed original
+`results.json` is preserved byte-for-byte, with final facts recorded additively.
+These commits provide no release, deployment, Platform acceptance or Story 16.1
+runtime-entry credit.
+The native validation/adoption results apply to their recorded source/dependency
+snapshot; they do not certify the concurrently changed dependency snapshot.

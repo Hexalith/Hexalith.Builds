@@ -1,0 +1,431 @@
+{
+  "schema": "hexalith.module-configuration-key-local-observation.v1",
+  "scope": "local diagnostic compatibility only; unpublished working tree",
+  "buildsSourceRevision": "72e48d9544bacc218a5fa8290fc3f68ffdea8974",
+  "conversationsSourceRevision": "8925c9fef46026d53d15478e2a744b3604c38a98",
+  "packages": [
+    {
+      "id": "published-4.35.2",
+      "pathAtMeasurement": "/home/administrator/.nuget/packages/hexalith.builds.module.cli/4.35.2/hexalith.builds.module.cli.4.35.2.nupkg",
+      "packageSha256": "637bebd547f45b5f2012c2f43af79b9b01772f1e81af02809babe62f4aa7cf1d",
+      "sizeBytes": 36818927,
+      "toolingAssemblySha256": "a923a77ea4488d1b7162134ed89d951dfebd2398ccae92f74d0a087df336fd9a",
+      "looseManifestSchemaSha256": "888d719b58493b4ebe14975e96262eca87e00afee8fe3a451a83ac7da366293e",
+      "embeddedManifestSchemaSha256": "888d719b58493b4ebe14975e96262eca87e00afee8fe3a451a83ac7da366293e",
+      "looseEqualsEmbedded": true,
+      "configurationKey": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256,
+        "pattern": "^[A-Za-z][A-Za-z0-9]*(?::[A-Za-z][A-Za-z0-9]*)*(?![\\s\\S])"
+      },
+      "inspectedInstalledAssemblyEqualsPackage": true,
+      "nuspecRepository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.Builds",
+        "branch": "refs/heads/main",
+        "commit": "4248b8c70cb35ba79fdd7e4dd63049d4c73211a0"
+      },
+      "embeddedHashConfirmedByRawStreamCopy": true
+    },
+    {
+      "id": "local-candidate",
+      "pathAtMeasurement": "/tmp/module-cli-compat-88cl840t/packages/Hexalith.Builds.Module.Cli.0.0.0-app-api-token.20261025.nupkg",
+      "packageSha256": "9185cb993e24a52e8a9ed1066a42199fc13e4357de710dd0af0f851942a3f646",
+      "sizeBytes": 37029684,
+      "toolingAssemblySha256": "1fd7f620379c70fa0392230736efb5bf6c771bce64d1f50ab9b53c37a81dd809",
+      "looseManifestSchemaSha256": "06d6804f3b111e803edd0d9142b03f36df344e26e2d71e50e2291fe15039daa4",
+      "embeddedManifestSchemaSha256": "06d6804f3b111e803edd0d9142b03f36df344e26e2d71e50e2291fe15039daa4",
+      "looseEqualsEmbedded": true,
+      "configurationKey": {
+        "description": "Colon-separated configuration segments start with an ASCII letter and contain alphanumeric words separated by single underscores, preserving SDK keys such as APP_API_TOKEN.",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256,
+        "pattern": "^[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*(?::[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*)*(?![\\s\\S])"
+      },
+      "inspectedInstalledAssemblyEqualsPackage": true,
+      "nuspecRepository": {
+        "type": "git",
+        "url": "https://github.com/Hexalith/Hexalith.Builds",
+        "branch": "refs/heads/main",
+        "commit": "72e48d9544bacc218a5fa8290fc3f68ffdea8974"
+      },
+      "embeddedHashConfirmedByRawStreamCopy": true
+    }
+  ],
+  "sourceSchemaSha256": "06d6804f3b111e803edd0d9142b03f36df344e26e2d71e50e2291fe15039daa4",
+  "manifest": {
+    "path": "module/hexalith.module-manifest.v2.json",
+    "sha256Before": "0bed1c297c9c9d78fdb8f37197ac5f71d829191c0535fdd78e4034aaa017bdf0",
+    "sha256After": "0bed1c297c9c9d78fdb8f37197ac5f71d829191c0535fdd78e4034aaa017bdf0",
+    "unchanged": true
+  },
+  "preservation": {
+    "result": "PASS",
+    "existingRootOwnedFileCount": 4206,
+    "changedExistingRootOwnedFiles": [],
+    "allRootGitlinksUnchanged": true,
+    "rootGitlinkIndexSha256": "d76deb8c2be02f892a9516b854d9222eeda8558628c2f8359a8f86435c63ac60",
+    "protectedPaths": {
+      ".config/dotnet-tools.json": "5d72a022a9416cb753da75cda1b0f1945fd938c065521fd9946aaa525fe048da",
+      "_bmad-output/implementation-artifacts/spec-16-1-persist-tenant-access-projection-state-and-prove-convergence.md": "2fc0e6a91abb2bef9e8df4d4176c86305693719e1ff311bf0ffad7b69b79be14",
+      "_bmad-output/implementation-artifacts/sprint-status.yaml": "18744a7ddbf62ed1b02050fb644630f95ca1c80e6be497fa75cc00d3c73df500",
+      "_bmad-output/planning-artifacts/epic-16-adoption-v2/README.md": "e12ee39652b9d7e18052716c955962d716f7e48b6fea2cd1f43f6a22d783ecb0",
+      "_bmad-output/planning-artifacts/epic-16-adoption-v2/execution-graph.json": "989cea64a9f8bdcee5d69909d2c3f9662722e27ba19ba3d80e129fcab54c3747",
+      "_bmad-output/planning-artifacts/epic-16-adoption-v2/inventories.json": "791b3a9de4a6f846fe265a5284ee2d8d930b30a2ec1cd48ca6ee1a8eb7e792b8",
+      "_bmad-output/planning-artifacts/epic-16-adoption-v2/package.json": "4c533a78c3f0f115f28d1113e5b2e71a4d71c93b5c08b4e3ebf8cfa23e47b9bd",
+      "_bmad-output/planning-artifacts/epic-16-adoption-v2/story-contracts/16.1.json": "3088bcf463a6bd7643925195c0ecf3e34f26e72caf6706c08e2c62b3ddaae2f6",
+      "_bmad-output/planning-artifacts/epic-16-adoption-v2/story-contracts/16.2.json": "d9fd9f9fe66b178f2435396ab467886d9dd04024754ff5970345fa1802f53560",
+      "_bmad-output/planning-artifacts/epic-16-adoption-v2/story-contracts/16.3.json": "b353f763387047063f3c2c8d9a0373de8e61f054ea7a3df714c29f43db21b712",
+      "module/hosting-inventory.json": "1bfd46248158637c950cd6764a47f926b1683568218208a0107d3b1ed3ada1e7",
+      "module/validation/epic-16-adoption-v2/adoption-json.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "module/validation/epic-16-adoption-v2/adoption-text.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "module/validation/epic-16-adoption-v2/adoption-text.txt": "eeef394d27bac9795d97966acd397dbb19910544a14a4a07dcdd318c499e99be",
+      "module/validation/epic-16-adoption-v2/adoption.json": "aaa2a5212826e659132386da3f8cd7c187c83c2ff2646a075005f669c0053f99",
+      "module/validation/epic-16-adoption-v2/manifest.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "module/validation/epic-16-adoption-v2/manifest.txt": "bc037e128cae9965e41ebb9c79ae42d51a432e95acf1102acaa7ef5fe498bdf0",
+      "module/validation/epic-16-adoption-v2/provenance.json": "ed487a0e1e27afde2f08deaceef2cc43847fb2780935af1ec7ac07aedf3b62d1",
+      "module/validation/epic-16-adoption-v2/restore.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "module/validation/epic-16-adoption-v2/restore.txt": "cf2c6e1396b29887925ee3526920d83f7478ae89f450e93d0c5b29b1fbeec0b3",
+      "module/validation/epic-16-adoption-v2/results.json": "0b60dda6ca0981ba0f1fabc26b3a21dc70e21fb5fbf414cdf1a67293dddfc1f8",
+      "module/validation/epic-16-adoption-v2/version.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "module/validation/epic-16-adoption-v2/version.txt": "2263b9f44abd72ad7f9a4c5ad92505b0ebbccb4356f1e289438b203995fa6de9"
+    },
+    "completeBeforeInventory": {
+      "path": "evidence/g4/module-configuration-keys-20261025/conversations-before.json.gz",
+      "sha256": "1ccb11f48dcc2070fc2374b0c37af752a1a61f69a4d87f8b70f232e9382e9eb3",
+      "uncompressedSha256": "807e7d42a4ed4b6ddc69d285679d37a657139e5de16351ec6aedcc7f314f3ec8",
+      "encoding": "gzip of UTF-8 JSON path-to-SHA256 map; root-owned tracked and existing untracked files, excluding references"
+    }
+  },
+  "adoption": {
+    "exitCode": 1,
+    "rows": 24,
+    "pass": 7,
+    "fail": 17,
+    "remaining": {
+      "dependency-selectors": 14,
+      "dapr-subscriptions": 3
+    },
+    "observation": "candidate-adoption-json.stdout.txt",
+    "remainingFailuresMatchPriorObservation": true,
+    "humanJsonRowsEqual": true,
+    "remainingFailurePaths": [
+      {
+        "requirement": "dependency-selectors",
+        "file": "Directory.Build.props"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "Directory.Packages.props"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "src/Hexalith.Conversations.AppHost/Hexalith.Conversations.AppHost.csproj"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "src/Hexalith.Conversations.Client/Hexalith.Conversations.Client.csproj"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "src/Hexalith.Conversations.Contracts/Hexalith.Conversations.Contracts.csproj"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "src/Hexalith.Conversations.Server/Hexalith.Conversations.Server.csproj"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "src/Hexalith.Conversations/Hexalith.Conversations.csproj"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "tests/Hexalith.Conversations.AppHost.Tests/Hexalith.Conversations.AppHost.Tests.csproj"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "tests/Hexalith.Conversations.Contracts.Tests/ContractPackageInventoryTest.cs"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "tests/Hexalith.Conversations.Contracts.Tests/Hexalith.Conversations.Contracts.Tests.csproj"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "tests/Hexalith.Conversations.IntegrationTests/Hexalith.Conversations.IntegrationTests.csproj"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "tests/Hexalith.Conversations.Server.Tests/Hexalith.Conversations.Server.Tests.csproj"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "tests/Hexalith.Conversations.Tests/Hexalith.Conversations.Tests.csproj"
+      },
+      {
+        "requirement": "dependency-selectors",
+        "file": "tests/fixtures/Hexalith.Conversations.MinimalModule/Directory.Build.props"
+      },
+      {
+        "requirement": "dapr-subscriptions",
+        "file": "src/Hexalith.Conversations.Server/Projections/ConversationProjectionReadModelKeys.cs"
+      },
+      {
+        "requirement": "dapr-subscriptions",
+        "file": "tests/Hexalith.Conversations.IntegrationTests/Projections/ConversationGatewayLiveFixture.cs"
+      },
+      {
+        "requirement": "dapr-subscriptions",
+        "file": "tests/Hexalith.Conversations.IntegrationTests/Projections/ConversationProjectionReadStorePopulationLiveTests.cs"
+      }
+    ]
+  },
+  "commands": "commands.json",
+  "diagnosticQualification": {
+    "releaseEligible": false,
+    "packageBuildMode": "fixture (byte-identical copies of official local build)",
+    "sourceValidation": "not-run",
+    "fullRuntimeControls": "not-run",
+    "localSeedHttpMetadataProbe": "passed",
+    "copiedArtifactsByteIdentical": true,
+    "copiedArtifactCount": 4,
+    "finalObservation": "installed-package-controls-final",
+    "finalInventory": "final-qualification/g4-tool-package-inventory.json",
+    "malformedCasesHaveEscapedValueAndInputHash": true
+  },
+  "authority": {
+    "story16_1RuntimeHold": "ACTIVE",
+    "runtimeEntryAllowed": false,
+    "publicationPerformed": false,
+    "deploymentPerformed": false,
+    "platformAcceptanceClaimed": false,
+    "pinChanges": false,
+    "gitlinkChanges": false
+  },
+  "evidenceBoundary": "not-applicable: routine Builds fix, no runtime receipts/final records",
+  "supportingArtifacts": {
+    "evidence/g4/module-configuration-keys-20261025/diagnostic-package-inventory.json": {
+      "sha256": "383aa0bf8afef35d9b375674c91d4358fe0e4f36f23f8f9962f3f9fc2d6af5df",
+      "sizeBytes": 2660
+    },
+    "evidence/g4/module-configuration-keys-20261025/inspect-schema.ps1": {
+      "sha256": "4eba1323269310d78029554d8b271736fefe9a8d957d3e7780b66dbdf4faed7d",
+      "sizeBytes": 998
+    },
+    "evidence/g4/module-configuration-keys-20261025/reuse-packages.ps1": {
+      "sha256": "34d924902c2a03746467c78bec8709c4815382521b65fd821a41206aa85de2d6",
+      "sizeBytes": 445
+    },
+    "evidence/g4/module-configuration-keys-20261025/NuGet.Config": {
+      "sha256": "f09bfbe3ef85985544a5bcbe8cbab4c659bb628a15c54c49789acd28d6b6ec43",
+      "sizeBytes": 152
+    },
+    "evidence/g4/module-configuration-keys-20261025/qualification-evidence/qualification.log": {
+      "sha256": "0703b9d2d2b93503e5058cf49b41aebffc09ff896e8f189a4d0e8973c3d03f8a",
+      "sizeBytes": 30394
+    },
+    "evidence/g4/module-configuration-keys-20261025/qualification-evidence/packaged-seed-subscriptions.json": {
+      "sha256": "7988a84bc9f8150065d829d6431f687008b913b670c7f6f87400535918e93917",
+      "sizeBytes": 1007
+    },
+    "evidence/g4/module-configuration-keys-20261025/preservation-check.json": {
+      "sha256": "78cda55e6a8ab80074dd720eb8a5de7ba1b30ef7e7059c2420db68b1894f2609",
+      "sizeBytes": 641
+    },
+    "evidence/g4/module-configuration-keys-20261025/synthetic-gate-final.json": {
+      "sha256": "97ee7dd4b7d220b364d613c8bf42ce75e25ac82ab1d03007aff76e87a63e6788",
+      "sizeBytes": 495
+    },
+    "evidence/g4/module-configuration-keys-20261025/synthetic-gate-final.combined.txt": {
+      "sha256": "bf95f87fa4160b3d1e0248aacf8f9be29b0697ad8336f464bbd5f8eca7fb95dd",
+      "sizeBytes": 1986
+    },
+    "evidence/g4/module-configuration-keys-20261025/final-qualification/g4-tool-package-inventory.json": {
+      "sha256": "032f3efa63d3bc9f47fc13e52a1db7ab4855aedc1521afca2e079ef541664bd2",
+      "sizeBytes": 2715
+    },
+    "evidence/g4/module-configuration-keys-20261025/final-qualification/qualification-evidence/qualification.log": {
+      "sha256": "b548f279f39598a48d5c48a3dbc67f1a4d2b1fc140964542d550a27d8a58f9ec",
+      "sizeBytes": 34218
+    },
+    "evidence/g4/module-configuration-keys-20261025/final-qualification/qualification-evidence/packaged-seed-subscriptions.json": {
+      "sha256": "7988a84bc9f8150065d829d6431f687008b913b670c7f6f87400535918e93917",
+      "sizeBytes": 1007
+    },
+    "evidence/g4/module-configuration-keys-20261025/gitlinks-before.txt": {
+      "sha256": "d76deb8c2be02f892a9516b854d9222eeda8558628c2f8359a8f86435c63ac60",
+      "sizeBytes": 947
+    },
+    "evidence/g4/module-configuration-keys-20261025/gitlinks-after-concurrent-pushall.txt": {
+      "sha256": "aa6cbe8e66d53e6e7a948b3d5a287d1776924f6c966be8e0a382f5a6058753f5",
+      "sizeBytes": 947
+    }
+  },
+  "syntheticGate": "synthetic-gate-final.json",
+  "qualificationSourceFiles": {
+    "Tools/test-g4-tool-package-contracts.ps1": "6e83de03126a48a794053e644f0234c900638a405aab63a2e862868f4d13104c",
+    "Tools/test-g4-tool-package-contract-gate.ps1": "86e2ffa576c051a29e17571154e9f0e8e7a244c08ea08617786c8e1da7cc126f",
+    "src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj": "5398373e0b0a31a3a72fb9073dcbeecc0d280b90ec540968eaf9c0006b879388",
+    "src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj": "537e83ff7001c7ddb1a5ac09e5743ff7d252a239aa988eac31ab09da62a83f01",
+    "Tools/build-g4-tool-packages.ps1": "6f39697f9e707e467d33338e7ba4af006279dbba2b21b116ce82c6fc51409a98"
+  },
+  "buildsWorkingTreeBoundary": {
+    "trackedChanges": [
+      "Tools/test-g4-tool-package-contract-gate.ps1",
+      "Tools/test-g4-tool-package-contracts.ps1"
+    ],
+    "newPaths": [
+      "docs/module-cli-configuration-key-compatibility.md",
+      "evidence/g4/module-configuration-keys-20261025/"
+    ],
+    "scope": "uncommitted working tree; informational revision is the source base, not a commit of this patch"
+  },
+  "focusedRegressionSummary": {
+    "TestsTotal": 647,
+    "TestsFailed": 0,
+    "TestsSkipped": 0,
+    "TestsNotRun": 0,
+    "ExecutionTime": 447.934,
+    "FinishTime": "2026-10-25T09:23:28.4132243+00:00"
+  },
+  "predecessor": {
+    "path": "results.json",
+    "sha256": "cecf0c22383d6cff2ace8cd06a3afe6e6a9e9e75cc9ca2f1ca825cf59d30efbb",
+    "preservedCommittedObservation": true
+  },
+  "concurrentGitObservation": {
+    "observedAtUtc": "2026-10-25T09:28:07.071480+00:00",
+    "buildsHead": "6f3bafa4170c90ab3be1d5531995b44cbe9a3b5a",
+    "conversationsHead": "cb7d8f2094c87493a717b3c2b883cdcae67c9224",
+    "originalBuildsHead": "72e48d9544bacc218a5fa8290fc3f68ffdea8974",
+    "originalConversationsHead": "8925c9fef46026d53d15478e2a744b3604c38a98",
+    "gitlinksChangedByThisSession": false,
+    "conversationsBuildsGitlinkAdvancedBySeparatePushall": true,
+    "existingRootOwnedFileContentsUnchanged": true,
+    "scope": "Earlier preservation PASS describes observation time. Separate concurrent /pushall commits captured part of this task and advanced the root Builds gitlink; no Git mutations were performed by this session and external commits are preserved. No release, deployment or Platform acceptance is inferred.",
+    "rootGitlinkChanges": [
+      {
+        "path": "references/Hexalith.Builds",
+        "before": {
+          "mode": "160000",
+          "revision": "72e48d9544bacc218a5fa8290fc3f68ffdea8974"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "6f3bafa4170c90ab3be1d5531995b44cbe9a3b5a"
+        }
+      },
+      {
+        "path": "references/Hexalith.EventStore",
+        "before": {
+          "mode": "160000",
+          "revision": "6a0b6441f6d78a3007678a1d0ec336e9cb8ff961"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "5be0c309f457d0af1f169bc591609fb4be6473ce"
+        }
+      },
+      {
+        "path": "references/Hexalith.Folders",
+        "before": {
+          "mode": "160000",
+          "revision": "2d0e1b833e14b9c3585d6ec315a74af399360026"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "3287af1d5d0befb4a288bab2f35eafbaa10de0ec"
+        }
+      },
+      {
+        "path": "references/Hexalith.FrontComposer",
+        "before": {
+          "mode": "160000",
+          "revision": "73768df6d2dcd8e15e9c6f023f0a60f9cb3a3609"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "80782afc7fc2fd33ee365d4601cb6b5e91d215fa"
+        }
+      },
+      {
+        "path": "references/Hexalith.McpCli",
+        "before": {
+          "mode": "160000",
+          "revision": "e5ed21a451d1b32c860a71164ed1a09a9febebc3"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "8962e2f2570459dbea2976f789b468aa5c6353c6"
+        }
+      },
+      {
+        "path": "references/Hexalith.Memories",
+        "before": {
+          "mode": "160000",
+          "revision": "4fd11078ab801b86b797d83ac7c4fcfaf82caa3c"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "98383a95b36638399f7e48b29dd009ab6125be2d"
+        }
+      },
+      {
+        "path": "references/Hexalith.Parties",
+        "before": {
+          "mode": "160000",
+          "revision": "664b99c67e90a14c8a1cc4d9663a25fa44c47c9a"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "0455c28a8604bf68d7065d36977c1c2ccf13e2e7"
+        }
+      },
+      {
+        "path": "references/Hexalith.Platform",
+        "before": {
+          "mode": "160000",
+          "revision": "858d02c05eb837a4ee85c5215430201f117dc24d"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "1b7a00381794bb7ecf40caf643c63c50758a81eb"
+        }
+      },
+      {
+        "path": "references/Hexalith.Projects",
+        "before": {
+          "mode": "160000",
+          "revision": "cfa97ede0576820896a02d82a02c8daf64826e7b"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "6d327ca427ada949892aa70bbba1498d43284a71"
+        }
+      },
+      {
+        "path": "references/Hexalith.Tenants",
+        "before": {
+          "mode": "160000",
+          "revision": "fc5d301dd07683475b7a1bcecf0ba5fab99ab265"
+        },
+        "after": {
+          "mode": "160000",
+          "revision": "14133e96d2c5efb13270580f920133079707398b"
+        }
+      }
+    ],
+    "changedRootGitlinkCount": 10,
+    "nativeResultsCertifyConcurrentDependencySnapshot": false
+  },
+  "completionIntegrity": {
+    "result": "PASS",
+    "commandRecordsVerified": 17,
+    "baselineExistingFileContentsVerified": 4206,
+    "externalGitlinkChangesDisclosed": 10,
+    "sourceAndSupportingHashesVerified": true,
+    "meaning": "local compatibility and evidence integrity, not adoption entry or runtime/release acceptance; native results apply to original recorded dependency snapshot"
+  }
+}

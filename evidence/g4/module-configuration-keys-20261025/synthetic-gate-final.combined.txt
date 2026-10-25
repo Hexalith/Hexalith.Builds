@@ -1,0 +1,18 @@
+Packing Hexalith.Builds.Module.Cli at 4.31.2 in Release configuration.
+Packing Hexalith.Builds.Evidence.Cli at 4.31.2 in Release configuration.
+Official package wrapper controls passed: version propagation and post-pack loader refusal.
+Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+Configuration-key gate rejected embedded-schema.
+Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+Configuration-key gate rejected sdk-rejected.
+Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+Configuration-key gate rejected malformed-accepted.
+Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+Configuration-key gate rejected wrong-field.
+Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+Configuration-key gate rejected input-mutated.
+Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+warning: in the working copy of 'test/fixtures/eol/Sample.cs', LF will be replaced by CRLF the next time Git touches it
+G-4 tool package artifact validator tests passed: 63 scenarios.
+G-4 tool package qualification gate checks passed: reused, pre-package, post-package, and duplicate-output failures expose no inventory.
