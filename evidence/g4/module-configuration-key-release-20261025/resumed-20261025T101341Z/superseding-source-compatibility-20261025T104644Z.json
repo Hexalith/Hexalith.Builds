@@ -1,0 +1,9 @@
+{
+  "observedAtUtc": "2026-10-25T10:46:45.373233+00:00",
+  "previousCandidate": "7144b8031b95a65982d78b3eb381e10c00b55cbe",
+  "supersedingMain": "6e40ea5f6243391bea80084b8ddd695df58fb1ff",
+  "comparedFileCount": 372,
+  "changedReleaseBoundInputs": [],
+  "proof": "Complete GitHub Git trees; matching path/blob object identities. No source checkout or remote mutation.",
+  "limitation": "Equality of release-bound inputs does not establish current-source CI, governance or release eligibility for the external runtime changes."
+}

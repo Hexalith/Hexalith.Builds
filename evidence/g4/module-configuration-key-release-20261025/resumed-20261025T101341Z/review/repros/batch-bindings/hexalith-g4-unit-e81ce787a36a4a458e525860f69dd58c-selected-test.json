@@ -1,0 +1,251 @@
+{
+  "runId": "0123456789abcdef0123456789abcdef",
+  "ownerId": "0123456789abcdef0123456789abcdef",
+  "selection": {
+    "moduleId": "sample",
+    "name": "second",
+    "executor": "python3",
+    "entry": "runner.py",
+    "manifestHash": "090BEC10EEB877A3261D0E2DCC4ED69974B4313B801F0B8BE1764F108E8B1533",
+    "entryHash": "07794B45781CF3C2432DBD349D932A1F71371CDEDB0138BA0566E5F53EC1E10F",
+    "executionTimeoutSeconds": 1,
+    "stopTimeoutSeconds": 4,
+    "requestedAtUtc": "2026-10-25T14:11:03.791075+00:00",
+    "executionDeadlineUtc": "2026-10-25T14:11:04.791075+00:00",
+    "credentialExpiryUtc": "2026-10-25T14:11:05+00:00",
+    "mode": "source"
+  },
+  "sourceMappingHash": "8d98573bace75a3a091f4f7c078dc7b9a48735908a90e9dd3dc1ce9a957f28ae",
+  "declaredPlatformCommit": null,
+  "checkoutPlatformCommit": null,
+  "observedCandidateHash": null,
+  "observedBackendIdentity": null,
+  "qualificationCredit": false,
+  "resources": [
+    {
+      "name": "eventstore",
+      "kind": "project",
+      "state": "Healthy",
+      "detail": null,
+      "moduleId": "eventstore",
+      "endpoints": [
+        {
+          "name": "http",
+          "protocol": "http",
+          "uri": "http://127.0.0.1:20012/"
+        }
+      ],
+      "observedAt": "2026-10-25T14:11:04.0754029+00:00",
+      "processId": null
+    }
+  ],
+  "terminalStatus": "failed",
+  "terminalOutcome": {
+    "exitCode": "ProductOrTest",
+    "phase": "Test",
+    "category": "ProductOrTest",
+    "ruleId": "HXT007"
+  },
+  "terminalAtUtc": "2026-10-25T14:11:04.6173094+00:00",
+  "resourceDisposition": "retained",
+  "remainingResources": {
+    "containerIds": [],
+    "processIds": [],
+    "unverified": false,
+    "isEmpty": false,
+    "workspaceIds": [
+      "workspace:0123456789abcdef0123456789abcdef"
+    ],
+    "claimIds": [],
+    "discoveryFailures": [],
+    "resourceIds": [
+      "workspace:0123456789abcdef0123456789abcdef"
+    ]
+  },
+  "observationHash": null,
+  "environmentBindings": {
+    "run": {
+      "runId": "0123456789abcdef0123456789abcdef",
+      "attemptId": "683a8ad080a94078a1ace4651e083a72",
+      "attemptSequence": 1,
+      "ownerRunId": "0123456789abcdef0123456789abcdef",
+      "environmentId": "f28d36e3f3ef4a878ffe08d2dbbbe52c",
+      "role": "owner"
+    },
+    "environment": {
+      "composition": {
+        "id": "sample",
+        "contentIdentity": "sha256:112fb09c8a5690cadf1ec43711b58107c27ee1946b272416616cc8a27bcde719"
+      },
+      "mode": "source",
+      "executionContext": {
+        "kind": "local"
+      },
+      "catalog": {
+        "commit": "cccccccccccccccccccccccccccccccccccccccc",
+        "instanceId": "f28d36e3f3ef4a878ffe08d2dbbbe52c-catalog"
+      },
+      "isolation": {
+        "state": "populated",
+        "syntheticTenantId": "g4t-0123456789ab",
+        "dataIsolationId": "g4r-0123456789ab",
+        "resourceScopeId": "f28d36e3f3ef4a878ffe08d2dbbbe52c",
+        "catalogScopeId": "f28d36e3f3ef4a878ffe08d2dbbbe52c-catalog"
+      },
+      "resources": [
+        {
+          "resourceId": "eventstore",
+          "moduleId": "eventstore",
+          "endpoints": [
+            {
+              "name": "http",
+              "protocol": "http",
+              "uri": "http://127.0.0.1:20012/"
+            }
+          ]
+        }
+      ],
+      "readiness": {
+        "state": "populated",
+        "status": "ready",
+        "observedAt": "2026-10-25T14:11:04.0749662Z",
+        "resources": [
+          {
+            "resourceId": "eventstore",
+            "status": "ready",
+            "observedAt": "2026-10-25T14:11:04.0754029Z",
+            "diagnosticIds": []
+          }
+        ]
+      },
+      "startupTasks": {
+        "state": "populated",
+        "tasks": []
+      }
+    },
+    "tool": {
+      "state": "not-yet-populated"
+    },
+    "candidate": {
+      "state": "not-yet-populated"
+    },
+    "decision": {
+      "state": "not-yet-populated"
+    },
+    "reuseLineage": {
+      "state": "not-yet-populated"
+    },
+    "artifacts": {
+      "expected": {
+        "state": "not-yet-populated"
+      },
+      "loaded": {
+        "state": "not-yet-populated"
+      }
+    },
+    "suite": {
+      "declared": {
+        "state": "not-yet-populated"
+      },
+      "completion": {
+        "state": "not-yet-populated"
+      }
+    },
+    "attachments": {
+      "state": "populated",
+      "holds": []
+    },
+    "deadlines": {
+      "startup": {
+        "state": "populated",
+        "origin": "environment-requested",
+        "originAt": "2026-10-25T14:11:03.7910750Z",
+        "effectiveSeconds": 600,
+        "expiresAt": "2026-10-25T14:21:03.7910750Z",
+        "actualDurationSeconds": 0,
+        "override": {
+          "state": "not-overridden"
+        }
+      },
+      "execution": {
+        "state": "populated",
+        "origin": "test-execution-started",
+        "originAt": "2026-10-25T14:11:04.4077368Z",
+        "effectiveSeconds": 1,
+        "expiresAt": "2026-10-25T14:11:05.4077368Z",
+        "configurationContentIdentity": "sha256:aa516a77a194bcf12780311ea1d2f888c80fbb52cfabdab17874f9fdcf1196b1"
+      }
+    }
+  },
+  "terminalCause": "test-failure",
+  "failureRetained": true,
+  "cleanupDisposition": "not-requested",
+  "cleanupAttemptId": null,
+  "diagnosticRuleIds": [
+    "HXT007"
+  ],
+  "laterDiagnosticRuleIds": [
+    "HXI002",
+    "HXI005"
+  ],
+  "executionTiming": {
+    "startedAtUtc": "2026-10-25T14:11:04.4077368+00:00",
+    "deadlineUtc": "2026-10-25T14:11:05.4077368+00:00",
+    "effectiveSeconds": 1,
+    "configurationContentIdentity": "sha256:aa516a77a194bcf12780311ea1d2f888c80fbb52cfabdab17874f9fdcf1196b1",
+    "actualDurationSeconds": 0.1951139,
+    "credentialExpiryUtc": "2026-10-25T14:11:06+00:00"
+  },
+  "selections": [
+    {
+      "moduleId": "sample",
+      "name": "first",
+      "executor": "python3",
+      "entry": "runner.py",
+      "manifestHash": "090BEC10EEB877A3261D0E2DCC4ED69974B4313B801F0B8BE1764F108E8B1533",
+      "entryHash": "07794B45781CF3C2432DBD349D932A1F71371CDEDB0138BA0566E5F53EC1E10F",
+      "executionTimeoutSeconds": 1,
+      "stopTimeoutSeconds": 1,
+      "requestedAtUtc": "2026-10-25T14:11:03.791075+00:00",
+      "executionDeadlineUtc": "2026-10-25T14:11:04.791075+00:00",
+      "credentialExpiryUtc": "2026-10-25T14:11:05+00:00",
+      "mode": "source"
+    },
+    {
+      "moduleId": "sample",
+      "name": "second",
+      "executor": "python3",
+      "entry": "runner.py",
+      "manifestHash": "090BEC10EEB877A3261D0E2DCC4ED69974B4313B801F0B8BE1764F108E8B1533",
+      "entryHash": "07794B45781CF3C2432DBD349D932A1F71371CDEDB0138BA0566E5F53EC1E10F",
+      "executionTimeoutSeconds": 1,
+      "stopTimeoutSeconds": 4,
+      "requestedAtUtc": "2026-10-25T14:11:03.791075+00:00",
+      "executionDeadlineUtc": "2026-10-25T14:11:04.791075+00:00",
+      "credentialExpiryUtc": "2026-10-25T14:11:05+00:00",
+      "mode": "source"
+    },
+    {
+      "moduleId": "sample",
+      "name": "third",
+      "executor": "python3",
+      "entry": "runner.py",
+      "manifestHash": "090BEC10EEB877A3261D0E2DCC4ED69974B4313B801F0B8BE1764F108E8B1533",
+      "entryHash": "07794B45781CF3C2432DBD349D932A1F71371CDEDB0138BA0566E5F53EC1E10F",
+      "executionTimeoutSeconds": 1,
+      "stopTimeoutSeconds": 4,
+      "requestedAtUtc": "2026-10-25T14:11:03.791075+00:00",
+      "executionDeadlineUtc": "2026-10-25T14:11:04.791075+00:00",
+      "credentialExpiryUtc": "2026-10-25T14:11:05+00:00",
+      "mode": "source"
+    }
+  ],
+  "reportHash": "6DDA7EC46C203AB941E211E091968A31631368FE10D417F792B941FE662E8DFF",
+  "testCounts": {
+    "reported": true,
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  }
+}

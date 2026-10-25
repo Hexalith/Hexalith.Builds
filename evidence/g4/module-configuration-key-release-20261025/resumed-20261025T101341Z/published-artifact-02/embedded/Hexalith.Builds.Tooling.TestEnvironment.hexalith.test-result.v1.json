@@ -1,0 +1,1948 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexalith.com/schemas/hexalith.test-result.v1.json",
+  "title": "Hexalith test result v1",
+  "$comment": "Shape validation grants no attachment admission, tool qualification or candidate-evidence acceptance. All references are document-local.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "policyId",
+    "bindings",
+    "diagnostics",
+    "terminal",
+    "termination",
+    "retention",
+    "cleanup"
+  ],
+  "properties": {
+    "schema": {
+      "const": "hexalith.test-result.v1"
+    },
+    "policyId": {
+      "const": "hexalith.platform.candidate-and-attachment-policy.v1"
+    },
+    "bindings": {
+      "$ref": "#/$defs/bindings"
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    },
+    "terminal": {
+      "$ref": "#/$defs/terminal"
+    },
+    "termination": {
+      "$ref": "#/$defs/termination"
+    },
+    "retention": {
+      "$ref": "#/$defs/retention"
+    },
+    "cleanup": {
+      "$ref": "#/$defs/cleanup"
+    }
+  },
+  "$defs": {
+    "identity": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^[^\\s\\x00-\\x1f\\x7f-\\x9f](?:[^\\x00-\\x1f\\x7f-\\x9f]*[^\\s\\x00-\\x1f\\x7f-\\x9f])?$(?![\\s\\S])"
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^(?:[a-fA-F0-9]{40}|[a-fA-F0-9]{64})$(?![\\s\\S])"
+    },
+    "contentIdentity": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$(?![\\s\\S])"
+    },
+    "utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:[0-5]\\d(?:\\.\\d{1,7})?Z$(?![\\s\\S])"
+    },
+    "unpopulated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "const": "not-yet-populated"
+        }
+      }
+    },
+    "qualification": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "referenceId",
+            "toolVersion",
+            "toolContentIdentity",
+            "policyId"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "referenceId": {
+              "$ref": "#/$defs/identity"
+            },
+            "toolVersion": {
+              "$ref": "#/$defs/identity"
+            },
+            "toolContentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            },
+            "policyId": {
+              "const": "hexalith.platform.candidate-and-attachment-policy.v1"
+            }
+          }
+        }
+      ]
+    },
+    "tool": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "name",
+            "version",
+            "contentIdentity",
+            "buildsAdoption",
+            "platformAcceptance",
+            "integrationQualification"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "name": {
+              "$ref": "#/$defs/identity"
+            },
+            "version": {
+              "$ref": "#/$defs/identity"
+            },
+            "contentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            },
+            "buildsAdoption": {
+              "$ref": "#/$defs/qualification"
+            },
+            "platformAcceptance": {
+              "$ref": "#/$defs/qualification"
+            },
+            "integrationQualification": {
+              "$ref": "#/$defs/qualification"
+            }
+          }
+        }
+      ]
+    },
+    "run": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "runId",
+            "attemptId",
+            "attemptSequence",
+            "ownerRunId",
+            "environmentId",
+            "role"
+          ],
+          "properties": {
+            "runId": {
+              "$ref": "#/$defs/identity"
+            },
+            "attemptId": {
+              "$ref": "#/$defs/identity"
+            },
+            "attemptSequence": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "ownerRunId": {
+              "$ref": "#/$defs/identity"
+            },
+            "environmentId": {
+              "$ref": "#/$defs/identity"
+            },
+            "role": {
+              "const": "owner"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "runId",
+            "attemptId",
+            "attemptSequence",
+            "ownerRunId",
+            "environmentId",
+            "role",
+            "attachedRunId"
+          ],
+          "properties": {
+            "runId": {
+              "$ref": "#/$defs/identity"
+            },
+            "attemptId": {
+              "$ref": "#/$defs/identity"
+            },
+            "attemptSequence": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "ownerRunId": {
+              "$ref": "#/$defs/identity"
+            },
+            "environmentId": {
+              "$ref": "#/$defs/identity"
+            },
+            "role": {
+              "const": "attached"
+            },
+            "attachedRunId": {
+              "$ref": "#/$defs/identity"
+            }
+          }
+        }
+      ]
+    },
+    "executionContext": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "local"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "repository",
+            "workflowRunId",
+            "workflowAttempt",
+            "jobId",
+            "runnerKind",
+            "operatingSystem",
+            "disposable"
+          ],
+          "properties": {
+            "kind": {
+              "const": "ci"
+            },
+            "repository": {
+              "$ref": "#/$defs/identity"
+            },
+            "workflowRunId": {
+              "$ref": "#/$defs/identity"
+            },
+            "workflowAttempt": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "jobId": {
+              "$ref": "#/$defs/identity"
+            },
+            "runnerKind": {
+              "enum": [
+                "github-hosted",
+                "other"
+              ]
+            },
+            "operatingSystem": {
+              "$ref": "#/$defs/identity"
+            },
+            "disposable": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "composition": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "contentIdentity"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/identity"
+            },
+            "contentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            }
+          }
+        }
+      ]
+    },
+    "endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "protocol",
+        "uri"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identity"
+        },
+        "protocol": {
+          "$ref": "#/$defs/identity"
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9+.-]*://[^/?#@\\s]+(?:/[^?#\\s]*)?$(?![\\s\\S])",
+          "description": "Absolute endpoint without userinfo, query or fragment; credentials use a separate channel."
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceId",
+        "moduleId",
+        "endpoints"
+      ],
+      "properties": {
+        "resourceId": {
+          "$ref": "#/$defs/identity"
+        },
+        "moduleId": {
+          "$ref": "#/$defs/identity"
+        },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/endpoint"
+          }
+        }
+      }
+    },
+    "isolation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "syntheticTenantId",
+            "dataIsolationId",
+            "resourceScopeId",
+            "catalogScopeId"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "syntheticTenantId": {
+              "$ref": "#/$defs/identity"
+            },
+            "dataIsolationId": {
+              "$ref": "#/$defs/identity"
+            },
+            "resourceScopeId": {
+              "$ref": "#/$defs/identity"
+            },
+            "catalogScopeId": {
+              "$ref": "#/$defs/identity"
+            }
+          }
+        }
+      ]
+    },
+    "readiness": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "status",
+            "observedAt",
+            "resources"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "status": {
+              "enum": [
+                "pending",
+                "ready",
+                "failed"
+              ]
+            },
+            "observedAt": {
+              "$ref": "#/$defs/utc"
+            },
+            "resources": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "resourceId",
+                  "status",
+                  "observedAt",
+                  "diagnosticIds"
+                ],
+                "properties": {
+                  "resourceId": {
+                    "$ref": "#/$defs/identity"
+                  },
+                  "status": {
+                    "enum": [
+                      "pending",
+                      "ready",
+                      "failed"
+                    ]
+                  },
+                  "observedAt": {
+                    "$ref": "#/$defs/utc"
+                  },
+                  "diagnosticIds": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/identity"
+                    },
+                    "uniqueItems": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "startupTasks": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "tasks"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "tasks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "taskId",
+                  "required",
+                  "status",
+                  "diagnosticIds"
+                ],
+                "properties": {
+                  "taskId": {
+                    "$ref": "#/$defs/identity"
+                  },
+                  "required": {
+                    "type": "boolean"
+                  },
+                  "status": {
+                    "enum": [
+                      "pending",
+                      "running",
+                      "passed",
+                      "failed",
+                      "cancelled"
+                    ]
+                  },
+                  "startedAt": {
+                    "$ref": "#/$defs/utc"
+                  },
+                  "finishedAt": {
+                    "$ref": "#/$defs/utc"
+                  },
+                  "diagnosticIds": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/identity"
+                    },
+                    "uniqueItems": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "pr": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "headCommit",
+        "baseCommit",
+        "mergeResultCommit"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identity"
+        },
+        "headCommit": {
+          "$ref": "#/$defs/commit"
+        },
+        "baseCommit": {
+          "$ref": "#/$defs/commit"
+        },
+        "mergeResultCommit": {
+          "$ref": "#/$defs/commit"
+        }
+      }
+    },
+    "candidate": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "classification",
+            "reason"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "classification": {
+              "const": "baseline-only"
+            },
+            "reason": {
+              "$ref": "#/$defs/identity"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "classification",
+            "repository",
+            "moduleId",
+            "committedRevision"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "classification": {
+              "const": "candidate"
+            },
+            "repository": {
+              "$ref": "#/$defs/identity"
+            },
+            "moduleId": {
+              "$ref": "#/$defs/identity"
+            },
+            "committedRevision": {
+              "$ref": "#/$defs/commit"
+            },
+            "pr": {
+              "$ref": "#/$defs/pr"
+            }
+          }
+        }
+      ]
+    },
+    "issuer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "authenticationReference"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identity"
+        },
+        "authenticationReference": {
+          "$ref": "#/$defs/identity"
+        }
+      }
+    },
+    "decision": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "requestId",
+            "issuer",
+            "repository",
+            "moduleId",
+            "policyId",
+            "kind",
+            "targetCommit",
+            "pr",
+            "requestState",
+            "producingRunId",
+            "producingAttemptId",
+            "attemptSequence"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "requestId": {
+              "$ref": "#/$defs/identity"
+            },
+            "issuer": {
+              "$ref": "#/$defs/issuer"
+            },
+            "repository": {
+              "$ref": "#/$defs/identity"
+            },
+            "moduleId": {
+              "$ref": "#/$defs/identity"
+            },
+            "policyId": {
+              "const": "hexalith.platform.candidate-and-attachment-policy.v1"
+            },
+            "kind": {
+              "const": "pr-merge"
+            },
+            "targetCommit": {
+              "$ref": "#/$defs/commit"
+            },
+            "pr": {
+              "$ref": "#/$defs/pr"
+            },
+            "requestState": {
+              "enum": [
+                "pending",
+                "completed",
+                "closed"
+              ]
+            },
+            "producingRunId": {
+              "$ref": "#/$defs/identity"
+            },
+            "producingAttemptId": {
+              "$ref": "#/$defs/identity"
+            },
+            "attemptSequence": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "requestId",
+            "issuer",
+            "repository",
+            "moduleId",
+            "policyId",
+            "kind",
+            "targetCommit",
+            "requestState",
+            "producingRunId",
+            "producingAttemptId",
+            "attemptSequence"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "requestId": {
+              "$ref": "#/$defs/identity"
+            },
+            "issuer": {
+              "$ref": "#/$defs/issuer"
+            },
+            "repository": {
+              "$ref": "#/$defs/identity"
+            },
+            "moduleId": {
+              "$ref": "#/$defs/identity"
+            },
+            "policyId": {
+              "const": "hexalith.platform.candidate-and-attachment-policy.v1"
+            },
+            "kind": {
+              "const": "release"
+            },
+            "targetCommit": {
+              "$ref": "#/$defs/commit"
+            },
+            "requestState": {
+              "enum": [
+                "pending",
+                "completed",
+                "closed"
+              ]
+            },
+            "producingRunId": {
+              "$ref": "#/$defs/identity"
+            },
+            "producingAttemptId": {
+              "$ref": "#/$defs/identity"
+            },
+            "attemptSequence": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        }
+      ]
+    },
+    "reuseLineage": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "producingRunId",
+            "producingDecisionId",
+            "reuseAllowed",
+            "sourceRunIds",
+            "sourceDecisionIds"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "producingRunId": {
+              "$ref": "#/$defs/identity"
+            },
+            "producingDecisionId": {
+              "$ref": "#/$defs/identity"
+            },
+            "reuseAllowed": {
+              "const": false
+            },
+            "sourceRunIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "maxItems": 0
+            },
+            "sourceDecisionIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "maxItems": 0
+            }
+          }
+        }
+      ]
+    },
+    "expectedArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactId",
+        "moduleId",
+        "kind",
+        "version",
+        "repository",
+        "committedRevision",
+        "configuration",
+        "contentIdentity"
+      ],
+      "properties": {
+        "artifactId": {
+          "$ref": "#/$defs/identity"
+        },
+        "moduleId": {
+          "$ref": "#/$defs/identity"
+        },
+        "kind": {
+          "enum": [
+            "contracts",
+            "server",
+            "extension",
+            "service",
+            "tool",
+            "test",
+            "other"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/identity"
+        },
+        "repository": {
+          "$ref": "#/$defs/identity"
+        },
+        "committedRevision": {
+          "$ref": "#/$defs/commit"
+        },
+        "configuration": {
+          "enum": [
+            "Debug",
+            "Release"
+          ]
+        },
+        "contentIdentity": {
+          "$ref": "#/$defs/contentIdentity"
+        }
+      }
+    },
+    "loadedArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactId",
+        "moduleId",
+        "consumerKind",
+        "consumerId",
+        "contentIdentity"
+      ],
+      "properties": {
+        "artifactId": {
+          "$ref": "#/$defs/identity"
+        },
+        "moduleId": {
+          "$ref": "#/$defs/identity"
+        },
+        "consumerKind": {
+          "enum": [
+            "composed-host",
+            "mcpcli",
+            "tests"
+          ]
+        },
+        "consumerId": {
+          "$ref": "#/$defs/identity"
+        },
+        "contentIdentity": {
+          "$ref": "#/$defs/contentIdentity"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected",
+        "loaded"
+      ],
+      "properties": {
+        "expected": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/unpopulated"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "items"
+              ],
+              "properties": {
+                "state": {
+                  "const": "populated"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/expectedArtifact"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "loaded": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/unpopulated"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "items"
+              ],
+              "properties": {
+                "state": {
+                  "const": "populated"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/loadedArtifact"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "suiteDeclaration": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "suiteId",
+            "suiteContentIdentity",
+            "configurationContentIdentity",
+            "requiredTestSetContentIdentity",
+            "requiredTestIds"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "suiteId": {
+              "$ref": "#/$defs/identity"
+            },
+            "suiteContentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            },
+            "configurationContentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            },
+            "requiredTestSetContentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            },
+            "requiredTestIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "uniqueItems": true
+            }
+          }
+        }
+      ]
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "executed",
+        "completed",
+        "passed",
+        "failed",
+        "skipped"
+      ],
+      "properties": {
+        "required": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "executed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "completed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "suiteCompletion": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "executedSuiteContentIdentity",
+            "executedConfigurationContentIdentity",
+            "requiredTestSetContentIdentity",
+            "counts",
+            "tests"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "executedSuiteContentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            },
+            "executedConfigurationContentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            },
+            "requiredTestSetContentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            },
+            "counts": {
+              "$ref": "#/$defs/counts"
+            },
+            "tests": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "testId",
+                  "outcome"
+                ],
+                "properties": {
+                  "testId": {
+                    "$ref": "#/$defs/identity"
+                  },
+                  "outcome": {
+                    "enum": [
+                      "passed",
+                      "failed",
+                      "skipped",
+                      "cancelled",
+                      "not-executed"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "suite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "declared",
+        "completion"
+      ],
+      "properties": {
+        "declared": {
+          "$ref": "#/$defs/suiteDeclaration"
+        },
+        "completion": {
+          "$ref": "#/$defs/suiteCompletion"
+        }
+      }
+    },
+    "holdEnd": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "const": "active"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "endedAt",
+            "reason"
+          ],
+          "properties": {
+            "state": {
+              "const": "ended"
+            },
+            "endedAt": {
+              "$ref": "#/$defs/utc"
+            },
+            "reason": {
+              "enum": [
+                "terminal-outcome",
+                "expired",
+                "owner-cancelled",
+                "developer-stop",
+                "cleanup",
+                "ci-job-completed",
+                "ci-job-cancelled"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "hold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "originalAttachmentRequestId",
+        "environmentId",
+        "ownerRunId",
+        "attachedRunId",
+        "acceptedAt",
+        "effectiveHoldSeconds",
+        "expiresAt",
+        "end"
+      ],
+      "properties": {
+        "originalAttachmentRequestId": {
+          "$ref": "#/$defs/identity"
+        },
+        "environmentId": {
+          "$ref": "#/$defs/identity"
+        },
+        "ownerRunId": {
+          "$ref": "#/$defs/identity"
+        },
+        "attachedRunId": {
+          "$ref": "#/$defs/identity"
+        },
+        "requestedHoldSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 14400
+        },
+        "acceptedAt": {
+          "$ref": "#/$defs/utc"
+        },
+        "effectiveHoldSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 14400
+        },
+        "expiresAt": {
+          "$ref": "#/$defs/utc"
+        },
+        "end": {
+          "$ref": "#/$defs/holdEnd"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "not": {
+              "required": [
+                "requestedHoldSeconds"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "effectiveHoldSeconds": {
+                "const": 1800
+              }
+            }
+          }
+        }
+      ]
+    },
+    "attachments": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "holds"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "holds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/hold"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "override": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "const": "not-overridden"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "requestedSeconds",
+            "justification"
+          ],
+          "properties": {
+            "state": {
+              "const": "declared"
+            },
+            "requestedSeconds": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "justification": {
+              "$ref": "#/$defs/identity"
+            }
+          }
+        }
+      ]
+    },
+    "startupDeadline": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "origin",
+            "originAt",
+            "effectiveSeconds",
+            "expiresAt",
+            "override"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "origin": {
+              "const": "environment-requested"
+            },
+            "originAt": {
+              "$ref": "#/$defs/utc"
+            },
+            "effectiveSeconds": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "expiresAt": {
+              "$ref": "#/$defs/utc"
+            },
+            "actualDurationSeconds": {
+              "type": "number",
+              "minimum": 0
+            },
+            "override": {
+              "$ref": "#/$defs/override"
+            }
+          }
+        }
+      ]
+    },
+    "executionDeadline": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "const": "not-declared"
+            },
+            "origin": {
+              "const": "test-execution-started"
+            },
+            "originAt": {
+              "$ref": "#/$defs/utc"
+            },
+            "actualDurationSeconds": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "origin",
+            "originAt",
+            "effectiveSeconds",
+            "expiresAt",
+            "configurationContentIdentity"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "origin": {
+              "const": "test-execution-started"
+            },
+            "originAt": {
+              "$ref": "#/$defs/utc"
+            },
+            "effectiveSeconds": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "expiresAt": {
+              "$ref": "#/$defs/utc"
+            },
+            "actualDurationSeconds": {
+              "type": "number",
+              "minimum": 0
+            },
+            "configurationContentIdentity": {
+              "$ref": "#/$defs/contentIdentity"
+            }
+          }
+        }
+      ]
+    },
+    "deadlines": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startup",
+        "execution"
+      ],
+      "properties": {
+        "startup": {
+          "$ref": "#/$defs/startupDeadline"
+        },
+        "execution": {
+          "$ref": "#/$defs/executionDeadline"
+        }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "classification",
+        "redacted",
+        "reference",
+        "contentIdentity"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identity"
+        },
+        "classification": {
+          "enum": [
+            "public",
+            "internal",
+            "restricted"
+          ]
+        },
+        "redacted": {
+          "const": true
+        },
+        "reference": {
+          "$ref": "#/$defs/identity"
+        },
+        "contentIdentity": {
+          "$ref": "#/$defs/contentIdentity"
+        }
+      }
+    },
+    "terminal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome",
+        "recordedAt",
+        "cause",
+        "diagnosticIds"
+      ],
+      "properties": {
+        "outcome": {
+          "enum": [
+            "passed",
+            "failed",
+            "cancelled",
+            "withdrawn"
+          ]
+        },
+        "recordedAt": {
+          "$ref": "#/$defs/utc"
+        },
+        "cause": {
+          "enum": [
+            "tests-completed",
+            "test-failure",
+            "startup-failure",
+            "startup-timeout",
+            "execution-timeout",
+            "run-cancelled",
+            "hold-expired",
+            "owner-cancelled",
+            "developer-stop",
+            "cleanup",
+            "ci-job-completed",
+            "ci-job-cancelled"
+          ]
+        },
+        "diagnosticIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identity"
+          },
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "passed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cause": {
+                "enum": [
+                  "tests-completed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "failed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cause": {
+                "enum": [
+                  "test-failure",
+                  "startup-failure",
+                  "startup-timeout",
+                  "execution-timeout"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "cancelled"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cause": {
+                "enum": [
+                  "run-cancelled"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "withdrawn"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cause": {
+                "enum": [
+                  "hold-expired",
+                  "owner-cancelled",
+                  "developer-stop",
+                  "cleanup",
+                  "ci-job-completed",
+                  "ci-job-cancelled"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "terminationItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "observedAt",
+        "diagnosticIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identity"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "terminated",
+            "failed",
+            "not-applicable"
+          ]
+        },
+        "observedAt": {
+          "$ref": "#/$defs/utc"
+        },
+        "diagnosticIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identity"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "termination": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "ownedWork",
+            "environmentAccess",
+            "leftoverWorkIds",
+            "failures"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "ownedWork": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/terminationItem"
+              }
+            },
+            "environmentAccess": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/terminationItem"
+              }
+            },
+            "leftoverWorkIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "uniqueItems": true
+            },
+            "failures": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "uniqueItems": true,
+              "description": "IDs resolving to ownedWork or environmentAccess in this object."
+            }
+          }
+        }
+      ]
+    },
+    "retention": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "disposition",
+            "failureRunIds",
+            "retainedResourceIds",
+            "reason",
+            "recordedAt"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "disposition": {
+              "enum": [
+                "not-retained",
+                "failure-retained",
+                "released"
+              ]
+            },
+            "failureRunIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "uniqueItems": true
+            },
+            "retainedResourceIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "uniqueItems": true
+            },
+            "reason": {
+              "$ref": "#/$defs/identity"
+            },
+            "recordedAt": {
+              "$ref": "#/$defs/utc"
+            }
+          }
+        }
+      ]
+    },
+    "cleanup": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/unpopulated"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "disposition",
+            "observedAt",
+            "ownedResourceIds",
+            "leftoverResourceIds",
+            "failures",
+            "diagnosticIds"
+          ],
+          "properties": {
+            "state": {
+              "const": "populated"
+            },
+            "disposition": {
+              "enum": [
+                "not-requested",
+                "pending",
+                "in-progress",
+                "incomplete",
+                "complete"
+              ]
+            },
+            "attemptId": {
+              "$ref": "#/$defs/identity"
+            },
+            "observedAt": {
+              "$ref": "#/$defs/utc"
+            },
+            "ownedResourceIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "uniqueItems": true
+            },
+            "leftoverResourceIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "uniqueItems": true
+            },
+            "failures": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "uniqueItems": true,
+              "description": "IDs resolving to ownedResourceIds in this object."
+            },
+            "diagnosticIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/identity"
+              },
+              "uniqueItems": true
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "disposition": {
+                    "not": {
+                      "const": "not-requested"
+                    }
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "attemptId"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "composition",
+        "mode",
+        "executionContext",
+        "catalog",
+        "isolation",
+        "resources",
+        "readiness",
+        "startupTasks"
+      ],
+      "properties": {
+        "composition": {
+          "$ref": "#/$defs/composition"
+        },
+        "mode": {
+          "enum": [
+            "source",
+            "package"
+          ]
+        },
+        "executionContext": {
+          "$ref": "#/$defs/executionContext"
+        },
+        "catalog": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/unpopulated"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "commit",
+                "instanceId"
+              ],
+              "properties": {
+                "commit": {
+                  "$ref": "#/$defs/commit"
+                },
+                "instanceId": {
+                  "$ref": "#/$defs/identity"
+                }
+              }
+            }
+          ]
+        },
+        "isolation": {
+          "$ref": "#/$defs/isolation"
+        },
+        "resources": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/unpopulated"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/resource"
+              }
+            }
+          ]
+        },
+        "readiness": {
+          "$ref": "#/$defs/readiness"
+        },
+        "startupTasks": {
+          "$ref": "#/$defs/startupTasks"
+        }
+      }
+    },
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run",
+        "tool",
+        "candidate",
+        "decision",
+        "reuseLineage",
+        "environment",
+        "artifacts",
+        "suite",
+        "attachments",
+        "deadlines"
+      ],
+      "properties": {
+        "run": {
+          "$ref": "#/$defs/run"
+        },
+        "tool": {
+          "$ref": "#/$defs/tool"
+        },
+        "candidate": {
+          "$ref": "#/$defs/candidate"
+        },
+        "decision": {
+          "$ref": "#/$defs/decision"
+        },
+        "reuseLineage": {
+          "$ref": "#/$defs/reuseLineage"
+        },
+        "environment": {
+          "$ref": "#/$defs/environment"
+        },
+        "artifacts": {
+          "$ref": "#/$defs/artifacts"
+        },
+        "suite": {
+          "$ref": "#/$defs/suite"
+        },
+        "attachments": {
+          "$ref": "#/$defs/attachments"
+        },
+        "deadlines": {
+          "$ref": "#/$defs/deadlines"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "terminal": {
+            "properties": {
+              "outcome": {
+                "const": "withdrawn"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "bindings": {
+            "properties": {
+              "run": {
+                "properties": {
+                  "role": {
+                    "const": "attached"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

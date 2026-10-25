@@ -1,0 +1,44 @@
+[
+  {
+    "originalPath": "/tmp/review-claims-60fjz4mz/Review.csproj",
+    "retainedPath": "review/repros/claims/Review.csproj",
+    "sha256": "dffb318f02bf30433f341bede299a8eac4356ebbac4217cbde977fa22132ce7f",
+    "sizeBytes": 446
+  },
+  {
+    "originalPath": "/tmp/review-claims-60fjz4mz/Program.cs",
+    "retainedPath": "review/repros/claims/Program.cs",
+    "sha256": "c7391f01a4e536f71ac07bdfdf8e9619719b31e58d1b762365694bbd024d5fb7",
+    "sizeBytes": 780
+  },
+  {
+    "originalPath": "/tmp/review-claim-state-fd652b8ba2d94420a86fe14f8343b888/claims/owners/65b0380add24e836445b4535ae7d13b4.json",
+    "retainedPath": "review/repros/claims/reported-oversized-receipt.json",
+    "sha256": "9c885f3e1c77b3b9ed3183f2741ff2f843e64ba2d058dde410ffe0c029b5f44e",
+    "sizeBytes": 67001
+  },
+  {
+    "originalPath": "/tmp/edge-stale-bindings-27l61luj/hexalith-g4-unit-1354b31a2c894a0f9cc81af84157cad6-test-result.json",
+    "retainedPath": "review/repros/batch-bindings/hexalith-g4-unit-1354b31a2c894a0f9cc81af84157cad6-test-result.json",
+    "sha256": "1e46f9d0b07e976d2fa293a8d79927cc17b29f95e2292e3597e476b5ffd19b45",
+    "sizeBytes": 4335
+  },
+  {
+    "originalPath": "/tmp/edge-stale-bindings-27l61luj/hexalith-g4-unit-e81ce787a36a4a458e525860f69dd58c-test-result.json",
+    "retainedPath": "review/repros/batch-bindings/hexalith-g4-unit-e81ce787a36a4a458e525860f69dd58c-test-result.json",
+    "sha256": "d990ae700835ec74273360aea7887a12dfdd66e739ea5440b4b86ca8953a586c",
+    "sizeBytes": 4678
+  },
+  {
+    "originalPath": "/tmp/edge-stale-bindings-27l61luj/hexalith-g4-unit-1354b31a2c894a0f9cc81af84157cad6-selected-test.json",
+    "retainedPath": "review/repros/batch-bindings/hexalith-g4-unit-1354b31a2c894a0f9cc81af84157cad6-selected-test.json",
+    "sha256": "2ff4bbf2f96f9667d21334c24c29c40291b96c5cd18585a860b131f8f86533f6",
+    "sizeBytes": 7336
+  },
+  {
+    "originalPath": "/tmp/edge-stale-bindings-27l61luj/hexalith-g4-unit-e81ce787a36a4a458e525860f69dd58c-selected-test.json",
+    "retainedPath": "review/repros/batch-bindings/hexalith-g4-unit-e81ce787a36a4a458e525860f69dd58c-selected-test.json",
+    "sha256": "c9fffc75b0f02c65742812a94231eea36a392444616539dfc3e51f40cebfa22a",
+    "sizeBytes": 7600
+  }
+]

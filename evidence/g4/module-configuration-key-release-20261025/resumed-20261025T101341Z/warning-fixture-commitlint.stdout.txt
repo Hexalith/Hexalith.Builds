@@ -1,0 +1,7 @@
+⧗   --- input ---
+test(runtime): stabilize startup success fixtures
+
+Give process-backed warning and native-handoff success fixtures a
+finite 30-second startup allowance. Retain every warning, result and
+handoff assertion, production deadline and short refusal control.
+✔   found 0 problems, 0 warnings

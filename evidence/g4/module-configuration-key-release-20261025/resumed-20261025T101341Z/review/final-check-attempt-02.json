@@ -1,0 +1,14 @@
+{
+  "observedAtUtc": "2026-10-25T14:44:30.890806+00:00",
+  "result": "stopped",
+  "exitCode": 1,
+  "command": [
+    "git",
+    "diff",
+    "--check"
+  ],
+  "nativeExitCode": 2,
+  "stdout": "_bmad-output/implementation-artifacts/deferred-work.md:1037: new blank line at EOF.\n",
+  "classification": "Our appended deferred-work section introduced one excess final newline. Removed only that byte and retained original append/record; no product gate or prior user content changed.",
+  "correctionRecord": "deferred-finalization-record.json"
+}

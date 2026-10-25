@@ -1,0 +1,9 @@
+{
+  "ledger": "_bmad-output/implementation-artifacts/deferred-work.md",
+  "beforeSha256": "94d6e900b87441909bf7a70553fcfdb5d39c263f95395f17e3c4f31c941b6a2e",
+  "afterSha256": "6f1d85d509859fa2e449cdc9c062f0970ba518eb2b95b736d696104a74657834",
+  "appendedBytes": 7482,
+  "appendedSha256": "a054f50515201a9ed395fe4ab402327dac3a569363c2b1710299e1af4a8e66a1",
+  "groups": 10,
+  "priorBytesPreserved": true
+}

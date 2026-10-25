@@ -1,0 +1,39 @@
+[
+  {
+    "file": "Build and test/32_Test Hexalith.Builds.Module.Tests.txt",
+    "lines": [
+      "2026-10-25T11:50:14.7327291Z ##[endgroup]",
+      "2026-10-25T11:50:21.1773881Z Running tests from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)",
+      "2026-10-25T11:52:25.8286795Z failed Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.PublicSourceWarningAppearsOnSuccessAsync(format: \"json\") (15s 554ms)",
+      "2026-10-25T11:52:25.8334362Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)",
+      "2026-10-25T11:52:25.8363428Z   Shouldly.ShouldAssertException : 3",
+      "2026-10-25T11:52:25.8392962Z       should be",
+      "2026-10-25T11:52:25.8422851Z   0",
+      "2026-10-25T11:52:25.8483143Z       but was not",
+      "2026-10-25T11:52:25.8513236Z   ",
+      "2026-10-25T11:52:25.8545612Z   Additional Info:",
+      "2026-10-25T11:52:25.8598505Z       {\"status\":\"failed\",\"outcome\":{\"exitCode\":\"TopologyOrLifecycle\",\"phase\":\"Topology\",\"category\":\"TopologyOrLifecycle\",\"ruleId\":\"HXR021\"},\"diagnostics\":[{\"ruleId\":\"HXW011\",\"phase\":\"Prerequisite\",\"category\":\"None\",\"message\":\"Platform checkout \\u0027/tmp/hexalith-workspace-tests/28eeb40c4b144ab6bd93d26bcb92a699/checkout/references/Hexalith.Platform\\u0027 has changes.\",\"field\":\"/tmp/hexalith-workspace-tests/28eeb40c4b144ab6bd93d26bcb92a699/checkout/references/Hexalith.Platform\",\"hint\":null,\"source\":null,\"location\":null,\"row\":null},{\"ruleId\":\"HXR021\",\"phase\":\"Topology\",\"category\":\"TopologyOrLifecycle\",\"message\":\"The run resources did not become healthy within the readiness bound. deadline=\\u00275s\\u0027 diagnostics=\\u0027/tmp/hexalith-workspace-tests/28eeb40c4b144ab6bd93d26bcb92a699/state/diagnostics/6c4fd249a63ac41091376e21a6f58957\\u0027.\",\"field\":\"readiness\",\"hint\":\"Inspect the preserved startup diagnostics.\",\"source\":null,\"location\":null,\"row\":null}],\"runId\":\"6c4fd249a63ac41091376e21a6f58957\"}",
+      "2026-10-25T11:52:25.8606776Z   ",
+      "2026-10-25T11:52:25.8635789Z     at Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.PublicSourceWarningAppearsOnSuccessAsync(String format) in /_/test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs:281",
+      "2026-10-25T11:52:25.8663376Z     at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()",
+      "2026-10-25T11:52:25.8695285Z     at Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.PublicSourceWarningAppearsOnSuccessAsync(String format) in /_/test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs:282",
+      "2026-10-25T11:52:25.8788223Z     at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()",
+      "2026-10-25T11:52:25.8799683Z     at Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.PublicSourceWarningAppearsOnSuccessAsync(String format) in /_/test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs:282",
+      "2026-10-25T11:52:25.8873475Z     at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()",
+      "2026-10-25T11:52:25.8886400Z     at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)",
+      "2026-10-25T11:52:25.8929928Z     --- End of stack trace from previous location ---",
+      "2026-10-25T11:52:25.8966528Z     at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()",
+      "2026-10-25T11:52:25.9024259Z     at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)",
+      "2026-10-25T12:00:29.5423533Z   g4: HXR025 resource='first' appId='-' status='state=Running;health=Unhealthy'.",
+      "2026-10-25T12:00:29.5423877Z ",
+      "2026-10-25T12:00:29.5426875Z Test run summary: Failed!",
+      "2026-10-25T12:00:29.5432538Z   total: 2116",
+      "2026-10-25T12:00:29.5432937Z   failed: 1",
+      "2026-10-25T12:00:29.5433220Z   succeeded: 2112",
+      "2026-10-25T12:00:29.5433465Z   skipped: 3",
+      "2026-10-25T12:00:29.5433743Z   duration: 10m 08s 636ms",
+      "2026-10-25T12:00:29.5434383Z Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)",
+      "2026-10-25T12:00:29.5734408Z ##[error]Process completed with exit code 2."
+    ]
+  }
+]

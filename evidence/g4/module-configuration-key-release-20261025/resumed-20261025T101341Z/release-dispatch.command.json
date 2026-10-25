@@ -1,0 +1,14 @@
+{
+  "command": [
+    "gh",
+    "workflow",
+    "run",
+    "build-release.yml",
+    "--repo",
+    "Hexalith/Hexalith.Builds",
+    "--ref",
+    "main"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:38:22.092662+00:00"
+}

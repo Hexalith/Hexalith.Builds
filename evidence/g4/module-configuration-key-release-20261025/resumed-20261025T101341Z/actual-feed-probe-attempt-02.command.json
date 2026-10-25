@@ -1,0 +1,24 @@
+{
+  "command": [
+    "python3",
+    "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/probe-published-artifact-02.py",
+    "--builds",
+    "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "--conversations",
+    "/home/administrator/projects/hexalith/conversations",
+    "--version",
+    "4.38.0",
+    "--release-sha",
+    "e171c5a788eab183b32683431b084198c9b8d373",
+    "--output",
+    "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-02",
+    "--inventory",
+    "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/g4-tool-package-inventory.json"
+  ],
+  "observedAtUtc": "2026-10-25T13:55:16.593312+00:00",
+  "completedAtUtc": "2026-10-25T13:55:30.330402+00:00",
+  "exitCode": 1,
+  "harnessSha256": "0de7b814bfd3384b656c33f704e943034edf3806796ba026d08578cdc3acaf5e",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "4974c8c3e428f9c396da7786dbf4bca9a740c1c87cd2f9dc52c87ded50004115"
+}

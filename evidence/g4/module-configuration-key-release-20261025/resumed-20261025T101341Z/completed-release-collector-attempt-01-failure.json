@@ -1,0 +1,11 @@
+{
+  "observedAtUtc": "2026-10-25T13:53:40.977881+00:00",
+  "command": [
+    "python3",
+    "/tmp/module-cli-release-20261025-2gbedle5/collect-completed-release.py"
+  ],
+  "exitCode": 1,
+  "error": "AssertionError at line59: raw git show blob SHA-256 compared to qualified worktree fixture SHA-256",
+  "scriptSha256": "26be7bd446723f2160216eea1026b5f92ec0f178e7de9221bcc7603de6d6fcae",
+  "diagnosis": "Tracked .gitattributes uses *.cs text eol=crlf. Raw Git LF blob is not the qualified checkout byte stream. Actual release gate already proves clean-filter equality; successor independent collector uses git cat-file --filters and verifies exact attributes source."
+}

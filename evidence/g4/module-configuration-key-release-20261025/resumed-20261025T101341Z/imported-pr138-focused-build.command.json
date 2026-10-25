@@ -1,0 +1,15 @@
+{
+  "command": [
+    "dotnet",
+    "build",
+    "test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj",
+    "--configuration",
+    "Debug",
+    "--no-restore",
+    "-p:GeneratePackageOnBuild=false",
+    "-m:1"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:17:46.530000+00:00",
+  "source": "e171c5a788eab183b32683431b084198c9b8d373"
+}

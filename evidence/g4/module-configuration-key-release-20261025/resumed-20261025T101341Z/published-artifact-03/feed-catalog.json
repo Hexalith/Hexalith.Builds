@@ -1,0 +1,2331 @@
+{
+  "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json",
+  "@type": [
+    "PackageDetails",
+    "catalog:Permalink"
+  ],
+  "authors": "Jérôme Piquot",
+  "catalog:commitId": "67330961-ead0-45d2-ba55-e6309d3691c3",
+  "catalog:commitTimeStamp": "2026-10-25T13:50:17.378588Z",
+  "created": "2026-10-25T13:37:57.3Z",
+  "description": "Runs supported Hexalith module profiles and emits deterministic evidence.",
+  "iconFile": "icon.png",
+  "id": "Hexalith.Builds.Module.Cli",
+  "isPrerelease": false,
+  "lastEdited": "2026-10-25T13:50:12.52Z",
+  "licenseExpression": "MIT",
+  "licenseUrl": "https://licenses.nuget.org/MIT",
+  "listed": true,
+  "packageHash": "HRpceCtXfGpKe6DnFsYcBQuYgbF+/qzFxhV7Pouu2NVxIq/LFSDfnH2xXV4Lc/mMf+hwjDWp+lvZ4EOJC1XDeQ==",
+  "packageHashAlgorithm": "SHA512",
+  "packageSize": 37220356,
+  "projectUrl": "https://github.com/Hexalith/Hexalith.Builds",
+  "published": "2026-10-25T13:37:57.3Z",
+  "readmeFile": "README.md",
+  "repository": {
+    "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#repository",
+    "branch": "refs/heads/main",
+    "commit": "e171c5a788eab183b32683431b084198c9b8d373",
+    "type": "git",
+    "url": "https://github.com/Hexalith/Hexalith.Builds"
+  },
+  "verbatimVersion": "4.38.0",
+  "version": "4.38.0",
+  "packageEntries": [
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#Hexalith.Builds.Module.Cli.nuspec",
+      "@type": "PackageEntry",
+      "compressedLength": 505,
+      "fullName": "Hexalith.Builds.Module.Cli.nuspec",
+      "length": 899,
+      "name": "Hexalith.Builds.Module.Cli.nuspec"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#README.md",
+      "@type": "PackageEntry",
+      "compressedLength": 16915,
+      "fullName": "README.md",
+      "length": 49131,
+      "name": "README.md"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#icon.png",
+      "@type": "PackageEntry",
+      "compressedLength": 11165,
+      "fullName": "icon.png",
+      "length": 11417,
+      "name": "icon.png"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/DotnetToolSettings.xml",
+      "@type": "PackageEntry",
+      "compressedLength": 157,
+      "fullName": "tools/net10.0/any/DotnetToolSettings.xml",
+      "length": 212,
+      "name": "DotnetToolSettings.xml"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Hexalith.Builds.Module.Cli.deps.json",
+      "@type": "PackageEntry",
+      "compressedLength": 2093,
+      "fullName": "tools/net10.0/any/Hexalith.Builds.Module.Cli.deps.json",
+      "length": 9428,
+      "name": "Hexalith.Builds.Module.Cli.deps.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Hexalith.Builds.Module.Cli.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 11650,
+      "fullName": "tools/net10.0/any/Hexalith.Builds.Module.Cli.dll",
+      "length": 27136,
+      "name": "Hexalith.Builds.Module.Cli.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Hexalith.Builds.Module.Cli.pdb",
+      "@type": "PackageEntry",
+      "compressedLength": 9171,
+      "fullName": "tools/net10.0/any/Hexalith.Builds.Module.Cli.pdb",
+      "length": 15232,
+      "name": "Hexalith.Builds.Module.Cli.pdb"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Hexalith.Builds.Module.Cli.runtimeconfig.json",
+      "@type": "PackageEntry",
+      "compressedLength": 208,
+      "fullName": "tools/net10.0/any/Hexalith.Builds.Module.Cli.runtimeconfig.json",
+      "length": 330,
+      "name": "Hexalith.Builds.Module.Cli.runtimeconfig.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Hexalith.Builds.Module.Cli.xml",
+      "@type": "PackageEntry",
+      "compressedLength": 477,
+      "fullName": "tools/net10.0/any/Hexalith.Builds.Module.Cli.xml",
+      "length": 1315,
+      "name": "Hexalith.Builds.Module.Cli.xml"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Hexalith.Builds.Tooling.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 460843,
+      "fullName": "tools/net10.0/any/Hexalith.Builds.Tooling.dll",
+      "length": 1459200,
+      "name": "Hexalith.Builds.Tooling.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Hexalith.Builds.Tooling.pdb",
+      "@type": "PackageEntry",
+      "compressedLength": 141291,
+      "fullName": "tools/net10.0/any/Hexalith.Builds.Tooling.pdb",
+      "length": 282000,
+      "name": "Hexalith.Builds.Tooling.pdb"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Hexalith.Builds.Tooling.xml",
+      "@type": "PackageEntry",
+      "compressedLength": 69010,
+      "fullName": "tools/net10.0/any/Hexalith.Builds.Tooling.xml",
+      "length": 626175,
+      "name": "Hexalith.Builds.Tooling.xml"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Humanizer.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 387132,
+      "fullName": "tools/net10.0/any/Humanizer.dll",
+      "length": 643760,
+      "name": "Humanizer.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Json.More.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 23979,
+      "fullName": "tools/net10.0/any/Json.More.dll",
+      "length": 54272,
+      "name": "Json.More.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/JsonPointer.Net.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 11918,
+      "fullName": "tools/net10.0/any/JsonPointer.Net.dll",
+      "length": 25600,
+      "name": "JsonPointer.Net.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/JsonSchema.Net.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 103501,
+      "fullName": "tools/net10.0/any/JsonSchema.Net.dll",
+      "length": 294400,
+      "name": "JsonSchema.Net.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 29613,
+      "fullName": "tools/net10.0/any/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+      "length": 66320,
+      "name": "Microsoft.Extensions.DependencyInjection.Abstractions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/Microsoft.Extensions.Logging.Abstractions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 32692,
+      "fullName": "tools/net10.0/any/Microsoft.Extensions.Logging.Abstractions.dll",
+      "length": 67384,
+      "name": "Microsoft.Extensions.Logging.Abstractions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/NuGet.Versioning.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 32032,
+      "fullName": "tools/net10.0/any/NuGet.Versioning.dll",
+      "length": 62264,
+      "name": "NuGet.Versioning.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/RESPite.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 70640,
+      "fullName": "tools/net10.0/any/RESPite.dll",
+      "length": 116736,
+      "name": "RESPite.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/StackExchange.Redis.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 962528,
+      "fullName": "tools/net10.0/any/StackExchange.Redis.dll",
+      "length": 2349056,
+      "name": "StackExchange.Redis.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/System.CommandLine.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 69532,
+      "fullName": "tools/net10.0/any/System.CommandLine.dll",
+      "length": 151352,
+      "name": "System.CommandLine.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/System.IO.Hashing.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 30046,
+      "fullName": "tools/net10.0/any/System.IO.Hashing.dll",
+      "length": 56104,
+      "name": "System.IO.Hashing.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/YamlDotNet.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 121764,
+      "fullName": "tools/net10.0/any/YamlDotNet.dll",
+      "length": 300032,
+      "name": "YamlDotNet.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/cs/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10698,
+      "fullName": "tools/net10.0/any/cs/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/de/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10668,
+      "fullName": "tools/net10.0/any/de/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/es/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10700,
+      "fullName": "tools/net10.0/any/es/System.CommandLine.resources.dll",
+      "length": 18784,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/fr/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10691,
+      "fullName": "tools/net10.0/any/fr/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Aspire.Hosting.AppHost.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 22026,
+      "fullName": "tools/net10.0/any/g4-host/Aspire.Hosting.AppHost.dll",
+      "length": 27448,
+      "name": "Aspire.Hosting.AppHost.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Aspire.Hosting.Keycloak.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 28003,
+      "fullName": "tools/net10.0/any/g4-host/Aspire.Hosting.Keycloak.dll",
+      "length": 38752,
+      "name": "Aspire.Hosting.Keycloak.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Aspire.Hosting.Redis.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 44701,
+      "fullName": "tools/net10.0/any/g4-host/Aspire.Hosting.Redis.dll",
+      "length": 70968,
+      "name": "Aspire.Hosting.Redis.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Aspire.Hosting.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 1450179,
+      "fullName": "tools/net10.0/any/g4-host/Aspire.Hosting.dll",
+      "length": 3378528,
+      "name": "Aspire.Hosting.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/CommunityToolkit.Aspire.Hosting.Dapr.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 72599,
+      "fullName": "tools/net10.0/any/g4-host/CommunityToolkit.Aspire.Hosting.Dapr.dll",
+      "length": 137544,
+      "name": "CommunityToolkit.Aspire.Hosting.Dapr.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Fractions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10268,
+      "fullName": "tools/net10.0/any/g4-host/Fractions.dll",
+      "length": 22016,
+      "name": "Fractions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Google.Protobuf.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 193307,
+      "fullName": "tools/net10.0/any/g4-host/Google.Protobuf.dll",
+      "length": 501760,
+      "name": "Google.Protobuf.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Grpc.AspNetCore.Server.ClientFactory.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 9907,
+      "fullName": "tools/net10.0/any/g4-host/Grpc.AspNetCore.Server.ClientFactory.dll",
+      "length": 21504,
+      "name": "Grpc.AspNetCore.Server.ClientFactory.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Grpc.AspNetCore.Server.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 64234,
+      "fullName": "tools/net10.0/any/g4-host/Grpc.AspNetCore.Server.dll",
+      "length": 157184,
+      "name": "Grpc.AspNetCore.Server.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Grpc.Core.Api.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 33834,
+      "fullName": "tools/net10.0/any/g4-host/Grpc.Core.Api.dll",
+      "length": 70296,
+      "name": "Grpc.Core.Api.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Grpc.Net.Client.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 134627,
+      "fullName": "tools/net10.0/any/g4-host/Grpc.Net.Client.dll",
+      "length": 360088,
+      "name": "Grpc.Net.Client.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Grpc.Net.ClientFactory.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 28210,
+      "fullName": "tools/net10.0/any/g4-host/Grpc.Net.ClientFactory.dll",
+      "length": 54936,
+      "name": "Grpc.Net.ClientFactory.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Grpc.Net.Common.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13267,
+      "fullName": "tools/net10.0/any/g4-host/Grpc.Net.Common.dll",
+      "length": 22168,
+      "name": "Grpc.Net.Common.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/HealthChecks.Redis.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 15705,
+      "fullName": "tools/net10.0/any/g4-host/HealthChecks.Redis.dll",
+      "length": 22528,
+      "name": "HealthChecks.Redis.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/HealthChecks.Uris.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 19255,
+      "fullName": "tools/net10.0/any/g4-host/HealthChecks.Uris.dll",
+      "length": 29184,
+      "name": "HealthChecks.Uris.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hex1b.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 4171626,
+      "fullName": "tools/net10.0/any/g4-host/Hex1b.dll",
+      "length": 7401984,
+      "name": "Hex1b.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost",
+      "@type": "PackageEntry",
+      "compressedLength": 34188,
+      "fullName": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost",
+      "length": 78192,
+      "name": "Hexalith.Builds.Module.AppHost"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.deps.json",
+      "@type": "PackageEntry",
+      "compressedLength": 8001,
+      "fullName": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.deps.json",
+      "length": 45720,
+      "name": "Hexalith.Builds.Module.AppHost.deps.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 40890,
+      "fullName": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.dll",
+      "length": 94208,
+      "name": "Hexalith.Builds.Module.AppHost.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.pdb",
+      "@type": "PackageEntry",
+      "compressedLength": 23435,
+      "fullName": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.pdb",
+      "length": 40848,
+      "name": "Hexalith.Builds.Module.AppHost.pdb"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.runtimeconfig.json",
+      "@type": "PackageEntry",
+      "compressedLength": 230,
+      "fullName": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.runtimeconfig.json",
+      "length": 440,
+      "name": "Hexalith.Builds.Module.AppHost.runtimeconfig.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.xml",
+      "@type": "PackageEntry",
+      "compressedLength": 4659,
+      "fullName": "tools/net10.0/any/g4-host/Hexalith.Builds.Module.AppHost.xml",
+      "length": 28891,
+      "name": "Hexalith.Builds.Module.AppHost.xml"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 460843,
+      "fullName": "tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.dll",
+      "length": 1459200,
+      "name": "Hexalith.Builds.Tooling.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.pdb",
+      "@type": "PackageEntry",
+      "compressedLength": 141291,
+      "fullName": "tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.pdb",
+      "length": 282000,
+      "name": "Hexalith.Builds.Tooling.pdb"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.xml",
+      "@type": "PackageEntry",
+      "compressedLength": 69010,
+      "fullName": "tools/net10.0/any/g4-host/Hexalith.Builds.Tooling.xml",
+      "length": 626175,
+      "name": "Hexalith.Builds.Tooling.xml"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Hexalith.EventStore.Aspire.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 26704,
+      "fullName": "tools/net10.0/any/g4-host/Hexalith.EventStore.Aspire.dll",
+      "length": 69120,
+      "name": "Hexalith.EventStore.Aspire.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Humanizer.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 387132,
+      "fullName": "tools/net10.0/any/g4-host/Humanizer.dll",
+      "length": 643760,
+      "name": "Humanizer.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Json.More.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 23979,
+      "fullName": "tools/net10.0/any/g4-host/Json.More.dll",
+      "length": 54272,
+      "name": "Json.More.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/JsonPointer.Net.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 11918,
+      "fullName": "tools/net10.0/any/g4-host/JsonPointer.Net.dll",
+      "length": 25600,
+      "name": "JsonPointer.Net.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/JsonSchema.Net.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 103501,
+      "fullName": "tools/net10.0/any/g4-host/JsonSchema.Net.dll",
+      "length": 294400,
+      "name": "JsonSchema.Net.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/KubernetesClient.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 2478048,
+      "fullName": "tools/net10.0/any/g4-host/KubernetesClient.dll",
+      "length": 10680320,
+      "name": "KubernetesClient.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/MessagePack.Annotations.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 7811,
+      "fullName": "tools/net10.0/any/g4-host/MessagePack.Annotations.dll",
+      "length": 18432,
+      "name": "MessagePack.Annotations.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/MessagePack.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 153267,
+      "fullName": "tools/net10.0/any/g4-host/MessagePack.dll",
+      "length": 385024,
+      "name": "MessagePack.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Microsoft.Extensions.AI.Abstractions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 214097,
+      "fullName": "tools/net10.0/any/g4-host/Microsoft.Extensions.AI.Abstractions.dll",
+      "length": 679224,
+      "name": "Microsoft.Extensions.AI.Abstractions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Microsoft.NET.StringTools.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 18443,
+      "fullName": "tools/net10.0/any/g4-host/Microsoft.NET.StringTools.dll",
+      "length": 33552,
+      "name": "Microsoft.NET.StringTools.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Microsoft.VisualStudio.Threading.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 177503,
+      "fullName": "tools/net10.0/any/g4-host/Microsoft.VisualStudio.Threading.dll",
+      "length": 441888,
+      "name": "Microsoft.VisualStudio.Threading.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Microsoft.VisualStudio.Validation.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 18933,
+      "fullName": "tools/net10.0/any/g4-host/Microsoft.VisualStudio.Validation.dll",
+      "length": 37392,
+      "name": "Microsoft.VisualStudio.Validation.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Microsoft.Win32.SystemEvents.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13278,
+      "fullName": "tools/net10.0/any/g4-host/Microsoft.Win32.SystemEvents.dll",
+      "length": 26224,
+      "name": "Microsoft.Win32.SystemEvents.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ModelContextProtocol.Core.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 411261,
+      "fullName": "tools/net10.0/any/g4-host/ModelContextProtocol.Core.dll",
+      "length": 1302016,
+      "name": "ModelContextProtocol.Core.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ModelContextProtocol.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 34708,
+      "fullName": "tools/net10.0/any/g4-host/ModelContextProtocol.dll",
+      "length": 91136,
+      "name": "ModelContextProtocol.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Nerdbank.MessagePack.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 231029,
+      "fullName": "tools/net10.0/any/g4-host/Nerdbank.MessagePack.dll",
+      "length": 641024,
+      "name": "Nerdbank.MessagePack.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Nerdbank.Streams.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 96149,
+      "fullName": "tools/net10.0/any/g4-host/Nerdbank.Streams.dll",
+      "length": 222048,
+      "name": "Nerdbank.Streams.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Newtonsoft.Json.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 278013,
+      "fullName": "tools/net10.0/any/g4-host/Newtonsoft.Json.dll",
+      "length": 723368,
+      "name": "Newtonsoft.Json.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/NuGet.Versioning.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 32032,
+      "fullName": "tools/net10.0/any/g4-host/NuGet.Versioning.dll",
+      "length": 62264,
+      "name": "NuGet.Versioning.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8792,
+      "fullName": "tools/net10.0/any/g4-host/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+      "length": 24576,
+      "name": "OpenTelemetry.Api.ProviderBuilderExtensions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/OpenTelemetry.Api.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 36709,
+      "fullName": "tools/net10.0/any/g4-host/OpenTelemetry.Api.dll",
+      "length": 84992,
+      "name": "OpenTelemetry.Api.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 82671,
+      "fullName": "tools/net10.0/any/g4-host/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+      "length": 201728,
+      "name": "OpenTelemetry.Exporter.OpenTelemetryProtocol.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/OpenTelemetry.Extensions.Hosting.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 6941,
+      "fullName": "tools/net10.0/any/g4-host/OpenTelemetry.Extensions.Hosting.dll",
+      "length": 15872,
+      "name": "OpenTelemetry.Extensions.Hosting.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/OpenTelemetry.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 142760,
+      "fullName": "tools/net10.0/any/g4-host/OpenTelemetry.dll",
+      "length": 344064,
+      "name": "OpenTelemetry.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Polly.Core.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 99606,
+      "fullName": "tools/net10.0/any/g4-host/Polly.Core.dll",
+      "length": 223136,
+      "name": "Polly.Core.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/PolyType.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 129838,
+      "fullName": "tools/net10.0/any/g4-host/PolyType.dll",
+      "length": 323072,
+      "name": "PolyType.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/QRCoder.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 104496,
+      "fullName": "tools/net10.0/any/g4-host/QRCoder.dll",
+      "length": 195584,
+      "name": "QRCoder.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/RESPite.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 70640,
+      "fullName": "tools/net10.0/any/g4-host/RESPite.dll",
+      "length": 116736,
+      "name": "RESPite.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/Semver.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 28197,
+      "fullName": "tools/net10.0/any/g4-host/Semver.dll",
+      "length": 72704,
+      "name": "Semver.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/StackExchange.Redis.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 962528,
+      "fullName": "tools/net10.0/any/g4-host/StackExchange.Redis.dll",
+      "length": 2349056,
+      "name": "StackExchange.Redis.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/StreamJsonRpc.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 239109,
+      "fullName": "tools/net10.0/any/g4-host/StreamJsonRpc.dll",
+      "length": 647048,
+      "name": "StreamJsonRpc.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/System.Drawing.Common.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 64428,
+      "fullName": "tools/net10.0/any/g4-host/System.Drawing.Common.dll",
+      "length": 175216,
+      "name": "System.Drawing.Common.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/System.IO.Hashing.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 30046,
+      "fullName": "tools/net10.0/any/g4-host/System.IO.Hashing.dll",
+      "length": 56104,
+      "name": "System.IO.Hashing.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/YamlDotNet.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 121764,
+      "fullName": "tools/net10.0/any/g4-host/YamlDotNet.dll",
+      "length": 300032,
+      "name": "YamlDotNet.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/ByteAether.Ulid.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14051,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/ByteAether.Ulid.dll",
+      "length": 29696,
+      "name": "ByteAether.Ulid.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Actors.AspNetCore.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 11784,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Actors.AspNetCore.dll",
+      "length": 26112,
+      "name": "Dapr.Actors.AspNetCore.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Actors.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 88678,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Actors.dll",
+      "length": 214016,
+      "name": "Dapr.Actors.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.AspNetCore.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 25406,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.AspNetCore.dll",
+      "length": 57344,
+      "name": "Dapr.AspNetCore.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Client.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 69792,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Client.dll",
+      "length": 181248,
+      "name": "Dapr.Client.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Common.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 27942,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Common.dll",
+      "length": 77824,
+      "name": "Dapr.Common.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Protos.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 200932,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Dapr.Protos.dll",
+      "length": 635904,
+      "name": "Dapr.Protos.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/FluentValidation.DependencyInjectionExtensions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 11348,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/FluentValidation.DependencyInjectionExtensions.dll",
+      "length": 15360,
+      "name": "FluentValidation.DependencyInjectionExtensions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/FluentValidation.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 182122,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/FluentValidation.dll",
+      "length": 549888,
+      "name": "FluentValidation.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Google.Api.CommonProtos.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 153626,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Google.Api.CommonProtos.dll",
+      "length": 450048,
+      "name": "Google.Api.CommonProtos.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Google.Protobuf.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 196958,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Google.Protobuf.dll",
+      "length": 501400,
+      "name": "Google.Protobuf.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Core.Api.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 33835,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Core.Api.dll",
+      "length": 70296,
+      "name": "Grpc.Core.Api.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Net.Client.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 134368,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Net.Client.dll",
+      "length": 359064,
+      "name": "Grpc.Net.Client.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Net.Common.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13271,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Net.Common.dll",
+      "length": 22168,
+      "name": "Grpc.Net.Common.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Reflection.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 34935,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Grpc.Reflection.dll",
+      "length": 77976,
+      "name": "Grpc.Reflection.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost",
+      "@type": "PackageEntry",
+      "compressedLength": 34197,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost",
+      "length": 78192,
+      "name": "Hexalith.Builds.Module.EventStoreHost"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.deps.json",
+      "@type": "PackageEntry",
+      "compressedLength": 8476,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.deps.json",
+      "length": 50562,
+      "name": "Hexalith.Builds.Module.EventStoreHost.deps.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13403,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll",
+      "length": 30720,
+      "name": "Hexalith.Builds.Module.EventStoreHost.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.pdb",
+      "@type": "PackageEntry",
+      "compressedLength": 21877,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.pdb",
+      "length": 36460,
+      "name": "Hexalith.Builds.Module.EventStoreHost.pdb"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.runtimeconfig.json",
+      "@type": "PackageEntry",
+      "compressedLength": 244,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.runtimeconfig.json",
+      "length": 472,
+      "name": "Hexalith.Builds.Module.EventStoreHost.runtimeconfig.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.staticwebassets.endpoints.json",
+      "@type": "PackageEntry",
+      "compressedLength": 53,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.staticwebassets.endpoints.json",
+      "length": 51,
+      "name": "Hexalith.Builds.Module.EventStoreHost.staticwebassets.endpoints.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.xml",
+      "@type": "PackageEntry",
+      "compressedLength": 837,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.xml",
+      "length": 3126,
+      "name": "Hexalith.Builds.Module.EventStoreHost.xml"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Commons.UniqueIds.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 4704,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Commons.UniqueIds.dll",
+      "length": 9728,
+      "name": "Hexalith.Commons.UniqueIds.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Admin.Abstractions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 77430,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Admin.Abstractions.dll",
+      "length": 233984,
+      "name": "Hexalith.EventStore.Admin.Abstractions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Client.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 383892,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Client.dll",
+      "length": 1107456,
+      "name": "Hexalith.EventStore.Client.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Contracts.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 231269,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Contracts.dll",
+      "length": 705024,
+      "name": "Hexalith.EventStore.Contracts.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.DomainService.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 384593,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.DomainService.dll",
+      "length": 1136640,
+      "name": "Hexalith.EventStore.DomainService.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Gateway.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 256843,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Gateway.dll",
+      "length": 823296,
+      "name": "Hexalith.EventStore.Gateway.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Server.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 1004525,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.Server.dll",
+      "length": 3209728,
+      "name": "Hexalith.EventStore.Server.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.ServiceDefaults.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 64093,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.EventStore.ServiceDefaults.dll",
+      "length": 157184,
+      "name": "Hexalith.EventStore.ServiceDefaults.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/MediatR.Contracts.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 2987,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/MediatR.Contracts.dll",
+      "length": 6656,
+      "name": "MediatR.Contracts.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/MediatR.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 40069,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/MediatR.dll",
+      "length": 94208,
+      "name": "MediatR.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/MessagePack.Annotations.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 7811,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/MessagePack.Annotations.dll",
+      "length": 18432,
+      "name": "MessagePack.Annotations.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/MessagePack.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 153267,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/MessagePack.dll",
+      "length": 385024,
+      "name": "MessagePack.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.Authentication.JwtBearer.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 25554,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.Authentication.JwtBearer.dll",
+      "length": 52008,
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.OpenApi.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 85791,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.OpenApi.dll",
+      "length": 193320,
+      "name": "Microsoft.AspNetCore.OpenApi.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 39302,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll",
+      "length": 82216,
+      "name": "Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Bcl.Cryptography.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 11141,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Bcl.Cryptography.dll",
+      "length": 19248,
+      "name": "Microsoft.Bcl.Cryptography.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.AmbientMetadata.Application.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 17776,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.AmbientMetadata.Application.dll",
+      "length": 34616,
+      "name": "Microsoft.Extensions.AmbientMetadata.Application.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Compliance.Abstractions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 21962,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Compliance.Abstractions.dll",
+      "length": 43832,
+      "name": "Microsoft.Extensions.Compliance.Abstractions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.DependencyInjection.AutoActivation.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 16609,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.DependencyInjection.AutoActivation.dll",
+      "length": 33632,
+      "name": "Microsoft.Extensions.DependencyInjection.AutoActivation.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Diagnostics.ExceptionSummarization.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 15990,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Diagnostics.ExceptionSummarization.dll",
+      "length": 30008,
+      "name": "Microsoft.Extensions.Diagnostics.ExceptionSummarization.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Http.Diagnostics.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 53954,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Http.Diagnostics.dll",
+      "length": 118112,
+      "name": "Microsoft.Extensions.Http.Diagnostics.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Http.Resilience.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 56585,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Http.Resilience.dll",
+      "length": 135992,
+      "name": "Microsoft.Extensions.Http.Resilience.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Resilience.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 16840,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Resilience.dll",
+      "length": 33080,
+      "name": "Microsoft.Extensions.Resilience.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.ServiceDiscovery.Abstractions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 15164,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.ServiceDiscovery.Abstractions.dll",
+      "length": 28984,
+      "name": "Microsoft.Extensions.ServiceDiscovery.Abstractions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.ServiceDiscovery.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 35953,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.ServiceDiscovery.dll",
+      "length": 77112,
+      "name": "Microsoft.Extensions.ServiceDiscovery.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Telemetry.Abstractions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 27187,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Telemetry.Abstractions.dll",
+      "length": 58680,
+      "name": "Microsoft.Extensions.Telemetry.Abstractions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Telemetry.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 68071,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.Extensions.Telemetry.dll",
+      "length": 152376,
+      "name": "Microsoft.Extensions.Telemetry.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Abstractions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 11250,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Abstractions.dll",
+      "length": 19264,
+      "name": "Microsoft.IdentityModel.Abstractions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.JsonWebTokens.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 63872,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.JsonWebTokens.dll",
+      "length": 174384,
+      "name": "Microsoft.IdentityModel.JsonWebTokens.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Logging.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 18664,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Logging.dll",
+      "length": 38192,
+      "name": "Microsoft.IdentityModel.Logging.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 47273,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+      "length": 137008,
+      "name": "Microsoft.IdentityModel.Protocols.OpenIdConnect.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Protocols.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 24831,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Protocols.dll",
+      "length": 54064,
+      "name": "Microsoft.IdentityModel.Protocols.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Tokens.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 136056,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.IdentityModel.Tokens.dll",
+      "length": 416024,
+      "name": "Microsoft.IdentityModel.Tokens.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.NET.StringTools.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 17574,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.NET.StringTools.dll",
+      "length": 30880,
+      "name": "Microsoft.NET.StringTools.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.OpenApi.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 213387,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Microsoft.OpenApi.dll",
+      "length": 595296,
+      "name": "Microsoft.OpenApi.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8792,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+      "length": 24576,
+      "name": "OpenTelemetry.Api.ProviderBuilderExtensions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Api.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 36709,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Api.dll",
+      "length": 84992,
+      "name": "OpenTelemetry.Api.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 82671,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+      "length": 201728,
+      "name": "OpenTelemetry.Exporter.OpenTelemetryProtocol.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Extensions.Hosting.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 6941,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Extensions.Hosting.dll",
+      "length": 15872,
+      "name": "OpenTelemetry.Extensions.Hosting.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.AspNetCore.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 33370,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.AspNetCore.dll",
+      "length": 76800,
+      "name": "OpenTelemetry.Instrumentation.AspNetCore.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.Http.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 30211,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.Http.dll",
+      "length": 69632,
+      "name": "OpenTelemetry.Instrumentation.Http.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.Runtime.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 5083,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.Instrumentation.Runtime.dll",
+      "length": 10752,
+      "name": "OpenTelemetry.Instrumentation.Runtime.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 142760,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/OpenTelemetry.dll",
+      "length": 344064,
+      "name": "OpenTelemetry.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.Core.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 105586,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.Core.dll",
+      "length": 242736,
+      "name": "Polly.Core.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.Extensions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 28975,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.Extensions.dll",
+      "length": 57120,
+      "name": "Polly.Extensions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.RateLimiting.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 16934,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Polly.RateLimiting.dll",
+      "length": 28208,
+      "name": "Polly.RateLimiting.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/RESPite.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 70640,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/RESPite.dll",
+      "length": 116736,
+      "name": "RESPite.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/StackExchange.Redis.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 962528,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/StackExchange.Redis.dll",
+      "length": 2349056,
+      "name": "StackExchange.Redis.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/Swashbuckle.AspNetCore.SwaggerUI.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 690280,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/Swashbuckle.AspNetCore.SwaggerUI.dll",
+      "length": 754688,
+      "name": "Swashbuckle.AspNetCore.SwaggerUI.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/System.IO.Hashing.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 30046,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/System.IO.Hashing.dll",
+      "length": 56104,
+      "name": "System.IO.Hashing.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/System.IdentityModel.Tokens.Jwt.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 39055,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/System.IdentityModel.Tokens.Jwt.dll",
+      "length": 91952,
+      "name": "System.IdentityModel.Tokens.Jwt.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/EventStoreHost/appsettings.json",
+      "@type": "PackageEntry",
+      "compressedLength": 204,
+      "fullName": "tools/net10.0/any/g4-host/bin/EventStoreHost/appsettings.json",
+      "length": 318,
+      "name": "appsettings.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Fluxor.Blazor.Web.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 18972,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Fluxor.Blazor.Web.dll",
+      "length": 28160,
+      "name": "Fluxor.Blazor.Web.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Fluxor.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 49527,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Fluxor.dll",
+      "length": 88576,
+      "name": "Fluxor.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost",
+      "@type": "PackageEntry",
+      "compressedLength": 34188,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost",
+      "length": 78192,
+      "name": "Hexalith.Builds.Module.UiHost"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.deps.json",
+      "@type": "PackageEntry",
+      "compressedLength": 3019,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.deps.json",
+      "length": 16339,
+      "name": "Hexalith.Builds.Module.UiHost.deps.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 7452,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.dll",
+      "length": 16896,
+      "name": "Hexalith.Builds.Module.UiHost.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.pdb",
+      "@type": "PackageEntry",
+      "compressedLength": 16996,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.pdb",
+      "length": 29184,
+      "name": "Hexalith.Builds.Module.UiHost.pdb"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.runtimeconfig.json",
+      "@type": "PackageEntry",
+      "compressedLength": 244,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.runtimeconfig.json",
+      "length": 472,
+      "name": "Hexalith.Builds.Module.UiHost.runtimeconfig.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.staticwebassets.endpoints.json",
+      "@type": "PackageEntry",
+      "compressedLength": 6820,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.staticwebassets.endpoints.json",
+      "length": 102664,
+      "name": "Hexalith.Builds.Module.UiHost.staticwebassets.endpoints.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.staticwebassets.runtime.json",
+      "@type": "PackageEntry",
+      "compressedLength": 1726,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.staticwebassets.runtime.json",
+      "length": 10902,
+      "name": "Hexalith.Builds.Module.UiHost.staticwebassets.runtime.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.xml",
+      "@type": "PackageEntry",
+      "compressedLength": 784,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.Builds.Module.UiHost.xml",
+      "length": 2621,
+      "name": "Hexalith.Builds.Module.UiHost.xml"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Contracts.UI.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10326,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Contracts.UI.dll",
+      "length": 24064,
+      "name": "Hexalith.FrontComposer.Contracts.UI.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Contracts.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 84714,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Contracts.dll",
+      "length": 225792,
+      "name": "Hexalith.FrontComposer.Contracts.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Shell.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 597245,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Hexalith.FrontComposer.Shell.dll",
+      "length": 1865728,
+      "name": "Hexalith.FrontComposer.Shell.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.Authentication.OpenIdConnect.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 50721,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.Authentication.OpenIdConnect.dll",
+      "length": 126760,
+      "name": "Microsoft.AspNetCore.Authentication.OpenIdConnect.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.Http.Connections.Client.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 49765,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.Http.Connections.Client.dll",
+      "length": 116520,
+      "name": "Microsoft.AspNetCore.Http.Connections.Client.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.SignalR.Client.Core.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 83179,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.SignalR.Client.Core.dll",
+      "length": 211240,
+      "name": "Microsoft.AspNetCore.SignalR.Client.Core.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.SignalR.Client.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 11659,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.AspNetCore.SignalR.Client.dll",
+      "length": 20776,
+      "name": "Microsoft.AspNetCore.SignalR.Client.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.Bcl.Cryptography.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 11141,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.Bcl.Cryptography.dll",
+      "length": 19248,
+      "name": "Microsoft.Bcl.Cryptography.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Color.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 326915,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Color.dll",
+      "length": 3541504,
+      "name": "Microsoft.FluentUI.AspNetCore.Components.Icons.Color.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Filled.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 1463490,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Filled.dll",
+      "length": 8631808,
+      "name": "Microsoft.FluentUI.AspNetCore.Components.Icons.Filled.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Light.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 42014,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Light.dll",
+      "length": 206848,
+      "name": "Microsoft.FluentUI.AspNetCore.Components.Icons.Light.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 1661721,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.dll",
+      "length": 10221056,
+      "name": "Microsoft.FluentUI.AspNetCore.Components.Icons.Regular.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 1877,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.Icons.dll",
+      "length": 5120,
+      "name": "Microsoft.FluentUI.AspNetCore.Components.Icons.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 571710,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.FluentUI.AspNetCore.Components.dll",
+      "length": 1817600,
+      "name": "Microsoft.FluentUI.AspNetCore.Components.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Abstractions.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 11250,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Abstractions.dll",
+      "length": 19264,
+      "name": "Microsoft.IdentityModel.Abstractions.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.JsonWebTokens.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 63872,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.JsonWebTokens.dll",
+      "length": 174384,
+      "name": "Microsoft.IdentityModel.JsonWebTokens.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Logging.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 18664,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Logging.dll",
+      "length": 38192,
+      "name": "Microsoft.IdentityModel.Logging.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 47273,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll",
+      "length": 137008,
+      "name": "Microsoft.IdentityModel.Protocols.OpenIdConnect.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Protocols.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 24831,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Protocols.dll",
+      "length": 54064,
+      "name": "Microsoft.IdentityModel.Protocols.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Tokens.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 136056,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/Microsoft.IdentityModel.Tokens.dll",
+      "length": 416024,
+      "name": "Microsoft.IdentityModel.Tokens.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/NUlid.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10220,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/NUlid.dll",
+      "length": 22528,
+      "name": "NUlid.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/System.IdentityModel.Tokens.Jwt.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 39055,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/System.IdentityModel.Tokens.Jwt.dll",
+      "length": 91952,
+      "name": "System.IdentityModel.Tokens.Jwt.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/System.Reactive.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 416918,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/System.Reactive.dll",
+      "length": 1387984,
+      "name": "System.Reactive.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/bin/UiHost/fr/fr/Hexalith.FrontComposer.Shell.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10944,
+      "fullName": "tools/net10.0/any/g4-host/bin/UiHost/fr/fr/Hexalith.FrontComposer.Shell.resources.dll",
+      "length": 30208,
+      "name": "Hexalith.FrontComposer.Shell.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/cs/cs/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13127,
+      "fullName": "tools/net10.0/any/g4-host/cs/cs/Aspire.Hosting.resources.dll",
+      "length": 26464,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/cs/cs/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10145,
+      "fullName": "tools/net10.0/any/g4-host/cs/cs/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 17936,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/cs/cs/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8670,
+      "fullName": "tools/net10.0/any/g4-host/cs/cs/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14880,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/cs/cs/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14403,
+      "fullName": "tools/net10.0/any/g4-host/cs/cs/StreamJsonRpc.resources.dll",
+      "length": 25944,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/de/de/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13100,
+      "fullName": "tools/net10.0/any/g4-host/de/de/Aspire.Hosting.resources.dll",
+      "length": 26424,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/de/de/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10156,
+      "fullName": "tools/net10.0/any/g4-host/de/de/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 18448,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/de/de/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8626,
+      "fullName": "tools/net10.0/any/g4-host/de/de/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14864,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/de/de/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14418,
+      "fullName": "tools/net10.0/any/g4-host/de/de/StreamJsonRpc.resources.dll",
+      "length": 27016,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/es/es/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13066,
+      "fullName": "tools/net10.0/any/g4-host/es/es/Aspire.Hosting.resources.dll",
+      "length": 26424,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/es/es/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10039,
+      "fullName": "tools/net10.0/any/g4-host/es/es/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 18448,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/es/es/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8613,
+      "fullName": "tools/net10.0/any/g4-host/es/es/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14864,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/es/es/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14200,
+      "fullName": "tools/net10.0/any/g4-host/es/es/StreamJsonRpc.resources.dll",
+      "length": 26464,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/fr/fr/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13175,
+      "fullName": "tools/net10.0/any/g4-host/fr/fr/Aspire.Hosting.resources.dll",
+      "length": 26976,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/fr/fr/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10195,
+      "fullName": "tools/net10.0/any/g4-host/fr/fr/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 18448,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/fr/fr/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8589,
+      "fullName": "tools/net10.0/any/g4-host/fr/fr/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14864,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/fr/fr/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14365,
+      "fullName": "tools/net10.0/any/g4-host/fr/fr/StreamJsonRpc.resources.dll",
+      "length": 26976,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/it/it/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 12991,
+      "fullName": "tools/net10.0/any/g4-host/it/it/Aspire.Hosting.resources.dll",
+      "length": 26424,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/it/it/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10084,
+      "fullName": "tools/net10.0/any/g4-host/it/it/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 18448,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/it/it/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8580,
+      "fullName": "tools/net10.0/any/g4-host/it/it/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14864,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/it/it/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14224,
+      "fullName": "tools/net10.0/any/g4-host/it/it/StreamJsonRpc.resources.dll",
+      "length": 26464,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ja/ja/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13173,
+      "fullName": "tools/net10.0/any/g4-host/ja/ja/Aspire.Hosting.resources.dll",
+      "length": 27448,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ja/ja/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10170,
+      "fullName": "tools/net10.0/any/g4-host/ja/ja/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 18456,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ja/ja/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8696,
+      "fullName": "tools/net10.0/any/g4-host/ja/ja/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14880,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ja/ja/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14333,
+      "fullName": "tools/net10.0/any/g4-host/ja/ja/StreamJsonRpc.resources.dll",
+      "length": 28512,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ko/ko/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13097,
+      "fullName": "tools/net10.0/any/g4-host/ko/ko/Aspire.Hosting.resources.dll",
+      "length": 26424,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ko/ko/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10083,
+      "fullName": "tools/net10.0/any/g4-host/ko/ko/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 17952,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ko/ko/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8649,
+      "fullName": "tools/net10.0/any/g4-host/ko/ko/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14880,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ko/ko/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14117,
+      "fullName": "tools/net10.0/any/g4-host/ko/ko/StreamJsonRpc.resources.dll",
+      "length": 26976,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/pl/pl/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13259,
+      "fullName": "tools/net10.0/any/g4-host/pl/pl/Aspire.Hosting.resources.dll",
+      "length": 26464,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/pl/pl/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10306,
+      "fullName": "tools/net10.0/any/g4-host/pl/pl/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 18464,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/pl/pl/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8673,
+      "fullName": "tools/net10.0/any/g4-host/pl/pl/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14864,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/pl/pl/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14469,
+      "fullName": "tools/net10.0/any/g4-host/pl/pl/StreamJsonRpc.resources.dll",
+      "length": 26464,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/projects/EventStore/Host.csproj",
+      "@type": "PackageEntry",
+      "compressedLength": 596,
+      "fullName": "tools/net10.0/any/g4-host/projects/EventStore/Host.csproj",
+      "length": 1510,
+      "name": "Host.csproj"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/projects/EventStore/Placeholder.cs",
+      "@type": "PackageEntry",
+      "compressedLength": 70,
+      "fullName": "tools/net10.0/any/g4-host/projects/EventStore/Placeholder.cs",
+      "length": 83,
+      "name": "Placeholder.cs"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/projects/Ui/Host.csproj",
+      "@type": "PackageEntry",
+      "compressedLength": 590,
+      "fullName": "tools/net10.0/any/g4-host/projects/Ui/Host.csproj",
+      "length": 1486,
+      "name": "Host.csproj"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/projects/Ui/Placeholder.cs",
+      "@type": "PackageEntry",
+      "compressedLength": 70,
+      "fullName": "tools/net10.0/any/g4-host/projects/Ui/Placeholder.cs",
+      "length": 83,
+      "name": "Placeholder.cs"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/pt-BR/pt-BR/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13112,
+      "fullName": "tools/net10.0/any/g4-host/pt-BR/pt-BR/Aspire.Hosting.resources.dll",
+      "length": 26464,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/pt-BR/pt-BR/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10048,
+      "fullName": "tools/net10.0/any/g4-host/pt-BR/pt-BR/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 17952,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/pt-BR/pt-BR/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8603,
+      "fullName": "tools/net10.0/any/g4-host/pt-BR/pt-BR/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14864,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/pt-BR/pt-BR/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14165,
+      "fullName": "tools/net10.0/any/g4-host/pt-BR/pt-BR/StreamJsonRpc.resources.dll",
+      "length": 26464,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ru/ru/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13481,
+      "fullName": "tools/net10.0/any/g4-host/ru/ru/Aspire.Hosting.resources.dll",
+      "length": 28512,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ru/ru/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10535,
+      "fullName": "tools/net10.0/any/g4-host/ru/ru/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 19480,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ru/ru/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8855,
+      "fullName": "tools/net10.0/any/g4-host/ru/ru/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 15392,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/ru/ru/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14908,
+      "fullName": "tools/net10.0/any/g4-host/ru/ru/StreamJsonRpc.resources.dll",
+      "length": 30088,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/linux-arm64/native/runtimes/linux-arm64/native/libhex1binterop.so",
+      "@type": "PackageEntry",
+      "compressedLength": 7927,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/linux-arm64/native/runtimes/linux-arm64/native/libhex1binterop.so",
+      "length": 71960,
+      "name": "libhex1binterop.so"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/linux-x64/native/runtimes/linux-x64/native/libhex1binterop.so",
+      "@type": "PackageEntry",
+      "compressedLength": 7009,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/linux-x64/native/runtimes/linux-x64/native/libhex1binterop.so",
+      "length": 21896,
+      "name": "libhex1binterop.so"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/osx-arm64/native/runtimes/osx-arm64/native/libhex1binterop.dylib",
+      "@type": "PackageEntry",
+      "compressedLength": 4636,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/osx-arm64/native/runtimes/osx-arm64/native/libhex1binterop.dylib",
+      "length": 52072,
+      "name": "libhex1binterop.dylib"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/osx-x64/native/runtimes/osx-x64/native/libhex1binterop.dylib",
+      "@type": "PackageEntry",
+      "compressedLength": 4310,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/osx-x64/native/runtimes/osx-x64/native/libhex1binterop.dylib",
+      "length": 18752,
+      "name": "libhex1binterop.dylib"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/unix/lib/net6.0/runtimes/unix/lib/net6.0/System.Drawing.Common.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 167744,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/unix/lib/net6.0/runtimes/unix/lib/net6.0/System.Drawing.Common.dll",
+      "length": 427112,
+      "name": "System.Drawing.Common.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/win-arm64/native/arm64/runtimes/win-arm64/native/arm64/OpenConsole.exe",
+      "@type": "PackageEntry",
+      "compressedLength": 526752,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/win-arm64/native/arm64/runtimes/win-arm64/native/arm64/OpenConsole.exe",
+      "length": 1120056,
+      "name": "OpenConsole.exe"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/win-arm64/native/runtimes/win-arm64/native/conpty.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 50445,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/win-arm64/native/runtimes/win-arm64/native/conpty.dll",
+      "length": 106336,
+      "name": "conpty.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/win-arm64/native/runtimes/win-arm64/native/hex1bpty.exe",
+      "@type": "PackageEntry",
+      "compressedLength": 2260448,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/win-arm64/native/runtimes/win-arm64/native/hex1bpty.exe",
+      "length": 5028352,
+      "name": "hex1bpty.exe"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/win-x64/native/arm64/runtimes/win-x64/native/arm64/OpenConsole.exe",
+      "@type": "PackageEntry",
+      "compressedLength": 526752,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/win-x64/native/arm64/runtimes/win-x64/native/arm64/OpenConsole.exe",
+      "length": 1120056,
+      "name": "OpenConsole.exe"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/win-x64/native/runtimes/win-x64/native/conpty.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 56753,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/win-x64/native/runtimes/win-x64/native/conpty.dll",
+      "length": 109920,
+      "name": "conpty.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/win-x64/native/runtimes/win-x64/native/hex1bpty.exe",
+      "@type": "PackageEntry",
+      "compressedLength": 2352690,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/win-x64/native/runtimes/win-x64/native/hex1bpty.exe",
+      "length": 4914688,
+      "name": "hex1bpty.exe"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/win-x64/native/x64/runtimes/win-x64/native/x64/OpenConsole.exe",
+      "@type": "PackageEntry",
+      "compressedLength": 563289,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/win-x64/native/x64/runtimes/win-x64/native/x64/OpenConsole.exe",
+      "length": 1066296,
+      "name": "OpenConsole.exe"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/win/lib/net10.0/runtimes/win/lib/net10.0/System.Diagnostics.EventLog.Messages.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13431,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/win/lib/net10.0/runtimes/win/lib/net10.0/System.Diagnostics.EventLog.Messages.dll",
+      "length": 800552,
+      "name": "System.Diagnostics.EventLog.Messages.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/win/lib/net6.0/runtimes/win/lib/net6.0/Microsoft.Win32.SystemEvents.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 26503,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/win/lib/net6.0/runtimes/win/lib/net6.0/Microsoft.Win32.SystemEvents.dll",
+      "length": 53352,
+      "name": "Microsoft.Win32.SystemEvents.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/runtimes/win/lib/net6.0/runtimes/win/lib/net6.0/System.Drawing.Common.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 180468,
+      "fullName": "tools/net10.0/any/g4-host/runtimes/win/lib/net6.0/runtimes/win/lib/net6.0/System.Drawing.Common.dll",
+      "length": 454248,
+      "name": "System.Drawing.Common.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/tr/tr/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13062,
+      "fullName": "tools/net10.0/any/g4-host/tr/tr/Aspire.Hosting.resources.dll",
+      "length": 26464,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/tr/tr/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10050,
+      "fullName": "tools/net10.0/any/g4-host/tr/tr/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 17952,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/tr/tr/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8626,
+      "fullName": "tools/net10.0/any/g4-host/tr/tr/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14880,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/tr/tr/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 14115,
+      "fullName": "tools/net10.0/any/g4-host/tr/tr/StreamJsonRpc.resources.dll",
+      "length": 25952,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 12921,
+      "fullName": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Aspire.Hosting.resources.dll",
+      "length": 25400,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 9815,
+      "fullName": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 16400,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8532,
+      "fullName": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14880,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/zh-Hans/zh-Hans/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13979,
+      "fullName": "tools/net10.0/any/g4-host/zh-Hans/zh-Hans/StreamJsonRpc.resources.dll",
+      "length": 24928,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Aspire.Hosting.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 12943,
+      "fullName": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Aspire.Hosting.resources.dll",
+      "length": 25400,
+      "name": "Aspire.Hosting.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Microsoft.VisualStudio.Threading.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 9869,
+      "fullName": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Microsoft.VisualStudio.Threading.resources.dll",
+      "length": 17424,
+      "name": "Microsoft.VisualStudio.Threading.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Microsoft.VisualStudio.Validation.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 8535,
+      "fullName": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/Microsoft.VisualStudio.Validation.resources.dll",
+      "length": 14864,
+      "name": "Microsoft.VisualStudio.Validation.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/g4-host/zh-Hant/zh-Hant/StreamJsonRpc.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 13996,
+      "fullName": "tools/net10.0/any/g4-host/zh-Hant/zh-Hant/StreamJsonRpc.resources.dll",
+      "length": 24968,
+      "name": "StreamJsonRpc.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/it/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10729,
+      "fullName": "tools/net10.0/any/it/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/ja/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10808,
+      "fullName": "tools/net10.0/any/ja/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/ko/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10748,
+      "fullName": "tools/net10.0/any/ko/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/pl/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10695,
+      "fullName": "tools/net10.0/any/pl/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/pt-BR/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10676,
+      "fullName": "tools/net10.0/any/pt-BR/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/ru/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10843,
+      "fullName": "tools/net10.0/any/ru/System.CommandLine.resources.dll",
+      "length": 19256,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/schemas/hexalith.module-manifest.v2.json",
+      "@type": "PackageEntry",
+      "compressedLength": 3625,
+      "fullName": "tools/net10.0/any/schemas/hexalith.module-manifest.v2.json",
+      "length": 29840,
+      "name": "hexalith.module-manifest.v2.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/schemas/hexalith.test-environment.v1.json",
+      "@type": "PackageEntry",
+      "compressedLength": 3734,
+      "fullName": "tools/net10.0/any/schemas/hexalith.test-environment.v1.json",
+      "length": 37361,
+      "name": "hexalith.test-environment.v1.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/schemas/hexalith.test-result.v1.json",
+      "@type": "PackageEntry",
+      "compressedLength": 4494,
+      "fullName": "tools/net10.0/any/schemas/hexalith.test-result.v1.json",
+      "length": 46488,
+      "name": "hexalith.test-result.v1.json"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/tr/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10695,
+      "fullName": "tools/net10.0/any/tr/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/zh-Hans/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10661,
+      "fullName": "tools/net10.0/any/zh-Hans/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#tools/net10.0/any/zh-Hant/System.CommandLine.resources.dll",
+      "@type": "PackageEntry",
+      "compressedLength": 10681,
+      "fullName": "tools/net10.0/any/zh-Hant/System.CommandLine.resources.dll",
+      "length": 18744,
+      "name": "System.CommandLine.resources.dll"
+    },
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#.signature.p7s",
+      "@type": "PackageEntry",
+      "compressedLength": 12983,
+      "fullName": ".signature.p7s",
+      "length": 12983,
+      "name": ".signature.p7s"
+    }
+  ],
+  "packageTypes": [
+    {
+      "@id": "https://api.nuget.org/v3/catalog0/data/2026.10.25.13.50.17/hexalith.builds.module.cli.4.38.0.json#packagetypes/DotnetTool",
+      "@type": "PackageType",
+      "name": "DotnetTool"
+    }
+  ],
+  "tags": [
+    "Hexalith",
+    "Build",
+    "Tooling",
+    "Aspire",
+    "Dapr",
+    "Evidence"
+  ],
+  "@context": {
+    "@vocab": "http://schema.nuget.org/schema#",
+    "catalog": "http://schema.nuget.org/catalog#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dependencies": {
+      "@id": "dependency",
+      "@container": "@set"
+    },
+    "dependencyGroups": {
+      "@id": "dependencyGroup",
+      "@container": "@set"
+    },
+    "packageEntries": {
+      "@id": "packageEntry",
+      "@container": "@set"
+    },
+    "packageTypes": {
+      "@id": "packageType",
+      "@container": "@set"
+    },
+    "supportedFrameworks": {
+      "@id": "supportedFramework",
+      "@container": "@set"
+    },
+    "tags": {
+      "@id": "tag",
+      "@container": "@set"
+    },
+    "vulnerabilities": {
+      "@id": "vulnerability",
+      "@container": "@set"
+    },
+    "published": {
+      "@type": "xsd:dateTime"
+    },
+    "created": {
+      "@type": "xsd:dateTime"
+    },
+    "lastEdited": {
+      "@type": "xsd:dateTime"
+    },
+    "catalog:commitTimeStamp": {
+      "@type": "xsd:dateTime"
+    },
+    "reasons": {
+      "@container": "@set"
+    }
+  }
+}

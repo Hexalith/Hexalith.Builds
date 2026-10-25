@@ -1,0 +1,20 @@
+{
+  "command": [
+    "dotnet",
+    "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll",
+    "-automated",
+    "sync",
+    "-failSkips",
+    "-parallel",
+    "none",
+    "-method",
+    "Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.PublicSourceWarningAppearsOnSuccessAsync",
+    "-method",
+    "Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.DescriptorModuleProjectOutsideMappingStopsEngineAsync",
+    "-method",
+    "Hexalith.Builds.ModuleTool.Tests.StartupCoordinationTests.ShortSelectedDeadlineStillBoundsSourceMappingAsync"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:21:07.399086+00:00",
+  "exactSource": "e171c5a788eab183b32683431b084198c9b8d373"
+}

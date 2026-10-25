@@ -1,0 +1,9 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/actions/runs/40192040716/logs"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:38:18.341790+00:00"
+}

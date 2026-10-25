@@ -1,0 +1,24 @@
+Updating 7144b80..6e40ea5
+Fast-forward
+ README.md                                          |   8 +-
+ .../ModuleRunEvidenceArtifactValidator.cs          |   1 -
+ .../Runtime/CompositionEngine.cs                   | 173 ++++++++----
+ .../Runtime/CompositionProcessEnvironmentReader.cs | 217 ++++++++++++++
+ .../Runtime/CompositionRunListing.cs               |  64 ++++-
+ .../Runtime/CompositionRunResourceScanner.cs       |  17 +-
+ .../Runtime/CompositionRunStateStore.cs            |  11 +-
+ .../Runtime/ModuleCommandExecutionService.cs       |  41 ++-
+ .../Runtime/ModuleTestRunRecord.cs                 |   3 +
+ .../Runtime/NativeTestExecutor.cs                  |   5 +
+ .../TestEnvironment/TestResultWriter.cs            |   3 +-
+ .../CompositionEngineTests.cs                      |  46 +++
+ .../CompositionRunListingTests.cs                  |  47 ++++
+ .../LocalRunCommittedReviewTests.cs                | 311 +++++++++++++++++++++
+ .../LocalRunFollowupTests.cs                       |  29 +-
+ .../LocalRunLifecycleReviewTests.cs                |   1 +
+ .../LocalRunLifecycleTests.cs                      |   1 +
+ .../ModuleRunnerReviewRegressionTests.cs           |   9 +-
+ .../TestEnvironmentProvisioningReviewTests.cs      |   5 +
+ 19 files changed, 894 insertions(+), 98 deletions(-)
+ create mode 100644 src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionProcessEnvironmentReader.cs
+ create mode 100644 test/Hexalith.Builds.Module.Tests/LocalRunCommittedReviewTests.cs

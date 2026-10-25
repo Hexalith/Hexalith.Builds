@@ -1,0 +1,40 @@
+{
+  "observedAtUtc": "2026-10-25T12:15:35.846567+00:00",
+  "sourceBase": "68e65f2023eca117a2aa08a022ee33d8f4c34a44",
+  "change": "A shared finite 30-second allowance in the two process-backed ready/success fixtures only. All warning/result/native-handoff assertions are retained.",
+  "changedCodeFiles": [
+    "test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs"
+  ],
+  "baselineFocused": {
+    "exitCode": 0,
+    "testsTotal": 2,
+    "failed": 0,
+    "skipped": 0,
+    "notRun": 0,
+    "meaning": "The original warning case passed locally in both formats; the native CI failure remains the reproduced load-sensitive observation."
+  },
+  "updatedDebugBuild": {
+    "exitCode": 0,
+    "warnings": 0,
+    "errors": 0,
+    "evidence": "warning-fixture-updated-build-02.stdout.txt"
+  },
+  "initialUpdatedBuild": {
+    "exitCode": 1,
+    "rule": "RCS1181",
+    "resolution": "Converted the new fixture field comment to XML documentation; no rule or gate change."
+  },
+  "focused": {
+    "exitCode": 0,
+    "testsTotal": 18,
+    "failed": 0,
+    "skipped": 0,
+    "notRun": 0,
+    "executionSeconds": 81.739,
+    "evidence": "warning-fixture-focused-results.json"
+  },
+  "negativeControls": "Eight existing readiness-refusal cases plus the unchanged0.5-second selected-mapping deadline test passed; prior unmapped-project refusal and warning-failure cases also passed.",
+  "productionAndGateDiffExitCode": 0,
+  "newFullCi": "required at the eventual exact main SHA; not yet run",
+  "releaseDispatch": "not-run"
+}

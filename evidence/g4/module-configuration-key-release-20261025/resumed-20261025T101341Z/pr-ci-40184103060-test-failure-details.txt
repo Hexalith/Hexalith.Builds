@@ -1,0 +1,40 @@
+2026-10-25T10:46:18.2914014Z ##[endgroup]
+2026-10-25T10:46:25.2284897Z Running tests from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+2026-10-25T10:48:37.3450983Z failed Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.DescriptorModuleProjectOutsideMappingStopsEngineAsync (3s 073ms)
+2026-10-25T10:48:37.3481659Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+2026-10-25T10:48:37.3491083Z   Shouldly.ShouldAssertException : True
+2026-10-25T10:48:37.3543198Z       should be
+2026-10-25T10:48:37.3543903Z   False
+2026-10-25T10:48:37.3570028Z       but was not
+2026-10-25T10:48:37.3573388Z     at Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.DescriptorModuleProjectOutsideMappingStopsEngineAsync() in /_/test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs:1151
+2026-10-25T10:48:37.3601593Z     at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+2026-10-25T10:48:37.3631226Z     at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+2026-10-25T10:48:37.3660458Z     --- End of stack trace from previous location ---
+2026-10-25T10:48:37.3667437Z     at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+2026-10-25T10:48:37.3671879Z     at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+2026-10-25T10:49:35.0472241Z skipped Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceAppHostTests.PlatformPlanDelegatesToThePinnedModelAsync
+2026-10-25T10:49:35.0500555Z   This integration assertion requires the enclosing Platform checkout.
+2026-10-25T10:49:35.0561389Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+2026-10-25T10:50:04.3262722Z skipped Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceMsBuildTests.RootDeclaredCommonsLibraryCandidateSelectsSourceAsync
+2026-10-25T10:50:04.3264711Z   This repository is not inside the Platform root with its Commons checkout.
+2026-10-25T10:50:04.3266606Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+2026-10-25T10:50:28.1325628Z   This repository is not inside the Platform root with its EventStore checkout.
+2026-10-25T10:50:28.1342571Z   from /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64)
+2026-10-25T10:54:52.8632918Z /home/runner/work/Hexalith.Builds/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll (net10.0|x64) failed with 1 error(s) (8m 27s 637ms)
+2026-10-25T10:54:52.8634773Z Exit code: 2
+2026-10-25T10:54:52.8635231Z   Standard output: g4: waiting for resource 'first' to become healthy.
+2026-10-25T10:54:52.8635814Z   g4: waiting for resource 'eventstore' to become healthy.
+2026-10-25T10:54:52.8636307Z   g4: waiting for resource 'worker' to become healthy.
+2026-10-25T10:54:52.8636753Z   g4: waiting for Dapr invocation of 'worker-app'.
+2026-10-25T10:54:52.8637495Z   g4: waiting for resource 'worker' to become healthy.
+2026-10-25T10:54:52.8638184Z   fail: Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService[103]
+2026-10-25T10:54:52.8677475Z   g4: HXR026 resource='selected' appId='selected-app' status='request-timeout;probe-timeout'.
+2026-10-25T10:54:52.8678744Z   g4: HXR028 resource='stdin-listener' appId='-' status='blocked-after-stop'.
+2026-10-25T10:54:52.8680379Z   g4: HXR027 resource='eventstore' appId='eventstore' status='fault-OptionsValidationException'.
+2026-10-25T10:54:52.8681791Z   g4: HXR021 resource='apphost-start' appId='-' status='state=unreported;health=unreported'.
+2026-10-25T10:54:52.8683061Z   g4: HXR021 resource='worker' appId='-' status='state=Running;health=Unhealthy'.
+2026-10-25T10:54:52.8684466Z   g4: HXR026 resource='selected-test-observations' appId='orders' status='identity-or-access-unavailable'.
+2026-10-25T10:54:52.8685826Z   g4: HXR025 resource='first' appId='-' status='state=Running;health=Unhealthy'.
+2026-10-25T10:54:52.8686428Z 
+2026-10-25T10:54:52.8686924Z Test run summary: Failed!
+2026-10-25T10:54:52.8691563Z   total: 2097

@@ -1,0 +1,9 @@
+{
+  "diff": "/tmp/module-cli-release-review-cnjdhb__/release-content.diff",
+  "sizeBytes": 823376,
+  "sha256": "b0a48fbc9d767e24a8878a948a0cf38b06407881392f9af8df85fce8f4b83505",
+  "untrackedIncluded": 622,
+  "untrackedOutsideTask": [],
+  "reviewOnlyAttributes": "/tmp/module-cli-release-review-cnjdhb__/diff-attributes",
+  "scopeGate": "review/entry-scope-gate.json"
+}

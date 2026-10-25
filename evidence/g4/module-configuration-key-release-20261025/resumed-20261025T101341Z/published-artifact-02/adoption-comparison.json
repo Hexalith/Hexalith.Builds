@@ -1,0 +1,313 @@
+{
+  "predecessorRowsEqual": false,
+  "differences": {
+    "removed": [
+      {
+        "requirement": "gitlinks",
+        "passed": true,
+        "file": ".gitmodules",
+        "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+      }
+    ],
+    "added": [
+      {
+        "requirement": "gitlinks",
+        "passed": false,
+        "file": "references/Hexalith.Builds",
+        "reason": "Required source 'Hexalith.Builds' at '/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds' is unavailable: Package-origin checkout HEAD 'e171c5a788eab183b32683431b084198c9b8d373' does not match the root's staged gitlink '68e65f2023eca117a2aa08a022ee33d8f4c34a44'. Restore the staged gitlink with git -C '/home/administrator/projects/hexalith/conversations' submodule update --checkout -- ':(literal)references/Hexalith.Builds', or deinitialize the stale checkout before retrying."
+      }
+    ]
+  },
+  "currentRows": [
+    {
+      "requirement": "workspace",
+      "passed": true,
+      "file": ".git",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "declaration",
+      "passed": true,
+      "file": "module/hexalith.module-manifest.v2.json",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "references",
+      "passed": true,
+      "file": ".gitmodules",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "gitlinks",
+      "passed": false,
+      "file": "references/Hexalith.Builds",
+      "reason": "Required source 'Hexalith.Builds' at '/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds' is unavailable: Package-origin checkout HEAD 'e171c5a788eab183b32683431b084198c9b8d373' does not match the root's staged gitlink '68e65f2023eca117a2aa08a022ee33d8f4c34a44'. Restore the staged gitlink with git -C '/home/administrator/projects/hexalith/conversations' submodule update --checkout -- ':(literal)references/Hexalith.Builds', or deinitialize the stale checkout before retrying."
+    },
+    {
+      "requirement": "nested-references",
+      "passed": true,
+      "file": ".gitmodules",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "tool-pin",
+      "passed": true,
+      "file": ".config/dotnet-tools.json",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "hosting-inventory",
+      "passed": true,
+      "file": "module/hosting-inventory.json",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "Directory.Build.props",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "Directory.Packages.props",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "src/Hexalith.Conversations.AppHost/Hexalith.Conversations.AppHost.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "src/Hexalith.Conversations.Client/Hexalith.Conversations.Client.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "src/Hexalith.Conversations.Contracts/Hexalith.Conversations.Contracts.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "src/Hexalith.Conversations.Server/Hexalith.Conversations.Server.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "src/Hexalith.Conversations/Hexalith.Conversations.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.AppHost.Tests/Hexalith.Conversations.AppHost.Tests.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.Contracts.Tests/ContractPackageInventoryTest.cs",
+      "reason": "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.Contracts.Tests/Hexalith.Conversations.Contracts.Tests.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.IntegrationTests/Hexalith.Conversations.IntegrationTests.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.Server.Tests/Hexalith.Conversations.Server.Tests.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.Tests/Hexalith.Conversations.Tests.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/fixtures/Hexalith.Conversations.MinimalModule/Directory.Build.props",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dapr-subscriptions",
+      "passed": false,
+      "file": "src/Hexalith.Conversations.Server/Projections/ConversationProjectionReadModelKeys.cs",
+      "reason": "Literal Dapr component name; obtain the name from the declared configuration key."
+    },
+    {
+      "requirement": "dapr-subscriptions",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.IntegrationTests/Projections/ConversationGatewayLiveFixture.cs",
+      "reason": "Literal Dapr component name; obtain the name from the declared configuration key."
+    },
+    {
+      "requirement": "dapr-subscriptions",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.IntegrationTests/Projections/ConversationProjectionReadStorePopulationLiveTests.cs",
+      "reason": "Literal Dapr component name; obtain the name from the declared configuration key."
+    }
+  ],
+  "predecessorRows": [
+    {
+      "requirement": "workspace",
+      "passed": true,
+      "file": ".git",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "declaration",
+      "passed": true,
+      "file": "module/hexalith.module-manifest.v2.json",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "references",
+      "passed": true,
+      "file": ".gitmodules",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "gitlinks",
+      "passed": true,
+      "file": ".gitmodules",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "nested-references",
+      "passed": true,
+      "file": ".gitmodules",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "tool-pin",
+      "passed": true,
+      "file": ".config/dotnet-tools.json",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "hosting-inventory",
+      "passed": true,
+      "file": "module/hosting-inventory.json",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "Directory.Build.props",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "Directory.Packages.props",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "src/Hexalith.Conversations.AppHost/Hexalith.Conversations.AppHost.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "src/Hexalith.Conversations.Client/Hexalith.Conversations.Client.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "src/Hexalith.Conversations.Contracts/Hexalith.Conversations.Contracts.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "src/Hexalith.Conversations.Server/Hexalith.Conversations.Server.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "src/Hexalith.Conversations/Hexalith.Conversations.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.AppHost.Tests/Hexalith.Conversations.AppHost.Tests.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.Contracts.Tests/ContractPackageInventoryTest.cs",
+      "reason": "Known sibling/nested/package-fallback helper or file-based dependency/mode selection; use only the tool-resolved mapping."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.Contracts.Tests/Hexalith.Conversations.Contracts.Tests.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.IntegrationTests/Hexalith.Conversations.IntegrationTests.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.Server.Tests/Hexalith.Conversations.Server.Tests.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.Tests/Hexalith.Conversations.Tests.csproj",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dependency-selectors",
+      "passed": false,
+      "file": "tests/fixtures/Hexalith.Conversations.MinimalModule/Directory.Build.props",
+      "reason": "File-based dependency selection or sibling/nested fallback; consume only tool-mapped roots and project/package pairs."
+    },
+    {
+      "requirement": "dapr-subscriptions",
+      "passed": false,
+      "file": "src/Hexalith.Conversations.Server/Projections/ConversationProjectionReadModelKeys.cs",
+      "reason": "Literal Dapr component name; obtain the name from the declared configuration key."
+    },
+    {
+      "requirement": "dapr-subscriptions",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.IntegrationTests/Projections/ConversationGatewayLiveFixture.cs",
+      "reason": "Literal Dapr component name; obtain the name from the declared configuration key."
+    },
+    {
+      "requirement": "dapr-subscriptions",
+      "passed": false,
+      "file": "tests/Hexalith.Conversations.IntegrationTests/Projections/ConversationProjectionReadStorePopulationLiveTests.cs",
+      "reason": "Literal Dapr component name; obtain the name from the declared configuration key."
+    }
+  ]
+}

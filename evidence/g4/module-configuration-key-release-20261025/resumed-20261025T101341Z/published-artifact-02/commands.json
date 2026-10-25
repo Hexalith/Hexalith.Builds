@@ -1,0 +1,150 @@
+[
+  {
+    "name": "feed-tool-install",
+    "command": [
+      "dotnet",
+      "tool",
+      "install",
+      "Hexalith.Builds.Module.Cli",
+      "--version",
+      "4.38.0",
+      "--tool-path",
+      "/tmp/module-cli-published-20261025-qgbj6e5x/tool",
+      "--configfile",
+      "/tmp/module-cli-published-20261025-qgbj6e5x/NuGet.Config",
+      "--no-cache"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "observedAtUtc": "2026-10-25T13:55:16.639594+00:00",
+    "exitCode": 0,
+    "stdoutSha256": "455bb7f32c3948aaf775c539319b9e0bfef5292ce10d18bd39c157ca949d3260",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "feed-tool-version",
+    "command": [
+      "/tmp/module-cli-published-20261025-qgbj6e5x/tool/hexalith-module",
+      "--version"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "observedAtUtc": "2026-10-25T13:55:18.359026+00:00",
+    "exitCode": 0,
+    "stdoutSha256": "1069fcc15f8609cfcb23b12f86b8f62bc2a6087dfb88c6317e7b82c447515664",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "feed-signature-verification",
+    "command": [
+      "dotnet",
+      "nuget",
+      "verify",
+      "/tmp/module-cli-published-20261025-qgbj6e5x/tool/.store/hexalith.builds.module.cli/4.38.0/hexalith.builds.module.cli/4.38.0/hexalith.builds.module.cli.4.38.0.nupkg",
+      "--all"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "observedAtUtc": "2026-10-25T13:55:18.442207+00:00",
+    "exitCode": 0,
+    "stdoutSha256": "72d57a17a0c4d93f3afdd636f3fa9ba8122c83efb0c6c0aa5f19b366ba972760",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "embedded-resource-identity",
+    "command": [
+      "pwsh",
+      "-NoProfile",
+      "-File",
+      "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/inspect-published-resources.ps1",
+      "-AssemblyPath",
+      "/tmp/module-cli-published-20261025-qgbj6e5x/Hexalith.Builds.Tooling.dll",
+      "-OutputDirectory",
+      "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-02/embedded"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "observedAtUtc": "2026-10-25T13:55:19.419313+00:00",
+    "exitCode": 0,
+    "stdoutSha256": "889a948cd5eedb9d48bd0ec5eb2d5b9dfc0235e15253c9a08199b7562dbb48d5",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "ordinary-human",
+    "command": [
+      "/tmp/module-cli-published-20261025-qgbj6e5x/tool/hexalith-module",
+      "validate",
+      "--manifest",
+      "module/hexalith.module-manifest.v2.json",
+      "--output",
+      "human"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/conversations",
+    "observedAtUtc": "2026-10-25T13:55:21.176786+00:00",
+    "exitCode": 0,
+    "stdoutSha256": "670f8f82620ce8ee37554566e6d02a245a5c0bab0f76359e0d2b35bed45cb199",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "adoption-human",
+    "command": [
+      "/tmp/module-cli-published-20261025-qgbj6e5x/tool/hexalith-module",
+      "validate",
+      "--manifest",
+      "module/hexalith.module-manifest.v2.json",
+      "--adoption",
+      "--output",
+      "human"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/conversations",
+    "observedAtUtc": "2026-10-25T13:55:21.396601+00:00",
+    "exitCode": 1,
+    "stdoutSha256": "c98b4ffdbb793ffb44d2e05e4aa1afddcf6365bfa4b518fa8a7759b76be86489",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "ordinary-json",
+    "command": [
+      "/tmp/module-cli-published-20261025-qgbj6e5x/tool/hexalith-module",
+      "validate",
+      "--manifest",
+      "module/hexalith.module-manifest.v2.json",
+      "--output",
+      "json"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/conversations",
+    "observedAtUtc": "2026-10-25T13:55:26.172926+00:00",
+    "exitCode": 0,
+    "stdoutSha256": "724d6ace8bd53e2658aa456dc61b065be48a3fe24e71ebb7c93b76c056cd0d53",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "adoption-json",
+    "command": [
+      "/tmp/module-cli-published-20261025-qgbj6e5x/tool/hexalith-module",
+      "validate",
+      "--manifest",
+      "module/hexalith.module-manifest.v2.json",
+      "--adoption",
+      "--output",
+      "json"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/conversations",
+    "observedAtUtc": "2026-10-25T13:55:26.413958+00:00",
+    "exitCode": 1,
+    "stdoutSha256": "8184e406ce8b47ec0789966be68f0b84c8a5d92b0d0241d417d073ee9b4f80b8",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "invalid-0-0-human",
+    "command": [
+      "/tmp/module-cli-published-20261025-qgbj6e5x/tool/hexalith-module",
+      "validate",
+      "--manifest",
+      "/tmp/module-cli-published-20261025-qgbj6e5x/invalid-0-0.json",
+      "--output",
+      "human"
+    ],
+    "cwd": "/home/administrator/projects/hexalith/conversations",
+    "observedAtUtc": "2026-10-25T13:55:30.059540+00:00",
+    "exitCode": 1,
+    "stdoutSha256": "3d3374f0fe6b7f7a105af8bb105e96dbacec3b503bf8168e2a8f986d6e9b42bf",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

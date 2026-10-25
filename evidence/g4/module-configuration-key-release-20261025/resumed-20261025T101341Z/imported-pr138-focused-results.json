@@ -1,0 +1,16 @@
+{
+  "source": "e171c5a788eab183b32683431b084198c9b8d373",
+  "exitCode": 0,
+  "summaries": [
+    {
+      "$type": "test-assembly-finished",
+      "AssemblyUniqueID": "241821e52e561b54d177645db1cc36c5838b7dc1d876058412252e4c7d870e9a",
+      "ExecutionTime": 16.561,
+      "FinishTime": "2026-10-25T12:21:24.1856708+00:00",
+      "TestsFailed": 0,
+      "TestsNotRun": 0,
+      "TestsSkipped": 0,
+      "TestsTotal": 4
+    }
+  ]
+}

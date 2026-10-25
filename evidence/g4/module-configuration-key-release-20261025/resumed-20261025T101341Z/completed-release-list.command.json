@@ -1,0 +1,11 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/releases?per_page=20"
+  ],
+  "observedAtUtc": "2026-10-25T13:52:41.988042+00:00",
+  "exitCode": 0,
+  "stdoutSha256": "10fbb9fb8871986c2fcde6776cb54d3f9aafeba5e3e5e17ec32ec0ecb9cb4791",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

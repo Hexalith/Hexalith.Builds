@@ -1,0 +1,20 @@
+Props/Directory.Packages.props text eol=crlf
+*.cs text eol=crlf whitespace=cr-at-eol
+test/fixtures/**/*.json text eol=lf
+test/fixtures/**/*.yaml text eol=lf
+# Acceptance-validator artifacts are SHA-256 bound by the corpus records; their bytes must never be converted.
+test/fixtures/evidence/acceptance/bound/** -text
+# Candidate qualification outputs are byte-bound observations; preserve their exact bytes.
+evidence/g4/** -text
+
+# Raw qualification observations retain CRLF; saved patches retain context spaces.
+evidence/g4/story117-package-seed-20261016/** whitespace=cr-at-eol
+evidence/g4/story117-package-seed-20261016/*.patch -whitespace
+evidence/g4/story117-package-seed-20261016/**/*.patch -whitespace
+evidence/g4/story117-package-seed-20261016/*.log -whitespace
+evidence/g4/story117-package-seed-20261016/**/*.log -whitespace
+
+# Preserve raw approved-tuple observations and saved patch context.
+evidence/g4/approved-tuple-20261020/** whitespace=cr-at-eol
+evidence/g4/approved-tuple-20261020/*.patch -whitespace
+evidence/g4/approved-tuple-20261020/*.log -whitespace

@@ -1,0 +1,29 @@
+{
+  "observedAtUtc": "2026-10-25T12:22:19.451504+00:00",
+  "source": "e171c5a788eab183b32683431b084198c9b8d373",
+  "importedPr": 138,
+  "mergeRuleSuite": 4710425344,
+  "mergeRuleResult": "pass",
+  "importedMessagePinnedCommitlintExitCode": 0,
+  "exactSourceDebugBuild": {
+    "exitCode": 0,
+    "warnings": 0,
+    "errors": 0,
+    "evidence": "imported-pr138-focused-build.stdout.txt"
+  },
+  "exactSourceFocused": {
+    "exitCode": 0,
+    "total": 4,
+    "failed": 0,
+    "skipped": 0,
+    "notRun": 0,
+    "evidence": "imported-pr138-focused-results.json",
+    "scope": "human/json warning success, prior unmapped-project refusal and unchanged0.5-second selected mapping deadline"
+  },
+  "proposalEvidenceBoundary": "The archived two-fixture proposal passed18 tests, but that result is not exact-source proof for this imported one-line fix. Native-handoff fixture remains unchanged in imported source and is covered by required fullCI.",
+  "fullPushCi": {
+    "id": 40192040716,
+    "result": "pending"
+  },
+  "releaseDispatch": "not-run"
+}

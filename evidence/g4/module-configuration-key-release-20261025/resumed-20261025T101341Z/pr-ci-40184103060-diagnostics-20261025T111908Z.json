@@ -1,0 +1,45 @@
+[
+  {
+    "file": "1_Build and test.txt",
+    "lines": [
+      "2026-10-25T10:54:52.8685833Z   g4: HXR025 resource='first' appId='-' status='state=Running;health=Unhealthy'.",
+      "2026-10-25T10:54:52.8686434Z ",
+      "2026-10-25T10:54:52.8686928Z \u001b[31mTest run summary: Failed!",
+      "2026-10-25T10:54:52.8691588Z \u001b[m  total: 2097",
+      "2026-10-25T10:54:52.8692113Z \u001b[31m  failed: 1",
+      "2026-10-25T10:54:52.8692626Z \u001b[m  succeeded: 2093",
+      "2026-10-25T10:54:52.8693031Z   skipped: 3",
+      "2026-10-25T10:54:52.8693459Z   duration: 8m 27s 875ms",
+      "2026-10-25T10:54:52.8694639Z Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)",
+      "2026-10-25T10:54:52.8967546Z ##[error]Process completed with exit code 2.",
+      "2026-10-25T10:54:52.8693459Z   duration: 8m 27s 875ms",
+      "2026-10-25T10:54:52.8694639Z Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)",
+      "2026-10-25T10:54:52.8967546Z ##[error]Process completed with exit code 2.",
+      "2026-10-25T10:54:52.9085991Z Post job cleanup.",
+      "2026-10-25T10:54:52.9090230Z ##[start-action display=Setup .NET from global.json;id=__ee2938e9-ed41-4efa-b69b-fbb389199f77.__actions_setup-dotnet]",
+      "2026-10-25T10:54:52.9092375Z ##[end-action id=__ee2938e9-ed41-4efa-b69b-fbb389199f77.__actions_setup-dotnet;outcome=skipped;conclusion=skipped;duration_ms=0]",
+      "2026-10-25T10:54:52.9175744Z Post job cleanup.",
+      "2026-10-25T10:54:53.0041692Z [command]/usr/bin/git version",
+      "2026-10-25T10:54:53.0090034Z git version 2.55.0",
+      "2026-10-25T10:54:53.0128450Z Temporarily overriding HOME='/home/runner/work/_temp/4aeb89c0-7295-4ece-a5f4-dca4f54baf51' before making global git config changes"
+    ]
+  },
+  {
+    "file": "Build and test/32_Test Hexalith.Builds.Module.Tests.txt",
+    "lines": [
+      "2026-10-25T10:54:52.8685826Z   g4: HXR025 resource='first' appId='-' status='state=Running;health=Unhealthy'.",
+      "2026-10-25T10:54:52.8686428Z ",
+      "2026-10-25T10:54:52.8686924Z \u001b[31mTest run summary: Failed!",
+      "2026-10-25T10:54:52.8691563Z \u001b[m  total: 2097",
+      "2026-10-25T10:54:52.8692105Z \u001b[31m  failed: 1",
+      "2026-10-25T10:54:52.8692620Z \u001b[m  succeeded: 2093",
+      "2026-10-25T10:54:52.8693026Z   skipped: 3",
+      "2026-10-25T10:54:52.8693454Z   duration: 8m 27s 875ms",
+      "2026-10-25T10:54:52.8694628Z Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)",
+      "2026-10-25T10:54:52.8967520Z ##[error]Process completed with exit code 2.",
+      "2026-10-25T10:54:52.8693454Z   duration: 8m 27s 875ms",
+      "2026-10-25T10:54:52.8694628Z Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)",
+      "2026-10-25T10:54:52.8967520Z ##[error]Process completed with exit code 2."
+    ]
+  }
+]

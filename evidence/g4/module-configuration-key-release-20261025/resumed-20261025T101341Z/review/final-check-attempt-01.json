@@ -1,0 +1,17 @@
+{
+  "observedAtUtc": "2026-10-25T14:43:06.137723+00:00",
+  "result": "stopped",
+  "exitCode": 1,
+  "command": [
+    "git",
+    "-C",
+    "references/Hexalith.Builds",
+    "rev-list",
+    "-n",
+    "1",
+    "v4.38.0"
+  ],
+  "nativeExitCode": 128,
+  "stderr": "fatal: ambiguous argument 'v4.38.0': unknown revision or path not in the working tree.",
+  "classification": "Supplemental local tag-presence assumption failed; published tag was verified remotely in implementation evidence. No source, package, CI, release or adoption gate failure. Use read-only ls-remote for final ref observation; no fetch or local tag write needed."
+}

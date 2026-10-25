@@ -1,0 +1,10 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/actions/runs/40193969210/jobs?per_page=100"
+  ],
+  "observedAtUtc": "2026-10-25T13:39:17.420564+00:00",
+  "exitCode": 0,
+  "stdoutSha256": "9c2f500665fc40ddac37a835bc7fc98e5aaf12b8e1cbc977fb156c2b610d3b2f"
+}

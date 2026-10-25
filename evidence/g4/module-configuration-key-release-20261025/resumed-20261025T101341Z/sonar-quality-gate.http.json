@@ -1,0 +1,5 @@
+{
+  "url": "https://sonarcloud.io/api/qualitygates/project_status?projectKey=Hexalith_Hexalith.Builds&pullRequest=136",
+  "status": 200,
+  "observedAtUtc": "2026-10-25T10:15:35.994031+00:00"
+}

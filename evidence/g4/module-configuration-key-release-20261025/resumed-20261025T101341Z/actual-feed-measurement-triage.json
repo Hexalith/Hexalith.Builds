@@ -1,0 +1,56 @@
+{
+  "observedAtUtc": "2026-10-25T13:58:35.137168+00:00",
+  "measurement": "actual fresh NuGet.org4.38.0 published-artifact-03",
+  "harnessExitCode": 1,
+  "harnessExitReason": "Final predecessor-row equality assertion detected a real current-checkout adoption difference after all malformed controls completed; it is retained, not hidden or changed to force success.",
+  "allRequiredArtifactAndValidationMeasurementsCompleted": true,
+  "ordinaryHumanJson": "0/0; zero diagnostics",
+  "malformedControls": {
+    "total": 36,
+    "fields": 2,
+    "variantsPerField": 9,
+    "formats": 2,
+    "allExit1": true,
+    "allExactHXP002FieldAndCanonicalSource": true,
+    "allInputBytesUnchanged": true
+  },
+  "adoption": {
+    "humanExit": 1,
+    "jsonExit": 1,
+    "totalRows": 24,
+    "passed": 6,
+    "failed": 18,
+    "humanJsonRowsEqual": true,
+    "all17PriorFailuresRetainedUnchanged": true,
+    "newFailure": {
+      "requirement": "gitlinks",
+      "passed": false,
+      "file": "references/Hexalith.Builds",
+      "reason": "Required source 'Hexalith.Builds' at '/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds' is unavailable: Package-origin checkout HEAD 'e171c5a788eab183b32683431b084198c9b8d373' does not match the root's staged gitlink '68e65f2023eca117a2aa08a022ee33d8f4c34a44'. Restore the staged gitlink with git -C '/home/administrator/projects/hexalith/conversations' submodule update --checkout -- ':(literal)references/Hexalith.Builds', or deinitialize the stale checkout before retrying."
+    },
+    "supersededPass": {
+      "requirement": "gitlinks",
+      "passed": true,
+      "file": ".gitmodules",
+      "reason": "Static requirement passed. Bounded static checks only. Human source review is required for unsupported constructs. SM-2 remains separately unverified."
+    },
+    "classification": "Current Builds checkout at released e171 differs from externally committed Conversations indexed link68e65f2. Keep both checkout and indexed link intact; no pin/gitlink edit and no adoption acceptance claimed."
+  },
+  "rootObservation": {
+    "head": "ed53473ea4c67aa10ffc46c9b951d9864fe263d4",
+    "indexedBuilds": "160000 68e65f2023eca117a2aa08a022ee33d8f4c34a44 0\treferences/Hexalith.Builds",
+    "externalCommit": "commit ed53473ea4c67aa10ffc46c9b951d9864fe263d4\nAuthor:     Jerome Piquot <jpiquot@itaneo.com>\nAuthorDate: Sun Oct 25 12:24:40 2026 +0100\nCommit:     Jerome Piquot <jpiquot@itaneo.com>\nCommitDate: Sun Oct 25 12:24:40 2026 +0100\n\n    fix: submodules\n\n .../spec-release-corrected-module-cli.md           | 69 +++++++++++++++++++++-\n references/Hexalith.Builds                         |  2 +-\n 2 files changed, 68 insertions(+), 3 deletions(-)",
+    "reflog": "ed53473ea4c67aa10ffc46c9b951d9864fe263d4 HEAD@{2026-10-25 12:24:40 +0100} commit: fix: submodules\n8444207001d6ad3cd197c2ffba519317effa8b37 HEAD@{2026-10-25 11:05:52 +0100} commit: build: sync Builds after merging governance evidence\nd93d7f8dc6c95ca4e73d4a12729ccca8e4da4998 HEAD@{2026-10-25 11:01:29 +0100} checkout: moving from main to main\nd93d7f8dc6c95ca4e73d4a12729ccca8e4da4998 HEAD@{2026-10-25 11:01:27 +0100} commit: build: sync local changes via /pushall\n3fa50842227ecbbe68a77f10ce68743ac000e26a HEAD@{2026-10-25 10:54:44 +0100} commit: fix: release"
+  },
+  "publishedIdentity": "published-artifact-03/identity.json",
+  "publishedResults": "published-artifact-03/results.json",
+  "publisherSignedHashMatchesRestoredPackage": true,
+  "authority": {
+    "story16_1RuntimeHold": "ACTIVE",
+    "runtimeEntryAllowed": false,
+    "deploymentPerformed": false,
+    "platformAcceptanceClaimed": false,
+    "pinChanges": false,
+    "indexedGitlinkChanges": false
+  }
+}

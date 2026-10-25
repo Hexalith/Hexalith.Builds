@@ -1,0 +1,13 @@
+Finding floor: 823,376 bytes / 1,000 = 823.376 kB; N = min(floor(sqrt(823.376) + 1), 10) = 10.
+
+B1 ModuleCommandExecutionService.cs:1147 checks cleanup once before native execution. StartAsync released provisioning.lock; NativeTestExecutor.cs:391 launches without cleanup-request.json check. Exact cleanup may finish before a late native child launch.
+B2 NativeTestExecutor.cs:399 samples owner cancellation after RunSelectedAsync kills/waits the child. A later owner cancellation during stopping can relabel an earlier execution timeout as cancelled and suppress retention.
+B3 CompositionProcessEnvironmentReader.cs:81 treats Windows OpenProcess failures and macOS EPERM/EACCES as absence, without proving the inaccessible process is foreign.
+B4 CompositionRunResourceScanner.cs:38 marks Linux discovery verified even when environ reads fail or /proc is unavailable.
+B5 CompositionRunStateStore.cs:112 checks resource collections only for nulls. A valid state carrying remainingResources.containerIds=["password=review-secret"] was accepted by list JSON and echoed through containerIds/resourceIds.
+B6 ModuleCommandApplication.cs:90 lacks list cancellation mapping. With 5,000 valid states, SIGINT during list JSON returned exit1 and empty stdout/stderr.
+B7 CompositionResourceClaimStore.cs:33 allows writing a 67,001-byte receipt for1,000 identities; FindOwned rejects it under its64KiB limit, including after ReleaseOwned.
+B8 CompositionDocumentStore.cs:99 reads at most4MiB but writers are unrestricted. Original claim that a valid descriptor can produce an oversized lifecycle record was subsequently RETRACTED as unverified after the1MiB descriptor guard was examined.
+B9 CompositionDocumentStore.cs:137 closes/renames without an explicit stable-storage flush. Reviewer requested a durability barrier or a narrower documented crash guarantee.
+B10 LocalRunCommittedReviewTests.cs:199 injects native process discovery; Ubuntu release does not exercise Windows PEB/WOW64 or macOS sysctl paths on their actual hosts.
+B11 completed-release-collector-attempt-01.py:3 reads an original absolute /tmp/resumed-evidence-path.txt and hardcodes its checkout, preventing portable replay after original temporary paths disappear.

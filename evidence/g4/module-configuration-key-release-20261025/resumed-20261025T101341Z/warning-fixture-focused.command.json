@@ -1,0 +1,27 @@
+{
+  "command": [
+    "dotnet",
+    "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll",
+    "-automated",
+    "sync",
+    "-failSkips",
+    "-parallel",
+    "none",
+    "-method",
+    "Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.PublicSourceWarningAppearsOnSuccessAsync",
+    "-method",
+    "Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.PublicTestCarriesResolvedHashIntoNativeProcessAsync",
+    "-method",
+    "Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.PublicSourceWarningAppearsOnFailureAsync",
+    "-method",
+    "Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceCommandModeTests.DescriptorModuleProjectOutsideMappingStopsEngineAsync",
+    "-method",
+    "Hexalith.Builds.ModuleTool.Tests.CompositionEngineTests.ReadinessFailuresTearDownAndRetainFailedStateAsync",
+    "-method",
+    "Hexalith.Builds.ModuleTool.Tests.StartupCoordinationTests.ShortSelectedDeadlineStillBoundsSourceMappingAsync"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:12:33.748278+00:00",
+  "successFixtureStartupAllowanceSeconds": 30,
+  "negativeControlBounds": "unchanged; HXR021 controls retain 3-second readiness and 0.5-second selected-mapping overrides"
+}

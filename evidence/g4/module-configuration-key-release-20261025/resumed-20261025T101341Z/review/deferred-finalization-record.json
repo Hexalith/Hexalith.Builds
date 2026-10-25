@@ -1,0 +1,14 @@
+{
+  "ledger": "_bmad-output/implementation-artifacts/deferred-work.md",
+  "beforeSha256": "94d6e900b87441909bf7a70553fcfdb5d39c263f95395f17e3c4f31c941b6a2e",
+  "afterSha256": "19f50128bdfa4d040f83a8e777204e25146e085461eb32ddd5c32a6120b4c354",
+  "appendedBytes": 7481,
+  "appendedSha256": "76c20565afe6a0e95ad640a6bba34a89695c5ae82a4cf1748707ccc3e52cef06",
+  "groups": 10,
+  "priorBytesPreserved": true,
+  "observedAtUtc": "2026-10-25T14:44:30.890554+00:00",
+  "supersedesCurrentBytesRecord": "deferred-append-record.json",
+  "originalAppend": "deferred-entries.md",
+  "finalAppend": "deferred-entries-final.md",
+  "change": "Removed one newly appended terminal blank line after git diff --check reported it; every pre-existing ledger byte and finding text is preserved."
+}

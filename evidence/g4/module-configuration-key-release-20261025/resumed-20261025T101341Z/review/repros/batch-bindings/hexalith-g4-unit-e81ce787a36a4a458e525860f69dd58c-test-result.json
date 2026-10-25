@@ -1,0 +1,169 @@
+{
+  "schema": "hexalith.test-result.v1",
+  "policyId": "hexalith.platform.candidate-and-attachment-policy.v1",
+  "bindings": {
+    "run": {
+      "runId": "0123456789abcdef0123456789abcdef",
+      "attemptId": "683a8ad080a94078a1ace4651e083a72",
+      "attemptSequence": 1,
+      "ownerRunId": "0123456789abcdef0123456789abcdef",
+      "environmentId": "f28d36e3f3ef4a878ffe08d2dbbbe52c",
+      "role": "owner"
+    },
+    "environment": {
+      "composition": {
+        "id": "sample",
+        "contentIdentity": "sha256:112fb09c8a5690cadf1ec43711b58107c27ee1946b272416616cc8a27bcde719"
+      },
+      "mode": "source",
+      "executionContext": {
+        "kind": "local"
+      },
+      "catalog": {
+        "commit": "cccccccccccccccccccccccccccccccccccccccc",
+        "instanceId": "f28d36e3f3ef4a878ffe08d2dbbbe52c-catalog"
+      },
+      "isolation": {
+        "state": "populated",
+        "syntheticTenantId": "g4t-0123456789ab",
+        "dataIsolationId": "g4r-0123456789ab",
+        "resourceScopeId": "f28d36e3f3ef4a878ffe08d2dbbbe52c",
+        "catalogScopeId": "f28d36e3f3ef4a878ffe08d2dbbbe52c-catalog"
+      },
+      "resources": [
+        {
+          "resourceId": "eventstore",
+          "moduleId": "eventstore",
+          "endpoints": [
+            {
+              "name": "http",
+              "protocol": "http",
+              "uri": "http://127.0.0.1:20012/"
+            }
+          ]
+        }
+      ],
+      "readiness": {
+        "state": "populated",
+        "status": "ready",
+        "observedAt": "2026-10-25T14:11:04.0749662Z",
+        "resources": [
+          {
+            "resourceId": "eventstore",
+            "status": "ready",
+            "observedAt": "2026-10-25T14:11:04.0754029Z",
+            "diagnosticIds": []
+          }
+        ]
+      },
+      "startupTasks": {
+        "state": "populated",
+        "tasks": []
+      }
+    },
+    "tool": {
+      "state": "not-yet-populated"
+    },
+    "candidate": {
+      "state": "not-yet-populated"
+    },
+    "decision": {
+      "state": "not-yet-populated"
+    },
+    "reuseLineage": {
+      "state": "not-yet-populated"
+    },
+    "artifacts": {
+      "expected": {
+        "state": "not-yet-populated"
+      },
+      "loaded": {
+        "state": "not-yet-populated"
+      }
+    },
+    "suite": {
+      "declared": {
+        "state": "not-yet-populated"
+      },
+      "completion": {
+        "state": "not-yet-populated"
+      }
+    },
+    "attachments": {
+      "state": "populated",
+      "holds": []
+    },
+    "deadlines": {
+      "startup": {
+        "state": "populated",
+        "origin": "environment-requested",
+        "originAt": "2026-10-25T14:11:03.7910750Z",
+        "effectiveSeconds": 600,
+        "expiresAt": "2026-10-25T14:21:03.7910750Z",
+        "actualDurationSeconds": 0,
+        "override": {
+          "state": "not-overridden"
+        }
+      },
+      "execution": {
+        "state": "populated",
+        "origin": "test-execution-started",
+        "originAt": "2026-10-25T14:11:04.4077368Z",
+        "effectiveSeconds": 1,
+        "expiresAt": "2026-10-25T14:11:05.4077368Z",
+        "configurationContentIdentity": "sha256:aa516a77a194bcf12780311ea1d2f888c80fbb52cfabdab17874f9fdcf1196b1",
+        "actualDurationSeconds": 0.1951139
+      }
+    }
+  },
+  "terminal": {
+    "outcome": "failed",
+    "recordedAt": "2026-10-25T14:11:04.6173094Z",
+    "cause": "test-failure",
+    "diagnosticIds": [
+      "lifecycle"
+    ]
+  },
+  "termination": {
+    "state": "not-yet-populated"
+  },
+  "retention": {
+    "state": "populated",
+    "disposition": "failure-retained",
+    "failureRunIds": [
+      "0123456789abcdef0123456789abcdef"
+    ],
+    "retainedResourceIds": [],
+    "reason": "local-failure",
+    "recordedAt": "2026-10-25T14:11:04.6744776Z"
+  },
+  "cleanup": {
+    "state": "populated",
+    "disposition": "not-requested",
+    "observedAt": "2026-10-25T14:11:04.6744776Z",
+    "ownedResourceIds": [
+      "resource:eventstore"
+    ],
+    "leftoverResourceIds": [],
+    "failures": [],
+    "diagnosticIds": [
+      "lifecycle"
+    ]
+  },
+  "diagnostics": [
+    {
+      "id": "lifecycle",
+      "classification": "internal",
+      "redacted": true,
+      "reference": "lifecycle-a8e074b238b54e025a81282d380f19296e481e0bdb78140a61b2712dd2ce28c6.json",
+      "contentIdentity": "sha256:a8e074b238b54e025a81282d380f19296e481e0bdb78140a61b2712dd2ce28c6"
+    },
+    {
+      "id": "native-report",
+      "classification": "internal",
+      "redacted": true,
+      "reference": "native-6dda7ec46c203ab941e211e091968a31631368fe10d417f792b941fe662e8dff.trx",
+      "contentIdentity": "sha256:6dda7ec46c203ab941e211e091968a31631368fe10d417f792b941fe662e8dff"
+    }
+  ]
+}

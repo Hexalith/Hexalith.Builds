@@ -1,0 +1,5 @@
+Native process discovery is unverified on Windows and macOS.
+
+CompositionProcessEnvironmentReader.cs:46 adds native Windows/macOS reads; CompositionRunResourceScanner.cs:38 uses them. Exact teardown calls Scanner.RemoveAsync at CompositionEngine.cs:1830 and releases claims at1848.
+LocalRunCommittedReviewTests.cs:202 injects ProcessDiscoveryOverride; line220 tests synthetic ContainsEntry bytes only. Repository reference searches found no direct native-reader tests. StartupCoordinationTests.cs:202 skips Windows. CI/release run Ubuntu.
+Required verification: tagged owner discovery, foreign-process exclusion, exact cleanup and inaccessible-process behavior on each actual supported native host. An empty native environment result can omit owned processes while Verified remains true; existing stubs/byte tests would pass. Filed disposition patch is independently triaged by the parent for incoming-source ownership.

@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/probe-published-artifact-02.py", line 233, in <module>
+    main()
+    ~~~~^^
+  File "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/probe-published-artifact-02.py", line 213, in main
+    assert f'source={input_path} field={field}:' in lines[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

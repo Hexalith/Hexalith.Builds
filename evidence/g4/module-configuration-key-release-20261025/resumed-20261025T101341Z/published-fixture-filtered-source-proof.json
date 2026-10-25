@@ -1,0 +1,2613 @@
+{
+  "observedAtUtc": "2026-10-25T13:53:41.818518+00:00",
+  "releaseSha": "e171c5a788eab183b32683431b084198c9b8d373",
+  "attributesSha256": "33280333a28d74c49660f25f7425094079e2bf2f2b323be3563075c70cf6df2c",
+  "attributesMatchReleaseSource": true,
+  "comparison": "git cat-file --filters releaseSHA:path reproduces qualified checkout bytes under tracked attributes",
+  "fixtureCount": 289,
+  "rawGitBlobByteDifferences": 23,
+  "allEqual": true,
+  "fixtures": [
+    {
+      "path": "test/fixtures/check-suites/runner.py",
+      "gitBlobSha256": "eae0b40ace73b4831d267e1b4f58687dd36b928a109b20199f29c879f88c44e2",
+      "checkoutFilteredSha256": "eae0b40ace73b4831d267e1b4f58687dd36b928a109b20199f29c879f88c44e2",
+      "qualifiedSha256": "eae0b40ace73b4831d267e1b4f58687dd36b928a109b20199f29c879f88c44e2",
+      "qualifiedSizeBytes": 107,
+      "checkoutFilteredSizeBytes": 107,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/check-suites/suite.json",
+      "gitBlobSha256": "e46f3be0b7170e019522ae18d8bcf0d6bd518506a3c44f0b5b050c4042254357",
+      "checkoutFilteredSha256": "e46f3be0b7170e019522ae18d8bcf0d6bd518506a3c44f0b5b050c4042254357",
+      "qualifiedSha256": "e46f3be0b7170e019522ae18d8bcf0d6bd518506a3c44f0b5b050c4042254357",
+      "qualifiedSizeBytes": 438,
+      "checkoutFilteredSizeBytes": 438,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/cleanup-down-foreign-run.json",
+      "gitBlobSha256": "4dc887971dbb0ee608259eec5f7d718fc0dcb442edf6063b31ced6a4c0ca819e",
+      "checkoutFilteredSha256": "4dc887971dbb0ee608259eec5f7d718fc0dcb442edf6063b31ced6a4c0ca819e",
+      "qualifiedSha256": "4dc887971dbb0ee608259eec5f7d718fc0dcb442edf6063b31ced6a4c0ca819e",
+      "qualifiedSizeBytes": 1680,
+      "checkoutFilteredSizeBytes": 1680,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/cleanup-down.json",
+      "gitBlobSha256": "9ca6ae5cd4bec229c9ad1cc2e22ecde61e3924bf3d4f5f29bc7f1a18209be6de",
+      "checkoutFilteredSha256": "9ca6ae5cd4bec229c9ad1cc2e22ecde61e3924bf3d4f5f29bc7f1a18209be6de",
+      "qualifiedSha256": "9ca6ae5cd4bec229c9ad1cc2e22ecde61e3924bf3d4f5f29bc7f1a18209be6de",
+      "qualifiedSizeBytes": 1680,
+      "checkoutFilteredSizeBytes": 1680,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/cleanup-stub.json",
+      "gitBlobSha256": "ec8128e215c7e0df3af6b8beb8adbae9b4f8cf572e7b65dafa8dda96229fa127",
+      "checkoutFilteredSha256": "ec8128e215c7e0df3af6b8beb8adbae9b4f8cf572e7b65dafa8dda96229fa127",
+      "qualifiedSha256": "ec8128e215c7e0df3af6b8beb8adbae9b4f8cf572e7b65dafa8dda96229fa127",
+      "qualifiedSizeBytes": 93,
+      "checkoutFilteredSizeBytes": 93,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Evidence.Cli.0.0.0-contract.nupkg",
+      "gitBlobSha256": "b8d1bf1e04ee69b5633197a42b98f8376e72de00ad25d9ec54848b9e18ca42d3",
+      "checkoutFilteredSha256": "b8d1bf1e04ee69b5633197a42b98f8376e72de00ad25d9ec54848b9e18ca42d3",
+      "qualifiedSha256": "b8d1bf1e04ee69b5633197a42b98f8376e72de00ad25d9ec54848b9e18ca42d3",
+      "qualifiedSizeBytes": 599,
+      "checkoutFilteredSizeBytes": 599,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Evidence.Cli.0.0.0-contract.snupkg",
+      "gitBlobSha256": "6e65380558cb2658ab313ce937f52a95d0fe63f23ece0f3923f92614deac0222",
+      "checkoutFilteredSha256": "6e65380558cb2658ab313ce937f52a95d0fe63f23ece0f3923f92614deac0222",
+      "qualifiedSha256": "6e65380558cb2658ab313ce937f52a95d0fe63f23ece0f3923f92614deac0222",
+      "qualifiedSizeBytes": 603,
+      "checkoutFilteredSizeBytes": 603,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Module.Cli.0.0.0-contract.nupkg",
+      "gitBlobSha256": "b31481ec8c36345a07411ba3966d6bb03da0da4310fadb7e485e376a3690483d",
+      "checkoutFilteredSha256": "b31481ec8c36345a07411ba3966d6bb03da0da4310fadb7e485e376a3690483d",
+      "qualifiedSha256": "b31481ec8c36345a07411ba3966d6bb03da0da4310fadb7e485e376a3690483d",
+      "qualifiedSizeBytes": 593,
+      "checkoutFilteredSizeBytes": 593,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Module.Cli.0.0.0-contract.snupkg",
+      "gitBlobSha256": "32cdb654751f72da2be88e7c056e2ebbe9e52b15fb5e80c5f74d04d2888db57b",
+      "checkoutFilteredSha256": "32cdb654751f72da2be88e7c056e2ebbe9e52b15fb5e80c5f74d04d2888db57b",
+      "qualifiedSha256": "32cdb654751f72da2be88e7c056e2ebbe9e52b15fb5e80c5f74d04d2888db57b",
+      "qualifiedSizeBytes": 597,
+      "checkoutFilteredSizeBytes": 597,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Module.Cli.0.0.0-other.nupkg",
+      "gitBlobSha256": "91b27f5edc68c994cdc927d39636e561b4d925eb42c7c1dcb142aed2c9491cc0",
+      "checkoutFilteredSha256": "91b27f5edc68c994cdc927d39636e561b4d925eb42c7c1dcb142aed2c9491cc0",
+      "qualifiedSha256": "91b27f5edc68c994cdc927d39636e561b4d925eb42c7c1dcb142aed2c9491cc0",
+      "qualifiedSizeBytes": 590,
+      "checkoutFilteredSizeBytes": 590,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/Hexalith.Builds.Module.Cli.0.0.0-other.snupkg",
+      "gitBlobSha256": "4a617727c57d6b8f668ef9fb159d8865f8e9cbf5e95b8da97f63cf9372a47673",
+      "checkoutFilteredSha256": "4a617727c57d6b8f668ef9fb159d8865f8e9cbf5e95b8da97f63cf9372a47673",
+      "qualifiedSha256": "4a617727c57d6b8f668ef9fb159d8865f8e9cbf5e95b8da97f63cf9372a47673",
+      "qualifiedSizeBytes": 594,
+      "checkoutFilteredSizeBytes": 594,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/hexalith.module-manifest.v1.json",
+      "gitBlobSha256": "c9a9df3136d640d4345e4f56437a90e5ad8a15bcac1a97ff95858b0aec514209",
+      "checkoutFilteredSha256": "c9a9df3136d640d4345e4f56437a90e5ad8a15bcac1a97ff95858b0aec514209",
+      "qualifiedSha256": "c9a9df3136d640d4345e4f56437a90e5ad8a15bcac1a97ff95858b0aec514209",
+      "qualifiedSizeBytes": 109,
+      "checkoutFilteredSizeBytes": 109,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/mislabeled/Hexalith.Builds.Evidence.Cli.0.0.0-contract.nupkg",
+      "gitBlobSha256": "d509a7661b63767a8fc55e7e2e81fc56f825bc00489c8ef55df1840f431efa58",
+      "checkoutFilteredSha256": "d509a7661b63767a8fc55e7e2e81fc56f825bc00489c8ef55df1840f431efa58",
+      "qualifiedSha256": "d509a7661b63767a8fc55e7e2e81fc56f825bc00489c8ef55df1840f431efa58",
+      "qualifiedSizeBytes": 590,
+      "checkoutFilteredSizeBytes": 590,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/mislabeled/Hexalith.Builds.Evidence.Cli.0.0.0-contract.snupkg",
+      "gitBlobSha256": "c612787e00228bc5af9410c27820989ecccfb8cdcad115c0d3703ffc1c0d2b7b",
+      "checkoutFilteredSha256": "c612787e00228bc5af9410c27820989ecccfb8cdcad115c0d3703ffc1c0d2b7b",
+      "qualifiedSha256": "c612787e00228bc5af9410c27820989ecccfb8cdcad115c0d3703ffc1c0d2b7b",
+      "qualifiedSizeBytes": 594,
+      "checkoutFilteredSizeBytes": 594,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/profile-full-mtp.fixture.json",
+      "gitBlobSha256": "ab8e1c460f653faf797dbee711a9985cc2e8300e2581574ee07b41eef45fec92",
+      "checkoutFilteredSha256": "ab8e1c460f653faf797dbee711a9985cc2e8300e2581574ee07b41eef45fec92",
+      "qualifiedSha256": "ab8e1c460f653faf797dbee711a9985cc2e8300e2581574ee07b41eef45fec92",
+      "qualifiedSizeBytes": 130,
+      "checkoutFilteredSizeBytes": 130,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/profile-full.fixture.json",
+      "gitBlobSha256": "1e2deefa8e24c961adefa0f8565421eed802fe4d6f7a278dd2ae687eb429f894",
+      "checkoutFilteredSha256": "1e2deefa8e24c961adefa0f8565421eed802fe4d6f7a278dd2ae687eb429f894",
+      "qualifiedSha256": "1e2deefa8e24c961adefa0f8565421eed802fe4d6f7a278dd2ae687eb429f894",
+      "qualifiedSizeBytes": 140,
+      "checkoutFilteredSizeBytes": 140,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/rollback-drill.json",
+      "gitBlobSha256": "8d3cee4dd5150bddcb3145d5ccf8120594e3cfd5d9db58be94db6be5a598dc12",
+      "checkoutFilteredSha256": "8d3cee4dd5150bddcb3145d5ccf8120594e3cfd5d9db58be94db6be5a598dc12",
+      "qualifiedSha256": "8d3cee4dd5150bddcb3145d5ccf8120594e3cfd5d9db58be94db6be5a598dc12",
+      "qualifiedSizeBytes": 67,
+      "checkoutFilteredSizeBytes": 67,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-cancelled-no-profile.json",
+      "gitBlobSha256": "da2069a95c2706eab5a001152aca33e3802ba32b998da9f1f39a1d9294d3287c",
+      "checkoutFilteredSha256": "da2069a95c2706eab5a001152aca33e3802ba32b998da9f1f39a1d9294d3287c",
+      "qualifiedSha256": "da2069a95c2706eab5a001152aca33e3802ba32b998da9f1f39a1d9294d3287c",
+      "qualifiedSizeBytes": 1664,
+      "checkoutFilteredSizeBytes": 1664,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-cancelled.json",
+      "gitBlobSha256": "cc904f2f06e8aa9ff546feb3c02d0c04e0151a09e763ce80efe661f8325f837f",
+      "checkoutFilteredSha256": "cc904f2f06e8aa9ff546feb3c02d0c04e0151a09e763ce80efe661f8325f837f",
+      "qualifiedSha256": "cc904f2f06e8aa9ff546feb3c02d0c04e0151a09e763ce80efe661f8325f837f",
+      "qualifiedSizeBytes": 1806,
+      "checkoutFilteredSizeBytes": 1806,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.json",
+      "gitBlobSha256": "f5b6963b0932efe9ea0ab06399c610b56d724588f813cff2747f54129443fc7c",
+      "checkoutFilteredSha256": "f5b6963b0932efe9ea0ab06399c610b56d724588f813cff2747f54129443fc7c",
+      "qualifiedSha256": "f5b6963b0932efe9ea0ab06399c610b56d724588f813cff2747f54129443fc7c",
+      "qualifiedSizeBytes": 2366,
+      "checkoutFilteredSizeBytes": 2366,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.mtp.trx",
+      "gitBlobSha256": "7a81e16b31d9d46b875dd225f4783f671e956ea0f7e694ef1e539917111760ae",
+      "checkoutFilteredSha256": "7a81e16b31d9d46b875dd225f4783f671e956ea0f7e694ef1e539917111760ae",
+      "qualifiedSha256": "7a81e16b31d9d46b875dd225f4783f671e956ea0f7e694ef1e539917111760ae",
+      "qualifiedSizeBytes": 485,
+      "checkoutFilteredSizeBytes": 485,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-all-skipped.json",
+      "gitBlobSha256": "5a9d3c9fa77d96cc665c6b3e3167d116544f92276badcb0e3acd22ddc05397d5",
+      "checkoutFilteredSha256": "5a9d3c9fa77d96cc665c6b3e3167d116544f92276badcb0e3acd22ddc05397d5",
+      "qualifiedSha256": "5a9d3c9fa77d96cc665c6b3e3167d116544f92276badcb0e3acd22ddc05397d5",
+      "qualifiedSizeBytes": 2372,
+      "checkoutFilteredSizeBytes": 2372,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-all-skipped.vstest.trx",
+      "gitBlobSha256": "3157c7ccb2eb5c1ad592b716e8caab575f725b6733faa3b65822d0d89270567f",
+      "checkoutFilteredSha256": "3157c7ccb2eb5c1ad592b716e8caab575f725b6733faa3b65822d0d89270567f",
+      "qualifiedSha256": "3157c7ccb2eb5c1ad592b716e8caab575f725b6733faa3b65822d0d89270567f",
+      "qualifiedSizeBytes": 485,
+      "checkoutFilteredSizeBytes": 485,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-count-mismatch.json",
+      "gitBlobSha256": "1596030b4f698504121ad9c2d5dbd77b6cbce1471540bb9bb865b9bfb81b9a38",
+      "checkoutFilteredSha256": "1596030b4f698504121ad9c2d5dbd77b6cbce1471540bb9bb865b9bfb81b9a38",
+      "qualifiedSha256": "1596030b4f698504121ad9c2d5dbd77b6cbce1471540bb9bb865b9bfb81b9a38",
+      "qualifiedSizeBytes": 2375,
+      "checkoutFilteredSizeBytes": 2375,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-count-mismatch.vstest.trx",
+      "gitBlobSha256": "381dece65259e57a82e00ec8b8eee14b1b661d24beaf747a782057d9afe758da",
+      "checkoutFilteredSha256": "381dece65259e57a82e00ec8b8eee14b1b661d24beaf747a782057d9afe758da",
+      "qualifiedSha256": "381dece65259e57a82e00ec8b8eee14b1b661d24beaf747a782057d9afe758da",
+      "qualifiedSizeBytes": 485,
+      "checkoutFilteredSizeBytes": 485,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-dirty.json",
+      "gitBlobSha256": "95dcc0bdbccbcd80b3730f5ed77858d049ab09f893ca083d4d0c8f80ac592080",
+      "checkoutFilteredSha256": "95dcc0bdbccbcd80b3730f5ed77858d049ab09f893ca083d4d0c8f80ac592080",
+      "qualifiedSha256": "95dcc0bdbccbcd80b3730f5ed77858d049ab09f893ca083d4d0c8f80ac592080",
+      "qualifiedSizeBytes": 2366,
+      "checkoutFilteredSizeBytes": 2366,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-dirty.vstest.trx",
+      "gitBlobSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "checkoutFilteredSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "qualifiedSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "qualifiedSizeBytes": 485,
+      "checkoutFilteredSizeBytes": 485,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-failed-report.json",
+      "gitBlobSha256": "1186734c2e98fa68ccda212ac9a18a0c9376798888dd6e5f08ca21a6b8ce686c",
+      "checkoutFilteredSha256": "1186734c2e98fa68ccda212ac9a18a0c9376798888dd6e5f08ca21a6b8ce686c",
+      "qualifiedSha256": "1186734c2e98fa68ccda212ac9a18a0c9376798888dd6e5f08ca21a6b8ce686c",
+      "qualifiedSizeBytes": 2374,
+      "checkoutFilteredSizeBytes": 2374,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-failed-report.vstest.trx",
+      "gitBlobSha256": "dceaea2f1b7324d55d1d798714ba76881a65db74f1cd2b75b34cdd89ed83f85c",
+      "checkoutFilteredSha256": "dceaea2f1b7324d55d1d798714ba76881a65db74f1cd2b75b34cdd89ed83f85c",
+      "qualifiedSha256": "dceaea2f1b7324d55d1d798714ba76881a65db74f1cd2b75b34cdd89ed83f85c",
+      "qualifiedSizeBytes": 482,
+      "checkoutFilteredSizeBytes": 482,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-other-revision.json",
+      "gitBlobSha256": "aa6f1041e310f1271f9d9b1bde1d3558048a5ddb140f0caf31c7d90e52d62265",
+      "checkoutFilteredSha256": "aa6f1041e310f1271f9d9b1bde1d3558048a5ddb140f0caf31c7d90e52d62265",
+      "qualifiedSha256": "aa6f1041e310f1271f9d9b1bde1d3558048a5ddb140f0caf31c7d90e52d62265",
+      "qualifiedSizeBytes": 2375,
+      "checkoutFilteredSizeBytes": 2375,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-other-revision.vstest.trx",
+      "gitBlobSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "checkoutFilteredSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "qualifiedSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "qualifiedSizeBytes": 485,
+      "checkoutFilteredSizeBytes": 485,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-partial-assertions.json",
+      "gitBlobSha256": "307a4cc17c83878d2d329e13fb5e91f211caa558da8a5654f584f739b0e903f6",
+      "checkoutFilteredSha256": "307a4cc17c83878d2d329e13fb5e91f211caa558da8a5654f584f739b0e903f6",
+      "qualifiedSha256": "307a4cc17c83878d2d329e13fb5e91f211caa558da8a5654f584f739b0e903f6",
+      "qualifiedSizeBytes": 2045,
+      "checkoutFilteredSizeBytes": 2045,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-partial-assertions.vstest.trx",
+      "gitBlobSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "checkoutFilteredSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "qualifiedSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "qualifiedSizeBytes": 485,
+      "checkoutFilteredSizeBytes": 485,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-unbound.json",
+      "gitBlobSha256": "23ff40dd3bbec664e5bc3b4cf89635e53a5b708b3c0342901729decfca88f742",
+      "checkoutFilteredSha256": "23ff40dd3bbec664e5bc3b4cf89635e53a5b708b3c0342901729decfca88f742",
+      "qualifiedSha256": "23ff40dd3bbec664e5bc3b4cf89635e53a5b708b3c0342901729decfca88f742",
+      "qualifiedSizeBytes": 2354,
+      "checkoutFilteredSizeBytes": 2354,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest-unbound.vstest.trx",
+      "gitBlobSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "checkoutFilteredSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "qualifiedSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "qualifiedSizeBytes": 485,
+      "checkoutFilteredSizeBytes": 485,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest.json",
+      "gitBlobSha256": "fc52a7ac655464bd25ec0ce67c5eef9c4e47d27ec031474f4f11d3d13f3a10b4",
+      "checkoutFilteredSha256": "fc52a7ac655464bd25ec0ce67c5eef9c4e47d27ec031474f4f11d3d13f3a10b4",
+      "qualifiedSha256": "fc52a7ac655464bd25ec0ce67c5eef9c4e47d27ec031474f4f11d3d13f3a10b4",
+      "qualifiedSizeBytes": 2360,
+      "checkoutFilteredSizeBytes": 2360,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest.vstest.trx",
+      "gitBlobSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "checkoutFilteredSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "qualifiedSha256": "0bb21ef12f7dc8a79849bc4a1f7298eecf13c23cd7242266d87bc36173c13553",
+      "qualifiedSizeBytes": 485,
+      "checkoutFilteredSizeBytes": 485,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-prerequisite-unavailable.json",
+      "gitBlobSha256": "121f948b4ea1964a1792e339f70e59ae9231306f94463aba61b693227cdd339f",
+      "checkoutFilteredSha256": "121f948b4ea1964a1792e339f70e59ae9231306f94463aba61b693227cdd339f",
+      "qualifiedSha256": "121f948b4ea1964a1792e339f70e59ae9231306f94463aba61b693227cdd339f",
+      "qualifiedSizeBytes": 1844,
+      "checkoutFilteredSizeBytes": 1844,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/bound/run-unsupported-profile.json",
+      "gitBlobSha256": "6e6329d564b0b8e59ca1df0525b60d45dc554d0bf6dcb892235a63edfaf5f81d",
+      "checkoutFilteredSha256": "6e6329d564b0b8e59ca1df0525b60d45dc554d0bf6dcb892235a63edfaf5f81d",
+      "qualifiedSha256": "6e6329d564b0b8e59ca1df0525b60d45dc554d0bf6dcb892235a63edfaf5f81d",
+      "qualifiedSizeBytes": 1844,
+      "checkoutFilteredSizeBytes": 1844,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/all-skipped-report.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/all-skipped-report.json",
+      "gitBlobSha256": "876c8578350d696d1f09d3d711f3905ff101f7daa62ba6b6a2b5cdca509713ec",
+      "checkoutFilteredSha256": "876c8578350d696d1f09d3d711f3905ff101f7daa62ba6b6a2b5cdca509713ec",
+      "qualifiedSha256": "876c8578350d696d1f09d3d711f3905ff101f7daa62ba6b6a2b5cdca509713ec",
+      "qualifiedSizeBytes": 5297,
+      "checkoutFilteredSizeBytes": 5297,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/approval-before-runs.expected.json",
+      "gitBlobSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "checkoutFilteredSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "qualifiedSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/approval-before-runs.json",
+      "gitBlobSha256": "7b2177846e311bc52ae508224eeb0c2529e18c5bbfb4709d9ff5b143b204ebfb",
+      "checkoutFilteredSha256": "7b2177846e311bc52ae508224eeb0c2529e18c5bbfb4709d9ff5b143b204ebfb",
+      "qualifiedSha256": "7b2177846e311bc52ae508224eeb0c2529e18c5bbfb4709d9ff5b143b204ebfb",
+      "qualifiedSizeBytes": 5273,
+      "checkoutFilteredSizeBytes": 5273,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/approval-in-future.expected.json",
+      "gitBlobSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "checkoutFilteredSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "qualifiedSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/approval-in-future.json",
+      "gitBlobSha256": "1b86c639851bdc7ea280537a8f8294997efd86da9ed990e9d56589e5729c7b1f",
+      "checkoutFilteredSha256": "1b86c639851bdc7ea280537a8f8294997efd86da9ed990e9d56589e5729c7b1f",
+      "qualifiedSha256": "1b86c639851bdc7ea280537a8f8294997efd86da9ed990e9d56589e5729c7b1f",
+      "qualifiedSizeBytes": 5273,
+      "checkoutFilteredSizeBytes": 5273,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/approval-revision-mismatch.expected.json",
+      "gitBlobSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "checkoutFilteredSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "qualifiedSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/approval-revision-mismatch.json",
+      "gitBlobSha256": "b7304f9698a5595c7df002647355b3b7fcd0d1f0c27181850be7329cb7fa65a1",
+      "checkoutFilteredSha256": "b7304f9698a5595c7df002647355b3b7fcd0d1f0c27181850be7329cb7fa65a1",
+      "qualifiedSha256": "b7304f9698a5595c7df002647355b3b7fcd0d1f0c27181850be7329cb7fa65a1",
+      "qualifiedSizeBytes": 5273,
+      "checkoutFilteredSizeBytes": 5273,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/cancelled-without-profile.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/cancelled-without-profile.json",
+      "gitBlobSha256": "011a7fb0603437449af2a20376276b53a6a547faf57f5e7b913ab1f5140514fd",
+      "checkoutFilteredSha256": "011a7fb0603437449af2a20376276b53a6a547faf57f5e7b913ab1f5140514fd",
+      "qualifiedSha256": "011a7fb0603437449af2a20376276b53a6a547faf57f5e7b913ab1f5140514fd",
+      "qualifiedSizeBytes": 5269,
+      "checkoutFilteredSizeBytes": 5269,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/cleanup-foreign-run.expected.json",
+      "gitBlobSha256": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+      "checkoutFilteredSha256": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+      "qualifiedSha256": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/cleanup-foreign-run.json",
+      "gitBlobSha256": "74462313cca832736143b8ead113ba7f2dc0432d56d80057e77a0e055d5f15b7",
+      "checkoutFilteredSha256": "74462313cca832736143b8ead113ba7f2dc0432d56d80057e77a0e055d5f15b7",
+      "qualifiedSha256": "74462313cca832736143b8ead113ba7f2dc0432d56d80057e77a0e055d5f15b7",
+      "qualifiedSizeBytes": 5285,
+      "checkoutFilteredSizeBytes": 5285,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/cleanup-not-down-evidence.expected.json",
+      "gitBlobSha256": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+      "checkoutFilteredSha256": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+      "qualifiedSha256": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/cleanup-not-down-evidence.json",
+      "gitBlobSha256": "64f13dd65609cf9765ad7c248c9b5834c23056887e3e2c92c884745abb53873f",
+      "checkoutFilteredSha256": "64f13dd65609cf9765ad7c248c9b5834c23056887e3e2c92c884745abb53873f",
+      "qualifiedSha256": "64f13dd65609cf9765ad7c248c9b5834c23056887e3e2c92c884745abb53873f",
+      "qualifiedSizeBytes": 5273,
+      "checkoutFilteredSizeBytes": 5273,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/command-mismatch.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/command-mismatch.json",
+      "gitBlobSha256": "cf0a0b8fab64530e0b2562365ee3fcc9db96759c4a924a53e13b44904ec629d3",
+      "checkoutFilteredSha256": "cf0a0b8fab64530e0b2562365ee3fcc9db96759c4a924a53e13b44904ec629d3",
+      "qualifiedSha256": "cf0a0b8fab64530e0b2562365ee3fcc9db96759c4a924a53e13b44904ec629d3",
+      "qualifiedSizeBytes": 5211,
+      "checkoutFilteredSizeBytes": 5211,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/control-run-with-report.expected.json",
+      "gitBlobSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "checkoutFilteredSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/control-run-with-report.json",
+      "gitBlobSha256": "3877e954cb5fed88ac6d77b22a92990f42000000d3c676130afc6970d65226a0",
+      "checkoutFilteredSha256": "3877e954cb5fed88ac6d77b22a92990f42000000d3c676130afc6970d65226a0",
+      "qualifiedSha256": "3877e954cb5fed88ac6d77b22a92990f42000000d3c676130afc6970d65226a0",
+      "qualifiedSizeBytes": 5408,
+      "checkoutFilteredSizeBytes": 5408,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/dirty-evidence.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/dirty-evidence.json",
+      "gitBlobSha256": "18579cf0e985c98a41e766e4a6638f3ff7d97c05959b589faf0474758212b119",
+      "checkoutFilteredSha256": "18579cf0e985c98a41e766e4a6638f3ff7d97c05959b589faf0474758212b119",
+      "qualifiedSha256": "18579cf0e985c98a41e766e4a6638f3ff7d97c05959b589faf0474758212b119",
+      "qualifiedSizeBytes": 5285,
+      "checkoutFilteredSizeBytes": 5285,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/duplicate-key.expected.json",
+      "gitBlobSha256": "dee71bcf029d1ab3769f69513e43b583722f4d4d2ea79b8994e6428229a60c31",
+      "checkoutFilteredSha256": "dee71bcf029d1ab3769f69513e43b583722f4d4d2ea79b8994e6428229a60c31",
+      "qualifiedSha256": "dee71bcf029d1ab3769f69513e43b583722f4d4d2ea79b8994e6428229a60c31",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/duplicate-key.json",
+      "gitBlobSha256": "9b45568de1397c70b4163aaba398f0a823782a39d1c618d35644319815ab9982",
+      "checkoutFilteredSha256": "9b45568de1397c70b4163aaba398f0a823782a39d1c618d35644319815ab9982",
+      "qualifiedSha256": "9b45568de1397c70b4163aaba398f0a823782a39d1c618d35644319815ab9982",
+      "qualifiedSizeBytes": 5297,
+      "checkoutFilteredSizeBytes": 5297,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/duplicate-run-key.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/duplicate-run-key.json",
+      "gitBlobSha256": "b9d450087f5b67159fe36626b4fbff70aa7c3fa48e72f25057006d87bc97a8c2",
+      "checkoutFilteredSha256": "b9d450087f5b67159fe36626b4fbff70aa7c3fa48e72f25057006d87bc97a8c2",
+      "qualifiedSha256": "b9d450087f5b67159fe36626b4fbff70aa7c3fa48e72f25057006d87bc97a8c2",
+      "qualifiedSizeBytes": 5931,
+      "checkoutFilteredSizeBytes": 5931,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/evidence-other-revision.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/evidence-other-revision.json",
+      "gitBlobSha256": "7b3aed5ded44a3a0f8783fbe6282b91ebf646038494234e89dd4870581a6324f",
+      "checkoutFilteredSha256": "7b3aed5ded44a3a0f8783fbe6282b91ebf646038494234e89dd4870581a6324f",
+      "qualifiedSha256": "7b3aed5ded44a3a0f8783fbe6282b91ebf646038494234e89dd4870581a6324f",
+      "qualifiedSizeBytes": 5303,
+      "checkoutFilteredSizeBytes": 5303,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/failed-native-report.expected.json",
+      "gitBlobSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "checkoutFilteredSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/failed-native-report.json",
+      "gitBlobSha256": "911d3275692134a5a0e880439b38c668adb53cb2388226f4820cb540aa1481c1",
+      "checkoutFilteredSha256": "911d3275692134a5a0e880439b38c668adb53cb2388226f4820cb540aa1481c1",
+      "qualifiedSha256": "911d3275692134a5a0e880439b38c668adb53cb2388226f4820cb540aa1481c1",
+      "qualifiedSizeBytes": 5301,
+      "checkoutFilteredSizeBytes": 5301,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/manifest-hash-mismatch.expected.json",
+      "gitBlobSha256": "645f56650b77f068162332b3102e3eacbe6cf7c047088cee4384700fd31416da",
+      "checkoutFilteredSha256": "645f56650b77f068162332b3102e3eacbe6cf7c047088cee4384700fd31416da",
+      "qualifiedSha256": "645f56650b77f068162332b3102e3eacbe6cf7c047088cee4384700fd31416da",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/manifest-hash-mismatch.json",
+      "gitBlobSha256": "61ee601099d076a585e24073436e31516f28676708c0546ceaf8a7801a2adca5",
+      "checkoutFilteredSha256": "61ee601099d076a585e24073436e31516f28676708c0546ceaf8a7801a2adca5",
+      "qualifiedSha256": "61ee601099d076a585e24073436e31516f28676708c0546ceaf8a7801a2adca5",
+      "qualifiedSizeBytes": 5273,
+      "checkoutFilteredSizeBytes": 5273,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/missing-approval.expected.json",
+      "gitBlobSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "checkoutFilteredSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "qualifiedSha256": "20f2bcaea667589e079de7a4c91bad062575a27c36f9476f1071cf29291e8db5",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/missing-approval.json",
+      "gitBlobSha256": "68204988f35ccc56394acb0c79966ecb9ec6ed7c447b08b88c4e9e20dc628650",
+      "checkoutFilteredSha256": "68204988f35ccc56394acb0c79966ecb9ec6ed7c447b08b88c4e9e20dc628650",
+      "qualifiedSha256": "68204988f35ccc56394acb0c79966ecb9ec6ed7c447b08b88c4e9e20dc628650",
+      "qualifiedSizeBytes": 5072,
+      "checkoutFilteredSizeBytes": 5072,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/missing-mtp-run.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/missing-mtp-run.json",
+      "gitBlobSha256": "665801020d4fa3519d9ffc354588570dbb2a496f3a5fe102224a0f34cccded16",
+      "checkoutFilteredSha256": "665801020d4fa3519d9ffc354588570dbb2a496f3a5fe102224a0f34cccded16",
+      "qualifiedSha256": "665801020d4fa3519d9ffc354588570dbb2a496f3a5fe102224a0f34cccded16",
+      "qualifiedSizeBytes": 4626,
+      "checkoutFilteredSizeBytes": 4626,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/missing-package.expected.json",
+      "gitBlobSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "checkoutFilteredSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "qualifiedSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/missing-package.json",
+      "gitBlobSha256": "3d0c080a3e1bdf6f8d243333d3726cd4d9b9f730c9961ea8f47f11f95e8c375d",
+      "checkoutFilteredSha256": "3d0c080a3e1bdf6f8d243333d3726cd4d9b9f730c9961ea8f47f11f95e8c375d",
+      "qualifiedSha256": "3d0c080a3e1bdf6f8d243333d3726cd4d9b9f730c9961ea8f47f11f95e8c375d",
+      "qualifiedSizeBytes": 4750,
+      "checkoutFilteredSizeBytes": 4750,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/missing-rollback.expected.json",
+      "gitBlobSha256": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+      "checkoutFilteredSha256": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+      "qualifiedSha256": "e7384b2d2fd47140367eaa3aa7f35e9b3b3d646ee83bcc815105ddfbabe93fc0",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/missing-rollback.json",
+      "gitBlobSha256": "97847358b24d3f0cf892d2cc9109be61ebc9e99b5dc56e6328b5463f9270d440",
+      "checkoutFilteredSha256": "97847358b24d3f0cf892d2cc9109be61ebc9e99b5dc56e6328b5463f9270d440",
+      "qualifiedSha256": "97847358b24d3f0cf892d2cc9109be61ebc9e99b5dc56e6328b5463f9270d440",
+      "qualifiedSizeBytes": 5274,
+      "checkoutFilteredSizeBytes": 5274,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/mtp-run-cites-vstest-evidence.expected.json",
+      "gitBlobSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "checkoutFilteredSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/mtp-run-cites-vstest-evidence.json",
+      "gitBlobSha256": "c9e41d5ca1634a39ebe66938392ecbcaef8e0d077666d5d6e9721916e35c5c86",
+      "checkoutFilteredSha256": "c9e41d5ca1634a39ebe66938392ecbcaef8e0d077666d5d6e9721916e35c5c86",
+      "qualifiedSha256": "c9e41d5ca1634a39ebe66938392ecbcaef8e0d077666d5d6e9721916e35c5c86",
+      "qualifiedSizeBytes": 5278,
+      "checkoutFilteredSizeBytes": 5278,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/package-identity-mismatch.expected.json",
+      "gitBlobSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "checkoutFilteredSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "qualifiedSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/package-identity-mismatch.json",
+      "gitBlobSha256": "0ec1778566d79184bda5ee7cb7ec23820c7ff3477a3cb8ea84715688509f7795",
+      "checkoutFilteredSha256": "0ec1778566d79184bda5ee7cb7ec23820c7ff3477a3cb8ea84715688509f7795",
+      "qualifiedSha256": "0ec1778566d79184bda5ee7cb7ec23820c7ff3477a3cb8ea84715688509f7795",
+      "qualifiedSizeBytes": 5295,
+      "checkoutFilteredSizeBytes": 5295,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/package-version-not-lockstep.expected.json",
+      "gitBlobSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "checkoutFilteredSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "qualifiedSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/package-version-not-lockstep.json",
+      "gitBlobSha256": "bf77a681ab6652ac36138f8396ed97fec3c235aec744dd1a6811d326624401b9",
+      "checkoutFilteredSha256": "bf77a681ab6652ac36138f8396ed97fec3c235aec744dd1a6811d326624401b9",
+      "qualifiedSha256": "bf77a681ab6652ac36138f8396ed97fec3c235aec744dd1a6811d326624401b9",
+      "qualifiedSizeBytes": 5264,
+      "checkoutFilteredSizeBytes": 5264,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/partial-persisted-assertions.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/partial-persisted-assertions.json",
+      "gitBlobSha256": "e0f6a6fa8b1f91f3f7f1f964dec08447dad58416459c3db50b2ec5f97e57cb4b",
+      "checkoutFilteredSha256": "e0f6a6fa8b1f91f3f7f1f964dec08447dad58416459c3db50b2ec5f97e57cb4b",
+      "qualifiedSha256": "e0f6a6fa8b1f91f3f7f1f964dec08447dad58416459c3db50b2ec5f97e57cb4b",
+      "qualifiedSizeBytes": 5311,
+      "checkoutFilteredSizeBytes": 5311,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/pin-mismatch.expected.json",
+      "gitBlobSha256": "655d7cfe91aa850717694e6de4650d48b3101415a854f06b1db2604c52e69aa4",
+      "checkoutFilteredSha256": "655d7cfe91aa850717694e6de4650d48b3101415a854f06b1db2604c52e69aa4",
+      "qualifiedSha256": "655d7cfe91aa850717694e6de4650d48b3101415a854f06b1db2604c52e69aa4",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/pin-mismatch.json",
+      "gitBlobSha256": "09cce7d27ebc82289baa25d3b379f14b71989ff3c2b75c515dcf5f6c2ff444d0",
+      "checkoutFilteredSha256": "09cce7d27ebc82289baa25d3b379f14b71989ff3c2b75c515dcf5f6c2ff444d0",
+      "qualifiedSha256": "09cce7d27ebc82289baa25d3b379f14b71989ff3c2b75c515dcf5f6c2ff444d0",
+      "qualifiedSizeBytes": 5273,
+      "checkoutFilteredSizeBytes": 5273,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/prerequisite-is-passing-run.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/prerequisite-is-passing-run.json",
+      "gitBlobSha256": "61589777c52a9f44d455bc2a71e57b409ccad01e8f70929f245035b0b3b5252c",
+      "checkoutFilteredSha256": "61589777c52a9f44d455bc2a71e57b409ccad01e8f70929f245035b0b3b5252c",
+      "qualifiedSha256": "61589777c52a9f44d455bc2a71e57b409ccad01e8f70929f245035b0b3b5252c",
+      "qualifiedSizeBytes": 5263,
+      "checkoutFilteredSizeBytes": 5263,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/report-count-mismatch.expected.json",
+      "gitBlobSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "checkoutFilteredSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/report-count-mismatch.json",
+      "gitBlobSha256": "7f02b78861097ce3e1ecf5cd585c7353a8eb9efaf7c37e1a7dbdf9784fb5bbc0",
+      "checkoutFilteredSha256": "7f02b78861097ce3e1ecf5cd585c7353a8eb9efaf7c37e1a7dbdf9784fb5bbc0",
+      "qualifiedSha256": "7f02b78861097ce3e1ecf5cd585c7353a8eb9efaf7c37e1a7dbdf9784fb5bbc0",
+      "qualifiedSizeBytes": 5303,
+      "checkoutFilteredSizeBytes": 5303,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/report-not-bound.expected.json",
+      "gitBlobSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "checkoutFilteredSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/report-not-bound.json",
+      "gitBlobSha256": "4d271eb0a9839a14dfa0134179ba84f76db9187d387b68fb12852db0052a756e",
+      "checkoutFilteredSha256": "4d271eb0a9839a14dfa0134179ba84f76db9187d387b68fb12852db0052a756e",
+      "qualifiedSha256": "4d271eb0a9839a14dfa0134179ba84f76db9187d387b68fb12852db0052a756e",
+      "qualifiedSizeBytes": 5289,
+      "checkoutFilteredSizeBytes": 5289,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/report-platform-mismatch.expected.json",
+      "gitBlobSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "checkoutFilteredSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSha256": "0d28ec9277c9c8a77cc21267ed97cae899a7457a408c900fa6ccd98f2eea0fad",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/report-platform-mismatch.json",
+      "gitBlobSha256": "d2764420939d35b0d974c274f351b9cde7b22c204b616851b386aede829c33fb",
+      "checkoutFilteredSha256": "d2764420939d35b0d974c274f351b9cde7b22c204b616851b386aede829c33fb",
+      "qualifiedSha256": "d2764420939d35b0d974c274f351b9cde7b22c204b616851b386aede829c33fb",
+      "qualifiedSizeBytes": 5270,
+      "checkoutFilteredSizeBytes": 5270,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/secret-bearing.expected.json",
+      "gitBlobSha256": "dee71bcf029d1ab3769f69513e43b583722f4d4d2ea79b8994e6428229a60c31",
+      "checkoutFilteredSha256": "dee71bcf029d1ab3769f69513e43b583722f4d4d2ea79b8994e6428229a60c31",
+      "qualifiedSha256": "dee71bcf029d1ab3769f69513e43b583722f4d4d2ea79b8994e6428229a60c31",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/secret-bearing.json",
+      "gitBlobSha256": "afa35cce22e2b7f0bac48fe5fe149240812a6abed86c60871b54bbb0c5188dc7",
+      "checkoutFilteredSha256": "afa35cce22e2b7f0bac48fe5fe149240812a6abed86c60871b54bbb0c5188dc7",
+      "qualifiedSha256": "afa35cce22e2b7f0bac48fe5fe149240812a6abed86c60871b54bbb0c5188dc7",
+      "qualifiedSizeBytes": 5282,
+      "checkoutFilteredSizeBytes": 5282,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/status-candidate.expected.json",
+      "gitBlobSha256": "655d7cfe91aa850717694e6de4650d48b3101415a854f06b1db2604c52e69aa4",
+      "checkoutFilteredSha256": "655d7cfe91aa850717694e6de4650d48b3101415a854f06b1db2604c52e69aa4",
+      "qualifiedSha256": "655d7cfe91aa850717694e6de4650d48b3101415a854f06b1db2604c52e69aa4",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/status-candidate.json",
+      "gitBlobSha256": "74b970d49a87ccc4018e92bf4d6a7d19f9c3d0d95cabea79f07b0e7f9a16ef84",
+      "checkoutFilteredSha256": "74b970d49a87ccc4018e92bf4d6a7d19f9c3d0d95cabea79f07b0e7f9a16ef84",
+      "qualifiedSha256": "74b970d49a87ccc4018e92bf4d6a7d19f9c3d0d95cabea79f07b0e7f9a16ef84",
+      "qualifiedSizeBytes": 5274,
+      "checkoutFilteredSizeBytes": 5274,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/tampered-evidence-hash.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/tampered-evidence-hash.json",
+      "gitBlobSha256": "7e29fe7ac74ee6d0579b303605381eba962798f5c192fe997b730216efe43e55",
+      "checkoutFilteredSha256": "7e29fe7ac74ee6d0579b303605381eba962798f5c192fe997b730216efe43e55",
+      "qualifiedSha256": "7e29fe7ac74ee6d0579b303605381eba962798f5c192fe997b730216efe43e55",
+      "qualifiedSizeBytes": 5273,
+      "checkoutFilteredSizeBytes": 5273,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/unavailable-claimed-passing.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/unavailable-claimed-passing.json",
+      "gitBlobSha256": "32e67bff61d58e66463f7de7ebaa0b487f7fd4a808e29f83e60672a144cd38fb",
+      "checkoutFilteredSha256": "32e67bff61d58e66463f7de7ebaa0b487f7fd4a808e29f83e60672a144cd38fb",
+      "qualifiedSha256": "32e67bff61d58e66463f7de7ebaa0b487f7fd4a808e29f83e60672a144cd38fb",
+      "qualifiedSizeBytes": 5271,
+      "checkoutFilteredSizeBytes": 5271,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/unknown-field.expected.json",
+      "gitBlobSha256": "65f2271f134d587654e20af7ad4c2c119c2f77e946921023250c6028d96eb59a",
+      "checkoutFilteredSha256": "65f2271f134d587654e20af7ad4c2c119c2f77e946921023250c6028d96eb59a",
+      "qualifiedSha256": "65f2271f134d587654e20af7ad4c2c119c2f77e946921023250c6028d96eb59a",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/unknown-field.json",
+      "gitBlobSha256": "cf452e667254dff9a43e276de2236ba380e34ff8d7b4fa1071c989d68e13c19f",
+      "checkoutFilteredSha256": "cf452e667254dff9a43e276de2236ba380e34ff8d7b4fa1071c989d68e13c19f",
+      "qualifiedSha256": "cf452e667254dff9a43e276de2236ba380e34ff8d7b4fa1071c989d68e13c19f",
+      "qualifiedSizeBytes": 5298,
+      "checkoutFilteredSizeBytes": 5298,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/unsupported-profile-as-unavailable.expected.json",
+      "gitBlobSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "checkoutFilteredSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSha256": "2ea6dd7fb399d17a294c4d175df7376c071e57494ec20c52fadfd49fd5cd7410",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/unsupported-profile-as-unavailable.json",
+      "gitBlobSha256": "8403b1bd4377874aa2338939f533bc9392f3fff3ad6694f11ba09c02b7a727b6",
+      "checkoutFilteredSha256": "8403b1bd4377874aa2338939f533bc9392f3fff3ad6694f11ba09c02b7a727b6",
+      "qualifiedSha256": "8403b1bd4377874aa2338939f533bc9392f3fff3ad6694f11ba09c02b7a727b6",
+      "qualifiedSizeBytes": 5268,
+      "checkoutFilteredSizeBytes": 5268,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/unsupported-schema.expected.json",
+      "gitBlobSha256": "65f2271f134d587654e20af7ad4c2c119c2f77e946921023250c6028d96eb59a",
+      "checkoutFilteredSha256": "65f2271f134d587654e20af7ad4c2c119c2f77e946921023250c6028d96eb59a",
+      "qualifiedSha256": "65f2271f134d587654e20af7ad4c2c119c2f77e946921023250c6028d96eb59a",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/unsupported-schema.json",
+      "gitBlobSha256": "5ea128b8bcd5068b85a96ec50cbda9a33db898ffdaf1f12086b3785684a1be3a",
+      "checkoutFilteredSha256": "5ea128b8bcd5068b85a96ec50cbda9a33db898ffdaf1f12086b3785684a1be3a",
+      "qualifiedSha256": "5ea128b8bcd5068b85a96ec50cbda9a33db898ffdaf1f12086b3785684a1be3a",
+      "qualifiedSizeBytes": 5273,
+      "checkoutFilteredSizeBytes": 5273,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/wrong-feed.expected.json",
+      "gitBlobSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "checkoutFilteredSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "qualifiedSha256": "fc61a478b5f4d9c2f7f14eb6319877d76cf381cfdb0d454baa7702a96399fed2",
+      "qualifiedSizeBytes": 169,
+      "checkoutFilteredSizeBytes": 169,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/negative/wrong-feed.json",
+      "gitBlobSha256": "7a2e574682de99a40c3e306f162db2b375657bacaf35cd81b773cf94dd97fd43",
+      "checkoutFilteredSha256": "7a2e574682de99a40c3e306f162db2b375657bacaf35cd81b773cf94dd97fd43",
+      "qualifiedSha256": "7a2e574682de99a40c3e306f162db2b375657bacaf35cd81b773cf94dd97fd43",
+      "qualifiedSizeBytes": 5261,
+      "checkoutFilteredSizeBytes": 5261,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/positive/p0-acceptance.expected.json",
+      "gitBlobSha256": "171d66db3d4c2a7a7c6ca66473dadb15c76121f1349d3568879df1f71ab27711",
+      "checkoutFilteredSha256": "171d66db3d4c2a7a7c6ca66473dadb15c76121f1349d3568879df1f71ab27711",
+      "qualifiedSha256": "171d66db3d4c2a7a7c6ca66473dadb15c76121f1349d3568879df1f71ab27711",
+      "qualifiedSizeBytes": 136,
+      "checkoutFilteredSizeBytes": 136,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/positive/p0-acceptance.json",
+      "gitBlobSha256": "b521119ac7ef812ba0cab84662e311c88b7531075e37aaa0f4215ac8ba290833",
+      "checkoutFilteredSha256": "b521119ac7ef812ba0cab84662e311c88b7531075e37aaa0f4215ac8ba290833",
+      "qualifiedSha256": "b521119ac7ef812ba0cab84662e311c88b7531075e37aaa0f4215ac8ba290833",
+      "qualifiedSizeBytes": 5273,
+      "checkoutFilteredSizeBytes": 5273,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/acceptance/README.md",
+      "gitBlobSha256": "4d305d87d25606b929216eab0078a8a4415dacbcaada55296fce7e2d3e3999d1",
+      "checkoutFilteredSha256": "4d305d87d25606b929216eab0078a8a4415dacbcaada55296fce7e2d3e3999d1",
+      "qualifiedSha256": "4d305d87d25606b929216eab0078a8a4415dacbcaada55296fce7e2d3e3999d1",
+      "qualifiedSizeBytes": 2229,
+      "checkoutFilteredSizeBytes": 2229,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-command-filter-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-command-filter-mismatch.yaml",
+      "gitBlobSha256": "6ec2b8ed5453ea1e42b5212c1d465aad39feb692423e5ea9603efd9000006cf3",
+      "checkoutFilteredSha256": "6ec2b8ed5453ea1e42b5212c1d465aad39feb692423e5ea9603efd9000006cf3",
+      "qualifiedSha256": "6ec2b8ed5453ea1e42b5212c1d465aad39feb692423e5ea9603efd9000006cf3",
+      "qualifiedSizeBytes": 2474,
+      "checkoutFilteredSizeBytes": 2474,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-command-manifest-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-command-manifest-mismatch.yaml",
+      "gitBlobSha256": "a2a8fe50d60c76386d4277e640a110157d8c7fde7800752fe6e4768e92a0eafc",
+      "checkoutFilteredSha256": "a2a8fe50d60c76386d4277e640a110157d8c7fde7800752fe6e4768e92a0eafc",
+      "qualifiedSha256": "a2a8fe50d60c76386d4277e640a110157d8c7fde7800752fe6e4768e92a0eafc",
+      "qualifiedSizeBytes": 2480,
+      "checkoutFilteredSizeBytes": 2480,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-command-profile-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-command-profile-mismatch.yaml",
+      "gitBlobSha256": "47f82982508aa27e6a49f3471ec0f1095664d28b0556d27aeaac77cdb51751ee",
+      "checkoutFilteredSha256": "47f82982508aa27e6a49f3471ec0f1095664d28b0556d27aeaac77cdb51751ee",
+      "qualifiedSha256": "47f82982508aa27e6a49f3471ec0f1095664d28b0556d27aeaac77cdb51751ee",
+      "qualifiedSizeBytes": 2477,
+      "checkoutFilteredSizeBytes": 2477,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-duplicate-option-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-duplicate-option-mismatch.yaml",
+      "gitBlobSha256": "90b4ae446895fa8b1ce218c8f2b98bfad8870915e056d7c927620d13260077df",
+      "checkoutFilteredSha256": "90b4ae446895fa8b1ce218c8f2b98bfad8870915e056d7c927620d13260077df",
+      "qualifiedSha256": "90b4ae446895fa8b1ce218c8f2b98bfad8870915e056d7c927620d13260077df",
+      "qualifiedSizeBytes": 2473,
+      "checkoutFilteredSizeBytes": 2473,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-hash-mismatch.expected.json",
+      "gitBlobSha256": "59fd6f9b4aaa946d0a163411235dc6bad58f42248b41b43831c4c0594496e513",
+      "checkoutFilteredSha256": "59fd6f9b4aaa946d0a163411235dc6bad58f42248b41b43831c4c0594496e513",
+      "qualifiedSha256": "59fd6f9b4aaa946d0a163411235dc6bad58f42248b41b43831c4c0594496e513",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-hash-mismatch.yaml",
+      "gitBlobSha256": "7b3cc4680a6b788deaa01d0d0b31dedb999b25ac1632720c8cc0b7aeae3b6f2b",
+      "checkoutFilteredSha256": "7b3cc4680a6b788deaa01d0d0b31dedb999b25ac1632720c8cc0b7aeae3b6f2b",
+      "qualifiedSha256": "7b3cc4680a6b788deaa01d0d0b31dedb999b25ac1632720c8cc0b7aeae3b6f2b",
+      "qualifiedSizeBytes": 2418,
+      "checkoutFilteredSizeBytes": 2418,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-raw-filter-equals-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-raw-filter-equals-mismatch.yaml",
+      "gitBlobSha256": "9c073a791301ebe3fed032360dc8df02df8c169ff2fbfbe2e445237ace3a7ec6",
+      "checkoutFilteredSha256": "9c073a791301ebe3fed032360dc8df02df8c169ff2fbfbe2e445237ace3a7ec6",
+      "qualifiedSha256": "9c073a791301ebe3fed032360dc8df02df8c169ff2fbfbe2e445237ace3a7ec6",
+      "qualifiedSizeBytes": 2482,
+      "checkoutFilteredSizeBytes": 2482,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-raw-filter-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/artifact-raw-filter-mismatch.yaml",
+      "gitBlobSha256": "773e2560f775ec20861ee2557b2f3f393a113039406ec43d7ef7cddc08fdae19",
+      "checkoutFilteredSha256": "773e2560f775ec20861ee2557b2f3f393a113039406ec43d7ef7cddc08fdae19",
+      "qualifiedSha256": "773e2560f775ec20861ee2557b2f3f393a113039406ec43d7ef7cddc08fdae19",
+      "qualifiedSizeBytes": 2462,
+      "checkoutFilteredSizeBytes": 2462,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/binding-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/binding-mismatch.yaml",
+      "gitBlobSha256": "4a381cf0f46756d3fb8718b428ca3367561a58a25f40c4f1eb7021d19576e375",
+      "checkoutFilteredSha256": "4a381cf0f46756d3fb8718b428ca3367561a58a25f40c4f1eb7021d19576e375",
+      "qualifiedSha256": "4a381cf0f46756d3fb8718b428ca3367561a58a25f40c4f1eb7021d19576e375",
+      "qualifiedSizeBytes": 2298,
+      "checkoutFilteredSizeBytes": 2298,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/coverage-shortfall.expected.json",
+      "gitBlobSha256": "892146adfb87360013e302c946f826a2ff572aa94c839c62f4151a60b09d7f11",
+      "checkoutFilteredSha256": "892146adfb87360013e302c946f826a2ff572aa94c839c62f4151a60b09d7f11",
+      "qualifiedSha256": "892146adfb87360013e302c946f826a2ff572aa94c839c62f4151a60b09d7f11",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/coverage-shortfall.yaml",
+      "gitBlobSha256": "4dccfae0121f292b634d4be8eef7ba26aa26f805da3a4f09799374820a0fa22d",
+      "checkoutFilteredSha256": "4dccfae0121f292b634d4be8eef7ba26aa26f805da3a4f09799374820a0fa22d",
+      "qualifiedSha256": "4dccfae0121f292b634d4be8eef7ba26aa26f805da3a4f09799374820a0fa22d",
+      "qualifiedSizeBytes": 2417,
+      "checkoutFilteredSizeBytes": 2417,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/duplicate-key.yaml",
+      "gitBlobSha256": "38b161eaebaa6fbe88468f525398dc6a4c095529b1436d73a2b9656f36c3de1c",
+      "checkoutFilteredSha256": "38b161eaebaa6fbe88468f525398dc6a4c095529b1436d73a2b9656f36c3de1c",
+      "qualifiedSha256": "38b161eaebaa6fbe88468f525398dc6a4c095529b1436d73a2b9656f36c3de1c",
+      "qualifiedSizeBytes": 78,
+      "checkoutFilteredSizeBytes": 78,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/duplicate-key.yaml.expected.json",
+      "gitBlobSha256": "f2725df05f536727a0949966d6c665253686c5d37b1b41e3756f73905b5db261",
+      "checkoutFilteredSha256": "f2725df05f536727a0949966d6c665253686c5d37b1b41e3756f73905b5db261",
+      "qualifiedSha256": "f2725df05f536727a0949966d6c665253686c5d37b1b41e3756f73905b5db261",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/artifact-command-filter-mismatch.json",
+      "gitBlobSha256": "22fa72266fa4792e37dfa3ec3a871ff132890c08f800f5c24c4e8a27008493b7",
+      "checkoutFilteredSha256": "22fa72266fa4792e37dfa3ec3a871ff132890c08f800f5c24c4e8a27008493b7",
+      "qualifiedSha256": "22fa72266fa4792e37dfa3ec3a871ff132890c08f800f5c24c4e8a27008493b7",
+      "qualifiedSizeBytes": 1836,
+      "checkoutFilteredSizeBytes": 1836,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/artifact-command-manifest-mismatch.json",
+      "gitBlobSha256": "c0c24109c4f6ff5556d798af890a456af6a6b86d59ae4efe5ab60f69ddbf0527",
+      "checkoutFilteredSha256": "c0c24109c4f6ff5556d798af890a456af6a6b86d59ae4efe5ab60f69ddbf0527",
+      "qualifiedSha256": "c0c24109c4f6ff5556d798af890a456af6a6b86d59ae4efe5ab60f69ddbf0527",
+      "qualifiedSizeBytes": 1824,
+      "checkoutFilteredSizeBytes": 1824,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/artifact-command-profile-mismatch.json",
+      "gitBlobSha256": "2389efe8517ce4fe9f766cb58af91171d1ff5f5d9011739ee3d4cf8fdaf65152",
+      "checkoutFilteredSha256": "2389efe8517ce4fe9f766cb58af91171d1ff5f5d9011739ee3d4cf8fdaf65152",
+      "qualifiedSha256": "2389efe8517ce4fe9f766cb58af91171d1ff5f5d9011739ee3d4cf8fdaf65152",
+      "qualifiedSizeBytes": 1841,
+      "checkoutFilteredSizeBytes": 1841,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/artifact-duplicate-option-mismatch.json",
+      "gitBlobSha256": "da8baa0a60e403e9b17b2293ef7255de760c7062f718ef65f57d05d929c7611b",
+      "checkoutFilteredSha256": "da8baa0a60e403e9b17b2293ef7255de760c7062f718ef65f57d05d929c7611b",
+      "qualifiedSha256": "da8baa0a60e403e9b17b2293ef7255de760c7062f718ef65f57d05d929c7611b",
+      "qualifiedSizeBytes": 1910,
+      "checkoutFilteredSizeBytes": 1910,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/artifact-raw-filter-equals-mismatch.json",
+      "gitBlobSha256": "726fe6a30bc2b28034617333a6dd30c3bece3c5fa9fc7a4885cd71b74ef71b68",
+      "checkoutFilteredSha256": "726fe6a30bc2b28034617333a6dd30c3bece3c5fa9fc7a4885cd71b74ef71b68",
+      "qualifiedSha256": "726fe6a30bc2b28034617333a6dd30c3bece3c5fa9fc7a4885cd71b74ef71b68",
+      "qualifiedSizeBytes": 1860,
+      "checkoutFilteredSizeBytes": 1860,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/artifact-raw-filter-mismatch.json",
+      "gitBlobSha256": "f86bdb98580426b44faf27d3b0b8a6bf702043ebdc4966cc3bd8a6af422aa2a4",
+      "checkoutFilteredSha256": "f86bdb98580426b44faf27d3b0b8a6bf702043ebdc4966cc3bd8a6af422aa2a4",
+      "qualifiedSha256": "f86bdb98580426b44faf27d3b0b8a6bf702043ebdc4966cc3bd8a6af422aa2a4",
+      "qualifiedSizeBytes": 1860,
+      "checkoutFilteredSizeBytes": 1860,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/down-run.json",
+      "gitBlobSha256": "3679e7bcccae62e0a9e0107cdc2b9628d3a3e080cd6c77b9b12eb1d1adb8912b",
+      "checkoutFilteredSha256": "3679e7bcccae62e0a9e0107cdc2b9628d3a3e080cd6c77b9b12eb1d1adb8912b",
+      "qualifiedSha256": "3679e7bcccae62e0a9e0107cdc2b9628d3a3e080cd6c77b9b12eb1d1adb8912b",
+      "qualifiedSizeBytes": 1515,
+      "checkoutFilteredSizeBytes": 1515,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/fixture-hash-mismatch.json",
+      "gitBlobSha256": "a5b50255a0f157c6933c9da9119f9e96e5796f79b312b29828440f09c1a925f0",
+      "checkoutFilteredSha256": "a5b50255a0f157c6933c9da9119f9e96e5796f79b312b29828440f09c1a925f0",
+      "qualifiedSha256": "a5b50255a0f157c6933c9da9119f9e96e5796f79b312b29828440f09c1a925f0",
+      "qualifiedSizeBytes": 1836,
+      "checkoutFilteredSizeBytes": 1836,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/invalid-run.json",
+      "gitBlobSha256": "fdce830664205d5a2c463db13943bc87868c3d82ff0232a4c4149c1799e7c4d3",
+      "checkoutFilteredSha256": "fdce830664205d5a2c463db13943bc87868c3d82ff0232a4c4149c1799e7c4d3",
+      "qualifiedSha256": "fdce830664205d5a2c463db13943bc87868c3d82ff0232a4c4149c1799e7c4d3",
+      "qualifiedSizeBytes": 45,
+      "checkoutFilteredSizeBytes": 45,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/manifest-hash-mismatch.json",
+      "gitBlobSha256": "52172c99c78185c0467a36a2a7f39ab4f463f146cdbba8c95c703ead0b1054b7",
+      "checkoutFilteredSha256": "52172c99c78185c0467a36a2a7f39ab4f463f146cdbba8c95c703ead0b1054b7",
+      "qualifiedSha256": "52172c99c78185c0467a36a2a7f39ab4f463f146cdbba8c95c703ead0b1054b7",
+      "qualifiedSizeBytes": 1836,
+      "checkoutFilteredSizeBytes": 1836,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/manifest-profile-fixture-mismatch.json",
+      "gitBlobSha256": "828eb2eed13aa82e1fef4ba30f6fdf9499ebab3294378a5aae4c827c8c3fc267",
+      "checkoutFilteredSha256": "828eb2eed13aa82e1fef4ba30f6fdf9499ebab3294378a5aae4c827c8c3fc267",
+      "qualifiedSha256": "828eb2eed13aa82e1fef4ba30f6fdf9499ebab3294378a5aae4c827c8c3fc267",
+      "qualifiedSizeBytes": 1841,
+      "checkoutFilteredSizeBytes": 1841,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/secret-metadata.json",
+      "gitBlobSha256": "e2e2221c0770648857370f94bbd17de8a542cef3340d696c21d138ecdefd8fb2",
+      "checkoutFilteredSha256": "e2e2221c0770648857370f94bbd17de8a542cef3340d696c21d138ecdefd8fb2",
+      "qualifiedSha256": "e2e2221c0770648857370f94bbd17de8a542cef3340d696c21d138ecdefd8fb2",
+      "qualifiedSizeBytes": 1522,
+      "checkoutFilteredSizeBytes": 1522,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/evidence/test-no-tests.json",
+      "gitBlobSha256": "eb5b4c8770267e417da8ef0ad49246c3ce658d67e92b16ebb06ddfd5f469d71c",
+      "checkoutFilteredSha256": "eb5b4c8770267e417da8ef0ad49246c3ce658d67e92b16ebb06ddfd5f469d71c",
+      "qualifiedSha256": "eb5b4c8770267e417da8ef0ad49246c3ce658d67e92b16ebb06ddfd5f469d71c",
+      "qualifiedSizeBytes": 1837,
+      "checkoutFilteredSizeBytes": 1837,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/filter-hash-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/filter-hash-mismatch.yaml",
+      "gitBlobSha256": "0af84dda6a45054193835c687b38fbe01fbf876eb5794c6caf7893e92cd85a4a",
+      "checkoutFilteredSha256": "0af84dda6a45054193835c687b38fbe01fbf876eb5794c6caf7893e92cd85a4a",
+      "qualifiedSha256": "0af84dda6a45054193835c687b38fbe01fbf876eb5794c6caf7893e92cd85a4a",
+      "qualifiedSizeBytes": 2437,
+      "checkoutFilteredSizeBytes": 2437,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/fixture-hash-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/fixture-hash-mismatch.yaml",
+      "gitBlobSha256": "c6ecc29388e0b839dd9ac14dd5b2d59a22326a496c30263ca7d3bb08ab1d4c84",
+      "checkoutFilteredSha256": "c6ecc29388e0b839dd9ac14dd5b2d59a22326a496c30263ca7d3bb08ab1d4c84",
+      "qualifiedSha256": "c6ecc29388e0b839dd9ac14dd5b2d59a22326a496c30263ca7d3bb08ab1d4c84",
+      "qualifiedSizeBytes": 2436,
+      "checkoutFilteredSizeBytes": 2436,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/fixture-path-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/fixture-path-mismatch.yaml",
+      "gitBlobSha256": "a7674fa123b34202e7c3b517a3796594d5b8b3e8e057392f507235786b53f4ee",
+      "checkoutFilteredSha256": "a7674fa123b34202e7c3b517a3796594d5b8b3e8e057392f507235786b53f4ee",
+      "qualifiedSha256": "a7674fa123b34202e7c3b517a3796594d5b8b3e8e057392f507235786b53f4ee",
+      "qualifiedSizeBytes": 2429,
+      "checkoutFilteredSizeBytes": 2429,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/invalid-artifact.expected.json",
+      "gitBlobSha256": "8d1cfd1b42d66506599d848c30b7960de90c0215af27f23030b7340cae31ebff",
+      "checkoutFilteredSha256": "8d1cfd1b42d66506599d848c30b7960de90c0215af27f23030b7340cae31ebff",
+      "qualifiedSha256": "8d1cfd1b42d66506599d848c30b7960de90c0215af27f23030b7340cae31ebff",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/invalid-artifact.yaml",
+      "gitBlobSha256": "1d87844c8ccec94779caec9cab564e0024e8ae6a97d67f75848ed147ac55b2cb",
+      "checkoutFilteredSha256": "1d87844c8ccec94779caec9cab564e0024e8ae6a97d67f75848ed147ac55b2cb",
+      "qualifiedSha256": "1d87844c8ccec94779caec9cab564e0024e8ae6a97d67f75848ed147ac55b2cb",
+      "qualifiedSizeBytes": 2525,
+      "checkoutFilteredSizeBytes": 2525,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/malformed-row-option-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/malformed-row-option-mismatch.yaml",
+      "gitBlobSha256": "efed530a8b52276b46a4a51d2642a94b1ec2c64c514ad6e55306c9c00ff1072d",
+      "checkoutFilteredSha256": "efed530a8b52276b46a4a51d2642a94b1ec2c64c514ad6e55306c9c00ff1072d",
+      "qualifiedSha256": "efed530a8b52276b46a4a51d2642a94b1ec2c64c514ad6e55306c9c00ff1072d",
+      "qualifiedSizeBytes": 2430,
+      "checkoutFilteredSizeBytes": 2430,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/manifest-hash-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/manifest-hash-mismatch.yaml",
+      "gitBlobSha256": "b97fed8b3d16f972b7f3da3d615b60bdb1b51e6df93c839e4571c234b37524c8",
+      "checkoutFilteredSha256": "b97fed8b3d16f972b7f3da3d615b60bdb1b51e6df93c839e4571c234b37524c8",
+      "qualifiedSha256": "b97fed8b3d16f972b7f3da3d615b60bdb1b51e6df93c839e4571c234b37524c8",
+      "qualifiedSizeBytes": 2439,
+      "checkoutFilteredSizeBytes": 2439,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/manifest-path-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/manifest-path-mismatch.yaml",
+      "gitBlobSha256": "29dd057b217e08a15d7ddd1fd926fe5e3ffcff79bbebe9fd94276641e0f27ab0",
+      "checkoutFilteredSha256": "29dd057b217e08a15d7ddd1fd926fe5e3ffcff79bbebe9fd94276641e0f27ab0",
+      "qualifiedSha256": "29dd057b217e08a15d7ddd1fd926fe5e3ffcff79bbebe9fd94276641e0f27ab0",
+      "qualifiedSizeBytes": 2414,
+      "checkoutFilteredSizeBytes": 2414,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/manifest-profile-fixture-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/manifest-profile-fixture-mismatch.yaml",
+      "gitBlobSha256": "3d4e5aa90bd8515df198044cd7c773bad497afb3e20cec7a464ccd1121085fc4",
+      "checkoutFilteredSha256": "3d4e5aa90bd8515df198044cd7c773bad497afb3e20cec7a464ccd1121085fc4",
+      "qualifiedSha256": "3d4e5aa90bd8515df198044cd7c773bad497afb3e20cec7a464ccd1121085fc4",
+      "qualifiedSizeBytes": 2489,
+      "checkoutFilteredSizeBytes": 2489,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/missing-artifact-metadata.expected.json",
+      "gitBlobSha256": "4ae60143cf6e65b679f5303624a4f1aabbb9a91c44d8e3770a3992b2f895cbe1",
+      "checkoutFilteredSha256": "4ae60143cf6e65b679f5303624a4f1aabbb9a91c44d8e3770a3992b2f895cbe1",
+      "qualifiedSha256": "4ae60143cf6e65b679f5303624a4f1aabbb9a91c44d8e3770a3992b2f895cbe1",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/missing-artifact-metadata.yaml",
+      "gitBlobSha256": "3a3dc2c117db9038cb89c28e5673ffe238118bdf969f618229c5bcde45e28fc3",
+      "checkoutFilteredSha256": "3a3dc2c117db9038cb89c28e5673ffe238118bdf969f618229c5bcde45e28fc3",
+      "qualifiedSha256": "3a3dc2c117db9038cb89c28e5673ffe238118bdf969f618229c5bcde45e28fc3",
+      "qualifiedSizeBytes": 2173,
+      "checkoutFilteredSizeBytes": 2173,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/no-executed-tests.expected.json",
+      "gitBlobSha256": "e0bc998035d7a8117913c1c67c47683df158fa4413a47181ecdbf7ee3caac0c8",
+      "checkoutFilteredSha256": "e0bc998035d7a8117913c1c67c47683df158fa4413a47181ecdbf7ee3caac0c8",
+      "qualifiedSha256": "e0bc998035d7a8117913c1c67c47683df158fa4413a47181ecdbf7ee3caac0c8",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/no-executed-tests.yaml",
+      "gitBlobSha256": "651431c37c3bcf04dde3818dc4229064e07bc66c2951f59a953014003c0ccf6b",
+      "checkoutFilteredSha256": "651431c37c3bcf04dde3818dc4229064e07bc66c2951f59a953014003c0ccf6b",
+      "qualifiedSha256": "651431c37c3bcf04dde3818dc4229064e07bc66c2951f59a953014003c0ccf6b",
+      "qualifiedSizeBytes": 2411,
+      "checkoutFilteredSizeBytes": 2411,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/outcome-mismatch.expected.json",
+      "gitBlobSha256": "6ab5e164bec3e42c2938976094191592f40a3f826e6e83eafa36214af2671255",
+      "checkoutFilteredSha256": "6ab5e164bec3e42c2938976094191592f40a3f826e6e83eafa36214af2671255",
+      "qualifiedSha256": "6ab5e164bec3e42c2938976094191592f40a3f826e6e83eafa36214af2671255",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/outcome-mismatch.yaml",
+      "gitBlobSha256": "ecd7821a75c6b819a0e832d247e76d9c7de171b5e403327f35b721046f74301a",
+      "checkoutFilteredSha256": "ecd7821a75c6b819a0e832d247e76d9c7de171b5e403327f35b721046f74301a",
+      "qualifiedSha256": "ecd7821a75c6b819a0e832d247e76d9c7de171b5e403327f35b721046f74301a",
+      "qualifiedSizeBytes": 2417,
+      "checkoutFilteredSizeBytes": 2417,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/policy-controls.md",
+      "gitBlobSha256": "b0cc3a7da2833f66c898493fe34865ea1a803c88938a2b57e5e34dc6487c09fd",
+      "checkoutFilteredSha256": "b0cc3a7da2833f66c898493fe34865ea1a803c88938a2b57e5e34dc6487c09fd",
+      "qualifiedSha256": "b0cc3a7da2833f66c898493fe34865ea1a803c88938a2b57e5e34dc6487c09fd",
+      "qualifiedSizeBytes": 110,
+      "checkoutFilteredSizeBytes": 110,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/policy-controls.yaml",
+      "gitBlobSha256": "c62090a26b9c0399487a11b3685446785097190b0a47e723142f49d8f48d68ac",
+      "checkoutFilteredSha256": "c62090a26b9c0399487a11b3685446785097190b0a47e723142f49d8f48d68ac",
+      "qualifiedSha256": "c62090a26b9c0399487a11b3685446785097190b0a47e723142f49d8f48d68ac",
+      "qualifiedSizeBytes": 4513,
+      "checkoutFilteredSizeBytes": 4513,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/policy-controls.yaml.expected.json",
+      "gitBlobSha256": "bb421db111fe65bf352c2d3e94d7052f9660033778cee109970876221550b31a",
+      "checkoutFilteredSha256": "bb421db111fe65bf352c2d3e94d7052f9660033778cee109970876221550b31a",
+      "qualifiedSha256": "bb421db111fe65bf352c2d3e94d7052f9660033778cee109970876221550b31a",
+      "qualifiedSizeBytes": 318,
+      "checkoutFilteredSizeBytes": 318,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/row-duplicate-option-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/row-duplicate-option-mismatch.yaml",
+      "gitBlobSha256": "0e4162aeb4b37989f83c9aef372046faa67058f0dc5ca7896a1eddcef9ab26a4",
+      "checkoutFilteredSha256": "0e4162aeb4b37989f83c9aef372046faa67058f0dc5ca7896a1eddcef9ab26a4",
+      "qualifiedSha256": "0e4162aeb4b37989f83c9aef372046faa67058f0dc5ca7896a1eddcef9ab26a4",
+      "qualifiedSizeBytes": 2463,
+      "checkoutFilteredSizeBytes": 2463,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/row-missing-filter-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/row-missing-filter-mismatch.yaml",
+      "gitBlobSha256": "426d4b8dc3494f71278f2ff2ec37a653f9a380ddbf8d842473103a273f20427e",
+      "checkoutFilteredSha256": "426d4b8dc3494f71278f2ff2ec37a653f9a380ddbf8d842473103a273f20427e",
+      "qualifiedSha256": "426d4b8dc3494f71278f2ff2ec37a653f9a380ddbf8d842473103a273f20427e",
+      "qualifiedSizeBytes": 2416,
+      "checkoutFilteredSizeBytes": 2416,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/row-missing-manifest-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/row-missing-manifest-mismatch.yaml",
+      "gitBlobSha256": "3682ec25cc4fa5d6db713589c66d1856be8919ad395d1f61d306f4f7daaede4f",
+      "checkoutFilteredSha256": "3682ec25cc4fa5d6db713589c66d1856be8919ad395d1f61d306f4f7daaede4f",
+      "qualifiedSha256": "3682ec25cc4fa5d6db713589c66d1856be8919ad395d1f61d306f4f7daaede4f",
+      "qualifiedSizeBytes": 2370,
+      "checkoutFilteredSizeBytes": 2370,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/row-profile-mismatch.expected.json",
+      "gitBlobSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "checkoutFilteredSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSha256": "06eeda3fa85cf173ee8a29d769b2114709122168e477fb377d184786cdc10e2d",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/row-profile-mismatch.yaml",
+      "gitBlobSha256": "86e6ebeaccb3a3fa0e057753a746459b41a7ed88e96ca1421be48b0e630399c2",
+      "checkoutFilteredSha256": "86e6ebeaccb3a3fa0e057753a746459b41a7ed88e96ca1421be48b0e630399c2",
+      "qualifiedSha256": "86e6ebeaccb3a3fa0e057753a746459b41a7ed88e96ca1421be48b0e630399c2",
+      "qualifiedSizeBytes": 2443,
+      "checkoutFilteredSizeBytes": 2443,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/secret-metadata.expected.json",
+      "gitBlobSha256": "8d1cfd1b42d66506599d848c30b7960de90c0215af27f23030b7340cae31ebff",
+      "checkoutFilteredSha256": "8d1cfd1b42d66506599d848c30b7960de90c0215af27f23030b7340cae31ebff",
+      "qualifiedSha256": "8d1cfd1b42d66506599d848c30b7960de90c0215af27f23030b7340cae31ebff",
+      "qualifiedSizeBytes": 206,
+      "checkoutFilteredSizeBytes": 206,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/secret-metadata.yaml",
+      "gitBlobSha256": "d3e0c3c8382cdc93249e2a47ea00cdaf9915f7aabca6adc1f2748b77f07117e1",
+      "checkoutFilteredSha256": "d3e0c3c8382cdc93249e2a47ea00cdaf9915f7aabca6adc1f2748b77f07117e1",
+      "qualifiedSha256": "d3e0c3c8382cdc93249e2a47ea00cdaf9915f7aabca6adc1f2748b77f07117e1",
+      "qualifiedSizeBytes": 2308,
+      "checkoutFilteredSizeBytes": 2308,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/unknown-field.yaml",
+      "gitBlobSha256": "b1770373313b3d7bc3cbc9e54d6218a05e38aaaeb2edef70dab5c9fd243fd037",
+      "checkoutFilteredSha256": "b1770373313b3d7bc3cbc9e54d6218a05e38aaaeb2edef70dab5c9fd243fd037",
+      "qualifiedSha256": "b1770373313b3d7bc3cbc9e54d6218a05e38aaaeb2edef70dab5c9fd243fd037",
+      "qualifiedSizeBytes": 93,
+      "checkoutFilteredSizeBytes": 93,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/unknown-field.yaml.expected.json",
+      "gitBlobSha256": "edebedeba009c0ac8439f3fe275068549d8d80abc3fe38c6b37ebd728d659b84",
+      "checkoutFilteredSha256": "edebedeba009c0ac8439f3fe275068549d8d80abc3fe38c6b37ebd728d659b84",
+      "qualifiedSha256": "edebedeba009c0ac8439f3fe275068549d8d80abc3fe38c6b37ebd728d659b84",
+      "qualifiedSizeBytes": 276,
+      "checkoutFilteredSizeBytes": 276,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/unsupported-schema.yaml",
+      "gitBlobSha256": "76e0dd2d34282e32547659e5e57beb84d277358aebf8626539c8ef0542a5bad3",
+      "checkoutFilteredSha256": "76e0dd2d34282e32547659e5e57beb84d277358aebf8626539c8ef0542a5bad3",
+      "qualifiedSha256": "76e0dd2d34282e32547659e5e57beb84d277358aebf8626539c8ef0542a5bad3",
+      "qualifiedSizeBytes": 39,
+      "checkoutFilteredSizeBytes": 39,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/negative/unsupported-schema.yaml.expected.json",
+      "gitBlobSha256": "bbed4abf403c275a68074271d5130adf2c76cf0795cc83fd29533f285bab1071",
+      "checkoutFilteredSha256": "bbed4abf403c275a68074271d5130adf2c76cf0795cc83fd29533f285bab1071",
+      "qualifiedSha256": "bbed4abf403c275a68074271d5130adf2c76cf0795cc83fd29533f285bab1071",
+      "qualifiedSizeBytes": 290,
+      "checkoutFilteredSizeBytes": 290,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/positive/evidence/release-passed.json",
+      "gitBlobSha256": "b153d833be60163046207483ba3a86470c9a80495870accf09d4f87db6f8ad79",
+      "checkoutFilteredSha256": "b153d833be60163046207483ba3a86470c9a80495870accf09d4f87db6f8ad79",
+      "qualifiedSha256": "b153d833be60163046207483ba3a86470c9a80495870accf09d4f87db6f8ad79",
+      "qualifiedSizeBytes": 1836,
+      "checkoutFilteredSizeBytes": 1836,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/positive/readiness.md",
+      "gitBlobSha256": "b16b7b9a95d0bc08043788b5e49c2d3d021b7bb773157b8701487bc9117d2ba5",
+      "checkoutFilteredSha256": "b16b7b9a95d0bc08043788b5e49c2d3d021b7bb773157b8701487bc9117d2ba5",
+      "qualifiedSha256": "b16b7b9a95d0bc08043788b5e49c2d3d021b7bb773157b8701487bc9117d2ba5",
+      "qualifiedSizeBytes": 102,
+      "checkoutFilteredSizeBytes": 102,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/positive/readiness.yaml",
+      "gitBlobSha256": "f117506bc06cb4b3a664046d301f23bf4975f3bea499ed4b01ded21191cfd3dc",
+      "checkoutFilteredSha256": "f117506bc06cb4b3a664046d301f23bf4975f3bea499ed4b01ded21191cfd3dc",
+      "qualifiedSha256": "f117506bc06cb4b3a664046d301f23bf4975f3bea499ed4b01ded21191cfd3dc",
+      "qualifiedSizeBytes": 2626,
+      "checkoutFilteredSizeBytes": 2626,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/evidence/positive/readiness.yaml.expected.json",
+      "gitBlobSha256": "c4e2c9e48c5379a9b3fc8294d187f63a00b11c3cc9dd0b39e631c098755e7f17",
+      "checkoutFilteredSha256": "c4e2c9e48c5379a9b3fc8294d187f63a00b11c3cc9dd0b39e631c098755e7f17",
+      "qualifiedSha256": "c4e2c9e48c5379a9b3fc8294d187f63a00b11c3cc9dd0b39e631c098755e7f17",
+      "qualifiedSizeBytes": 128,
+      "checkoutFilteredSizeBytes": 128,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/controls/absent-event.control.json",
+      "gitBlobSha256": "3beb1bf52bf316abb9ab76851f75c187166635207eaac53e2bec3a7ab8071059",
+      "checkoutFilteredSha256": "3beb1bf52bf316abb9ab76851f75c187166635207eaac53e2bec3a7ab8071059",
+      "qualifiedSha256": "3beb1bf52bf316abb9ab76851f75c187166635207eaac53e2bec3a7ab8071059",
+      "qualifiedSizeBytes": 268,
+      "checkoutFilteredSizeBytes": 268,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/controls/absent-projection.control.json",
+      "gitBlobSha256": "399c65f938050acfc39477987d0fc9369972f64e4483ddf784ec0f2a27a77d30",
+      "checkoutFilteredSha256": "399c65f938050acfc39477987d0fc9369972f64e4483ddf784ec0f2a27a77d30",
+      "qualifiedSha256": "399c65f938050acfc39477987d0fc9369972f64e4483ddf784ec0f2a27a77d30",
+      "qualifiedSizeBytes": 273,
+      "checkoutFilteredSizeBytes": 273,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/controls/cancellation.control.json",
+      "gitBlobSha256": "8a25f1b42a90d9d3bdf07c764fb87727f7f8debc20559bcff345c12713cb582c",
+      "checkoutFilteredSha256": "8a25f1b42a90d9d3bdf07c764fb87727f7f8debc20559bcff345c12713cb582c",
+      "qualifiedSha256": "8a25f1b42a90d9d3bdf07c764fb87727f7f8debc20559bcff345c12713cb582c",
+      "qualifiedSizeBytes": 269,
+      "checkoutFilteredSizeBytes": 269,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/controls/cross-tenant.control.json",
+      "gitBlobSha256": "1df698ebd8658435ff313fc3f58a0687f339983f5d7364e746ede177a687e787",
+      "checkoutFilteredSha256": "1df698ebd8658435ff313fc3f58a0687f339983f5d7364e746ede177a687e787",
+      "qualifiedSha256": "1df698ebd8658435ff313fc3f58a0687f339983f5d7364e746ede177a687e787",
+      "qualifiedSizeBytes": 271,
+      "checkoutFilteredSizeBytes": 271,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/controls/prerequisite-unavailable.control.json",
+      "gitBlobSha256": "47878483ce07d2742c7fe23367428ad546852e3150daa4e75a204f9a069dd650",
+      "checkoutFilteredSha256": "47878483ce07d2742c7fe23367428ad546852e3150daa4e75a204f9a069dd650",
+      "qualifiedSha256": "47878483ce07d2742c7fe23367428ad546852e3150daa4e75a204f9a069dd650",
+      "qualifiedSizeBytes": 317,
+      "checkoutFilteredSizeBytes": 317,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/controls/stale-state.control.json",
+      "gitBlobSha256": "4743466b56ddd7dd7d7cd25510931add04c6ca5bd6238db098b40bc8d80caf82",
+      "checkoutFilteredSha256": "4743466b56ddd7dd7d7cd25510931add04c6ca5bd6238db098b40bc8d80caf82",
+      "qualifiedSha256": "4743466b56ddd7dd7d7cd25510931add04c6ca5bd6238db098b40bc8d80caf82",
+      "qualifiedSizeBytes": 279,
+      "checkoutFilteredSizeBytes": 279,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/controls/wrong-sequence.control.json",
+      "gitBlobSha256": "610b902008b64a4584b8beee8f130150bfea6b074437531f8882adee8d002667",
+      "checkoutFilteredSha256": "610b902008b64a4584b8beee8f130150bfea6b074437531f8882adee8d002667",
+      "qualifiedSha256": "610b902008b64a4584b8beee8f130150bfea6b074437531f8882adee8d002667",
+      "qualifiedSizeBytes": 270,
+      "checkoutFilteredSizeBytes": 270,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/descriptors/p0-fixture-inventory.descriptor.json",
+      "gitBlobSha256": "5b7da86f06dcd31faa76cb697c8ede1cb06dfb87831b2c68604a50ed45146f83",
+      "checkoutFilteredSha256": "5b7da86f06dcd31faa76cb697c8ede1cb06dfb87831b2c68604a50ed45146f83",
+      "qualifiedSha256": "5b7da86f06dcd31faa76cb697c8ede1cb06dfb87831b2c68604a50ed45146f83",
+      "qualifiedSizeBytes": 223,
+      "checkoutFilteredSizeBytes": 223,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/descriptors/p0-fixture-orders.descriptor.json",
+      "gitBlobSha256": "1115a7583589d512c0e6510d1dcfeb8a9c1ce998ec003ac70d2cbe8c5dd5cf12",
+      "checkoutFilteredSha256": "1115a7583589d512c0e6510d1dcfeb8a9c1ce998ec003ac70d2cbe8c5dd5cf12",
+      "qualifiedSha256": "1115a7583589d512c0e6510d1dcfeb8a9c1ce998ec003ac70d2cbe8c5dd5cf12",
+      "qualifiedSizeBytes": 220,
+      "checkoutFilteredSizeBytes": 220,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/Directory.Build.props",
+      "gitBlobSha256": "84159ecaf790b27c69b59071d59671e81d37ac85a2abd0050ec252dbf9ddb9b7",
+      "checkoutFilteredSha256": "84159ecaf790b27c69b59071d59671e81d37ac85a2abd0050ec252dbf9ddb9b7",
+      "qualifiedSha256": "84159ecaf790b27c69b59071d59671e81d37ac85a2abd0050ec252dbf9ddb9b7",
+      "qualifiedSizeBytes": 1272,
+      "checkoutFilteredSizeBytes": 1272,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/Hexalith.Builds.P0Fixture.slnx",
+      "gitBlobSha256": "157a2c37bffc5dc9b4c7be49d9d6f55ff8c02392f05841dd53c340cb60706635",
+      "checkoutFilteredSha256": "157a2c37bffc5dc9b4c7be49d9d6f55ff8c02392f05841dd53c340cb60706635",
+      "qualifiedSha256": "157a2c37bffc5dc9b4c7be49d9d6f55ff8c02392f05841dd53c340cb60706635",
+      "qualifiedSizeBytes": 457,
+      "checkoutFilteredSizeBytes": 457,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/hexalith.module-manifest.v1.json",
+      "gitBlobSha256": "257cdf13bbbed3d2269c67387266ab527e64664f097628a27f8c6443ebcc80b4",
+      "checkoutFilteredSha256": "257cdf13bbbed3d2269c67387266ab527e64664f097628a27f8c6443ebcc80b4",
+      "qualifiedSha256": "257cdf13bbbed3d2269c67387266ab527e64664f097628a27f8c6443ebcc80b4",
+      "qualifiedSizeBytes": 1713,
+      "checkoutFilteredSizeBytes": 1713,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Inventory.Descriptor/ModuleDescriptorV1.cs",
+      "gitBlobSha256": "9cc9cbcbff61ade96ff17fcff617bfce687ee8af1cbdecc89dcfa9352885af7f",
+      "checkoutFilteredSha256": "2e0fe2791e077589fea0272564cb80d941f29f8857e9679bc796c136cd42f232",
+      "qualifiedSha256": "2e0fe2791e077589fea0272564cb80d941f29f8857e9679bc796c136cd42f232",
+      "qualifiedSizeBytes": 1248,
+      "checkoutFilteredSizeBytes": 1248,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.csproj",
+      "gitBlobSha256": "1363589311a0629f6132b51927075752163e45411ec95a116efd9b0602da46a6",
+      "checkoutFilteredSha256": "1363589311a0629f6132b51927075752163e45411ec95a116efd9b0602da46a6",
+      "qualifiedSha256": "1363589311a0629f6132b51927075752163e45411ec95a116efd9b0602da46a6",
+      "qualifiedSizeBytes": 236,
+      "checkoutFilteredSizeBytes": 236,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Inventory/P0Fixture.Inventory.csproj",
+      "gitBlobSha256": "570515ae1750eaf0a25118016aadb3df1a49aae50ec5868cfd20823ced6afdc1",
+      "checkoutFilteredSha256": "570515ae1750eaf0a25118016aadb3df1a49aae50ec5868cfd20823ced6afdc1",
+      "qualifiedSha256": "570515ae1750eaf0a25118016aadb3df1a49aae50ec5868cfd20823ced6afdc1",
+      "qualifiedSizeBytes": 352,
+      "checkoutFilteredSizeBytes": 352,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Inventory/Program.cs",
+      "gitBlobSha256": "a97212099e5a567bcfa58e3d4b760ad1b67d7fbbb15d3820cc18f136001ae877",
+      "checkoutFilteredSha256": "e475e7d058e0af8828f2f98c91f1a5a5c3f1ac41eb8de9112f909a2860a7fb70",
+      "qualifiedSha256": "e475e7d058e0af8828f2f98c91f1a5a5c3f1ac41eb8de9112f909a2860a7fb70",
+      "qualifiedSizeBytes": 518,
+      "checkoutFilteredSizeBytes": 518,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Inventory/ReserveStock.cs",
+      "gitBlobSha256": "10acabf52d5aab29b601f458a7377c055394e14e8e390c4790bb6a9502b330f3",
+      "checkoutFilteredSha256": "1d57c9105b20ead40ffa02fd438929beb92f0839aa99ba34175952eb2afda752",
+      "qualifiedSha256": "1d57c9105b20ead40ffa02fd438929beb92f0839aa99ba34175952eb2afda752",
+      "qualifiedSizeBytes": 503,
+      "checkoutFilteredSizeBytes": 503,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Inventory/StockAggregate.cs",
+      "gitBlobSha256": "bfb362f84ca34a2e403db6b0b750c350cc9de1c82f860285bc561d5e00409001",
+      "checkoutFilteredSha256": "9c4c3db06ec9aa5ec50df9953584d897ed0d3e64b5b2137ec4de018db6b6e916",
+      "qualifiedSha256": "9c4c3db06ec9aa5ec50df9953584d897ed0d3e64b5b2137ec4de018db6b6e916",
+      "qualifiedSizeBytes": 1237,
+      "checkoutFilteredSizeBytes": 1237,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Inventory/StockReserved.cs",
+      "gitBlobSha256": "007873a766fd6be4c6fac8f9c41227f0bfa275c86e0624d64ee75670df8c7e53",
+      "checkoutFilteredSha256": "01f2b22a63c0550bd633429e2ab1271bfdaaaa55ebe4688faf9f5fa26cb169c1",
+      "qualifiedSha256": "01f2b22a63c0550bd633429e2ab1271bfdaaaa55ebe4688faf9f5fa26cb169c1",
+      "qualifiedSizeBytes": 650,
+      "checkoutFilteredSizeBytes": 650,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Inventory/StockState.cs",
+      "gitBlobSha256": "f98d575043e4715e7e8543117b3084083c9348c86e7ac0077561d690ab6d1690",
+      "checkoutFilteredSha256": "79a10f18e66980676b387153695f9ead55641cdc994ff69987a4645a174a79f1",
+      "qualifiedSha256": "79a10f18e66980676b387153695f9ead55641cdc994ff69987a4645a174a79f1",
+      "qualifiedSizeBytes": 1020,
+      "checkoutFilteredSizeBytes": 1020,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Inventory/StockSummaryProjection.cs",
+      "gitBlobSha256": "85e55966f8aeec67aa4145665a20b1b7270239ea809a8daf2fdeb92622bd65b3",
+      "checkoutFilteredSha256": "82be6e04e6eb114d8760e55c7c7c8af11e385738884e519dc0486abf65a15d0f",
+      "qualifiedSha256": "82be6e04e6eb114d8760e55c7c7c8af11e385738884e519dc0486abf65a15d0f",
+      "qualifiedSizeBytes": 2166,
+      "checkoutFilteredSizeBytes": 2166,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.NativeTests.VsTest/global.json",
+      "gitBlobSha256": "c9c9cae030d639a70a7f7642ee546c9a31dda4bae6492a3a8aa21d08cab83779",
+      "checkoutFilteredSha256": "c9c9cae030d639a70a7f7642ee546c9a31dda4bae6492a3a8aa21d08cab83779",
+      "qualifiedSha256": "c9c9cae030d639a70a7f7642ee546c9a31dda4bae6492a3a8aa21d08cab83779",
+      "qualifiedSizeBytes": 79,
+      "checkoutFilteredSizeBytes": 79,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.NativeTests.VsTest/P0Fixture.NativeTests.VsTest.csproj",
+      "gitBlobSha256": "eeaab398ba0d1e954fa102f540bcd1e1de9948c96bad95d0a74fe97c5a02fab1",
+      "checkoutFilteredSha256": "eeaab398ba0d1e954fa102f540bcd1e1de9948c96bad95d0a74fe97c5a02fab1",
+      "qualifiedSha256": "eeaab398ba0d1e954fa102f540bcd1e1de9948c96bad95d0a74fe97c5a02fab1",
+      "qualifiedSizeBytes": 980,
+      "checkoutFilteredSizeBytes": 980,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.NativeTests/P0Fixture.NativeTests.csproj",
+      "gitBlobSha256": "eb539e5496bd4f5758b33eb71a33e1247fd02a06ce69f68e16bcec5144578cfe",
+      "checkoutFilteredSha256": "eb539e5496bd4f5758b33eb71a33e1247fd02a06ce69f68e16bcec5144578cfe",
+      "qualifiedSha256": "eb539e5496bd4f5758b33eb71a33e1247fd02a06ce69f68e16bcec5144578cfe",
+      "qualifiedSizeBytes": 655,
+      "checkoutFilteredSizeBytes": 655,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.NativeTests/RunHandoff.cs",
+      "gitBlobSha256": "4b9db00c3ed4d8bccae1b3f358c7561b3ffaacc6106d0b868aa16facb909a203",
+      "checkoutFilteredSha256": "407167b5a607eaa549c31901d4ff0d68be679da1ea253a2cfd172dda62bbb3a9",
+      "qualifiedSha256": "407167b5a607eaa549c31901d4ff0d68be679da1ea253a2cfd172dda62bbb3a9",
+      "qualifiedSizeBytes": 1782,
+      "checkoutFilteredSizeBytes": 1782,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.NativeTests/RunHandoffTests.cs",
+      "gitBlobSha256": "468cef5fcf6e50da832b6e8d995faa4acb5ea76882122a9e2b8cf868300db45b",
+      "checkoutFilteredSha256": "ac8b0f575b12f42dff862c734a9bdeded23fd5a1ad041fd369082d269079df01",
+      "qualifiedSha256": "ac8b0f575b12f42dff862c734a9bdeded23fd5a1ad041fd369082d269079df01",
+      "qualifiedSizeBytes": 4018,
+      "checkoutFilteredSizeBytes": 4018,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Orders.Descriptor/ModuleDescriptorV1.cs",
+      "gitBlobSha256": "3d28dbd90d3c3a25fd5f227112f594c331707fe5ae772fb370aeae114e2e5d80",
+      "checkoutFilteredSha256": "ff48f0b6ba8b481c60f30b26572ec838e18a6331b701c054eb40c936e1c2215e",
+      "qualifiedSha256": "ff48f0b6ba8b481c60f30b26572ec838e18a6331b701c054eb40c936e1c2215e",
+      "qualifiedSizeBytes": 1233,
+      "checkoutFilteredSizeBytes": 1233,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.csproj",
+      "gitBlobSha256": "1363589311a0629f6132b51927075752163e45411ec95a116efd9b0602da46a6",
+      "checkoutFilteredSha256": "1363589311a0629f6132b51927075752163e45411ec95a116efd9b0602da46a6",
+      "qualifiedSha256": "1363589311a0629f6132b51927075752163e45411ec95a116efd9b0602da46a6",
+      "qualifiedSizeBytes": 236,
+      "checkoutFilteredSizeBytes": 236,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Orders/OrderAggregate.cs",
+      "gitBlobSha256": "2ecf5f2d96e609cc44aba1c404a16b5a33fc7b72a2d4ad555c7c7996910fc898",
+      "checkoutFilteredSha256": "a734f87f5c760c3b5fcdfe3bea8daaad69b01241426ed2d3a9cad2dfcd07ebba",
+      "qualifiedSha256": "a734f87f5c760c3b5fcdfe3bea8daaad69b01241426ed2d3a9cad2dfcd07ebba",
+      "qualifiedSizeBytes": 1219,
+      "checkoutFilteredSizeBytes": 1219,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Orders/OrderPlaced.cs",
+      "gitBlobSha256": "2071acc421761b2b1e6ff4fc2ed34c428735088bc9eb64a4f8541bca07536342",
+      "checkoutFilteredSha256": "25c2ac2399270d54a79f963ccfb1960a751be6b8426000399c2a4bc6e96903f7",
+      "qualifiedSha256": "25c2ac2399270d54a79f963ccfb1960a751be6b8426000399c2a4bc6e96903f7",
+      "qualifiedSizeBytes": 648,
+      "checkoutFilteredSizeBytes": 648,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Orders/OrderState.cs",
+      "gitBlobSha256": "17cc3f519f6a446a4b62b9ef601d5264828498ae54ed79ac6a9a9b468d30a0f8",
+      "checkoutFilteredSha256": "616fe1765602d54b25e51f303f148c13f8332f8607f78e42b94ad744c114583b",
+      "qualifiedSha256": "616fe1765602d54b25e51f303f148c13f8332f8607f78e42b94ad744c114583b",
+      "qualifiedSizeBytes": 1009,
+      "checkoutFilteredSizeBytes": 1009,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Orders/OrderSummaryProjection.cs",
+      "gitBlobSha256": "7ca1f80b7378467ea6ecb29758df543c2f176405d0d623c9b5f2ce44827ce5d7",
+      "checkoutFilteredSha256": "14e0b4e9d3d8d39dff1f87c62772fd0edd6105b5ef372a48cac8a12f789f79f4",
+      "qualifiedSha256": "14e0b4e9d3d8d39dff1f87c62772fd0edd6105b5ef372a48cac8a12f789f79f4",
+      "qualifiedSizeBytes": 2139,
+      "checkoutFilteredSizeBytes": 2139,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj",
+      "gitBlobSha256": "11b69c39e82224d4195a645ed98dc4d41d68800bc9e28051cf5d6dfd3374fccd",
+      "checkoutFilteredSha256": "11b69c39e82224d4195a645ed98dc4d41d68800bc9e28051cf5d6dfd3374fccd",
+      "qualifiedSha256": "11b69c39e82224d4195a645ed98dc4d41d68800bc9e28051cf5d6dfd3374fccd",
+      "qualifiedSizeBytes": 346,
+      "checkoutFilteredSizeBytes": 346,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Orders/PlaceOrder.cs",
+      "gitBlobSha256": "c277095d2ca3a68ea01e9563b877814332d495fa47745628817766c71b9db2ce",
+      "checkoutFilteredSha256": "e20f6943e7428b8943e0f42163e9abc7fa1d84116a8dfb88a9efdc6dd021a247",
+      "qualifiedSha256": "e20f6943e7428b8943e0f42163e9abc7fa1d84116a8dfb88a9efdc6dd021a247",
+      "qualifiedSizeBytes": 497,
+      "checkoutFilteredSizeBytes": 497,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Orders/Program.cs",
+      "gitBlobSha256": "a97212099e5a567bcfa58e3d4b760ad1b67d7fbbb15d3820cc18f136001ae877",
+      "checkoutFilteredSha256": "e475e7d058e0af8828f2f98c91f1a5a5c3f1ac41eb8de9112f909a2860a7fb70",
+      "qualifiedSha256": "e475e7d058e0af8828f2f98c91f1a5a5c3f1ac41eb8de9112f909a2860a7fb70",
+      "qualifiedSizeBytes": 518,
+      "checkoutFilteredSizeBytes": 518,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.csproj",
+      "gitBlobSha256": "4f7d182a4a47042c2a78215798feae99e2fe2d3b11873ff3ecf59f182476bcbc",
+      "checkoutFilteredSha256": "4f7d182a4a47042c2a78215798feae99e2fe2d3b11873ff3ecf59f182476bcbc",
+      "qualifiedSha256": "4f7d182a4a47042c2a78215798feae99e2fe2d3b11873ff3ecf59f182476bcbc",
+      "qualifiedSizeBytes": 228,
+      "checkoutFilteredSizeBytes": 228,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Ui.Descriptor/UiDescriptorV1.cs",
+      "gitBlobSha256": "56a147aefd12defd0a9b5aab2973f9cde5b5aad9eba441834c3dc3bf78d3c6ef",
+      "checkoutFilteredSha256": "5879dcbc5ae708acf8e81439899dff8a914ccc17555bf37d3d746335c11f1b73",
+      "qualifiedSha256": "5879dcbc5ae708acf8e81439899dff8a914ccc17555bf37d3d746335c11f1b73",
+      "qualifiedSizeBytes": 1394,
+      "checkoutFilteredSizeBytes": 1394,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Ui/InventoryUiMarker.cs",
+      "gitBlobSha256": "8354234310a1237e88203fcf5cda26e6ae5a5ff1d196ed2d4e371fea4c3972bf",
+      "checkoutFilteredSha256": "d2f17a9faa5aadec9ed63d1e85929ada381d6478d7ca39ddf8c64f4f225fed64",
+      "qualifiedSha256": "d2f17a9faa5aadec9ed63d1e85929ada381d6478d7ca39ddf8c64f4f225fed64",
+      "qualifiedSizeBytes": 550,
+      "checkoutFilteredSizeBytes": 550,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Ui/OrdersUiMarker.cs",
+      "gitBlobSha256": "cda1b9d4811d7ecbd333222bd46661fab0426bfb75fab0dec7c7a0409326d9f8",
+      "checkoutFilteredSha256": "79aa69fcb1a68e5a31d6f1df5c63b25f2c89a485d1e68ad6d29b6f8b154bb372",
+      "qualifiedSha256": "79aa69fcb1a68e5a31d6f1df5c63b25f2c89a485d1e68ad6d29b6f8b154bb372",
+      "qualifiedSizeBytes": 535,
+      "checkoutFilteredSizeBytes": 535,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj",
+      "gitBlobSha256": "2e8d89c3a25a14d23dcd8dc37f53178d8fee144010d44da01d1639a11e249aa7",
+      "checkoutFilteredSha256": "2e8d89c3a25a14d23dcd8dc37f53178d8fee144010d44da01d1639a11e249aa7",
+      "qualifiedSha256": "2e8d89c3a25a14d23dcd8dc37f53178d8fee144010d44da01d1639a11e249aa7",
+      "qualifiedSizeBytes": 347,
+      "checkoutFilteredSizeBytes": 347,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Ui/PlaceOrderUiCommand.cs",
+      "gitBlobSha256": "82c72de06b7b25da151ae718d9c81c169ab5c06edc409eab8ef6d9d6b2edd9bd",
+      "checkoutFilteredSha256": "980e5084096731d83449c75234dec8bf1982dce25cd7e21394ad1a31b3d3468f",
+      "qualifiedSha256": "980e5084096731d83449c75234dec8bf1982dce25cd7e21394ad1a31b3d3468f",
+      "qualifiedSizeBytes": 651,
+      "checkoutFilteredSizeBytes": 651,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/P0Fixture.Ui/ReserveStockUiCommand.cs",
+      "gitBlobSha256": "08b29b73b299a1e1faf7999a583fa64b3b28dfdc21ec32f80b38f5f7ec6f5afd",
+      "checkoutFilteredSha256": "65eac95828e59e36338277308b996887d2839e4d358c664929dd866ea7518dad",
+      "qualifiedSha256": "65eac95828e59e36338277308b996887d2839e4d358c664929dd866ea7518dad",
+      "qualifiedSizeBytes": 655,
+      "checkoutFilteredSizeBytes": 655,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/profiles/p0-executable-live.fixture.json",
+      "gitBlobSha256": "cb0e4815649c7f65b3e9202a3de86b51d647f26fb20c29c91ce4c6af5b816a39",
+      "checkoutFilteredSha256": "cb0e4815649c7f65b3e9202a3de86b51d647f26fb20c29c91ce4c6af5b816a39",
+      "qualifiedSha256": "cb0e4815649c7f65b3e9202a3de86b51d647f26fb20c29c91ce4c6af5b816a39",
+      "qualifiedSizeBytes": 903,
+      "checkoutFilteredSizeBytes": 903,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/profiles/p0-two-module-full-mtp.fixture.json",
+      "gitBlobSha256": "1d92af2bada25d89195d084f3df54ea2f3f4c63ec00deb3187dccf1dc9e4b835",
+      "checkoutFilteredSha256": "1d92af2bada25d89195d084f3df54ea2f3f4c63ec00deb3187dccf1dc9e4b835",
+      "qualifiedSha256": "1d92af2bada25d89195d084f3df54ea2f3f4c63ec00deb3187dccf1dc9e4b835",
+      "qualifiedSizeBytes": 752,
+      "checkoutFilteredSizeBytes": 752,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/executable/profiles/p0-two-module-full.fixture.json",
+      "gitBlobSha256": "472ab1becbf89c1502333bbc27838d81afbb267141bd72639eceecb6c794be14",
+      "checkoutFilteredSha256": "472ab1becbf89c1502333bbc27838d81afbb267141bd72639eceecb6c794be14",
+      "qualifiedSha256": "472ab1becbf89c1502333bbc27838d81afbb267141bd72639eceecb6c794be14",
+      "qualifiedSizeBytes": 765,
+      "checkoutFilteredSizeBytes": 765,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/absolute-path.expected.json",
+      "gitBlobSha256": "48f72c6bec9c2283542dd64e3d79482cffb9045ecfc4bbaa6f1b882acb9c601e",
+      "checkoutFilteredSha256": "48f72c6bec9c2283542dd64e3d79482cffb9045ecfc4bbaa6f1b882acb9c601e",
+      "qualifiedSha256": "48f72c6bec9c2283542dd64e3d79482cffb9045ecfc4bbaa6f1b882acb9c601e",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/absolute-path.json",
+      "gitBlobSha256": "c61b93925cda8975dcb7da98059a4a7eb77d98d4a66c24999d0f999680795907",
+      "checkoutFilteredSha256": "c61b93925cda8975dcb7da98059a4a7eb77d98d4a66c24999d0f999680795907",
+      "qualifiedSha256": "c61b93925cda8975dcb7da98059a4a7eb77d98d4a66c24999d0f999680795907",
+      "qualifiedSizeBytes": 704,
+      "checkoutFilteredSizeBytes": 704,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/duplicate-id.expected.json",
+      "gitBlobSha256": "7a7534304503dc39c8d443c65660748ed40d206282901706b4371a409b0f88f2",
+      "checkoutFilteredSha256": "7a7534304503dc39c8d443c65660748ed40d206282901706b4371a409b0f88f2",
+      "qualifiedSha256": "7a7534304503dc39c8d443c65660748ed40d206282901706b4371a409b0f88f2",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/duplicate-id.json",
+      "gitBlobSha256": "15ec2611055444291796cdcb9b5af0f90e04b3db4c8fbb715578019a9db1bf2a",
+      "checkoutFilteredSha256": "15ec2611055444291796cdcb9b5af0f90e04b3db4c8fbb715578019a9db1bf2a",
+      "qualifiedSha256": "15ec2611055444291796cdcb9b5af0f90e04b3db4c8fbb715578019a9db1bf2a",
+      "qualifiedSizeBytes": 1069,
+      "checkoutFilteredSizeBytes": 1069,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/duplicate-json-key.expected.json",
+      "gitBlobSha256": "db000c6d78d574f253b024423cec3c16d328d48bc2c3db063f77d2bea474ceaa",
+      "checkoutFilteredSha256": "db000c6d78d574f253b024423cec3c16d328d48bc2c3db063f77d2bea474ceaa",
+      "qualifiedSha256": "db000c6d78d574f253b024423cec3c16d328d48bc2c3db063f77d2bea474ceaa",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/duplicate-json-key.json",
+      "gitBlobSha256": "50f212ac0b7dd90b16590098efc803c57530a86326573fd681a1b8c0f31de236",
+      "checkoutFilteredSha256": "50f212ac0b7dd90b16590098efc803c57530a86326573fd681a1b8c0f31de236",
+      "qualifiedSha256": "50f212ac0b7dd90b16590098efc803c57530a86326573fd681a1b8c0f31de236",
+      "qualifiedSizeBytes": 789,
+      "checkoutFilteredSizeBytes": 789,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/invalid-profile.expected.json",
+      "gitBlobSha256": "beb259967430c1731d07789389970d7a5fe573978251e8748a016b711c03cecd",
+      "checkoutFilteredSha256": "beb259967430c1731d07789389970d7a5fe573978251e8748a016b711c03cecd",
+      "qualifiedSha256": "beb259967430c1731d07789389970d7a5fe573978251e8748a016b711c03cecd",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/invalid-profile.json",
+      "gitBlobSha256": "538f05952891cb93853ee5c0a2c2b15c3c65025227e9a18041dbee205a805a95",
+      "checkoutFilteredSha256": "538f05952891cb93853ee5c0a2c2b15c3c65025227e9a18041dbee205a805a95",
+      "qualifiedSha256": "538f05952891cb93853ee5c0a2c2b15c3c65025227e9a18041dbee205a805a95",
+      "qualifiedSizeBytes": 726,
+      "checkoutFilteredSizeBytes": 726,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/malformed-dependency.expected.json",
+      "gitBlobSha256": "c5d55588d2d29d9448d46fff960d42934e15d36e2d870d7a6b04170c37f434b5",
+      "checkoutFilteredSha256": "c5d55588d2d29d9448d46fff960d42934e15d36e2d870d7a6b04170c37f434b5",
+      "qualifiedSha256": "c5d55588d2d29d9448d46fff960d42934e15d36e2d870d7a6b04170c37f434b5",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/malformed-dependency.json",
+      "gitBlobSha256": "aa03323c1bdd7e4f0e26fb1c67c2330169efe28f6ebf94fa0fc9954dc5496cbe",
+      "checkoutFilteredSha256": "aa03323c1bdd7e4f0e26fb1c67c2330169efe28f6ebf94fa0fc9954dc5496cbe",
+      "qualifiedSha256": "aa03323c1bdd7e4f0e26fb1c67c2330169efe28f6ebf94fa0fc9954dc5496cbe",
+      "qualifiedSizeBytes": 762,
+      "checkoutFilteredSizeBytes": 762,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/missing-descriptor.expected.json",
+      "gitBlobSha256": "995903065c35cd46ea3de281d006b3d99a630fe958c39225fa72fb8c979b3f62",
+      "checkoutFilteredSha256": "995903065c35cd46ea3de281d006b3d99a630fe958c39225fa72fb8c979b3f62",
+      "qualifiedSha256": "995903065c35cd46ea3de281d006b3d99a630fe958c39225fa72fb8c979b3f62",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/missing-descriptor.json",
+      "gitBlobSha256": "0c6d9b7dab01758b438fd883d62eaa257c1bc2582bbeffc16a893f2c5e770dc7",
+      "checkoutFilteredSha256": "0c6d9b7dab01758b438fd883d62eaa257c1bc2582bbeffc16a893f2c5e770dc7",
+      "qualifiedSha256": "0c6d9b7dab01758b438fd883d62eaa257c1bc2582bbeffc16a893f2c5e770dc7",
+      "qualifiedSizeBytes": 736,
+      "checkoutFilteredSizeBytes": 736,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/missing-required-value.expected.json",
+      "gitBlobSha256": "dc5f87e5eb73c8344215fbda2c7bd2a2725ddee9100cbf877138969939e0df24",
+      "checkoutFilteredSha256": "dc5f87e5eb73c8344215fbda2c7bd2a2725ddee9100cbf877138969939e0df24",
+      "qualifiedSha256": "dc5f87e5eb73c8344215fbda2c7bd2a2725ddee9100cbf877138969939e0df24",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/missing-required-value.json",
+      "gitBlobSha256": "8536e37dac3e27171705d8485d86ab1e2ea1a57507d791b00e93c06eaf997ea3",
+      "checkoutFilteredSha256": "8536e37dac3e27171705d8485d86ab1e2ea1a57507d791b00e93c06eaf997ea3",
+      "qualifiedSha256": "8536e37dac3e27171705d8485d86ab1e2ea1a57507d791b00e93c06eaf997ea3",
+      "qualifiedSizeBytes": 722,
+      "checkoutFilteredSizeBytes": 722,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/path-escape.expected.json",
+      "gitBlobSha256": "48f72c6bec9c2283542dd64e3d79482cffb9045ecfc4bbaa6f1b882acb9c601e",
+      "checkoutFilteredSha256": "48f72c6bec9c2283542dd64e3d79482cffb9045ecfc4bbaa6f1b882acb9c601e",
+      "qualifiedSha256": "48f72c6bec9c2283542dd64e3d79482cffb9045ecfc4bbaa6f1b882acb9c601e",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/path-escape.json",
+      "gitBlobSha256": "324697e7717438b1aab618b90b87da3c7434192b47fa36e71e73d04777ab5824",
+      "checkoutFilteredSha256": "324697e7717438b1aab618b90b87da3c7434192b47fa36e71e73d04777ab5824",
+      "qualifiedSha256": "324697e7717438b1aab618b90b87da3c7434192b47fa36e71e73d04777ab5824",
+      "qualifiedSizeBytes": 706,
+      "checkoutFilteredSizeBytes": 706,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/placeholder.expected.json",
+      "gitBlobSha256": "49110502a2cba3d3b245a92cc2abb9a8bead2bb7b8c6db652f1f03753fa81a0e",
+      "checkoutFilteredSha256": "49110502a2cba3d3b245a92cc2abb9a8bead2bb7b8c6db652f1f03753fa81a0e",
+      "qualifiedSha256": "49110502a2cba3d3b245a92cc2abb9a8bead2bb7b8c6db652f1f03753fa81a0e",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/placeholder.json",
+      "gitBlobSha256": "8933ca78c3e29db0d7014e36bc72554cd2f3880ade578ac9505c6729ca1d359a",
+      "checkoutFilteredSha256": "8933ca78c3e29db0d7014e36bc72554cd2f3880ade578ac9505c6729ca1d359a",
+      "qualifiedSha256": "8933ca78c3e29db0d7014e36bc72554cd2f3880ade578ac9505c6729ca1d359a",
+      "qualifiedSizeBytes": 735,
+      "checkoutFilteredSizeBytes": 735,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/secret-bearing.expected.json",
+      "gitBlobSha256": "d1363c20a1ec3412e2f7b13aecc71fe6bbf169d71b85a740bed9bf6acc9c66ea",
+      "checkoutFilteredSha256": "d1363c20a1ec3412e2f7b13aecc71fe6bbf169d71b85a740bed9bf6acc9c66ea",
+      "qualifiedSha256": "d1363c20a1ec3412e2f7b13aecc71fe6bbf169d71b85a740bed9bf6acc9c66ea",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/secret-bearing.json",
+      "gitBlobSha256": "4f7ec5f789be54dc6d6a0a575bbbe919700d7e54356c4a44348f37dc06e7b079",
+      "checkoutFilteredSha256": "4f7ec5f789be54dc6d6a0a575bbbe919700d7e54356c4a44348f37dc06e7b079",
+      "qualifiedSha256": "4f7ec5f789be54dc6d6a0a575bbbe919700d7e54356c4a44348f37dc06e7b079",
+      "qualifiedSizeBytes": 754,
+      "checkoutFilteredSizeBytes": 754,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/superseded-frontcomposer-pin.expected.json",
+      "gitBlobSha256": "33176af5f3fabb375367af45914379ed60468caf8f01425caaf1cb7f644b2915",
+      "checkoutFilteredSha256": "33176af5f3fabb375367af45914379ed60468caf8f01425caaf1cb7f644b2915",
+      "qualifiedSha256": "33176af5f3fabb375367af45914379ed60468caf8f01425caaf1cb7f644b2915",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/superseded-frontcomposer-pin.json",
+      "gitBlobSha256": "f2a4cb2acfc1907f89d6d3cf653c74a4db52274e062434388c9c048f9e4b3648",
+      "checkoutFilteredSha256": "f2a4cb2acfc1907f89d6d3cf653c74a4db52274e062434388c9c048f9e4b3648",
+      "qualifiedSha256": "f2a4cb2acfc1907f89d6d3cf653c74a4db52274e062434388c9c048f9e4b3648",
+      "qualifiedSizeBytes": 746,
+      "checkoutFilteredSizeBytes": 746,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/superseded-platform-pin.expected.json",
+      "gitBlobSha256": "33176af5f3fabb375367af45914379ed60468caf8f01425caaf1cb7f644b2915",
+      "checkoutFilteredSha256": "33176af5f3fabb375367af45914379ed60468caf8f01425caaf1cb7f644b2915",
+      "qualifiedSha256": "33176af5f3fabb375367af45914379ed60468caf8f01425caaf1cb7f644b2915",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/superseded-platform-pin.json",
+      "gitBlobSha256": "3be334729cacc3ec52b81a243aa7a29a07f335f34bd63c93f775fb3d1c0353b7",
+      "checkoutFilteredSha256": "3be334729cacc3ec52b81a243aa7a29a07f335f34bd63c93f775fb3d1c0353b7",
+      "qualifiedSha256": "3be334729cacc3ec52b81a243aa7a29a07f335f34bd63c93f775fb3d1c0353b7",
+      "qualifiedSizeBytes": 745,
+      "checkoutFilteredSizeBytes": 745,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/tampered-platform-pin.expected.json",
+      "gitBlobSha256": "33176af5f3fabb375367af45914379ed60468caf8f01425caaf1cb7f644b2915",
+      "checkoutFilteredSha256": "33176af5f3fabb375367af45914379ed60468caf8f01425caaf1cb7f644b2915",
+      "qualifiedSha256": "33176af5f3fabb375367af45914379ed60468caf8f01425caaf1cb7f644b2915",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/tampered-platform-pin.json",
+      "gitBlobSha256": "e2db0d9e5d185208fde22a457dd0134b25fdf7cc980574ff643f0b207ccdd910",
+      "checkoutFilteredSha256": "e2db0d9e5d185208fde22a457dd0134b25fdf7cc980574ff643f0b207ccdd910",
+      "qualifiedSha256": "e2db0d9e5d185208fde22a457dd0134b25fdf7cc980574ff643f0b207ccdd910",
+      "qualifiedSizeBytes": 745,
+      "checkoutFilteredSizeBytes": 745,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/unknown-field.expected.json",
+      "gitBlobSha256": "73b1521158fa9c3948bcf103de3b311057dd44b4cc928150a13cc4d7d7762c6b",
+      "checkoutFilteredSha256": "73b1521158fa9c3948bcf103de3b311057dd44b4cc928150a13cc4d7d7762c6b",
+      "qualifiedSha256": "73b1521158fa9c3948bcf103de3b311057dd44b4cc928150a13cc4d7d7762c6b",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/unknown-field.json",
+      "gitBlobSha256": "ea1f0c1e425e3e0730714149c0ec2003e8b30178e381af187e11723d899c9824",
+      "checkoutFilteredSha256": "ea1f0c1e425e3e0730714149c0ec2003e8b30178e381af187e11723d899c9824",
+      "qualifiedSha256": "ea1f0c1e425e3e0730714149c0ec2003e8b30178e381af187e11723d899c9824",
+      "qualifiedSizeBytes": 770,
+      "checkoutFilteredSizeBytes": 770,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/unknown-schema.expected.json",
+      "gitBlobSha256": "9dc199e508c6f802e62af9fa291e2c6c5858523204c6c0a39e093809b606be53",
+      "checkoutFilteredSha256": "9dc199e508c6f802e62af9fa291e2c6c5858523204c6c0a39e093809b606be53",
+      "qualifiedSha256": "9dc199e508c6f802e62af9fa291e2c6c5858523204c6c0a39e093809b606be53",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/unknown-schema.json",
+      "gitBlobSha256": "81cd24403041f799a282b04e36dbc81cc41140019ec1753ff62f636f0df936fd",
+      "checkoutFilteredSha256": "81cd24403041f799a282b04e36dbc81cc41140019ec1753ff62f636f0df936fd",
+      "qualifiedSha256": "81cd24403041f799a282b04e36dbc81cc41140019ec1753ff62f636f0df936fd",
+      "qualifiedSizeBytes": 746,
+      "checkoutFilteredSizeBytes": 746,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/unsupported-profile-class.expected.json",
+      "gitBlobSha256": "5287bf9a70aacde9d28cdf8c02c530c8b4fa257c906dc9b5ee4e45ec98b440d7",
+      "checkoutFilteredSha256": "5287bf9a70aacde9d28cdf8c02c530c8b4fa257c906dc9b5ee4e45ec98b440d7",
+      "qualifiedSha256": "5287bf9a70aacde9d28cdf8c02c530c8b4fa257c906dc9b5ee4e45ec98b440d7",
+      "qualifiedSizeBytes": 213,
+      "checkoutFilteredSizeBytes": 213,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/negative/unsupported-profile-class.json",
+      "gitBlobSha256": "f14a280c460508a6df0ff5a784a1e1453011920dfe85998a11d3d088b49a5b4a",
+      "checkoutFilteredSha256": "f14a280c460508a6df0ff5a784a1e1453011920dfe85998a11d3d088b49a5b4a",
+      "qualifiedSha256": "f14a280c460508a6df0ff5a784a1e1453011920dfe85998a11d3d088b49a5b4a",
+      "qualifiedSizeBytes": 747,
+      "checkoutFilteredSizeBytes": 747,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/platform-loader/Hexalith.Platform.Composition.csproj",
+      "gitBlobSha256": "89ddd5be7e5ac5c0071d57101f7522075713c2f091656db86e293ecdbfafd078",
+      "checkoutFilteredSha256": "89ddd5be7e5ac5c0071d57101f7522075713c2f091656db86e293ecdbfafd078",
+      "qualifiedSha256": "89ddd5be7e5ac5c0071d57101f7522075713c2f091656db86e293ecdbfafd078",
+      "qualifiedSizeBytes": 687,
+      "checkoutFilteredSizeBytes": 687,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/platform-loader/PlatformAppModel.cs",
+      "gitBlobSha256": "61ce41bfe2d1fa5ae562616bf9a66960b13af55136a1d30748c322a144433fe4",
+      "checkoutFilteredSha256": "2577647ab789251a229ff5b4ca378a6b9316b4762e03931c1315875fdc7ecdda",
+      "qualifiedSha256": "2577647ab789251a229ff5b4ca378a6b9316b4762e03931c1315875fdc7ecdda",
+      "qualifiedSizeBytes": 3091,
+      "checkoutFilteredSizeBytes": 3091,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/platform-loader/PlatformServerAnnotation.cs",
+      "gitBlobSha256": "ebee04a58bc4c2ab65989355187956d54a447d82127995b1045d186d20d128fb",
+      "checkoutFilteredSha256": "709da72a2a6972fc228eed6e939e9980bb5d5a27afb58f047db8009c08b4311d",
+      "qualifiedSha256": "709da72a2a6972fc228eed6e939e9980bb5d5a27afb58f047db8009c08b4311d",
+      "qualifiedSizeBytes": 511,
+      "checkoutFilteredSizeBytes": 511,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/platform/valid.json",
+      "gitBlobSha256": "d56edab79ae2fc9c43543eded08da06f5fd75e4a22c1c2ad6bc933106bbc2931",
+      "checkoutFilteredSha256": "d56edab79ae2fc9c43543eded08da06f5fd75e4a22c1c2ad6bc933106bbc2931",
+      "qualifiedSha256": "d56edab79ae2fc9c43543eded08da06f5fd75e4a22c1c2ad6bc933106bbc2931",
+      "qualifiedSizeBytes": 5651,
+      "checkoutFilteredSizeBytes": 5651,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/positive/hexalith.module-manifest.v1.json",
+      "gitBlobSha256": "b2a0318bae124ce67e16940c8b6d99b72cbe51477fd368f5172ec02ce4fc8b45",
+      "checkoutFilteredSha256": "b2a0318bae124ce67e16940c8b6d99b72cbe51477fd368f5172ec02ce4fc8b45",
+      "qualifiedSha256": "b2a0318bae124ce67e16940c8b6d99b72cbe51477fd368f5172ec02ce4fc8b45",
+      "qualifiedSizeBytes": 1507,
+      "checkoutFilteredSizeBytes": 1507,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/profiles/p0-two-module-full.fixture.json",
+      "gitBlobSha256": "fb9ea42bf01b92a7b8c95c97086519c1418c14b54f095ed55f4e8cc8fd9864e1",
+      "checkoutFilteredSha256": "fb9ea42bf01b92a7b8c95c97086519c1418c14b54f095ed55f4e8cc8fd9864e1",
+      "qualifiedSha256": "fb9ea42bf01b92a7b8c95c97086519c1418c14b54f095ed55f4e8cc8fd9864e1",
+      "qualifiedSizeBytes": 1112,
+      "checkoutFilteredSizeBytes": 1112,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/profiles/p0-two-module-persisted.fixture.json",
+      "gitBlobSha256": "9383ddc8a7e4bc5dc575c98f3c1c403d8602a4642f047fbefe44218253f6fede",
+      "checkoutFilteredSha256": "9383ddc8a7e4bc5dc575c98f3c1c403d8602a4642f047fbefe44218253f6fede",
+      "qualifiedSha256": "9383ddc8a7e4bc5dc575c98f3c1c403d8602a4642f047fbefe44218253f6fede",
+      "qualifiedSizeBytes": 761,
+      "checkoutFilteredSizeBytes": 761,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/README.md",
+      "gitBlobSha256": "faea0ce7b6e4f7b2c7f7b745e1b014061be6c5680c4f50a2dc0761b5a647b7c5",
+      "checkoutFilteredSha256": "faea0ce7b6e4f7b2c7f7b745e1b014061be6c5680c4f50a2dc0761b5a647b7c5",
+      "qualifiedSha256": "faea0ce7b6e4f7b2c7f7b745e1b014061be6c5680c4f50a2dc0761b5a647b7c5",
+      "qualifiedSizeBytes": 1124,
+      "checkoutFilteredSizeBytes": 1124,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/test-environment-v1/descriptor.json",
+      "gitBlobSha256": "0b2b7c503ae40383b442e3206d586d4b34bfffefd47f07d5dd2ec79a65ab7787",
+      "checkoutFilteredSha256": "0b2b7c503ae40383b442e3206d586d4b34bfffefd47f07d5dd2ec79a65ab7787",
+      "qualifiedSha256": "0b2b7c503ae40383b442e3206d586d4b34bfffefd47f07d5dd2ec79a65ab7787",
+      "qualifiedSizeBytes": 2839,
+      "checkoutFilteredSizeBytes": 2839,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/module/test-environment-v1/result.json",
+      "gitBlobSha256": "df8345d35f43ebbb9dac8d0749fe94711873fe549c367784c78fa13520e0099a",
+      "checkoutFilteredSha256": "df8345d35f43ebbb9dac8d0749fe94711873fe549c367784c78fa13520e0099a",
+      "qualifiedSha256": "df8345d35f43ebbb9dac8d0749fe94711873fe549c367784c78fa13520e0099a",
+      "qualifiedSizeBytes": 3143,
+      "checkoutFilteredSizeBytes": 3143,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/package-consumer/NuGet.Config",
+      "gitBlobSha256": "aec93b5637ab6d62470979a008990a4a336a287ab83a3f2541849ae735674055",
+      "checkoutFilteredSha256": "aec93b5637ab6d62470979a008990a4a336a287ab83a3f2541849ae735674055",
+      "qualifiedSha256": "aec93b5637ab6d62470979a008990a4a336a287ab83a3f2541849ae735674055",
+      "qualifiedSizeBytes": 197,
+      "checkoutFilteredSizeBytes": 197,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/package-consumer/README.md",
+      "gitBlobSha256": "1327857bc9e6e9151a1921dcf64e47ebfda4d297b561238ddcca0d99c8d3c9ea",
+      "checkoutFilteredSha256": "1327857bc9e6e9151a1921dcf64e47ebfda4d297b561238ddcca0d99c8d3c9ea",
+      "qualifiedSha256": "1327857bc9e6e9151a1921dcf64e47ebfda4d297b561238ddcca0d99c8d3c9ea",
+      "qualifiedSizeBytes": 2635,
+      "checkoutFilteredSizeBytes": 2635,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/publish-containers/v3.75.0-evidence.json",
+      "gitBlobSha256": "9328412055cc7d77ce9798f1cfc37f3c4a005042e750988d72b248575aa39cc7",
+      "checkoutFilteredSha256": "9328412055cc7d77ce9798f1cfc37f3c4a005042e750988d72b248575aa39cc7",
+      "qualifiedSha256": "9328412055cc7d77ce9798f1cfc37f3c4a005042e750988d72b248575aa39cc7",
+      "qualifiedSizeBytes": 2742,
+      "checkoutFilteredSizeBytes": 2742,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/publish-containers/v3.75.0-single-manifest.json",
+      "gitBlobSha256": "4839b0e9a98ced22634755e5e124a6f5e0ebea6fe52e7932243c093ce838c045",
+      "checkoutFilteredSha256": "4839b0e9a98ced22634755e5e124a6f5e0ebea6fe52e7932243c093ce838c045",
+      "qualifiedSha256": "4839b0e9a98ced22634755e5e124a6f5e0ebea6fe52e7932243c093ce838c045",
+      "qualifiedSizeBytes": 263,
+      "checkoutFilteredSizeBytes": 263,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/publish-containers/validation-cases.json",
+      "gitBlobSha256": "f42b28a2dd45fe71307a97702d3ac34f01cc9c88415817dd370c9e74e6f932d4",
+      "checkoutFilteredSha256": "f42b28a2dd45fe71307a97702d3ac34f01cc9c88415817dd370c9e74e6f932d4",
+      "qualifiedSha256": "f42b28a2dd45fe71307a97702d3ac34f01cc9c88415817dd370c9e74e6f932d4",
+      "qualifiedSizeBytes": 2133,
+      "checkoutFilteredSizeBytes": 2133,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/runtime-toolchain-v2/deploy/dapr/resiliency.yaml",
+      "gitBlobSha256": "115bdb0d3d330c69920692a80654066937e6b2dd3bd18806c0b276e1de011645",
+      "checkoutFilteredSha256": "115bdb0d3d330c69920692a80654066937e6b2dd3bd18806c0b276e1de011645",
+      "qualifiedSha256": "115bdb0d3d330c69920692a80654066937e6b2dd3bd18806c0b276e1de011645",
+      "qualifiedSizeBytes": 2769,
+      "checkoutFilteredSizeBytes": 2769,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/runtime-toolchain-v2/deploy/dapr/statestore-postgresql.yaml",
+      "gitBlobSha256": "e8024498786765a32b0ea299778248ade35c855f77ede16ee4775162a971d0eb",
+      "checkoutFilteredSha256": "e8024498786765a32b0ea299778248ade35c855f77ede16ee4775162a971d0eb",
+      "qualifiedSha256": "e8024498786765a32b0ea299778248ade35c855f77ede16ee4775162a971d0eb",
+      "qualifiedSizeBytes": 1701,
+      "checkoutFilteredSizeBytes": 1701,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/runtime-toolchain-v2/deterministic-support.json",
+      "gitBlobSha256": "2e4e950b9efc4301dd023d1d9b338086aa1756b8b7223c6413586094865b2e78",
+      "checkoutFilteredSha256": "2e4e950b9efc4301dd023d1d9b338086aa1756b8b7223c6413586094865b2e78",
+      "qualifiedSha256": "2e4e950b9efc4301dd023d1d9b338086aa1756b8b7223c6413586094865b2e78",
+      "qualifiedSizeBytes": 14274,
+      "checkoutFilteredSizeBytes": 14274,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/runtime-toolchain-v2/observations.json",
+      "gitBlobSha256": "7b9787fbc4f134bf3912ab6113950dbe18cae2dda526b67fd08cf3d061cbcac4",
+      "checkoutFilteredSha256": "7b9787fbc4f134bf3912ab6113950dbe18cae2dda526b67fd08cf3d061cbcac4",
+      "qualifiedSha256": "7b9787fbc4f134bf3912ab6113950dbe18cae2dda526b67fd08cf3d061cbcac4",
+      "qualifiedSizeBytes": 8055,
+      "checkoutFilteredSizeBytes": 8055,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/runtime-toolchain-v2/provenance.json",
+      "gitBlobSha256": "f75bf867e002b981fa0d66781ecd6dd3d806d9846578f13dc1eaff86d250a168",
+      "checkoutFilteredSha256": "f75bf867e002b981fa0d66781ecd6dd3d806d9846578f13dc1eaff86d250a168",
+      "qualifiedSha256": "f75bf867e002b981fa0d66781ecd6dd3d806d9846578f13dc1eaff86d250a168",
+      "qualifiedSizeBytes": 1925,
+      "checkoutFilteredSizeBytes": 1925,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/runtime-toolchain-v2/test-results.json",
+      "gitBlobSha256": "c5896d1fd2644e17463f7f709976975c7bd096dc99080ad2f57d0fda3aad8b56",
+      "checkoutFilteredSha256": "c5896d1fd2644e17463f7f709976975c7bd096dc99080ad2f57d0fda3aad8b56",
+      "qualifiedSha256": "c5896d1fd2644e17463f7f709976975c7bd096dc99080ad2f57d0fda3aad8b56",
+      "qualifiedSizeBytes": 904,
+      "checkoutFilteredSizeBytes": 904,
+      "equal": true
+    },
+    {
+      "path": "test/fixtures/runtime-toolchain-v2/tools/validate-oq8-platform-evidence.py",
+      "gitBlobSha256": "87c7e5289fad892d3008ad70923c3be63b7c2fb0ac5492392e65b686812ad9c7",
+      "checkoutFilteredSha256": "87c7e5289fad892d3008ad70923c3be63b7c2fb0ac5492392e65b686812ad9c7",
+      "qualifiedSha256": "87c7e5289fad892d3008ad70923c3be63b7c2fb0ac5492392e65b686812ad9c7",
+      "qualifiedSizeBytes": 271917,
+      "checkoutFilteredSizeBytes": 271917,
+      "equal": true
+    }
+  ]
+}

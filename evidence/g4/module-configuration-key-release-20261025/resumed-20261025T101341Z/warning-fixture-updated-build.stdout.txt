@@ -1,0 +1,21 @@
+  P0Fixture.Inventory -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.dll
+  P0Fixture.Inventory.Descriptor -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll
+  P0Fixture.Orders -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders/P0Fixture.Orders.dll
+  P0Fixture.Orders.Descriptor -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll
+  P0Fixture.Ui -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll
+  P0Fixture.Ui.Descriptor -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.127.0, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll
+  Hexalith.Builds.Module.EventStoreHost -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Debug/net10.0/Hexalith.Builds.Module.EventStoreHost.dll
+  Hexalith.Builds.Module.UiHost -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/bin/Debug/net10.0/Hexalith.Builds.Module.UiHost.dll
+  Hexalith.Builds.Module.AppHost -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/bin/Debug/net10.0/Hexalith.Builds.Module.AppHost.dll
+/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs(21,5): error RCS1181: Convert comment to documentation comment (https://josefpihrt.github.io/docs/roslynator/analyzers/RCS1181) [/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj]
+
+Build FAILED.
+
+/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs(21,5): error RCS1181: Convert comment to documentation comment (https://josefpihrt.github.io/docs/roslynator/analyzers/RCS1181) [/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:02:34.42

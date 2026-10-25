@@ -1,0 +1,11 @@
+{
+  "observedAtUtc": "2026-10-25T13:56:27.386963+00:00",
+  "attempt": "published-artifact-02",
+  "result": "stopped on supplemental human absolute-path presentation assertion at first malformed-key probe",
+  "observedHumanSource": "failed: UsageOrManifest\nHXP002 Manifest Manifest source=../../../../../tmp/module-cli-published-20261025-qgbj6e5x/invalid-0-0.json field=modules[0].integration.secrets[1].configurationKey: Use a nonblank value matching the schema's declared format and length.\n",
+  "resolvedSource": "/tmp/module-cli-published-20261025-qgbj6e5x/invalid-0-0.json",
+  "ordinaryHumanJson": "passed0/0",
+  "adoptionHumanJson": "expected1/1; raw rows retained",
+  "disposition": "Require exact HXP002 field and canonical source-file identity after resolving the CLI source path relative to measured cwd; preserve both raw attempts and run all controls in fresh03. Product expectations and gates unchanged.",
+  "successorHarnessSha256": "742990ee09929f4739fbe7ad6641396ee465bd9039342c51968406ffdff48b43"
+}

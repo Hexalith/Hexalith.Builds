@@ -1,0 +1,13 @@
+{
+  "command": [
+    "node_modules/.bin/commitlint",
+    "--config",
+    "commitlint.config.mjs",
+    "--edit",
+    "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-commit-message.txt",
+    "--verbose"
+  ],
+  "exitCode": 0,
+  "messageSha256": "246583e582ff49907d6398b0e74a0ebb56e6aaf1d2a7d9c8afaa303aea734095",
+  "observedAtUtc": "2026-10-25T12:13:37.410950+00:00"
+}

@@ -1,0 +1,13 @@
+{
+  "observedAtUtc": "2026-10-25T10:51:02.988521+00:00",
+  "previousSource": "7144b8031b95a65982d78b3eb381e10c00b55cbe",
+  "externalSource": "6e40ea5f6243391bea80084b8ddd695df58fb1ff",
+  "path": "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceArtifactValidator.cs",
+  "patch": "@@ -478,7 +478,6 @@ private static bool IsSelectedTestRun(JsonElement root)\n             || selected.GetProperty(\"remainingResources\").GetProperty(\"isEmpty\").GetBoolean() != record.RemainingResources.IsEmpty;\n         return !invalid && IsSelectedBindingCoherent(root, record!) && (root.GetProperty(\"finalStatus\").GetString() != \"completed\"\n             || (record!.TerminalStatus == \"completed\" && record.TerminalOutcome.ExitCode == Diagnostics.ToolExitCode.Success\n-                && record.ResourceDisposition == \"removed\" && record.RemainingResources.IsEmpty\n                 && record.ReportHash is not null && record.TestCounts is { Total: > 0, Failed: 0, Skipped: 0 } counts\n                 && counts.Passed == counts.Total));\n     }",
+  "observation": "The external change removes the resourceDisposition=removed and RemainingResources.IsEmpty conjuncts from completed selected-test evidence validation. It retains terminal completed/success, report hash and all-passing positive test-count checks.",
+  "classification": "Separate externally authored runtime/evidence policy change; not edited or independently qualified by this continuation.",
+  "proofScope": "372 unchanged inputs means module-key schema plus workflow, qualification/publisher scripts, tracked fixtures, source catalog, lockfile, SDK and attributes only. It excludes compiled runtime code and does not establish all validators unchanged.",
+  "releaseRequirement": "Complete exact-current-source CI and full governed release qualification remain required.",
+  "platformQualificationClaimed": false,
+  "runtimeEntryCredit": false
+}

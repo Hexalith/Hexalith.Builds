@@ -1,0 +1,36 @@
+{
+  "observedAtUtc": "2026-10-25T10:47:47.458007+00:00",
+  "phase": "resumed source superseded; remote writes held",
+  "repositories": {
+    "Conversations": {
+      "head": "8444207001d6ad3cd197c2ffba519317effa8b37",
+      "entryHead": "8444207001d6ad3cd197c2ffba519317effa8b37",
+      "trackedEntryFileCount": 4208,
+      "changedEntryFiles": [],
+      "indexedGitlinksUnchanged": true,
+      "indexedGitlinkChanges": []
+    },
+    "Builds": {
+      "head": "7144b8031b95a65982d78b3eb381e10c00b55cbe",
+      "entryHead": "142b06e6d05c94b55ac35e587450c35fcac87590",
+      "trackedEntryFileCount": 2228,
+      "changedEntryFiles": [
+        {
+          "path": "docs/module-cli-configuration-key-release-plan.md",
+          "beforeSha256": "3c7d0205323171aaeaf02523793a036226a93759da62f7e0a6dcf4fbe2c5df7d",
+          "afterSha256": "cf1cb532b208b235881032ff054ac22e73c42a4d8c889059c87cbee3f19cd1e8"
+        }
+      ],
+      "indexedGitlinksUnchanged": true,
+      "indexedGitlinkChanges": []
+    },
+    "Platform": {
+      "head": "b9cf0e78c42ca8bfe1aa5488cc4340c238887acb",
+      "entryHead": "b9cf0e78c42ca8bfe1aa5488cc4340c238887acb",
+      "trackedEntryFileCount": 9060,
+      "changedEntryFiles": [],
+      "indexedGitlinksUnchanged": true,
+      "indexedGitlinkChanges": []
+    }
+  }
+}

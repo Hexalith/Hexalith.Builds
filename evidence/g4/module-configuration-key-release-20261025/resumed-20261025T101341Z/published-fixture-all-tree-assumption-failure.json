@@ -1,0 +1,11 @@
+{
+  "observedAtUtc": "2026-10-25T13:57:33.790357+00:00",
+  "result": "supplemental all-Git-tree fixture assumption failed",
+  "sourceTrackedCount": 290,
+  "inventoryCount": 289,
+  "gitOnly": [
+    "test/fixtures/package-consumer/.config/dotnet-tools.json"
+  ],
+  "inventoryOnly": [],
+  "diagnosis": "Existing Get-FixtureManifest uses PowerShell Get-ChildItem -File -Recurse without -Force and excludes hidden .config. No source/gate change; qualify exact existing visible scope and record extra tracked identity separately."
+}

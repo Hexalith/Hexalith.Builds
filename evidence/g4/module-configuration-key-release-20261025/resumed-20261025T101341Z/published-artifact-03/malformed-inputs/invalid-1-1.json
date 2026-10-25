@@ -1,0 +1,498 @@
+{
+  "schema": "hexalith.module-manifest.v2",
+  "modules": [
+    {
+      "identity": {
+        "moduleId": "conversations",
+        "servers": [
+          {
+            "id": "domain",
+            "appId": "conversation",
+            "resourceId": "conversations",
+            "enabled": true,
+            "required": true
+          }
+        ],
+        "dependencies": [
+          "eventstore",
+          "tenants",
+          "memories"
+        ]
+      },
+      "runtime": {
+        "dapr": [
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:CommandStatus:StateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:DataProtection:StateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:Projections:ReadModelStateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "state",
+            "capability": "state",
+            "recoveryClass": "authoritative-restore",
+            "configurationKey": "EventStore:Projections:CheckpointStateStoreName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "events",
+            "capability": "pubsub",
+            "recoveryClass": "rebuild-only",
+            "configurationKey": "Tenants:PubSubName",
+            "servers": [
+              "domain"
+            ]
+          },
+          {
+            "role": "events",
+            "capability": "pubsub",
+            "recoveryClass": "rebuild-only",
+            "configurationKey": "EventStore:ProjectionChanges:PubSubName",
+            "servers": [
+              "domain"
+            ]
+          }
+        ],
+        "extensions": [
+          {
+            "packageId": "Hexalith.Conversations.Server",
+            "configurationInputs": [
+              {
+                "key": "EventStore:DomainService:AppId",
+                "source": "configuration",
+                "reference": "eventstore-domainservice-appid"
+              },
+              {
+                "key": "Authentication:JwtBearer:Authority",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-authority"
+              },
+              {
+                "key": "Authentication:JwtBearer:Issuer",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-issuer"
+              },
+              {
+                "key": "Authentication:JwtBearer:Audience",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-audience"
+              },
+              {
+                "key": "Authentication:JwtBearer:ValidAudiences",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-validaudiences"
+              },
+              {
+                "key": "Authentication:JwtBearer:AllowedAlgorithms",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-allowedalgorithms"
+              },
+              {
+                "key": "Authentication:JwtBearer:RequireHttpsMetadata",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-requirehttpsmetadata"
+              },
+              {
+                "key": "Authentication:JwtBearer:AllowInsecureSymmetricKey",
+                "source": "configuration",
+                "reference": "authentication-jwtbearer-allowinsecuresymmetrickey"
+              },
+              {
+                "key": "Authentication:JwtBearer:SigningKey",
+                "source": "secret",
+                "reference": "domain-jwt-signing-key"
+              },
+              {
+                "key": "Authentication:Workload:Audience",
+                "source": "configuration",
+                "reference": "authentication-workload-audience"
+              },
+              {
+                "key": "Authentication:Workload:AllowedCallers",
+                "source": "configuration",
+                "reference": "authentication-workload-allowedcallers"
+              },
+              {
+                "key": "Authentication:Workload:MaximumLifetimeSeconds",
+                "source": "configuration",
+                "reference": "authentication-workload-maximumlifetimeseconds"
+              },
+              {
+                "key": " ",
+                "source": "secret",
+                "reference": "app-channel-token"
+              },
+              {
+                "key": "EventStore:DataProtection:PersistToStateStore",
+                "source": "configuration",
+                "reference": "eventstore-dataprotection-persisttostatestore"
+              },
+              {
+                "key": "Tenants:TopicName",
+                "source": "configuration",
+                "reference": "tenants-topicname"
+              },
+              {
+                "key": "Authentication:WorkloadJwtBearer:Authority",
+                "source": "configuration",
+                "reference": "workload-jwt-authority"
+              },
+              {
+                "key": "Authentication:WorkloadJwtBearer:Issuer",
+                "source": "configuration",
+                "reference": "workload-jwt-issuer"
+              },
+              {
+                "key": "Authentication:WorkloadJwtBearer:Audience",
+                "source": "configuration",
+                "reference": "workload-jwt-audience"
+              },
+              {
+                "key": "Authentication:WorkloadJwtBearer:ValidAudiences",
+                "source": "configuration",
+                "reference": "workload-jwt-validaudiences"
+              },
+              {
+                "key": "Authentication:WorkloadJwtBearer:AllowedAlgorithms",
+                "source": "configuration",
+                "reference": "workload-jwt-allowedalgorithms"
+              },
+              {
+                "key": "Authentication:WorkloadJwtBearer:RequireHttpsMetadata",
+                "source": "configuration",
+                "reference": "workload-jwt-requirehttpsmetadata"
+              },
+              {
+                "key": "Dapr:DeclarativeSubscriptions",
+                "source": "configuration",
+                "reference": "dapr-declarative-subscriptions-true"
+              }
+            ]
+          }
+        ],
+        "resources": [
+          {
+            "server": "domain",
+            "requests": {},
+            "limits": {},
+            "volumes": []
+          }
+        ]
+      },
+      "surfaces": {
+        "interfaces": [
+          {
+            "name": "conversation-domain",
+            "server": "domain",
+            "protocol": "http",
+            "routePrefix": "/",
+            "exposure": "internal-only",
+            "surfaceClass": "service",
+            "authorization": {
+              "policy": "EventStoreWorkload:any",
+              "permissions": []
+            },
+            "callers": [
+              "eventstore"
+            ],
+            "operations": [
+              {
+                "name": "process",
+                "kind": "command",
+                "authorizationPolicy": "EventStoreWorkload:domain-service:process"
+              },
+              {
+                "name": "query",
+                "kind": "query",
+                "authorizationPolicy": "EventStoreWorkload:domain-service:query"
+              },
+              {
+                "name": "project",
+                "kind": "command",
+                "authorizationPolicy": "EventStoreWorkload:domain-service:project"
+              },
+              {
+                "name": "replay-state",
+                "kind": "administration",
+                "authorizationPolicy": "EventStoreWorkload:domain-service:replay-state"
+              },
+              {
+                "name": "admin-operational-index-metadata",
+                "kind": "administration",
+                "authorizationPolicy": "EventStoreWorkload:domain-service:metadata"
+              }
+            ],
+            "invocationRules": [
+              {
+                "caller": "eventstore",
+                "path": "/process",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/replay-state",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/query",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/v2",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/v2/reconcile",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/source-guard/owner-proof/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/source-guard/applied-receipt/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/source-guard/reconcile-applied-receipt/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/part/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/stage/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/commit/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/abort/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/verify/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/reclaim-guarded/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/reclaim-recovery/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/project/rebuild/shared/v1",
+                "verbs": [
+                  "POST"
+                ]
+              },
+              {
+                "caller": "eventstore",
+                "path": "/admin/operational-index-metadata",
+                "verbs": [
+                  "POST"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "integration": {
+        "topics": [
+          {
+            "name": "tenants-events",
+            "role": "events",
+            "deadLetter": {
+              "strategy": "topic",
+              "topic": "tenants-dead-letter"
+            },
+            "subscription": {
+              "server": "domain",
+              "route": "/tenants/events",
+              "topic": "system.tenants.events"
+            }
+          },
+          {
+            "name": "tenants-dead-letter",
+            "role": "events",
+            "deadLetter": {
+              "strategy": "none"
+            }
+          }
+        ],
+        "secrets": [
+          {
+            "name": "domain-jwt-signing-key",
+            "configurationKey": "Authentication:JwtBearer:SigningKey"
+          },
+          {
+            "name": "app-channel-token",
+            "configurationKey": "APP_API_TOKEN"
+          }
+        ],
+        "dynamicSecretNamespaces": [],
+        "identityNeeds": [],
+        "egress": [
+          {
+            "name": "domain-oidc-metadata",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority/.well-known/openid-configuration"
+          },
+          {
+            "name": "domain-oidc-jwks",
+            "protocol": "https",
+            "destination": "Authentication:JwtBearer:Authority -> metadata.jwks_uri"
+          },
+          {
+            "name": "workload-oidc-metadata",
+            "protocol": "https",
+            "destination": "Authentication:WorkloadJwtBearer:Authority/.well-known/openid-configuration"
+          },
+          {
+            "name": "workload-oidc-jwks",
+            "protocol": "https",
+            "destination": "Authentication:WorkloadJwtBearer:Authority -> metadata.jwks_uri"
+          }
+        ],
+        "providers": [],
+        "workers": []
+      },
+      "lifecycle": {
+        "readiness": [
+          {
+            "server": "domain",
+            "kind": "http",
+            "endpoint": "/ready"
+          }
+        ],
+        "tasks": [],
+        "recoveryHooks": [],
+        "fenceHooks": [],
+        "replay": {
+          "reopenBeforeReplay": false
+        },
+        "startup": {},
+        "criticalFlows": [
+          {
+            "name": "conversation-management",
+            "surface": "conversation-domain",
+            "operations": [
+              "process",
+              "query"
+            ]
+          }
+        ],
+        "smokeSurfaces": [],
+        "classification": {
+          "changeClass": "additive",
+          "reason": "Prepare declaration for the existing Conversations domain server; qualification and runtime adoption remain pending and both test AppHosts stay frozen."
+        },
+        "recoveryInventory": [
+          {
+            "name": "conversation-projections",
+            "recoveryClass": "rebuild-only",
+            "owner": "conversations",
+            "dependencies": [
+              "eventstore"
+            ]
+          },
+          {
+            "name": "tenant-access-projection",
+            "recoveryClass": "rebuild-only",
+            "owner": "tenants",
+            "dependencies": [
+              "eventstore",
+              "tenants"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

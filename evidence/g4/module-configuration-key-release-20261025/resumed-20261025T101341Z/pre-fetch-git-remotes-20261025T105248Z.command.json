@@ -1,0 +1,9 @@
+{
+  "command": [
+    "git",
+    "remote",
+    "-v"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T10:52:49.283128+00:00"
+}

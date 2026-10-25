@@ -1,0 +1,9 @@
+{
+  "command": [
+    "git",
+    "switch",
+    "main"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T10:20:31.428377+00:00"
+}

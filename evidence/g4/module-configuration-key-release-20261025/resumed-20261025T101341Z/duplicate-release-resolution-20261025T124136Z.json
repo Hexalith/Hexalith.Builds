@@ -1,0 +1,12 @@
+{
+  "observedAtUtc": "2026-10-25T12:41:38.359014+00:00",
+  "source": "e171c5a788eab183b32683431b084198c9b8d373",
+  "activeRun": 40193969210,
+  "activeCreatedAt": "2026-10-25T12:38:02Z",
+  "ownRedundantQueuedRun": 40193995250,
+  "ownCreatedAt": "2026-10-25T12:38:23Z",
+  "ownJobsBeforeCancel": 0,
+  "decision": "Follow the earlier active exact-source governed release; cancel only our redundant queued dispatch before any job/publication. No active or unrelated run, source gate, protected review, qualification or publisher was cancelled or bypassed.",
+  "activeActor": "jpiquot",
+  "boundary": "The other session source/approval history is retained; no independent human review is inferred merely from workflow state."
+}

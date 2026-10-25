@@ -1,0 +1,688 @@
+{
+  "observedAtUtc": "2026-10-25T14:01:37.861715+00:00",
+  "originalBaselineSha256": "612fa25ecbabd86a49a268af5a3b44ab8ca3007214c35738af45f3ab2ca6be43",
+  "resumedBaselineUncompressedSha256": "b2d5bc4e69a7d7030c7fa0324c1dca3f3a9c06e7d128998a903cc1b0a3dfb4ee",
+  "repositories": {
+    "Conversations": {
+      "head": "ed53473ea4c67aa10ffc46c9b951d9864fe263d4",
+      "branch": "main",
+      "status": "## main...origin/main\n M _bmad-output/implementation-artifacts/spec-5-4-ext-conv-ai-1-owner-qualification.md\n M _bmad-output/implementation-artifacts/spec-ext-conv-ai-1-runtime-delivery.md\n M _bmad-output/implementation-artifacts/spec-release-corrected-module-cli.md\n M docs/implementation/ext-conv-ai-1-runtime-qualification.md\n M references/Hexalith.Builds",
+      "indexedGitlinks": {
+        "references/Hexalith.AI.Tools": {
+          "mode": "160000",
+          "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d"
+        },
+        "references/Hexalith.Builds": {
+          "mode": "160000",
+          "revision": "68e65f2023eca117a2aa08a022ee33d8f4c34a44"
+        },
+        "references/Hexalith.Commons": {
+          "mode": "160000",
+          "revision": "1663028fb6d9f46a0bf17919edeb21bb99be1587"
+        },
+        "references/Hexalith.EventStore": {
+          "mode": "160000",
+          "revision": "245ded36b78b960b57728f845f9a8aae62275908"
+        },
+        "references/Hexalith.Folders": {
+          "mode": "160000",
+          "revision": "c048d8c4bd94fc9d9ceba64d0e8e9342250c801e"
+        },
+        "references/Hexalith.FrontComposer": {
+          "mode": "160000",
+          "revision": "80782afc7fc2fd33ee365d4601cb6b5e91d215fa"
+        },
+        "references/Hexalith.McpCli": {
+          "mode": "160000",
+          "revision": "8962e2f2570459dbea2976f789b468aa5c6353c6"
+        },
+        "references/Hexalith.Memories": {
+          "mode": "160000",
+          "revision": "fd80d62a6ba1cf5703155f57d7cd18d8a3627579"
+        },
+        "references/Hexalith.Parties": {
+          "mode": "160000",
+          "revision": "9c116910f9d712b82ae27ceb1946605d76c8a451"
+        },
+        "references/Hexalith.Platform": {
+          "mode": "160000",
+          "revision": "b9cf0e78c42ca8bfe1aa5488cc4340c238887acb"
+        },
+        "references/Hexalith.Projects": {
+          "mode": "160000",
+          "revision": "1d95c4e6d0f309e18efc831e344043f3168c056f"
+        },
+        "references/Hexalith.Tenants": {
+          "mode": "160000",
+          "revision": "14133e96d2c5efb13270580f920133079707398b"
+        }
+      },
+      "comparisons": [
+        {
+          "baseline": "original",
+          "entryHead": "957df69d50f4ab56c6c924b7a61237338413c21c",
+          "comparedTrackedFileCount": 4207,
+          "changedTrackedFiles": [
+            {
+              "path": "_bmad-output/implementation-artifacts/spec-5-4-ext-conv-ai-1-owner-qualification.md",
+              "beforeSha256": "549aba1d58ff4e58d39ece11ca65b4aac6a25d09c93170635cf055f4796e4b4e",
+              "afterSha256": "d47b086dda8917acfcf64b84bf02792eddec2c3f981baa6bad38acefd2a2520a"
+            },
+            {
+              "path": "_bmad-output/implementation-artifacts/spec-ext-conv-ai-1-runtime-delivery.md",
+              "beforeSha256": "a0c4de4f5a32a024f5a734148b1dd94728f5ddc3411f39026f37e2ae4890673e",
+              "afterSha256": "c343525af93f4f79e76952f6b04231e6d2d9758ea30f625980cebc99f75820fe"
+            },
+            {
+              "path": "docs/implementation/ext-conv-ai-1-runtime-qualification.md",
+              "beforeSha256": "0087665ac0d04817ebd5005287f41cb760c390505f788fcf5a9ef96aa12f3130",
+              "afterSha256": "375a7fbeb966480ff14085fb9d6d6a663382fc2f393a4278d9a774b313132435"
+            }
+          ],
+          "indexedGitlinkChanges": [
+            {
+              "path": "references/Hexalith.Builds",
+              "before": {
+                "mode": "160000",
+                "revision": "8eb5646fac69c5d3f42257c6bfdcd04158ac50ea"
+              },
+              "after": {
+                "mode": "160000",
+                "revision": "68e65f2023eca117a2aa08a022ee33d8f4c34a44"
+              }
+            },
+            {
+              "path": "references/Hexalith.EventStore",
+              "before": {
+                "mode": "160000",
+                "revision": "5be0c309f457d0af1f169bc591609fb4be6473ce"
+              },
+              "after": {
+                "mode": "160000",
+                "revision": "245ded36b78b960b57728f845f9a8aae62275908"
+              }
+            },
+            {
+              "path": "references/Hexalith.Folders",
+              "before": {
+                "mode": "160000",
+                "revision": "3287af1d5d0befb4a288bab2f35eafbaa10de0ec"
+              },
+              "after": {
+                "mode": "160000",
+                "revision": "c048d8c4bd94fc9d9ceba64d0e8e9342250c801e"
+              }
+            },
+            {
+              "path": "references/Hexalith.Memories",
+              "before": {
+                "mode": "160000",
+                "revision": "98383a95b36638399f7e48b29dd009ab6125be2d"
+              },
+              "after": {
+                "mode": "160000",
+                "revision": "fd80d62a6ba1cf5703155f57d7cd18d8a3627579"
+              }
+            },
+            {
+              "path": "references/Hexalith.Parties",
+              "before": {
+                "mode": "160000",
+                "revision": "0455c28a8604bf68d7065d36977c1c2ccf13e2e7"
+              },
+              "after": {
+                "mode": "160000",
+                "revision": "9c116910f9d712b82ae27ceb1946605d76c8a451"
+              }
+            },
+            {
+              "path": "references/Hexalith.Platform",
+              "before": {
+                "mode": "160000",
+                "revision": "1b7a00381794bb7ecf40caf643c63c50758a81eb"
+              },
+              "after": {
+                "mode": "160000",
+                "revision": "b9cf0e78c42ca8bfe1aa5488cc4340c238887acb"
+              }
+            },
+            {
+              "path": "references/Hexalith.Projects",
+              "before": {
+                "mode": "160000",
+                "revision": "6d327ca427ada949892aa70bbba1498d43284a71"
+              },
+              "after": {
+                "mode": "160000",
+                "revision": "1d95c4e6d0f309e18efc831e344043f3168c056f"
+              }
+            }
+          ],
+          "indexedGitlinksUnchanged": false
+        },
+        {
+          "baseline": "resumed",
+          "entryHead": "8444207001d6ad3cd197c2ffba519317effa8b37",
+          "comparedTrackedFileCount": 4208,
+          "changedTrackedFiles": [
+            {
+              "path": "_bmad-output/implementation-artifacts/spec-5-4-ext-conv-ai-1-owner-qualification.md",
+              "beforeSha256": "549aba1d58ff4e58d39ece11ca65b4aac6a25d09c93170635cf055f4796e4b4e",
+              "afterSha256": "d47b086dda8917acfcf64b84bf02792eddec2c3f981baa6bad38acefd2a2520a"
+            },
+            {
+              "path": "_bmad-output/implementation-artifacts/spec-ext-conv-ai-1-runtime-delivery.md",
+              "beforeSha256": "a0c4de4f5a32a024f5a734148b1dd94728f5ddc3411f39026f37e2ae4890673e",
+              "afterSha256": "c343525af93f4f79e76952f6b04231e6d2d9758ea30f625980cebc99f75820fe"
+            },
+            {
+              "path": "_bmad-output/implementation-artifacts/spec-release-corrected-module-cli.md",
+              "beforeSha256": "a7b9cad543ff075041ab379d7c57123728739b16ef116ed04fcaf62ed5a2c006",
+              "afterSha256": "9e491944a20db4adf38ff9af8b1cc8ff8ce289e1257ccdb5500f0fc51ef5067c"
+            },
+            {
+              "path": "docs/implementation/ext-conv-ai-1-runtime-qualification.md",
+              "beforeSha256": "0087665ac0d04817ebd5005287f41cb760c390505f788fcf5a9ef96aa12f3130",
+              "afterSha256": "375a7fbeb966480ff14085fb9d6d6a663382fc2f393a4278d9a774b313132435"
+            }
+          ],
+          "indexedGitlinkChanges": [
+            {
+              "path": "references/Hexalith.Builds",
+              "before": {
+                "mode": "160000",
+                "revision": "142b06e6d05c94b55ac35e587450c35fcac87590"
+              },
+              "after": {
+                "mode": "160000",
+                "revision": "68e65f2023eca117a2aa08a022ee33d8f4c34a44"
+              }
+            }
+          ],
+          "indexedGitlinksUnchanged": false
+        }
+      ]
+    },
+    "Builds": {
+      "head": "e171c5a788eab183b32683431b084198c9b8d373",
+      "branch": "main",
+      "status": "## main...origin/main\n M docs/module-cli-configuration-key-release-progress.md\n?? docs/module-cli-configuration-key-released-artifact-handoff.md\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-production-policy-20261025T124205Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-production-policy-20261025T124205Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-production-policy-20261025T124205Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-protected-review-history-20261025T124205Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-protected-review-history-20261025T124205Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-protected-review-history-20261025T124205Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-adoption-20261025T124136Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-adoption-20261025T124136Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-adoption-20261025T124136Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-current-state-20261025T124136Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-current-state-20261025T124136Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-current-state-20261025T124136Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-jobs-20261025T124205Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-jobs-20261025T124205Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-jobs-20261025T124205Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-pending-production-20261025T124136Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-pending-production-20261025T124136Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-pending-production-20261025T124136Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-release-run-id.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-verify-source-job.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/active-verify-source-job.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/activity-at-cancellation-20261025T104514Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/activity-at-cancellation-20261025T104514Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/activity-at-cancellation-20261025T104514Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/activity-at-second-cancellation-20261025T111513Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/activity-at-second-cancellation-20261025T111513Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/activity-at-second-cancellation-20261025T111513Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-measurement-triage.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-01-diagnosis.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-01.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-01.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-01.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-02-diagnosis.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-02.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-02.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-02.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-03.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-03.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/actual-feed-probe-attempt-03.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancel-own-queued-duplicate-20261025T124136Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancel-own-queued-duplicate-20261025T124136Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancel-own-queued-duplicate-20261025T124136Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancelled-ci-diagnostics-20261025T104620Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancelled-source-ci-20261025T104514Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancelled-source-ci-20261025T104514Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancelled-source-ci-20261025T104514Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancelled-source-jobs-20261025T104514Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancelled-source-jobs-20261025T104514Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancelled-source-jobs-20261025T104514Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancelled-source-logs-20261025T104514Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancelled-source-logs-20261025T104514Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/cancelled-source-logs-20261025T104514Z.zip\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ci-40185980339-monitor.jsonl\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ci-at-second-cancellation-20261025T111513Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ci-at-second-cancellation-20261025T111513Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ci-at-second-cancellation-20261025T111513Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ci-runs-at-cancellation-20261025T104514Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ci-runs-at-cancellation-20261025T104514Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ci-runs-at-cancellation-20261025T104514Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release-jobs.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release-jobs.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release-jobs.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release-logs.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release-logs.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release-logs.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release-logs.zip\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release-native-lines.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-active-release.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-release-collector-attempt-01-failure.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-release-collector-attempt-01.py\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-release-list.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-release-list.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-release-list.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-release-main-ref.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-release-main-ref.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-release-main-ref.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/completed-release-native-proof.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/consumed-pr138-decision-20261025T121745Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/current-main-before-release.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/current-main-before-release.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/current-main-before-release.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/current-main-in-full-qualification-20261025T131227Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/current-main-in-full-qualification-20261025T131227Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/current-source-decision-20261025T111639Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/duplicate-release-resolution-20261025T124136Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/exact-source-release-guard.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/exact-source-release-guard.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/exact-source-release-guard.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/external-runtime-validator-delta-20261025T105102Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/failed-current-ci-diagnostics-20261025T120118Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/failed-current-ci-jobs-20261025T120118Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/failed-current-ci-jobs-20261025T120118Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/failed-current-ci-jobs-20261025T120118Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/failed-current-ci-logs-20261025T120118Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/failed-current-ci-logs-20261025T120118Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/failed-current-ci-logs-20261025T120118Z.zip\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/failed-current-ci-metadata-20261025T120118Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/failed-current-ci-metadata-20261025T120118Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/failed-current-ci-metadata-20261025T120118Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fast-forward-main.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fast-forward-main.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fast-forward-main.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fast-forward-pr137-source-20261025T111639Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fast-forward-pr137-source-20261025T111639Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fast-forward-pr137-source-20261025T111639Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fast-forward-stable-source-20261025T105248Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fast-forward-stable-source-20261025T105248Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fast-forward-stable-source-20261025T105248Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fetch-normal-merge.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fetch-normal-merge.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fetch-normal-merge.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fetch-pr137-source-20261025T111639Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fetch-pr137-source-20261025T111639Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fetch-pr137-source-20261025T111639Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fetch-stable-source-20261025T105248Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fetch-stable-source-20261025T105248Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/fetch-stable-source-20261025T105248Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/full-qualification-completed-jobs-20261025T132312Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/full-qualification-completed-jobs-20261025T132312Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/g4-tool-package-inventory.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-commit-message.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-commitlint.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-commitlint.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-commitlint.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-focused-build.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-focused-build.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-focused-build.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-focused-results.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-focused.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-focused.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-focused.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/imported-pr138-verification.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/incoming-pr137-diff-20261025T111639Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/incoming-pr137-diff-20261025T111639Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/incoming-pr137-diff-20261025T111639Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/inspect-published-resources.ps1\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/inventory-push.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/inventory-push.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-at-cancellation-20261025T104514Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-at-cancellation-20261025T104514Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-at-cancellation-20261025T104514Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-at-second-cancellation-20261025T111513Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-at-second-cancellation-20261025T111513Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-at-second-cancellation-20261025T111513Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-before-normal-merge.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-before-normal-merge.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-before-normal-merge.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-during-protected-release-20261025T124843Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-during-protected-release-20261025T124843Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/normal-merge-rule-suite.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/normal-merge-rule-suite.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/normal-merge-rule-suite.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/normal-merge-rule-suites.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/normal-merge-rule-suites.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/normal-merge-rule-suites.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/observed-semantic-active-jobs-20261025T133916Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/observed-semantic-active-jobs-20261025T133916Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/observed-semantic-active-jobs-20261025T133916Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/observed-semantic-active-run-20261025T133916Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/observed-semantic-active-run-20261025T133916Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/observed-semantic-active-run-20261025T133916Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/observed-semantic-tag-20261025T133916Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/observed-semantic-tag-20261025T133916Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/observed-semantic-tag-20261025T133916Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/obsolete-pr-ci-inventory-20261025T111839Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/obsolete-pr-ci-inventory-20261025T111839Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/own-duplicate-before-cancel-20261025T124136Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/own-duplicate-before-cancel-20261025T124136Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/own-duplicate-before-cancel-20261025T124136Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/own-duplicate-final-20261025T124205Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/own-duplicate-final-20261025T124205Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/own-duplicate-final-20261025T124205Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/own-duplicate-jobs-before-cancel-20261025T124136Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/own-duplicate-jobs-before-cancel-20261025T124136Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/own-duplicate-jobs-before-cancel-20261025T124136Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/parent-verification/\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/platform-handoff-inputs-20261025T133834Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40181639047-diagnostics-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40181639047-jobs-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40181639047-jobs-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40181639047-logs-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40181639047-logs-20261025T111908Z.zip\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40181639047-metadata-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40181639047-metadata-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40182523658-diagnostics-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40182523658-jobs-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40182523658-jobs-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40182523658-logs-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40182523658-logs-20261025T111908Z.zip\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40182523658-metadata-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40182523658-metadata-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40182523658-test-failure-details.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40183927122-diagnostics-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40183927122-jobs-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40183927122-jobs-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40183927122-logs-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40183927122-logs-20261025T111908Z.zip\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40183927122-metadata-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40183927122-metadata-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40184103060-diagnostics-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40184103060-jobs-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40184103060-jobs-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40184103060-logs-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40184103060-logs-20261025T111908Z.zip\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40184103060-metadata-20261025T111908Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40184103060-metadata-20261025T111908Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr-ci-40184103060-test-failure-details.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-before-normal-merge.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-before-normal-merge.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-before-normal-merge.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-first-checks.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-first-checks.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-merged.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-merged.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-merged.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-normal-squash-merge.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-normal-squash-merge.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-normal-squash-merge.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-required-checks.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-required-checks.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr136-required-checks.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-current-main-20261025T111639Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-current-main-20261025T111639Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-current-main-20261025T111639Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-current-source-ci-20261025T111639Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-current-source-ci-20261025T111639Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-current-source-ci-20261025T111639Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-merge-rule-suite-20261025T111639Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-merge-rule-suite-20261025T111639Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-merge-rule-suite-20261025T111639Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-pre-fetch-history-20261025T111639Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-pre-fetch-history-20261025T111639Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-pre-fetch-history-20261025T111639Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-pre-fetch-remotes-20261025T111639Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-pre-fetch-remotes-20261025T111639Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-pre-fetch-remotes-20261025T111639Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-pre-fetch-state-20261025T111639Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-pre-fetch-state-20261025T111639Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pr137-pre-fetch-state-20261025T111639Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pre-fetch-git-history-20261025T105248Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pre-fetch-git-history-20261025T105248Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pre-fetch-git-history-20261025T105248Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pre-fetch-git-remotes-20261025T105248Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pre-fetch-git-remotes-20261025T105248Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pre-fetch-git-remotes-20261025T105248Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pre-fetch-git-state-20261025T105248Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pre-fetch-git-state-20261025T105248Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/pre-fetch-git-state-20261025T105248Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/preservation-at-supersession-20261025T104747Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/preservation-before-publication.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/previous-source-tree-20261025T104644Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/previous-source-tree-20261025T104644Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/probe-published-artifact-02.py\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/probe-published-artifact-03.py\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/probe-published-artifact.py\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/production-pending-before-review-20261025T124037Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/production-pending-before-review-20261025T124037Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/production-policy-before-release.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/production-policy-before-release.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/production-policy-before-release.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/progress-at-supersession-20261025T104747Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-01/\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-02/\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-fixture-all-tree-assumption-failure.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-fixture-effective-attributes.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-fixture-filtered-source-proof.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-fixture-pinned-visible-enumeration.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-fixture-pinned-visible-enumeration.stdout.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-fixture-source-set-and-attributes.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-g4-tool-package-inventory.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-g4-tool-package-inventory.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-g4-tool-package-inventory.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-release-identity.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-release-tag-ref.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-release-tag-ref.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-release-tag-ref.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci-jobs.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci-jobs.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci-jobs.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci-logs.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci-logs.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci-logs.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci-logs.zip\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci-native-counts.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/qualified-current-ci.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-before-review-20261025T124037Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-before-review-20261025T124037Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-dispatch-run.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-dispatch.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-dispatch.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-dispatch.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-entry-state-20261025T123855Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-entry-state-20261025T123855Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-hidden-fixture-dotnet-tools.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-native-skips-0.0.0-ci.451.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-native-skips-4.38.0.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-pending-production-20261025T123855Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-pending-production-20261025T123855Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-queue-inventory-20261025T124101Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-queue-inventory-20261025T124101Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-run-id.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-runs-before-dispatch.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-runs-before-dispatch.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-runs-before-dispatch.stdout.bin\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-source-ci-current.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-source-ci-entry.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-source-ci-entry.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-source-ci-id.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-source-sha-current.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-source-sha.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/release-source.gitattributes\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-cancelled-ci-20261025T111513Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-cancelled-ci-20261025T111513Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-cancelled-ci-20261025T111513Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-cancelled-jobs-20261025T111513Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-cancelled-jobs-20261025T111513Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-cancelled-jobs-20261025T111513Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-cancelled-logs-20261025T111513Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-cancelled-logs-20261025T111513Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-cancelled-logs-20261025T111513Z.zip\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-superseding-commit-20261025T111541Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-superseding-commit-20261025T111541Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-superseding-pr-20261025T111541Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-superseding-pr-20261025T111541Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-superseding-suites-20261025T111541Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/second-superseding-suites-20261025T111541Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-ce-activity.http.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-ce-activity.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-first-check.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-open-issues-page-2.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-open-issues-page-3.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-open-issues-page-4.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-open-issues-page-5.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-open-issues-page-6.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-open-issues.http.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-open-issues.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-quality-gate.http.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/sonar-quality-gate.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/squash-body.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/squash-commitlint.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/squash-commitlint.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/squash-commitlint.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/squash-message.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/stable-current-ci-20261025T105248Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/stable-current-ci-20261025T105248Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/stable-current-ci-20261025T105248Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/stable-current-main-20261025T105248Z.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/stable-current-main-20261025T105248Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/stable-current-main-20261025T105248Z.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/stable-source-decision-20261025T105248Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/stable-source-release-guard.sh\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/superseding-main-commit-20261025T104525Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/superseding-main-commit-20261025T104525Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/superseding-main-rule-suites-20261025T104525Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/superseding-main-rule-suites-20261025T104525Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/superseding-source-compatibility-20261025T104644Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/superseding-source-tree-20261025T104644Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/superseding-source-tree-20261025T104644Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/switch-main.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/switch-main.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/switch-main.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-baseline-build.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-baseline-build.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-baseline-build.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-baseline.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-baseline.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-baseline.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-commit-message.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-commitlint.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-commitlint.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-commitlint.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-diagnosis.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-focused-results.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-focused.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-focused.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-focused.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-git-fetch.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-git-fetch.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-git-history.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-git-history.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-git-remotes.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-git-remotes.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-git-state.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-git-state.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-local-proposal.cs.gz\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-local-proposal.patch.gz\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-new-main-20261025T121551Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-new-main-20261025T121551Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-new-main-pr-20261025T121551Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-new-main-pr-20261025T121551Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-new-main-rules-20261025T121551Z.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-new-main-rules-20261025T121551Z.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-production-preservation.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-production-preservation.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-production-preservation.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-updated-build-02.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-updated-build-02.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-updated-build-02.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-updated-build.command.json\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-updated-build.stderr.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-updated-build.stdout.txt\n?? evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/warning-fixture-verification.json",
+      "indexedGitlinks": {
+        "references/Hexalith.AI.Tools": {
+          "mode": "160000",
+          "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d"
+        }
+      },
+      "comparisons": [
+        {
+          "baseline": "original",
+          "entryHead": "8eb5646fac69c5d3f42257c6bfdcd04158ac50ea",
+          "comparedTrackedFileCount": 2088,
+          "changedTrackedFiles": [
+            {
+              "path": "README.md",
+              "beforeSha256": "58b5140bb68140ff3066c453eb0002e61675e94adfcc6d0d6e7d4b703d96bd75",
+              "afterSha256": "6171ca3d5d7e9475e89e6af39800ed4536f4e1bf5874fbf496adf30c3b184677"
+            },
+            {
+              "path": "schemas/hexalith.module-run-evidence.v1.json",
+              "beforeSha256": "1dfcc2aa062af8d0af1ee57a8d6086de5f5abad0f65328aee850db1d0e9834f2",
+              "afterSha256": "a8f34fe1b9bc15b1794015b5d8babbc070b3096947d46716c52351397447b54f"
+            },
+            {
+              "path": "schemas/hexalith.test-environment.v1.json",
+              "beforeSha256": "8d98ce1bfa1b536a22b083050033d6ea67c088129ff1e575cee9121affa710ea",
+              "afterSha256": "bf1e46acc773991037daaae20dff1d815faf4af13ab7887d88339609607ff357"
+            },
+            {
+              "path": "schemas/hexalith.test-result.v1.json",
+              "beforeSha256": "b5d5055219e61646cc58cef9064f9190b139467a4c729b840686284f4a38ebfb",
+              "afterSha256": "9773678febac38025fae837154341d9036ce8aa94e66b0d30c7e15ee668d7e39"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs",
+              "beforeSha256": "6184532bd6627872e2ce041b30e1eae7b2341c81b82ff7d0684592521f71d76e",
+              "afterSha256": "533ec5b61d490214d5823c70e8df4696c2ac53b97c4862e7e81a18776b98ee35"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolCommandResult.cs",
+              "beforeSha256": "1aa45b4e48d4537ed5dd447591a50a4383728144c0fd50bfa1bbb0a9f50faa68",
+              "afterSha256": "7f344710c9cd18d182e0a6191bcbb9bcc14b66ce8df5c53a608a5c2bf19d1a52"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs",
+              "beforeSha256": "d7872e0b9ab33d4c2b6ecc50d16be9c05405c5d99006f47e0a9e46ef450eebd1",
+              "afterSha256": "ce100f24f8daaf2162ade39415bb8352a51e4ec02932ca94b0b6bb36b2c41669"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceArtifactValidator.cs",
+              "beforeSha256": "ee02392b7433f009c90481afde7549aa9821a5d17a9cd9df1b976ef397b2d902",
+              "afterSha256": "05aee31897fa3872c6649fdcaa46d6d397f7ad4f373c3febf578eb651bffa414"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceWriter.cs",
+              "beforeSha256": "c5781f424b588a076f136afba91c850142ddc4babda25dd954275e02feb51a7a",
+              "afterSha256": "7c36103524d57403efc8f5f54248ddd47c3e4649f02e0a9b8a70085e49cb0359"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionDocumentStore.cs",
+              "beforeSha256": "75b70fffc32b9577a23c5c72f86b86d71c48f99b071f7022f92f214e19cc1043",
+              "afterSha256": "56436be08eece80acd617a8ff71a3b7fb8fc29e6bd68c7c00883d0af742856e1"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs",
+              "beforeSha256": "9f88e5ca0f6714cdc4a0a439088c922d4a08daf92ad386a0785cf768001eb8fc",
+              "afterSha256": "1cf0ae9cce3d3dc90b28a7c028f6ad119c06dbe7ac0b8126cf12b2a785121a9d"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionResourceClaimStore.cs",
+              "beforeSha256": "2e8eef14ff4f87f5a761f6178d89e9b14902382c7c28f63b3d6b57c682923b2c",
+              "afterSha256": "92dc98c9955e6654dfe2029568aff5d6e6a18e2edd185c4cddb4c40c44136660"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunPlanFactory.cs",
+              "beforeSha256": "7f0bed7ecd87742be5efc67e1262096ff01abee818c8b58eb7549eefb5d63e34",
+              "afterSha256": "88fa279d0b41772479ffa5ee940dd51eaaa7ede352d603e8107e40c87f0c0553"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunResourceScanner.cs",
+              "beforeSha256": "6496d734a1f897689768aa03bf8f57a7f50245b6adc7de4f61bfeaf94bcbde5d",
+              "afterSha256": "221f356680bd13611cb1df6ec6e8258188f2b4cd976884c4ecfbc10365517d50"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunResources.cs",
+              "beforeSha256": "b81e4a2e45b206144256e43571abaf9c0716f6346d90cc5e4d112feff0e75613",
+              "afterSha256": "4e6351c8991b80880c6ed0b5496e2f00cabcb6af7f23df0cc23f37629d7c636c"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunSession.cs",
+              "beforeSha256": "aad2e4ff841ebde02f8aeba339a675b3f1ec72eebcbddec97d60eb4844abcfe7",
+              "afterSha256": "e885be61af37609408cda11c08a0d9e66147bfe430596ea4dc94441029a53538"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunState.cs",
+              "beforeSha256": "35913301b766bfd05e5ddba09eb3d79a740e5ed708f4c21c6e9d523a5fb75dbb",
+              "afterSha256": "651bee6d16b5bb946bc4a4152a7eb32c222ca84a7f6a5ebbdf4e326b4f392955"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunStateStore.cs",
+              "beforeSha256": "701a4ee0591f768cc35d6e81f3f664f09c03061993f8d9ec0482913186aa09c7",
+              "afterSha256": "42d7d907c9e96d0dfa16898022b2910d098d9fa556e6641c7696de148c8e0e67"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionWorkspace.cs",
+              "beforeSha256": "02e506f00269f9e2fde4689647c1e095306aad18ea7c0cc096aa86d73c33ef1d",
+              "afterSha256": "54ca263b46b8b6b07b7924b6551fe5b22c55fdb6de96de44b5e70c29ffa7f627"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs",
+              "beforeSha256": "73ad457aec286c5d097449cc7e4a78cfa0593c549e477a633bc2e33d782bba8c",
+              "afterSha256": "fdb8deb98fd159713bdc8e0776469d3b0a092011f6c8993e32e72a2ac7181a24"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleTestRunRecord.cs",
+              "beforeSha256": "e1b4e330982b4443563cda179ac362d33c83d7b238fb2e45c5d5029cc9e569ff",
+              "afterSha256": "d7da8fc9bd47924c6c609d59770674d1afce68be9a3eff2da779d1b52c560ab0"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestExecutionResult.cs",
+              "beforeSha256": "bf8aa08b6c1e09b238c80e7b3ee637cc20dd00118bdfa16b3f6c4bf84c380dc6",
+              "afterSha256": "9e038e9685b18a9b04e2b9f07b7d22cb37a6a694dabfa1a6e4de4967f74ffb58"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestExecutor.cs",
+              "beforeSha256": "d6a185fbdb6643cdf6f8a1997e6d8b429ad70a9d22338afe9e8a60fed84284bc",
+              "afterSha256": "b1922a1c347005afdde9725ff8a24005081a095a72085a66de95bc5a4f441fce"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/SelectedNativeTestReport.cs",
+              "beforeSha256": "a20c201eaef5e1adca427375ebabcac01af5cb9d6e8768af562d4a82482cac1e",
+              "afterSha256": "3d8c2f5ec456c2991e34f26c2ef0acf33b5571249d5defa11844707a45cf7de9"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestEnvironmentContractReader.cs",
+              "beforeSha256": "08d2795e67b2c1d806132dd38b2837e3c2b1bf3dcc0c0a7c1af7e167df9819d4",
+              "afterSha256": "d6366e98e6a1c78f179ed0e2572698137685da7764864d4bad71a1597713111d"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestEnvironmentDescriptorWriter.cs",
+              "beforeSha256": "22edb63472c6213afcb09929a94b566c097f5bb8ba3b09983e533b1d04d30ec8",
+              "afterSha256": "280329acc98f00acc265fe66681c2ede1df4c972b07ce406c99a36c4d691b78d"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/CompositionEngineTests.cs",
+              "beforeSha256": "014df6aff7ee184de9802b1818811dc5729a5c7117a0db76d4a729e3b8f9a507",
+              "afterSha256": "18a52c34a3ad49a2886074445dc78ae30ddb311c3be2a67204cfb226cde65125"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/ModuleRunnerReviewRegressionTests.cs",
+              "beforeSha256": "e25c28d62266b1120498f3316194af817de99df95e790538ab946f08595fc323",
+              "afterSha256": "ed39b7e6e0a14cf26f6a553c548dc5c54c9cdc4342b8e7fdafc6cd55b1b2e8c8"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/ModuleTestSelectionTests.cs",
+              "beforeSha256": "07eb1adf10043284f9d1d444c037f3d38c67036cf2d22d4a189c81898c99561b",
+              "afterSha256": "5c6ae8844c2012fd063464b765d713a657ee1c16aba2c983a53f389c11b0d0fb"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/SelectedObservationTests.cs",
+              "beforeSha256": "73eec3d9ca354185bdefc7848dbb328dc08316cecd453d38fa9643607de7e0b3",
+              "afterSha256": "8ced9ae4f73b5bbc8ca14e19be22ce39f107bd8e4142546a11eab292b2113537"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/StartupReadinessTests.cs",
+              "beforeSha256": "0a428681fe188d8f2f611a837f5f0ae949ceebce10f0722df4243ccd3095d4ee",
+              "afterSha256": "23d41157ae04afe118de862756eb1ded71187059b30b5e77a03ce93e4b5d40df"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/TestEnvironmentProvisioningReviewTests.cs",
+              "beforeSha256": "75f324be71ca9c42cb7517125c2284b00d297f024093138adeeeaeeea124cb84",
+              "afterSha256": "e8739790481a707a9667587f24db64ee82e3324c0ed34d3a6d805cc6ac4129eb"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs",
+              "beforeSha256": "ac8448821aa9c938aff0cc3916d24b8952a736d8c0bdc410967b3c041f3d1316",
+              "afterSha256": "ec3885031a68e64402386fe002d4ea0eca6469aa3b24286abd51877cf580ad63"
+            }
+          ],
+          "indexedGitlinkChanges": [],
+          "indexedGitlinksUnchanged": true
+        },
+        {
+          "baseline": "resumed",
+          "entryHead": "142b06e6d05c94b55ac35e587450c35fcac87590",
+          "comparedTrackedFileCount": 2228,
+          "changedTrackedFiles": [
+            {
+              "path": "README.md",
+              "beforeSha256": "ae8a67da6545e1b9848648fc27549c99dc7fd6c76d3bf7134ade49cbe1e79af9",
+              "afterSha256": "6171ca3d5d7e9475e89e6af39800ed4536f4e1bf5874fbf496adf30c3b184677"
+            },
+            {
+              "path": "docs/module-cli-configuration-key-release-plan.md",
+              "beforeSha256": "3c7d0205323171aaeaf02523793a036226a93759da62f7e0a6dcf4fbe2c5df7d",
+              "afterSha256": "cf1cb532b208b235881032ff054ac22e73c42a4d8c889059c87cbee3f19cd1e8"
+            },
+            {
+              "path": "docs/module-cli-configuration-key-release-progress.md",
+              "beforeSha256": "55af1f47c37959dcb462058a55234254142a2fef8965c3c04ca940f3732d2de0",
+              "afterSha256": "522d66b826fa8795d3e6f4a5a885f13ba33502439f7227855f472fba92476290"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/RunEvidence/ModuleRunEvidenceArtifactValidator.cs",
+              "beforeSha256": "ee02392b7433f009c90481afde7549aa9821a5d17a9cd9df1b976ef397b2d902",
+              "afterSha256": "05aee31897fa3872c6649fdcaa46d6d397f7ad4f373c3febf578eb651bffa414"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs",
+              "beforeSha256": "6ce97fb4b1b43d0224098147eec18c294ee7ee6c980c18552aa867105719ddd3",
+              "afterSha256": "1cf0ae9cce3d3dc90b28a7c028f6ad119c06dbe7ac0b8126cf12b2a785121a9d"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunListing.cs",
+              "beforeSha256": "66145d2141342504deb5aee7ed986453e803966218ee473a56e390094cee9824",
+              "afterSha256": "f0219483a5d6ebd8ddefb983d87d98aa0280da1453d49fb806f1626bdf8e25eb"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunResourceScanner.cs",
+              "beforeSha256": "3749a118947514dd14ccecd71e3f4c86c4ac2997dceed3e991e435b8a9df43f7",
+              "afterSha256": "221f356680bd13611cb1df6ec6e8258188f2b4cd976884c4ecfbc10365517d50"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunStateStore.cs",
+              "beforeSha256": "6c5be1427fdcf04566a79fd21aadc87ba9f16f6284cf7c905f3b7493c1028e22",
+              "afterSha256": "42d7d907c9e96d0dfa16898022b2910d098d9fa556e6641c7696de148c8e0e67"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs",
+              "beforeSha256": "4b67c53775662f2488b1c89de9d5d6ebcbb8dfe3d3e67be4834f7f4a01fd1074",
+              "afterSha256": "fdb8deb98fd159713bdc8e0776469d3b0a092011f6c8993e32e72a2ac7181a24"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleTestRunRecord.cs",
+              "beforeSha256": "9b999e1a39fb40c3e5de18bed1348c7991d9edb9a74d583f55aa8d2bb935eb12",
+              "afterSha256": "d7da8fc9bd47924c6c609d59770674d1afce68be9a3eff2da779d1b52c560ab0"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/Runtime/NativeTestExecutor.cs",
+              "beforeSha256": "12993568aa4fff3da2b0f74bacc9dee1266701bc78eb72c11885d2dad2244937",
+              "afterSha256": "b1922a1c347005afdde9725ff8a24005081a095a72085a66de95bc5a4f441fce"
+            },
+            {
+              "path": "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestResultWriter.cs",
+              "beforeSha256": "e62bf816a986cd6bd9988d75b32a3c8ec7dd056c1a8309fd3a8f268c4d6dc9eb",
+              "afterSha256": "3c72ff8117bfb3274f1d9229d7041e1ba34c1db18a2f52a9064467d7ab79f3eb"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/CompositionEngineTests.cs",
+              "beforeSha256": "a113923ccd6db6cbe725a35015187326f4df7b065b5fad42c20c64a24e571a10",
+              "afterSha256": "18a52c34a3ad49a2886074445dc78ae30ddb311c3be2a67204cfb226cde65125"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/CompositionRunListingTests.cs",
+              "beforeSha256": "214d5e8f9401c10c667dd1c3aaa0ec8f0d2a4801d036dad863b2fe8599abd86f",
+              "afterSha256": "46d17a144c6c94744f93e665215323ee5ecccbb79af352dffc3746464e76b3ac"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/LocalRunFollowupTests.cs",
+              "beforeSha256": "57b2346a38212bdf0d2ae574c4aa84ad70804ee7c619ab41917891ce9c587973",
+              "afterSha256": "b8dddd273fa394f7d049a810800e4f877653ea54896fd7914887d0ef1b8f54fb"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/LocalRunLifecycleReviewTests.cs",
+              "beforeSha256": "723de274bbc1fc0a52308878285af0e8283c19645f4eff4034b029c2b994b857",
+              "afterSha256": "030532ec595dfe90a647ca83098503348ea1aa1d9fcfed8e5c59bb82d91b9fa3"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/LocalRunLifecycleTests.cs",
+              "beforeSha256": "f2f515a03e1aa2bc1d879fc4c0a2da055c3f3cdc374fcfa30e35d9308700f232",
+              "afterSha256": "71dc03aa0dfc56d50a59502a406bbf060b55c560150bd5b657eb22fbb674ee39"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/ModuleRunnerReviewRegressionTests.cs",
+              "beforeSha256": "e25c28d62266b1120498f3316194af817de99df95e790538ab946f08595fc323",
+              "afterSha256": "ed39b7e6e0a14cf26f6a553c548dc5c54c9cdc4342b8e7fdafc6cd55b1b2e8c8"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/TestEnvironmentProvisioningReviewTests.cs",
+              "beforeSha256": "ede8d0995b3e53590695267c42bcfa75976d925511743fde3a17ac081ec67a24",
+              "afterSha256": "e8739790481a707a9667587f24db64ee82e3324c0ed34d3a6d805cc6ac4129eb"
+            },
+            {
+              "path": "test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceCommandModeTests.cs",
+              "beforeSha256": "ac8448821aa9c938aff0cc3916d24b8952a736d8c0bdc410967b3c041f3d1316",
+              "afterSha256": "ec3885031a68e64402386fe002d4ea0eca6469aa3b24286abd51877cf580ad63"
+            }
+          ],
+          "indexedGitlinkChanges": [],
+          "indexedGitlinksUnchanged": true
+        }
+      ]
+    },
+    "Platform": {
+      "head": "b9cf0e78c42ca8bfe1aa5488cc4340c238887acb",
+      "branch": "main",
+      "status": "## main...origin/main",
+      "indexedGitlinks": {
+        "references/Hexalith.AI.Tools": {
+          "mode": "160000",
+          "revision": "3f194e17174994d308ec84af9ee2b5aa68674d0d"
+        },
+        "references/Hexalith.Agents": {
+          "mode": "160000",
+          "revision": "4cc1da1c8d3ff66496326b556287488153d8f3ff"
+        },
+        "references/Hexalith.Builds": {
+          "mode": "160000",
+          "revision": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274"
+        },
+        "references/Hexalith.ChatBot": {
+          "mode": "160000",
+          "revision": "b92e5090313011913bd12ec3241e9f07bae7f16f"
+        },
+        "references/Hexalith.Commons": {
+          "mode": "160000",
+          "revision": "1663028fb6d9f46a0bf17919edeb21bb99be1587"
+        },
+        "references/Hexalith.Conversations": {
+          "mode": "160000",
+          "revision": "8925c9fef46026d53d15478e2a744b3604c38a98"
+        },
+        "references/Hexalith.EventStore": {
+          "mode": "160000",
+          "revision": "5be0c309f457d0af1f169bc591609fb4be6473ce"
+        },
+        "references/Hexalith.Folders": {
+          "mode": "160000",
+          "revision": "283861849cd8ee76c5b074cc522803af42cfbe17"
+        },
+        "references/Hexalith.FrontComposer": {
+          "mode": "160000",
+          "revision": "80782afc7fc2fd33ee365d4601cb6b5e91d215fa"
+        },
+        "references/Hexalith.McpCli": {
+          "mode": "160000",
+          "revision": "8962e2f2570459dbea2976f789b468aa5c6353c6"
+        },
+        "references/Hexalith.Memories": {
+          "mode": "160000",
+          "revision": "7e9ca2c214b3e912a4a55b2c57c5d4d492920897"
+        },
+        "references/Hexalith.Parties": {
+          "mode": "160000",
+          "revision": "1ef274ea0471643d83f924147e85ac8326cf6a47"
+        },
+        "references/Hexalith.PolymorphicSerializations": {
+          "mode": "160000",
+          "revision": "221ac4592ba908ae7661ba1fa9e2d1fcc23baee0"
+        },
+        "references/Hexalith.Projects": {
+          "mode": "160000",
+          "revision": "f02481c2aa65ccc6d13f7fa71eb3a884503337ba"
+        },
+        "references/Hexalith.Tenants": {
+          "mode": "160000",
+          "revision": "14133e96d2c5efb13270580f920133079707398b"
+        },
+        "references/Hexalith.Timesheets": {
+          "mode": "160000",
+          "revision": "6fe2d21c132a4dcc286fdeb0d6b6e84db50c3c77"
+        },
+        "references/Hexalith.Works": {
+          "mode": "160000",
+          "revision": "d46166d8cc038ec28ecb4bbdf989684eb746adc1"
+        }
+      },
+      "comparisons": [
+        {
+          "baseline": "original",
+          "entryHead": "1b7a00381794bb7ecf40caf643c63c50758a81eb",
+          "comparedTrackedFileCount": 9060,
+          "changedTrackedFiles": [],
+          "indexedGitlinkChanges": [
+            {
+              "path": "references/Hexalith.Builds",
+              "before": {
+                "mode": "160000",
+                "revision": "d434d4a789661c48aaad3ddfba42f383240e8a1a"
+              },
+              "after": {
+                "mode": "160000",
+                "revision": "0ade5ec2b4f9b81fcd3a4bbb1672c11b0131a274"
+              }
+            }
+          ],
+          "indexedGitlinksUnchanged": false
+        },
+        {
+          "baseline": "resumed",
+          "entryHead": "b9cf0e78c42ca8bfe1aa5488cc4340c238887acb",
+          "comparedTrackedFileCount": 9060,
+          "changedTrackedFiles": [],
+          "indexedGitlinkChanges": [],
+          "indexedGitlinksUnchanged": true
+        }
+      ]
+    }
+  },
+  "protectedInputs": [
+    {
+      "repository": "Conversations",
+      "path": ".config/dotnet-tools.json",
+      "sha256": "5d72a022a9416cb753da75cda1b0f1945fd938c065521fd9946aaa525fe048da",
+      "unchangedAgainst": {
+        "original": true,
+        "resumed": true
+      }
+    },
+    {
+      "repository": "Conversations",
+      "path": "module/hexalith.module-manifest.v2.json",
+      "sha256": "0bed1c297c9c9d78fdb8f37197ac5f71d829191c0535fdd78e4034aaa017bdf0",
+      "unchangedAgainst": {
+        "original": true,
+        "resumed": true
+      }
+    },
+    {
+      "repository": "Conversations",
+      "path": "_bmad-output/implementation-artifacts/spec-16-1-persist-tenant-access-projection-state-and-prove-convergence.md",
+      "sha256": "2fc0e6a91abb2bef9e8df4d4176c86305693719e1ff311bf0ffad7b69b79be14",
+      "unchangedAgainst": {
+        "original": true,
+        "resumed": true
+      }
+    },
+    {
+      "repository": "Conversations",
+      "path": "_bmad-output/implementation-artifacts/sprint-status.yaml",
+      "sha256": "18744a7ddbf62ed1b02050fb644630f95ca1c80e6be497fa75cc00d3c73df500",
+      "unchangedAgainst": {
+        "original": true,
+        "resumed": true
+      }
+    },
+    {
+      "repository": "Platform",
+      "path": ".config/dotnet-tools.json",
+      "sha256": "5d72a022a9416cb753da75cda1b0f1945fd938c065521fd9946aaa525fe048da",
+      "unchangedAgainst": {
+        "original": true,
+        "resumed": true
+      }
+    },
+    {
+      "repository": "Platform",
+      "path": "hexalith-platform.json",
+      "sha256": "3ba6c30a8d602bbc3216f0a4f9f90fb9e1f2e11ea985b4fb5058c3611149fb23",
+      "unchangedAgainst": {
+        "original": true,
+        "resumed": true
+      }
+    }
+  ],
+  "historicalObservations": [
+    {
+      "repository": "Conversations",
+      "comparedFileCount": 19,
+      "changedFiles": [],
+      "unchanged": true
+    },
+    {
+      "repository": "Builds",
+      "comparedFileCount": 53,
+      "changedFiles": [],
+      "unchanged": true
+    }
+  ],
+  "authority": {
+    "story16_1RuntimeHold": "ACTIVE",
+    "runtimeEntryAllowed": false,
+    "applicationDeploymentPerformed": false,
+    "platformAcceptanceClaimed": false,
+    "pinEditsByThisContinuation": false,
+    "indexedGitlinkEditsByThisContinuation": false
+  },
+  "resumedIndexedGitlinksAllUnchanged": false,
+  "indexedGitlinkAttribution": "Conversations externally advanced to ed53473ea4c67aa10ffc46c9b951d9864fe263d4 at11:24:40UTC, changing its indexed Builds link from resumed142b06e to68e65f2. This continuation leaves that index and all user work intact; it makes no root or Platform Git mutations."
+}

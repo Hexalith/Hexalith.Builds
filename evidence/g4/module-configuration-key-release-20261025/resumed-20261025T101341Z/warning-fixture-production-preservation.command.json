@@ -1,0 +1,20 @@
+{
+  "command": [
+    "git",
+    "diff",
+    "--exit-code",
+    "HEAD",
+    "--",
+    "src",
+    "schemas",
+    "Tools",
+    ".github",
+    "Props",
+    "package.json",
+    "package-lock.json",
+    "global.json",
+    ".gitattributes"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:13:36.708510+00:00"
+}

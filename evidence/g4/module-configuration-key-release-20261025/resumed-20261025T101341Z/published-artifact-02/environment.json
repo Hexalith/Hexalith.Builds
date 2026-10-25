@@ -1,0 +1,7 @@
+{
+  "NUGET_PACKAGES": "/tmp/module-cli-published-20261025-qgbj6e5x/cache",
+  "NUGET_HTTP_CACHE_PATH": "/tmp/module-cli-published-20261025-qgbj6e5x/http-cache",
+  "DOTNET_CLI_HOME": "/tmp/module-cli-published-20261025-qgbj6e5x/dotnet-home",
+  "DOTNET_NOLOGO": "1",
+  "DOTNET_CLI_TELEMETRY_OPTOUT": "1"
+}

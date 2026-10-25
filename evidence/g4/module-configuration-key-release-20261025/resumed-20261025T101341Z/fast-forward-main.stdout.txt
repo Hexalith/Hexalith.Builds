@@ -1,0 +1,50 @@
+Updating 142b06e..7144b80
+Fast-forward
+ docs/module-cli-configuration-key-release-plan.md  |    29 +
+ .../baseline-archive-identity.json                 |    19 +
+ .../baseline-readable.json                         | 62143 +++++++++++++++++++
+ .../resumed-20261025T101341Z/baseline.json.gz      |   Bin 0 -> 599981 bytes
+ .../ci-at-resume.command.json                      |     9 +
+ .../resumed-20261025T101341Z/ci-at-resume.json     |     1 +
+ .../ci-at-resume.stderr.txt                        |     0
+ .../inventory-commit-message.txt                   |     5 +
+ .../inventory-commitlint.json                      |    13 +
+ .../inventory-commitlint.stderr.txt                |     0
+ .../inventory-commitlint.stdout.txt                |     7 +
+ .../main-at-resume.command.json                    |     9 +
+ .../resumed-20261025T101341Z/main-at-resume.json   |     1 +
+ .../main-at-resume.stderr.txt                      |     0
+ .../rules-at-resume.command.json                   |     9 +
+ .../resumed-20261025T101341Z/rules-at-resume.json  |     1 +
+ .../rules-at-resume.stderr.txt                     |     0
+ .../ruleset-at-resume.command.json                 |     9 +
+ .../ruleset-at-resume.json                         |     1 +
+ .../ruleset-at-resume.stderr.txt                   |     0
+ .../source-commit-message.txt                      |     5 +
+ .../source-commitlint.json                         |    13 +
+ .../source-commitlint.stderr.txt                   |     0
+ .../source-commitlint.stdout.txt                   |     7 +
+ 24 files changed, 62281 insertions(+)
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/baseline-archive-identity.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/baseline-readable.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/baseline.json.gz
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ci-at-resume.command.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ci-at-resume.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ci-at-resume.stderr.txt
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/inventory-commit-message.txt
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/inventory-commitlint.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/inventory-commitlint.stderr.txt
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/inventory-commitlint.stdout.txt
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-at-resume.command.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-at-resume.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/main-at-resume.stderr.txt
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/rules-at-resume.command.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/rules-at-resume.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/rules-at-resume.stderr.txt
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ruleset-at-resume.command.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ruleset-at-resume.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/ruleset-at-resume.stderr.txt
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/source-commit-message.txt
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/source-commitlint.json
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/source-commitlint.stderr.txt
+ create mode 100644 evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/source-commitlint.stdout.txt

@@ -1,0 +1,9 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/actions/workflows/build-release.yml/runs?head_sha=e171c5a788eab183b32683431b084198c9b8d373&event=workflow_dispatch&per_page=100"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T12:38:21.667881+00:00"
+}

@@ -1,0 +1,161 @@
+{
+  "schema": "hexalith.test-result.v1",
+  "policyId": "hexalith.platform.candidate-and-attachment-policy.v1",
+  "bindings": {
+    "run": {
+      "runId": "0123456789abcdef0123456789abcdef",
+      "attemptId": "67fa629043da4dc28290d96cca14576f",
+      "attemptSequence": 1,
+      "ownerRunId": "0123456789abcdef0123456789abcdef",
+      "environmentId": "0aa84d2144584d6f942c080db53ad16f",
+      "role": "owner"
+    },
+    "environment": {
+      "composition": {
+        "id": "sample",
+        "contentIdentity": "sha256:112fb09c8a5690cadf1ec43711b58107c27ee1946b272416616cc8a27bcde719"
+      },
+      "mode": "source",
+      "executionContext": {
+        "kind": "local"
+      },
+      "catalog": {
+        "commit": "cccccccccccccccccccccccccccccccccccccccc",
+        "instanceId": "0aa84d2144584d6f942c080db53ad16f-catalog"
+      },
+      "isolation": {
+        "state": "populated",
+        "syntheticTenantId": "g4t-0123456789ab",
+        "dataIsolationId": "g4r-0123456789ab",
+        "resourceScopeId": "0aa84d2144584d6f942c080db53ad16f",
+        "catalogScopeId": "0aa84d2144584d6f942c080db53ad16f-catalog"
+      },
+      "resources": [
+        {
+          "resourceId": "eventstore",
+          "moduleId": "eventstore",
+          "endpoints": [
+            {
+              "name": "http",
+              "protocol": "http",
+              "uri": "http://127.0.0.1:20012/"
+            }
+          ]
+        }
+      ],
+      "readiness": {
+        "state": "populated",
+        "status": "ready",
+        "observedAt": "2026-10-25T14:11:04.8174495Z",
+        "resources": [
+          {
+            "resourceId": "eventstore",
+            "status": "ready",
+            "observedAt": "2026-10-25T14:11:04.8174837Z",
+            "diagnosticIds": []
+          }
+        ]
+      },
+      "startupTasks": {
+        "state": "populated",
+        "tasks": []
+      }
+    },
+    "tool": {
+      "state": "not-yet-populated"
+    },
+    "candidate": {
+      "state": "not-yet-populated"
+    },
+    "decision": {
+      "state": "not-yet-populated"
+    },
+    "reuseLineage": {
+      "state": "not-yet-populated"
+    },
+    "artifacts": {
+      "expected": {
+        "state": "not-yet-populated"
+      },
+      "loaded": {
+        "state": "not-yet-populated"
+      }
+    },
+    "suite": {
+      "declared": {
+        "state": "not-yet-populated"
+      },
+      "completion": {
+        "state": "not-yet-populated"
+      }
+    },
+    "attachments": {
+      "state": "populated",
+      "holds": []
+    },
+    "deadlines": {
+      "startup": {
+        "state": "populated",
+        "origin": "environment-requested",
+        "originAt": "2026-10-25T14:11:04.7875289Z",
+        "effectiveSeconds": 600,
+        "expiresAt": "2026-10-25T14:21:04.7875289Z",
+        "actualDurationSeconds": 0,
+        "override": {
+          "state": "not-overridden"
+        }
+      },
+      "execution": {
+        "state": "populated",
+        "origin": "test-execution-started",
+        "originAt": "2026-10-25T14:11:04.8207265Z",
+        "effectiveSeconds": 1,
+        "expiresAt": "2026-10-25T14:11:05.8207265Z",
+        "configurationContentIdentity": "sha256:9e0d9823cca1338908180aa22a9af2766135e5f93698be723b9ceab1f7e1137a"
+      }
+    }
+  },
+  "terminal": {
+    "outcome": "failed",
+    "recordedAt": "2026-10-25T14:11:05.0242798Z",
+    "cause": "test-failure",
+    "diagnosticIds": [
+      "lifecycle"
+    ]
+  },
+  "termination": {
+    "state": "not-yet-populated"
+  },
+  "retention": {
+    "state": "populated",
+    "disposition": "failure-retained",
+    "failureRunIds": [
+      "0123456789abcdef0123456789abcdef"
+    ],
+    "retainedResourceIds": [],
+    "reason": "local-failure",
+    "recordedAt": "2026-10-25T14:11:05.0270479Z"
+  },
+  "cleanup": {
+    "state": "populated",
+    "disposition": "not-requested",
+    "observedAt": "2026-10-25T14:11:05.0270479Z",
+    "ownedResourceIds": [
+      "resource:eventstore"
+    ],
+    "leftoverResourceIds": [],
+    "failures": [],
+    "diagnosticIds": [
+      "lifecycle"
+    ]
+  },
+  "diagnostics": [
+    {
+      "id": "lifecycle",
+      "classification": "internal",
+      "redacted": true,
+      "reference": "lifecycle-4a8e9eb13d7a418468e87e78dfb83ead8d27eb4fc3ba45dc9bd57e0831259329.json",
+      "contentIdentity": "sha256:4a8e9eb13d7a418468e87e78dfb83ead8d27eb4fc3ba45dc9bd57e0831259329"
+    }
+  ]
+}

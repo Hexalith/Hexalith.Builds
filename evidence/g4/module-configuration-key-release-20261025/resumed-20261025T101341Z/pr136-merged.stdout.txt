@@ -1,0 +1,1 @@
+{"mergeCommit":{"oid":"7144b8031b95a65982d78b3eb381e10c00b55cbe"},"mergedAt":"2026-10-25T10:20:28Z","mergedBy":{"id":"MDQ6VXNlcjY3NzUwOTQ=","is_bot":false,"login":"jpiquot","name":"Jérôme Piquot"},"state":"MERGED","url":"https://github.com/Hexalith/Hexalith.Builds/pull/136"}

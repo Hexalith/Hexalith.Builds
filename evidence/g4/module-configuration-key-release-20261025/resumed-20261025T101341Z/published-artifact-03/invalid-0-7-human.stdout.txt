@@ -1,0 +1,2 @@
+failed: UsageOrManifest
+HXP002 Manifest Manifest source=../../../../../tmp/module-cli-published-20261025-axd3an1l/invalid-0-7.json field=modules[0].integration.secrets[1].configurationKey: Use a nonblank value matching the schema's declared format and length.

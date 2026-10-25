@@ -1,0 +1,1427 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.hexalith.com/platform/release-records.v1.json",
+  "title": "Hexalith Platform signed operational records v1",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/release"
+    },
+    {
+      "$ref": "#/$defs/attempt"
+    },
+    {
+      "$ref": "#/$defs/qualification"
+    },
+    {
+      "$ref": "#/$defs/production-promoted"
+    },
+    {
+      "$ref": "#/$defs/release-available"
+    },
+    {
+      "$ref": "#/$defs/latest-working"
+    },
+    {
+      "$ref": "#/$defs/promotion-stop"
+    },
+    {
+      "$ref": "#/$defs/administrator"
+    }
+  ],
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "recordId",
+        "digest"
+      ],
+      "additionalProperties": false
+    },
+    "environmentCurrent": {
+      "type": "object",
+      "properties": {
+        "secretReferences": {
+          "type": "object",
+          "minProperties": 0,
+          "maxProperties": 128,
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+          }
+        },
+        "secretScopes": {
+          "type": "object",
+          "minProperties": 0,
+          "maxProperties": 128,
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+          }
+        },
+        "keyGeneration": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "catalogGeneration": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "catalogRootDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "secretContractDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "realmContractVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "activeProfileDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+        },
+        "hostnames": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+          },
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "credentialReferences": {
+          "type": "object",
+          "minProperties": 0,
+          "maxProperties": 128,
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+          }
+        }
+      },
+      "required": [
+        "secretReferences",
+        "secretScopes",
+        "keyGeneration",
+        "catalogGeneration",
+        "catalogRootDigest",
+        "secretContractDigest",
+        "realmContractVersion",
+        "activeProfileDigest",
+        "hostnames",
+        "credentialReferences"
+      ],
+      "additionalProperties": false
+    },
+    "namedRecovery": {
+      "type": "object",
+      "properties": {
+        "recoveryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "acceptanceChecks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+          },
+          "maxItems": 128,
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "maximumDurationSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      },
+      "required": [
+        "recoveryId",
+        "acceptanceChecks",
+        "maximumDurationSeconds"
+      ],
+      "additionalProperties": false
+    },
+    "release": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "https://schemas.hexalith.com/platform/release.v1"
+        },
+        "kind": {
+          "const": "release"
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "writerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "environment": {
+          "type": "null"
+        },
+        "createdUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "recordedUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "releaseId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+            },
+            "applicationPackageDigest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+            },
+            "moduleArtifactDigests": {
+              "type": "object",
+              "minProperties": 0,
+              "maxProperties": 128,
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+              }
+            },
+            "composedHostDigest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+            },
+            "catalogRouteContentDigest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+            },
+            "mcpCliPackageDigest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+            },
+            "profileTemplateDigest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+            },
+            "daprSidecarPatch": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+            },
+            "realmContractVersion": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+            },
+            "recoveryHookContractVersion": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+            },
+            "checkSuiteDigests": {
+              "type": "object",
+              "minProperties": 0,
+              "maxProperties": 128,
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+              }
+            },
+            "qualifiedEnvironmentLayer": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+              },
+              "maxItems": 128,
+              "uniqueItems": true
+            },
+            "qualifiedSharedInfrastructure": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+              },
+              "maxItems": 128,
+              "uniqueItems": true
+            },
+            "moduleChangeClassifications": {
+              "type": "object",
+              "minProperties": 0,
+              "maxProperties": 128,
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+              },
+              "additionalProperties": {
+                "enum": [
+                  "unchanged",
+                  "compatible",
+                  "breaking"
+                ]
+              }
+            },
+            "evidenceDigests": {
+              "type": "object",
+              "minProperties": 0,
+              "maxProperties": 128,
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+              }
+            }
+          },
+          "required": [
+            "releaseId",
+            "applicationPackageDigest",
+            "moduleArtifactDigests",
+            "composedHostDigest",
+            "catalogRouteContentDigest",
+            "mcpCliPackageDigest",
+            "profileTemplateDigest",
+            "daprSidecarPatch",
+            "realmContractVersion",
+            "recoveryHookContractVersion",
+            "checkSuiteDigests",
+            "qualifiedEnvironmentLayer",
+            "qualifiedSharedInfrastructure",
+            "moduleChangeClassifications",
+            "evidenceDigests"
+          ],
+          "additionalProperties": false
+        },
+        "algorithm": {
+          "const": "ES256"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "recordId",
+        "writerId",
+        "keyId",
+        "subject",
+        "environment",
+        "createdUtc",
+        "recordedUtc",
+        "payload",
+        "algorithm",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "$anchor": "release-v1"
+    },
+    "attempt": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "https://schemas.hexalith.com/platform/attempt.v1"
+        },
+        "kind": {
+          "const": "attempt"
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "writerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])",
+          "enum": [
+            "staging",
+            "production"
+          ]
+        },
+        "createdUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "recordedUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "release": {
+              "$ref": "#/$defs/reference"
+            },
+            "attemptKind": {
+              "enum": [
+                "release",
+                "rollback",
+                "configuration",
+                "rotation",
+                "catalog-activation",
+                "realm-contract",
+                "operator-artifact",
+                "baseline-redeploy",
+                "environment-layer",
+                "profile",
+                "shared-infrastructure",
+                "in-place-restore",
+                "disaster-recovery"
+              ]
+            },
+            "environmentCurrent": {
+              "$ref": "#/$defs/environmentCurrent"
+            },
+            "renderMode": {
+              "enum": [
+                "normal",
+                "recovery",
+                "remove-workloads"
+              ]
+            },
+            "lockEpoch": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "entryUtc": {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 40
+            },
+            "firstMutationUtc": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "outageUtc": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "preMutationDeadlineUtc": {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 40
+            },
+            "rolloutDeadlineUtc": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "verificationDeadlineUtc": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maximumLifetimeUtc": {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 40
+            },
+            "checkTimeoutSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 86400
+            },
+            "graceSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 86430
+            },
+            "recoveryAllowance": {
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "recoveriesConsumed": {
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "observedStop": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/reference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "preIncidentIngress": {
+              "enum": [
+                "open",
+                "restricted"
+              ]
+            },
+            "outcome": {
+              "enum": [
+                "in-progress",
+                "working",
+                "non-working",
+                "superseded"
+              ]
+            },
+            "supersedes": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/reference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "supersededBy": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/reference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "release",
+            "attemptKind",
+            "environmentCurrent",
+            "renderMode",
+            "lockEpoch",
+            "entryUtc",
+            "firstMutationUtc",
+            "outageUtc",
+            "preMutationDeadlineUtc",
+            "rolloutDeadlineUtc",
+            "verificationDeadlineUtc",
+            "maximumLifetimeUtc",
+            "checkTimeoutSeconds",
+            "graceSeconds",
+            "recoveryAllowance",
+            "recoveriesConsumed",
+            "observedStop",
+            "preIncidentIngress",
+            "outcome",
+            "supersedes",
+            "supersededBy"
+          ],
+          "additionalProperties": false
+        },
+        "algorithm": {
+          "const": "ES256"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "recordId",
+        "writerId",
+        "keyId",
+        "subject",
+        "environment",
+        "createdUtc",
+        "recordedUtc",
+        "payload",
+        "algorithm",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "$anchor": "attempt-v1"
+    },
+    "qualification": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "https://schemas.hexalith.com/platform/qualification.v1"
+        },
+        "kind": {
+          "const": "qualification"
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "writerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])",
+          "enum": [
+            "staging",
+            "production"
+          ]
+        },
+        "createdUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "recordedUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "release": {
+              "$ref": "#/$defs/reference"
+            },
+            "issuingAttempt": {
+              "$ref": "#/$defs/reference"
+            },
+            "profileDigest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+            },
+            "qualifiedEnvironmentLayer": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+              },
+              "maxItems": 128,
+              "uniqueItems": true
+            },
+            "qualifiedSharedInfrastructure": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+              },
+              "maxItems": 128,
+              "uniqueItems": true
+            },
+            "evidenceDigests": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+              },
+              "maxItems": 128,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "release",
+            "issuingAttempt",
+            "profileDigest",
+            "qualifiedEnvironmentLayer",
+            "qualifiedSharedInfrastructure",
+            "evidenceDigests"
+          ],
+          "additionalProperties": false
+        },
+        "algorithm": {
+          "const": "ES256"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "recordId",
+        "writerId",
+        "keyId",
+        "subject",
+        "environment",
+        "createdUtc",
+        "recordedUtc",
+        "payload",
+        "algorithm",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "$anchor": "qualification-v1"
+    },
+    "production-promoted": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "https://schemas.hexalith.com/platform/production-promoted.v1"
+        },
+        "kind": {
+          "const": "production-promoted"
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "writerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])",
+          "enum": [
+            "staging",
+            "production"
+          ]
+        },
+        "createdUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "recordedUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "release": {
+              "$ref": "#/$defs/reference"
+            },
+            "issuingAttempt": {
+              "$ref": "#/$defs/reference"
+            },
+            "qualification": {
+              "$ref": "#/$defs/reference"
+            },
+            "profileDigest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+            }
+          },
+          "required": [
+            "release",
+            "issuingAttempt",
+            "qualification",
+            "profileDigest"
+          ],
+          "additionalProperties": false
+        },
+        "algorithm": {
+          "const": "ES256"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "recordId",
+        "writerId",
+        "keyId",
+        "subject",
+        "environment",
+        "createdUtc",
+        "recordedUtc",
+        "payload",
+        "algorithm",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "$anchor": "production-promoted-v1"
+    },
+    "release-available": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "https://schemas.hexalith.com/platform/release-available.v1"
+        },
+        "kind": {
+          "const": "release-available"
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "writerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "environment": {
+          "type": "null"
+        },
+        "createdUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "recordedUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "release": {
+              "$ref": "#/$defs/reference"
+            },
+            "stagingAttempt": {
+              "$ref": "#/$defs/reference"
+            },
+            "composedImageDigest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+            }
+          },
+          "required": [
+            "release",
+            "stagingAttempt",
+            "composedImageDigest"
+          ],
+          "additionalProperties": false
+        },
+        "algorithm": {
+          "const": "ES256"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "recordId",
+        "writerId",
+        "keyId",
+        "subject",
+        "environment",
+        "createdUtc",
+        "recordedUtc",
+        "payload",
+        "algorithm",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "$anchor": "release-available-v1"
+    },
+    "latest-working": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "https://schemas.hexalith.com/platform/latest-working.v1"
+        },
+        "kind": {
+          "const": "latest-working"
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "writerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])",
+          "enum": [
+            "staging",
+            "production"
+          ]
+        },
+        "createdUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "recordedUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "release": {
+              "$ref": "#/$defs/reference"
+            },
+            "terminalAttempt": {
+              "$ref": "#/$defs/reference"
+            },
+            "epoch": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "release",
+            "terminalAttempt",
+            "epoch"
+          ],
+          "additionalProperties": false
+        },
+        "algorithm": {
+          "const": "ES256"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "recordId",
+        "writerId",
+        "keyId",
+        "subject",
+        "environment",
+        "createdUtc",
+        "recordedUtc",
+        "payload",
+        "algorithm",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "$anchor": "latest-working-v1"
+    },
+    "promotion-stop": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "https://schemas.hexalith.com/platform/promotion-stop.v1"
+        },
+        "kind": {
+          "const": "promotion-stop"
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "writerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])",
+          "enum": [
+            "staging",
+            "production"
+          ]
+        },
+        "createdUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "recordedUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "previousStop": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/reference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "cause": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+            },
+            "evidenceDigests": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}(?![\\s\\S])"
+              },
+              "maxItems": 128,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "revision",
+            "previousStop",
+            "cause",
+            "evidenceDigests"
+          ],
+          "additionalProperties": false
+        },
+        "algorithm": {
+          "const": "ES256"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "recordId",
+        "writerId",
+        "keyId",
+        "subject",
+        "environment",
+        "createdUtc",
+        "recordedUtc",
+        "payload",
+        "algorithm",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "$anchor": "promotion-stop-v1"
+    },
+    "administrator": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "https://schemas.hexalith.com/platform/administrator.v1"
+        },
+        "kind": {
+          "const": "administrator"
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "writerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])",
+          "enum": [
+            "staging",
+            "production"
+          ]
+        },
+        "createdUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "recordedUtc": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "enum": [
+                "approve-release",
+                "clear-promotion-stop",
+                "grant-admission",
+                "revoke-admission",
+                "grant-management",
+                "revoke-management",
+                "authorize-takeover",
+                "start-recovery",
+                "return-to-g2",
+                "approve-infrastructure"
+              ]
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+            },
+            "attempt": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/reference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "observedStop": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/reference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "expectedStopRevision": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "predecessor": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/reference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+            },
+            "causeDispositions": {
+              "type": "object",
+              "minProperties": 0,
+              "maxProperties": 128,
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f](?:[^\\u0000-\\u001f\\u007f-\\u009f]*[^\\s\\u0000-\\u001f\\u007f-\\u009f])?(?![\\s\\S])"
+              }
+            },
+            "namedRecovery": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/namedRecovery"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target",
+            "attempt",
+            "observedStop",
+            "expectedStopRevision",
+            "predecessor",
+            "reason",
+            "causeDispositions",
+            "namedRecovery"
+          ],
+          "additionalProperties": false
+        },
+        "algorithm": {
+          "const": "ES256"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "recordId",
+        "writerId",
+        "keyId",
+        "subject",
+        "environment",
+        "createdUtc",
+        "recordedUtc",
+        "payload",
+        "algorithm",
+        "signature"
+      ],
+      "additionalProperties": false,
+      "$anchor": "administrator-v1"
+    }
+  }
+}
