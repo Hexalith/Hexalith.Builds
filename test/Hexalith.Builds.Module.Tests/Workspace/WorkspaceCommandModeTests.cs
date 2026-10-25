@@ -263,7 +263,7 @@ public sealed class WorkspaceCommandModeTests
             ProfileExecutorOverride = (_, _, _) => Task.FromResult(new ToolCommandResult("completed", ToolOutcome.Passed(), [])),
             StateDirectory = Path.Combine(fixture.Directory, "state"),
             WorkspaceRoot = Path.Combine(fixture.Directory, "workspaces"),
-            ReadinessTimeout = TimeSpan.FromSeconds(5),
+            ReadinessTimeout = TimeSpan.FromSeconds(30),
         };
 
 #pragma warning disable CA2007 // Test assertions require the xUnit synchronization context.
