@@ -1,0 +1,12 @@
+{
+  "command": [
+    "git",
+    "push",
+    "origin",
+    "main"
+  ],
+  "exitCode": 0,
+  "releaseSha": "c81e691f5cb3be7590c99a3bfc1518d2d899fd6c",
+  "capture": "Exact displayed push output copied from exec tool response ccdffd; stderr/stdout were not separately captured by that invocation. Spaces are retained as displayed.",
+  "compliance": "Server explicitly reports bypassed pull-request and status rules; no claim of branch-rule compliance is made."
+}

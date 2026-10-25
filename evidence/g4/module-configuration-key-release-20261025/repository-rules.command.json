@@ -1,0 +1,9 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/rules/branches/main"
+  ],
+  "exitCode": 0,
+  "observedAtUtc": "2026-10-25T09:39:54.799379+00:00"
+}

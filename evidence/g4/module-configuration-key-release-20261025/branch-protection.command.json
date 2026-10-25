@@ -1,0 +1,9 @@
+{
+  "command": [
+    "gh",
+    "api",
+    "repos/Hexalith/Hexalith.Builds/branches/main/protection"
+  ],
+  "exitCode": 1,
+  "observedAtUtc": "2026-10-25T09:39:55.536999+00:00"
+}
