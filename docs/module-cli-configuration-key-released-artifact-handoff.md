@@ -150,8 +150,8 @@ Exact release-source `Props/Directory.Packages.props` Git blob
 `b31e9a952317c0c62a1bf518208e1a2cef2a19e2` has SHA-256
 `553796eef36f2789f60bb47bc8902b5fb9f1df5b3a942cde7f0523768bf1d2a1`. Its declared CRLF checkout SHA-256 is
 `c43f62b33c765e28519b6c72058c6317649ec53963d7cbe7f0d0ddabb3898375`. Both
-[raw source blob](../evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/source-Directory.Packages.props) and
-[checkout bytes](../evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/source-checkout-Directory.Packages.props)
+[raw source blob (gzip)](../evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/source-Directory.Packages.props.gz) and
+[checkout bytes (gzip)](../evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/source-checkout-Directory.Packages.props.gz)
 are retained; these source and embedded JSON identities remain separate records.
 
 ## Unchanged declaration and all remaining adoption failures
