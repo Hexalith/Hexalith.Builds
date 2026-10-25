@@ -211,6 +211,19 @@ change.
 
 ## Test environment contract consumption
 
+The offline validator also exposes the same strict descriptor reader directly:
+
+```sh
+hexalith-module validate --environment /absolute/private/test-environment.json --output json
+```
+
+Use either `--environment` or `--manifest`; combining them, or combining an
+environment descriptor with `--adoption`, refuses. This route validates schema,
+document-local ownership and timing consistency without provisioning services,
+fetching schemas, accepting qualification evidence or granting execution authority.
+Platform's full-campaign environment uses this handoff contract.
+
+
 The Tooling `Hexalith.Builds.Tooling.TestEnvironment` namespace provides
 `TestEnvironmentContractReader.ReadDescriptor(path)` and `ReadResult(path)`.
 They validate strict UTF-8 JSON against the embedded
