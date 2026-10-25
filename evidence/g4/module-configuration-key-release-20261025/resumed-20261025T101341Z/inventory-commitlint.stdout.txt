@@ -1,0 +1,7 @@
+⧗   --- input ---
+docs(module): label inventory hashes explicitly
+
+Keep the original resumed inventory bytes in a verified gzip archive.
+Label readable inventory rows with separate path and SHA-256 fields
+to avoid treating file digests as authentication credentials.
+✔   found 0 problems, 0 warnings
