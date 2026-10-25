@@ -165,6 +165,8 @@ public sealed class CompositionRunListingTests
     [Theory]
     [InlineData("outcome")]
     [InlineData("activation")]
+    [InlineData("unreadable-outcome")]
+    [InlineData("unreadable-activation")]
     public async Task UnverifiableObservationNamesOwnerAsync(string observation)
     {
         using PlatformManifestTestWorkspace workspace = new();
@@ -174,7 +176,13 @@ public sealed class CompositionRunListingTests
         string peer = CompositionRunPlanFactory.NewRunId();
         await store.WriteAsync(state with { RunId = peer }, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string directory = Path.Combine(store.Directory, "diagnostics", state.RunId);
-        if (observation == "outcome")
+        if (observation is "unreadable-outcome" or "unreadable-activation")
+        {
+            CompositionWorkspace.CreatePrivateDirectory(directory);
+            string file = observation == "unreadable-outcome" ? "selected-test.json" : "execution-activation.json";
+            await File.WriteAllTextAsync(Path.Combine(directory, file), "not-json", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        else if (observation == "outcome")
         {
             ModuleTestRunRecord invalid = new(state.RunId, peer, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "unknown", new CompositionRunResources([], []));
             await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "selected-test.json"), invalid, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -188,6 +196,7 @@ public sealed class CompositionRunListingTests
         ToolCommandResult listed = await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
         listed.Environments.ShouldNotBeNull().Single().OwnerRunId.ShouldBe(peer);
         listed.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
+        listed.Diagnostics.Single().RuleId.ShouldBe("HXR024");
         listed.Diagnostics.Single().Message.ShouldContain(state.RunId);
     }
 

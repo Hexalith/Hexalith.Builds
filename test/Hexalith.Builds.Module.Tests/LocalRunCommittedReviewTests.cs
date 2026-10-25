@@ -186,6 +186,8 @@ public sealed class LocalRunCommittedReviewTests
         CompositionDownResult down = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
         down.Result.Outcome.ExitCode.ShouldNotBe(ToolExitCode.Success);
         down.Remaining.Unverified.ShouldBeTrue();
+        down.Remaining.WorkspaceIds.ShouldContain("workspace:" + state.RunId);
+        down.Result.RemainingResources.ShouldNotBeNull().WorkspaceIds.ShouldContain("workspace:" + state.RunId);
         Directory.Exists(state.Workspace).ShouldBeTrue();
         File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeTrue();
     }
@@ -203,6 +205,8 @@ public sealed class LocalRunCommittedReviewTests
         CompositionDownResult down = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
         down.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR023");
         down.Remaining.Unverified.ShouldBeTrue();
+        down.Remaining.WorkspaceIds.ShouldContain("workspace:" + state.RunId);
+        down.Result.RemainingResources.ShouldNotBeNull().WorkspaceIds.ShouldContain("workspace:" + state.RunId);
         ToolCommandResult listed = await CompositionRunListing.ReadAsync(engine.StateStore, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
         listed.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
         listed.Diagnostics.Single().RuleId.ShouldBe("HXR024");
@@ -227,10 +231,40 @@ public sealed class LocalRunCommittedReviewTests
         CompositionDownResult down = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
         down.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR023");
         down.Remaining.Unverified.ShouldBeTrue();
+        down.Remaining.WorkspaceIds.ShouldContain("workspace:" + state.RunId);
+        down.Result.RemainingResources.ShouldNotBeNull().WorkspaceIds.ShouldContain("workspace:" + state.RunId);
         ToolCommandResult listed = await CompositionRunListing.ReadAsync(engine.StateStore, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
         listed.Diagnostics.Single().RuleId.ShouldBe("HXR024");
         Directory.Exists(state.Workspace).ShouldBeTrue();
         File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeTrue();
+    }
+
+    /// <summary>Supported unavailable and cancelled outcomes remain valid, recoverable and visible to exact-owner operators.</summary>
+    /// <param name="status">The committed terminal status.</param>
+    /// <param name="exitCode">The matching terminal exit code.</param>
+    /// <param name="category">The terminal failure category.</param>
+    /// <returns>The validation, committed restoration and listing assertions.</returns>
+    [Theory]
+    [InlineData("unavailable", ToolExitCode.PrerequisiteUnavailable, ToolFailureCategory.PrerequisiteUnavailable)]
+    [InlineData("cancelled", ToolExitCode.Cancelled, ToolFailureCategory.Cancelled)]
+    public async Task SupportedTerminalMetadataRestoresAndListsAsync(string status, ToolExitCode exitCode, ToolFailureCategory category)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ToolOutcome outcome = new(exitCode, ToolPhase.Test, category, status == "unavailable" ? "HXR030" : "HXC130");
+        ModuleTestRunRecord terminal = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], status, outcome, DateTimeOffset.UtcNow, "unknown", new CompositionRunResources([], []));
+        CompositionRunStateStore.ValidOutcome(terminal, state.RunId).ShouldBeTrue();
+        string committed = Path.Combine(engine.StateStore.Directory, "diagnostics", state.RunId, "selected-test.json");
+        await CompositionDocumentStore.WriteAsync(committed, terminal, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord restored = (await engine.ReadCommittedOutcomeAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        restored.TerminalStatus.ShouldBe(status);
+        restored.TerminalOutcome.ShouldBe(outcome);
+        restored.TerminalAtUtc.ShouldBe(terminal.TerminalAtUtc);
+        ToolCommandResult listed = await CompositionRunListing.ReadAsync(engine.StateStore, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        listed.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+        listed.Environments.ShouldNotBeNull().Single().OwnerRunId.ShouldBe(state.RunId);
     }
 
     /// <summary>Undefined terminal enums and unsupported status/exit pairs never become restored command outcomes.</summary>
@@ -280,6 +314,8 @@ public sealed class LocalRunCommittedReviewTests
         CompositionDownResult down = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
         down.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR023");
         down.Remaining.Unverified.ShouldBeTrue();
+        down.Remaining.WorkspaceIds.ShouldContain("workspace:" + state.RunId);
+        down.Result.RemainingResources.ShouldNotBeNull().WorkspaceIds.ShouldContain("workspace:" + state.RunId);
         Directory.Exists(state.Workspace).ShouldBeTrue();
         File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeTrue();
     }

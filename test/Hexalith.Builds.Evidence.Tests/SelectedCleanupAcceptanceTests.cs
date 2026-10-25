@@ -81,7 +81,10 @@ public sealed class SelectedCleanupAcceptanceTests
             else
             {
                 accepted.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldContain("HXE205");
-                ready.Diagnostics.Select(diagnostic => diagnostic.RuleId).ShouldContain("HXE149");
+                ToolDiagnostic cleanup = ready.Diagnostics.First(diagnostic => diagnostic.RuleId == "HXE149");
+                cleanup.Message.ShouldContain("for a selected run, verified environment cleanup");
+                cleanup.Hint.ShouldNotBeNull().ShouldContain("verified cleanup");
+                cleanup.Hint.ShouldContain("removed resources and an empty remainder");
             }
         }
         finally

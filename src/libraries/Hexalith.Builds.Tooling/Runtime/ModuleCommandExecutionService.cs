@@ -1212,7 +1212,8 @@ public static class ModuleCommandExecutionService
             }
             catch (OperationCanceledException)
             {
-                if (!cancellationToken.IsCancellationRequested && startupToken?.IsCancellationRequested == true && session?.Plan.ExecutionTiming is null)
+                bool ownerCancelled = cancellationToken.IsCancellationRequested;
+                if (!ownerCancelled && startupToken?.IsCancellationRequested == true && session?.Plan.ExecutionTiming is null)
                 {
                     engine ??= new CompositionEngine(options);
                     CompositionStartResult expired = await engine.ReportSetupTimeoutAsync(startedUtc, startupDeadline ?? CompositionStartupDeadlineResolver.Resolve(validation.Declarations, options.ReadinessTimeout)).ConfigureAwait(false);
@@ -1222,8 +1223,8 @@ public static class ModuleCommandExecutionService
                 }
                 else
                 {
-                    fallbackTerminalCause = cancellationToken.IsCancellationRequested ? "run-cancelled" : "execution-timeout";
-                    result = cancellationToken.IsCancellationRequested
+                    fallbackTerminalCause = ownerCancelled ? "run-cancelled" : "execution-timeout";
+                    result = ownerCancelled
                         ? PlatformRefusal("HXC130", "The owner cancelled the selected execution.", ToolExitCode.Cancelled) with { Status = "cancelled", RunId = ownedRunId }
                         : PlatformRefusal("HXT007", "The selected execution exhausted its finite execution lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
                 }
@@ -1270,7 +1271,7 @@ public static class ModuleCommandExecutionService
                     string initialDisposition = retain && !passed && !withdrawn ? "retained" : "unknown";
                     using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
                     record = session is null
-                        ? await CompositionDocumentStore.TryReadAsync<ModuleTestRunRecord>(Path.Combine(options.StateDirectory, "diagnostics", ownedRunId, "selected-test.json"), recording.Token).ConfigureAwait(false)
+                        ? await engine!.ReadCommittedOutcomeAsync(ownedRunId, recording.Token, waitForLock: true).ConfigureAwait(false)
                         : await engine!.RecordTestOutcomeAsync(ownedRunId, session.Readiness.Resources, result, initialDisposition, new CompositionRunResources([], [], Unverified: true), recording.Token, native, waitForLock: false, executionTiming: session.Plan.ExecutionTiming, environmentBindings: session.EnvironmentBindings, terminalCause: native?.TerminalCause ?? fallbackTerminalCause, testObservation: session.Readiness.TestObservation, archiveMetadata: false).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)

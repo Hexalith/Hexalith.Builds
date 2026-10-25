@@ -457,8 +457,8 @@ before child launch, so running suites expose their actual independent deadline.
 Legacy unknowns stay unavailable;
 attachments are empty and admission/hold information is explicitly unsupported.
 Exact cleanup accepts an omitted, missing or changed manifest, removes only the
-requested owner's resources and claims, and can be retried safely. Incomplete
-cleanup exposes exact known container/process/workspace/claim leftovers and
+requested owner's resources and claims, and can be retried safely. Exporting
+`--evidence` requires an explicit `--manifest`. Incomplete cleanup exposes exact known container/process/workspace/claim leftovers and
 explicit discovery uncertainty.
 Valid listing rows remain visible alongside an incomplete-list diagnostic when
 another state file is corrupt. Both output formats include known leftovers, and

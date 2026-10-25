@@ -534,7 +534,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
-            return IncompleteDown();
+            return IncompleteDown(runId);
         }
 
         using CancellationTokenSource bound = TeardownBound(state?.SelectedTest);
@@ -610,9 +610,10 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <summary>Recovers the committed first observation without rerunning optional publication work.</summary>
     /// <param name="runId">The exact owning run.</param>
     /// <param name="cancellationToken">The independent finite metadata allowance.</param>
+    /// <param name="waitForLock">Whether to wait for concurrent finalization within the metadata allowance.</param>
     /// <returns>The committed observation when available.</returns>
     /// <exception cref="IOException">The recorded owner cannot be verified.</exception>
-    internal async Task<ModuleTestRunRecord?> ReadCommittedOutcomeAsync(string runId, CancellationToken cancellationToken)
+    internal async Task<ModuleTestRunRecord?> ReadCommittedOutcomeAsync(string runId, CancellationToken cancellationToken, bool waitForLock = false)
     {
         string directory = DiagnosticsDirectory(runId);
         if (!Directory.Exists(directory))
@@ -620,7 +621,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             return null;
         }
 
-        FileStream outcomeLock = await OpenOutcomeLockAsync(Path.Combine(directory, "outcome.lock"), cancellationToken, waitForLock: false).ConfigureAwait(false);
+        FileStream outcomeLock = await OpenOutcomeLockAsync(Path.Combine(directory, "outcome.lock"), cancellationToken, waitForLock).ConfigureAwait(false);
         await using (outcomeLock.ConfigureAwait(false))
         {
             ModuleTestRunRecord? record = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestRunRecord>(Path.Combine(directory, "selected-test.json"), cancellationToken).ConfigureAwait(false);
@@ -1144,18 +1145,23 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     private static IReadOnlyList<int> ProjectProcessIds(IReadOnlyList<CompositionResourceReadiness> resources) =>
         [.. resources.Where(resource => resource.ProcessId is > 0).Select(resource => resource.ProcessId!.Value).Distinct().Order()];
 
-    private static CompositionDownResult IncompleteDown(CompositionRunResources? known = null, bool recordingFailed = false)
+    private static IReadOnlyList<string> Rules(IReadOnlyList<ToolDiagnostic> diagnostics) => [.. diagnostics.Select(diagnostic => diagnostic.RuleId).Where(rule => rule.Length is >= 5 and <= 8 && rule.StartsWith("HX", StringComparison.Ordinal) && rule.All(char.IsAsciiLetterOrDigit)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+
+    private static bool ValidOutcome(ModuleTestRunRecord record, string runId) => CompositionRunStateStore.ValidOutcome(record, runId);
+
+    private CompositionDownResult IncompleteDown(string runId, CompositionRunResources? known = null, bool recordingFailed = false)
     {
-        CompositionRunResources remaining = (known ?? new CompositionRunResources([], [], true)) with { Unverified = true, DiscoveryFailures = [.. known?.DiscoveryFailures ?? [], "cleanup-verification"] };
+        CompositionRunResources remaining = (known ?? new CompositionRunResources([], [], true)) with
+        {
+            Unverified = true,
+            WorkspaceIds = [.. (known?.WorkspaceIds ?? []).Concat(Directory.Exists(WorkspaceFor(runId)) ? ["workspace:" + runId] : []).Distinct(StringComparer.Ordinal)],
+            DiscoveryFailures = [.. known?.DiscoveryFailures ?? [], "cleanup-verification"],
+        };
         ToolDiagnostic diagnostic = Diagnostic("HXR023", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Owned cleanup could not be verified within its existing allowance.", "down", "Retry down for the same run identity.");
         ToolDiagnostic[] diagnostics = recordingFailed ? [RecordingFailure(), diagnostic] : [diagnostic];
         ToolDiagnostic first = diagnostics[0];
         return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(first.Phase, first.Category, first.RuleId, recordingFailed ? ToolExitCode.EvidenceSchemaOrPolicy : ToolExitCode.TopologyOrLifecycle), diagnostics) { RemainingResources = remaining }, remaining);
     }
-
-    private static IReadOnlyList<string> Rules(IReadOnlyList<ToolDiagnostic> diagnostics) => [.. diagnostics.Select(diagnostic => diagnostic.RuleId).Where(rule => rule.Length is >= 5 and <= 8 && rule.StartsWith("HX", StringComparison.Ordinal) && rule.All(char.IsAsciiLetterOrDigit)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
-
-    private static bool ValidOutcome(ModuleTestRunRecord record, string runId) => CompositionRunStateStore.ValidOutcome(record, runId);
 
     private async Task<bool> TryRecordStoppingOutcomeAsync(string runId, IReadOnlyList<CompositionResourceReadiness> resources, ToolCommandResult result, string disposition, CompositionRunResources remaining, List<ToolDiagnostic> diagnostics, string? terminalCause = null)
     {
@@ -1223,7 +1229,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         {
             if (exception is OperationCanceledException || bound.IsCancellationRequested)
             {
-                return IncompleteDown(known);
+                return IncompleteDown(runId, known);
             }
 
             // Unavailable bookkeeping must not prevent exact-owner teardown within the existing allowance.
@@ -1237,7 +1243,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
-            return IncompleteDown(known, recordingFailed);
+            return IncompleteDown(runId, known, recordingFailed);
         }
     }
 
@@ -1292,7 +1298,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         {
             if (bound.IsCancellationRequested)
             {
-                return IncompleteDown(state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Count > 0);
+                return IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Count > 0);
             }
 
             if (!Directory.Exists(directory))
@@ -1314,7 +1320,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
-            return IncompleteDown(state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Count > 0);
+            return IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Count > 0);
         }
 
         if (state?.AppHostProcessId is int processId && TryGetRecordedProcess(processId, state.AppHostStartedAt) is Process recorded)
