@@ -1,0 +1,3 @@
+failed: UsageOrManifest
+HXP002 Manifest Manifest source=module/hexalith.module-manifest.v2.json field=modules[0].integration.secrets[1].configurationKey: Use a nonblank value matching the schema's declared format and length.
+HXP002 Manifest Manifest source=module/hexalith.module-manifest.v2.json field=modules[0].runtime.extensions[0].configurationInputs[12].key: Use a nonblank value matching the schema's declared format and length.

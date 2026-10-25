@@ -1,0 +1,56 @@
+  Determining projects to restore...
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.csproj (in 501 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj (in 515 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Inventory/P0Fixture.Inventory.csproj (in 501 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Evidence.Cli/Hexalith.Builds.Evidence.Cli.csproj (in 508 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj (in 501 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj (in 501 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj (in 503 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj (in 503 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj (in 501 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.csproj (in 501 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj (in 518 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.csproj (in 420 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/Hexalith.Builds.Module.UiHost.csproj (in 18 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj (in 737 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj (in 737 ms).
+  P0Fixture.Ui -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll
+  P0Fixture.Ui.Descriptor -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+  P0Fixture.Orders.Descriptor -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll
+  P0Fixture.Inventory.Descriptor -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll
+  P0Fixture.Inventory -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.dll
+  P0Fixture.Orders -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders/P0Fixture.Orders.dll
+  Hexalith.Builds.Module.UiHost -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/bin/Release/net10.0/Hexalith.Builds.Module.UiHost.dll
+  Hexalith.Builds.Module.EventStoreHost -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Release/net10.0/Hexalith.Builds.Module.EventStoreHost.dll
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin/Release/net10.0/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Release/net10.0/Hexalith.Builds.Module.Cli.dll
+  Hexalith.Builds.Evidence.Cli -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Evidence.Cli/bin/Release/net10.0/Hexalith.Builds.Evidence.Cli.dll
+  Hexalith.Builds.Module.AppHost -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/bin/Release/net10.0/Hexalith.Builds.Module.AppHost.dll
+  Hexalith.Builds.Evidence.Tests -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Evidence.Tests/bin/Release/net10.0/Hexalith.Builds.Evidence.Tests.dll
+  Hexalith.Builds.Tooling.IntegrationTests -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Tooling.IntegrationTests/bin/Release/net10.0/Hexalith.Builds.Tooling.IntegrationTests.dll
+  Hexalith.Builds.Module.Tests -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Release/net10.0/Hexalith.Builds.Module.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:01:06.63
+Packing Hexalith.Builds.Module.Cli at 0.0.0-app-api-token.20261025 in Release configuration.
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin/Release/net10.0/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Release/net10.0/Hexalith.Builds.Module.Cli.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Release/net10.0/Hexalith.Builds.Module.Cli.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Release/net10.0/publish/
+  Successfully created package '/tmp/module-cli-compat-88cl840t/packages/Hexalith.Builds.Module.Cli.0.0.0-app-api-token.20261025.nupkg'.
+  Successfully created package '/tmp/module-cli-compat-88cl840t/packages/Hexalith.Builds.Module.Cli.0.0.0-app-api-token.20261025.snupkg'.
+Packing Hexalith.Builds.Evidence.Cli at 0.0.0-app-api-token.20261025 in Release configuration.
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin/Release/net10.0/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Evidence.Cli -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Evidence.Cli/bin/Release/net10.0/Hexalith.Builds.Evidence.Cli.dll
+  Hexalith.Builds.Evidence.Cli -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Evidence.Cli/bin/Release/net10.0/Hexalith.Builds.Evidence.Cli.dll
+  Hexalith.Builds.Evidence.Cli -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Evidence.Cli/bin/Release/net10.0/publish/
+  Successfully created package '/tmp/module-cli-compat-88cl840t/packages/Hexalith.Builds.Evidence.Cli.0.0.0-app-api-token.20261025.nupkg'.
+  Successfully created package '/tmp/module-cli-compat-88cl840t/packages/Hexalith.Builds.Evidence.Cli.0.0.0-app-api-token.20261025.snupkg'.
+Packaged Platform loader passed offline; contract Hexalith.Builds.Tooling, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null; runtime start reached the run-private Aspire store '/tmp/module-cli-compat-88cl840t/packages/platform-loader/workspace/aspire-store/.aspire'; no resources started. Receipt: /tmp/module-cli-compat-88cl840t/packages/platform-loader
+G-4 tool package inventory recorded at '/tmp/module-cli-compat-88cl840t/packages/g4-tool-package-inventory.json'.

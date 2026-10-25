@@ -1,0 +1,32 @@
+  Determining projects to restore...
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/Hexalith.Builds.Module.UiHost.csproj (in 586 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.csproj (in 540 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj (in 554 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.csproj (in 547 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.csproj (in 563 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj (in 579 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj (in 610 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj (in 582 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Ui/P0Fixture.Ui.csproj (in 541 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj (in 679 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.Inventory/P0Fixture.Inventory.csproj (in 584 ms).
+  Restored /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj (in 692 ms).
+  P0Fixture.Inventory -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.dll
+  P0Fixture.Inventory.Descriptor -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll
+  P0Fixture.Orders -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders/P0Fixture.Orders.dll
+  P0Fixture.Orders.Descriptor -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll
+  P0Fixture.Ui -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll
+  P0Fixture.Ui.Descriptor -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.126.1, CommunityToolkit.Aspire.Hosting.Dapr/13.6.1-beta.935, required range 13.6.1-beta.935 for net10.0.
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll
+  Hexalith.Builds.Module.EventStoreHost -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Debug/net10.0/Hexalith.Builds.Module.EventStoreHost.dll
+  Hexalith.Builds.Module.UiHost -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/bin/Debug/net10.0/Hexalith.Builds.Module.UiHost.dll
+  Hexalith.Builds.Module.AppHost -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/bin/Debug/net10.0/Hexalith.Builds.Module.AppHost.dll
+  Hexalith.Builds.Module.Tests -> /home/administrator/projects/hexalith/conversations/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:02:06.71

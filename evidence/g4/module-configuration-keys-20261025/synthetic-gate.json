@@ -1,0 +1,16 @@
+{
+  "command": "pwsh -NoProfile -File ./Tools/test-g4-tool-package-contract-gate.ps1",
+  "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+  "exitCode": 0,
+  "capture": "combined stdout/stderr",
+  "observedAfterCompletionAtUtc": "2026-10-25T09:18:22.977793+00:00",
+  "startedAtUtc": null,
+  "startTimeRecorded": false,
+  "log": {
+    "path": "evidence/g4/module-configuration-keys-20261025/synthetic-gate.combined.txt",
+    "sha256": "bf95f87fa4160b3d1e0248aacf8f9be29b0697ad8336f464bbd5f8eca7fb95dd",
+    "sizeBytes": 1986
+  },
+  "result": "five injected refusals; two SDK positive formats and eighteen malformed controls; 63 artifact validator scenarios passed",
+  "reportedBy": "bmad-build packaging subagent; raw retained command output ends in passing gate summary"
+}

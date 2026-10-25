@@ -1,0 +1,14 @@
+{
+  "assembly": "/tmp/module-cli-compat-88cl840t/tool/.store/hexalith.builds.module.cli/0.0.0-app-api-token.20261025/hexalith.builds.module.cli/0.0.0-app-api-token.20261025/tools/net10.0/any/Hexalith.Builds.Tooling.dll",
+  "version": "0.0.0-app-api-token.20261025+72e48d9544bacc218a5fa8290fc3f68ffdea8974",
+  "resource": "Hexalith.Builds.Tooling.Manifest.hexalith.module-manifest.v2.json",
+  "output": "/tmp/module-cli-compat-88cl840t/candidate-embedded-schema.json",
+  "sha256": "06D6804F3B111E803EDD0D9142B03F36DF344E26E2D71E50E2291FE15039DAA4",
+  "configurationKey": {
+    "description": "Colon-separated configuration segments start with an ASCII letter and contain alphanumeric words separated by single underscores, preserving SDK keys such as APP_API_TOKEN.",
+    "type": "string",
+    "minLength": 1,
+    "maxLength": 256,
+    "pattern": "^[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*(?::[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*)*(?![\\s\\S])"
+  }
+}

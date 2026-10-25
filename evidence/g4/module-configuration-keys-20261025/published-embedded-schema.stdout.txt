@@ -1,0 +1,13 @@
+{
+  "assembly": "/home/administrator/.nuget/packages/hexalith.builds.module.cli/4.35.2/tools/net10.0/any/Hexalith.Builds.Tooling.dll",
+  "version": "4.35.2+4248b8c70cb35ba79fdd7e4dd63049d4c73211a0",
+  "resource": "Hexalith.Builds.Tooling.Manifest.hexalith.module-manifest.v2.json",
+  "output": "/tmp/module-cli-compat-88cl840t/published-embedded-schema.json",
+  "sha256": "888D719B58493B4EBE14975E96262ECA87E00AFEE8FE3A451A83AC7DA366293E",
+  "configurationKey": {
+    "type": "string",
+    "minLength": 1,
+    "maxLength": 256,
+    "pattern": "^[A-Za-z][A-Za-z0-9]*(?::[A-Za-z][A-Za-z0-9]*)*(?![\\s\\S])"
+  }
+}

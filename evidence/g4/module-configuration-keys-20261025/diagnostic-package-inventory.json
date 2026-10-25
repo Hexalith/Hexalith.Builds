@@ -1,0 +1,79 @@
+{
+  "schema": "hexalith.g4-tool-package-inventory.v1",
+  "version": "0.0.0-app-api-token.20261025",
+  "configuration": "Release",
+  "packages": [
+    {
+      "id": "Hexalith.Builds.Evidence.Cli",
+      "version": "0.0.0-app-api-token.20261025",
+      "nupkg": {
+        "file": "Hexalith.Builds.Evidence.Cli.0.0.0-app-api-token.20261025.nupkg",
+        "sha256": "E5B7BBB11DC6CFF67B3780A911980293934E2E064428FBE7A31DD643B1BBD9C5",
+        "sizeBytes": 2691523
+      },
+      "snupkg": {
+        "file": "Hexalith.Builds.Evidence.Cli.0.0.0-app-api-token.20261025.snupkg",
+        "sha256": "81C55EE7F259EA1ADA893834F985E772DB1DF65DFCEAAF5746B7F665EFA1C50E",
+        "sizeBytes": 145018
+      }
+    },
+    {
+      "id": "Hexalith.Builds.Module.Cli",
+      "version": "0.0.0-app-api-token.20261025",
+      "nupkg": {
+        "file": "Hexalith.Builds.Module.Cli.0.0.0-app-api-token.20261025.nupkg",
+        "sha256": "9185CB993E24A52E8A9ED1066A42199FC13E4357DE710DD0AF0F851942A3F646",
+        "sizeBytes": 37029684
+      },
+      "snupkg": {
+        "file": "Hexalith.Builds.Module.Cli.0.0.0-app-api-token.20261025.snupkg",
+        "sha256": "8B0AAF170F5CF784EB75D802CEFEFE418B42C15244FBFFCBED79677F44055A0C",
+        "sizeBytes": 342779
+      }
+    }
+  ],
+  "qualificationEvidence": [
+    {
+      "file": "qualification-evidence/packaged-seed-subscriptions.json",
+      "sha256": "7988A84BC9F8150065D829D6431F687008B913B670C7F6F87400535918E93917",
+      "sizeBytes": 1007
+    },
+    {
+      "file": "qualification-evidence/qualification.log",
+      "sha256": "0703B9D2D2B93503E5058CF49B41AEBFFC09FF896E8F189A4D0E8973C3D03F8A",
+      "sizeBytes": 30394
+    }
+  ],
+  "qualification": {
+    "packageBuild": {
+      "mode": "fixture",
+      "result": "passed"
+    },
+    "sourceValidation": {
+      "mode": "skipped",
+      "result": "not-run"
+    },
+    "controls": {
+      "mode": "skipped",
+      "result": "not-run"
+    },
+    "fixtures": {
+      "mode": "not-used",
+      "root": null,
+      "sha256": null,
+      "files": []
+    },
+    "sourceTree": {
+      "clean": false,
+      "revision": "72e48d9544bacc218a5fa8290fc3f68ffdea8974"
+    },
+    "releaseEligible": false,
+    "ineligibilityReasons": [
+      "source validation was skipped (-SkipSourceValidation).",
+      "qualification controls were not required (-RequireControls not set).",
+      "fixture provenance was 'not-used', not repository-tracked.",
+      "package build mode was 'fixture', not official.",
+      "source tree was not clean:  M Tools/test-g4-tool-package-contract-gate.ps1;  M Tools/test-g4-tool-package-contracts.ps1; ?? evidence/g4/module-configuration-keys-20261025/"
+    ]
+  }
+}

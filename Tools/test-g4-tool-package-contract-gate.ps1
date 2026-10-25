@@ -67,6 +67,34 @@ function global:dotnet {
         $global:LASTEXITCODE = 1
         return
     }
+    elseif ($joinedArguments -like '*tool run hexalith-module*validate*platform-sdk-key.json*') {
+        $global:HexalithG4SdkPositiveCalls++
+        if ($global:HexalithG4GateDotNetMode -ceq 'sdk-rejected') {
+            '{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXP002"},"diagnostics":[]}' + "`n"
+            $global:LASTEXITCODE = 1
+            return
+        }
+        '{"status":"validated","outcome":{"exitCode":"Success","phase":"None","category":"None","ruleId":null},"diagnostics":[]}' + "`n"
+    }
+    elseif ($joinedArguments -like '*tool run hexalith-module*validate*platform-invalid-key.json*') {
+        $global:HexalithG4SdkNegativeCalls++
+        if ($global:HexalithG4GateDotNetMode -ceq 'malformed-accepted') {
+            '{"status":"validated","outcome":{"exitCode":"Success","phase":"None","category":"None","ruleId":null},"diagnostics":[]}' + "`n"
+            $global:LASTEXITCODE = 0
+            return
+        }
+        $manifestPath = Join-Path (Split-Path (Split-Path $env:NUGET_PACKAGES)) 'platform-invalid-key.json'
+        $manifest = [IO.File]::ReadAllText($manifestPath) | ConvertFrom-Json
+        $field = if ($manifest.modules[0].integration.secrets[0].configurationKey -cne 'APP_API_TOKEN') {
+            'modules[0].integration.secrets[0].configurationKey'
+        } else { 'modules[0].runtime.extensions[0].configurationInputs[0].key' }
+        if ($global:HexalithG4GateDotNetMode -ceq 'wrong-field') { $field = 'modules[0].unknown' }
+        if ($global:HexalithG4GateDotNetMode -ceq 'input-mutated') { [IO.File]::AppendAllText($manifestPath, ' ') }
+        (@{ status = 'failed'; outcome = @{ exitCode = 'UsageOrManifest'; phase = 'Manifest'; category = 'Manifest'; ruleId = 'HXP002' }
+            diagnostics = @(@{ ruleId = 'HXP002'; source = 'platform-invalid-key.json'; field = $field; message = 'Invalid key.' }) } | ConvertTo-Json -Depth 6 -Compress) + "`n"
+        $global:LASTEXITCODE = 1
+        return
+    }
     elseif ($joinedArguments -like '*tool run hexalith-module*validate*') {
         '{"status":"validated","outcome":{"exitCode":"Success","phase":"None","category":"None","ruleId":null},"diagnostics":[]}' + "`n"
     }
@@ -162,6 +190,8 @@ try {
             -Destination (Join-Path $testRoot $schemaName)
     }
     Copy-Item -LiteralPath $catalogToolingAssembly -Destination (Join-Path $testRoot 'Hexalith.Builds.Tooling.dll')
+    $faultAssembly = Join-Path $testRoot 'FaultManifestTooling.dll'
+    Add-Type -TypeDefinition 'public sealed class FaultManifestTooling {}' -OutputAssembly $faultAssembly
     [IO.File]::WriteAllText($fixtureBuildPath, @'
 param([string] $Version, [string] $OutputDirectory, [switch] $DeferInventory)
 $null = $DeferInventory
@@ -177,7 +207,8 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
                 try { $writer.Write([IO.File]::ReadAllText((Join-Path $PSScriptRoot $schemaName))) }
                 finally { $writer.Dispose() }
             }
-            $null = [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, (Join-Path $PSScriptRoot 'Hexalith.Builds.Tooling.dll'), 'tools/net10.0/any/Hexalith.Builds.Tooling.dll')
+            $toolingName = if ($global:HexalithG4GateDotNetMode -ceq 'embedded-schema') { 'FaultManifestTooling.dll' } else { 'Hexalith.Builds.Tooling.dll' }
+            $null = [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, (Join-Path $PSScriptRoot $toolingName), 'tools/net10.0/any/Hexalith.Builds.Tooling.dll')
         }
         finally { $archive.Dispose() }
     }
@@ -205,6 +236,31 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
         throw 'Post-package failure must retain package evidence without exposing a complete inventory.'
     }
 
+    foreach ($fault in @(
+        @{ mode = 'embedded-schema'; message = 'installed tooling omitted its embedded hexalith.module-manifest.v2.json schema' },
+        @{ mode = 'sdk-rejected'; message = 'Packaged SDK configuration key (human) was expected to pass but exited 1.' },
+        @{ mode = 'malformed-accepted'; message = 'Packaged malformed configuration key exited 0, expected 1.' },
+        @{ mode = 'wrong-field'; message = 'lost its exact source and field diagnostic' },
+        @{ mode = 'input-mutated'; message = 'modified its malformed configuration input' }
+    )) {
+        $faultOutput = Join-Path $testRoot $fault.mode
+        try {
+            $global:HexalithG4GateDotNetMode = $fault.mode
+            $global:HexalithG4SdkPositiveCalls = 0
+            $global:HexalithG4SdkNegativeCalls = 0
+            & $qualificationPath -Version '0.0.0-gate.5' -PackageDirectory $faultOutput `
+                -SkipSourceValidation -RetainPackageDirectory -PackageBuildScriptPath $fixtureBuildPath
+            throw "Configuration-key fault '$($fault.mode)' was accepted."
+        }
+        catch {
+            if (-not $_.Exception.Message.Contains($fault.message, [StringComparison]::Ordinal)) { throw }
+        }
+        if (Test-Path -LiteralPath (Join-Path $faultOutput 'g4-tool-package-inventory.json')) {
+            throw "Configuration-key fault '$($fault.mode)' exposed a complete inventory."
+        }
+        Write-Host "Configuration-key gate rejected $($fault.mode)."
+    }
+
     $duplicateFixtureRoot = Join-Path $testRoot 'duplicate-fixtures'
     $null = New-Item -ItemType Directory -Path $duplicateFixtureRoot
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../test/fixtures/module') `
@@ -218,6 +274,8 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
     $duplicateOutputDirectory = Join-Path $testRoot 'duplicate-output'
     try {
         $global:HexalithG4GateDotNetMode = 'pass'
+        $global:HexalithG4SdkPositiveCalls = 0
+        $global:HexalithG4SdkNegativeCalls = 0
         & $qualificationPath -Version '0.0.0-gate.4' -PackageDirectory $duplicateOutputDirectory `
             -SkipSourceValidation -RequireControls -RetainPackageDirectory -FixtureRoot $duplicateFixtureRoot `
             -PackageBuildScriptPath $fixtureBuildPath
@@ -231,10 +289,14 @@ foreach ($id in @('Hexalith.Builds.Module.Cli', 'Hexalith.Builds.Evidence.Cli'))
     if (Test-Path -LiteralPath (Join-Path $duplicateOutputDirectory 'g4-tool-package-inventory.json')) {
         throw 'Duplicate qualification evidence names exposed a complete inventory.'
     }
+    if ($global:HexalithG4SdkPositiveCalls -ne 2 -or $global:HexalithG4SdkNegativeCalls -ne 18) {
+        throw 'The installed SDK-key positive and malformed-key controls did not all execute.'
+    }
 }
 finally {
     Remove-Item Function:\dotnet -Force -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4GateDotNetMode -Scope Global -ErrorAction SilentlyContinue
+    Remove-Variable -Name HexalithG4SdkPositiveCalls, HexalithG4SdkNegativeCalls -Scope Global -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
 

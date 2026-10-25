@@ -1038,8 +1038,9 @@ try {
         $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($toolingPath))
         [IO.Compression.ZipFileExtensions]::ExtractToFile($toolingEntry, $toolingPath)
         $toolingAssembly = [Reflection.Assembly]::LoadFrom($toolingPath)
-        foreach ($schemaName in @('hexalith.test-environment.v1.json', 'hexalith.test-result.v1.json')) {
-            $schemaStream = $toolingAssembly.GetManifestResourceStream("Hexalith.Builds.Tooling.TestEnvironment.$schemaName")
+        foreach ($schemaName in @('hexalith.module-manifest.v2.json', 'hexalith.test-environment.v1.json', 'hexalith.test-result.v1.json')) {
+            $schemaNamespace = if ($schemaName -ceq 'hexalith.module-manifest.v2.json') { 'Manifest' } else { 'TestEnvironment' }
+            $schemaStream = $toolingAssembly.GetManifestResourceStream("Hexalith.Builds.Tooling.$schemaNamespace.$schemaName")
             if ($null -eq $schemaStream) { throw "The installed tooling omitted its embedded $schemaName schema." }
             $schemaReader = [IO.StreamReader]::new($schemaStream)
             try { $embeddedSchema = $schemaReader.ReadToEnd() }
@@ -1100,6 +1101,67 @@ try {
     }
     if ((Get-FileHash -LiteralPath $platformManifest -Algorithm SHA256).Hash -cne $platformInputHash) {
         throw 'Packaged validation modified its declaration input.'
+    }
+
+    # Qualify the SDK spelling against the installed tool, separately from the
+    # shared fixture, and retain strict HXP002 diagnostics for each key field.
+    $sdkManifest = Join-Path $consumerRoot 'platform-sdk-key.json'
+    $sdkDeclaration = [IO.File]::ReadAllText($platformManifest) | ConvertFrom-Json -AsHashtable
+    $sdkDeclaration.modules[0].integration.secrets[0].configurationKey = 'APP_API_TOKEN'
+    $sdkInput = $sdkDeclaration.modules[0].runtime.extensions[0].configurationInputs[0]
+    $sdkInput.key = 'APP_API_TOKEN'
+    $sdkInput.source = 'secret'
+    $sdkInput.reference = $sdkDeclaration.modules[0].integration.secrets[0].name
+    $sdkDeclarationJson = $sdkDeclaration | ConvertTo-Json -Depth 64
+    [IO.File]::WriteAllText($sdkManifest, $sdkDeclarationJson)
+    $sdkInputHash = (Get-FileHash -LiteralPath $sdkManifest -Algorithm SHA256).Hash
+    foreach ($format in @('human', 'json')) {
+        $sdkResult = Invoke-ToolCommand -Command 'hexalith-module' `
+            -Arguments @('validate', '--manifest', 'platform-sdk-key.json', '--output', $format) -WorkingDirectory $consumerRoot
+        Assert-PositiveResult -Result $sdkResult -Description "Packaged SDK configuration key ($format)"
+        if ($format -ceq 'json') {
+            $null = Assert-JsonToolResult -Result $sdkResult -Description 'Packaged SDK configuration key' `
+                -Status 'validated' -ExitCode 0 -OutcomeExitCode 'Success' -Phase 'None' -Category 'None' `
+                -OutcomeRuleId $null -RuleIds @()
+        }
+        elseif (-not $sdkResult.Output.Contains('validated', [StringComparison]::Ordinal)) {
+            throw 'Packaged SDK configuration key omitted its human validation result.'
+        }
+        if ((Get-FileHash -LiteralPath $sdkManifest -Algorithm SHA256).Hash -cne $sdkInputHash) {
+            throw 'Packaged validation modified its SDK configuration input.'
+        }
+    }
+
+    $invalidManifest = Join-Path $consumerRoot 'platform-invalid-key.json'
+    $keyFields = @('modules[0].integration.secrets[0].configurationKey', 'modules[0].runtime.extensions[0].configurationInputs[0].key')
+    $invalidKeys = @('', ' ', '1TOKEN', '_TOKEN', 'TOKEN_', 'APP__API_TOKEN', 'App::Token', "APP_API_TOKEN`n", ('A' * 257))
+    foreach ($keyField in $keyFields) {
+        foreach ($invalidKey in $invalidKeys) {
+            $invalidDeclaration = $sdkDeclarationJson | ConvertFrom-Json -AsHashtable
+            if ($keyField -ceq $keyFields[0]) {
+                $invalidDeclaration.modules[0].integration.secrets[0].configurationKey = $invalidKey
+            }
+            else {
+                $invalidDeclaration.modules[0].runtime.extensions[0].configurationInputs[0].key = $invalidKey
+            }
+            [IO.File]::WriteAllText($invalidManifest, ($invalidDeclaration | ConvertTo-Json -Depth 64))
+            $invalidInputHash = (Get-FileHash -LiteralPath $invalidManifest -Algorithm SHA256).Hash
+            $escapedKey = ConvertTo-Json -InputObject $invalidKey -Compress
+            $qualificationLog.Add("Packaged malformed configuration key field=$keyField key=$escapedKey inputSha256=$invalidInputHash")
+            $invalidResult = Invoke-ToolCommand -Command 'hexalith-module' `
+                -Arguments @('validate', '--manifest', 'platform-invalid-key.json', '--output', 'json') -WorkingDirectory $consumerRoot
+            $invalidReport = Assert-JsonToolResult -Result $invalidResult -Description 'Packaged malformed configuration key' `
+                -Status 'failed' -ExitCode 1 -OutcomeExitCode 'UsageOrManifest' -Phase 'Manifest' -Category 'Manifest' `
+                -OutcomeRuleId 'HXP002' -RuleIds @('HXP002')
+            if ($invalidReport.diagnostics.Count -ne 1 -or
+                $invalidReport.diagnostics[0].source -cne 'platform-invalid-key.json' -or
+                $invalidReport.diagnostics[0].field -cne $keyField) {
+                throw 'Packaged malformed configuration key lost its exact source and field diagnostic.'
+            }
+            if ((Get-FileHash -LiteralPath $invalidManifest -Algorithm SHA256).Hash -cne $invalidInputHash) {
+                throw 'Packaged validation modified its malformed configuration input.'
+            }
+        }
     }
 
     $legacyEnrollmentManifest = Join-Path $consumerRoot 'platform-legacy.json'

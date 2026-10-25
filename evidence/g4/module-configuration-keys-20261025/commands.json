@@ -1,0 +1,308 @@
+[
+  {
+    "id": "published-validation",
+    "command": "dotnet tool run hexalith-module -- validate --manifest module/hexalith.module-manifest.v2.json",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations",
+    "startedAtUtc": "2026-10-25T09:10:46.135674+00:00",
+    "finishedAtUtc": "2026-10-25T09:10:46.516618+00:00",
+    "exitCode": 1,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/published-validation.stdout.txt",
+      "sha256": "bc037e128cae9965e41ebb9c79ae42d51a432e95acf1102acaa7ef5fe498bdf0",
+      "sizeBytes": 436
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/published-validation.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "published-embedded-schema",
+    "command": "pwsh -NoProfile -File /tmp/module-cli-compat-88cl840t/inspect-schema.ps1 -AssemblyPath /home/administrator/.nuget/packages/hexalith.builds.module.cli/4.35.2/tools/net10.0/any/Hexalith.Builds.Tooling.dll -OutputPath /tmp/module-cli-compat-88cl840t/published-embedded-schema.json",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-25T09:11:01.148213+00:00",
+    "finishedAtUtc": "2026-10-25T09:11:03.395836+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/published-embedded-schema.stdout.txt",
+      "sha256": "1429382d68a93196ac21c7924224a34154c9a6562293092186048f5962030536",
+      "sizeBytes": 611
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/published-embedded-schema.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "local-package-build",
+    "command": "pwsh -NoProfile -File Tools/build-g4-tool-packages.ps1 -Version 0.0.0-app-api-token.20261025 -OutputDirectory /tmp/module-cli-compat-88cl840t/packages",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-25T09:10:46.562103+00:00",
+    "finishedAtUtc": "2026-10-25T09:12:12.104820+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/local-package-build.stdout.txt",
+      "sha256": "a5202dd184a160b1f25822baf9f947962946a20362317972dab85e54c5669bef",
+      "sizeBytes": 9153
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/local-package-build.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "candidate-install",
+    "command": "env NUGET_PACKAGES=/tmp/module-cli-compat-88cl840t/isolated-nuget dotnet tool install Hexalith.Builds.Module.Cli --tool-path /tmp/module-cli-compat-88cl840t/tool --version 0.0.0-app-api-token.20261025 --configfile /tmp/module-cli-compat-88cl840t/NuGet.Config",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-25T09:12:23.776563+00:00",
+    "finishedAtUtc": "2026-10-25T09:12:28.312382+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-install.stdout.txt",
+      "sha256": "750c168c8b6cf28e2c2bcbef72dc058952583ea58960676ccac008f2e8faf87d",
+      "sizeBytes": 172
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-install.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "candidate-version",
+    "command": "/tmp/module-cli-compat-88cl840t/tool/hexalith-module --version",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations",
+    "startedAtUtc": "2026-10-25T09:12:51.927977+00:00",
+    "finishedAtUtc": "2026-10-25T09:12:52.005407+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-version.stdout.txt",
+      "sha256": "aa07b246a85fdc96acbf6754cb99b6b0dba74eb9a80150737b7adfb71813d850",
+      "sizeBytes": 70
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-version.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "candidate-validation-human",
+    "command": "/tmp/module-cli-compat-88cl840t/tool/hexalith-module validate --manifest module/hexalith.module-manifest.v2.json",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations",
+    "startedAtUtc": "2026-10-25T09:12:52.146929+00:00",
+    "finishedAtUtc": "2026-10-25T09:12:52.757770+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-validation-human.stdout.txt",
+      "sha256": "670f8f82620ce8ee37554566e6d02a245a5c0bab0f76359e0d2b35bed45cb199",
+      "sizeBytes": 19
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-validation-human.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "candidate-validation-json",
+    "command": "/tmp/module-cli-compat-88cl840t/tool/hexalith-module validate --manifest module/hexalith.module-manifest.v2.json --output json",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations",
+    "startedAtUtc": "2026-10-25T09:12:52.805460+00:00",
+    "finishedAtUtc": "2026-10-25T09:12:53.306637+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-validation-json.stdout.txt",
+      "sha256": "724d6ace8bd53e2658aa456dc61b065be48a3fe24e71ebb7c93b76c056cd0d53",
+      "sizeBytes": 120
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-validation-json.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "candidate-embedded-schema",
+    "command": "pwsh -NoProfile -File /tmp/module-cli-compat-88cl840t/inspect-schema.ps1 -AssemblyPath /tmp/module-cli-compat-88cl840t/tool/.store/hexalith.builds.module.cli/0.0.0-app-api-token.20261025/hexalith.builds.module.cli/0.0.0-app-api-token.20261025/tools/net10.0/any/Hexalith.Builds.Tooling.dll -OutputPath /tmp/module-cli-compat-88cl840t/candidate-embedded-schema.json",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-25T09:12:53.103843+00:00",
+    "finishedAtUtc": "2026-10-25T09:12:55.903351+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-embedded-schema.stdout.txt",
+      "sha256": "2fe2016301cddd9c3561da4ee9e89ff1ce74fb2be752c686e2ef241e1ced2fd5",
+      "sizeBytes": 950
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-embedded-schema.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "candidate-adoption-json",
+    "command": "/tmp/module-cli-compat-88cl840t/tool/hexalith-module validate --manifest module/hexalith.module-manifest.v2.json --adoption --output json",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations",
+    "startedAtUtc": "2026-10-25T09:12:53.359796+00:00",
+    "finishedAtUtc": "2026-10-25T09:13:00.248137+00:00",
+    "exitCode": 1,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-adoption-json.stdout.txt",
+      "sha256": "0eaef56a5e28c2c0c662ab4b9b5386f780a77373d156737de3bf9bea75965474",
+      "sizeBytes": 12130
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-adoption-json.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "candidate-adoption-human",
+    "command": "/tmp/module-cli-compat-88cl840t/tool/hexalith-module validate --manifest module/hexalith.module-manifest.v2.json --adoption",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations",
+    "startedAtUtc": "2026-10-25T09:13:00.313164+00:00",
+    "finishedAtUtc": "2026-10-25T09:13:06.429955+00:00",
+    "exitCode": 1,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-adoption-human.stdout.txt",
+      "sha256": "9d2bf86cd0e5dacf63554ec7d7b106e262480e47226ccffed19d3aef247386bf",
+      "sizeBytes": 9388
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-adoption-human.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "installed-package-controls",
+    "command": "pwsh -NoProfile -File Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-app-api-token.20261025 -PackageDirectory /tmp/module-cli-compat-88cl840t/metadata-controls -SkipSourceValidation -RetainPackageDirectory -PackageBuildScriptPath /tmp/module-cli-compat-88cl840t/reuse-packages.ps1",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-25T09:13:03.950898+00:00",
+    "finishedAtUtc": "2026-10-25T09:13:38.175977+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/installed-package-controls.stdout.txt",
+      "sha256": "bad124d0fc0a44c09236c814b8fa92d8e5c4324411d2d0a0161b29df034595fc",
+      "sizeBytes": 14257
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/installed-package-controls.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "focused-debug-build",
+    "command": "dotnet build test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj --configuration Debug -m:1",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-25T09:12:25.473451+00:00",
+    "finishedAtUtc": "2026-10-25T09:14:33.523987+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/focused-debug-build.stdout.txt",
+      "sha256": "0dcd7a811dfa6d05ace9da1e99dcceed85e9b9c31ea7986f5e6a4b4276857dba",
+      "sizeBytes": 4797
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/focused-debug-build.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "focused-regressions",
+    "command": "dotnet test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -automated sync -failSkips -parallel none -class Hexalith.Builds.ModuleTool.Tests.PlatformManifestValidationTests -class Hexalith.Builds.ModuleTool.Tests.PlatformManifestCommandTests -class Hexalith.Builds.ModuleTool.Tests.PlatformAdoptionValidationTests",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-25T09:15:59.729272+00:00",
+    "finishedAtUtc": "2026-10-25T09:23:28.447030+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/focused-regressions.stdout.txt",
+      "sha256": "2a34f730464e36cc039f850b663abbc1092d6f7590ed6afd1750aea789132fd3",
+      "sizeBytes": 2390545
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/focused-regressions.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "published-validation-json",
+    "command": "dotnet tool run hexalith-module -- validate --manifest module/hexalith.module-manifest.v2.json --output json",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations",
+    "startedAtUtc": "2026-10-25T09:24:05.129050+00:00",
+    "finishedAtUtc": "2026-10-25T09:24:06.302749+00:00",
+    "exitCode": 1,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/published-validation-json.stdout.txt",
+      "sha256": "6b587381301ff21f440326aa26c7d3dfed151ff407c6fbda8f245bcc7ba4f7f7",
+      "sizeBytes": 746
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/published-validation-json.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "published-embedded-schema-raw",
+    "command": "pwsh -NoProfile -File evidence/g4/module-configuration-keys-20261025/inspect-schema.ps1 -AssemblyPath /home/administrator/.nuget/packages/hexalith.builds.module.cli/4.35.2/tools/net10.0/any/Hexalith.Builds.Tooling.dll -OutputPath /tmp/module-cli-compat-88cl840t/published-embedded-raw.json",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-25T09:24:06.377904+00:00",
+    "finishedAtUtc": "2026-10-25T09:24:08.651359+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/published-embedded-schema-raw.stdout.txt",
+      "sha256": "a2cde1ec0cd1efe41c63f0393d3a54115fd1be251208aa4a5a14a9ae6d9ac44d",
+      "sizeBytes": 608
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/published-embedded-schema-raw.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "candidate-embedded-schema-raw",
+    "command": "pwsh -NoProfile -File evidence/g4/module-configuration-keys-20261025/inspect-schema.ps1 -AssemblyPath /tmp/module-cli-compat-88cl840t/tool/.store/hexalith.builds.module.cli/0.0.0-app-api-token.20261025/hexalith.builds.module.cli/0.0.0-app-api-token.20261025/tools/net10.0/any/Hexalith.Builds.Tooling.dll -OutputPath /tmp/module-cli-compat-88cl840t/candidate-embedded-raw.json",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-25T09:24:08.763558+00:00",
+    "finishedAtUtc": "2026-10-25T09:24:10.830538+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-embedded-schema-raw.stdout.txt",
+      "sha256": "470222ebc809c1f8f4eabf8aa43561f8aefa15229413a502be854840dbbf2d07",
+      "sizeBytes": 947
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/candidate-embedded-schema-raw.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  },
+  {
+    "id": "installed-package-controls-final",
+    "command": "pwsh -NoProfile -File Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-app-api-token.20261025 -PackageDirectory /tmp/module-cli-compat-88cl840t/metadata-controls-final -SkipSourceValidation -RetainPackageDirectory -PackageBuildScriptPath /tmp/module-cli-compat-88cl840t/reuse-packages.ps1",
+    "workingDirectory": "/home/administrator/projects/hexalith/conversations/references/Hexalith.Builds",
+    "startedAtUtc": "2026-10-25T09:24:10.890683+00:00",
+    "finishedAtUtc": "2026-10-25T09:24:54.209383+00:00",
+    "exitCode": 0,
+    "stdout": {
+      "path": "evidence/g4/module-configuration-keys-20261025/installed-package-controls-final.stdout.txt",
+      "sha256": "c0a7ed8956c958e76f2396c3abcf37f1ee425afad2f04ebf3bafc9430eb68714",
+      "sizeBytes": 14154
+    },
+    "stderr": {
+      "path": "evidence/g4/module-configuration-keys-20261025/installed-package-controls-final.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0
+    }
+  }
+]

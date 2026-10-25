@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "baselineInventory": {
+    "path": "evidence/g4/module-configuration-keys-20261025/conversations-before.json.gz",
+    "sha256": "1ccb11f48dcc2070fc2374b0c37af752a1a61f69a4d87f8b70f232e9382e9eb3",
+    "uncompressedSha256": "807e7d42a4ed4b6ddc69d285679d37a657139e5de16351ec6aedcc7f314f3ec8",
+    "encoding": "gzip of UTF-8 JSON path-to-SHA256 map; root-owned tracked and existing untracked files, excluding references"
+  },
+  "evaluatedExistingRootOwnedFiles": 4206,
+  "changedExistingRootOwnedFiles": [],
+  "allRootGitlinkIndexEntriesUnchanged": true,
+  "story16_1Status": "draft/backlog",
+  "runtimeHold": "ACTIVE"
+}
