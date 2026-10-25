@@ -19,7 +19,7 @@ inputs:
     description: Caller-owned JSON package inventory
     default: tools/release-packages.json
   source-branch:
-    description: Protected source branch
+    description: Compatibility input; only main is supported
     default: main
   source-ci-workflow:
     description: Workflow filename providing successful exact-source push CI

@@ -73,7 +73,7 @@ on:
         required: true
         type: string
       source-branch:
-        description: 'Exact protected source branch revalidated at every publication boundary.'
+        description: 'Compatibility input: only main is supported and revalidated at every publication boundary.'
         required: false
         type: string
         default: 'main'

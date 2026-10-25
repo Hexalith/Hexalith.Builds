@@ -30,6 +30,10 @@ import tempfile
 from pathlib import Path
 
 
+if not __debug__:
+    raise SystemExit("G6-EVIDENCE-TESTS-INVALID: optimized Python disables required assertions")
+
+
 SCRIPT = Path(__file__).with_name("validate-runtime-toolchain-evidence.py")
 BASELINES = (
     # Accepted 2026-09-06 G-6 tuple; bound by the historical accepted packet.
@@ -79,6 +83,13 @@ PACKET_SCENARIOS_PER_BASELINE = VALIDATOR.MUTATION_SCENARIOS_PER_BASELINE
 RESULT_LINE = VALIDATOR.MUTATION_CONTROLS_RESULT_LINE
 
 
+def assert_mode_rejected(result: subprocess.CompletedProcess[str], expected_status: str) -> None:
+    """Distinguish intentional mode validation failures from CLI crashes."""
+    assert result.returncode == 1, result
+    assert result.stdout == "", result.stdout
+    assert result.stderr.strip() == f"G6-EVIDENCE-INVALID: Packet status must be {expected_status}", result.stderr
+
+
 def mutation_summary_line(scenarios: int, baselines: int, drift: int, authority: int, pins: int) -> str:
     """The self-test's final output line; the G-6 packet records it verbatim."""
     return (
@@ -125,14 +136,19 @@ def expect_rejected(
     workspace: Path, baseline_path: Path, baseline: dict, packet_path: Path, packet: dict, label: str,
     message: str | None = None, record: list[str] | None = None,
 ) -> None:
-    write_json(packet_path, packet)
-    try:
-        VALIDATOR.validate_packet(workspace, packet_path, baseline_path, baseline)
-    except VALIDATOR.ValidationError as error:
-        assert message is None or message in str(error), f"{label}: expected '{message}', got '{error}'"
-        (REJECTED_PACKET_MUTATIONS if record is None else record).append(label)
-        return
-    raise AssertionError(f"mutation was accepted: {label}")
+    # Exercise identical tampering after the valid status for each mode is selected.
+    # Count the logical mutation once to preserve historical packet result contracts.
+    for candidate in (False, True):
+        changed = copy.deepcopy(packet)
+        changed["status"] = "pending" if candidate else "accepted"
+        write_json(packet_path, changed)
+        try:
+            VALIDATOR.validate_packet(workspace, packet_path, baseline_path, baseline, candidate=candidate)
+        except VALIDATOR.ValidationError as error:
+            assert message is None or message in str(error), f"{label} ({candidate=}): expected '{message}', got '{error}'"
+        else:
+            raise AssertionError(f"mutation was accepted: {label} ({candidate=})")
+    (REJECTED_PACKET_MUTATIONS if record is None else record).append(label)
 
 
 def expect_baseline_rejected(
@@ -468,9 +484,11 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
         VALIDATOR.validate_packet(workspace, paths["packet"], baseline_path, baseline, candidate=True)
         pending_result = run_mode(True)
         assert pending_result.returncode == 0 and pending_result.stdout.strip() == "G6-EVIDENCE-CANDIDATE-VALID"
-        assert run_mode(False).returncode == 1
+        wrong_accepted_mode = run_mode(False)
+        assert_mode_rejected(wrong_accepted_mode, "accepted")
         write_json(paths["packet"], packet)
-        assert run_mode(True).returncode == 1
+        wrong_candidate_mode = run_mode(True)
+        assert_mode_rejected(wrong_candidate_mode, "pending")
 
         packet_mutations = []
         stale_hash = copy.deepcopy(packet); stale_hash["artifacts"][0]["sha256"] = "b" * 64

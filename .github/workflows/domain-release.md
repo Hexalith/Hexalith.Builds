@@ -22,7 +22,7 @@ Dapr-backed tests, and then runs semantic-release.
 | `publish-containers` | No | `false` | Whether to prepare semantic-release container publishing for .NET SDK container projects. |
 | `container-projects` | No | `''` | Newline-separated container mappings in `path/to/project.csproj|repository-name` format. Required when `publish-containers` is `true`. |
 | `builds-execution-sha` | Yes | - | Exact maintainer-approved Builds commit. It must equal the reusable workflow's full-SHA `uses` revision and is checked against nested action/helper bytes. |
-| `source-branch` | No | `main` | Protected source branch revalidated at every publication boundary. |
+| `source-branch` | No | `main` | Compatibility input; only `main` is supported and revalidated at every publication boundary. |
 | `source-ci-workflow` | No | `ci.yml` | Workflow filename whose successful exact-source `push` run authorizes the source. |
 | `package-manifest` | No | `tools/release-packages.json` | Caller package manifest frozen into publication identity. |
 | `expected-package-count` | No\* | `0` | Number of NuGet package IDs the caller publishes. \*Effectively required when `publish-containers` is `true`: a dedicated workflow step rejects the default `0` and any non-positive-integer value immediately after checkout, before `npm ci` or any publication step. Declared by the caller rather than derived from the manifest, so an accidental inventory change fails closed. |

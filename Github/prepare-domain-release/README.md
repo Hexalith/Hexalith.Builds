@@ -22,7 +22,9 @@ by the caller). Optional inputs default to `source-branch: main`,
 `source-ci-workflow: ci.yml`, `package-manifest: tools/release-packages.json`,
 `dotnet-global-json: global.json`, `packages-lock-file: Directory.Packages.props`,
 `node-version: '24'`, and `publication-flag: ''`. The manifest must contain exactly the declared unique
-package IDs and unique existing project paths.
+package IDs and unique existing project paths. The `source-branch` input remains
+for compatibility; only the literal value `main` is supported. Other values fail
+before preparation or publication.
 
 The caller checks out `${{ github.sha }}` with full history, `submodules: false`,
 and `persist-credentials: false` before calling the action. Its job owns
