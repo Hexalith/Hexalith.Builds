@@ -1,0 +1,37 @@
+{
+  "reason": "Archive immutable source observations with a non-MSBuild extension so the unchanged tracked consumer-authority guard does not treat them as active declarations. Historical manifests retain original paths and hashes; decompress these payloads to reproduce their exact observations.",
+  "introducedBy": "32d2b076b26ae5ef0a203c5d04894c008e564462",
+  "sourceImportReferences": [],
+  "files": [
+    {
+      "originalPath": "evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-02/source-Directory.Packages.props",
+      "storedPath": "evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-02/source-Directory.Packages.props.gz",
+      "originalSha256": "553796eef36f2789f60bb47bc8902b5fb9f1df5b3a942cde7f0523768bf1d2a1",
+      "storedSha256": "9bca6b599cd60b74e99efb12a11726cc0bab0516adca6c39b6031c798720957d",
+      "originalBytes": 30088,
+      "storedBytes": 4842,
+      "compression": "gzip; mtime=0",
+      "roundTripBytesEqual": true
+    },
+    {
+      "originalPath": "evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/source-Directory.Packages.props",
+      "storedPath": "evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/source-Directory.Packages.props.gz",
+      "originalSha256": "553796eef36f2789f60bb47bc8902b5fb9f1df5b3a942cde7f0523768bf1d2a1",
+      "storedSha256": "9bca6b599cd60b74e99efb12a11726cc0bab0516adca6c39b6031c798720957d",
+      "originalBytes": 30088,
+      "storedBytes": 4842,
+      "compression": "gzip; mtime=0",
+      "roundTripBytesEqual": true
+    },
+    {
+      "originalPath": "evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/source-checkout-Directory.Packages.props",
+      "storedPath": "evidence/g4/module-configuration-key-release-20261025/resumed-20261025T101341Z/published-artifact-03/source-checkout-Directory.Packages.props.gz",
+      "originalSha256": "c43f62b33c765e28519b6c72058c6317649ec53963d7cbe7f0d0ddabb3898375",
+      "storedSha256": "bbcd504115fda1e3c3552c8983d50472c4ce15201b3b0a57cb9386199d648354",
+      "originalBytes": 30450,
+      "storedBytes": 4849,
+      "compression": "gzip; mtime=0",
+      "roundTripBytesEqual": true
+    }
+  ]
+}
