@@ -43,6 +43,9 @@ Omitting the hooks preserves the existing VSTest/MTP commands and defaults.
 Script paths and `aspire-evidence-path` reject absolute paths, traversal, shell
 syntax and symbolic links. Inputs are passed through environment variables and
 quoted arguments, without evaluating command strings.
+The evidence directory must be absent or empty at job entry; pre-existing files
+are unowned and reject validation, so the always-run upload cannot expose them.
+Use a fresh evidence directory for retries; no user files are deleted.
 
 Each hook receives `ASPIRE_TEST_PROJECT`, `TEST_PLATFORM` and
 `ASPIRE_EVIDENCE_PATH`. A preparer may export nonsecret paths for its runner using

@@ -892,6 +892,9 @@ jobs:
           relative('ASPIRE_PREPARE_SCRIPT', True)
           relative('ASPIRE_RUNNER_SCRIPT', True)
           relative('ASPIRE_EVIDENCE_PATH')
+          evidence = root / os.environ['ASPIRE_EVIDENCE_PATH']
+          if evidence.exists() and (not evidence.is_dir() or any(evidence.iterdir())):
+              raise SystemExit('ASPIRE_EVIDENCE_PATH must name a fresh empty directory; existing files are unowned and will not be uploaded.')
           bounds = {}
           for name, maximum in [('ASPIRE_PREPARE_TIMEOUT', 60), ('ASPIRE_RUNNER_TIMEOUT', 340), ('ASPIRE_JOB_TIMEOUT', 360)]:
               value = os.environ[name]

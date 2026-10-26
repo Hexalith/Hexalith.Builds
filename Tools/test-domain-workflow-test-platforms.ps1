@@ -535,6 +535,10 @@ foreach ($scenario in @(
 }
 $symlinkResult = Invoke-WorkflowBashBody -Body ($hookFixture + "mv hooks/run.sh hooks/real.sh`nln -s real.sh hooks/run.sh`n" + $hookBody) -Environment $hookEnvironment
 Assert-Condition -Name 'Aspire linked script' -Condition ($symlinkResult.ExitCode -ne 0) -Failure 'accepted a symbolic link.'
+$seededEvidence = "mkdir -p TestResults/aspire-hook-evidence`nprintf 'private-key-sentinel\n' > TestResults/aspire-hook-evidence/issuer.key`n"
+$seededResult = Invoke-WorkflowBashBody -Body ($hookFixture + $seededEvidence + $hookBody) -Environment $hookEnvironment
+Assert-Condition -Name 'Aspire unowned evidence rejection' -Condition ($seededResult.ExitCode -ne 0) -Failure 'accepted pre-existing files for the always-run artifact upload.'
+Assert-Contains -Name 'Aspire unowned evidence diagnostic' -Content $seededResult.Output -Expected 'fresh empty directory'
 foreach ($step in @(
     @{ Name = 'Prepare Aspire tier'; Script = 'ASPIRE_PREPARE_SCRIPT'; Bound = 'ASPIRE_PREPARE_TIMEOUT' },
     @{ Name = 'Run Aspire hook'; Script = 'ASPIRE_RUNNER_SCRIPT'; Bound = 'ASPIRE_RUNNER_TIMEOUT' }
