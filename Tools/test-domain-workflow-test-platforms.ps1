@@ -501,6 +501,69 @@ $ciWorkflow = Get-Content -LiteralPath $ciWorkflowPath -Raw
 $releaseWorkflow = Get-Content -LiteralPath $releaseWorkflowPath -Raw
 $buildReleaseWorkflow = Get-Content -LiteralPath $buildReleaseWorkflowPath -Raw
 
+$hookValidation = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Validate Aspire hooks'
+$hookBody = Get-StepRunBody -Block $hookValidation -StepName 'Validate Aspire hooks'
+$hookEnvironment = @{
+    ASPIRE_PREPARE_SCRIPT = 'hooks/prepare.sh'
+    ASPIRE_RUNNER_SCRIPT = 'hooks/run.sh'
+    ASPIRE_EVIDENCE_PATH = 'TestResults/aspire-hook-evidence'
+    ASPIRE_PREPARE_TIMEOUT = '40'
+    ASPIRE_RUNNER_TIMEOUT = '300'
+    ASPIRE_JOB_TIMEOUT = '360'
+}
+$hookFixture = "mkdir -p hooks`nprintf 'exit 0\n' > hooks/prepare.sh`nprintf 'exit 0\n' > hooks/run.sh`n"
+$hookResult = Invoke-WorkflowBashBody -Body ($hookFixture + $hookBody) -Environment $hookEnvironment
+Assert-Condition -Name 'Aspire valid hooks' -Condition ($hookResult.ExitCode -eq 0) -Failure "rejected valid hooks: $($hookResult.Output)"
+foreach ($scenario in @(
+    @{ Key = 'ASPIRE_PREPARE_SCRIPT'; Value = '../outside.sh' },
+    @{ Key = 'ASPIRE_RUNNER_SCRIPT'; Value = '/tmp/run.sh' },
+    @{ Key = 'ASPIRE_RUNNER_SCRIPT'; Value = 'hooks/missing.sh' },
+    @{ Key = 'ASPIRE_RUNNER_SCRIPT'; Value = 'hooks/run.sh;true' },
+    @{ Key = 'ASPIRE_EVIDENCE_PATH'; Value = '.' },
+    @{ Key = 'ASPIRE_EVIDENCE_PATH'; Value = 'TestResults/../outside' },
+    @{ Key = 'ASPIRE_PREPARE_TIMEOUT'; Value = '0' },
+    @{ Key = 'ASPIRE_PREPARE_TIMEOUT'; Value = '61' },
+    @{ Key = 'ASPIRE_RUNNER_TIMEOUT'; Value = '341' },
+    @{ Key = 'ASPIRE_RUNNER_TIMEOUT'; Value = '0.5' },
+    @{ Key = 'ASPIRE_JOB_TIMEOUT'; Value = '361' },
+    @{ Key = 'ASPIRE_JOB_TIMEOUT'; Value = '340' }
+)) {
+    $environment = $hookEnvironment.Clone()
+    $environment[$scenario.Key] = $scenario.Value
+    $result = Invoke-WorkflowBashBody -Body ($hookFixture + $hookBody) -Environment $environment
+    Assert-Condition -Name "Aspire invalid $($scenario.Key)=$($scenario.Value)" -Condition ($result.ExitCode -ne 0) -Failure 'accepted invalid hook inputs.'
+}
+$symlinkResult = Invoke-WorkflowBashBody -Body ($hookFixture + "mv hooks/run.sh hooks/real.sh`nln -s real.sh hooks/run.sh`n" + $hookBody) -Environment $hookEnvironment
+Assert-Condition -Name 'Aspire linked script' -Condition ($symlinkResult.ExitCode -ne 0) -Failure 'accepted a symbolic link.'
+foreach ($step in @(
+    @{ Name = 'Prepare Aspire tier'; Script = 'ASPIRE_PREPARE_SCRIPT'; Bound = 'ASPIRE_PREPARE_TIMEOUT' },
+    @{ Name = 'Run Aspire hook'; Script = 'ASPIRE_RUNNER_SCRIPT'; Bound = 'ASPIRE_RUNNER_TIMEOUT' }
+)) {
+    $block = Get-NamedStepBlock -Content $ciWorkflow -StepName $step.Name
+    $body = Get-StepRunBody -Block $block -StepName $step.Name
+    Assert-Contains -Name $step.Name -Content $block -Expected 'timeout-minutes: ${{ inputs.aspire-'
+    Assert-Contains -Name $step.Name -Content $block -Expected 'TEST_PLATFORM: ${{ inputs.test-platform }}'
+    Assert-Contains -Name $step.Name -Content $body -Expected '--signal=TERM --kill-after=30s'
+    foreach ($code in @(0, 23, 124)) {
+        $environment = @{ $step.Script = 'hooks/run.sh'; $step.Bound = '2' }
+        $fixture = "mkdir -p hooks`nprintf 'exit $code\n' > hooks/run.sh`n"
+        $result = Invoke-WorkflowBashBody -Body ($fixture + $body) -Environment $environment
+        Assert-Condition -Name "$($step.Name) exit $code" -Condition ($result.ExitCode -eq $code) -Failure "returned $($result.ExitCode)."
+    }
+    $result = Invoke-WorkflowBashBody -Body ('timeout() { [ "$3" = 120 ] || exit 99; return 124; }' + "`n" + $body) -Environment @{ $step.Script = 'hooks/run.sh'; $step.Bound = '2' }
+    Assert-Condition -Name "$($step.Name) timeout propagation" -Condition ($result.ExitCode -eq 124) -Failure 'lost the bound or deadline exit.'
+}
+$aspireJob = $ciWorkflow.Substring($ciWorkflow.IndexOf('  aspire-tests:')).Split('  performance-tests:')[0]
+Assert-Condition -Name 'Aspire preparation ordering' -Condition ($aspireJob.IndexOf('Install and initialize Dapr') -lt $aspireJob.IndexOf('Prepare Aspire tier') -and $aspireJob.IndexOf('Prepare Aspire tier') -lt $aspireJob.IndexOf('Run Aspire hook')) -Failure 'does not initialize Dapr before preparation and execution.'
+foreach ($platform in @('VSTest', 'Microsoft.Testing.Platform')) {
+    $block = Get-NamedStepBlock -Content $ciWorkflow -StepName "Aspire contract tests (Tier 3, non-Performance, $platform)"
+    Assert-Contains -Name "Aspire default $platform" -Content $block -Expected "inputs.aspire-runner-script == '' && inputs.test-platform =="
+}
+$hookUpload = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Upload Aspire hook evidence'
+Assert-Contains -Name 'Aspire hook upload' -Content $hookUpload -Expected 'always()'
+Assert-Contains -Name 'Aspire hook upload validation gate' -Content $hookUpload -Expected "steps.validate-aspire-hooks.outcome == 'success'"
+Assert-Contains -Name 'Aspire hook upload path' -Content $hookUpload -Expected 'path: ${{ inputs.aspire-evidence-path }}'
+
 foreach ($workflow in @(
     [pscustomobject] @{ Name = 'domain-ci.yml'; Content = $ciWorkflow },
     [pscustomobject] @{ Name = 'domain-release.yml'; Content = $releaseWorkflow }
