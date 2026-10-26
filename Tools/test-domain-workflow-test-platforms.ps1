@@ -135,6 +135,8 @@ function Invoke-WorkflowBashBody {
 dotnet() {
   printf '%s\n' "$*" >> "$DOTNET_INVOCATIONS"
   project="$2"
+  # Simulate MTP/children that read stdin until EOF; the workflow must isolate them.
+  cat >/dev/null
   result_directory=''
   trx_filename=''
   arguments=("$@")
@@ -150,7 +152,17 @@ dotnet() {
   esac
   if [ -n "$result_directory" ] && [ -n "$trx_filename" ]; then
     mkdir -p "$result_directory"
-    : > "$result_directory/$trx_filename"
+    case "$project" in
+      *missing-report*) return 0 ;;
+      *malformed-report*) printf '<TestRun' > "$result_directory/$trx_filename"; return 0 ;;
+      *zero-report*) printf '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Results/><ResultSummary><Counters total="0" executed="0"/></ResultSummary></TestRun>' > "$result_directory/$trx_filename"; return 0 ;;
+    esac
+    printf '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Results><UnitTestResult outcome="Passed"/></Results><ResultSummary><Counters total="1" executed="1"/></ResultSummary></TestRun>' > "$result_directory/$trx_filename"
+    case "$project" in
+      *stale-report*) touch -t 200001010000 "$result_directory/$trx_filename" ;;
+      *failed-report*) sed -i 's/outcome="Passed"/outcome="Failed"/' "$result_directory/$trx_filename" ;;
+      *inconsistent-report*) sed -i 's/total="1"/total="2"/' "$result_directory/$trx_filename" ;;
+    esac
   fi
   case "$project" in
     *infra-reported*) return 10 ;;
@@ -290,6 +302,37 @@ function Assert-ShardAggregationRuntime {
     if ($UsesCoverageSwitch) {
         Assert-NotContains -Name "$StepName disabled coverage runtime" -Content $passingResult.Invocations -Unexpected '--coverage'
     }
+
+    $consumingEnvironment = @{
+        $ProjectsVariable = "tests/pass-first/One.csproj`ntests/pass-second/Two.csproj`ntests/pass-third/Three.csproj`ntests/pass-fourth/Four.csproj"
+        RUN_COVERAGE_GATE = 'false'
+    }
+    $consumingResult = Invoke-WorkflowBashBody -Body $body -Environment $consumingEnvironment
+    $consumingInvocations = @($consumingResult.Invocations -split '\r?\n' | Where-Object { $_ })
+    Assert-Condition -Name "$StepName stdin-consuming children" `
+        -Condition ($consumingResult.ExitCode -eq 0 -and $consumingInvocations.Count -eq 4 -and $consumingResult.StepOutput -match '\Afailure-count=0\r?\n\z') `
+        -Failure 'did not execute all four configured projects with nonzero reports when children consume stdin.'
+
+    foreach ($scenario in @('missing-report', 'stale-report', 'malformed-report', 'zero-report', 'failed-report', 'inconsistent-report')) {
+        $reportEnvironment = @{
+            $ProjectsVariable = "tests/$scenario/Invalid.csproj`ntests/pass-later/Later.csproj"
+            RUN_COVERAGE_GATE = 'false'
+        }
+        $reportResult = Invoke-WorkflowBashBody -Body $body -Environment $reportEnvironment
+        Assert-Condition -Name "$StepName $scenario runtime" -Condition ($reportResult.ExitCode -eq 1) `
+            -Failure "returned $($reportResult.ExitCode) instead of rejecting invalid test evidence."
+        Assert-Contains -Name "$StepName $scenario diagnostic" -Content $reportResult.Output -Expected '::error title=Invalid test report::'
+        Assert-NotContains -Name "$StepName $scenario output" -Content $reportResult.StepOutput -Unexpected 'failure-count=0'
+    }
+
+    # Deleting the prior same-basename report must also protect successful child exits.
+    $staleSuccessEnvironment = @{
+        $ProjectsVariable = "tests/pass-first/Same.csproj`ntests/missing-report/Same.csproj"
+        RUN_COVERAGE_GATE = 'false'
+    }
+    $staleSuccessResult = Invoke-WorkflowBashBody -Body $body -Environment $staleSuccessEnvironment
+    Assert-Condition -Name "$StepName stale successful report runtime" -Condition ($staleSuccessResult.ExitCode -eq 1) `
+        -Failure 'accepted a prior project report after a successful child produced no report.'
 
     $infrastructureEnvironment = @{
         $ProjectsVariable = "tests/infra-first/Infra%0ADown.csproj`ntests/pass-later/Pass.Later.csproj"

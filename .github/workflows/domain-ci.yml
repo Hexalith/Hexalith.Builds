@@ -376,13 +376,16 @@ jobs:
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
             rm -f -- "$result_file"
+            mkdir -p "TestResults/${name}"
+            report_marker="TestResults/${name}/.started"
+            touch "$report_marker"
             summary_proj=${proj//\\/\\\\}
             summary_proj=${summary_proj//|/\\|}
             summary_proj=${summary_proj//\`/\\\`}
             if dotnet test "$proj" --no-build --configuration Release \
                 --logger "trx;LogFileName=${name}.trx" \
                 --results-directory "TestResults/${name}" \
-                --collect:"XPlat Code Coverage"; then
+                --collect:"XPlat Code Coverage" </dev/null; then
               status=PASS
               exit_code=0
             else
@@ -398,6 +401,44 @@ jobs:
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            # A zero child exit is insufficient: require this invocation's nonzero TRX.
+            # The heredoc also keeps the verifier from consuming the project-list stdin.
+            if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          try:
+              report = pathlib.Path(sys.argv[1])
+              if report.stat().st_mtime_ns < pathlib.Path(sys.argv[2]).stat().st_mtime_ns:
+                  raise ValueError("stale report")
+              root = ET.parse(report).getroot()
+              ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+              if root.tag != ns + "TestRun":
+                  raise ValueError("invalid TRX root")
+              counters = root.find(f"{ns}ResultSummary/{ns}Counters")
+              results = root.findall(f"{ns}Results/{ns}UnitTestResult")
+              if counters is None:
+                  raise ValueError("missing counters")
+              total = int(counters.get("total", "-1"))
+              executed = int(counters.get("executed", "-1"))
+              outcomes = [result.get("outcome") for result in results]
+              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+                  raise ValueError("missing or inconsistent test results")
+              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+                  raise ValueError("invalid result outcome")
+              if int(sys.argv[3]) == 0 and "Failed" in outcomes:
+                  raise ValueError("failed results with successful exit")
+          except (OSError, ValueError, ET.ParseError):
+              print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
+              sys.exit(1)
+          PYTRX
+            then
+              annotation_proj=${proj//%/%25}
+              printf '::error title=Invalid test report::%s did not produce fresh nonzero test evidence.\n' "$annotation_proj"
+              printf '| %s | FAIL | 1 |\n' "$summary_proj" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
             fi
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$UNIT_TEST_PROJECTS"
@@ -424,6 +465,9 @@ jobs:
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
             rm -f -- "$result_file"
+            mkdir -p "TestResults/${name}"
+            report_marker="TestResults/${name}/.started"
+            touch "$report_marker"
             summary_proj=${proj//\\/\\\\}
             summary_proj=${summary_proj//|/\\|}
             summary_proj=${summary_proj//\`/\\\`}
@@ -435,7 +479,7 @@ jobs:
                 --results-directory "TestResults/${name}" \
                 --report-xunit-trx \
                 --report-xunit-trx-filename "${name}.trx" \
-                "${coverage_args[@]}"; then
+                "${coverage_args[@]}" </dev/null; then
               status=PASS
               exit_code=0
             else
@@ -456,6 +500,44 @@ jobs:
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            # A zero child exit is insufficient: require this invocation's nonzero TRX.
+            # The heredoc also keeps the verifier from consuming the project-list stdin.
+            if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          try:
+              report = pathlib.Path(sys.argv[1])
+              if report.stat().st_mtime_ns < pathlib.Path(sys.argv[2]).stat().st_mtime_ns:
+                  raise ValueError("stale report")
+              root = ET.parse(report).getroot()
+              ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+              if root.tag != ns + "TestRun":
+                  raise ValueError("invalid TRX root")
+              counters = root.find(f"{ns}ResultSummary/{ns}Counters")
+              results = root.findall(f"{ns}Results/{ns}UnitTestResult")
+              if counters is None:
+                  raise ValueError("missing counters")
+              total = int(counters.get("total", "-1"))
+              executed = int(counters.get("executed", "-1"))
+              outcomes = [result.get("outcome") for result in results]
+              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+                  raise ValueError("missing or inconsistent test results")
+              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+                  raise ValueError("invalid result outcome")
+              if int(sys.argv[3]) == 0 and "Failed" in outcomes:
+                  raise ValueError("failed results with successful exit")
+          except (OSError, ValueError, ET.ParseError):
+              print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
+              sys.exit(1)
+          PYTRX
+            then
+              annotation_proj=${proj//%/%25}
+              printf '::error title=Invalid test report::%s did not produce fresh nonzero test evidence.\n' "$annotation_proj"
+              printf '| %s | FAIL | 1 |\n' "$summary_proj" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
             fi
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$UNIT_TEST_PROJECTS"
@@ -493,13 +575,16 @@ jobs:
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
             rm -f -- "$result_file"
+            mkdir -p "TestResults/${name}"
+            report_marker="TestResults/${name}/.started"
+            touch "$report_marker"
             summary_proj=${proj//\\/\\\\}
             summary_proj=${summary_proj//|/\\|}
             summary_proj=${summary_proj//\`/\\\`}
             if dotnet test "$proj" --no-build --configuration Release \
                 --logger "trx;LogFileName=${name}.trx" \
                 --results-directory "TestResults/${name}" \
-                --collect:"XPlat Code Coverage"; then
+                --collect:"XPlat Code Coverage" </dev/null; then
               status=PASS
               exit_code=0
             else
@@ -515,6 +600,44 @@ jobs:
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            # A zero child exit is insufficient: require this invocation's nonzero TRX.
+            # The heredoc also keeps the verifier from consuming the project-list stdin.
+            if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          try:
+              report = pathlib.Path(sys.argv[1])
+              if report.stat().st_mtime_ns < pathlib.Path(sys.argv[2]).stat().st_mtime_ns:
+                  raise ValueError("stale report")
+              root = ET.parse(report).getroot()
+              ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+              if root.tag != ns + "TestRun":
+                  raise ValueError("invalid TRX root")
+              counters = root.find(f"{ns}ResultSummary/{ns}Counters")
+              results = root.findall(f"{ns}Results/{ns}UnitTestResult")
+              if counters is None:
+                  raise ValueError("missing counters")
+              total = int(counters.get("total", "-1"))
+              executed = int(counters.get("executed", "-1"))
+              outcomes = [result.get("outcome") for result in results]
+              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+                  raise ValueError("missing or inconsistent test results")
+              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+                  raise ValueError("invalid result outcome")
+              if int(sys.argv[3]) == 0 and "Failed" in outcomes:
+                  raise ValueError("failed results with successful exit")
+          except (OSError, ValueError, ET.ParseError):
+              print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
+              sys.exit(1)
+          PYTRX
+            then
+              annotation_proj=${proj//%/%25}
+              printf '::error title=Invalid test report::%s did not produce fresh nonzero test evidence.\n' "$annotation_proj"
+              printf '| %s | FAIL | 1 |\n' "$summary_proj" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
             fi
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$INTEGRATION_TEST_PROJECTS"
@@ -541,6 +664,9 @@ jobs:
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
             rm -f -- "$result_file"
+            mkdir -p "TestResults/${name}"
+            report_marker="TestResults/${name}/.started"
+            touch "$report_marker"
             summary_proj=${proj//\\/\\\\}
             summary_proj=${summary_proj//|/\\|}
             summary_proj=${summary_proj//\`/\\\`}
@@ -552,7 +678,7 @@ jobs:
                 --results-directory "TestResults/${name}" \
                 --report-xunit-trx \
                 --report-xunit-trx-filename "${name}.trx" \
-                "${coverage_args[@]}"; then
+                "${coverage_args[@]}" </dev/null; then
               status=PASS
               exit_code=0
             else
@@ -573,6 +699,44 @@ jobs:
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            # A zero child exit is insufficient: require this invocation's nonzero TRX.
+            # The heredoc also keeps the verifier from consuming the project-list stdin.
+            if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          try:
+              report = pathlib.Path(sys.argv[1])
+              if report.stat().st_mtime_ns < pathlib.Path(sys.argv[2]).stat().st_mtime_ns:
+                  raise ValueError("stale report")
+              root = ET.parse(report).getroot()
+              ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+              if root.tag != ns + "TestRun":
+                  raise ValueError("invalid TRX root")
+              counters = root.find(f"{ns}ResultSummary/{ns}Counters")
+              results = root.findall(f"{ns}Results/{ns}UnitTestResult")
+              if counters is None:
+                  raise ValueError("missing counters")
+              total = int(counters.get("total", "-1"))
+              executed = int(counters.get("executed", "-1"))
+              outcomes = [result.get("outcome") for result in results]
+              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+                  raise ValueError("missing or inconsistent test results")
+              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+                  raise ValueError("invalid result outcome")
+              if int(sys.argv[3]) == 0 and "Failed" in outcomes:
+                  raise ValueError("failed results with successful exit")
+          except (OSError, ValueError, ET.ParseError):
+              print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
+              sys.exit(1)
+          PYTRX
+            then
+              annotation_proj=${proj//%/%25}
+              printf '::error title=Invalid test report::%s did not produce fresh nonzero test evidence.\n' "$annotation_proj"
+              printf '| %s | FAIL | 1 |\n' "$summary_proj" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
             fi
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$INTEGRATION_TEST_PROJECTS"
