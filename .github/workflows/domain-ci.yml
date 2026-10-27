@@ -365,7 +365,7 @@ jobs:
       - name: Restore
         env:
           SOLUTION: ${{ inputs.solution }}
-        run: dotnet restore "$SOLUTION"
+        run: dotnet restore "$SOLUTION" -p:Configuration=Release
       - name: Build
         env:
           SOLUTION: ${{ inputs.solution }}
