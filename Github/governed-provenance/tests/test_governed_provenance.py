@@ -504,9 +504,11 @@ class EndToEndTests(unittest.TestCase):
                 "Github/dapr-init/action.yml",
                 "Github/governed-provenance/action.yml",
                 "Github/initialize-build/action.yml",
+                "Github/prepare-module-build/action.yml",
             },
             local,
         )
+        self.assertIn("Github/prepare-module-build/prepare_module_build.py", {helper["path"] for helper in closure["helpers"]})
         self.assertEqual({"Github/dapr-init", "Github/initialize-build"}, builds_pins)
         for action in closure["actions"]:
             self.assertEqual(COMMIT, action["commit"])

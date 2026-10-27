@@ -34,6 +34,34 @@ coverage is deliberately not collected and is excluded from the coverage gates;
 TRX results are always uploaded as the `aspire-test-results` artifact. Set
 `aspire-continue-on-error: false` in a module that wants the tier blocking.
 
+## Optional Aspire preparation and runner hooks
+
+`aspire-prepare-script` and `aspire-runner-script` accept repository-relative bash
+script files. Preparation runs after the Release solution build and Dapr
+initialization; the runner replaces only the ordinary Aspire test command.
+Omitting the hooks preserves the existing VSTest/MTP commands and defaults.
+Script paths and `aspire-evidence-path` reject absolute paths, traversal, shell
+syntax and symbolic links. Inputs are passed through environment variables and
+quoted arguments, without evaluating command strings.
+The evidence directory must be absent or empty at job entry; pre-existing files
+are unowned and reject validation, so the always-run upload cannot expose them.
+Use a fresh evidence directory for retries; no user files are deleted.
+
+Each hook receives `ASPIRE_TEST_PROJECT`, `TEST_PLATFORM` and
+`ASPIRE_EVIDENCE_PATH`. A preparer may export nonsecret paths for its runner using
+`GITHUB_ENV`; consumers are responsible for keeping credentials and private
+runtime state out of uploaded evidence. `aspire-prepare-timeout-minutes` defaults
+to 30 and accepts 1–60; `aspire-runner-timeout-minutes` defaults to 30 and accepts
+1–340. GNU `timeout` enforces each bound with a 30-second kill grace in addition
+to the Actions step deadline. Hook failures and deadline exits fail their steps.
+The finite `aspire-timeout-minutes` must be an integer at most 360 and allow all
+enabled hook budgets plus at least five minutes for the rest of the job.
+
+`aspire-evidence-path` defaults to `TestResults/aspire-hook-evidence`; its contents
+are retained as `aspire-hook-evidence` for seven days on success and failure.
+Keep `aspire-continue-on-error: false` for a blocking caller. Hooks do not change
+the nightly performance tier, enable publication, or initialize nested submodules.
+
 ## Blocking Test Shard Results
 
 Each active Tier 1 and Tier 2 step runs every configured project, even when an
@@ -216,3 +244,22 @@ jobs:
       dependency-policy-sha256: ${{ needs.policy.outputs.sha256 }}
       expected-ci-evaluator-digest: ${{ vars.HEXALITH_CI_EVALUATOR_DIGEST }}
 ```
+
+## Optional producer-owned build preparation
+
+Set `module-manifest` to a repository-relative v2 declaration to prepare package
+references and Release imports before restore/build in all three jobs. Omitting
+it preserves existing callers. The exact `.config/dotnet-tools.json` module CLI
+pin must disable roll-forward. The helper restores that manifest, checks the
+observed version, invokes `prepare-build --mode package` and structurally parses
+JSON. Only the five generated MSBuild import paths, mapping hash and Release
+configuration can reach `GITHUB_ENV`; unexpected keys, invalid paths and newlines
+refuse before any environment export. No command text is evaluated.
+
+Governed callers load the composite from `.hexalith/builds-execution` at their
+approved workflow SHA. Other opted-in callers check out the reusable workflow's actual
+`job.workflow_sha` into the same local action path. The helper never uses source mode in CI.
+Accepted tool 4.35.2 does not implement this command. A separately qualified and
+published producer command, accepted exact tool pin, compatible tagged Platform
+identity/catalog and qualified root Builds gitlink are delivery prerequisites.
+Candidate source tests do not certify those prerequisites or green upstream CI.

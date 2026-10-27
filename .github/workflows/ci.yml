@@ -206,6 +206,9 @@ jobs:
         working-directory: Github/publish-containers/tests
         run: python3 -m unittest discover -v
 
+      - name: Test module build preparation helper
+        run: python3 -m unittest discover -s Github/prepare-module-build/tests -v
+
       - name: Test governed workflow provenance evaluator
         working-directory: Github/governed-provenance/tests
         run: python3 -m unittest discover -v
