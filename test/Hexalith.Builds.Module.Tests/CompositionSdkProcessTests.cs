@@ -112,18 +112,23 @@ public sealed class CompositionSdkProcessTests
         result.Output.Trim().ShouldBe("intercepted|certificate=false|serial=1");
     }
 
-    /// <summary>Verifies the actual SDK reports the repository's pinned version under the controlled environment.</summary>
+    /// <summary>Verifies the actual SDK stays on a latestPatch resolution of the repository pin.</summary>
     /// <returns>The bounded SDK probe assertion.</returns>
     [Fact]
     public async Task SelectedSdkReportsPinnedVersionAsync()
     {
         string root = CompositionTestFiles.RepositoryRoot();
         using JsonDocument global = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(root, "global.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+        JsonElement sdk = global.RootElement.GetProperty("sdk");
         CompositionProcessResult result = await CompositionSdkProcess.RunAsync(root, null, "--version").ConfigureAwait(true);
         result.Started.ShouldBeTrue();
         result.TimedOut.ShouldBeFalse();
         result.ExitCode.ShouldBe(0, result.Output + result.ErrorOutput);
-        result.Output.Trim().ShouldBe(global.RootElement.GetProperty("sdk").GetProperty("version").GetString());
+
+        // global.json uses latestPatch, so a runner may report a newer patch in the pinned feature band.
+        sdk.GetProperty("rollForward").GetString().ShouldBe("latestPatch");
+        string observed = result.Output.Trim();
+        SatisfiesLatestPatchRollForward(observed, Version.Parse(sdk.GetProperty("version").GetString()!)).ShouldBeTrue(observed);
     }
 
     /// <summary>Verifies an unresponsive controlled SDK child is stopped within its bound.</summary>
@@ -176,5 +181,19 @@ public sealed class CompositionSdkProcessTests
             Environment.SetEnvironmentVariable(sentinel, null);
             CompositionTestFiles.Delete(root);
         }
+    }
+
+    /// <summary>Accepts the pinned SDK and a newer patch in the same feature band.</summary>
+    /// <param name="sdkVersion">The SDK version the runner resolved.</param>
+    /// <param name="pinned">The version declared in global.json.</param>
+    /// <returns>Whether the resolved version satisfies latestPatch.</returns>
+    private static bool SatisfiesLatestPatchRollForward(string sdkVersion, Version pinned)
+    {
+        int suffixIndex = sdkVersion.IndexOfAny(['-', '+']);
+        Version resolved = Version.Parse(suffixIndex < 0 ? sdkVersion : sdkVersion[..suffixIndex]);
+        return resolved.Major == pinned.Major
+            && resolved.Minor == pinned.Minor
+            && resolved.Build / 100 == pinned.Build / 100
+            && resolved >= pinned;
     }
 }
