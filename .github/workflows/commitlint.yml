@@ -36,7 +36,7 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Verify npm dependency provenance and signatures
         run: npm audit signatures
       - name: Validate commit messages
@@ -71,13 +71,13 @@ jobs:
               for (const error of result.errors) console.error(`${error.name}: ${error.message}`);
               if (!result.valid) process.exitCode = 1;
             '
-            npx commitlint --from "$PR_BASE_SHA" --to "$PR_HEAD_SHA" --verbose
+            npx --no-install --ignore-scripts commitlint --from "$PR_BASE_SHA" --to "$PR_HEAD_SHA" --verbose
           elif [ -n "$PUSH_BEFORE_SHA" ] &&
                [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ] &&
                git cat-file -e "$PUSH_BEFORE_SHA" 2>/dev/null; then
-            npx commitlint --from "$PUSH_BEFORE_SHA" --to "$PUSH_AFTER_SHA" --verbose
+            npx --no-install --ignore-scripts commitlint --from "$PUSH_BEFORE_SHA" --to "$PUSH_AFTER_SHA" --verbose
           else
             # Branch creation or force-push with an unreachable before-SHA:
             # validate at least the head commit rather than failing on the range.
-            npx commitlint --last --verbose
+            npx --no-install --ignore-scripts commitlint --last --verbose
           fi

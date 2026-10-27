@@ -25,7 +25,7 @@ runs:
 
     - name: Install semantic-release dependencies
       shell: bash
-      run: npm ci
+      run: npm ci --ignore-scripts
 
     - name: Verify dependency provenance and signatures
       shell: bash
@@ -40,4 +40,4 @@ runs:
       env:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         NUGET_API_KEY: ${{ env.NUGET_API_KEY }}
-      run: npx semantic-release
+      run: npx --no-install --ignore-scripts semantic-release

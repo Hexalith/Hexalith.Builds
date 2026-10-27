@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $releaseWorkflow = Get-Content -LiteralPath (Join-Path $repositoryRoot '.github/workflows/build-release.yml') -Raw
 if (-not $releaseWorkflow.Contains('id-token: write', [StringComparison]::Ordinal) -or
-    -not $releaseWorkflow.Contains('uses: NuGet/login@v1.2.0', [StringComparison]::Ordinal) -or
+    -not $releaseWorkflow.Contains('uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0', [StringComparison]::Ordinal) -or
     -not $releaseWorkflow.Contains('user: ${{ vars.NUGET_USER }}', [StringComparison]::Ordinal) -or
     -not $releaseWorkflow.Contains('nuget-api-key: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}', [StringComparison]::Ordinal) -or
     $releaseWorkflow.Contains('nuget-api-key: ${{ secrets.NUGET_API_KEY }}', [StringComparison]::Ordinal)) {

@@ -245,11 +245,7 @@ on:
       governed-publish-enabled:
         description: 'Whether the common release-freeze gate authorized Semantic Release.'
         value: ${{ jobs.governed-release.outputs.publish-enabled }}
-permissions:
-  actions: read
-  contents: write
-  issues: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   release:
@@ -260,6 +256,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
     environment: ${{ inputs.environment-name }}
+    permissions:
+      actions: read
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

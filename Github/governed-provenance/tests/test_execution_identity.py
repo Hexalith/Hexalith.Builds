@@ -56,6 +56,22 @@ class ExecutionIdentityTests(unittest.TestCase):
         self.assertEqual(len(result["helpers"]), 2)
         self.assertEqual(len(result["provenance_sha256"]), 64)
 
+    def test_resolve_refuses_unvalidated_git_arguments_before_reading_source(self):
+        for source in ("main", "--output=unapproved-file", "a" * 40 + "\n"):
+            with self.subTest(source=source), mock.patch.object(
+                sys, "argv", ["execution_identity.py", "resolve", "--source=" + source]
+            ), mock.patch.object(identity, "git") as read_git:
+                self.assertEqual(identity.main(), 1)
+                read_git.assert_not_called()
+
+    def test_resolve_accepts_the_exact_source_revision(self):
+        with mock.patch.object(sys, "argv", [
+            "execution_identity.py", "resolve", "--workspace", str(self.source),
+            "--source", self.source_sha,
+        ]), mock.patch("builtins.print") as output:
+            self.assertEqual(identity.main(), 0)
+            output.assert_called_once_with(self.builds_sha)
+
     def test_different_execution_revision_is_refused(self):
         with self.assertRaisesRegex(ValueError, "source release workflow declaration"):
             self.capture(declared="a" * 40)
