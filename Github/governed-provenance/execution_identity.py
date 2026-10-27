@@ -162,6 +162,8 @@ def main():
     parser.add_argument("--state")
     args = parser.parse_args()
     try:
+        if not re.fullmatch(r"[0-9a-f]{40}", args.source):
+            raise ValueError("source identity must be an exact lowercase commit SHA")
         if args.mode == "resolve":
             print(approved_builds_sha(git(args.workspace, "show", f"{args.source}:.github/workflows/release.yml")))
             return 0

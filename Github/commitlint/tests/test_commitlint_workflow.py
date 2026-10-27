@@ -43,7 +43,7 @@ class CommitlintWorkflowTests(unittest.TestCase):
         self.assertNotIn("${{", script)
         self.assertLess(
             script.index("printf '%s\\n' \"$PR_TITLE\""),
-            script.index('npx commitlint --from "$PR_BASE_SHA"'),
+            script.index('npx --no-install --ignore-scripts commitlint --from "$PR_BASE_SHA"'),
         )
 
     def test_pull_request_title_is_not_evaluated_as_shell_code(self):

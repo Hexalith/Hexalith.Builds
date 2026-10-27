@@ -575,8 +575,6 @@ $ciWorkflow = Get-Content -LiteralPath $ciWorkflowPath -Raw
 $releaseWorkflow = Get-Content -LiteralPath $releaseWorkflowPath -Raw
 $buildReleaseWorkflow = Get-Content -LiteralPath $buildReleaseWorkflowPath -Raw
 
-Assert-RestoreAndBuildUseReleaseRuntime -Workflow $ciWorkflow
-
 $packagePreparation = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Prepare package dependencies'
 $packageBody = Get-StepRunBody -Block $packagePreparation -StepName 'Prepare package dependencies'
 Assert-Contains -Name 'Package preparation opt-in' -Content $packagePreparation -Expected "inputs.package-prepare-script != ''"
@@ -600,6 +598,7 @@ foreach ($fixture in @(
 }
 $result = Invoke-WorkflowBashBody -Body ("mkdir -p hooks`nprintf 'exit 0\n' > hooks/packages.sh`n" + 'timeout() { [ "$3" = 1800 ] || exit 99; return 124; }' + "`n" + $packageBody) -Environment @{ PACKAGE_PREPARE_SCRIPT = 'hooks/packages.sh' }
 Assert-Condition -Name 'Package preparation timeout' -Condition ($result.ExitCode -eq 124) -Failure 'lost its deadline or timeout exit.'
+Assert-RestoreAndBuildUseReleaseRuntime -Workflow $ciWorkflow
 
 $hookValidation = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Validate Aspire hooks'
 $hookBody = Get-StepRunBody -Block $hookValidation -StepName 'Validate Aspire hooks'

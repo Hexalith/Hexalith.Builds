@@ -21,9 +21,10 @@ class PreparationTests(unittest.TestCase):
         cls.stale = helper.prepare(cls.current, cls.earlier)
 
     def test_refresh_is_deterministic_and_idempotent(self):
-        self.assertEqual(helper.prepare(self.stale, self.pins), self.current)
-        self.assertEqual(helper.prepare(self.stale, self.pins), helper.prepare(self.stale, self.pins))
-        self.assertEqual(helper.prepare(self.current, self.pins), self.current)
+        prepared = helper.prepare(self.stale, self.pins)
+        self.assertEqual(prepared, self.current)
+        self.assertEqual(helper.prepare(self.stale, self.pins), prepared)
+        self.assertEqual(helper.prepare(prepared, self.pins), prepared)
 
     def test_preserves_expectations_approvals_and_negative_mutations(self):
         for name,body in self.stale.items():

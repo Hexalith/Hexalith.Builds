@@ -108,7 +108,8 @@ def required_packages(api, workspace: Path, baseline: dict, relative: str) -> se
             expression = re.sub(r"\$\((UseHexalithProjectReferences|Hexalith\w+FromSource)\)", "true", condition)
             expression = expression.replace("$(Configuration)", "Debug")
             match = re.fullmatch(r"\s*'([^']*)'\s*(==|!=)\s*'([^']*)'\s*", expression)
-            api.require(match is not None and "$" not in expression, f"Unresolved dependency condition: {relative}")
+            if match is None or "$" in expression:
+                raise api.ValidationError(f"Unresolved dependency condition: {relative}")
             return (match[1] == match[3]) == (match[2] == "==")
         def visit(element, enabled=True):
             if not any(item.tag == "PackageReference" and controlled_field(item.get("Include") or item.get("Update") or "") for item in element.iter()):

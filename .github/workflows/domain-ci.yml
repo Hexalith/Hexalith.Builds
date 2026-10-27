@@ -1060,7 +1060,7 @@ jobs:
         if: ${{ inputs.aspire-browser-project != '' }}
         working-directory: ${{ inputs.aspire-browser-project }}
         run: |
-          npm ci
+          npm ci --ignore-scripts
           npx --no-install playwright install --with-deps chromium
       - name: Prepare package dependencies
         if: ${{ inputs.package-prepare-script != '' }}
