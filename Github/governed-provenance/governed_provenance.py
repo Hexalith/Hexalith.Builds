@@ -21,6 +21,7 @@ import json
 import os
 import re
 import sys
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -216,12 +217,19 @@ def action_using(text, context):
 class ClosureCollector:
     """Collect the bounded static ``uses:`` closure of one reusable workflow."""
 
-    def __init__(self, builds_root, commit):
+    def __init__(self, builds_root, commit, workflow_root=None, workflow_commit=None, workflow_repository=None):
         """Bind the collector to an immutable Hexalith.Builds checkout."""
         self.root = Path(builds_root).resolve()
         if not self.root.is_dir():
             raise ProvenanceError(f"Builds checkout {self.root} does not exist")
         self.commit = require_commit(commit, "builds-execution-sha")
+        self.workflow_root = Path(workflow_root).resolve() if workflow_root else None
+        self.workflow_commit = workflow_commit
+        self.workflow_repository = workflow_repository
+        self.builds_payloads = {}
+        if self.workflow_root:
+            self._verify_head(self.root, self.commit, "Builds checkout")
+            self._verify_head(self.workflow_root, self.workflow_commit, "standalone workflow checkout")
         self.workflows = {}
         self.actions = {}
         self.external = {}
@@ -229,6 +237,18 @@ class ClosureCollector:
         self.total_bytes = 0
         self._active = []
         self._visited = set()
+
+    @staticmethod
+    def _verify_head(root, commit, context):
+        result = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True)
+        if result.returncode or result.stdout.strip() != commit:
+            raise ProvenanceError(f"{context} does not match its approved exact commit")
+
+    @staticmethod
+    def _verify_blob(root, commit, relative, payload):
+        result = subprocess.run(["git", "-C", str(root), "show", f"{commit}:{relative}"], capture_output=True)
+        if result.returncode or result.stdout != payload:
+            raise ProvenanceError(f"source bytes differ from the approved Git blob: {relative}")
 
     def _resolve_inside_root(self, relative_path, context):
         candidate = (self.root / relative_path).resolve()
@@ -238,10 +258,17 @@ class ClosureCollector:
 
     def _read_source(self, relative_path, context):
         normalize_path(relative_path, context)
+        probe = self.root
+        for segment in relative_path.split("/"):
+            probe = probe / segment
+            if probe.is_symlink():
+                raise ProvenanceError(f"{context}: symbolic links are not approved sources: {relative_path}")
         path = self._resolve_inside_root(relative_path, context)
         if not path.is_file() or path.is_symlink():
             raise ProvenanceError(f"{context}: {relative_path} is not a regular file in the approved checkout")
         payload = path.read_bytes()
+        if self.workflow_root:
+            self.builds_payloads[relative_path] = payload
         if len(payload) > MAX_SOURCE_BLOB_BYTES:
             raise ProvenanceError(
                 f"{context}: {relative_path} is {len(payload)} bytes, exceeding the "
@@ -367,11 +394,21 @@ class ClosureCollector:
         if not self._enter(workflow_path, depth):
             return
         try:
-            payload = self._read_source(workflow_path, "reusable workflow")
+            if self.workflow_root:
+                path = self.workflow_root / workflow_path
+                if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(self.workflow_root):
+                    raise ProvenanceError("standalone workflow source is not a regular file inside the approved checkout")
+                payload = path.read_bytes()
+                if len(payload) > MAX_SOURCE_BLOB_BYTES:
+                    raise ProvenanceError("standalone workflow exceeds the source ceiling")
+                self.total_bytes += len(payload)
+                self._verify_blob(self.workflow_root, self.workflow_commit, workflow_path, payload)
+            else:
+                payload = self._read_source(workflow_path, "reusable workflow")
             self.workflows[workflow_path] = {
-                "repository": BUILDS_IDENTITY,
+                "repository": self.workflow_repository or BUILDS_IDENTITY,
                 "workflow_path": workflow_path,
-                "commit": self.commit,
+                "commit": self.workflow_commit or self.commit,
                 "blob_sha256": hashlib.sha256(payload).hexdigest(),
             }
             text = self._decode(payload, workflow_path)
@@ -412,6 +449,8 @@ class ClosureCollector:
 
     def projection(self, workflow_path):
         """Project the collected closure into its canonical, digest-bearing form."""
+        if self.workflow_root:
+            verify_git_blobs(self.root, self.commit, self.builds_payloads)
         reusable = self.workflows[workflow_path]
         actions = sorted(
             self.actions.values(),
@@ -464,6 +503,47 @@ def validate_workflow_identity(arguments):
     return commit
 
 
+def validate_standalone_identity(arguments):
+    """Bind a standalone job to GitHub's actual workflow identity and exact source."""
+    commit = require_commit(arguments.workflow_sha, "standalone workflow SHA")
+    candidate = require_commit(arguments.candidate, "candidate commit")
+    repository = normalize_identity(arguments.caller_repository, "standalone caller repository")
+    if normalize_identity(arguments.workflow_repository, "standalone workflow repository") != repository:
+        raise ProvenanceError("standalone workflow repository does not match its caller")
+    match = WORKFLOW_REF_PATTERN.fullmatch(arguments.workflow_ref)
+    if match is None or normalize_identity(f"{match.group('owner')}/{match.group('repository')}", "workflow ref repository") != repository:
+        raise ProvenanceError("standalone workflow ref does not identify the caller repository")
+    if match.group("path") != arguments.workflow_path or arguments.workflow_file_path != arguments.workflow_path:
+        raise ProvenanceError("standalone workflow path does not match the actual executing workflow")
+    if arguments.workflow_ref != arguments.caller_workflow_ref or commit != candidate:
+        raise ProvenanceError("standalone workflow identity does not match the exact candidate and caller ref")
+    return commit, repository
+
+
+def verify_git_blobs(root, commit, sources):
+    """Compare exact file bytes to immutable blobs in one bounded Git invocation."""
+    names = list(sources)
+    if not names:
+        return
+    result = subprocess.run(["git", "-C", str(root), "cat-file", "--batch"],
+                            input="".join(f"{commit}:{name}\n" for name in names).encode(), capture_output=True)
+    if result.returncode:
+        raise ProvenanceError("approved source blobs could not be read")
+    cursor = 0
+    for name in names:
+        end = result.stdout.find(b"\n", cursor)
+        header = result.stdout[cursor:end].split()
+        if end < 0 or len(header) != 3 or header[1] != b"blob" or not header[2].isdigit():
+            raise ProvenanceError(f"approved source blob is missing: {name}")
+        length = int(header[2])
+        cursor = end + 1
+        if result.stdout[cursor:cursor + length] != sources[name]:
+            raise ProvenanceError(f"source bytes differ from the approved Git blob: {name}")
+        cursor += length + 1
+    if cursor != len(result.stdout):
+        raise ProvenanceError("approved source blob response is malformed")
+
+
 def dependency_policy_projection(arguments):
     """Validate and project the caller-declared active dependency-policy coordinate."""
     fields = (
@@ -490,7 +570,15 @@ def build_provenance(arguments):
     """Build the complete governed-provenance document for one reusable-workflow run."""
     if arguments.stage not in STAGES:
         raise ProvenanceError(f"stage must be one of {list(STAGES)}, got {arguments.stage!r}")
-    commit = validate_workflow_identity(arguments)
+    mode = getattr(arguments, "workflow_mode", "reusable")
+    commit = require_commit(arguments.builds_execution_sha, "builds-execution-sha")
+    standalone = None
+    if mode == "standalone":
+        standalone = validate_standalone_identity(arguments)
+    elif mode == "reusable":
+        commit = validate_workflow_identity(arguments)
+    else:
+        raise ProvenanceError("workflow mode must be reusable or standalone")
     candidate = require_commit(arguments.candidate, "candidate commit")
     expected_digest = None
     if arguments.expected_evaluator_digest:
@@ -499,7 +587,10 @@ def build_provenance(arguments):
             "expected evaluator-authorization digest",
         )
 
-    collector = ClosureCollector(arguments.builds_root, commit)
+    collector = ClosureCollector(arguments.builds_root, commit,
+                                 workflow_root=getattr(arguments, "workflow_root", ".") if standalone else None,
+                                 workflow_commit=standalone[0] if standalone else None,
+                                 workflow_repository=standalone[1] if standalone else None)
     collector.visit_workflow(arguments.workflow_path)
     closure = collector.projection(arguments.workflow_path)
 
@@ -528,6 +619,9 @@ def build_provenance(arguments):
         "dependency_policy": dependency_policy_projection(arguments),
         "expected_evaluator_digest": expected_digest,
     }
+    if standalone:
+        provenance["workflow_mode"] = "standalone"
+        provenance["builds_execution_sha"] = commit
     return provenance
 
 
@@ -575,6 +669,8 @@ def write_outputs(provenance, output_path):
 def build_parser():
     """Build the governed-provenance command-line parser."""
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--workflow-mode", choices=("reusable", "standalone"), default="reusable")
+    parser.add_argument("--workflow-root", default=".")
     parser.add_argument("--stage", required=True)
     parser.add_argument("--builds-root", required=True)
     parser.add_argument("--builds-execution-sha", required=True)

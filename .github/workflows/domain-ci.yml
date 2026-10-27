@@ -139,6 +139,16 @@ on:
         required: false
         type: string
         default: 'TestResults/aspire-hook-evidence'
+      aspire-browser-project:
+        description: 'Opt-in directory containing the pinned Playwright npm lockfile; also installs TLS/browser prerequisites.'
+        required: false
+        type: string
+        default: ''
+      aspire-fail-skips:
+        description: 'Require nonempty Aspire results and reject every skipped test.'
+        required: false
+        type: boolean
+        default: false
       build-timeout-minutes:
         required: false
         type: number
@@ -994,6 +1004,38 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
           restore-keys: nuget-
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: ${{ inputs.aspire-browser-project != '' }}
+        with:
+          node-version: '24'
+      - name: Trust HTTPS development certificates for live sockets
+        if: ${{ inputs.aspire-browser-project != '' }}
+        run: |
+          echo 'SSL_CERT_DIR=/home/runner/.aspnet/dev-certs/trust:/usr/lib/ssl/certs' >> "$GITHUB_ENV"
+          sudo apt-get update
+          sudo apt-get install -y libnss3-tools
+          for live_nss_directory in "$HOME/.pki/nssdb" "$HOME/.local/share/pki/nssdb"; do
+            mkdir -p "$live_nss_directory"
+            if [ ! -f "$live_nss_directory/cert9.db" ]; then
+              certutil -N -d "sql:$live_nss_directory" --empty-password
+            fi
+          done
+          dotnet dev-certs https --trust
+          for live_nss_directory in "$HOME/.pki/nssdb" "$HOME/.local/share/pki/nssdb"; do
+            live_cert_index=0
+            for live_certificate in "$HOME"/.aspnet/dev-certs/trust/*.pem; do
+              [ -f "$live_certificate" ] || continue
+              # Trust the SDK development server certificate as a peer.
+              certutil -A -d "sql:$live_nss_directory" -n "tenants-live-dev-cert-$live_cert_index" -t 'P,,' -i "$live_certificate"
+              live_cert_index=$((live_cert_index + 1))
+            done
+          done
+      - name: Install pinned browser qualification tools
+        if: ${{ inputs.aspire-browser-project != '' }}
+        working-directory: ${{ inputs.aspire-browser-project }}
+        run: |
+          npm ci
+          npx --no-install playwright install --with-deps chromium
       - name: Restore and Build
         env:
           SOLUTION: ${{ inputs.solution }}
@@ -1051,13 +1093,36 @@ jobs:
         env:
           ASPIRE_TEST_PROJECT: ${{ inputs.aspire-test-project }}
           ASPIRE_MTP_EXCLUDED_TRAIT: ${{ inputs.aspire-mtp-excluded-trait }}
-        run: >
-          dotnet test "$ASPIRE_TEST_PROJECT"
-          --no-build --configuration Release
-          --filter-not-trait "$ASPIRE_MTP_EXCLUDED_TRAIT"
-          --results-directory TestResults/aspire
-          --report-xunit-trx
-          --report-xunit-trx-filename aspire-results.trx
+          ASPIRE_FAIL_SKIPS: ${{ inputs.aspire-fail-skips }}
+        run: |
+          set -euo pipefail
+          skip_arguments=()
+          if [ "$ASPIRE_FAIL_SKIPS" = true ]; then
+            skip_arguments+=(--minimum-expected-tests 1 --fail-skips on)
+          fi
+          dotnet test "$ASPIRE_TEST_PROJECT" \
+            --no-build --configuration Release \
+            --filter-not-trait "$ASPIRE_MTP_EXCLUDED_TRAIT" \
+            --results-directory TestResults/aspire \
+            --report-xunit-trx --report-xunit-trx-filename aspire-results.trx \
+            "${skip_arguments[@]}"
+      - name: Require executed Aspire tests without skips
+        if: ${{ inputs.aspire-fail-skips }}
+        shell: bash
+        run: |
+          python3 - <<'PYTEST'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          reports = list(Path('TestResults/aspire').rglob('*.trx'))
+          if not reports:
+              raise SystemExit('Aspire qualification requires a test result report.')
+          for report in reports:
+              counters = ET.parse(report).getroot().find('.//{*}Counters')
+              if counters is None or int(counters.get('executed', '0')) < 1:
+                  raise SystemExit(f'Aspire qualification executed no tests: {report}')
+              if int(counters.get('notExecuted', '0')) or int(counters.get('failed', '0')):
+                  raise SystemExit(f'Aspire qualification rejected failed or skipped tests: {report}')
+          PYTEST
       - name: Test summary
         if: always()
         env:

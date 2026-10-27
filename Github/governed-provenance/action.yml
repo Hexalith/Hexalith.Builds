@@ -7,6 +7,14 @@ description: >-
   service.
 
 inputs:
+  workflow-mode:
+    description: 'reusable (default) or standalone, using the actual GitHub workflow identity.'
+    required: false
+    default: 'reusable'
+  workflow-root:
+    description: 'Exact candidate checkout holding a standalone workflow.'
+    required: false
+    default: '.'
   stage:
     description: 'Governed stage the provenance is produced for: ci or release.'
     required: true
@@ -90,6 +98,8 @@ runs:
       id: provenance
       shell: bash
       env:
+        GOVERNED_WORKFLOW_MODE: ${{ inputs.workflow-mode }}
+        GOVERNED_WORKFLOW_ROOT: ${{ inputs.workflow-root }}
         GOVERNED_STAGE: ${{ inputs.stage }}
         GOVERNED_BUILDS_ROOT: ${{ inputs.builds-root }}
         GOVERNED_BUILDS_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
@@ -101,10 +111,10 @@ runs:
         GOVERNED_POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
         GOVERNED_EXPECTED_EVALUATOR_DIGEST: ${{ inputs.expected-evaluator-digest }}
         GOVERNED_OUTPUT: ${{ inputs.output }}
-        RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
-        RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}
-        RESOLVED_WORKFLOW_REF: ${{ job.workflow_ref }}
-        RESOLVED_WORKFLOW_FILE_PATH: ${{ job.workflow_file_path }}
+        RESOLVED_WORKFLOW_REPOSITORY: ${{ inputs.workflow-mode == 'standalone' && github.repository || job.workflow_repository }}
+        RESOLVED_WORKFLOW_SHA: ${{ inputs.workflow-mode == 'standalone' && github.workflow_sha || job.workflow_sha }}
+        RESOLVED_WORKFLOW_REF: ${{ inputs.workflow-mode == 'standalone' && github.workflow_ref || job.workflow_ref }}
+        RESOLVED_WORKFLOW_FILE_PATH: ${{ inputs.workflow-mode == 'standalone' && inputs.workflow-path || job.workflow_file_path }}
         CALLER_REPOSITORY: ${{ github.repository }}
         CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
         CALLER_RUN_ID: ${{ github.run_id }}
@@ -113,6 +123,8 @@ runs:
       run: |
         set -euo pipefail
         python3 "${GITHUB_ACTION_PATH}/governed_provenance.py" \
+          --workflow-mode "$GOVERNED_WORKFLOW_MODE" \
+          --workflow-root "$GOVERNED_WORKFLOW_ROOT" \
           --stage "$GOVERNED_STAGE" \
           --builds-root "$GOVERNED_BUILDS_ROOT" \
           --builds-execution-sha "$GOVERNED_BUILDS_EXECUTION_SHA" \

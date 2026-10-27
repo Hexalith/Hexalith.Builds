@@ -143,3 +143,29 @@ produces the same canonical bytes and the same digest.
 `Tools/test-governed-provenance.ps1` and by this repository's own CI. The suite
 evaluates both shipped governed workflows end to end, so a reference that stops
 being resolvable fails the pull request rather than a release.
+
+## Standalone publication workflows
+
+`workflow-mode: standalone` opts into a caller-owned publishing workflow while
+preserving the default reusable-workflow identity rules. GitHub's actual
+`github.workflow_ref` and `github.workflow_sha` must identify the caller and
+exact candidate. The collector verifies the source workflow and every local
+Builds action/helper against their immutable Git blobs, applies the same bounded
+closure rules, and records both repository revisions. Mutable or unverifiable
+closure edges fail before artifact preparation. Existing reusable outputs and
+identity refusal remain unchanged.
+
+`source_workflow_gates.py` accepts repeated caller-owned `--workflow` filenames.
+It queries every exact-main-source push run without filtering for success,
+selects the latest run number and attempt across all pages, rereads that run,
+and requires its exact workflow/source identity and completed success. Missing,
+failed, skipped, pending, malformed or changing attempts refuse admission and
+retain JSON observations. Conditional jobs inside a successful workflow do not
+become additional required gates.
+
+`execution_identity.py` binds recovery to the unique literal
+`HEXALITH_BUILDS_EXECUTION_SHA` approved by the source `release.yml`. Capture and
+verification compare the actual Builds checkout, helper Git blobs, source
+workflow bytes and reproducible standalone closure; retained provenance changes
+invalidate prepared state. Source-pinned build props need not move to the
+execution checkout.

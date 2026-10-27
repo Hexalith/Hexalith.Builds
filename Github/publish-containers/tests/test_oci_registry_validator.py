@@ -2,6 +2,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 import urllib.error
@@ -408,6 +409,30 @@ class OciRegistryValidatorTests(unittest.TestCase):
                 else:
                     with self.assertRaises(self.validator.ValidationError):
                         self.validator.validate_capture(root, expected)
+
+    def test_observation_cli_keeps_created_label_refusals(self):
+        for mutation in ("none", "missing-created-label", "missing-artifact-created-label",
+                         "truncated-created-label", "invalid-created-date", "different-child-created-pair"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                build_capture(root, mutation)
+                arguments = ["validator", "--image", "registry.hexalith.com/tenants:3.76.1",
+                             "--repository", REPOSITORY, "--source-sha", SOURCE_SHA,
+                             "--version", RELEASE_VERSION, "--observe-created", "--evidence-directory", ".hexalith/fixture"]
+                with mock.patch.object(sys, "argv", arguments), mock.patch.object(
+                    self.validator, "validate_registry", side_effect=lambda image, user, key, expected: self.validator.validate_capture(root, expected)
+                ), mock.patch.object(self.validator, "write_evidence", return_value={
+                    "index_digest": "sha256:" + "a" * 64, "platforms": ["linux/amd64", "linux/arm64"]
+                }):
+                    self.assertEqual(self.validator.main(), 0 if mutation == "none" else 1)
+
+    def test_cli_cannot_replace_an_explicit_expected_instant_with_observation(self):
+        arguments = ["validator", "--image", "registry.hexalith.com/tenants:3.76.1",
+                     "--repository", REPOSITORY, "--source-sha", SOURCE_SHA, "--version", RELEASE_VERSION,
+                     "--created", CREATED, "--observe-created", "--evidence-directory", ".hexalith/fixture"]
+        with mock.patch.object(sys, "argv", arguments), self.assertRaises(SystemExit) as rejected:
+            self.validator.main()
+        self.assertEqual(rejected.exception.code, 2)
 
     def test_created_identity_rejects_impossible_or_noncanonical_instants(self):
         for created in ["2023-02-29T23:59:59Z", "1900-02-29T00:00:00Z", "2024-04-31T00:00:00Z",

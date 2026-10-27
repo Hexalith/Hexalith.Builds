@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""Require the latest exact-source push run and attempt of each caller-owned gate."""
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+
+class GateError(ValueError):
+    """Source admission could not be proved."""
+
+
+def positive_integer(value, context):
+    if type(value) is not int or value < 1:
+        raise GateError(f"{context} must be a positive integer")
+    return value
+
+
+def select_latest(pages, source, branch, workflow):
+    """An older success must never hide a newer incomplete or unsuccessful run."""
+    if not isinstance(pages, list) or not pages:
+        raise GateError(f"{workflow}: workflow run pages are missing")
+    matching = []
+    for page in pages:
+        if not isinstance(page, dict) or not isinstance(page.get("workflow_runs"), list):
+            raise GateError(f"{workflow}: malformed workflow run response")
+        for run in page["workflow_runs"]:
+            if not isinstance(run, dict):
+                raise GateError(f"{workflow}: malformed workflow run")
+            if run.get("head_sha") == source and run.get("head_branch") == branch and run.get("event") == "push":
+                positive_integer(run.get("id"), f"{workflow}: run id")
+                positive_integer(run.get("run_number"), f"{workflow}: run number")
+                positive_integer(run.get("run_attempt"), f"{workflow}: run attempt")
+                matching.append(run)
+    if not matching:
+        raise GateError(f"{workflow}: no push run exists for exact {branch} source {source}")
+    latest = max(matching, key=lambda run: (run["run_number"], run["run_attempt"]))
+    if len({run["id"] for run in matching if run["run_number"] == latest["run_number"]}) != 1:
+        raise GateError(f"{workflow}: latest run identity is ambiguous")
+    return latest
+
+
+def require_success(run, source, branch, workflow, selected=None):
+    """Validate the fresh run response, including the latest attempt."""
+    if not isinstance(run, dict):
+        raise GateError(f"{workflow}: malformed latest-run response")
+    for key in ("id", "run_number", "run_attempt"):
+        positive_integer(run.get(key), f"{workflow}: {key}")
+    if selected is not None and any(run.get(key) != selected[key] for key in ("id", "run_number", "run_attempt")):
+        raise GateError(f"{workflow}: latest run or attempt changed during admission; retry qualification")
+    if run.get("head_sha") != source or run.get("head_branch") != branch or run.get("event") != "push":
+        raise GateError(f"{workflow}: latest run does not target the exact {branch} push source")
+    if run.get("path") != f".github/workflows/{workflow}":
+        raise GateError(f"{workflow}: latest run workflow identity is unverifiable")
+    if run.get("status") != "completed" or run.get("conclusion") != "success":
+        raise GateError(f"{workflow}: latest run {run['id']} attempt {run['run_attempt']} must succeed "
+                        f"(status={run.get('status')}, conclusion={run.get('conclusion')})")
+    return {key: run.get(key) for key in ("id", "run_number", "run_attempt", "head_sha", "head_branch", "event", "path", "status", "conclusion")}
+
+
+def gh_json(arguments):
+    result = subprocess.run(["gh", "api", *arguments], capture_output=True, text=True)
+    if result.returncode:
+        raise GateError("GitHub Actions API could not be queried safely")
+    try:
+        return json.loads(result.stdout)
+    except ValueError as error:
+        raise GateError("GitHub Actions API returned invalid JSON") from error
+
+
+def qualify(repository, source, branch, workflows, evidence):
+    """Retain observations even when one gate refuses admission."""
+    report = {"schema": "hexalith.source-workflow-gates.v1", "source": source, "branch": branch,
+              "repository": repository, "result": "refused", "gates": []}
+    try:
+        if not re.fullmatch(r"[A-Za-z0-9._-]+/[A-Za-z0-9._-]+", repository):
+            raise GateError("repository must be an owner/repository pair")
+        if not re.fullmatch(r"[0-9a-f]{40}", source) or branch != "main":
+            raise GateError("source must be an exact lowercase commit on main")
+        if not workflows or len(set(workflows)) != len(workflows):
+            raise GateError("required workflows must be nonempty and unique")
+        for workflow in workflows:
+            if not re.fullmatch(r"[A-Za-z0-9._-]+\.ya?ml", workflow):
+                raise GateError("required workflow must be a literal workflow filename")
+            observation = {"workflow": workflow}
+            report["gates"].append(observation)
+            pages = gh_json(["--paginate", "--slurp", "--method", "GET",
+                             f"repos/{repository}/actions/workflows/{workflow}/runs",
+                             "-f", f"branch={branch}", "-f", "event=push", "-f", f"head_sha={source}", "-f", "per_page=100"])
+            observation["pages"] = pages
+            latest = select_latest(pages, source, branch, workflow)
+            fresh = gh_json([f"repos/{repository}/actions/runs/{latest['id']}"])
+            observation["latest"] = fresh
+            observation["accepted"] = require_success(fresh, source, branch, workflow, latest)
+        report["result"] = "pass"
+    except GateError as error:
+        report["error"] = str(error)
+        raise
+    finally:
+        destination = Path(evidence)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    return report
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repository", required=True)
+    parser.add_argument("--source", required=True)
+    parser.add_argument("--branch", default="main")
+    parser.add_argument("--workflow", action="append", required=True)
+    parser.add_argument("--evidence", required=True)
+    args = parser.parse_args()
+    try:
+        qualify(args.repository, args.source, args.branch, args.workflow, args.evidence)
+    except GateError as error:
+        print(f"[source-workflow-gates] {error}", file=sys.stderr)
+        return 1
+    print("All required latest exact-source workflow runs and attempts succeeded.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
