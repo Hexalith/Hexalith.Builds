@@ -135,6 +135,8 @@ function Invoke-WorkflowBashBody {
 dotnet() {
   printf '%s\n' "$*" >> "$DOTNET_INVOCATIONS"
   project="$2"
+  # Simulate MTP/children that read stdin until EOF; the workflow must isolate them.
+  cat >/dev/null
   result_directory=''
   trx_filename=''
   arguments=("$@")
@@ -150,7 +152,21 @@ dotnet() {
   esac
   if [ -n "$result_directory" ] && [ -n "$trx_filename" ]; then
     mkdir -p "$result_directory"
-    : > "$result_directory/$trx_filename"
+    case "$project" in
+      *missing-report*) return 0 ;;
+      *malformed-report*) printf '<TestRun' > "$result_directory/$trx_filename"; return 0 ;;
+      *zero-report*) printf '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Results/><ResultSummary><Counters total="0" executed="0"/></ResultSummary></TestRun>' > "$result_directory/$trx_filename"; return 0 ;;
+    esac
+    printf '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Results><UnitTestResult outcome="Passed"/></Results><ResultSummary outcome="Completed"><Counters total="1" executed="1" passed="1" failed="0" error="0"/></ResultSummary></TestRun>' > "$result_directory/$trx_filename"
+    case "$project" in
+      *stale-report*) touch -t 200001010000 "$result_directory/$trx_filename" ;;
+      *failed-report*) sed -i 's/outcome="Passed"/outcome="Failed"/' "$result_directory/$trx_filename" ;;
+      *inconsistent-report*) sed -i 's/total="1"/total="2"/' "$result_directory/$trx_filename" ;;
+      *summary-failure*) sed -i 's/outcome="Completed"/outcome="Failed"/' "$result_directory/$trx_filename" ;;
+      *failure-counter*) sed -i 's/failed="0"/failed="1"/' "$result_directory/$trx_filename" ;;
+      *error-counter*) sed -i 's/error="0"/error="1"/' "$result_directory/$trx_filename" ;;
+      *passed-counter*) sed -i 's/passed="1"/passed="0"/' "$result_directory/$trx_filename" ;;
+    esac
   fi
   case "$project" in
     *infra-reported*) return 10 ;;
@@ -290,6 +306,37 @@ function Assert-ShardAggregationRuntime {
     if ($UsesCoverageSwitch) {
         Assert-NotContains -Name "$StepName disabled coverage runtime" -Content $passingResult.Invocations -Unexpected '--coverage'
     }
+
+    $consumingEnvironment = @{
+        $ProjectsVariable = "tests/pass-first/One.csproj`ntests/pass-second/Two.csproj`ntests/pass-third/Three.csproj`ntests/pass-fourth/Four.csproj"
+        RUN_COVERAGE_GATE = 'false'
+    }
+    $consumingResult = Invoke-WorkflowBashBody -Body $body -Environment $consumingEnvironment
+    $consumingInvocations = @($consumingResult.Invocations -split '\r?\n' | Where-Object { $_ })
+    Assert-Condition -Name "$StepName stdin-consuming children" `
+        -Condition ($consumingResult.ExitCode -eq 0 -and $consumingInvocations.Count -eq 4 -and $consumingResult.StepOutput -match '\Afailure-count=0\r?\n\z') `
+        -Failure 'did not execute all four configured projects with nonzero reports when children consume stdin.'
+
+    foreach ($scenario in @('missing-report', 'stale-report', 'malformed-report', 'zero-report', 'failed-report', 'inconsistent-report', 'summary-failure', 'failure-counter', 'error-counter', 'passed-counter')) {
+        $reportEnvironment = @{
+            $ProjectsVariable = "tests/$scenario/Invalid.csproj`ntests/pass-later/Later.csproj"
+            RUN_COVERAGE_GATE = 'false'
+        }
+        $reportResult = Invoke-WorkflowBashBody -Body $body -Environment $reportEnvironment
+        Assert-Condition -Name "$StepName $scenario runtime" -Condition ($reportResult.ExitCode -eq 1) `
+            -Failure "returned $($reportResult.ExitCode) instead of rejecting invalid test evidence."
+        Assert-Contains -Name "$StepName $scenario diagnostic" -Content $reportResult.Output -Expected '::error title=Invalid test report::'
+        Assert-NotContains -Name "$StepName $scenario output" -Content $reportResult.StepOutput -Unexpected 'failure-count=0'
+    }
+
+    # Deleting the prior same-basename report must also protect successful child exits.
+    $staleSuccessEnvironment = @{
+        $ProjectsVariable = "tests/pass-first/Same.csproj`ntests/missing-report/Same.csproj"
+        RUN_COVERAGE_GATE = 'false'
+    }
+    $staleSuccessResult = Invoke-WorkflowBashBody -Body $body -Environment $staleSuccessEnvironment
+    Assert-Condition -Name "$StepName stale successful report runtime" -Condition ($staleSuccessResult.ExitCode -eq 1) `
+        -Failure 'accepted a prior project report after a successful child produced no report.'
 
     $infrastructureEnvironment = @{
         $ProjectsVariable = "tests/infra-first/Infra%0ADown.csproj`ntests/pass-later/Pass.Later.csproj"
@@ -457,6 +504,73 @@ function Test-MtpCoverageBlock {
 $ciWorkflow = Get-Content -LiteralPath $ciWorkflowPath -Raw
 $releaseWorkflow = Get-Content -LiteralPath $releaseWorkflowPath -Raw
 $buildReleaseWorkflow = Get-Content -LiteralPath $buildReleaseWorkflowPath -Raw
+
+$hookValidation = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Validate Aspire hooks'
+$hookBody = Get-StepRunBody -Block $hookValidation -StepName 'Validate Aspire hooks'
+$hookEnvironment = @{
+    ASPIRE_PREPARE_SCRIPT = 'hooks/prepare.sh'
+    ASPIRE_RUNNER_SCRIPT = 'hooks/run.sh'
+    ASPIRE_EVIDENCE_PATH = 'TestResults/aspire-hook-evidence'
+    ASPIRE_PREPARE_TIMEOUT = '40'
+    ASPIRE_RUNNER_TIMEOUT = '300'
+    ASPIRE_JOB_TIMEOUT = '360'
+}
+$hookFixture = "mkdir -p hooks`nprintf 'exit 0\n' > hooks/prepare.sh`nprintf 'exit 0\n' > hooks/run.sh`n"
+$hookResult = Invoke-WorkflowBashBody -Body ($hookFixture + $hookBody) -Environment $hookEnvironment
+Assert-Condition -Name 'Aspire valid hooks' -Condition ($hookResult.ExitCode -eq 0) -Failure "rejected valid hooks: $($hookResult.Output)"
+foreach ($scenario in @(
+    @{ Key = 'ASPIRE_PREPARE_SCRIPT'; Value = '../outside.sh' },
+    @{ Key = 'ASPIRE_RUNNER_SCRIPT'; Value = '/tmp/run.sh' },
+    @{ Key = 'ASPIRE_RUNNER_SCRIPT'; Value = 'hooks/missing.sh' },
+    @{ Key = 'ASPIRE_RUNNER_SCRIPT'; Value = 'hooks/run.sh;true' },
+    @{ Key = 'ASPIRE_EVIDENCE_PATH'; Value = '.' },
+    @{ Key = 'ASPIRE_EVIDENCE_PATH'; Value = 'TestResults/../outside' },
+    @{ Key = 'ASPIRE_PREPARE_TIMEOUT'; Value = '0' },
+    @{ Key = 'ASPIRE_PREPARE_TIMEOUT'; Value = '61' },
+    @{ Key = 'ASPIRE_RUNNER_TIMEOUT'; Value = '341' },
+    @{ Key = 'ASPIRE_RUNNER_TIMEOUT'; Value = '0.5' },
+    @{ Key = 'ASPIRE_JOB_TIMEOUT'; Value = '361' },
+    @{ Key = 'ASPIRE_JOB_TIMEOUT'; Value = '340' }
+)) {
+    $environment = $hookEnvironment.Clone()
+    $environment[$scenario.Key] = $scenario.Value
+    $result = Invoke-WorkflowBashBody -Body ($hookFixture + $hookBody) -Environment $environment
+    Assert-Condition -Name "Aspire invalid $($scenario.Key)=$($scenario.Value)" -Condition ($result.ExitCode -ne 0) -Failure 'accepted invalid hook inputs.'
+}
+$symlinkResult = Invoke-WorkflowBashBody -Body ($hookFixture + "mv hooks/run.sh hooks/real.sh`nln -s real.sh hooks/run.sh`n" + $hookBody) -Environment $hookEnvironment
+Assert-Condition -Name 'Aspire linked script' -Condition ($symlinkResult.ExitCode -ne 0) -Failure 'accepted a symbolic link.'
+$seededEvidence = "mkdir -p TestResults/aspire-hook-evidence`nprintf 'private-key-sentinel\n' > TestResults/aspire-hook-evidence/issuer.key`n"
+$seededResult = Invoke-WorkflowBashBody -Body ($hookFixture + $seededEvidence + $hookBody) -Environment $hookEnvironment
+Assert-Condition -Name 'Aspire unowned evidence rejection' -Condition ($seededResult.ExitCode -ne 0) -Failure 'accepted pre-existing files for the always-run artifact upload.'
+Assert-Contains -Name 'Aspire unowned evidence diagnostic' -Content $seededResult.Output -Expected 'fresh empty directory'
+foreach ($step in @(
+    @{ Name = 'Prepare Aspire tier'; Script = 'ASPIRE_PREPARE_SCRIPT'; Bound = 'ASPIRE_PREPARE_TIMEOUT' },
+    @{ Name = 'Run Aspire hook'; Script = 'ASPIRE_RUNNER_SCRIPT'; Bound = 'ASPIRE_RUNNER_TIMEOUT' }
+)) {
+    $block = Get-NamedStepBlock -Content $ciWorkflow -StepName $step.Name
+    $body = Get-StepRunBody -Block $block -StepName $step.Name
+    Assert-Contains -Name $step.Name -Content $block -Expected 'timeout-minutes: ${{ inputs.aspire-'
+    Assert-Contains -Name $step.Name -Content $block -Expected 'TEST_PLATFORM: ${{ inputs.test-platform }}'
+    Assert-Contains -Name $step.Name -Content $body -Expected '--signal=TERM --kill-after=30s'
+    foreach ($code in @(0, 23, 124)) {
+        $environment = @{ $step.Script = 'hooks/run.sh'; $step.Bound = '2' }
+        $fixture = "mkdir -p hooks`nprintf 'exit $code\n' > hooks/run.sh`n"
+        $result = Invoke-WorkflowBashBody -Body ($fixture + $body) -Environment $environment
+        Assert-Condition -Name "$($step.Name) exit $code" -Condition ($result.ExitCode -eq $code) -Failure "returned $($result.ExitCode)."
+    }
+    $result = Invoke-WorkflowBashBody -Body ('timeout() { [ "$3" = 120 ] || exit 99; return 124; }' + "`n" + $body) -Environment @{ $step.Script = 'hooks/run.sh'; $step.Bound = '2' }
+    Assert-Condition -Name "$($step.Name) timeout propagation" -Condition ($result.ExitCode -eq 124) -Failure 'lost the bound or deadline exit.'
+}
+$aspireJob = $ciWorkflow.Substring($ciWorkflow.IndexOf('  aspire-tests:')).Split('  performance-tests:')[0]
+Assert-Condition -Name 'Aspire preparation ordering' -Condition ($aspireJob.IndexOf('Install and initialize Dapr') -lt $aspireJob.IndexOf('Prepare Aspire tier') -and $aspireJob.IndexOf('Prepare Aspire tier') -lt $aspireJob.IndexOf('Run Aspire hook')) -Failure 'does not initialize Dapr before preparation and execution.'
+foreach ($platform in @('VSTest', 'Microsoft.Testing.Platform')) {
+    $block = Get-NamedStepBlock -Content $ciWorkflow -StepName "Aspire contract tests (Tier 3, non-Performance, $platform)"
+    Assert-Contains -Name "Aspire default $platform" -Content $block -Expected "inputs.aspire-runner-script == '' && inputs.test-platform =="
+}
+$hookUpload = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Upload Aspire hook evidence'
+Assert-Contains -Name 'Aspire hook upload' -Content $hookUpload -Expected 'always()'
+Assert-Contains -Name 'Aspire hook upload validation gate' -Content $hookUpload -Expected "steps.validate-aspire-hooks.outcome == 'success'"
+Assert-Contains -Name 'Aspire hook upload path' -Content $hookUpload -Expected 'path: ${{ inputs.aspire-evidence-path }}'
 
 foreach ($workflow in @(
     [pscustomobject] @{ Name = 'domain-ci.yml'; Content = $ciWorkflow },

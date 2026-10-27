@@ -34,6 +34,34 @@ coverage is deliberately not collected and is excluded from the coverage gates;
 TRX results are always uploaded as the `aspire-test-results` artifact. Set
 `aspire-continue-on-error: false` in a module that wants the tier blocking.
 
+## Optional Aspire preparation and runner hooks
+
+`aspire-prepare-script` and `aspire-runner-script` accept repository-relative bash
+script files. Preparation runs after the Release solution build and Dapr
+initialization; the runner replaces only the ordinary Aspire test command.
+Omitting the hooks preserves the existing VSTest/MTP commands and defaults.
+Script paths and `aspire-evidence-path` reject absolute paths, traversal, shell
+syntax and symbolic links. Inputs are passed through environment variables and
+quoted arguments, without evaluating command strings.
+The evidence directory must be absent or empty at job entry; pre-existing files
+are unowned and reject validation, so the always-run upload cannot expose them.
+Use a fresh evidence directory for retries; no user files are deleted.
+
+Each hook receives `ASPIRE_TEST_PROJECT`, `TEST_PLATFORM` and
+`ASPIRE_EVIDENCE_PATH`. A preparer may export nonsecret paths for its runner using
+`GITHUB_ENV`; consumers are responsible for keeping credentials and private
+runtime state out of uploaded evidence. `aspire-prepare-timeout-minutes` defaults
+to 30 and accepts 1–60; `aspire-runner-timeout-minutes` defaults to 30 and accepts
+1–340. GNU `timeout` enforces each bound with a 30-second kill grace in addition
+to the Actions step deadline. Hook failures and deadline exits fail their steps.
+The finite `aspire-timeout-minutes` must be an integer at most 360 and allow all
+enabled hook budgets plus at least five minutes for the rest of the job.
+
+`aspire-evidence-path` defaults to `TestResults/aspire-hook-evidence`; its contents
+are retained as `aspire-hook-evidence` for seven days on success and failure.
+Keep `aspire-continue-on-error: false` for a blocking caller. Hooks do not change
+the nightly performance tier, enable publication, or initialize nested submodules.
+
 ## Blocking Test Shard Results
 
 Each active Tier 1 and Tier 2 step runs every configured project, even when an

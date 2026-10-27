@@ -111,6 +111,29 @@ on:
         required: false
         type: boolean
         default: true
+      aspire-prepare-script:
+        description: 'Optional repository-relative bash script preparing the Aspire tier after Dapr initialization.'
+        required: false
+        type: string
+        default: ''
+      aspire-runner-script:
+        description: 'Optional repository-relative bash script replacing the default Aspire test invocation.'
+        required: false
+        type: string
+        default: ''
+      aspire-prepare-timeout-minutes:
+        required: false
+        type: number
+        default: 30
+      aspire-runner-timeout-minutes:
+        required: false
+        type: number
+        default: 30
+      aspire-evidence-path:
+        description: 'Repository-relative directory for support-safe hook evidence; always uploaded for hook callers.'
+        required: false
+        type: string
+        default: 'TestResults/aspire-hook-evidence'
       build-timeout-minutes:
         required: false
         type: number
@@ -376,13 +399,16 @@ jobs:
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
             rm -f -- "$result_file"
+            mkdir -p "TestResults/${name}"
+            report_marker="TestResults/${name}/.started"
+            touch "$report_marker"
             summary_proj=${proj//\\/\\\\}
             summary_proj=${summary_proj//|/\\|}
             summary_proj=${summary_proj//\`/\\\`}
             if dotnet test "$proj" --no-build --configuration Release \
                 --logger "trx;LogFileName=${name}.trx" \
                 --results-directory "TestResults/${name}" \
-                --collect:"XPlat Code Coverage"; then
+                --collect:"XPlat Code Coverage" </dev/null; then
               status=PASS
               exit_code=0
             else
@@ -398,6 +424,54 @@ jobs:
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            # A zero child exit is insufficient: require this invocation's nonzero TRX.
+            # The heredoc also keeps the verifier from consuming the project-list stdin.
+            if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          try:
+              report = pathlib.Path(sys.argv[1])
+              if report.stat().st_mtime_ns < pathlib.Path(sys.argv[2]).stat().st_mtime_ns:
+                  raise ValueError("stale report")
+              root = ET.parse(report).getroot()
+              ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+              if root.tag != ns + "TestRun":
+                  raise ValueError("invalid TRX root")
+              counters = root.find(f"{ns}ResultSummary/{ns}Counters")
+              results = root.findall(f"{ns}Results/{ns}UnitTestResult")
+              if counters is None:
+                  raise ValueError("missing counters")
+              total = int(counters.get("total", "-1"))
+              executed = int(counters.get("executed", "-1"))
+              outcomes = [result.get("outcome") for result in results]
+              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+                  raise ValueError("missing or inconsistent test results")
+              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+                  raise ValueError("invalid result outcome")
+              summary = root.find(f"{ns}ResultSummary")
+              if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
+                  raise ValueError("invalid result summary")
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+                  if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
+                      raise ValueError("contradictory outcome counters")
+              failures = [int(counters.get(name, "0")) for name in
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+              if any(value < 0 for value in failures):
+                  raise ValueError("invalid failure counters")
+              if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
+                  raise ValueError("failed summary or counters with successful exit")
+          except (OSError, ValueError, ET.ParseError):
+              print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
+              sys.exit(1)
+          PYTRX
+            then
+              annotation_proj=${proj//%/%25}
+              printf '::error title=Invalid test report::%s did not produce fresh nonzero test evidence.\n' "$annotation_proj"
+              printf '| %s | FAIL | 1 |\n' "$summary_proj" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
             fi
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$UNIT_TEST_PROJECTS"
@@ -424,6 +498,9 @@ jobs:
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
             rm -f -- "$result_file"
+            mkdir -p "TestResults/${name}"
+            report_marker="TestResults/${name}/.started"
+            touch "$report_marker"
             summary_proj=${proj//\\/\\\\}
             summary_proj=${summary_proj//|/\\|}
             summary_proj=${summary_proj//\`/\\\`}
@@ -435,7 +512,7 @@ jobs:
                 --results-directory "TestResults/${name}" \
                 --report-xunit-trx \
                 --report-xunit-trx-filename "${name}.trx" \
-                "${coverage_args[@]}"; then
+                "${coverage_args[@]}" </dev/null; then
               status=PASS
               exit_code=0
             else
@@ -456,6 +533,54 @@ jobs:
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            # A zero child exit is insufficient: require this invocation's nonzero TRX.
+            # The heredoc also keeps the verifier from consuming the project-list stdin.
+            if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          try:
+              report = pathlib.Path(sys.argv[1])
+              if report.stat().st_mtime_ns < pathlib.Path(sys.argv[2]).stat().st_mtime_ns:
+                  raise ValueError("stale report")
+              root = ET.parse(report).getroot()
+              ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+              if root.tag != ns + "TestRun":
+                  raise ValueError("invalid TRX root")
+              counters = root.find(f"{ns}ResultSummary/{ns}Counters")
+              results = root.findall(f"{ns}Results/{ns}UnitTestResult")
+              if counters is None:
+                  raise ValueError("missing counters")
+              total = int(counters.get("total", "-1"))
+              executed = int(counters.get("executed", "-1"))
+              outcomes = [result.get("outcome") for result in results]
+              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+                  raise ValueError("missing or inconsistent test results")
+              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+                  raise ValueError("invalid result outcome")
+              summary = root.find(f"{ns}ResultSummary")
+              if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
+                  raise ValueError("invalid result summary")
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+                  if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
+                      raise ValueError("contradictory outcome counters")
+              failures = [int(counters.get(name, "0")) for name in
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+              if any(value < 0 for value in failures):
+                  raise ValueError("invalid failure counters")
+              if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
+                  raise ValueError("failed summary or counters with successful exit")
+          except (OSError, ValueError, ET.ParseError):
+              print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
+              sys.exit(1)
+          PYTRX
+            then
+              annotation_proj=${proj//%/%25}
+              printf '::error title=Invalid test report::%s did not produce fresh nonzero test evidence.\n' "$annotation_proj"
+              printf '| %s | FAIL | 1 |\n' "$summary_proj" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
             fi
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$UNIT_TEST_PROJECTS"
@@ -493,13 +618,16 @@ jobs:
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
             rm -f -- "$result_file"
+            mkdir -p "TestResults/${name}"
+            report_marker="TestResults/${name}/.started"
+            touch "$report_marker"
             summary_proj=${proj//\\/\\\\}
             summary_proj=${summary_proj//|/\\|}
             summary_proj=${summary_proj//\`/\\\`}
             if dotnet test "$proj" --no-build --configuration Release \
                 --logger "trx;LogFileName=${name}.trx" \
                 --results-directory "TestResults/${name}" \
-                --collect:"XPlat Code Coverage"; then
+                --collect:"XPlat Code Coverage" </dev/null; then
               status=PASS
               exit_code=0
             else
@@ -515,6 +643,54 @@ jobs:
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            # A zero child exit is insufficient: require this invocation's nonzero TRX.
+            # The heredoc also keeps the verifier from consuming the project-list stdin.
+            if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          try:
+              report = pathlib.Path(sys.argv[1])
+              if report.stat().st_mtime_ns < pathlib.Path(sys.argv[2]).stat().st_mtime_ns:
+                  raise ValueError("stale report")
+              root = ET.parse(report).getroot()
+              ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+              if root.tag != ns + "TestRun":
+                  raise ValueError("invalid TRX root")
+              counters = root.find(f"{ns}ResultSummary/{ns}Counters")
+              results = root.findall(f"{ns}Results/{ns}UnitTestResult")
+              if counters is None:
+                  raise ValueError("missing counters")
+              total = int(counters.get("total", "-1"))
+              executed = int(counters.get("executed", "-1"))
+              outcomes = [result.get("outcome") for result in results]
+              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+                  raise ValueError("missing or inconsistent test results")
+              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+                  raise ValueError("invalid result outcome")
+              summary = root.find(f"{ns}ResultSummary")
+              if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
+                  raise ValueError("invalid result summary")
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+                  if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
+                      raise ValueError("contradictory outcome counters")
+              failures = [int(counters.get(name, "0")) for name in
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+              if any(value < 0 for value in failures):
+                  raise ValueError("invalid failure counters")
+              if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
+                  raise ValueError("failed summary or counters with successful exit")
+          except (OSError, ValueError, ET.ParseError):
+              print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
+              sys.exit(1)
+          PYTRX
+            then
+              annotation_proj=${proj//%/%25}
+              printf '::error title=Invalid test report::%s did not produce fresh nonzero test evidence.\n' "$annotation_proj"
+              printf '| %s | FAIL | 1 |\n' "$summary_proj" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
             fi
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$INTEGRATION_TEST_PROJECTS"
@@ -541,6 +717,9 @@ jobs:
             name=$(basename "$proj")
             result_file="TestResults/${name}/${name}.trx"
             rm -f -- "$result_file"
+            mkdir -p "TestResults/${name}"
+            report_marker="TestResults/${name}/.started"
+            touch "$report_marker"
             summary_proj=${proj//\\/\\\\}
             summary_proj=${summary_proj//|/\\|}
             summary_proj=${summary_proj//\`/\\\`}
@@ -552,7 +731,7 @@ jobs:
                 --results-directory "TestResults/${name}" \
                 --report-xunit-trx \
                 --report-xunit-trx-filename "${name}.trx" \
-                "${coverage_args[@]}"; then
+                "${coverage_args[@]}" </dev/null; then
               status=PASS
               exit_code=0
             else
@@ -573,6 +752,54 @@ jobs:
               status=FAIL
               failures=$((failures + 1))
               printf '::error title=Test shard failed::%s exited with code %d.\n' "$annotation_proj" "$exit_code"
+            fi
+            # A zero child exit is insufficient: require this invocation's nonzero TRX.
+            # The heredoc also keeps the verifier from consuming the project-list stdin.
+            if ! python3 - "$result_file" "$report_marker" "$exit_code" <<'PYTRX'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          try:
+              report = pathlib.Path(sys.argv[1])
+              if report.stat().st_mtime_ns < pathlib.Path(sys.argv[2]).stat().st_mtime_ns:
+                  raise ValueError("stale report")
+              root = ET.parse(report).getroot()
+              ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+              if root.tag != ns + "TestRun":
+                  raise ValueError("invalid TRX root")
+              counters = root.find(f"{ns}ResultSummary/{ns}Counters")
+              results = root.findall(f"{ns}Results/{ns}UnitTestResult")
+              if counters is None:
+                  raise ValueError("missing counters")
+              total = int(counters.get("total", "-1"))
+              executed = int(counters.get("executed", "-1"))
+              outcomes = [result.get("outcome") for result in results]
+              if total != len(results) or executed <= 0 or executed != sum(outcome != "NotExecuted" for outcome in outcomes):
+                  raise ValueError("missing or inconsistent test results")
+              if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
+                  raise ValueError("invalid result outcome")
+              summary = root.find(f"{ns}ResultSummary")
+              if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
+                  raise ValueError("invalid result summary")
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+                  if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
+                      raise ValueError("contradictory outcome counters")
+              failures = [int(counters.get(name, "0")) for name in
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+              if any(value < 0 for value in failures):
+                  raise ValueError("invalid failure counters")
+              if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
+                  raise ValueError("failed summary or counters with successful exit")
+          except (OSError, ValueError, ET.ParseError):
+              print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
+              sys.exit(1)
+          PYTRX
+            then
+              annotation_proj=${proj//%/%25}
+              printf '::error title=Invalid test report::%s did not produce fresh nonzero test evidence.\n' "$annotation_proj"
+              printf '| %s | FAIL | 1 |\n' "$summary_proj" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
             fi
             printf '| %s | %s | %d |\n' "$summary_proj" "$status" "$exit_code" >> "$GITHUB_STEP_SUMMARY"
           done <<< "$INTEGRATION_TEST_PROJECTS"
@@ -674,6 +901,50 @@ jobs:
           submodules: false
       - name: Initialize root-declared submodules
         uses: Hexalith/Hexalith.Builds/Github/initialize-build@fff4a212180d8cd1c5c0759655a9bc4fb6963c45 # BUILD-REL-1
+      - name: Validate Aspire hooks
+        id: validate-aspire-hooks
+        if: ${{ inputs.aspire-prepare-script != '' || inputs.aspire-runner-script != '' }}
+        shell: bash
+        env:
+          ASPIRE_PREPARE_SCRIPT: ${{ inputs.aspire-prepare-script }}
+          ASPIRE_RUNNER_SCRIPT: ${{ inputs.aspire-runner-script }}
+          ASPIRE_EVIDENCE_PATH: ${{ inputs.aspire-evidence-path }}
+          ASPIRE_PREPARE_TIMEOUT: ${{ inputs.aspire-prepare-timeout-minutes }}
+          ASPIRE_RUNNER_TIMEOUT: ${{ inputs.aspire-runner-timeout-minutes }}
+          ASPIRE_JOB_TIMEOUT: ${{ inputs.aspire-timeout-minutes }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PYHOOKS'
+          import os, pathlib, re
+          root = pathlib.Path.cwd().resolve()
+          def relative(name, file=False):
+              value = os.environ[name]
+              if not value and file:
+                  return
+              path = pathlib.PurePosixPath(value)
+              if not re.fullmatch(r'[A-Za-z0-9_./-]+', value) or path.is_absolute() or any(part in ('.', '..') for part in value.split('/')):
+                  raise SystemExit(f'{name} must be a repository-relative path without traversal.')
+              target = root / value
+              if any(part.is_symlink() for part in [target, *target.parents] if part != root and root in part.parents):
+                  raise SystemExit(f'{name} must not traverse symbolic links.')
+              if file and not target.is_file():
+                  raise SystemExit(f'{name} does not name an existing script: {value}')
+          relative('ASPIRE_PREPARE_SCRIPT', True)
+          relative('ASPIRE_RUNNER_SCRIPT', True)
+          relative('ASPIRE_EVIDENCE_PATH')
+          evidence = root / os.environ['ASPIRE_EVIDENCE_PATH']
+          if evidence.exists() and (not evidence.is_dir() or any(evidence.iterdir())):
+              raise SystemExit('ASPIRE_EVIDENCE_PATH must name a fresh empty directory; existing files are unowned and will not be uploaded.')
+          bounds = {}
+          for name, maximum in [('ASPIRE_PREPARE_TIMEOUT', 60), ('ASPIRE_RUNNER_TIMEOUT', 340), ('ASPIRE_JOB_TIMEOUT', 360)]:
+              value = os.environ[name]
+              if not re.fullmatch(r'[1-9][0-9]*', value) or not 1 <= int(value) <= maximum:
+                  raise SystemExit(f'{name} must be an integer from 1 to {maximum} minutes.')
+              bounds[name] = int(value)
+          required = sum(bounds[name] for name, script in [('ASPIRE_PREPARE_TIMEOUT', 'ASPIRE_PREPARE_SCRIPT'), ('ASPIRE_RUNNER_TIMEOUT', 'ASPIRE_RUNNER_SCRIPT')] if os.environ[script])
+          if required + 5 > bounds['ASPIRE_JOB_TIMEOUT']:
+              raise SystemExit('Aspire job timeout must allow hook budgets plus at least five minutes for setup and evidence.')
+          PYHOOKS
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -695,10 +966,36 @@ jobs:
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
+      - name: Prepare Aspire tier
+        if: ${{ inputs.aspire-prepare-script != '' }}
+        timeout-minutes: ${{ inputs.aspire-prepare-timeout-minutes }}
+        shell: bash
+        env:
+          ASPIRE_PREPARE_SCRIPT: ${{ inputs.aspire-prepare-script }}
+          ASPIRE_PREPARE_TIMEOUT: ${{ inputs.aspire-prepare-timeout-minutes }}
+          ASPIRE_TEST_PROJECT: ${{ inputs.aspire-test-project }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          ASPIRE_EVIDENCE_PATH: ${{ inputs.aspire-evidence-path }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=30s "$((ASPIRE_PREPARE_TIMEOUT * 60))" bash "$ASPIRE_PREPARE_SCRIPT" </dev/null
+      - name: Run Aspire hook
+        if: ${{ inputs.aspire-runner-script != '' }}
+        timeout-minutes: ${{ inputs.aspire-runner-timeout-minutes }}
+        shell: bash
+        env:
+          ASPIRE_RUNNER_SCRIPT: ${{ inputs.aspire-runner-script }}
+          ASPIRE_RUNNER_TIMEOUT: ${{ inputs.aspire-runner-timeout-minutes }}
+          ASPIRE_TEST_PROJECT: ${{ inputs.aspire-test-project }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          ASPIRE_EVIDENCE_PATH: ${{ inputs.aspire-evidence-path }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=30s "$((ASPIRE_RUNNER_TIMEOUT * 60))" bash "$ASPIRE_RUNNER_SCRIPT" </dev/null
       # Coverage is not collected here: this tier is advisory (non-blocking by
       # default) and its coverage is intentionally excluded from the gates.
       - name: Aspire contract tests (Tier 3, non-Performance, VSTest)
-        if: ${{ inputs.test-platform == 'vstest' }}
+        if: ${{ inputs.aspire-runner-script == '' && inputs.test-platform == 'vstest' }}
         shell: bash
         env:
           ASPIRE_TEST_PROJECT: ${{ inputs.aspire-test-project }}
@@ -710,7 +1007,7 @@ jobs:
           --logger "trx;LogFileName=aspire-results.trx"
           --results-directory TestResults/aspire
       - name: Aspire contract tests (Tier 3, non-Performance, Microsoft.Testing.Platform)
-        if: ${{ inputs.test-platform == 'microsoft-testing-platform' }}
+        if: ${{ inputs.aspire-runner-script == '' && inputs.test-platform == 'microsoft-testing-platform' }}
         shell: bash
         env:
           ASPIRE_TEST_PROJECT: ${{ inputs.aspire-test-project }}
@@ -729,6 +1026,13 @@ jobs:
         run: |
           echo "## Tier 3 Aspire Contract Tests" >> "$GITHUB_STEP_SUMMARY"
           echo "Status: $JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload Aspire hook evidence
+        if: ${{ always() && steps.validate-aspire-hooks.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: aspire-hook-evidence
+          path: ${{ inputs.aspire-evidence-path }}
+          retention-days: 7
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
