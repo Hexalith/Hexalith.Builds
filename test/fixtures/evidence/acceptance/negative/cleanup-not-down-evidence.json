@@ -3,7 +3,7 @@
   "status": "accepted",
   "sourceRevision": "0123456789abcdef0123456789abcdef01234567",
   "platformPins": {
-    "eventStoreVersion": "3.128.0",
+    "eventStoreVersion": "3.128.3",
     "daprRuntimeVersion": "1.18.7",
     "daprSdkVersion": "1.18.10",
     "frontComposerVersion": "4.7.0"
@@ -39,7 +39,7 @@
       "exitCode": 0,
       "finalStatus": "completed",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest.json",
-      "evidenceSha256": "3C18F9ED8CE74272685DE3C3A65BAB2370AC263DD0E68727868C059AE0EE01FD",
+      "evidenceSha256": "8048C332C0988C9D4C55C70383BE656898F6A0B80DB9112FCFF689E99939EE2D",
       "reportPath": "test/fixtures/evidence/acceptance/bound/run-persisted-vstest.vstest.trx",
       "reportSha256": "0BB21EF12F7DC8A79849BC4A1F7298EECF13C23CD7242266D87BC36173C13553",
       "reportPlatform": "vstest"
@@ -50,7 +50,7 @@
       "exitCode": 0,
       "finalStatus": "completed",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.json",
-      "evidenceSha256": "03A86BCCFE0EC1DF07DAEF685AF739085A2664DDC02E3B5670665223706457B4",
+      "evidenceSha256": "0AC230417F02E8218600FF728BF13B428EBB63753D5AD2789BC311C4B17F5F01",
       "reportPath": "test/fixtures/evidence/acceptance/bound/run-persisted-mtp.mtp.trx",
       "reportSha256": "7A81E16B31D9D46B875DD225F4783F671E956EA0F7E694EF1E539917111760AE",
       "reportPlatform": "mtp"
@@ -61,7 +61,7 @@
       "exitCode": 2,
       "finalStatus": "unavailable",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-prerequisite-unavailable.json",
-      "evidenceSha256": "A79608B88D93C5BFC58E8A6A532F93BEA4642EB951CD499932A98EBA110AB655",
+      "evidenceSha256": "263D9FC40F9E4959D5E20708A6C6348E5AF083F5438A52E9A4B8E563B12066F5",
       "reportPath": null,
       "reportSha256": null,
       "reportPlatform": null
@@ -72,7 +72,7 @@
       "exitCode": 130,
       "finalStatus": "cancelled",
       "evidencePath": "test/fixtures/evidence/acceptance/bound/run-cancelled.json",
-      "evidenceSha256": "56B1C0428C5EFD92DF42E96E00D3FA56B6A720688B3AF67474BCA39F43A2DE6F",
+      "evidenceSha256": "9E735E7974B9847029CDCF738471FD1A5F5AE2A367A640E7EBEA14A87DF31298",
       "reportPath": null,
       "reportSha256": null,
       "reportPlatform": null
