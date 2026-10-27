@@ -501,9 +501,81 @@ function Test-MtpCoverageBlock {
         ([regex]::Matches($Block, [regex]::Escape('coverage_args+=('))).Count -eq 1
 }
 
+function Assert-RestoreAndBuildUseReleaseRuntime {
+    param([Parameter(Mandatory = $true)][string] $Workflow)
+
+    $temporaryDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "hexalith-restore-build-$([guid]::NewGuid().ToString('N'))"
+    try {
+        $null = New-Item -ItemType Directory -Path $temporaryDirectory
+        $projectPath = Join-Path $temporaryDirectory 'module graph with spaces.proj'
+        $project = @'
+<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+  </PropertyGroup>
+  <Target Name="Restore">
+    <Error Condition="'$(Configuration)' != 'Release'" Text="Restore must use Release." />
+    <WriteLinesToFile File="restore-configuration.txt" Lines="$(Configuration)" Overwrite="true" />
+  </Target>
+  <Target Name="Build">
+    <Error Condition="'$(Configuration)' != 'Release'" Text="Build must use Release." />
+    <WriteLinesToFile File="build-configuration.txt" Lines="$(Configuration)" Overwrite="true" />
+  </Target>
+</Project>
+'@
+        Set-Content -LiteralPath $projectPath -Value $project -NoNewline
+
+        foreach ($stepName in @('Restore', 'Build')) {
+            $block = Get-NamedStepBlock -Content $Workflow -StepName $stepName
+            $body = [regex]::Match($block, '(?m)^        run: (?<Body>dotnet [^\r\n]+)$')
+            Assert-Condition -Name "$stepName executable configuration body" -Condition $body.Success -Failure 'is missing its executable inline dotnet command.'
+            if (-not $body.Success) { continue }
+
+            $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+            $startInfo.FileName = 'bash'
+            $startInfo.ArgumentList.Add('-c')
+            $startInfo.ArgumentList.Add($body.Groups['Body'].Value)
+            $startInfo.UseShellExecute = $false
+            $startInfo.RedirectStandardInput = $true
+            $startInfo.RedirectStandardOutput = $true
+            $startInfo.RedirectStandardError = $true
+            $startInfo.WorkingDirectory = $temporaryDirectory
+            $startInfo.Environment['SOLUTION'] = $projectPath
+            $process = [System.Diagnostics.Process]::new()
+            try {
+                $process.StartInfo = $startInfo
+                $null = $process.Start()
+                $process.StandardInput.Close()
+                $stdout = $process.StandardOutput.ReadToEndAsync()
+                $stderr = $process.StandardError.ReadToEndAsync()
+                if (-not $process.WaitForExit(30000)) {
+                    $process.Kill($true)
+                    $null = $process.WaitForExit(5000)
+                    $script:failures.Add("$stepName configuration fixture exceeded 30 seconds.")
+                    continue
+                }
+                $diagnostic = $stdout.Result + $stderr.Result
+                if ($diagnostic.Length -gt 1000) { $diagnostic = $diagnostic.Substring(0, 1000) }
+                Assert-Condition -Name "$stepName Release execution" -Condition ($process.ExitCode -eq 0) -Failure "did not restore/build the Release graph: $diagnostic"
+                $configurationPath = Join-Path $temporaryDirectory "$($stepName.ToLowerInvariant())-configuration.txt"
+                $configuration = if (Test-Path -LiteralPath $configurationPath) { (Get-Content -LiteralPath $configurationPath -Raw).Trim() } else { '' }
+                Assert-Condition -Name "$stepName effective configuration" -Condition ($configuration -ceq 'Release') -Failure "used '$configuration' instead of Release."
+            }
+            finally {
+                $process.Dispose()
+            }
+        }
+    }
+    finally {
+        if (Test-Path -LiteralPath $temporaryDirectory) { Remove-Item -LiteralPath $temporaryDirectory -Recurse -Force }
+    }
+}
+
 $ciWorkflow = Get-Content -LiteralPath $ciWorkflowPath -Raw
 $releaseWorkflow = Get-Content -LiteralPath $releaseWorkflowPath -Raw
 $buildReleaseWorkflow = Get-Content -LiteralPath $buildReleaseWorkflowPath -Raw
+
+Assert-RestoreAndBuildUseReleaseRuntime -Workflow $ciWorkflow
 
 $packagePreparation = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Prepare package dependencies'
 $packageBody = Get-StepRunBody -Block $packagePreparation -StepName 'Prepare package dependencies'
