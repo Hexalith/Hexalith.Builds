@@ -507,6 +507,7 @@ function Assert-RestoreAndBuildUseReleaseRuntime {
     $temporaryDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "hexalith-restore-build-$([guid]::NewGuid().ToString('N'))"
     try {
         $null = New-Item -ItemType Directory -Path $temporaryDirectory
+        Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../global.json') -Destination (Join-Path $temporaryDirectory 'global.json')
         $projectPath = Join-Path $temporaryDirectory 'module graph with spaces.proj'
         $project = @'
 <Project DefaultTargets="Build">
@@ -527,7 +528,7 @@ function Assert-RestoreAndBuildUseReleaseRuntime {
 
         foreach ($stepName in @('Restore', 'Build')) {
             $block = Get-NamedStepBlock -Content $Workflow -StepName $stepName
-            $body = [regex]::Match($block, '(?m)^        run: (?<Body>dotnet [^\r\n]+)$')
+            $body = [regex]::Match($block, '(?m)^        run: (?<Body>dotnet [^\r\n]+)\r?$')
             Assert-Condition -Name "$stepName executable configuration body" -Condition $body.Success -Failure 'is missing its executable inline dotnet command.'
             if (-not $body.Success) { continue }
 
@@ -598,7 +599,11 @@ foreach ($fixture in @(
 }
 $result = Invoke-WorkflowBashBody -Body ("mkdir -p hooks`nprintf 'exit 0\n' > hooks/packages.sh`n" + 'timeout() { [ "$3" = 1800 ] || exit 99; return 124; }' + "`n" + $packageBody) -Environment @{ PACKAGE_PREPARE_SCRIPT = 'hooks/packages.sh' }
 Assert-Condition -Name 'Package preparation timeout' -Condition ($result.ExitCode -eq 124) -Failure 'lost its deadline or timeout exit.'
-Assert-RestoreAndBuildUseReleaseRuntime -Workflow $ciWorkflow
+# Exercise both representations in memory; never rewrite the runtime workflow.
+$ciWorkflowLf = $ciWorkflow.Replace("`r`n", "`n")
+foreach ($workflowInput in @($ciWorkflowLf, $ciWorkflowLf.Replace("`n", "`r`n"))) {
+    Assert-RestoreAndBuildUseReleaseRuntime -Workflow $workflowInput
+}
 
 $hookValidation = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Validate Aspire hooks'
 $hookBody = Get-StepRunBody -Block $hookValidation -StepName 'Validate Aspire hooks'
