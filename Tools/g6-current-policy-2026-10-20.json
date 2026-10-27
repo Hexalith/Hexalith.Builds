@@ -2,8 +2,8 @@
   "schema": "hexalith.g6-current-policy.v1",
   "tuple": {
     "dotnetSdk": "10.0.402",
-    "aspireSdk": "13.6.1",
-    "aspireCli": "13.6.1",
+    "aspireSdk": "13.6.4",
+    "aspireCli": "13.6.4",
     "communityToolkitAspireDapr": "13.6.1-beta.935",
     "daprCli": "1.18.0",
     "daprRuntime": "1.18.2",
@@ -15,9 +15,9 @@
   "approval": {
     "decision": "approved",
     "approvedBy": "Jérôme Piquot",
-    "approvedAtUtc": "2026-10-20T10:50:22Z",
-    "reference": "User conversation approval verbatim \"I approve\" of 6-1-p0-tool-runtime-tuple-proposal-20261020.md; evidence/g4/approved-tuple-20261020/approval.json binds that proposal and the approved preparation tuple. Approval covers tuple/exceptions and execution preparation, not unseen qualification result acceptance.",
-    "tupleSha256": "ba84cebe02e4cad7921999e1f0d04bb9ff5f6eefa6d6ce3f8f28d0d6759c0fba"
+    "approvedAtUtc": "2026-10-27T23:54:00Z",
+    "reference": "Operator request on 2026-10-28 to update the controlled tuple to Aspire 13.6.4, the latest stable SDK and CLI, with Aspire.Hosting.Keycloak and Aspire.Hosting.Kubernetes at 13.6.4-preview.1.26523.11. Approval covers the tuple change, not unseen qualification result acceptance.",
+    "tupleSha256": "391b1482011caeec06a8b7c65491c12afd00271f454fe29e4d3d7c5aa9086d8a"
   },
   "exceptions": {
     "daprSupportTable": "approved-explicit-exception",

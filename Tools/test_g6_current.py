@@ -30,6 +30,7 @@ class CurrentG6Tests(unittest.TestCase):
             (root / "obj").mkdir()
             assets = root / "obj/project.assets.json"
             for sdk, preview, allowed in (
+                ("13.6.4", "13.6.4-preview.1.26523.11", True),
                 ("13.6.1", "13.6.1-preview.1.26506.6", True),
                 ("13.6.0", "13.6.0-preview.1.26479.8", True),
                 ("13.6.1", "13.6.0-preview.1.26479.8", False),
