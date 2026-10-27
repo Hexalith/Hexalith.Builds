@@ -1020,10 +1020,16 @@ class GovernedOffParityTests(unittest.TestCase):
         self.assertEqual(1, workflow.count("attestations: write"))
         self.assertIn("id-token: write", governed)
         self.assertIn("attestations: write", governed)
-        self.assertNotIn("permissions:", job_slice(workflow, "release"))
-        workflow_permissions = workflow[workflow.index("\npermissions:\n"): workflow.index("\njobs:\n")]
-        self.assertNotIn("id-token", workflow_permissions)
-        self.assertNotIn("attestations", workflow_permissions)
+        legacy = job_slice(workflow, "release")
+        self.assertNotIn("id-token:", legacy)
+        self.assertNotIn("attestations:", legacy)
+        legacy_permissions = legacy[legacy.index("\n    permissions:\n"): legacy.index("\n    steps:\n")]
+        self.assertEqual(
+            {"actions": "read", "contents": "write", "issues": "write", "pull-requests": "write"},
+            dict(re.findall(r"^      ([a-z-]+): (\S+)$", legacy_permissions, re.MULTILINE)),
+        )
+        workflow_permissions = workflow[workflow.index("\npermissions:"): workflow.index("\njobs:\n")]
+        self.assertEqual("\npermissions: {}\n", workflow_permissions)
 
     def test_the_legacy_job_carries_no_governed_step(self):
         legacy = job_slice(read(DOMAIN_RELEASE), "release")
