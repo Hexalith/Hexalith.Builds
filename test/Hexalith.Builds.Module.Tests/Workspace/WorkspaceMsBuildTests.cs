@@ -11,9 +11,13 @@ using System.Xml.Linq;
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
 
+using Microsoft.Build.Utilities;
+
 using Shouldly;
 
 using Xunit;
+
+using Task = System.Threading.Tasks.Task;
 
 /// <summary>Verifies generated MSBuild imports override probes and reject mixed origins.</summary>
 public sealed class WorkspaceMsBuildTests
@@ -130,10 +134,12 @@ public sealed class WorkspaceMsBuildTests
             string workspace = Path.Combine(root, "run");
             await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
-            CompositionProcessResult run = await RunDotnetAsync(active, mapping, workspace, "run", "--project", consumer, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+            CompositionProcessResult run = await RunDotnetAsync(active, mapping, workspace, "build", consumer, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
 
             run.ExitCode.ShouldBe(0, run.Output);
-            run.Output.ShouldContain(expected);
+            using JsonDocument assets = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(consumerDirectory, "obj", "project.assets.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+            assets.RootElement.GetProperty("libraries").EnumerateObject().Single(item => item.Name.StartsWith("Hexalith.Dep.Contracts/", StringComparison.Ordinal))
+                .Value.GetProperty("type").GetString().ShouldBe(expected == "source" ? "project" : "package");
         }
         finally
         {
@@ -179,10 +185,12 @@ public sealed class WorkspaceMsBuildTests
             SourceMapping.LoadVerified(Path.Combine(workspace, "source-mapping", "mapping.json"), mapping.ContentHash)
                 .ContentHash.ShouldBe(mapping.ContentHash);
 
-            CompositionProcessResult run = await RunDotnetAsync(active, mapping, workspace, "run", "--project", consumer, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+            CompositionProcessResult run = await RunDotnetAsync(active, mapping, workspace, "build", consumer, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
 
             run.ExitCode.ShouldBe(0, run.Output);
-            run.Output.ShouldContain("second-source");
+            using JsonDocument assets = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(first, "obj", "project.assets.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+            assets.RootElement.GetProperty("libraries").EnumerateObject().Single(item => item.Name.StartsWith("Hexalith.Second.Core/", StringComparison.Ordinal))
+                .Value.GetProperty("type").GetString().ShouldBe("project");
         }
         finally
         {
@@ -2253,6 +2261,114 @@ public sealed class WorkspaceMsBuildTests
         }
     }
 
+    /// <summary>Verifies forwarded selections are canonical before child evaluation, restore and build.</summary>
+    /// <param name="relative">Whether the root uses relative segments.</param>
+    /// <param name="mixed">Whether a second mapping entry comes from packages.</param>
+    /// <returns>The forwarded graph assertion.</returns>
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task ForwardedMappedSelectionsRestoreWithCanonicalChildValuesAsync(bool relative, bool mixed)
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            string dependency = Path.Combine(active, "references", "Hexalith.Dep");
+            string childDirectory = Path.Combine(dependency, "src", "Child");
+            _ = Directory.CreateDirectory(childDirectory);
+            string child = Path.Combine(childDirectory, "Child.csproj");
+            string observed = Path.Combine(root, "child-values.txt");
+            new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0")), new XElement("Target", new XAttribute("Name", "ObserveChild"), new XAttribute("BeforeTargets", "CoreCompile"), new XElement("WriteLinesToFile", new XAttribute("File", observed), new XAttribute("Overwrite", "true"), new XAttribute("Lines", "$(HexalithDepRoot)|$(HexalithDepFromSource)|$(Configuration)|$(Version)|$(HexalithOtherFromSource)"))))).Save(child);
+            string forwarded = relative ? "references/Hexalith.Dep/src/../" : dependency + Path.DirectorySeparatorChar;
+            string properties = "HexalithDepRoot=" + forwarded + ";HexalithDepFromSource=true;Version=1.0.0;HexalithOtherFromSource=" + (mixed ? "false" : "true");
+            string project = WriteProject(active, new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0")), new XElement("ItemGroup", new XElement("PackageVersion", new XAttribute("Include", "Child"), new XAttribute("Version", "1.0.0")), new XElement("ProjectReference", new XAttribute("Include", child), new XAttribute("AdditionalProperties", properties), new XAttribute("IsAspireProjectResource", "false"))))).ToString());
+            SourceMapping mapping = Mapping(active, WorkspaceMode.Source) with
+            {
+                Entries = [new("Hexalith.Active", "source", active), new("Hexalith.Dep", "source", dependency), new("Hexalith.Other", mixed ? "package" : "source", mixed ? null : active)],
+            };
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionProcessResult selected = await RunDotnetAsync(active, mapping, workspace, "msbuild", project, "-target:HexalithReconcileSourceMapping", "-getItem:ProjectReference").ConfigureAwait(true);
+            selected.ExitCode.ShouldBe(0, selected.Output + selected.ErrorOutput);
+            using JsonDocument items = JsonDocument.Parse(selected.Output);
+            JsonElement reference = items.RootElement.GetProperty("Items").GetProperty("ProjectReference")[0];
+            reference.GetProperty("AdditionalProperties").GetString().ShouldBe(properties.Replace(forwarded, dependency, StringComparison.Ordinal));
+            reference.GetProperty("IsAspireProjectResource").GetString().ShouldBe("false");
+            XDocument.Load(project).Descendants("ProjectReference").Single().Attribute("AdditionalProperties")!.Value.ShouldBe(properties);
+            CompositionProcessResult built = await RunDotnetAsync(active, mapping, workspace, "build", project, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+            built.ExitCode.ShouldBe(0, built.Output + built.ErrorOutput);
+            (await File.ReadAllTextAsync(observed, TestContext.Current.CancellationToken).ConfigureAwait(true)).Trim().ShouldBe(dependency + "|true|Debug|1.0.0|" + (mixed ? "false" : "true"));
+            using JsonDocument assets = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(active, "obj", "project.assets.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
+            assets.RootElement.GetProperty("libraries").EnumerateObject().ShouldAllBe(item => item.Value.GetProperty("type").GetString() == "project");
+
+            TaskItem input = new(child);
+            input.SetMetadata("AdditionalProperties", properties.Replace(forwarded, dependency + Path.DirectorySeparatorChar, StringComparison.Ordinal));
+            input.SetMetadata("IsAspireProjectResource", "false");
+            TaskItem version = new("Child");
+            version.SetMetadata("Version", "1.0.0");
+            SourceMappingReconciliationTask task = new() { BuildEngine = new CatalogTestBuildEngine(), MappingFile = Path.Combine(workspace, "source-mapping", "mapping.json"), MappingHash = mapping.ContentHash, Projects = [input], PackageVersions = [version] };
+            string original = input.GetMetadata("AdditionalProperties");
+            task.Execute().ShouldBeTrue();
+            input.GetMetadata("AdditionalProperties").ShouldBe(original);
+            task.SelectedProjects[0].ShouldNotBeSameAs(input);
+            task.SelectedProjects[0].GetMetadata("AdditionalProperties").ShouldBe(original.Replace(dependency + Path.DirectorySeparatorChar, dependency, StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies unsafe assignments refuse before any dependent evaluation or restore output.</summary>
+    /// <param name="properties">The untrusted assignments.</param>
+    /// <returns>The early refusal assertion.</returns>
+    [Theory]
+    [InlineData("Unknown=value")]
+    [InlineData("HexalithDepRoot")]
+    [InlineData("HexalithDepRoot=")]
+    [InlineData("HexalithDepFromSource=true;HexalithDepFromSource=true")]
+    [InlineData("HexalithDepFromSource=true;hexalithdepfromsource=false")]
+    [InlineData("HexalithUnmappedRoot=elsewhere")]
+    [InlineData("HexalithDepFromSource=false")]
+    [InlineData("Configuration=Debug")]
+    [InlineData("Configuration=Release")]
+    [InlineData("Version=9.9.9")]
+    [InlineData("HexalithDepFromSource=true;;Version=1.0.0")]
+    [InlineData("HexalithDepRoot=../outside")]
+    [InlineData("HexalithDepRoot=references/escape")]
+    public async Task UnsafeForwardedAssignmentsStopBeforeChildEvaluationAsync(string properties)
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            string dependency = Path.Combine(active, "references", "Hexalith.Dep");
+            _ = Directory.CreateDirectory(dependency);
+            _ = Directory.CreateDirectory(Path.Combine(root, "outside"));
+            _ = Directory.CreateSymbolicLink(Path.Combine(active, "references", "escape"), Path.Combine(root, "outside"));
+            string child = Path.Combine(dependency, "Child.csproj");
+            string marker = Path.Combine(root, "evaluated.txt");
+            new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0"), new XElement("Observed", "$([System.IO.File]::WriteAllText('" + marker + "', 'evaluated'))")))).Save(child);
+            string project = WriteProject(active, new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0")), new XElement("ItemGroup", new XElement("PackageVersion", new XAttribute("Include", "Child"), new XAttribute("Version", "1.0.0")), new XElement("ProjectReference", new XAttribute("Include", child), new XAttribute("AdditionalProperties", properties))))).ToString());
+            SourceMapping mapping = Mapping(active, WorkspaceMode.Source);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "build", project, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
+            result.ExitCode.ShouldNotBe(0, result.Output + result.ErrorOutput);
+            (result.Output + result.ErrorOutput).ShouldContain("HXW006");
+            File.Exists(marker).ShouldBeFalse("unsafe metadata must refuse before child evaluation");
+            File.Exists(Path.Combine(active, "obj", "project.assets.json")).ShouldBeFalse();
+            File.Exists(Path.Combine(dependency, "obj", "project.assets.json")).ShouldBeFalse();
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static SourceMapping HostMapping(string root, string dependencyIdentity) => new(
         WorkspaceMode.Source,
         root,
@@ -2323,7 +2439,7 @@ public sealed class WorkspaceMsBuildTests
 
     private static Task<CompositionProcessResult> RunProcessAsync(string directory, IReadOnlyDictionary<string, string>? environment, params string[] arguments) =>
         CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", arguments, directory, environment),
+            CompositionSdkProcess.CreateStartInfo(arguments, directory, environment),
             TimeSpan.FromMinutes(2),
             TestContext.Current.CancellationToken);
 }

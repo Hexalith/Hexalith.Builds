@@ -16,6 +16,10 @@
     <ProjectReference Include="../../src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.Build">
+      <HintPath>$(MSBuildBinPath)/Microsoft.Build.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
     <Reference Include="Microsoft.Build.Framework">
       <HintPath>$(MSBuildBinPath)/Microsoft.Build.Framework.dll</HintPath>
       <Private>true</Private>

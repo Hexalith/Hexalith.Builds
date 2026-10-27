@@ -409,7 +409,7 @@ public sealed class CatalogVersionTests
             TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         CompositionProcessResult build = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["msbuild", project, "-nologo", "-target:Build"], host, SourceMappingMaterializer.Environment(mapping, workspace)),
+            CompositionSdkProcess.CreateStartInfo(["msbuild", project, "-nologo", "-target:Build"], host, SourceMappingMaterializer.Environment(mapping, workspace)),
             TimeSpan.FromMinutes(1),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
 
@@ -503,7 +503,7 @@ public sealed class CatalogVersionTests
         string project = Path.Combine(host, "Hexalith.Folders.Aspire.csproj");
         await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" VersionOverride=\"13.6.0-preview.1\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult build = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["msbuild", project, "-nologo", "-target:Build"], host, SourceMappingMaterializer.Environment(mapping, workspace)),
+            CompositionSdkProcess.CreateStartInfo(["msbuild", project, "-nologo", "-target:Build"], host, SourceMappingMaterializer.Environment(mapping, workspace)),
             TimeSpan.FromMinutes(1),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
 
@@ -548,7 +548,7 @@ public sealed class CatalogVersionTests
         string project = Path.Combine(host, "Hexalith.Folders.Aspire.csproj");
         await File.WriteAllTextAsync(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" VersionOverride=\"13.6.0-preview.1\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult build = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["msbuild", project, "-nologo", "-target:Build"], host, SourceMappingMaterializer.Environment(mapping, workspace)),
+            CompositionSdkProcess.CreateStartInfo(["msbuild", project, "-nologo", "-target:Build"], host, SourceMappingMaterializer.Environment(mapping, workspace)),
             TimeSpan.FromMinutes(1),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
 
@@ -619,7 +619,7 @@ public sealed class CatalogVersionTests
         await File.WriteAllTextAsync(Path.Combine(host, "Directory.Packages.props"), "<Project><ItemGroup><GlobalPackageReference Include=\"Hexalith.Dep\" Version=\"2.0.0\" /></ItemGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         CompositionProcessResult build = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["msbuild", project, "-nologo", "-target:Build"], host, SourceMappingMaterializer.Environment(mapping, workspace)),
+            CompositionSdkProcess.CreateStartInfo(["msbuild", project, "-nologo", "-target:Build"], host, SourceMappingMaterializer.Environment(mapping, workspace)),
             TimeSpan.FromMinutes(1),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
 
@@ -645,7 +645,7 @@ public sealed class CatalogVersionTests
         await File.WriteAllTextAsync(packageProject, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Hexalith.Dep</PackageId><Version>2.0.0</Version></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(Path.Combine(packageDirectory, "Class1.cs"), "public class Class1 {}", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult pack = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["pack", packageProject, "-o", feed, "-v:q", "-p:NuGetAudit=false", "-p:RestoreSources=" + feed], packageDirectory, null),
+            CompositionSdkProcess.CreateStartInfo(["pack", packageProject, "-o", feed, "-v:q", "-p:NuGetAudit=false", "-p:RestoreSources=" + feed], packageDirectory, null),
             TimeSpan.FromMinutes(1),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
         pack.ExitCode.ShouldBe(0, pack.Output + pack.ErrorOutput);
@@ -660,7 +660,7 @@ public sealed class CatalogVersionTests
             ["NUGET_PACKAGES"] = Path.Combine(fixture.Directory, "isolated-packages"),
         };
         CompositionProcessResult build = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["build", project, "-v:q", "-p:NuGetAudit=false"], host, environment),
+            CompositionSdkProcess.CreateStartInfo(["build", project, "-v:q", "-p:NuGetAudit=false"], host, environment),
             TimeSpan.FromMinutes(2),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
 
@@ -695,7 +695,7 @@ public sealed class CatalogVersionTests
         await File.WriteAllTextAsync(packageProject, $"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>{packageId}</PackageId><Version>{version}</Version></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         await File.WriteAllTextAsync(Path.Combine(packageDirectory, "Class1.cs"), "public class Class1 {}", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult pack = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["pack", packageProject, "-o", feed, "-v:q", "-p:NuGetAudit=false", "-p:RestoreSources=" + feed], packageDirectory, null),
+            CompositionSdkProcess.CreateStartInfo(["pack", packageProject, "-o", feed, "-v:q", "-p:NuGetAudit=false", "-p:RestoreSources=" + feed], packageDirectory, null),
             TimeSpan.FromMinutes(1),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
         pack.ExitCode.ShouldBe(0, pack.Output + pack.ErrorOutput);
@@ -716,7 +716,7 @@ public sealed class CatalogVersionTests
             ["NUGET_PACKAGES"] = Path.Combine(fixture.Directory, "isolated-packages"),
         };
         CompositionProcessResult build = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", ["build", project, "-v:q", "-p:NuGetAudit=false"], host, environment),
+            CompositionSdkProcess.CreateStartInfo(["build", project, "-v:q", "-p:NuGetAudit=false"], host, environment),
             TimeSpan.FromMinutes(2),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
 

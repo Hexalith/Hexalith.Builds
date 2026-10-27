@@ -382,6 +382,16 @@ their isolated central package selections. Generated projects under a run
 workspace's `hosts/` directory stay outside reconciliation in both modes;
 their existing catalog validation still applies.
 
+Retained source references may forward `Hexalith<Identity>Root` and
+`Hexalith<Identity>FromSource` values only when they agree with the verified
+mapping. Equivalent physical roots, including relative segments and trailing
+separators, are cloned with the mapping's canonical spelling before child
+project evaluation. A catalog-matching `Version` may accompany these values.
+Unknown, malformed, duplicate, conflicting or unmapped assignments and all
+configuration assignments fail with `HXW006` before dependent restore or
+compilation. Existing package conversion refusals and child guards still apply;
+forwarding cannot select another root or enable a package fallback.
+
 Restoring and building this source graph is a separate prerequisite before use. `CompositionEngine`
 launches an already-built Builds AppHost; resolving a run mapping does not
 rebuild or select a different AppHost distribution. Source graph verification

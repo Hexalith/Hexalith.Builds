@@ -167,16 +167,14 @@ public sealed class SourceMappingReconciliationTask : ITask
                 if (packageRoot.Path is null)
                 {
                     string? unsupportedRetainedMetadata = UnsupportedMetadata(project, ["SetConfiguration", "SetPlatform", "GlobalPropertiesToRemove"]);
-                    string additional = project.GetMetadata("AdditionalProperties");
-                    if (!string.IsNullOrWhiteSpace(additional))
+                    TaskItem retained = new(project);
+                    if (!TryCanonicalizeRetainedProperties(mapping, project, path, out string additional))
                     {
-                        string[] assignments = additional.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                        string retainedId = Path.GetFileNameWithoutExtension(path);
-                        string? selectedVersion = PackageVersions.FirstOrDefault(version => version.ItemSpec.Equals(retainedId, StringComparison.OrdinalIgnoreCase))?.GetMetadata("Version");
-                        if (assignments.Length != 1 || selectedVersion is null || assignments[0] != "Version=" + selectedVersion)
-                        {
-                            unsupportedRetainedMetadata ??= "AdditionalProperties";
-                        }
+                        unsupportedRetainedMetadata ??= "AdditionalProperties";
+                    }
+                    else if (!string.IsNullOrWhiteSpace(additional))
+                    {
+                        retained.SetMetadata("AdditionalProperties", additional);
                     }
 
                     if (unsupportedRetainedMetadata is not null)
@@ -184,7 +182,7 @@ public sealed class SourceMappingReconciliationTask : ITask
                         return Error("HXW006", $"Retained ProjectReference '{path}' cannot override the mapped configuration because metadata '{unsupportedRetainedMetadata}' is set.");
                     }
 
-                    selectedProjects.Add(new TaskItem(project));
+                    selectedProjects.Add(retained);
                     continue;
                 }
 
@@ -324,6 +322,81 @@ public sealed class SourceMappingReconciliationTask : ITask
     {
         string marker = Path.Combine(root, ".git");
         return File.Exists(marker) || Directory.Exists(marker) || new FileInfo(marker).LinkTarget is not null;
+    }
+
+    private bool TryCanonicalizeRetainedProperties(SourceMapping mapping, ITaskItem project, string path, out string canonical)
+    {
+        canonical = project.GetMetadata("AdditionalProperties");
+        if (string.IsNullOrWhiteSpace(canonical))
+        {
+            return true;
+        }
+
+        Dictionary<string, (string Value, bool IsRoot)> permitted = new(StringComparer.OrdinalIgnoreCase);
+        if (mapping.Mode == WorkspaceMode.Source && mapping.ContainsProject(path))
+        {
+            foreach (SourceMappingEntry entry in mapping.Entries)
+            {
+                string prefix = "Hexalith" + SourceMapping.PropertySuffix(entry.Identity);
+                permitted.Add(prefix + "Root", (entry.Path ?? Path.Combine(mapping.Root, "references", entry.Identity), true));
+                permitted.Add(prefix + "FromSource", (entry.Origin == "source" ? "true" : "false", false));
+            }
+        }
+
+        string retainedId = Path.GetFileNameWithoutExtension(path);
+        string? version = PackageVersions.FirstOrDefault(item => item.ItemSpec.Equals(retainedId, StringComparison.OrdinalIgnoreCase))?.GetMetadata("Version");
+        HashSet<string> assigned = new(StringComparer.OrdinalIgnoreCase);
+        List<string> assignments = [];
+        foreach (string assignment in canonical.Split(';', StringSplitOptions.TrimEntries))
+        {
+            int equals = assignment.IndexOf('=', StringComparison.Ordinal);
+            if (equals <= 0 || equals == assignment.Length - 1)
+            {
+                return false;
+            }
+
+            string name = assignment[..equals].Trim();
+            string value = assignment[(equals + 1)..].Trim();
+            if (!assigned.Add(name))
+            {
+                return false;
+            }
+
+            if (name.Equals("Version", StringComparison.OrdinalIgnoreCase) && version is not null && value == version)
+            {
+                assignments.Add("Version=" + version);
+                continue;
+            }
+
+            if (!permitted.TryGetValue(name, out (string Value, bool IsRoot) expected))
+            {
+                return false;
+            }
+
+            if (expected.IsRoot)
+            {
+                // Resolve both paths physically without searching for an alternate root.
+                // Relative metadata is interpreted from the declaring project's directory.
+                string declaringDirectory = project.GetMetadata("DefiningProjectDirectory");
+                string selected = Path.GetFullPath(value, string.IsNullOrWhiteSpace(declaringDirectory) ? Path.GetDirectoryName(path)! : declaringDirectory);
+                string expectedRoot = Path.GetPathRoot(Path.GetFullPath(expected.Value))!;
+                if (!RepositoryPathResolver.TryResolvePathWithinRoot(expectedRoot, expected.Value, out string mapped)
+                    || !RepositoryPathResolver.TryResolvePathWithinRoot(expectedRoot, selected, out string forwarded)
+                    || !SamePath(mapped, forwarded))
+                {
+                    return false;
+                }
+            }
+            else if (!value.Equals(expected.Value, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            assignments.Add(name + "=" + expected.Value);
+        }
+
+        canonical = string.Join(';', assignments);
+        return true;
     }
 
     private (string PackageId, bool Packable) EvaluatePackageIdentity(string project)
