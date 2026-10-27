@@ -451,8 +451,18 @@ jobs:
                   raise ValueError("missing or inconsistent test results")
               if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
                   raise ValueError("invalid result outcome")
-              if int(sys.argv[3]) == 0 and "Failed" in outcomes:
-                  raise ValueError("failed results with successful exit")
+              summary = root.find(f"{ns}ResultSummary")
+              if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
+                  raise ValueError("invalid result summary")
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+                  if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
+                      raise ValueError("contradictory outcome counters")
+              failures = [int(counters.get(name, "0")) for name in
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+              if any(value < 0 for value in failures):
+                  raise ValueError("invalid failure counters")
+              if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
+                  raise ValueError("failed summary or counters with successful exit")
           except (OSError, ValueError, ET.ParseError):
               print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
               sys.exit(1)
@@ -550,8 +560,18 @@ jobs:
                   raise ValueError("missing or inconsistent test results")
               if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
                   raise ValueError("invalid result outcome")
-              if int(sys.argv[3]) == 0 and "Failed" in outcomes:
-                  raise ValueError("failed results with successful exit")
+              summary = root.find(f"{ns}ResultSummary")
+              if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
+                  raise ValueError("invalid result summary")
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+                  if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
+                      raise ValueError("contradictory outcome counters")
+              failures = [int(counters.get(name, "0")) for name in
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+              if any(value < 0 for value in failures):
+                  raise ValueError("invalid failure counters")
+              if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
+                  raise ValueError("failed summary or counters with successful exit")
           except (OSError, ValueError, ET.ParseError):
               print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
               sys.exit(1)
@@ -650,8 +670,18 @@ jobs:
                   raise ValueError("missing or inconsistent test results")
               if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
                   raise ValueError("invalid result outcome")
-              if int(sys.argv[3]) == 0 and "Failed" in outcomes:
-                  raise ValueError("failed results with successful exit")
+              summary = root.find(f"{ns}ResultSummary")
+              if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
+                  raise ValueError("invalid result summary")
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+                  if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
+                      raise ValueError("contradictory outcome counters")
+              failures = [int(counters.get(name, "0")) for name in
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+              if any(value < 0 for value in failures):
+                  raise ValueError("invalid failure counters")
+              if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
+                  raise ValueError("failed summary or counters with successful exit")
           except (OSError, ValueError, ET.ParseError):
               print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
               sys.exit(1)
@@ -749,8 +779,18 @@ jobs:
                   raise ValueError("missing or inconsistent test results")
               if any(outcome not in {"Passed", "Failed", "NotExecuted"} for outcome in outcomes):
                   raise ValueError("invalid result outcome")
-              if int(sys.argv[3]) == 0 and "Failed" in outcomes:
-                  raise ValueError("failed results with successful exit")
+              summary = root.find(f"{ns}ResultSummary")
+              if summary is None or summary.get("outcome") not in {"Completed", "Passed", "Failed"}:
+                  raise ValueError("invalid result summary")
+              for name, outcome in (("passed", "Passed"), ("failed", "Failed"), ("notExecuted", "NotExecuted")):
+                  if name in counters.attrib and int(counters.get(name)) != outcomes.count(outcome):
+                      raise ValueError("contradictory outcome counters")
+              failures = [int(counters.get(name, "0")) for name in
+                          ("failed", "error", "timeout", "aborted", "inconclusive", "passedButRunAborted", "notRunnable", "disconnected")]
+              if any(value < 0 for value in failures):
+                  raise ValueError("invalid failure counters")
+              if int(sys.argv[3]) == 0 and ("Failed" in outcomes or summary.get("outcome") == "Failed" or any(failures)):
+                  raise ValueError("failed summary or counters with successful exit")
           except (OSError, ValueError, ET.ParseError):
               print("Expected a fresh, valid TRX with nonzero executed test results.", file=sys.stderr)
               sys.exit(1)

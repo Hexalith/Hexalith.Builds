@@ -157,11 +157,15 @@ dotnet() {
       *malformed-report*) printf '<TestRun' > "$result_directory/$trx_filename"; return 0 ;;
       *zero-report*) printf '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Results/><ResultSummary><Counters total="0" executed="0"/></ResultSummary></TestRun>' > "$result_directory/$trx_filename"; return 0 ;;
     esac
-    printf '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Results><UnitTestResult outcome="Passed"/></Results><ResultSummary><Counters total="1" executed="1"/></ResultSummary></TestRun>' > "$result_directory/$trx_filename"
+    printf '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Results><UnitTestResult outcome="Passed"/></Results><ResultSummary outcome="Completed"><Counters total="1" executed="1" passed="1" failed="0" error="0"/></ResultSummary></TestRun>' > "$result_directory/$trx_filename"
     case "$project" in
       *stale-report*) touch -t 200001010000 "$result_directory/$trx_filename" ;;
       *failed-report*) sed -i 's/outcome="Passed"/outcome="Failed"/' "$result_directory/$trx_filename" ;;
       *inconsistent-report*) sed -i 's/total="1"/total="2"/' "$result_directory/$trx_filename" ;;
+      *summary-failure*) sed -i 's/outcome="Completed"/outcome="Failed"/' "$result_directory/$trx_filename" ;;
+      *failure-counter*) sed -i 's/failed="0"/failed="1"/' "$result_directory/$trx_filename" ;;
+      *error-counter*) sed -i 's/error="0"/error="1"/' "$result_directory/$trx_filename" ;;
+      *passed-counter*) sed -i 's/passed="1"/passed="0"/' "$result_directory/$trx_filename" ;;
     esac
   fi
   case "$project" in
@@ -313,7 +317,7 @@ function Assert-ShardAggregationRuntime {
         -Condition ($consumingResult.ExitCode -eq 0 -and $consumingInvocations.Count -eq 4 -and $consumingResult.StepOutput -match '\Afailure-count=0\r?\n\z') `
         -Failure 'did not execute all four configured projects with nonzero reports when children consume stdin.'
 
-    foreach ($scenario in @('missing-report', 'stale-report', 'malformed-report', 'zero-report', 'failed-report', 'inconsistent-report')) {
+    foreach ($scenario in @('missing-report', 'stale-report', 'malformed-report', 'zero-report', 'failed-report', 'inconsistent-report', 'summary-failure', 'failure-counter', 'error-counter', 'passed-counter')) {
         $reportEnvironment = @{
             $ProjectsVariable = "tests/$scenario/Invalid.csproj`ntests/pass-later/Later.csproj"
             RUN_COVERAGE_GATE = 'false'
