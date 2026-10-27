@@ -72,7 +72,6 @@
     "references/Hexalith.EventStore/samples/Hexalith.EventStore.Sample/",
     "references/Hexalith.EventStore/tests/Hexalith.EventStore.Server.LiveSidecar.Tests/",
     "references/Hexalith.EventStore/tests/Hexalith.EventStore.Server.Tests/",
-    "references/Hexalith.EventStore/tools/validate-oq8-",
     "references/Hexalith.FrontComposer/src/",
     "references/Hexalith.FrontComposer/samples/",
     "references/Hexalith.FrontComposer/tests/Hexalith.FrontComposer.CounterFixture/",
