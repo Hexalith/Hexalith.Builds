@@ -1117,11 +1117,28 @@ jobs:
           if not reports:
               raise SystemExit('Aspire qualification requires a test result report.')
           for report in reports:
-              counters = ET.parse(report).getroot().find('.//{*}Counters')
-              if counters is None or int(counters.get('executed', '0')) < 1:
-                  raise SystemExit(f'Aspire qualification executed no tests: {report}')
-              if int(counters.get('notExecuted', '0')) or int(counters.get('failed', '0')):
-                  raise SystemExit(f'Aspire qualification rejected failed or skipped tests: {report}')
+              root = ET.parse(report).getroot()
+              ns = '{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}'
+              if root.tag != ns + 'TestRun':
+                  raise SystemExit(f'Aspire qualification requires a valid TRX root: {report}')
+              summary = root.find(ns + 'ResultSummary')
+              counters = summary.find('{*}Counters') if summary is not None else None
+              if summary is None or summary.get('outcome') not in ('Completed', 'Passed') or counters is None:
+                  raise SystemExit(f'Aspire qualification requires a successful summary: {report}')
+              try:
+                  counts = {name: int(value) for name, value in counters.attrib.items()}
+                  passing = counts['passed']
+                  consistent = passing > 0 and counts['total'] == counts['executed'] == passing and counts['failed'] == 0
+              except (ValueError, KeyError):
+                  raise SystemExit(f'Aspire qualification has malformed counters: {report}')
+              failures = ('failed', 'error', 'timeout', 'aborted', 'inconclusive', 'passedButRunAborted', 'notRunnable',
+                          'notExecuted', 'disconnected', 'inProgress', 'pending')
+              results = root.findall('.//{*}UnitTestResult')
+              if (not consistent or any(counts.get(name, 0) != 0 for name in failures)
+                      or any(value < 0 for value in counts.values()) or len(results) != passing
+                      or any(result.get('outcome') != 'Passed' for result in results)
+                      or summary.find('.//{*}ErrorInfo') is not None):
+                  raise SystemExit(f'Aspire qualification rejected nonpassing or inconsistent results: {report}')
           PYTEST
       - name: Test summary
         if: always()

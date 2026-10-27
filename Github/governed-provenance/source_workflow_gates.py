@@ -12,6 +12,10 @@ from pathlib import Path
 class GateError(ValueError):
     """Source admission could not be proved."""
 
+    def __init__(self, message, request=None):
+        super().__init__(message)
+        self.request = request
+
 
 def positive_integer(value, context):
     if type(value) is not int or value < 1:
@@ -62,13 +66,35 @@ def require_success(run, source, branch, workflow, selected=None):
 
 
 def gh_json(arguments):
-    result = subprocess.run(["gh", "api", *arguments], capture_output=True, text=True)
+    """Report bounded request coordinates and classifications, never raw CLI diagnostics."""
+    endpoint = next((value for value in arguments if value.startswith("repos/")), "unknown")
+    endpoint = endpoint.split("?", 1)[0][:240]
+    request = {"endpoint": endpoint, "method": "GET", "exit_status": None, "http_status": None}
+    try:
+        result = subprocess.run(["gh", "api", *arguments], capture_output=True, text=True)
+    except OSError as error:
+        request["classification"] = "cli-unavailable"
+        raise GateError(f"GET {endpoint} could not execute the GitHub CLI", request) from error
+    request["exit_status"] = result.returncode
     if result.returncode:
-        raise GateError("GitHub Actions API could not be queried safely")
+        match = re.search(r"HTTP(?:/[0-9.]+)?[ \t:]+([1-5][0-9]{2})\b", result.stderr)
+        status = int(match[1]) if match else None
+        classification = ("authorization" if status in (401, 403) else "not-found" if status == 404
+                          else "rate-limited" if status == 429 else "server-error" if status and status >= 500
+                          else "http-error" if status else "transport-or-cli-error")
+        request.update(http_status=status, classification=classification)
+        raise GateError(f"GET {endpoint} failed (exit={result.returncode}, HTTP={status}, {classification})", request)
     try:
         return json.loads(result.stdout)
     except ValueError as error:
-        raise GateError("GitHub Actions API returned invalid JSON") from error
+        request["classification"] = "invalid-json"
+        raise GateError(f"GET {endpoint} returned invalid JSON (exit=0)", request) from error
+
+
+def run_pages(repository, source, branch, workflow):
+    return gh_json(["--paginate", "--slurp", "--method", "GET",
+                    f"repos/{repository}/actions/workflows/{workflow}/runs",
+                    "-f", f"branch={branch}", "-f", "event=push", "-f", f"head_sha={source}", "-f", "per_page=100"])
 
 
 def qualify(repository, source, branch, workflows, evidence):
@@ -87,17 +113,30 @@ def qualify(repository, source, branch, workflows, evidence):
                 raise GateError("required workflow must be a literal workflow filename")
             observation = {"workflow": workflow}
             report["gates"].append(observation)
-            pages = gh_json(["--paginate", "--slurp", "--method", "GET",
-                             f"repos/{repository}/actions/workflows/{workflow}/runs",
-                             "-f", f"branch={branch}", "-f", "event=push", "-f", f"head_sha={source}", "-f", "per_page=100"])
+            pages = run_pages(repository, source, branch, workflow)
             observation["pages"] = pages
             latest = select_latest(pages, source, branch, workflow)
             fresh = gh_json([f"repos/{repository}/actions/runs/{latest['id']}"])
             observation["latest"] = fresh
             observation["accepted"] = require_success(fresh, source, branch, workflow, latest)
+        # Qualification is one bounded observation followed by one refresh, never a retry.
+        # Re-listing catches a new run as well as a later attempt of the selected run.
+        for observation in report["gates"]:
+            workflow = observation["workflow"]
+            pages = run_pages(repository, source, branch, workflow)
+            observation["refresh_pages"] = pages
+            selected = select_latest(pages, source, branch, workflow)
+            previous = observation["accepted"]
+            if any(selected[key] != previous[key] for key in ("id", "run_number", "run_attempt")):
+                raise GateError(f"{workflow}: latest run or attempt changed while qualifying other gates")
+            fresh = gh_json([f"repos/{repository}/actions/runs/{selected['id']}"])
+            observation["refreshed_latest"] = fresh
+            observation["refreshed_accepted"] = require_success(fresh, source, branch, workflow, selected)
         report["result"] = "pass"
     except GateError as error:
         report["error"] = str(error)
+        if error.request is not None:
+            report["request_failure"] = error.request
         raise
     finally:
         destination = Path(evidence)

@@ -23,11 +23,77 @@ def git(root, *arguments, binary=False):
 
 
 def approved_builds_sha(workflow):
-    """Only a unique literal execution declaration can authorize recovery tooling."""
-    values = [line.split("#", 1)[0].strip() for line in re.findall(
-        r"^[ \t]*HEXALITH_BUILDS_EXECUTION_SHA:[ \t]*([^\r\n]*)$", workflow, re.MULTILINE)]
-    if not values or len(set(values)) != 1 or not re.fullmatch(r"[0-9a-f]{40}", values[0]):
-        raise ValueError("source release workflow must declare one consistent exact Builds execution SHA")
+    """Read literal environment declarations from a closed indentation-based YAML subset."""
+    stack = []
+    values = []
+    environments = set()
+    mapping_keys = set()
+    block_indent = None
+    step_number = 0
+    active_steps = set()
+    for raw in workflow.splitlines():
+        if not raw.strip() or raw.lstrip().startswith('#'):
+            continue
+        indent = len(raw) - len(raw.lstrip(' '))
+        if '\t' in raw[:len(raw) - len(raw.lstrip())]:
+            raise ValueError('source workflow uses unsupported tab indentation')
+        if block_indent is not None:
+            if indent > block_indent:
+                continue
+            block_indent = None
+        line = raw[indent:]
+        sequence = line.startswith('- ')
+        if sequence:
+            line = line[2:]
+            indent += 2
+            step_number += 1
+        while stack and stack[-1][0] >= indent:
+            stack.pop()
+        match = re.fullmatch(r'([A-Za-z_][A-Za-z0-9_-]*):(?:[ ]+(.*))?', line)
+        if match is None:
+            raise ValueError('source workflow uses an unsupported mapping shape')
+        key, value = match.groups()
+        value = (value or '').split(' #', 1)[0].strip()
+        path = [item[1] for item in stack]
+        if stack:
+            expected_indent = stack[-1][0] + (4 if path[-1] == 'steps' else 2)
+            if indent != expected_indent:
+                raise ValueError('source workflow uses unsupported mapping indentation')
+        if sequence:
+            if len(path) != 3 or path[0] != 'jobs' or path[-1] != 'steps':
+                raise ValueError('source workflow uses an unsupported sequence')
+            active_steps.add(tuple(path))
+        if path and path[-1] == 'steps' and tuple(path) not in active_steps:
+            raise ValueError('source workflow steps must be a sequence')
+        context = tuple(path) + ((step_number,) if 'steps' in path else ())
+        coordinate = context + (key,)
+        if coordinate in mapping_keys:
+            raise ValueError('source workflow has duplicate mapping keys')
+        mapping_keys.add(coordinate)
+        if (key in ('env', 'jobs', 'steps') or path == ['jobs']) and value:
+            raise ValueError('source workflow uses an unsupported structural mapping: ' + key)
+        if key == 'env':
+            valid = not path or (len(path) == 2 and path[0] == 'jobs') or (
+                len(path) == 3 and path[0] == 'jobs' and path[2] == 'steps')
+            context = tuple(path) + ((step_number,) if 'steps' in path else ())
+            if not valid or context in environments:
+                raise ValueError('source workflow has an ambiguous environment declaration')
+            environments.add(context)
+        if path and path[-1] == 'env':
+            if indent != stack[-1][0] + 2 or key == '<<':
+                raise ValueError('source workflow has an unsupported environment declaration')
+            if key == 'HEXALITH_BUILDS_EXECUTION_SHA':
+                if value.startswith(("'", '"')) and value.endswith(value[0]):
+                    value = value[1:-1]
+                if not re.fullmatch(r'[0-9a-f]{40}', value):
+                    raise ValueError('source workflow must approve an exact literal Builds SHA')
+                values.append(value)
+        if value.startswith(('|', '>')):
+            block_indent = indent
+        elif not value:
+            stack.append((indent, key))
+    if not values or len(set(values)) != 1:
+        raise ValueError('source release workflow must declare one consistent exact Builds execution SHA')
     return values[0]
 
 

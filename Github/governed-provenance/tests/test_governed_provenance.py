@@ -724,6 +724,18 @@ class StandaloneIdentityTests(unittest.TestCase):
                 evaluator.build_provenance(self.args)
             path.write_bytes(original)
 
+    def test_standalone_mode_cannot_certify_a_caller_from_a_reusable_job(self):
+        action = (MODULE_ROOT / "action.yml").read_text()
+        for field in ("repository", "sha", "ref", "file_path"):
+            self.assertIn("${{ job.workflow_" + field + " }}", action)
+        self.assertNotIn("&& github.", action)
+        self.args.workflow_repository = evaluator.BUILDS_REPOSITORY
+        self.args.workflow_sha = self.builds_sha
+        self.args.workflow_ref = f"{evaluator.BUILDS_REPOSITORY}/.github/workflows/domain-release.yml@{self.builds_sha}"
+        self.args.workflow_file_path = ".github/workflows/domain-release.yml"
+        with self.assertRaisesRegex(evaluator.ProvenanceError, "does not match its caller"):
+            evaluator.build_provenance(self.args)
+
     def test_standalone_identity_cannot_enter_reusable_mode(self):
         self.args.workflow_mode = "reusable"
         with self.assertRaisesRegex(evaluator.ProvenanceError, "must be defined by Hexalith/Hexalith.Builds"):

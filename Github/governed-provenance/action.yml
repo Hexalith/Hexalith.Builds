@@ -111,10 +111,10 @@ runs:
         GOVERNED_POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
         GOVERNED_EXPECTED_EVALUATOR_DIGEST: ${{ inputs.expected-evaluator-digest }}
         GOVERNED_OUTPUT: ${{ inputs.output }}
-        RESOLVED_WORKFLOW_REPOSITORY: ${{ inputs.workflow-mode == 'standalone' && github.repository || job.workflow_repository }}
-        RESOLVED_WORKFLOW_SHA: ${{ inputs.workflow-mode == 'standalone' && github.workflow_sha || job.workflow_sha }}
-        RESOLVED_WORKFLOW_REF: ${{ inputs.workflow-mode == 'standalone' && github.workflow_ref || job.workflow_ref }}
-        RESOLVED_WORKFLOW_FILE_PATH: ${{ inputs.workflow-mode == 'standalone' && inputs.workflow-path || job.workflow_file_path }}
+        RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+        RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}
+        RESOLVED_WORKFLOW_REF: ${{ job.workflow_ref }}
+        RESOLVED_WORKFLOW_FILE_PATH: ${{ job.workflow_file_path }}
         CALLER_REPOSITORY: ${{ github.repository }}
         CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
         CALLER_RUN_ID: ${{ github.run_id }}

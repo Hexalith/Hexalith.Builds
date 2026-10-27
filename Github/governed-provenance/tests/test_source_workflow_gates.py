@@ -1,6 +1,7 @@
 """Positive and refusal controls for exact-source workflow admission."""
 import copy
 import json
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -66,7 +67,7 @@ class SourceWorkflowGateTests(unittest.TestCase):
             for index, workflow in enumerate(("ci.yml", "story-guards.yml", "source-reference.yml"), 1):
                 row = run(id=index, path=f".github/workflows/{workflow}")
                 replies.extend(([{"workflow_runs": [row]}], row))
-            with mock.patch.object(gates, "gh_json", side_effect=replies) as api:
+            with mock.patch.object(gates, "gh_json", side_effect=replies + replies) as api:
                 report = gates.qualify("owner/repository", SOURCE, "main",
                                        ["ci.yml", "story-guards.yml", "source-reference.yml"], output)
             self.assertEqual(report["result"], "pass")
@@ -83,6 +84,60 @@ class SourceWorkflowGateTests(unittest.TestCase):
                     gates.qualify("owner/repository", SOURCE, "main", [WORKFLOW], output)
             self.assertEqual(json.loads(output.read_text())["result"], "refused")
             self.assertIn("skipped", output.read_text())
+
+    def test_refresh_refuses_interleaved_attempt_new_run_and_status_changes(self):
+        for change in (dict(run_attempt=2), dict(id=8, run_number=4), dict(conclusion="failure"),
+                       dict(conclusion="skipped"), dict(status="in_progress", conclusion=None)):
+            with self.subTest(change=change), tempfile.TemporaryDirectory() as directory:
+                first = run()
+                second = run(id=9, path=".github/workflows/story-guards.yml")
+                changed = run(**change)
+                replies = [[{"workflow_runs": [first]}], first, [{"workflow_runs": [second]}], second,
+                           [{"workflow_runs": [changed]}], changed]
+                output = Path(directory) / "gates.json"
+                with mock.patch.object(gates, "gh_json", side_effect=replies) as api:
+                    with self.assertRaises(gates.GateError):
+                        gates.qualify("owner/repository", SOURCE, "main", ["ci.yml", "story-guards.yml"], output)
+                report = json.loads(output.read_text())
+                self.assertEqual(report["result"], "refused")
+                self.assertIn("refresh_pages", report["gates"][0])
+                self.assertLessEqual(api.call_count, 6, "Drift must refuse without silently retrying.")
+
+    def test_api_failures_retain_safe_request_context_without_cli_secrets(self):
+        for code, classification in ((401, "authorization"), (403, "authorization"), (404, "not-found"),
+                                     (429, "rate-limited"), (503, "server-error")):
+            with self.subTest(code=code), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "gates.json"
+                failure = subprocess.CompletedProcess([], 1, "", f"gh: HTTP {code}: request failed\nAuthorization: token super-secret")
+                with mock.patch.object(gates.subprocess, "run", return_value=failure):
+                    with self.assertRaises(gates.GateError) as rejected:
+                        gates.qualify("owner/repository", SOURCE, "main", ["ci.yml"], output)
+                report = json.loads(output.read_text())
+                self.assertEqual(report["request_failure"], {
+                    "endpoint": "repos/owner/repository/actions/workflows/ci.yml/runs", "method": "GET",
+                    "exit_status": 1, "http_status": code, "classification": classification})
+                self.assertIn(str(code), str(rejected.exception))
+                self.assertNotIn("super-secret", output.read_text())
+                self.assertNotIn("Authorization", output.read_text())
+
+
+    def test_cli_and_invalid_json_failures_preserve_classification(self):
+        scenarios = ((FileNotFoundError('private filesystem path'), 'cli-unavailable', None),
+                     (subprocess.CompletedProcess([], 2, '', 'private transport error token=secret'), 'transport-or-cli-error', 2),
+                     (subprocess.CompletedProcess([], 0, 'sensitive invalid payload', ''), 'invalid-json', 0))
+        for result, classification, exit_status in scenarios:
+            with self.subTest(classification=classification), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / 'gates.json'
+                option = {'side_effect': result} if isinstance(result, Exception) else {'return_value': result}
+                with mock.patch.object(gates.subprocess, 'run', **option), self.assertRaises(gates.GateError):
+                    gates.qualify('owner/repository', SOURCE, 'main', ['ci.yml'], output)
+                report = json.loads(output.read_text())
+                self.assertEqual(report['request_failure']['classification'], classification)
+                self.assertEqual(report['request_failure']['exit_status'], exit_status)
+                self.assertNotIn('private', output.read_text())
+                self.assertNotIn('sensitive', output.read_text())
+                self.assertNotIn('secret', output.read_text())
+
 
 
 if __name__ == "__main__":
