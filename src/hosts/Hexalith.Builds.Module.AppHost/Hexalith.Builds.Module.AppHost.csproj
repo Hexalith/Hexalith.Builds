@@ -14,7 +14,7 @@
     <!-- Align published EventStore transitive hosting dependencies with the approved catalog; Keycloak runtime remains unqualified. -->
     <PackageReference Include="Aspire.Hosting.Keycloak" />
     <PackageReference Include="Aspire.Hosting.Redis" />
-    <PackageReference Include="Hexalith.EventStore.Aspire" />
+    <PackageReference Include="Hexalith.EventStore.Aspire" IsAspireProjectResource="false" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj" />

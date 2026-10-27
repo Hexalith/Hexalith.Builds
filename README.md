@@ -344,6 +344,22 @@ refuses package mode. The `toolVersionRange` in Platform's
 Mapping values override optional `Directory.Build.props` source probes and
 reconcile references selected by consumer targets before restore. Builds fail
 rather than using a sibling, ancestor, or nested source outside the map.
+Source-tree Builds AppHost, EventStoreHost and UiHost projects participate in
+source-mode reconciliation: EventStore.Aspire, EventStore.Gateway and
+FrontComposer.Shell resolve to Debug projects under their mapped roots.
+EventStore.Aspire keeps `IsAspireProjectResource="false"` when its package
+reference becomes a project reference. In package mode, the source-tree
+EventStoreHost and UiHost remain outside consumer reconciliation, preserving
+their isolated central package selections. Generated projects under a run
+workspace's `hosts/` directory stay outside reconciliation in both modes;
+their existing catalog validation still applies.
+
+Restoring and building this source graph is a separate prerequisite before use. `CompositionEngine`
+launches an already-built Builds AppHost; resolving a run mapping does not
+rebuild or select a different AppHost distribution. Source graph verification
+therefore establishes a build boundary only. Distribution selection, ordinary
+command execution, signed package qualification and hosted acceptance require
+their own evidence.
 The `HXW` diagnostics identify workspace failures: `HXW001` invalid active
 root or manifest location, `HXW002` invalid root references or duplicate source
 projects declaring the same package identity, `HXW003`

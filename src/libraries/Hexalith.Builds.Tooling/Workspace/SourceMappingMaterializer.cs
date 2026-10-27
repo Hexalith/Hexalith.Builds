@@ -350,7 +350,7 @@ public static class SourceMappingMaterializer
         string hostPrefix = Path.Combine(workspace, "hosts") + Path.DirectorySeparatorChar;
         StringBuilder condition = new("!$([System.String]::Copy('$(MSBuildProjectFullPath)').StartsWith('");
         _ = condition.Append(ConditionLiteral(hostPrefix)).Append("', System.StringComparison.").Append(comparisonName).Append("))");
-        foreach (string buildsRoot in mapping.Entries.Where(entry => entry.Identity.Equals("Hexalith.Builds", StringComparison.OrdinalIgnoreCase))
+        foreach (string buildsRoot in mapping.Entries.Where(entry => mapping.Mode == WorkspaceMode.Package && entry.Identity.Equals("Hexalith.Builds", StringComparison.OrdinalIgnoreCase))
             .Select(entry => entry.Path ?? Path.Combine(mapping.Root, "references", "Hexalith.Builds")))
         {
             foreach (string host in new[] { "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.UiHost" })

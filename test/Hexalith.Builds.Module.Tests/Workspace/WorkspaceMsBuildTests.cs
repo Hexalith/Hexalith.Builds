@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
 using System.Text.Json;
+using System.Xml.Linq;
 
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
@@ -1240,29 +1241,35 @@ public sealed class WorkspaceMsBuildTests
         }
     }
 
-    /// <summary>Verifies private packaged host shims do not receive consumer source overrides.</summary>
+    /// <summary>Verifies generated host shims do not receive consumer overrides in either mode.</summary>
+    /// <param name="mode">The selected tool mode.</param>
     /// <returns>A task for the assertion.</returns>
-    [Fact]
-    public async Task PackagedHostProjectStaysOutsideMappingScopeAsync()
+    [Theory]
+    [InlineData(WorkspaceMode.Source)]
+    [InlineData(WorkspaceMode.Package)]
+    public async Task PackagedHostProjectStaysOutsideMappingScopeAsync(WorkspaceMode mode)
     {
         string root = NewDirectory();
         try
         {
             string active = Path.Combine(root, "active");
             _ = Directory.CreateDirectory(active);
-            SourceMapping mapping = Mapping(active, WorkspaceMode.Source);
+            SourceMapping mapping = Mapping(active, mode);
             string workspace = Path.Combine(root, "run");
             await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
             string host = Path.Combine(workspace, "hosts", "eventstore");
             _ = Directory.CreateDirectory(host);
-            string project = WriteProject(host, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>");
+            string project = WriteProject(host, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"Hexalith.Dep.Unmapped\" /></ItemGroup></Project>");
 
-            CompositionProcessResult result = await RunDotnetAsync(host, mapping, workspace, "msbuild", project, "-getProperty:HexalithSourceMappingApplies,UseHexalithProjectReferences,HexalithSourceMappingHash").ConfigureAwait(true);
+            CompositionProcessResult result = await RunDotnetAsync(host, mapping, workspace, "msbuild", project, "-target:HexalithReconcileSourceMapping", "-getProperty:HexalithSourceMappingApplies,UseHexalithProjectReferences,HexalithSourceMappingHash", "-getItem:ProjectReference,PackageReference").ConfigureAwait(true);
 
             result.ExitCode.ShouldBe(0, result.Output);
             result.Output.ShouldContain("\"HexalithSourceMappingApplies\": \"\"");
             result.Output.ShouldContain("\"UseHexalithProjectReferences\": \"\"");
             result.Output.ShouldContain("\"HexalithSourceMappingHash\": \"\"");
+            using JsonDocument output = JsonDocument.Parse(result.Output);
+            output.RootElement.GetProperty("Items").GetProperty("ProjectReference").GetArrayLength().ShouldBe(0);
+            output.RootElement.GetProperty("Items").GetProperty("PackageReference")[0].GetProperty("Identity").GetString().ShouldBe("Hexalith.Dep.Unmapped");
         }
         finally
         {
@@ -2017,7 +2024,7 @@ public sealed class WorkspaceMsBuildTests
         }
     }
 
-    /// <summary>Verifies source-tree Builds host projects are outside module mapping scope in either mode.</summary>
+    /// <summary>Verifies source-tree Builds hosts join source mapping and retain package isolation.</summary>
     /// <param name="mode">The selected tool mode.</param>
     /// <param name="hostName">The source-tree host project name.</param>
     /// <returns>A task for the assertion.</returns>
@@ -2026,7 +2033,7 @@ public sealed class WorkspaceMsBuildTests
     [InlineData(WorkspaceMode.Package, "Hexalith.Builds.Module.EventStoreHost")]
     [InlineData(WorkspaceMode.Source, "Hexalith.Builds.Module.UiHost")]
     [InlineData(WorkspaceMode.Package, "Hexalith.Builds.Module.UiHost")]
-    public async Task SourceTreeHostProjectsStayOutsideMappingScopeAsync(WorkspaceMode mode, string hostName)
+    public async Task SourceTreeHostProjectsFollowMappingModeAsync(WorkspaceMode mode, string hostName)
     {
         string root = NewDirectory();
         try
@@ -2047,8 +2054,11 @@ public sealed class WorkspaceMsBuildTests
             CompositionProcessResult result = await RunDotnetAsync(hostDirectory, mapping, workspace, "msbuild", host, "-getProperty:HexalithSourceMappingApplies,HexalithSourceMappingHash").ConfigureAwait(true);
 
             result.ExitCode.ShouldBe(0, result.Output);
-            result.Output.ShouldContain("\"HexalithSourceMappingApplies\": \"\"");
-            result.Output.ShouldContain("\"HexalithSourceMappingHash\": \"\"");
+            using JsonDocument output = JsonDocument.Parse(result.Output);
+            output.RootElement.GetProperty("Properties").GetProperty("HexalithSourceMappingApplies").GetString()
+                .ShouldBe(mode == WorkspaceMode.Source ? "true" : string.Empty);
+            output.RootElement.GetProperty("Properties").GetProperty("HexalithSourceMappingHash").GetString()
+                .ShouldBe(mode == WorkspaceMode.Source ? mapping.ContentHash : string.Empty);
         }
         finally
         {
@@ -2114,6 +2124,169 @@ public sealed class WorkspaceMsBuildTests
         {
             Directory.Delete(root, true);
         }
+    }
+
+    /// <summary>Verifies real host dependency declarations restore as Debug projects through materialized imports.</summary>
+    /// <param name="hostName">The source-tree host name.</param>
+    /// <param name="identity">The mapped dependency owner.</param>
+    /// <param name="packageId">The declared dependency package.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("Hexalith.Builds.Module.AppHost", "Hexalith.EventStore", "Hexalith.EventStore.Aspire")]
+    [InlineData("Hexalith.Builds.Module.EventStoreHost", "Hexalith.EventStore", "Hexalith.EventStore.Gateway")]
+    [InlineData("Hexalith.Builds.Module.UiHost", "Hexalith.FrontComposer", "Hexalith.FrontComposer.Shell")]
+    public async Task SourceHostDependencyRestoresFromMappedProjectAsync(string hostName, string identity, string packageId)
+    {
+        string root = NewDirectory();
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "NuGet.Config"), "<configuration><packageSources><clear /></packageSources></configuration>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string active = Path.Combine(root, "active");
+            string host = WriteSourceHost(active, hostName, packageId);
+            string dependency = WriteHostDependency(active, identity, packageId, "Selected");
+            SourceMapping mapping = HostMapping(active, identity);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+            CompositionProcessResult restore = await RunDotnetAsync(active, mapping, workspace, "restore", host, "-v:q", "-p:NuGetAudit=false", "-m:1").ConfigureAwait(true);
+            restore.ExitCode.ShouldBe(0, restore.Output + restore.ErrorOutput);
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "msbuild", host, "-target:HexalithValidateSourceProjectsBeforeRestore", "-getProperty:Configuration,HexalithSourceMappingHash,ProjectAssetsFile", "-getItem:ProjectReference,PackageReference").ConfigureAwait(true);
+            result.ExitCode.ShouldBe(0, result.Output + result.ErrorOutput);
+            using JsonDocument output = JsonDocument.Parse(result.Output);
+            JsonElement properties = output.RootElement.GetProperty("Properties");
+            properties.GetProperty("Configuration").GetString().ShouldBe("Debug");
+            properties.GetProperty("HexalithSourceMappingHash").GetString().ShouldBe(mapping.ContentHash);
+            JsonElement projects = output.RootElement.GetProperty("Items").GetProperty("ProjectReference");
+            projects.GetArrayLength().ShouldBe(1);
+            projects[0].GetProperty("Identity").GetString().ShouldBe(dependency);
+            output.RootElement.GetProperty("Items").GetProperty("PackageReference").GetArrayLength().ShouldBe(0);
+            if (hostName == "Hexalith.Builds.Module.AppHost")
+            {
+                projects[0].GetProperty("IsAspireProjectResource").GetString().ShouldBe("false");
+            }
+
+            using JsonDocument assets = JsonDocument.Parse(await File.ReadAllTextAsync(properties.GetProperty("ProjectAssetsFile").GetString()!, TestContext.Current.CancellationToken).ConfigureAwait(true));
+            JsonProperty library = assets.RootElement.GetProperty("libraries").EnumerateObject().ShouldHaveSingleItem();
+            library.Name.ShouldStartWith(packageId + "/");
+            library.Value.GetProperty("type").GetString().ShouldBe("project");
+            Path.GetFullPath(library.Value.GetProperty("msbuildProject").GetString()!, Path.GetDirectoryName(host)!).ShouldBe(dependency);
+            assets.RootElement.GetProperty("targets").GetProperty("net10.0").EnumerateObject().ShouldHaveSingleItem()
+                .Value.GetProperty("type").GetString().ShouldBe("project");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Verifies source hosts retain categorized refusals before dependent compilation.</summary>
+    /// <param name="hostName">The source-tree host name.</param>
+    /// <param name="identity">The mapped dependency owner.</param>
+    /// <param name="packageId">The declared dependency package.</param>
+    /// <param name="defect">The invalid dependency graph.</param>
+    /// <param name="diagnostic">The expected refusal category.</param>
+    /// <returns>A task for the assertion.</returns>
+    [Theory]
+    [InlineData("Hexalith.Builds.Module.AppHost", "Hexalith.EventStore", "Hexalith.EventStore.Aspire", "missing", "HXW005")]
+    [InlineData("Hexalith.Builds.Module.EventStoreHost", "Hexalith.EventStore", "Hexalith.EventStore.Gateway", "missing", "HXW005")]
+    [InlineData("Hexalith.Builds.Module.UiHost", "Hexalith.FrontComposer", "Hexalith.FrontComposer.Shell", "missing", "HXW005")]
+    [InlineData("Hexalith.Builds.Module.AppHost", "Hexalith.EventStore", "Hexalith.EventStore.Aspire", "ambiguous", "HXW002")]
+    [InlineData("Hexalith.Builds.Module.EventStoreHost", "Hexalith.EventStore", "Hexalith.EventStore.Gateway", "ambiguous", "HXW002")]
+    [InlineData("Hexalith.Builds.Module.UiHost", "Hexalith.FrontComposer", "Hexalith.FrontComposer.Shell", "ambiguous", "HXW002")]
+    [InlineData("Hexalith.Builds.Module.AppHost", "Hexalith.EventStore", "Hexalith.EventStore.Aspire", "escaped", "HXW006")]
+    [InlineData("Hexalith.Builds.Module.EventStoreHost", "Hexalith.EventStore", "Hexalith.EventStore.Gateway", "escaped", "HXW006")]
+    [InlineData("Hexalith.Builds.Module.UiHost", "Hexalith.FrontComposer", "Hexalith.FrontComposer.Shell", "escaped", "HXW006")]
+    [InlineData("Hexalith.Builds.Module.AppHost", "Hexalith.EventStore", "Hexalith.EventStore.Aspire", "mixed", "HXW005")]
+    [InlineData("Hexalith.Builds.Module.EventStoreHost", "Hexalith.EventStore", "Hexalith.EventStore.Gateway", "mixed", "HXW005")]
+    [InlineData("Hexalith.Builds.Module.UiHost", "Hexalith.FrontComposer", "Hexalith.FrontComposer.Shell", "mixed", "HXW005")]
+    public async Task SourceHostInvalidDependencyStopsBeforeCompilationAsync(string hostName, string identity, string packageId, string defect, string diagnostic)
+    {
+        string root = NewDirectory();
+        try
+        {
+            string active = Path.Combine(root, "active");
+            string host = WriteSourceHost(active, hostName, packageId);
+            string dependency = WriteHostDependency(active, identity, packageId, "Selected");
+            XDocument project = XDocument.Load(host);
+            if (defect == "missing")
+            {
+                File.Delete(dependency);
+            }
+            else if (defect == "ambiguous")
+            {
+                _ = WriteHostDependency(active, identity, packageId, "Other");
+            }
+            else if (defect == "escaped")
+            {
+                string outside = Path.Combine(root, "outside");
+                _ = Directory.CreateDirectory(outside);
+                string escaped = WriteProject(outside, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>");
+                project.Root!.Add(new XElement("ItemGroup", new XElement("ProjectReference", new XAttribute("Include", escaped))));
+            }
+            else
+            {
+                project.Root!.Add(new XElement("ItemGroup", new XElement("PackageReference", new XAttribute("Include", "Hexalith.Active.Unexpected"), new XAttribute("VersionOverride", "9.9.9"))));
+            }
+
+            project.Save(host);
+            string marker = Path.Combine(root, "dependent-compile.txt");
+            if (File.Exists(dependency))
+            {
+                XDocument candidate = XDocument.Load(dependency);
+                candidate.Root!.Add(new XElement("Target", new XAttribute("Name", "RecordCompilation"), new XAttribute("BeforeTargets", "CoreCompile"), new XElement("WriteLinesToFile", new XAttribute("File", marker), new XAttribute("Lines", "compiled"))));
+                candidate.Save(dependency);
+            }
+
+            SourceMapping mapping = HostMapping(active, identity);
+            string workspace = Path.Combine(root, "run");
+            await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "build", host, "-v:q", "-p:NuGetAudit=false", "-m:1").ConfigureAwait(true);
+
+            result.ExitCode.ShouldNotBe(0, result.Output + result.ErrorOutput);
+            (result.Output + result.ErrorOutput).ShouldContain(diagnostic);
+            File.Exists(marker).ShouldBeFalse("the invalid graph must refuse before dependent compilation");
+            File.Exists(Path.Combine(Path.GetDirectoryName(host)!, "obj", "project.assets.json")).ShouldBeFalse();
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static SourceMapping HostMapping(string root, string dependencyIdentity) => new(
+        WorkspaceMode.Source,
+        root,
+        "Hexalith.Active",
+        [
+            new SourceMappingEntry("Hexalith.Active", "source", root),
+            new SourceMappingEntry("Hexalith.Builds", "source", Path.Combine(root, "references", "Hexalith.Builds")),
+            new SourceMappingEntry(dependencyIdentity, "source", Path.Combine(root, "references", dependencyIdentity)),
+        ],
+        true);
+
+    private static string WriteSourceHost(string root, string hostName, string packageId)
+    {
+        string realProject = Path.Combine(CompositionTestFiles.RepositoryRoot(), "src", "hosts", hostName, hostName + ".csproj");
+        XElement dependency = XDocument.Load(realProject).Descendants("PackageReference").Single(item => (string?)item.Attribute("Include") == packageId);
+        if (hostName == "Hexalith.Builds.Module.AppHost")
+        {
+            ((string?)dependency.Attribute("IsAspireProjectResource")).ShouldBe("false");
+        }
+
+        string directory = Path.Combine(root, "references", "Hexalith.Builds", "src", "hosts", hostName);
+        _ = Directory.CreateDirectory(directory);
+        string project = Path.Combine(directory, hostName + ".csproj");
+        new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0")), new XElement("ItemGroup", new XElement(dependency)))).Save(project);
+        return project;
+    }
+
+    private static string WriteHostDependency(string root, string identity, string packageId, string name)
+    {
+        string directory = Path.Combine(root, "references", identity, "src", name);
+        _ = Directory.CreateDirectory(directory);
+        string project = Path.Combine(directory, name + ".csproj");
+        new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0"), new XElement("PackageId", new XAttribute("Condition", "'$(Configuration)' == 'Debug'"), packageId)))).Save(project);
+        return project;
     }
 
     private static SourceMapping Mapping(string root, WorkspaceMode mode) => new(

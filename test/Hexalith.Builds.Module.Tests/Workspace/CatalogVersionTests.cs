@@ -386,22 +386,23 @@ public sealed class CatalogVersionTests
     }
 
     /// <summary>Verifies generated and Builds host builds run the package catalog guard.</summary>
-    /// <param name="buildsHost">Whether the consumer is a Builds host.</param>
+    /// <param name="hostName">The generated or source-tree host name.</param>
     /// <returns>A task for the assertion.</returns>
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task HostBuildRejectsVersionOverrideAsync(bool buildsHost)
+    [InlineData("Generated")]
+    [InlineData("Hexalith.Builds.Module.EventStoreHost")]
+    [InlineData("Hexalith.Builds.Module.UiHost")]
+    public async Task HostBuildRejectsVersionOverrideAsync(string hostName)
     {
         using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Package, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string workspace = Path.Combine(fixture.Directory, "run");
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        string host = buildsHost
-            ? Path.Combine(fixture.Checkout, "references", "Hexalith.Builds", "src", "hosts", "Hexalith.Builds.Module.EventStoreHost")
-            : Path.Combine(workspace, "hosts", "Generated");
+        string host = hostName != "Generated"
+            ? Path.Combine(fixture.Checkout, "references", "Hexalith.Builds", "src", "hosts", hostName)
+            : Path.Combine(workspace, "hosts", hostName);
         _ = Directory.CreateDirectory(host);
-        string project = Path.Combine(host, buildsHost ? "Hexalith.Builds.Module.EventStoreHost.csproj" : "Generated.csproj");
+        string project = Path.Combine(host, hostName + ".csproj");
         await File.WriteAllTextAsync(
             project,
             "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"Hexalith.Dep\" VersionOverride=\"2.0.0\" /></ItemGroup></Project>",
