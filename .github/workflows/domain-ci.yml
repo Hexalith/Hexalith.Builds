@@ -1037,7 +1037,9 @@ jobs:
       - name: Trust HTTPS development certificates for live sockets
         if: ${{ inputs.aspire-browser-project != '' }}
         run: |
-          echo 'SSL_CERT_DIR=/home/runner/.aspnet/dev-certs/trust:/usr/lib/ssl/certs' >> "$GITHUB_ENV"
+          # GITHUB_ENV applies only to later steps. Export it now so dev-certs can trust OpenSSL.
+          export SSL_CERT_DIR="${HOME}/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"
+          echo "SSL_CERT_DIR=${SSL_CERT_DIR}" >> "$GITHUB_ENV"
           sudo apt-get update
           sudo apt-get install -y libnss3-tools
           for live_nss_directory in "$HOME/.pki/nssdb" "$HOME/.local/share/pki/nssdb"; do
