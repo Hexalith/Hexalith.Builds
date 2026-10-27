@@ -71,8 +71,42 @@ internal static class ModuleCommandApplication
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Down, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Test, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput, operationStarted));
+        rootCommand.Subcommands.Add(CreatePrepareBuildCommand(standardOutput, operationStarted));
         rootCommand.Subcommands.Add(CreateListCommand(standardOutput, compositionOptions, operationStarted));
         return rootCommand;
+    }
+
+    private static Command CreatePrepareBuildCommand(TextWriter output, Action<Task<int>> operationStarted)
+    {
+        Command command = new("prepare-build", "Prepares verified MSBuild imports without starting resources.");
+        Option<string> manifest = new("--manifest") { Required = true };
+        Option<string> workspace = new("--workspace") { Required = true };
+        Option<string> mode = new("--mode") { Required = true };
+        _ = mode.AcceptOnlyFromAmong("source", "package");
+        Option<string> format = new("--output") { DefaultValueFactory = _ => "human" };
+        _ = format.AcceptOnlyFromAmong("human", "json");
+        command.Options.Add(manifest);
+        command.Options.Add(workspace);
+        command.Options.Add(mode);
+        command.Options.Add(format);
+        command.SetAction((parsed, token) =>
+        {
+            Task<int> execution = ExecuteAsync(token);
+            operationStarted(execution);
+            return execution;
+
+            async Task<int> ExecuteAsync(CancellationToken cancellation)
+            {
+                ToolCommandResult result = await BuildPreparationService.PrepareAsync(
+                    parsed.GetValue(manifest)!,
+                    parsed.GetValue(mode) == "package" ? WorkspaceMode.Package : WorkspaceMode.Source,
+                    parsed.GetValue(workspace)!,
+                    cancellation).ConfigureAwait(false);
+                await ToolDiagnosticFormatter.WriteAsync(output, result, ParseOutputFormat(parsed.GetValue(format)), CancellationToken.None).ConfigureAwait(false);
+                return (int)result.Outcome.ExitCode;
+            }
+        });
+        return command;
     }
 
     private static Command CreateListCommand(TextWriter output, CompositionEngineOptions? options, Action<Task<int>> operationStarted)

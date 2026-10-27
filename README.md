@@ -261,6 +261,21 @@ dotnet tool run hexalith-module test --manifest module/hexalith-projects.module.
 dotnet tool run hexalith-evidence validate _bmad-output/planning-artifacts/implementation-readiness-traceability-matrix.yaml
 ```
 
+`prepare-build --manifest module/hexalith.module-manifest.v2.json --mode source|package
+--workspace <fresh-directory> --output human|json` validates the v2 declaration,
+resolves the same workspace and materializes verified MSBuild imports without
+allocating a run identity or starting resources. Its output parent must exist;
+the destination must be absent and have no symbolic-link ancestors. Source mode
+selects Debug; package mode selects Release and retains every Platform identity,
+release tag and pinned catalog check. JSON returns `buildPreparation` containing
+`workspace`, `mode`, `mappingHash` and the explicit `environment`. Pass those
+imports to each restore/build process without evaluating shell text. Existing
+files are never overwritten. The CI composite in `Github/prepare-module-build`
+restores the exact local CLI pin and exports only validated mapping imports.
+This candidate command is absent from accepted CLI 4.35.2: consumer pins and
+root Builds revisions require separate producer qualification/publication before
+CI can succeed; this change does not select a new accepted tool version.
+
 `run` and `test` accept `--mode source|package` and default to `source`. CI jobs
 that invoke this tool should pass `--mode package` explicitly. The tool resolves
 the outermost Git superproject containing

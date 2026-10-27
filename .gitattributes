@@ -18,3 +18,6 @@ evidence/g4/story117-package-seed-20261016/**/*.log -whitespace
 evidence/g4/approved-tuple-20261020/** whitespace=cr-at-eol
 evidence/g4/approved-tuple-20261020/*.patch -whitespace
 evidence/g4/approved-tuple-20261020/*.log -whitespace
+
+# Existing provenance tests use authored CRLF; retain their bytes during workflow changes.
+Github/governed-provenance/tests/test_governed_provenance.py -text diff whitespace=cr-at-eol

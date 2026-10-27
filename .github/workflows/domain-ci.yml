@@ -7,6 +7,11 @@ on:
         description: 'Path to the .slnx/.sln solution to restore and build.'
         required: true
         type: string
+      module-manifest:
+        description: 'Optional v2 declaration for exact pinned tool package/Release build preparation; requires a qualified producer release.'
+        required: false
+        type: string
+        default: ''
       dotnet-global-json:
         description: 'Path to global.json pinning the .NET SDK.'
         required: false
@@ -348,6 +353,19 @@ jobs:
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
+      - name: Checkout workflow-owned Builds preparation
+        if: ${{ inputs.module-manifest != '' && !inputs.governed-ci }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ job.workflow_sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
+      - name: Prepare module build
+        if: ${{ inputs.module-manifest != '' }}
+        uses: ./.hexalith/builds-execution/Github/prepare-module-build
+        with:
+          manifest: ${{ inputs.module-manifest }}
       - name: Cache NuGet packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -899,6 +917,14 @@ jobs:
         with:
           fetch-depth: 0
           submodules: false
+      - name: Checkout approved Builds preparation
+        if: ${{ inputs.module-manifest != '' && inputs.governed-ci }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ inputs.builds-execution-sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
       - name: Initialize root-declared submodules
         uses: Hexalith/Hexalith.Builds/Github/initialize-build@fff4a212180d8cd1c5c0759655a9bc4fb6963c45 # BUILD-REL-1
       - name: Validate Aspire hooks
@@ -949,6 +975,19 @@ jobs:
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
+      - name: Checkout workflow-owned Builds preparation
+        if: ${{ inputs.module-manifest != '' && !inputs.governed-ci }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ job.workflow_sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
+      - name: Prepare module build
+        if: ${{ inputs.module-manifest != '' }}
+        uses: ./.hexalith/builds-execution/Github/prepare-module-build
+        with:
+          manifest: ${{ inputs.module-manifest }}
       - name: Cache NuGet packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -1051,12 +1090,33 @@ jobs:
         with:
           fetch-depth: 0
           submodules: false
+      - name: Checkout approved Builds preparation
+        if: ${{ inputs.module-manifest != '' && inputs.governed-ci }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ inputs.builds-execution-sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
       - name: Initialize root-declared submodules
         uses: Hexalith/Hexalith.Builds/Github/initialize-build@fff4a212180d8cd1c5c0759655a9bc4fb6963c45 # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: ${{ inputs.dotnet-global-json }}
+      - name: Checkout workflow-owned Builds preparation
+        if: ${{ inputs.module-manifest != '' && !inputs.governed-ci }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ job.workflow_sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
+      - name: Prepare module build
+        if: ${{ inputs.module-manifest != '' }}
+        uses: ./.hexalith/builds-execution/Github/prepare-module-build
+        with:
+          manifest: ${{ inputs.module-manifest }}
       - name: Cache NuGet packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:

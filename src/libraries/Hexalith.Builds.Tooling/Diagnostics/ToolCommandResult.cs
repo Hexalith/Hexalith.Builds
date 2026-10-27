@@ -18,6 +18,10 @@ public sealed record ToolCommandResult(
     ToolOutcome Outcome,
     IReadOnlyList<ToolDiagnostic> Diagnostics)
 {
+    /// <summary>Gets verified build imports when runtime-free preparation succeeds.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Workspace.BuildPreparation? BuildPreparation { get; init; }
+
     /// <summary>Gets the optional bounded static enrollment report.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<Hexalith.Builds.Tooling.Manifest.PlatformAdoptionRow>? Adoption { get; init; }
