@@ -12,6 +12,8 @@
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">1.0.0</HexalithMcpCliVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">2.29.9</HexalithMemoriesVersion>
     <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.10.1</HexalithTenantsVersion>
+    <!-- Temporary Story 5.12 package-only catalog consumers. Shipped package pins stay unchanged. -->
+    <HexalithTenantsVersion Condition="'$(CatalogCandidateTenantsVersion)' != '' and '$(UseHexalithProjectReferences)' != 'true' and ('$(MSBuildProjectName)' == 'Hexalith.EventStore.CatalogConstruction' or '$(MSBuildProjectName)' == 'Hexalith.EventStore.Server.Tests' or '$(MSBuildProjectName)' == 'Hexalith.EventStore.QueryRouting.Tests' or '$(MSBuildProjectName)' == 'Hexalith.EventStore.Server.LiveSidecar.Tests' or '$(MSBuildProjectName)' == 'routing-catalog.cs')">$(CatalogCandidateTenantsVersion)</HexalithTenantsVersion>
     <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.6.0</HexalithPartiesVersion>
     <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">1.6.0</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.0</HexalithProjectsVersion>
