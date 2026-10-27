@@ -112,6 +112,18 @@ public static class ToolDiagnosticFormatter
             }
         }
 
+        if (result.BuildPreparation is { } preparation)
+        {
+            AppendField(builder, "workspace", preparation.Workspace);
+            AppendField(builder, "mode", preparation.Mode);
+            AppendField(builder, "mapping-hash", preparation.MappingHash);
+            foreach ((string name, string value) in preparation.Environment)
+            {
+                _ = builder.Append('\n');
+                AppendField(builder, name, value);
+            }
+        }
+
         AppendField(builder, "test-result", result.TestResultPath);
         return builder.ToString();
     }

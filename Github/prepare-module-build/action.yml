@@ -1,0 +1,15 @@
+name: Prepare module build
+description: Restore the exact local module tool and export verified package-mode MSBuild imports without starting resources
+inputs:
+  manifest:
+    description: Repository-relative v2 module declaration
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Prepare package build imports
+      shell: bash
+      env:
+        MODULE_BUILD_MANIFEST: ${{ inputs.manifest }}
+        MODULE_BUILD_HELPER: ${{ github.action_path }}/prepare_module_build.py
+      run: python3 "$MODULE_BUILD_HELPER" --manifest "$MODULE_BUILD_MANIFEST"

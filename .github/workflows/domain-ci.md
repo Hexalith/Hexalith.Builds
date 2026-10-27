@@ -244,3 +244,22 @@ jobs:
       dependency-policy-sha256: ${{ needs.policy.outputs.sha256 }}
       expected-ci-evaluator-digest: ${{ vars.HEXALITH_CI_EVALUATOR_DIGEST }}
 ```
+
+## Optional producer-owned build preparation
+
+Set `module-manifest` to a repository-relative v2 declaration to prepare package
+references and Release imports before restore/build in all three jobs. Omitting
+it preserves existing callers. The exact `.config/dotnet-tools.json` module CLI
+pin must disable roll-forward. The helper restores that manifest, checks the
+observed version, invokes `prepare-build --mode package` and structurally parses
+JSON. Only the five generated MSBuild import paths, mapping hash and Release
+configuration can reach `GITHUB_ENV`; unexpected keys, invalid paths and newlines
+refuse before any environment export. No command text is evaluated.
+
+Governed callers load the composite from `.hexalith/builds-execution` at their
+approved workflow SHA. Other opted-in callers check out the reusable workflow's actual
+`job.workflow_sha` into the same local action path. The helper never uses source mode in CI.
+Accepted tool 4.35.2 does not implement this command. A separately qualified and
+published producer command, accepted exact tool pin, compatible tagged Platform
+identity/catalog and qualified root Builds gitlink are delivery prerequisites.
+Candidate source tests do not certify those prerequisites or green upstream CI.
