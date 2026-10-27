@@ -505,6 +505,30 @@ $ciWorkflow = Get-Content -LiteralPath $ciWorkflowPath -Raw
 $releaseWorkflow = Get-Content -LiteralPath $releaseWorkflowPath -Raw
 $buildReleaseWorkflow = Get-Content -LiteralPath $buildReleaseWorkflowPath -Raw
 
+$packagePreparation = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Prepare package dependencies'
+$packageBody = Get-StepRunBody -Block $packagePreparation -StepName 'Prepare package dependencies'
+Assert-Contains -Name 'Package preparation opt-in' -Content $packagePreparation -Expected "inputs.package-prepare-script != ''"
+Assert-Contains -Name 'Package preparation deadline' -Content $packageBody -Expected 'timeout --signal=TERM --kill-after=30s 1800'
+Assert-Condition -Name 'Package preparation in every job' -Condition (([regex]::Matches($ciWorkflow, '      - name: Prepare package dependencies')).Count -eq 3) -Failure 'must prepare before restore in all three jobs.'
+foreach ($code in @(0, 23)) {
+    $fixture = "mkdir -p hooks`nprintf 'exit $code\n' > hooks/packages.sh`n"
+    $result = Invoke-WorkflowBashBody -Body ($fixture + $packageBody) -Environment @{ PACKAGE_PREPARE_SCRIPT = 'hooks/packages.sh' }
+    Assert-Condition -Name "Package preparation exit $code" -Condition ($result.ExitCode -eq $code) -Failure "returned $($result.ExitCode)."
+}
+foreach ($path in @('../outside.sh', '/tmp/outside.sh', 'hooks/missing.sh', 'hooks/packages.sh;true', 'hooks/./packages.sh')) {
+    $result = Invoke-WorkflowBashBody -Body ("mkdir -p hooks`nprintf 'exit 0\n' > hooks/packages.sh`n" + $packageBody) -Environment @{ PACKAGE_PREPARE_SCRIPT = $path }
+    Assert-Condition -Name "Package preparation invalid path $path" -Condition ($result.ExitCode -ne 0) -Failure 'accepted an invalid path.'
+}
+foreach ($fixture in @(
+    "mkdir -p hooks`nprintf 'exit 0\n' > hooks/real.sh`nln -s real.sh hooks/packages.sh`n",
+    "mkdir -p real`nprintf 'exit 0\n' > real/packages.sh`nln -s real hooks`n"
+)) {
+    $result = Invoke-WorkflowBashBody -Body ($fixture + $packageBody) -Environment @{ PACKAGE_PREPARE_SCRIPT = 'hooks/packages.sh' }
+    Assert-Condition -Name 'Package preparation linked path' -Condition ($result.ExitCode -ne 0) -Failure 'accepted a linked path.'
+}
+$result = Invoke-WorkflowBashBody -Body ("mkdir -p hooks`nprintf 'exit 0\n' > hooks/packages.sh`n" + 'timeout() { [ "$3" = 1800 ] || exit 99; return 124; }' + "`n" + $packageBody) -Environment @{ PACKAGE_PREPARE_SCRIPT = 'hooks/packages.sh' }
+Assert-Condition -Name 'Package preparation timeout' -Condition ($result.ExitCode -eq 124) -Failure 'lost its deadline or timeout exit.'
+
 $hookValidation = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Validate Aspire hooks'
 $hookBody = Get-StepRunBody -Block $hookValidation -StepName 'Validate Aspire hooks'
 $hookEnvironment = @{

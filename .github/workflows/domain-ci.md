@@ -259,6 +259,16 @@ are off by default; other callers keep their existing behavior.
 
 ## Optional producer-owned build preparation
 
+`package-prepare-script` optionally selects a repository-relative bash script
+before restore in every job. The default is empty. Paths containing traversal,
+shell syntax or symbolic links fail before execution; execution has a 30-minute
+deadline and propagates failures. Use it to prepare an isolated NuGet candidate
+feed in Release/package mode when qualifying a package dependency chain. The
+caller owns candidate provenance and may export nonsecret MSBuild properties
+through `GITHUB_ENV`. Keep candidate versions out of published dependencies and
+retain every existing build, consumer, test, coverage and exact-source release
+gate. Candidate-chain qualification does not prove published-version acceptance.
+
 Set `module-manifest` to a repository-relative v2 declaration to prepare package
 references and Release imports before restore/build in all three jobs. Omitting
 it preserves existing callers. The exact `.config/dotnet-tools.json` module CLI

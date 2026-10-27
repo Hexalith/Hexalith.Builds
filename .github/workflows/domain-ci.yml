@@ -83,6 +83,11 @@ on:
         required: false
         type: boolean
         default: false
+      package-prepare-script:
+        description: 'Optional repository-relative bash script preparing package dependencies before restore. Existing build, test and consumer gates remain unchanged.'
+        required: false
+        type: string
+        default: ''
       run-coverage-gate:
         description: 'Run scripts/validate-coverage.py over TestResults.'
         required: false
@@ -390,6 +395,27 @@ jobs:
         run: |
           echo "Unsupported test-platform '$TEST_PLATFORM'. Expected vstest or microsoft-testing-platform." >&2
           exit 1
+      - name: Prepare package dependencies
+        if: ${{ inputs.package-prepare-script != '' }}
+        timeout-minutes: 31
+        shell: bash
+        env:
+          PACKAGE_PREPARE_SCRIPT: ${{ inputs.package-prepare-script }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$PACKAGE_PREPARE_SCRIPT" =~ ^[A-Za-z0-9_./-]+\.sh$ || "$PACKAGE_PREPARE_SCRIPT" = /* || "$PACKAGE_PREPARE_SCRIPT" =~ (^|/)\.\.?(/|$) || ! -f "$PACKAGE_PREPARE_SCRIPT" ]]; then
+            echo "Package preparation must select an existing repository-relative bash script." >&2
+            exit 1
+          fi
+          checked_path="$PACKAGE_PREPARE_SCRIPT"
+          while [ "$checked_path" != . ]; do
+            if [ -L "$checked_path" ]; then
+              echo "Package preparation forbids symbolic links." >&2
+              exit 1
+            fi
+            checked_path="$(dirname "$checked_path")"
+          done
+          timeout --signal=TERM --kill-after=30s 1800 bash "$PACKAGE_PREPARE_SCRIPT" </dev/null
       - name: Restore
         env:
           SOLUTION: ${{ inputs.solution }}
@@ -1036,6 +1062,27 @@ jobs:
         run: |
           npm ci
           npx --no-install playwright install --with-deps chromium
+      - name: Prepare package dependencies
+        if: ${{ inputs.package-prepare-script != '' }}
+        timeout-minutes: 31
+        shell: bash
+        env:
+          PACKAGE_PREPARE_SCRIPT: ${{ inputs.package-prepare-script }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$PACKAGE_PREPARE_SCRIPT" =~ ^[A-Za-z0-9_./-]+\.sh$ || "$PACKAGE_PREPARE_SCRIPT" = /* || "$PACKAGE_PREPARE_SCRIPT" =~ (^|/)\.\.?(/|$) || ! -f "$PACKAGE_PREPARE_SCRIPT" ]]; then
+            echo "Package preparation must select an existing repository-relative bash script." >&2
+            exit 1
+          fi
+          checked_path="$PACKAGE_PREPARE_SCRIPT"
+          while [ "$checked_path" != . ]; do
+            if [ -L "$checked_path" ]; then
+              echo "Package preparation forbids symbolic links." >&2
+              exit 1
+            fi
+            checked_path="$(dirname "$checked_path")"
+          done
+          timeout --signal=TERM --kill-after=30s 1800 bash "$PACKAGE_PREPARE_SCRIPT" </dev/null
       - name: Restore and Build
         env:
           SOLUTION: ${{ inputs.solution }}
@@ -1205,6 +1252,27 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
           restore-keys: nuget-
+      - name: Prepare package dependencies
+        if: ${{ inputs.package-prepare-script != '' }}
+        timeout-minutes: 31
+        shell: bash
+        env:
+          PACKAGE_PREPARE_SCRIPT: ${{ inputs.package-prepare-script }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$PACKAGE_PREPARE_SCRIPT" =~ ^[A-Za-z0-9_./-]+\.sh$ || "$PACKAGE_PREPARE_SCRIPT" = /* || "$PACKAGE_PREPARE_SCRIPT" =~ (^|/)\.\.?(/|$) || ! -f "$PACKAGE_PREPARE_SCRIPT" ]]; then
+            echo "Package preparation must select an existing repository-relative bash script." >&2
+            exit 1
+          fi
+          checked_path="$PACKAGE_PREPARE_SCRIPT"
+          while [ "$checked_path" != . ]; do
+            if [ -L "$checked_path" ]; then
+              echo "Package preparation forbids symbolic links." >&2
+              exit 1
+            fi
+            checked_path="$(dirname "$checked_path")"
+          done
+          timeout --signal=TERM --kill-after=30s 1800 bash "$PACKAGE_PREPARE_SCRIPT" </dev/null
       - name: Restore and Build
         env:
           SOLUTION: ${{ inputs.solution }}
