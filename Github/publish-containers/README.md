@@ -104,3 +104,9 @@ precision, and must equal that instant. The three-argument
 supported: graph validation still requires both created labels, validates their
 calendar dates, and rejects disagreement between labels or platforms. Readers
 that know the publisher instant may supply the fourth argument to bind it too.
+
+The CLI's explicit `--observe-created` recovery-reader mode exposes the same
+three-argument reader semantics when no publisher receipt exists yet. It is
+mutually exclusive with `--created`; a supplied expected instant never falls
+back to observation. The initial receipt retains the observed canonical instant
+and immutable index digest so later recovery checks can bind both exactly.

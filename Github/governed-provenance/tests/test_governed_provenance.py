@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import sys
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -664,6 +665,81 @@ class EndToEndTests(unittest.TestCase):
     def test_an_unknown_stage_is_rejected(self):
         with self.assertRaises(evaluator.ProvenanceError):
             evaluator.build_provenance(self.arguments("publish", ".github/workflows/domain-ci.yml"))
+
+
+class StandaloneIdentityTests(unittest.TestCase):
+    """Standalone support must preserve the reusable identity refusal path."""
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.builds = self.root / "builds"
+        self.source = self.root / "source"
+        for root in (self.builds, self.source):
+            root.mkdir()
+        CheckoutBuilder(self.builds).composite("Github/example", "    - run: echo qualified\n")
+        self.builds_sha = self.commit(self.builds)
+        CheckoutBuilder(self.source).workflow(
+            "jobs:\n  release:\n    steps:\n      - uses: ./.hexalith/builds-execution/Github/example\n",
+            ".github/workflows/release.yml")
+        self.source_sha = self.commit(self.source)
+        self.args = Arguments(self.builds, workflow_mode="standalone", workflow_root=str(self.source),
+                              builds_execution_sha=self.builds_sha, workflow_path=".github/workflows/release.yml",
+                              workflow_repository="owner/repository", workflow_sha=self.source_sha,
+                              workflow_ref="owner/repository/.github/workflows/release.yml@refs/heads/main",
+                              workflow_file_path=".github/workflows/release.yml", caller_repository="owner/repository",
+                              caller_workflow_ref="owner/repository/.github/workflows/release.yml@refs/heads/main",
+                              candidate=self.source_sha, expected_evaluator_digest="")
+
+    @staticmethod
+    def commit(root):
+        for arguments in (("init", "-q"), ("add", "."),
+                          ("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "test: source fixture")):
+            subprocess.run(["git", "-C", str(root), *arguments], check=True, capture_output=True)
+        return subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+
+    def test_exact_standalone_closure_binds_both_repositories(self):
+        document = evaluator.build_provenance(self.args)
+        self.assertEqual(document["workflow_mode"], "standalone")
+        self.assertEqual(document["closure"]["reusable"]["repository"], "github.com/owner/repository")
+        self.assertEqual(document["closure"]["reusable"]["commit"], self.source_sha)
+        self.assertEqual(document["closure"]["actions"][0]["commit"], self.builds_sha)
+
+    def test_wrong_actual_identity_is_refused(self):
+        for key, value in (("workflow_repository", "other/repository"), ("workflow_sha", "b" * 40),
+                           ("workflow_file_path", ".github/workflows/other.yml"), ("workflow_ref", "owner/repository/.github/workflows/other.yml@refs/heads/main")):
+            with self.subTest(key=key):
+                original = getattr(self.args, key)
+                setattr(self.args, key, value)
+                with self.assertRaises(evaluator.ProvenanceError):
+                    evaluator.build_provenance(self.args)
+                setattr(self.args, key, original)
+
+    def test_changed_workflow_and_shared_helper_bytes_are_refused(self):
+        for path in (self.source / ".github/workflows/release.yml", self.builds / "Github/example/action.yml"):
+            original = path.read_bytes()
+            path.write_bytes(original + b"\n# drift\n")
+            with self.assertRaisesRegex(evaluator.ProvenanceError, "source bytes differ"):
+                evaluator.build_provenance(self.args)
+            path.write_bytes(original)
+
+    def test_standalone_mode_cannot_certify_a_caller_from_a_reusable_job(self):
+        action = (MODULE_ROOT / "action.yml").read_text()
+        for field in ("repository", "sha", "ref", "file_path"):
+            self.assertIn("${{ job.workflow_" + field + " }}", action)
+        self.assertNotIn("&& github.", action)
+        self.args.workflow_repository = evaluator.BUILDS_REPOSITORY
+        self.args.workflow_sha = self.builds_sha
+        self.args.workflow_ref = f"{evaluator.BUILDS_REPOSITORY}/.github/workflows/domain-release.yml@{self.builds_sha}"
+        self.args.workflow_file_path = ".github/workflows/domain-release.yml"
+        with self.assertRaisesRegex(evaluator.ProvenanceError, "does not match its caller"):
+            evaluator.build_provenance(self.args)
+
+    def test_standalone_identity_cannot_enter_reusable_mode(self):
+        self.args.workflow_mode = "reusable"
+        with self.assertRaisesRegex(evaluator.ProvenanceError, "must be defined by Hexalith/Hexalith.Builds"):
+            evaluator.build_provenance(self.args)
 
 
 if __name__ == "__main__":

@@ -245,6 +245,18 @@ jobs:
       expected-ci-evaluator-digest: ${{ vars.HEXALITH_CI_EVALUATOR_DIGEST }}
 ```
 
+### Blocking Aspire qualification
+
+Callers can set `aspire-continue-on-error: false`, `aspire-fail-skips: true`, and
+`aspire-browser-project` to a directory with a pinned Playwright npm lockfile.
+The browser opt-in installs Node, Chromium and trusted HTTPS development
+certificates, using the same NSS peer-trust setup as the authenticated route
+qualification. Dapr remains initialized by the Aspire tier. Skip rejection
+requires a nonempty successful TRX result; MTP additionally receives
+`--minimum-expected-tests 1 --fail-skips on`. The existing trait filter excludes
+Performance tests, whose schedule-only job remains separate. All new options
+are off by default; other callers keep their existing behavior.
+
 ## Optional producer-owned build preparation
 
 Set `module-manifest` to a repository-relative v2 declaration to prepare package

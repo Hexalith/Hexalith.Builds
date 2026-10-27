@@ -579,7 +579,10 @@ def main():
     parser.add_argument("--repository", required=True)
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--version", required=True)
-    parser.add_argument("--created", required=True)
+    creation = parser.add_mutually_exclusive_group(required=True)
+    creation.add_argument("--created", help="Exact publisher-approved creation instant.")
+    creation.add_argument("--observe-created", action="store_true",
+                          help="Recovery reader: require matching canonical creation labels without a prior timestamp.")
     parser.add_argument("--evidence-directory", required=True, type=workspace_output_directory)
     arguments = parser.parse_args()
     try:

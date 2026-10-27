@@ -10,6 +10,7 @@ using System.CommandLine;
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
+using Hexalith.Builds.Tooling.TestEnvironment;
 using Hexalith.Builds.Tooling.Workspace;
 
 /// <summary>
@@ -136,7 +137,6 @@ internal static class ModuleCommandApplication
         Command command = new("validate", "Validates local Platform module declarations without starting resources.");
         Option<string[]> manifestOption = new("--manifest")
         {
-            Required = true,
             Arity = ArgumentArity.OneOrMore,
             AllowMultipleArgumentsPerToken = false,
         };
@@ -149,13 +149,19 @@ internal static class ModuleCommandApplication
         {
             Description = "Reports bounded static module enrollment requirements; SM-2 requires human verification.",
         };
+        Option<string> environmentOption = new("--environment")
+        {
+            Description = "Validates a test-environment descriptor with the supported offline contract reader.",
+        };
+        command.Options.Add(environmentOption);
         command.Options.Add(adoptionOption);
         command.Options.Add(manifestOption);
         command.Options.Add(outputOption);
         command.SetAction((parseResult, cancellationToken) =>
         {
             Task<int> execution = ExecuteValidationAsync(
-                parseResult.GetValue(manifestOption)!,
+                parseResult.GetValue(manifestOption) ?? [],
+                parseResult.GetValue(environmentOption),
                 parseResult.GetValue(adoptionOption),
                 ParseOutputFormat(parseResult.GetValue(outputOption)),
                 standardOutput,
@@ -168,12 +174,14 @@ internal static class ModuleCommandApplication
 
     private static async Task<int> ExecuteValidationAsync(
         string[] manifestPaths,
+        string? environmentPath,
         bool adoption,
         ToolOutputFormat format,
         TextWriter writer,
         CancellationToken cancellationToken)
     {
-        if (manifestPaths.Any(string.IsNullOrWhiteSpace))
+        if (manifestPaths.Any(string.IsNullOrWhiteSpace)
+            || (environmentPath is null ? manifestPaths.Length == 0 : string.IsNullOrWhiteSpace(environmentPath) || manifestPaths.Length != 0 || adoption))
         {
             return await ToolCommandHost.WriteParseFailureAsync(writer, format).ConfigureAwait(false);
         }
@@ -181,7 +189,13 @@ internal static class ModuleCommandApplication
         ToolCommandResult commandResult;
         try
         {
-            if (adoption)
+            if (environmentPath is not null)
+            {
+                TestEnvironmentContractReadResult validation = TestEnvironmentContractReader.ReadDescriptor(environmentPath, cancellationToken);
+                ToolOutcome outcome = validation.IsValid ? ToolOutcome.Passed() : ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, validation.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest);
+                commandResult = new ToolCommandResult(validation.IsValid ? "validated" : "failed", outcome, validation.Diagnostics);
+            }
+            else if (adoption)
             {
                 PlatformAdoptionValidationResult report = await PlatformAdoptionValidator.ValidateAsync(manifestPaths, cancellationToken: cancellationToken).ConfigureAwait(false);
                 ToolOutcome adoptionOutcome = report.IsValid ? ToolOutcome.Passed() : ToolOutcome.Passed().Fail(ToolPhase.Manifest, ToolFailureCategory.Manifest, report.Diagnostics[0].RuleId, ToolExitCode.UsageOrManifest);
