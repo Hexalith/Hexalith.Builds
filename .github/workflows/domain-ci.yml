@@ -1035,7 +1035,7 @@ jobs:
         with:
           node-version: '24'
       - name: Trust HTTPS development certificates for live sockets
-        if: ${{ inputs.aspire-browser-project != '' }}
+        if: ${{ inputs.aspire-test-project != '' || inputs.aspire-browser-project != '' }}
         run: |
           # GITHUB_ENV applies only to later steps. Export it now so dev-certs can trust OpenSSL.
           export SSL_CERT_DIR="${HOME}/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"

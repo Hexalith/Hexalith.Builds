@@ -249,13 +249,15 @@ jobs:
 
 Callers can set `aspire-continue-on-error: false`, `aspire-fail-skips: true`, and
 `aspire-browser-project` to a directory with a pinned Playwright npm lockfile.
-The browser opt-in installs Node, Chromium and trusted HTTPS development
-certificates, using the same NSS peer-trust setup as the authenticated route
-qualification. Dapr remains initialized by the Aspire tier. Skip rejection
+The Aspire test job trusts HTTPS development certificates for .NET HTTP clients
+and browser sockets. It exports `SSL_CERT_DIR` before `dotnet dev-certs https --trust`
+and persists that directory for later steps. The browser opt-in installs Node and
+Chromium; the existing NSS peer-trust setup remains in place for browser sockets.
+Dapr remains initialized by the Aspire tier. Skip rejection
 requires a nonempty successful TRX result; MTP additionally receives
 `--minimum-expected-tests 1 --fail-skips on`. The existing trait filter excludes
 Performance tests, whose schedule-only job remains separate. All new options
-are off by default; other callers keep their existing behavior.
+are off by default; HTTPS trust also applies to callers with only `aspire-test-project`.
 
 ## Optional producer-owned build preparation
 

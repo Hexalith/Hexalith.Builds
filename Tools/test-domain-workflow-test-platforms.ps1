@@ -662,6 +662,55 @@ foreach ($step in @(
     Assert-Condition -Name "$($step.Name) timeout propagation" -Condition ($result.ExitCode -eq 124) -Failure 'lost the bound or deadline exit.'
 }
 $aspireJob = $ciWorkflow.Substring($ciWorkflow.IndexOf('  aspire-tests:')).Split('  performance-tests:')[0]
+$trustStepName = 'Trust HTTPS development certificates for live sockets'
+$trustBlock = Get-NamedStepBlock -Content $aspireJob -StepName $trustStepName
+$trustBody = Get-StepRunBody -Block $trustBlock -StepName $trustStepName
+$trustCondition = [regex]::Match($trustBlock, '(?m)^        if: \$\{\{ (?<Condition>[^\r\n]+) \}\}\r?$').Groups['Condition'].Value
+$trustClause = "inputs\.(?<Input>aspire-test-project|aspire-browser-project) != ''"
+Assert-Condition -Name 'Aspire HTTPS trust condition' `
+    -Condition ([regex]::IsMatch($trustCondition, "\A$trustClause(?: \|\| $trustClause)*\z")) `
+    -Failure 'must select the configured .NET or browser lane without an unmodelled condition.'
+$trustInputs = @([regex]::Matches($trustCondition, $trustClause) | ForEach-Object { $_.Groups['Input'].Value })
+foreach ($scenario in @(
+    @{ Name = '.NET-only'; Project = 'tests/Module.Aspire.Tests'; Browser = ''; Expected = $true },
+    @{ Name = 'browser'; Project = ''; Browser = 'tests/browser'; Expected = $true },
+    @{ Name = 'combined'; Project = 'tests/Module.Aspire.Tests'; Browser = 'tests/browser'; Expected = $true },
+    @{ Name = 'unconfigured'; Project = ''; Browser = ''; Expected = $false }
+)) {
+    $inputs = @{ 'aspire-test-project' = $scenario.Project; 'aspire-browser-project' = $scenario.Browser }
+    $applies = @($trustInputs | Where-Object { $inputs[$_] -ne '' }).Count -gt 0
+    Assert-Condition -Name "Aspire HTTPS trust $($scenario.Name) applicability" `
+        -Condition ($applies -eq $scenario.Expected) -Failure 'selects the wrong certificate trust behavior.'
+}
+$trustFixture = @'
+set -euo pipefail
+export GITHUB_ENV="${GITHUB_OUTPUT}.env"
+# Exercise the workflow shell without changing host packages or certificate stores.
+sudo() { :; }
+mkdir() { :; }
+certutil() { :; }
+dotnet() {
+  [ "$*" = 'dev-certs https --trust' ] || return 91
+  [ "$(printenv SSL_CERT_DIR)" = "${HOME}/.aspnet/dev-certs/trust:/usr/lib/ssl/certs" ] || return 92
+  IFS= read -r persisted_trust < "$GITHUB_ENV"
+  [ "$persisted_trust" = "SSL_CERT_DIR=${SSL_CERT_DIR}" ] || return 93
+  printf 'HTTPS trust receives exported and persisted OpenSSL configuration.\n'
+}
+
+'@
+$trustResult = Invoke-WorkflowBashBody -Body ($trustFixture + $trustBody) -Environment @{}
+Assert-Condition -Name 'Aspire HTTPS trust OpenSSL runtime' -Condition ($trustResult.ExitCode -eq 0) `
+    -Failure "did not export and persist OpenSSL trust before dev-certs: $($trustResult.Output)"
+Assert-Contains -Name 'Aspire HTTPS trust invocation' -Content $trustResult.Output `
+    -Expected 'HTTPS trust receives exported and persisted OpenSSL configuration.'
+Assert-Contains -Name 'Aspire HTTPS NSS stores' -Content $trustBody -Expected '"$HOME/.pki/nssdb" "$HOME/.local/share/pki/nssdb"'
+Assert-Contains -Name 'Aspire HTTPS NSS prerequisites' -Content $trustBody -Expected 'sudo apt-get install -y libnss3-tools'
+Assert-Contains -Name 'Aspire HTTPS browser peer trust' -Content $trustBody -Expected '-t ''P,,'' -i "$live_certificate"'
+Assert-Condition -Name 'Aspire HTTPS trust ordering' `
+    -Condition ($aspireJob.IndexOf($trustStepName) -lt $aspireJob.IndexOf('Restore and Build')) `
+    -Failure 'must configure trust before building or executing the Aspire lane.'
+$browserTools = Get-NamedStepBlock -Content $aspireJob -StepName 'Install pinned browser qualification tools'
+Assert-Contains -Name 'Aspire browser tooling opt-in' -Content $browserTools -Expected "inputs.aspire-browser-project != ''"
 Assert-Condition -Name 'Aspire preparation ordering' -Condition ($aspireJob.IndexOf('Install and initialize Dapr') -lt $aspireJob.IndexOf('Prepare Aspire tier') -and $aspireJob.IndexOf('Prepare Aspire tier') -lt $aspireJob.IndexOf('Run Aspire hook')) -Failure 'does not initialize Dapr before preparation and execution.'
 foreach ($platform in @('VSTest', 'Microsoft.Testing.Platform')) {
     $block = Get-NamedStepBlock -Content $ciWorkflow -StepName "Aspire contract tests (Tier 3, non-Performance, $platform)"
