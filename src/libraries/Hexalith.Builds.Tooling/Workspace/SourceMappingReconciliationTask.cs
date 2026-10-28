@@ -347,7 +347,7 @@ public sealed class SourceMappingReconciliationTask : ITask
         string? version = PackageVersions.FirstOrDefault(item => item.ItemSpec.Equals(retainedId, StringComparison.OrdinalIgnoreCase))?.GetMetadata("Version");
         HashSet<string> assigned = new(StringComparer.OrdinalIgnoreCase);
         List<string> assignments = [];
-        foreach (string assignment in canonical.Split(';', StringSplitOptions.TrimEntries))
+        foreach (string assignment in canonical.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             int equals = assignment.IndexOf('=', StringComparison.Ordinal);
             if (equals <= 0 || equals == assignment.Length - 1)
