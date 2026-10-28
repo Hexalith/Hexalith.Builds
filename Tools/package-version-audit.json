@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "088dffcfb18804d88cc7f56c5cc4a0edec3e3de4",
+  "generatedFromRevision": "eb723220aa28e665cf51ef836f2c6a62f77571e3",
   "catalogPath": "Props/Directory.Packages.props",
   "catalogSha256": "f9c97805fe540f17277f0d96f16a92b5f595f24c0f059c7a2c864abe8a6c1fb5",
   "catalogRawSha256": "76c78725f68a82642c0e26c8aab0256dea1a335b77218841451590d7070328a0",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-10-28T07:14:14.1541045+00:00",
+    "auditedAtUtc": "2026-10-28T07:18:24.3908094+00:00",
     "refreshedFamilies": [
       "package:radzen.blazor"
     ],
@@ -176,7 +176,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "088dffcfb18804d88cc7f56c5cc4a0edec3e3de4",
+    "repositoryRevision": "eb723220aa28e665cf51ef836f2c6a62f77571e3",
     "sha256": "15676eab3fb970ec868bd5f1afbe9e6ea3e4dc3bc5dc4228f158a2212c9162b3",
     "entries": [
       {
@@ -52492,8 +52492,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-10-28T07:14:14.1541045+00:00",
-        "generatedFromRevision": "088dffcfb18804d88cc7f56c5cc4a0edec3e3de4",
+        "auditedAtUtc": "2026-10-28T07:18:24.3908094+00:00",
+        "generatedFromRevision": "eb723220aa28e665cf51ef836f2c6a62f77571e3",
         "familySelectionSha256": "84ee3e8542d255b7c03797fbf83576e84ddd7781301a25b18294af1b4f69911b",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "28f30f7443a59f285fa88fcdb89c6c3a95d330c71238aa8523e84b89dccf9c34",
