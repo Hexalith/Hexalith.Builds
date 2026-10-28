@@ -202,6 +202,11 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
         run: python3 Tools/test-runtime-toolchain-evidence-validator.py
 
+      - name: Test historical runtime/toolchain disposition validator
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 Tools/test-runtime-toolchain-disposition.py
+
       - name: Test container publisher helpers
         working-directory: Github/publish-containers/tests
         run: python3 -m unittest discover -v
