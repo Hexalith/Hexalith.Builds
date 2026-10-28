@@ -711,7 +711,13 @@ Assert-Condition -Name 'Aspire HTTPS trust ordering' `
     -Failure 'must configure trust before building or executing the Aspire lane.'
 $browserTools = Get-NamedStepBlock -Content $aspireJob -StepName 'Install pinned browser qualification tools'
 Assert-Contains -Name 'Aspire browser tooling opt-in' -Content $browserTools -Expected "inputs.aspire-browser-project != ''"
-Assert-Condition -Name 'Aspire preparation ordering' -Condition ($aspireJob.IndexOf('Install and initialize Dapr') -lt $aspireJob.IndexOf('Prepare Aspire tier') -and $aspireJob.IndexOf('Prepare Aspire tier') -lt $aspireJob.IndexOf('Run Aspire hook')) -Failure 'does not initialize Dapr before preparation and execution.'
+$daprIndex = $aspireJob.IndexOf('Install and initialize Dapr')
+$prepareIndex = $aspireJob.IndexOf('Prepare Aspire tier')
+$runnerIndex = $aspireJob.IndexOf('Run Aspire hook')
+Assert-Condition -Name 'Aspire Dapr step exists' -Condition ($daprIndex -ge 0) -Failure 'omits Dapr initialization in the Aspire job.'
+Assert-Condition -Name 'Aspire preparation step exists' -Condition ($prepareIndex -ge 0) -Failure 'omits preparation in the Aspire job.'
+Assert-Condition -Name 'Aspire runner step exists' -Condition ($runnerIndex -ge 0) -Failure 'omits execution in the Aspire job.'
+Assert-Condition -Name 'Aspire preparation ordering' -Condition ($daprIndex -lt $prepareIndex -and $prepareIndex -lt $runnerIndex) -Failure 'does not initialize Dapr before preparation and execution.'
 foreach ($platform in @('VSTest', 'Microsoft.Testing.Platform')) {
     $block = Get-NamedStepBlock -Content $ciWorkflow -StepName "Aspire contract tests (Tier 3, non-Performance, $platform)"
     Assert-Contains -Name "Aspire default $platform" -Content $block -Expected "inputs.aspire-runner-script == '' && inputs.test-platform =="

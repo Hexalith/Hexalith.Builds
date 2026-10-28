@@ -31,7 +31,9 @@ The Aspire tier is **advisory (non-blocking) by default**
 (`aspire-continue-on-error: true`): full-topology Aspire runs on shared runners
 are inherently flakier than Tier 1/2, so they signal without gating merges. Its
 coverage is deliberately not collected and is excluded from the coverage gates;
-TRX results are always uploaded as the `aspire-test-results` artifact. Set
+For callers without a runner hook, TRX results are uploaded as the
+`aspire-test-results` artifact; runner hooks retain their output in
+`aspire-hook-evidence`. Set
 `aspire-continue-on-error: false` in a module that wants the tier blocking.
 
 ## Optional Aspire preparation and runner hooks
@@ -52,8 +54,9 @@ Each hook receives `ASPIRE_TEST_PROJECT`, `TEST_PLATFORM` and
 `GITHUB_ENV`; consumers are responsible for keeping credentials and private
 runtime state out of uploaded evidence. `aspire-prepare-timeout-minutes` defaults
 to 30 and accepts 1–60; `aspire-runner-timeout-minutes` defaults to 30 and accepts
-1–340. GNU `timeout` enforces each bound with a 30-second kill grace in addition
-to the Actions step deadline. Hook failures and deadline exits fail their steps.
+1–340. GNU `timeout` enforces each bound with a 30-second kill grace.
+The Actions step deadline remains a separate hard limit; hooks must reserve
+time inside that deadline for cancellation cleanup. Hook failures and deadline exits fail their steps.
 The finite `aspire-timeout-minutes` must be an integer at most 360 and allow all
 enabled hook budgets plus at least five minutes for the rest of the job.
 
