@@ -66,7 +66,10 @@ def verified_environment(result: dict, workspace: Path) -> dict[str, str]:
     if not real_path(metadata).is_relative_to(root) or not metadata.is_file():
         raise ValueError("invalid generated mapping metadata")
     mapping = read_json(metadata.read_text(encoding="utf-8"))
-    if mapping.get("ContentHash") != digest or type(mapping.get("Mode")) is not int or mapping["Mode"] != 1 or mapping.get("HasGit") is not True:
+    mode = mapping.get("Mode")
+    # WorkspaceMode serializes as "package"; integer 1 remains the historical encoding.
+    package_mode = mode == "package" or type(mode) is int and mode == 1
+    if mapping.get("ContentHash") != digest or not package_mode or mapping.get("HasGit") is not True:
         raise ValueError("persisted mapping differs from the package preparation")
     return environment
 

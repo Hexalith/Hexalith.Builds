@@ -114,6 +114,20 @@ class PreparationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "symbolic-link traversal"):
                 helper.verified_environment(result, workspace)
 
+    def test_string_package_mode_is_accepted(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary) / "prepared"
+            result = self.result(workspace)
+            metadata = workspace / "source-mapping/mapping.json"
+            mapping = json.loads(metadata.read_text())
+            mapping["Mode"] = "package"
+            metadata.write_text(json.dumps(mapping))
+            self.assertEqual(set(helper.verified_environment(result, workspace)), helper.KEYS)
+            mapping["Mode"] = "source"
+            metadata.write_text(json.dumps(mapping))
+            with self.assertRaisesRegex(ValueError, "persisted mapping differs"):
+                helper.verified_environment(result, workspace)
+
     def test_boolean_mapping_mode_refuses(self):
         with tempfile.TemporaryDirectory() as temporary:
             workspace = Path(temporary) / "prepared"
