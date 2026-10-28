@@ -23,7 +23,7 @@ public sealed class RuntimePrerequisiteGateTests
     [Fact]
     public void ApprovedExceptionTupleIsAvailable()
     {
-        RuntimePrerequisiteCheck result = RuntimePrerequisiteGate.Check(CreateManifest(SupportedPlatformPins.DaprRuntimeVersion, "1.18.10"));
+        RuntimePrerequisiteCheck result = RuntimePrerequisiteGate.Check(CreateManifest(SupportedPlatformPins.DaprRuntimeVersion, "1.19.0"));
 
         result.IsAvailable.ShouldBeTrue();
         result.Diagnostic.ShouldBeNull();
@@ -35,7 +35,7 @@ public sealed class RuntimePrerequisiteGateTests
     [Fact]
     public void StaleRuntimeTupleIsUnavailable()
     {
-        RuntimePrerequisiteCheck result = RuntimePrerequisiteGate.Check(CreateManifest("1.18.1", "1.18.10"));
+        RuntimePrerequisiteCheck result = RuntimePrerequisiteGate.Check(CreateManifest("1.18.1", "1.19.0"));
 
         result.IsAvailable.ShouldBeFalse();
         result.Diagnostic.ShouldNotBeNull().RuleId.ShouldBe("HXR002");
@@ -45,7 +45,7 @@ public sealed class RuntimePrerequisiteGateTests
         "hexalith.module-manifest.v1",
         "g6-test",
         [],
-        new PlatformPins("3.90.0", runtimeVersion, sdkVersion, "4.7.0"),
+        new PlatformPins("3.90.0", runtimeVersion, sdkVersion, "4.7.1"),
         null,
         new Dictionary<string, ModuleProfile>());
 }

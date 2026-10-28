@@ -159,7 +159,7 @@ public sealed class ModuleInvocationStateStoreTests
         "hexalith.module-manifest.v1",
         "state-store-fixture",
         [new ModuleDescriptor("module-a", "assemblies/module-a.dll", [], "module-a", "module-a", "module-a")],
-        new PlatformPins("3.126.0", "1.18.0", "1.18.10", "4.7.0"),
+        new PlatformPins("3.126.0", "1.18.0", "1.19.0", "4.7.1"),
         null,
         new Dictionary<string, ModuleProfile>(StringComparer.Ordinal));
 }
