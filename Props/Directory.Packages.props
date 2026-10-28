@@ -315,7 +315,7 @@
     <PackageVersion Include="OrchardCore.Localization.Core" Version="3.0.1" />
     <!-- FrontComposer Story 10-3: file-based EventStore REST consumer contracts. -->
     <PackageVersion Include="PactNet" Version="5.0.1" />
-    <PackageVersion Include="Radzen.Blazor" Version="12.1.7" />
+    <PackageVersion Include="Radzen.Blazor" Version="12.1.8" />
     <PackageVersion Include="Roslynator.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Scriban" Version="7.5.3" />
