@@ -7,6 +7,7 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Runtime;
@@ -19,6 +20,56 @@ using Xunit;
 /// <summary>Verifies durable validated result snapshots with truthful partial-startup observations.</summary>
 public sealed class TestResultWriterTests
 {
+    /// <summary>Malformed deadlines refuse durably without escaping JSON exceptions or replacing a prior result.</summary>
+    /// <param name="field">The deadline object or population field to corrupt.</param>
+    /// <param name="replacement">The replacement JSON, or null to omit the field.</param>
+    /// <returns>The structured refusal and unchanged prior publication assertions.</returns>
+    [Theory]
+    [InlineData("deadlines", null)]
+    [InlineData("deadlines", "null")]
+    [InlineData("deadlines", "[]")]
+    [InlineData("deadlines", "1")]
+    [InlineData("execution", null)]
+    [InlineData("execution", "null")]
+    [InlineData("execution", "[]")]
+    [InlineData("state", null)]
+    [InlineData("state", "null")]
+    [InlineData("state", "1")]
+    public async Task MalformedDeadlineBindingsRefuseBeforeUpdatingDurationAsync(string field, string? replacement)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        ModuleTestRunRecord first = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "unknown", new([], [], true));
+        string directory = Path.Combine(workspace.Root, "diagnostics");
+        string path = await TestResultWriter.WriteAsync(directory, state, first, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        byte[] published = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        JsonNode document = JsonNode.Parse(published).ShouldNotBeNull();
+        JsonNode bindings = document["bindings"].ShouldNotBeNull();
+        JsonObject parent = field switch
+        {
+            "deadlines" => bindings.AsObject(),
+            "execution" => bindings["deadlines"]!.AsObject(),
+            _ => bindings["deadlines"]!["execution"]!.AsObject(),
+        };
+        if (replacement is null)
+        {
+            parent.Remove(field).ShouldBeTrue();
+        }
+        else
+        {
+            parent[field] = JsonNode.Parse(replacement);
+        }
+
+        ModuleTestRunRecord malformed = first with
+        {
+            EnvironmentBindings = JsonSerializer.SerializeToElement(bindings),
+            ExecutionTiming = ModuleTestExecutionTiming.Start(selected, selected.RequestedAtUtc) with { ActualDurationSeconds = 0.5 },
+        };
+        _ = await Should.ThrowAsync<InvalidDataException>(() => TestResultWriter.WriteAsync(directory, state, malformed, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        (await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(published);
+        TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+    }
+
     /// <summary>Every first lifecycle cause produces a reader-valid result and immutable classified diagnostics.</summary>
     /// <param name="outcome">The observed outcome.</param>
     /// <param name="cause">The observed cause.</param>

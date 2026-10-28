@@ -994,6 +994,13 @@ external prerequisite rather than treating the run as a pass. If a command
 returns `6`, correct the evidence path, schema, hash, status declaration, or
 policy diagnostic and rerun it.
 
+## Tooling test prerequisites
+
+On Linux, `Hexalith.Builds.Module.Tests` requires a C compiler available as `cc`
+for its native metadata fault probes. The tests compile a private shim and run
+it in isolated subprocesses to verify interrupted locks, failed storage flushes
+and cancellation during flush retries.
+
 ## Environment Detection
 
 The build properties set environment flags used by consuming projects:

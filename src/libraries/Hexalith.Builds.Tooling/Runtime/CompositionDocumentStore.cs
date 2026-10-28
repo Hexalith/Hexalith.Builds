@@ -117,6 +117,7 @@ public static class CompositionDocumentStore
     /// <param name="bytes">The inspected bytes.</param>
     /// <param name="cancellationToken">The existing publication allowance.</param>
     /// <returns>The atomic publication task.</returns>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA1849:Call async methods when in an async method", Justification = "Durable publication requires Flush(true); FlushAsync does not flush the device cache.")]
     internal static async Task WriteBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -135,6 +136,8 @@ public static class CompositionDocumentStore
             await using (stream.ConfigureAwait(false))
             {
                 await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                CompositionDurableFlush.Flush(stream, cancellationToken);
             }
 
             cancellationToken.ThrowIfCancellationRequested();

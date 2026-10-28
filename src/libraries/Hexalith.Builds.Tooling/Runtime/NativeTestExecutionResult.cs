@@ -24,4 +24,7 @@ internal sealed record NativeTestExecutionResult(ToolCommandResult Result, Nativ
 
     /// <summary>Gets the monotonic start of the shared selected stopping and diagnostic budget.</summary>
     internal long? StoppingTimestamp { get; init; }
+
+    /// <summary>Gets the monotonic start of the finite metadata commit allowance after process shutdown.</summary>
+    internal long? MetadataRecordingTimestamp { get; init; }
 }

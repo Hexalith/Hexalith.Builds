@@ -28,11 +28,19 @@ public static class CompositionRunListing
                 try
                 {
                     string directory = Path.Combine(store.Directory, "diagnostics", tracked.RunId);
-                    ModuleTestRunRecord? committed = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestRunRecord>(Path.Combine(directory, "selected-test.json"), cancellationToken).ConfigureAwait(false);
-                    if (committed is not null && !CompositionRunStateStore.ValidOutcome(committed, tracked.RunId))
+                    ModuleTestRunRecord? committed = null;
+                    try
+                    {
+                        committed = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestRunRecord>(Path.Combine(directory, "selected-test.json"), cancellationToken).ConfigureAwait(false);
+                        if (committed is not null && !CompositionRunStateStore.ValidOutcome(committed, tracked.RunId))
+                        {
+                            _ = unverifiableOwners.Add(tracked.RunId);
+                            committed = null;
+                        }
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
                     {
                         _ = unverifiableOwners.Add(tracked.RunId);
-                        continue;
                     }
 
                     CompositionRunState state = committed is null ? tracked : tracked with { TestRun = committed, CleanupDisposition = committed.CleanupDisposition, RemainingResources = committed.RemainingResources };
@@ -42,11 +50,19 @@ public static class CompositionRunListing
                         state = state with { CleanupDisposition = "incomplete", RemainingResources = committed.RemainingResources with { Unverified = true, DiscoveryFailures = [.. committed.RemainingResources.DiscoveryFailures, "state-finalization"] } };
                     }
 
-                    ModuleTestExecutionTiming? timing = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestExecutionTiming>(Path.Combine(directory, "execution-activation.json"), cancellationToken).ConfigureAwait(false) ?? state.TestRun?.ExecutionTiming;
-                    if (timing is not null && (timing.EffectiveSeconds <= 0 || timing.DeadlineUtc - timing.StartedAtUtc != TimeSpan.FromSeconds(timing.EffectiveSeconds)))
+                    ModuleTestExecutionTiming? timing = null;
+                    try
+                    {
+                        timing = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestExecutionTiming>(Path.Combine(directory, "execution-activation.json"), cancellationToken).ConfigureAwait(false) ?? state.TestRun?.ExecutionTiming;
+                        if (timing is not null && (timing.EffectiveSeconds <= 0 || timing.DeadlineUtc - timing.StartedAtUtc != TimeSpan.FromSeconds(timing.EffectiveSeconds)))
+                        {
+                            _ = unverifiableOwners.Add(tracked.RunId);
+                            timing = null;
+                        }
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
                     {
                         _ = unverifiableOwners.Add(tracked.RunId);
-                        continue;
                     }
 
                     entries.Add(new CompositionRunListingEntry(
@@ -90,10 +106,10 @@ public static class CompositionRunListing
     private static string Retention(CompositionRunState state) => state.TestRun switch
     {
         null => "unavailable",
+        _ when state.CleanupDisposition == "complete" && state.TestRun.FailureRetained => "released",
         { ResourceDisposition: "retained" } => "failure-retained",
         _ when state.CreatedAt is null => "unavailable",
         { FailureRetained: false } => "not-retained",
-        _ when state.CleanupDisposition == "complete" => "released",
         _ => "failure-retained",
     };
 }

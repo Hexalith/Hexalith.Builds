@@ -378,7 +378,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
             }
 
-            if (File.Exists(Path.Combine(DiagnosticsDirectory(runId), "cleanup-request.json")))
+            if (await HasCleanupRequestAsync(runId, cancellationToken).ConfigureAwait(false))
             {
                 ToolDiagnostic stopped = Diagnostic("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The owned run was explicitly stopped during startup.", "down", null);
                 return await FailAndTearDownAsync(runId, null, manifestHash, CompositionRunStatus.Cancelled, stopped, ToolExitCode.Cancelled, requestedAt, deadline).ConfigureAwait(false);
@@ -578,12 +578,17 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <exception cref="IOException">The already-issued owner metadata cannot be verified.</exception>
     internal async Task<bool> EnsureIssuedStateAsync(CompositionRunState issued, CancellationToken cancellationToken)
     {
+        if (await HasCleanupRequestAsync(issued.RunId, cancellationToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+
         // Already-issued owners require no fallback write and must not consume the callback's lock allowance.
         CompositionRunState? tracked = await CompositionDocumentStore.ReadIfExistsAsync<CompositionRunState>(StateStore.PathFor(issued.RunId), cancellationToken).ConfigureAwait(false);
         if (tracked is not null)
         {
             return IsOwnedState(tracked, issued.RunId)
-                ? tracked.CleanupDisposition != "complete" && !File.Exists(Path.Combine(DiagnosticsDirectory(issued.RunId), "cleanup-request.json"))
+                ? tracked.CleanupDisposition != "complete" && !await HasCleanupRequestAsync(issued.RunId, cancellationToken).ConfigureAwait(false)
                 : throw new IOException("The issued owner cannot be verified.");
         }
 
@@ -593,7 +598,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         await using (outcomeLock.ConfigureAwait(false))
         {
             ModuleTestRunRecord? terminal = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestRunRecord>(Path.Combine(directory, "selected-test.json"), cancellationToken).ConfigureAwait(false);
-            if (File.Exists(Path.Combine(directory, "cleanup-request.json")) || terminal?.CleanupDisposition == "complete")
+            if (await HasCleanupRequestAsync(issued.RunId, cancellationToken).ConfigureAwait(false) || terminal?.CleanupDisposition == "complete")
             {
                 return false;
             }
@@ -726,8 +731,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 state ??= CompositionRunPlanFactory.CreateInitialState(runId, WorkspaceFor(runId), selection.ManifestHash, selection.RequestedAtUtc) with
                 {
                     SelectedTest = selection,
-                    AttemptId = environmentBindings?.GetProperty("run").GetProperty("attemptId").GetString() ?? CompositionRunPlanFactory.NewRunId(),
-                    EnvironmentId = environmentBindings?.GetProperty("run").GetProperty("environmentId").GetString() ?? CompositionRunPlanFactory.NewRunId(),
+                    AttemptId = BindingIdentity(environmentBindings, "attemptId") ?? CompositionRunPlanFactory.NewRunId(),
+                    EnvironmentId = BindingIdentity(environmentBindings, "environmentId") ?? CompositionRunPlanFactory.NewRunId(),
                     ExecutionContext = System.Text.Json.JsonSerializer.SerializeToElement(TestEnvironment.TestEnvironmentDescriptorWriter.ExecutionContext()),
                 };
                 if (!File.Exists(Path.Combine(directory, "owner.json")))
@@ -845,9 +850,23 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
         try
         {
+            _ = File.GetAttributes(WorkspaceFor(runId));
+            resources = resources with { WorkspaceIds = ["workspace:" + runId] };
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            // Only confirmed absence removes the known workspace identity.
+        }
+        catch (Exception exception) when (IsTeardownFailure(exception))
+        {
+            resources = resources with { Unverified = true, DiscoveryFailures = [.. resources.DiscoveryFailures, "workspaces-or-claims"] };
+        }
+
+        try
+        {
             bool unverifiedClaims = false;
             IReadOnlyList<string> claims = StateStore.Claims.FindOwned(runId, () => unverifiedClaims = true);
-            return resources with { WorkspaceIds = Directory.Exists(WorkspaceFor(runId)) ? ["workspace:" + runId] : [], ClaimIds = claims, Unverified = resources.Unverified || unverifiedClaims, DiscoveryFailures = [.. resources.DiscoveryFailures, .. unverifiedClaims ? new[] { "claims" } : []] };
+            return resources with { ClaimIds = claims, Unverified = resources.Unverified || unverifiedClaims, DiscoveryFailures = [.. resources.DiscoveryFailures, .. unverifiedClaims ? new[] { "claims" } : []] };
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
@@ -1029,6 +1048,24 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         && value.Length <= maximumLength
         && value.All(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '/' or '.' or ':' or ';' or '=' or ' ');
 
+    /// <summary>Reads an original issued identity without trusting incomplete held bindings.</summary>
+    /// <param name="environmentBindings">The optional original descriptor bindings.</param>
+    /// <param name="name">The identity property to read.</param>
+    /// <returns>The original identity, or null when no descriptor was issued.</returns>
+    /// <exception cref="InvalidDataException">Original owner bindings are invalid.</exception>
+    private static string? BindingIdentity(System.Text.Json.JsonElement? environmentBindings, string name) => environmentBindings switch
+    {
+        null => null,
+        { } bindings when bindings.ValueKind == System.Text.Json.JsonValueKind.Object
+            && bindings.TryGetProperty("run", out System.Text.Json.JsonElement run)
+            && run.ValueKind == System.Text.Json.JsonValueKind.Object
+            && run.TryGetProperty(name, out System.Text.Json.JsonElement identity)
+            && identity.ValueKind == System.Text.Json.JsonValueKind.String
+            && CompositionRunPlanFactory.IsRunId(identity.GetString()) => identity.GetString(),
+        _ => throw new InvalidDataException("The original owner bindings cannot be verified."),
+    };
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The nonblocking reader is disposed asynchronously in the unconditional finally before advancing to the next file.")]
     private static async Task CopySelectedMetadataAsync(string workspace, string destination, CancellationToken cancellationToken)
     {
         foreach ((string source, string name) in new[]
@@ -1039,6 +1076,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             (Path.Combine(workspace, "source-mapping", "mapping.json"), "selected-source-mapping.json"),
         })
         {
+            FileStream? stream = null;
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -1047,22 +1085,19 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                     continue;
                 }
 
-                FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(source);
-                await using (stream.ConfigureAwait(false))
+                stream = SelectedNativeTestReport.OpenWithoutBlocking(source);
+                long length = stream.CanSeek ? stream.Length : 0;
+                if (length is <= 0 or > 4194304)
                 {
-                    long length = stream.CanSeek ? stream.Length : 0;
-                    if (length is <= 0 or > 4194304)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    byte[] bytes = new byte[(int)length];
-                    await stream.ReadExactlyAsync(bytes, cancellationToken).ConfigureAwait(false);
-                    using System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(bytes);
-                    if (SafeMetadata(document.RootElement))
-                    {
-                        await File.WriteAllBytesAsync(Path.Combine(destination, name), bytes, cancellationToken).ConfigureAwait(false);
-                    }
+                byte[] bytes = new byte[(int)length];
+                await stream.ReadExactlyAsync(bytes, cancellationToken).ConfigureAwait(false);
+                using System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(bytes);
+                if (SafeMetadata(document.RootElement))
+                {
+                    await NativeTestExecutor.WriteSnapshotAsync(Path.Combine(destination, name), destination, bytes, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -1072,6 +1107,13 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException or System.Text.Json.JsonException)
             {
                 // An absent, unreadable or unsafe observation is never invented.
+            }
+            finally
+            {
+                if (stream is not null)
+                {
+                    await stream.DisposeAsync().ConfigureAwait(false);
+                }
             }
         }
 
@@ -1148,6 +1190,24 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     private static IReadOnlyList<string> Rules(IReadOnlyList<ToolDiagnostic> diagnostics) => [.. diagnostics.Select(diagnostic => diagnostic.RuleId).Where(rule => rule.Length is >= 5 and <= 8 && rule.StartsWith("HX", StringComparison.Ordinal) && rule.All(char.IsAsciiLetterOrDigit)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
 
     private static bool ValidOutcome(ModuleTestRunRecord record, string runId) => CompositionRunStateStore.ValidOutcome(record, runId);
+
+    private async Task<bool> HasCleanupRequestAsync(string runId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        string path = Path.Combine(DiagnosticsDirectory(runId), "cleanup-request.json");
+        if (!SelectedNativeTestReport.IsOwnedParent(path, StateStore.Directory))
+        {
+            throw new IOException("The cleanup request is outside the owned state path policy.");
+        }
+
+        using System.Text.Json.JsonDocument? request = await CompositionDocumentStore.ReadIfExistsAsync<System.Text.Json.JsonDocument>(path, cancellationToken).ConfigureAwait(false);
+        bool valid = request?.RootElement is { ValueKind: System.Text.Json.JsonValueKind.Object } root
+            && root.TryGetProperty("runId", out System.Text.Json.JsonElement owner)
+            && owner.ValueKind == System.Text.Json.JsonValueKind.String && owner.GetString() == runId
+            && root.TryGetProperty("attemptId", out System.Text.Json.JsonElement attempt)
+            && attempt.ValueKind == System.Text.Json.JsonValueKind.String && CompositionRunPlanFactory.IsRunId(attempt.GetString());
+        return request is not null && !valid ? throw new IOException("The cleanup request cannot be verified.") : valid;
+    }
 
     private CompositionDownResult IncompleteDown(string runId, CompositionRunResources? known = null, bool recordingFailed = false)
     {
@@ -1443,7 +1503,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         while (CompositionStartupClock.Remaining(deadlineUtc, DateTimeOffset.UtcNow) > TimeSpan.Zero)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (File.Exists(Path.Combine(DiagnosticsDirectory(plan.RunId), "cleanup-request.json")))
+            if (await HasCleanupRequestAsync(plan.RunId, cancellationToken).ConfigureAwait(false))
             {
                 ToolDiagnostic stopped = Diagnostic("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The owned run was explicitly stopped during startup.", "down", null);
                 return await FailAndTearDownAsync(plan.RunId, appHost, manifestHash, CompositionRunStatus.Cancelled, stopped, ToolExitCode.Cancelled, requestedAt, deadline).ConfigureAwait(false);
@@ -1717,16 +1777,16 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         CancellationToken boundToken = (stoppingBound ?? bound!).Token;
         List<ToolDiagnostic> bookkeeping = [];
         bool terminalPublished = _options.SelectedTest is null;
+        string terminalCause = startupTimedOut ? "startup-timeout" : "startup-failure";
+        if (status == CompositionRunStatus.Cancelled)
+        {
+            terminalCause = "run-cancelled";
+        }
+
         if (_options.SelectedTest is not null)
         {
             string terminalStatus = status == CompositionRunStatus.Cancelled ? "cancelled" : "failed";
             ToolCommandResult terminal = Failed(terminalStatus, exitCode, diagnostics, runId).Result;
-            string terminalCause = startupTimedOut ? "startup-timeout" : "startup-failure";
-            if (status == CompositionRunStatus.Cancelled)
-            {
-                terminalCause = "run-cancelled";
-            }
-
             terminalPublished = await TryRecordStoppingOutcomeAsync(runId, resources, terminal, _options.RetainOnFailure && status != CompositionRunStatus.Cancelled ? "retained" : "unknown", new CompositionRunResources([], [], Unverified: true), bookkeeping, terminalCause).ConfigureAwait(false);
         }
 
@@ -1755,7 +1815,17 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         }
 
         IReadOnlyList<ToolDiagnostic> located = WithDiagnosticsLocation(diagnostics, deadline, diagnosticsPath);
-        bool retained = _options.RetainOnFailure && status != CompositionRunStatus.Cancelled && !File.Exists(Path.Combine(DiagnosticsDirectory(runId), "cleanup-request.json"));
+        bool cleanupRequested = false;
+        try
+        {
+            cleanupRequested = await HasCleanupRequestAsync(runId, boundToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (IsTeardownFailure(exception))
+        {
+            // Only a verified exact cleanup request can release local failure retention.
+        }
+
+        bool retained = _options.RetainOnFailure && status != CompositionRunStatus.Cancelled && !cleanupRequested;
         int? retainedPid = retained && appHost?.HasExited == false ? appHost.Id : null;
         DateTimeOffset? retainedStart = retainedPid is null ? null : StartTime(appHost!);
         if (_options.SelectedTest is not null)
@@ -1817,7 +1887,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             try
             {
                 using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
-                _ = await RecordTestOutcomeAsync(runId, resources, result.Result, retained ? "retained" : disposition, remaining, metadata.Token, cleanupDisposition: retained ? null : cleanupDisposition, cleanupAttemptId: retained ? null : CompositionRunPlanFactory.NewRunId(), archiveMetadata: false).ConfigureAwait(false);
+                _ = await RecordTestOutcomeAsync(runId, resources, result.Result, retained ? "retained" : disposition, remaining, metadata.Token, terminalCause: terminalCause, cleanupDisposition: retained ? null : cleanupDisposition, cleanupAttemptId: retained ? null : CompositionRunPlanFactory.NewRunId(), archiveMetadata: false).ConfigureAwait(false);
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
@@ -2191,12 +2261,17 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
     private async Task<CompositionRunState> InitializeStateAsync(string runId, string manifestHash, DateTimeOffset requestedAt, CompositionEffectiveDeadline deadline, CancellationToken cancellationToken)
     {
+        if (await HasCleanupRequestAsync(runId, cancellationToken).ConfigureAwait(false))
+        {
+            throw new IOException("Exact cleanup already claimed this owner.");
+        }
+
         string directory = DiagnosticsDirectory(runId);
         CompositionWorkspace.CreatePrivateDirectory(directory);
         FileStream outcomeLock = await OpenOutcomeLockAsync(Path.Combine(directory, "outcome.lock"), cancellationToken).ConfigureAwait(false);
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outcomeLifetime = outcomeLock.ConfigureAwait(false);
         CompositionRunState? existing = await ReadOwnedStateAsync(runId, cancellationToken).ConfigureAwait(false);
-        if (File.Exists(Path.Combine(directory, "cleanup-request.json")) || existing?.CleanupDisposition == "complete")
+        if (await HasCleanupRequestAsync(runId, cancellationToken).ConfigureAwait(false) || existing?.CleanupDisposition == "complete")
         {
             throw new IOException("Exact cleanup already claimed this owner.");
         }

@@ -75,12 +75,40 @@ public sealed class CompositionResourceClaimStoreTests
             peer.FindOwned(second).ShouldBe(["claim:" + expected[0]]);
             owner.Acquire(first, ["a-new-exclusive-resource"]);
             peer.ReleaseOwned(second);
-            File.Exists(receiptPath).ShouldBeFalse();
+            JsonSerializer.Deserialize<string[]>(File.ReadAllText(receiptPath)).ShouldNotBeNull().ShouldBeEmpty();
             peer.FindOwned(second).ShouldBeEmpty();
             peer.Acquire(second, ["tcp:127.0.0.1:12346"]);
             Should.Throw<CompositionResourceClaimConflictException>(() => peer.Acquire(second, ["tcp:127.0.0.1:12345"])).OwnerRunId.ShouldBe(first);
             owner.ReleaseOwned(first);
             peer.Acquire(second, ["tcp:127.0.0.1:12345"]);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
+    /// <summary>Verified absence without any prior claim directory remains a durable exclusion proof for later peer corruption.</summary>
+    [Fact]
+    public void EmptyReleasePreservesProofAcrossLaterPeerCorruption()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionResourceClaimStore claims = new(root);
+            string owner = CompositionRunPlanFactory.NewRunId();
+            claims.ReleaseOwned(owner);
+            string receipt = Path.Combine(root, "claims", "owners", owner + ".json");
+            JsonSerializer.Deserialize<string[]>(File.ReadAllText(receipt)).ShouldNotBeNull().ShouldBeEmpty();
+            claims.Acquire(CompositionRunPlanFactory.NewRunId(), ["peer-exclusive"]);
+            string peerClaim = Directory.GetFiles(Path.Combine(root, "claims"), "*.json").Single();
+            const string malformed = "{invalid-peer-claim}";
+            File.WriteAllText(peerClaim, malformed);
+            _ = Should.Throw<CompositionResourceClaimConflictException>(() => claims.Acquire(owner, ["peer-exclusive"]));
+            claims.ReleaseOwned(owner);
+            claims.FindOwned(owner).ShouldBeEmpty();
+            File.ReadAllText(peerClaim).ShouldBe(malformed);
+            JsonSerializer.Deserialize<string[]>(File.ReadAllText(receipt)).ShouldNotBeNull().ShouldBeEmpty();
         }
         finally
         {

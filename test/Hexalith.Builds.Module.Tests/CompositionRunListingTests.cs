@@ -46,6 +46,7 @@ public sealed class CompositionRunListingTests
         legacy.CreatedAt.ShouldBeNull();
         legacy.AgeSeconds.ShouldBeNull();
         legacy.EnvironmentId.ShouldBeNull();
+        legacy.Cleanup.ShouldBe("unavailable");
         foreach (string format in new[] { "human", "json" })
         {
             StringWriter output = new();
@@ -194,7 +195,12 @@ public sealed class CompositionRunListingTests
         }
 
         ToolCommandResult listed = await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        listed.Environments.ShouldNotBeNull().Single().OwnerRunId.ShouldBe(peer);
+        listed.Environments.ShouldNotBeNull().Select(entry => entry.OwnerRunId).ShouldBe([peer, state.RunId], ignoreOrder: true);
+        CompositionRunListingEntry owner = listed.Environments.Single(entry => entry.OwnerRunId == state.RunId);
+        owner.AttemptId.ShouldBe(state.AttemptId);
+        owner.EnvironmentId.ShouldBe(state.EnvironmentId);
+        owner.CreatedAt.ShouldBe(state.CreatedAt);
+        owner.ExecutionDeadlineUtc.ShouldBeNull();
         listed.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
         listed.Diagnostics.Single().RuleId.ShouldBe("HXR024");
         listed.Diagnostics.Single().Message.ShouldContain(state.RunId);
@@ -235,7 +241,7 @@ public sealed class CompositionRunListingTests
         (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
         CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected);
         bool failure = retention is "failure-retained" or "released";
-        string disposition = retention == "failure-retained" ? "retained" : "removed";
+        string disposition = failure ? "retained" : "removed";
         string cleanup = retention == "released" ? "complete" : "not-requested";
         ToolOutcome outcome = failure ? ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.ProductOrTest, "HXT007", ToolExitCode.ProductOrTest) : ToolOutcome.Passed();
         ModuleTestRunRecord terminal = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], failure ? "failed" : "completed", outcome, DateTimeOffset.UtcNow, disposition, new CompositionRunResources([], [])) { FailureRetained = failure, CleanupDisposition = cleanup };

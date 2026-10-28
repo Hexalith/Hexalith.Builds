@@ -1285,8 +1285,24 @@ public static class ModuleCommandExecutionService
             {
                 try
                 {
-                    using CancellationTokenSource recovery = new(TimeSpan.FromSeconds(5));
-                    record = await engine.ReadCommittedOutcomeAsync(ownedRunId, recovery.Token).ConfigureAwait(false);
+                    // A failed immediate callback already spent part of its finite metadata allowance.
+                    TimeSpan recoveryRemaining = TimeSpan.FromSeconds(5);
+                    if (session?.FirstObservedOutcome?.MetadataRecordingTimestamp is long firstObservation)
+                    {
+                        recoveryRemaining -= System.Diagnostics.Stopwatch.GetElapsedTime(firstObservation);
+                    }
+
+                    using CancellationTokenSource recovery = new();
+                    if (recoveryRemaining > TimeSpan.Zero)
+                    {
+                        recovery.CancelAfter(recoveryRemaining);
+                    }
+                    else
+                    {
+                        await recovery.CancelAsync().ConfigureAwait(false);
+                    }
+
+                    record = await engine.ReadCommittedOutcomeAsync(ownedRunId, recovery.Token, waitForLock: true).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OperationCanceledException)
                 {

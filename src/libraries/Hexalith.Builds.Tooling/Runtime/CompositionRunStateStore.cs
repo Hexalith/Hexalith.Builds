@@ -189,7 +189,7 @@ public sealed class CompositionRunStateStore(string directory)
             if (state is null || state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId
                 || string.IsNullOrEmpty(state.Workspace) || !Path.IsPathFullyQualified(state.Workspace) || !Enum.IsDefined(state.Status)
                 || !ValidReadiness(state) || !ValidResources(state.RemainingResources)
-                || !ValidCleanup(state.CleanupDisposition, state.RemainingResources ?? state.TestRun?.RemainingResources)
+                || (state.CleanupDisposition != "unavailable" && !ValidCleanup(state.CleanupDisposition, state.RemainingResources ?? state.TestRun?.RemainingResources))
                 || (state.TestRun is { } test && !ValidOutcome(test, runId))
                 || (state.AttemptId is not null && (!CompositionRunPlanFactory.IsRunId(state.AttemptId) || state.AttemptId == runId || state.AttemptId == state.EnvironmentId))
                 || (state.EnvironmentId is not null && (!CompositionRunPlanFactory.IsRunId(state.EnvironmentId) || state.EnvironmentId == runId)))
