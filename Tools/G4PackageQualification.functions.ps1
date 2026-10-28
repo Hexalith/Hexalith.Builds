@@ -230,7 +230,7 @@ function Assert-ModuleRunEvidenceContent {
         [Parameter(Mandatory = $true)][string] $ExpectedRepositoryRevision,
         [Parameter(Mandatory = $true)][string] $ExpectedRepositoryDirtyMarker,
         [Parameter(Mandatory = $true)][string] $ExpectedManifestHash,
-        [string] $ExpectedEventStoreVersion = '3.128.3'
+        [string] $ExpectedEventStoreVersion = '3.128.4'
     )
 
     $bytes = [IO.File]::ReadAllBytes($FilePath)
