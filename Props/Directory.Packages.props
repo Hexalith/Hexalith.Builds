@@ -4,18 +4,18 @@
     <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
     <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.30.3</HexalithCommonsVersion>
-    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.3.0</HexalithConversationsVersion>
+    <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.3.1</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.5</HexalithPolymorphicSerializationsVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.128.3</HexalithEventStoreVersion>
     <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.7.1</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.3.2</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">1.1.0</HexalithMcpCliVersion>
-    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">3.0.0</HexalithMemoriesVersion>
-    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.10.1</HexalithTenantsVersion>
+    <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">3.0.3</HexalithMemoriesVersion>
+    <HexalithTenantsVersion Condition="'$(HexalithTenantsVersion)' == ''">5.11.0</HexalithTenantsVersion>
     <!-- Temporary Story 5.12 package-only catalog consumers. Shipped package pins stay unchanged. -->
     <HexalithTenantsVersion Condition="'$(CatalogCandidateTenantsVersion)' != '' and '$(UseHexalithProjectReferences)' != 'true' and ('$(MSBuildProjectName)' == 'Hexalith.EventStore.CatalogConstruction' or '$(MSBuildProjectName)' == 'Hexalith.EventStore.Server.Tests' or '$(MSBuildProjectName)' == 'Hexalith.EventStore.QueryRouting.Tests' or '$(MSBuildProjectName)' == 'Hexalith.EventStore.Server.LiveSidecar.Tests' or '$(MSBuildProjectName)' == 'routing-catalog.cs')">$(CatalogCandidateTenantsVersion)</HexalithTenantsVersion>
-    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">1.6.0</HexalithPartiesVersion>
-    <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">1.6.0</HexalithPartiesAspireVersion>
+    <HexalithPartiesVersion Condition="'$(HexalithPartiesVersion)' == ''">2.0.0</HexalithPartiesVersion>
+    <HexalithPartiesAspireVersion Condition="'$(HexalithPartiesAspireVersion)' == ''">2.0.0</HexalithPartiesAspireVersion>
     <HexalithProjectsVersion Condition="'$(HexalithProjectsVersion)' == ''">1.2.0</HexalithProjectsVersion>
     <!-- Folders.Aspire is a stable public package; all other consumers retain the preview integration. -->
     <HexalithAspireHostingDaprVersion>13.6.2-beta.959</HexalithAspireHostingDaprVersion>
@@ -315,7 +315,7 @@
     <PackageVersion Include="OrchardCore.Localization.Core" Version="3.0.1" />
     <!-- FrontComposer Story 10-3: file-based EventStore REST consumer contracts. -->
     <PackageVersion Include="PactNet" Version="5.0.1" />
-    <PackageVersion Include="Radzen.Blazor" Version="12.1.7" />
+    <PackageVersion Include="Radzen.Blazor" Version="12.1.8" />
     <PackageVersion Include="Roslynator.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.1" />
     <PackageVersion Include="Scriban" Version="7.5.3" />
