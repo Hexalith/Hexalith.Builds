@@ -1356,6 +1356,7 @@ public static class ModuleCommandExecutionService
                 {
                     // Cleanup stays deferred and discoverable as pending; the recorded first outcome is untouched and down can retry it.
                     cleanup = false;
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Waiting for attachment holds was cancelled; cleanup remains pending and retryable with down for this owner.", "evidence"));
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
                 {

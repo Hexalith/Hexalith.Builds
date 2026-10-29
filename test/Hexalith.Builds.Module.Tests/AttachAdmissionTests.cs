@@ -139,15 +139,18 @@ public sealed class AttachAdmissionTests
         File.Exists(CompositionAttachmentStore.PathFor(Path.Combine(store.Directory, "diagnostics", owner.RunId))).ShouldBeFalse();
     }
 
-    /// <summary>A CI attacher in the same workflow run, attempt and job is accepted.</summary>
-    /// <returns>The accepted CI attachment.</returns>
+    /// <summary>A CI owner is refused even for a same-job attacher, because CI owners do not wait for holds.</summary>
+    /// <returns>The refusal assertion.</returns>
     [Fact]
-    public async Task SameJobCiAttachmentIsAcceptedAsync()
+    public async Task SameJobCiAttachmentIsRefusedAsync()
     {
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
         ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = Ci("job-a") }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        _ = result.Attachment.ShouldNotBeNull();
+        result.Attachment.ShouldBeNull();
+        result.Diagnostics.Single().RuleId.ShouldBe("HXR035");
+        result.Diagnostics.Single().Field.ShouldBe("owner-ci-holds-unsupported");
+        File.Exists(CompositionAttachmentStore.PathFor(Path.Combine(store.Directory, "diagnostics", owner.RunId))).ShouldBeFalse();
     }
 
     /// <summary>A finished owner refuses new attaches and names its state, unless it is a ready failure-retained local environment.</summary>
@@ -229,6 +232,26 @@ public sealed class AttachAdmissionTests
 
         // The owner keeps accepting attachments after one of them ended.
         _ = (await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition), now.AddSeconds(31), TestContext.Current.CancellationToken).ConfigureAwait(true)).Attachment.ShouldNotBeNull();
+    }
+
+    /// <summary>The human output of attach and list shows the issued identities, expiry and hold deadline.</summary>
+    /// <returns>The human-format assertions.</returns>
+    [Fact]
+    public async Task HumanOutputShowsAttachedRunAndHoldDeadlineAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (_, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace).ConfigureAwait(true);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, owner.SelectedTest!);
+        (int admittedExit, string admitted) = await RunAsync(["attach", "--owner-run-id", owner.RunId, "--mode", "source", "--composition-identity", composition, "--hold-seconds", "600", "--output", "human"], options).ConfigureAwait(true);
+        admittedExit.ShouldBe(0, admitted);
+        admitted.ShouldContain("attached-run=");
+        admitted.ShouldContain("hold-seconds=600");
+        admitted.ShouldContain("expires=");
+        (int listedExit, string listed) = await RunAsync(["list", "--output", "human"], options).ConfigureAwait(true);
+        listedExit.ShouldBe(0, listed);
+        listed.ShouldContain("  attached=");
+        listed.ShouldContain("state=recorded");
+        listed.ShouldNotContain("hold-deadline=unavailable");
     }
 
     /// <summary>The CLI admits, retries and ends attachments with the public options and exit codes.</summary>
@@ -325,6 +348,19 @@ public sealed class AttachAdmissionTests
         descriptorHold.GetProperty("end").GetProperty("state").GetString().ShouldBe("active");
     }
 
+    /// <summary>A failed local owner finishes without waiting for a live hold.</summary>
+    /// <returns>The no-wait assertions.</returns>
+    [Fact]
+    public async Task FailedOwnerDoesNotWaitForLiveHoldAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        OwnerRun run = await OwnerRun.StartAsync(workspace, CancellationToken.None, failing: true).ConfigureAwait(true);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable runLifetime = run.ConfigureAwait(true);
+        int exit = await run.Running.WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        exit.ShouldNotBe((int)ToolExitCode.Success, run.Output.ToString());
+        (await CompositionAttachmentStore.ReadAsync(Path.Combine(run.Options.StateDirectory, "diagnostics", run.Session!.RunId), run.Session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single().IsLive(DateTimeOffset.UtcNow).ShouldBeTrue();
+    }
+
     /// <summary>Cancelling the wait during a live hold runs no cleanup and leaves the published first result intact.</summary>
     /// <returns>The deferred-cleanup assertions.</returns>
     [Fact]
@@ -339,6 +375,7 @@ public sealed class AttachAdmissionTests
         await cancel.CancelAsync().ConfigureAwait(true);
         _ = await run.Running.WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
         run.Cleanups.ShouldBe(0);
+        run.Output.ToString().ShouldContain("HXT008");
         Directory.Exists(run.Session!.Plan.Workspace).ShouldBeTrue();
         (await File.ReadAllBytesAsync(resultPath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(before);
         TestEnvironmentContractReader.ReadResult(resultPath, TestContext.Current.CancellationToken).Document!.Value.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("passed");
@@ -371,8 +408,10 @@ public sealed class AttachAdmissionTests
     {
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => scenario == "cross-job" ? state with { ExecutionContext = Ci("job-a") } : state).ConfigureAwait(true);
-        JsonElement context = scenario == "cross-job" ? Ci("job-a") : _local;
-        CompositionAttachment first = (await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = context }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Attachment.ShouldNotBeNull();
+        JsonElement context = _local;
+        CompositionAttachment first = scenario == "cross-job"
+            ? await SeedHoldAsync(store, owner).ConfigureAwait(true)
+            : (await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = context }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Attachment.ShouldNotBeNull();
         if (scenario != "cross-job")
         {
             await store.WriteAsync(Finished(owner, scenario), TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -392,7 +431,7 @@ public sealed class AttachAdmissionTests
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => Finished(state, "failed-retained") with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
         ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = Ci("job-a") }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        result.Diagnostics.Single().Field.ShouldBe("owner-failed");
+        result.Diagnostics.Single().Field.ShouldBe("owner-ci-holds-unsupported");
     }
 
     /// <summary>Any differing CI identity element refuses the attachment as cross-job.</summary>
@@ -439,9 +478,9 @@ public sealed class AttachAdmissionTests
     public async Task CiOwnerListingDoesNotClaimHoldDeferredCleanupAsync()
     {
         using PlatformManifestTestWorkspace workspace = new();
-        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
+        (CompositionRunStateStore store, CompositionRunState owner, _) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
         DateTimeOffset now = DateTimeOffset.UtcNow;
-        _ = (await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = Ci("job-a") }, now, TestContext.Current.CancellationToken).ConfigureAwait(true)).Attachment.ShouldNotBeNull();
+        _ = await SeedHoldAsync(store, owner).ConfigureAwait(true);
         await store.WriteAsync(Finished(owner, "passed") with { CleanupDisposition = "not-requested" }, TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionRunListingEntry entry = (await CompositionRunListing.ReadAsync(store, now.AddSeconds(1), TestContext.Current.CancellationToken).ConfigureAwait(true)).Environments.ShouldNotBeNull().Single();
         entry.Cleanup.ShouldBe("not-requested");
@@ -504,6 +543,14 @@ public sealed class AttachAdmissionTests
             : ["attach", "--owner-run-id", owner.RunId, "--mode", "source", "--composition-identity", composition, option, value];
         (int exit, string text) = await RunAsync(arguments, options).ConfigureAwait(true);
         exit.ShouldBe((int)ToolExitCode.UsageOrManifest, text);
+    }
+
+    private static async Task<CompositionAttachment> SeedHoldAsync(CompositionRunStateStore store, CompositionRunState owner)
+    {
+        DateTimeOffset accepted = DateTimeOffset.UtcNow;
+        CompositionAttachment hold = new(CompositionRunPlanFactory.NewRunId(), owner.EnvironmentId!, owner.RunId, CompositionRunPlanFactory.NewRunId(), 600, accepted, 600, accepted.AddSeconds(600));
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(Path.Combine(store.Directory, "diagnostics", owner.RunId), owner.RunId, existing => (0, [.. existing, hold]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        return hold;
     }
 
     private static JsonElement Ci(string job, string repository = "o/r", string run = "1", int attempt = 1) => JsonSerializer.SerializeToElement(new { kind = "ci", repository, workflowRunId = run, workflowAttempt = attempt, jobId = job, runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true });
@@ -576,13 +623,13 @@ public sealed class AttachAdmissionTests
 
         public bool CleanupTokenWasCancelled { get; private set; }
 
-        public static async Task<OwnerRun> StartAsync(PlatformManifestTestWorkspace workspace, CancellationToken runToken)
+        public static async Task<OwnerRun> StartAsync(PlatformManifestTestWorkspace workspace, CancellationToken runToken, bool failing = false)
         {
             OwnerRun run = new();
             (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
             await File.WriteAllTextAsync(
                 Path.Combine(workspace.Root, "runner.py"),
-                "import os, pathlib, shutil\nshutil.copy(os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], pathlib.Path(__file__).parent / 'descriptor-copy.json')\npathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text('<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" /></ResultSummary></TestRun>')\n",
+                "import os, pathlib, shutil\nshutil.copy(os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], pathlib.Path(__file__).parent / 'descriptor-copy.json')\npathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text('<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" /></ResultSummary></TestRun>')\n" + (failing ? "raise SystemExit(1)\n" : string.Empty),
                 TestContext.Current.CancellationToken).ConfigureAwait(false);
             string manifest = workspace.Save();
             string nativeDotnet = Path.Combine(workspace.Root, "native-dotnet");
