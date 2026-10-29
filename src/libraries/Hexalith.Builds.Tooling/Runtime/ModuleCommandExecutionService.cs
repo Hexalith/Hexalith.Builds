@@ -1357,7 +1357,7 @@ public static class ModuleCommandExecutionService
                     // Cleanup stays deferred and discoverable as pending; the recorded first outcome is untouched and down can retry it.
                     cleanup = false;
                 }
-                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
                 {
                     cleanup = false;
                     result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Attachment holds could not be verified; cleanup remains pending and retryable with down for this owner.", "evidence"));

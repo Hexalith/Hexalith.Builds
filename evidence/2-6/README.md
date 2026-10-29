@@ -10,3 +10,5 @@ Attach admission under `hexalith.platform.candidate-and-attachment-policy.v1`.
 - Results and descriptors publish the populated `holds`; a hold past its expiry is reported as ended `expired` at its expiry.
 - Verified with `AttachAdmissionTests`, `TestResultWriterTests` and `CompositionRunListingTests` (run directly, not through the slnx).
 - Not covered (Stories 2.7-2.9): withdrawal ordering and `withdrawn` outcomes, failure retention interplay, CI job bounds and workflow changes, fixture migration.
+- Artifact-identity matching is refused as `artifact-identity-unverifiable` until Epic 3 populates expected and loaded identities. CI owners do not wait for holds (CI withdrawal is Stories 2.7/2.8), so their listing never shows hold-deferred cleanup.
+- Retries run the context and owner-state checks before lineage resolution, and the owner state is decided again under the attachment lock before a hold is recorded.

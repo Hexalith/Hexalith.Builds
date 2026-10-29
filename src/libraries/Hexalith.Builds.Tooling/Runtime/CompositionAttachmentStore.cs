@@ -65,41 +65,14 @@ public static class CompositionAttachmentStore
     /// <param name="cancellationToken">The allowance.</param>
     /// <returns>The change result.</returns>
     /// <exception cref="IOException">The lock could not be acquired or the metadata is invalid.</exception>
-    public static async Task<T> UpdateAsync<T>(
+    public static Task<T> UpdateAsync<T>(
         string diagnosticsDirectory,
         string ownerRunId,
         Func<IReadOnlyList<CompositionAttachment>, (T Result, IReadOnlyList<CompositionAttachment>? Replacement)> change,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(change);
-        CompositionWorkspace.CreatePrivateDirectory(diagnosticsDirectory);
-        string lockPath = Path.Combine(diagnosticsDirectory, "attachments.lock");
-        DateTimeOffset giveUp = DateTimeOffset.UtcNow.AddSeconds(5);
-        FileStream? held = null;
-        while (held is null)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            try
-            {
-                held = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 1, FileOptions.None);
-            }
-            catch (IOException) when (DateTimeOffset.UtcNow < giveUp)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(25), cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        await using (held.ConfigureAwait(false))
-        {
-            IReadOnlyList<CompositionAttachment> current = await ReadAsync(diagnosticsDirectory, ownerRunId, cancellationToken).ConfigureAwait(false);
-            (T result, IReadOnlyList<CompositionAttachment>? replacement) = change(current);
-            if (replacement is not null)
-            {
-                await CompositionDocumentStore.WriteAsync(PathFor(diagnosticsDirectory), new CompositionAttachmentDocument(CompositionAttachmentDocument.SupportedSchema, ownerRunId, replacement), cancellationToken).ConfigureAwait(false);
-            }
-
-            return result;
-        }
+        return UpdateCoreAsync<T>(diagnosticsDirectory, ownerRunId, current => Task.FromResult(change(current)), cancellationToken);
     }
 
     /// <summary>Waits until no accepted attachment is live. Deadlines are evaluated against UTC on every poll.</summary>
@@ -123,6 +96,49 @@ public static class CompositionAttachmentStore
             TimeSpan untilLastExpiry = live.Max(item => item.ExpiresAtUtc) - now;
             TimeSpan pause = untilLastExpiry < pollInterval ? untilLastExpiry : pollInterval;
             await Task.Delay(pause > TimeSpan.Zero ? pause : TimeSpan.FromMilliseconds(1), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Applies one serialized change whose decision may itself read durable state under the lock.</summary>
+    /// <typeparam name="T">The result type.</typeparam>
+    /// <param name="diagnosticsDirectory">The owner's durable diagnostics directory.</param>
+    /// <param name="ownerRunId">The owner identity.</param>
+    /// <param name="change">Receives the current attachments and returns the result plus the replacement list, or null for no write.</param>
+    /// <param name="cancellationToken">The allowance.</param>
+    /// <returns>The change result.</returns>
+    internal static async Task<T> UpdateCoreAsync<T>(
+        string diagnosticsDirectory,
+        string ownerRunId,
+        Func<IReadOnlyList<CompositionAttachment>, Task<(T Result, IReadOnlyList<CompositionAttachment>? Replacement)>> change,
+        CancellationToken cancellationToken)
+    {
+        CompositionWorkspace.CreatePrivateDirectory(diagnosticsDirectory);
+        string lockPath = Path.Combine(diagnosticsDirectory, "attachments.lock");
+        DateTimeOffset giveUp = DateTimeOffset.UtcNow.AddSeconds(5);
+        FileStream? held = null;
+        while (held is null)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                held = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 1, FileOptions.None);
+            }
+            catch (IOException) when (DateTimeOffset.UtcNow < giveUp)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(25), cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        await using (held.ConfigureAwait(false))
+        {
+            IReadOnlyList<CompositionAttachment> current = await ReadAsync(diagnosticsDirectory, ownerRunId, cancellationToken).ConfigureAwait(false);
+            (T result, IReadOnlyList<CompositionAttachment>? replacement) = await change(current).ConfigureAwait(false);
+            if (replacement is not null)
+            {
+                await CompositionDocumentStore.WriteAsync(PathFor(diagnosticsDirectory), new CompositionAttachmentDocument(CompositionAttachmentDocument.SupportedSchema, ownerRunId, replacement), cancellationToken).ConfigureAwait(false);
+            }
+
+            return result;
         }
     }
 

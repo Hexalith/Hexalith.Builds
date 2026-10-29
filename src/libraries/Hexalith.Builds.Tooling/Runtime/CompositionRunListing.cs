@@ -40,7 +40,7 @@ public static class CompositionRunListing
                             committed = null;
                         }
                     }
-                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException or InvalidDataException)
                     {
                         _ = unverifiableOwners.Add(tracked.RunId);
                     }
@@ -62,7 +62,7 @@ public static class CompositionRunListing
                             timing = null;
                         }
                     }
-                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException or InvalidDataException)
                     {
                         _ = unverifiableOwners.Add(tracked.RunId);
                     }
@@ -73,13 +73,16 @@ public static class CompositionRunListing
                     {
                         attachments = await CompositionAttachmentStore.ReadAsync(directory, tracked.RunId, cancellationToken).ConfigureAwait(false);
                     }
-                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException or InvalidDataException)
                     {
                         _ = unverifiableOwners.Add(tracked.RunId);
                     }
 
                     CompositionAttachment[] live = [.. attachments.Where(item => item.IsLive(observedAt))];
-                    string cleanup = live.Length > 0 && state.TestRun?.TerminalOutcome.ExitCode == ToolExitCode.Success && state.CleanupDisposition == "not-requested"
+                    bool local = state.ExecutionContext is { ValueKind: System.Text.Json.JsonValueKind.Object } context && context.TryGetProperty("kind", out System.Text.Json.JsonElement kind) && kind.GetString() == "local";
+
+                    // CI owners do not wait for holds in this version, so their cleanup is never reported as hold-deferred.
+                    string cleanup = local && live.Length > 0 && state.TestRun?.TerminalOutcome.ExitCode == ToolExitCode.Success && state.CleanupDisposition == "not-requested"
                         ? "pending"
                         : state.CleanupDisposition;
                     entries.Add(new CompositionRunListingEntry(
@@ -101,7 +104,7 @@ public static class CompositionRunListing
                         Attachments = attachments,
                     });
                 }
-                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException or InvalidDataException)
                 {
                     _ = unverifiableOwners.Add(tracked.RunId);
                 }
@@ -109,7 +112,7 @@ public static class CompositionRunListing
 
             return (unverifiableOwners.Count > 0 ? Incomplete(unverifiableOwners) : new ToolCommandResult("completed", ToolOutcome.Passed(), [])) with { Environments = entries };
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException or InvalidDataException)
         {
             return Incomplete();
         }

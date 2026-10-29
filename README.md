@@ -525,7 +525,8 @@ targets (hosted, developer-started, unknown, legacy, cross-context or cross-job)
 incompatible mode, composition, artifact identity, readiness or isolation, `HXR035` a
 finished owner (naming its state; a ready local failure-retained environment stays
 attachable until it is stopped or cleaned), and `HXR036` an unknown, ended or expired
-retry. The stable reason is the diagnostic field. An accepted attachment records the
+retry. Artifact-identity matching is refused as unverifiable until Epic 3 populates expected
+and loaded identities. CI owners do not wait for holds in this version. The stable reason is the diagnostic field. An accepted attachment records the
 original request or omission, acceptance time, effective seconds and absolute expiry, and
 issues `originalAttachmentRequestId` and `attachedRunId`; a retry that presents either keeps
 the first acceptance and expiry. `--end` ends only that attachment. A passed local owner

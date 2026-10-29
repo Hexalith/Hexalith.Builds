@@ -58,7 +58,7 @@ public static class CompositionAttachAdmission
             owner = await ReadOwnerAsync(store, request.OwnerRunId, directory, cancellationToken).ConfigureAwait(false);
             existing = await CompositionAttachmentStore.ReadAsync(directory, request.OwnerRunId, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
         {
             return Refuse("HXR033", "owner-unverifiable", "The owner environment metadata cannot be verified.");
         }
@@ -73,16 +73,6 @@ public static class CompositionAttachAdmission
             return Refuse("HXR033", "owner-not-attachable", "The owner state lacks the issued identities needed to verify an attachment.");
         }
 
-        if (request.PresentedRequestId is { } presented)
-        {
-            return Retry(existing.FirstOrDefault(item => item.OriginalAttachmentRequestId == presented || item.AttachedRunId == presented), now);
-        }
-
-        if (request.EnvironmentId is not null && request.EnvironmentId != owner.EnvironmentId)
-        {
-            return Refuse("HXR034", "environment-mismatch", "The requested environment identity does not match the owner.");
-        }
-
         ToolCommandResult? context = CheckContext(owner, request);
         if (context is not null)
         {
@@ -95,6 +85,16 @@ public static class CompositionAttachAdmission
             return ownerState;
         }
 
+        if (request.PresentedRequestId is { } presented)
+        {
+            return Retry(existing.FirstOrDefault(item => item.OriginalAttachmentRequestId == presented || item.AttachedRunId == presented), now);
+        }
+
+        if (request.EnvironmentId is not null && request.EnvironmentId != owner.EnvironmentId)
+        {
+            return Refuse("HXR034", "environment-mismatch", "The requested environment identity does not match the owner.");
+        }
+
         ToolCommandResult? compatibility = CheckCompatibility(owner, request);
         if (compatibility is not null)
         {
@@ -103,11 +103,19 @@ public static class CompositionAttachAdmission
 
         try
         {
-            CompositionAttachment accepted = await CompositionAttachmentStore.UpdateAsync<CompositionAttachment>(
+            return await CompositionAttachmentStore.UpdateCoreAsync<ToolCommandResult>(
                 directory,
                 request.OwnerRunId,
-                current =>
+                async current =>
                 {
+                    // The owner may have finished or started cleanup since it was first read; decide again under the lock.
+                    CompositionRunState? latest = await ReadOwnerAsync(store, request.OwnerRunId, directory, cancellationToken).ConfigureAwait(false);
+                    ToolCommandResult? finished = latest is null ? Refuse("HXR033", "owner-unknown", "No runner-owned environment is tracked for this owner run.") : CheckOwnerState(latest);
+                    if (finished is not null)
+                    {
+                        return (finished, null);
+                    }
+
                     CompositionAttachment created = new(
                         CompositionRunPlanFactory.NewRunId(),
                         owner.EnvironmentId,
@@ -117,12 +125,11 @@ public static class CompositionAttachAdmission
                         now,
                         effectiveHold,
                         now.AddSeconds(effectiveHold));
-                    return (created, [.. current, created]);
+                    return (Accepted(created, retry: false), [.. current, created]);
                 },
                 cancellationToken).ConfigureAwait(false);
-            return Accepted(accepted, retry: false);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
         {
             return Refuse("HXR033", "attachment-unrecordable", "The accepted hold could not be durably recorded; nothing was attached.");
         }
@@ -167,7 +174,7 @@ public static class CompositionAttachAdmission
                         return (target, null);
                     }
 
-                    CompositionAttachment updated = target with { EndedAtUtc = now < target.AcceptedAtUtc ? target.AcceptedAtUtc : now, EndReason = now >= target.ExpiresAtUtc ? "expired" : "terminal-outcome" };
+                    CompositionAttachment updated = target with { EndedAtUtc = EndTime(target, now), EndReason = now >= target.ExpiresAtUtc ? "expired" : "terminal-outcome" };
                     return (updated, [.. current.Select(item => ReferenceEquals(item, target) ? updated : item)]);
                 },
                 cancellationToken).ConfigureAwait(false);
@@ -175,10 +182,20 @@ public static class CompositionAttachAdmission
                 ? Refuse("HXR036", "unknown-attachment", "No attachment with this identity was issued for the environment.")
                 : new ToolCommandResult("ended", ToolOutcome.Passed(), []) { Attachment = ended };
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
         {
             return Refuse("HXR033", "attachment-unrecordable", "The attachment end could not be durably recorded.");
         }
+    }
+
+    private static DateTimeOffset EndTime(CompositionAttachment target, DateTimeOffset now)
+    {
+        if (now >= target.ExpiresAtUtc)
+        {
+            return target.ExpiresAtUtc;
+        }
+
+        return now < target.AcceptedAtUtc ? target.AcceptedAtUtc : now;
     }
 
     private static async Task<CompositionRunState?> ReadOwnerAsync(CompositionRunStateStore store, string ownerRunId, string directory, CancellationToken cancellationToken)
@@ -262,6 +279,8 @@ public static class CompositionAttachAdmission
         return Accepted(lineage, retry: true);
     }
 
+    private static bool IsLocal(CompositionRunState owner) => owner.ExecutionContext is { } context && Text(context, "kind") == "local";
+
     private static string? FinishedOwnerReason(CompositionRunState owner)
     {
         if (owner.CleanupDisposition == "complete")
@@ -286,7 +305,7 @@ public static class CompositionAttachAdmission
             };
         }
 
-        if (CompositionRunListing.Retention(owner) == "failure-retained" && owner.TestRun.ResourceDisposition == "retained")
+        if (IsLocal(owner) && CompositionRunListing.Retention(owner) == "failure-retained" && owner.TestRun.ResourceDisposition == "retained")
         {
             return null;
         }

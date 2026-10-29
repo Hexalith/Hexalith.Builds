@@ -167,8 +167,8 @@ internal static class ModuleCommandApplication
                 ToolOutputFormat outputFormat = ParseOutputFormat(parsed.GetValue(format));
                 bool ending = parsed.GetValue(end);
                 bool malformed = ending
-                    ? parsed.GetValue(attached) is null || parsed.GetResult(hold) is not null || parsed.GetResult(requestId) is not null
-                    : parsed.GetValue(mode) is null || parsed.GetValue(composition) is null || parsed.GetValue(attached) is not null;
+                    ? parsed.GetValue(attached) is null || new Option[] { hold, requestId, mode, composition, target, environment, artifacts }.Any(option => parsed.GetResult(option) is { Implicit: false })
+                    : parsed.GetValue(mode) is null || parsed.GetValue(composition) is null || parsed.GetResult(attached) is not null;
                 if (malformed)
                 {
                     return await ToolCommandHost.WriteParseFailureAsync(output, outputFormat).ConfigureAwait(false);
