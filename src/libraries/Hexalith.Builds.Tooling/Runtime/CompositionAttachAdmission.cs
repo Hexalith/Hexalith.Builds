@@ -322,6 +322,11 @@ public static class CompositionAttachAdmission
 
     private static ToolCommandResult? CheckOwnerState(CompositionRunState owner)
     {
+        if (!IsLocal(owner))
+        {
+            return Refuse("HXR035", "owner-ci-holds-unsupported", "CI owners do not wait for holds in this version, so an attachment to a CI owner cannot be honored.");
+        }
+
         string? reason = FinishedOwnerReason(owner);
         string message = reason == "owner-starting" ? "The owner environment is not ready yet." : "The owner environment is finished, stopped, being cleaned or not failure-retained.";
         return reason is null ? null : Refuse("HXR035", reason, message);
