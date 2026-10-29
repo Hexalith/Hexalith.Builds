@@ -1382,7 +1382,12 @@ public static class ModuleCommandExecutionService
                     // Failed inspection leaves cleanup pending and preserves the committed outcome.
                 }
 
-                string expectedOutcome = record.TerminalOutcome.ExitCode == ToolExitCode.Success ? "passed" : "cancelled";
+                string expectedOutcome = (record.TerminalOutcome.ExitCode == ToolExitCode.Success, record.TerminalOutcome.ExitCode == ToolExitCode.Cancelled) switch
+                {
+                    (true, _) => "passed",
+                    (_, true) => "cancelled",
+                    _ => "failed",
+                };
                 bool matchingPublication = publication?.IsValid == true
                     && publication.Document!.Value.GetProperty("bindings").GetProperty("run").GetProperty("runId").GetString() == record.RunId
                     && publication.Document.Value.GetProperty("bindings").GetProperty("run").GetProperty("attemptId").GetString() == session!.Plan.AttemptId

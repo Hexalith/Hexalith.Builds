@@ -490,6 +490,7 @@ public sealed class WorkspaceMsBuildTests
     /// <returns>A task for the assertion.</returns>
     [Theory]
     [InlineData("Version=1.0.0", true)]
+    [InlineData("Version=1.0.0;", true)]
     [InlineData("Version=2.0.0", false)]
     [InlineData("Version=1.0.0;Configuration=Release", false)]
     public async Task RetainedProjectVersionMetadataMatchesCatalogAsync(string additionalProperties, bool accepted)
