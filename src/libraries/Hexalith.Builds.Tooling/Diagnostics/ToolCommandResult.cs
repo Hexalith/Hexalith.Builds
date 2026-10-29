@@ -44,6 +44,10 @@ public sealed record ToolCommandResult(
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<Runtime.CompositionRunListingEntry>? Environments { get; init; }
 
+    /// <summary>Gets the accepted or ended attachment of an attach command.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Runtime.CompositionAttachment? Attachment { get; init; }
+
     /// <summary>Gets the durable v1 result location, when one was published.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? TestResultPath { get; init; }

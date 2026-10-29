@@ -303,6 +303,7 @@ internal static class NativeTestExecutor
     /// <param name="cancellationToken">The existing publication allowance.</param>
     /// <returns>The bounded atomic publication.</returns>
     /// <exception cref="IOException">The destination is outside the owned path policy.</exception>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA1849:Call async methods when in an async method", Justification = "Durable publication requires Flush(true); FlushAsync does not flush the device cache.")]
     internal static async Task WriteSnapshotAsync(string path, string ownedRoot, byte[] bytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -323,6 +324,8 @@ internal static class NativeTestExecutor
             await using (stream.ConfigureAwait(false))
             {
                 await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                CompositionDurableFlush.Flush(stream, cancellationToken);
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -372,7 +375,7 @@ internal static class NativeTestExecutor
         byte[] descriptorSnapshot;
         try
         {
-            descriptorPath = await TestEnvironment.TestEnvironmentDescriptorWriter.WriteAsync(session, cancellationToken).ConfigureAwait(false);
+            descriptorPath = await TestEnvironment.TestEnvironmentDescriptorWriter.WriteAsync(session, archiveDirectory, cancellationToken).ConfigureAwait(false);
             TestEnvironment.TestEnvironmentContractReadResult validated = TestEnvironment.TestEnvironmentContractReader.ReadDescriptor(descriptorPath, cancellationToken);
             if (!validated.IsValid)
             {
@@ -464,17 +467,19 @@ internal static class NativeTestExecutor
             {
                 // Committing an observed outcome has its own finite metadata allowance. It never
                 // changes the original stopping timestamp or renews execution, archival or cleanup.
+                long metadataRecordingTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
                 using CancellationTokenSource immediate = new(TimeSpan.FromSeconds(5));
 
                 NativeTestExecutionResult first = process.Started
                     ? Failed("HXT007", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest)
                     : Failed("HXR030", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, ToolExitCode.PrerequisiteUnavailable);
+                first = first with { Result = first.Result with { Status = "failed" } };
                 if (cancelled || gate.Failed)
                 {
                     first = SelectedInterruption(cancelled);
                 }
 
-                first = first with { StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
+                first = first with { StoppingTimestamp = stoppingTimestamp, MetadataRecordingTimestamp = metadataRecordingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
                 session.FirstObservedOutcome ??= first;
                 await onOutcome(first, immediate.Token).ConfigureAwait(false);
             }
@@ -512,6 +517,11 @@ internal static class NativeTestExecutor
         else
         {
             evaluated = Evaluate(process, report, bytes, handoffSecrets);
+            if (!process.Started)
+            {
+                evaluated = evaluated with { Result = evaluated.Result with { Status = "failed" } };
+            }
+
             if (evaluated.Result.Outcome.ExitCode == ToolExitCode.Success && report.Report?.Skipped > 0)
             {
                 evaluated = Failed("HXT004", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
@@ -535,6 +545,7 @@ internal static class NativeTestExecutor
         NativeTestExecutionResult inspected = evaluated with { Report = report.Report, ReportBytes = bytes, ObservationBytes = observations, StoppingTimestamp = stoppingTimestamp, TerminalCause = process.TimedOut && !cancelled && !gate.Failed ? "execution-timeout" : null };
         if (onOutcome is not null)
         {
+            inspected = inspected with { MetadataRecordingTimestamp = System.Diagnostics.Stopwatch.GetTimestamp() };
             session.FirstObservedOutcome ??= inspected;
             using CancellationTokenSource recording = new(TimeSpan.FromSeconds(5));
             await onOutcome(inspected, recording.Token).ConfigureAwait(false);

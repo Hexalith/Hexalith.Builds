@@ -508,6 +508,28 @@ public sealed class PlatformManifestCommandTests
         }
     }
 
+    /// <summary>Verifies validate rejects missing, conflicting or blank manifest/environment option sets.</summary>
+    /// <param name="arguments">The option set after the validate verb.</param>
+    /// <returns>A task that completes after the command.</returns>
+    [Theory]
+    [InlineData("")]
+    [InlineData("--environment|environment.json|--manifest|manifest.json")]
+    [InlineData("--environment|environment.json|--adoption")]
+    [InlineData("--environment| ")]
+    public async Task ValidateInvalidOptionSetsReturnUsageAsync(string arguments)
+    {
+        ArgumentNullException.ThrowIfNull(arguments);
+        StringWriter output = new();
+        await using (output.ConfigureAwait(true))
+        {
+            string[] options = arguments.Length == 0 ? [] : arguments.Split('|');
+            int exitCode = await ModuleCommandApplication.InvokeAsync(
+                ["validate", .. options, "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            exitCode.ShouldBe(1);
+            output.ToString().ShouldContain("HXC001");
+        }
+    }
+
     /// <summary>Verifies cancellation is preserved as exit 130 with structured diagnostics.</summary>
     /// <returns>A task that completes after the command.</returns>
     [Fact]

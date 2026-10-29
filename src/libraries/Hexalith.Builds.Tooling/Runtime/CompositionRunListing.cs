@@ -3,6 +3,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // </copyright>
 
+#pragma warning disable IDE0046 // Guard clauses read better than nested conditionals.
+
 namespace Hexalith.Builds.Tooling.Runtime;
 
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -28,11 +30,19 @@ public static class CompositionRunListing
                 try
                 {
                     string directory = Path.Combine(store.Directory, "diagnostics", tracked.RunId);
-                    ModuleTestRunRecord? committed = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestRunRecord>(Path.Combine(directory, "selected-test.json"), cancellationToken).ConfigureAwait(false);
-                    if (committed is not null && !CompositionRunStateStore.ValidOutcome(committed, tracked.RunId))
+                    ModuleTestRunRecord? committed = null;
+                    try
+                    {
+                        committed = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestRunRecord>(Path.Combine(directory, "selected-test.json"), cancellationToken).ConfigureAwait(false);
+                        if (committed is not null && !CompositionRunStateStore.ValidOutcome(committed, tracked.RunId))
+                        {
+                            _ = unverifiableOwners.Add(tracked.RunId);
+                            committed = null;
+                        }
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException or InvalidDataException)
                     {
                         _ = unverifiableOwners.Add(tracked.RunId);
-                        continue;
                     }
 
                     CompositionRunState state = committed is null ? tracked : tracked with { TestRun = committed, CleanupDisposition = committed.CleanupDisposition, RemainingResources = committed.RemainingResources };
@@ -42,13 +52,39 @@ public static class CompositionRunListing
                         state = state with { CleanupDisposition = "incomplete", RemainingResources = committed.RemainingResources with { Unverified = true, DiscoveryFailures = [.. committed.RemainingResources.DiscoveryFailures, "state-finalization"] } };
                     }
 
-                    ModuleTestExecutionTiming? timing = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestExecutionTiming>(Path.Combine(directory, "execution-activation.json"), cancellationToken).ConfigureAwait(false) ?? state.TestRun?.ExecutionTiming;
-                    if (timing is not null && (timing.EffectiveSeconds <= 0 || timing.DeadlineUtc - timing.StartedAtUtc != TimeSpan.FromSeconds(timing.EffectiveSeconds)))
+                    ModuleTestExecutionTiming? timing = null;
+                    try
+                    {
+                        timing = await CompositionDocumentStore.ReadIfExistsAsync<ModuleTestExecutionTiming>(Path.Combine(directory, "execution-activation.json"), cancellationToken).ConfigureAwait(false) ?? state.TestRun?.ExecutionTiming;
+                        if (timing is not null && (timing.EffectiveSeconds <= 0 || timing.DeadlineUtc - timing.StartedAtUtc != TimeSpan.FromSeconds(timing.EffectiveSeconds)))
+                        {
+                            _ = unverifiableOwners.Add(tracked.RunId);
+                            timing = null;
+                        }
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException or InvalidDataException)
                     {
                         _ = unverifiableOwners.Add(tracked.RunId);
-                        continue;
                     }
 
+                    IReadOnlyList<CompositionAttachment> attachments = [];
+                    bool legacy = state.EnvironmentId is null || state.CreatedAt is null;
+                    try
+                    {
+                        attachments = await CompositionAttachmentStore.ReadAsync(directory, tracked.RunId, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException or InvalidDataException)
+                    {
+                        _ = unverifiableOwners.Add(tracked.RunId);
+                    }
+
+                    CompositionAttachment[] live = [.. attachments.Where(item => item.IsLive(observedAt))];
+                    bool local = state.ExecutionContext is { ValueKind: System.Text.Json.JsonValueKind.Object } context && context.TryGetProperty("kind", out System.Text.Json.JsonElement kind) && kind.GetString() == "local";
+
+                    // CI owners do not wait for holds in this version, so their cleanup is never reported as hold-deferred.
+                    string cleanup = local && live.Length > 0 && state.TestRun?.TerminalOutcome.ExitCode == ToolExitCode.Success && state.CleanupDisposition == "not-requested"
+                        ? "pending"
+                        : state.CleanupDisposition;
                     entries.Add(new CompositionRunListingEntry(
                         state.RunId,
                         state.EnvironmentId,
@@ -57,15 +93,18 @@ public static class CompositionRunListing
                         state.CreatedAt is { } created ? Math.Max(0, (observedAt - created).TotalSeconds) : null,
                         state.TestRun?.TerminalOutcome.ExitCode is not (null or ToolExitCode.Success or ToolExitCode.Cancelled) ? [state.RunId] : [],
                         Retention(state),
-                        state.CleanupDisposition,
+                        cleanup,
                         state.StartupDeadlineUtc,
                         timing?.DeadlineUtc,
-                        [],
-                        "unavailable-admission-unsupported",
-                        null,
-                        state.RemainingResources ?? state.TestRun?.RemainingResources));
+                        [.. live.Select(item => item.AttachedRunId)],
+                        AttachmentInformation(legacy, live.Length, attachments.Count),
+                        live.Length > 0 ? live.Max(item => item.ExpiresAtUtc) : null,
+                        state.RemainingResources ?? state.TestRun?.RemainingResources)
+                    {
+                        Attachments = attachments,
+                    });
                 }
-                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException or InvalidDataException)
                 {
                     _ = unverifiableOwners.Add(tracked.RunId);
                 }
@@ -73,11 +112,24 @@ public static class CompositionRunListing
 
             return (unverifiableOwners.Count > 0 ? Incomplete(unverifiableOwners) : new ToolCommandResult("completed", ToolOutcome.Passed(), [])) with { Environments = entries };
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException or InvalidDataException)
         {
             return Incomplete();
         }
     }
+
+    /// <summary>Derives the recorded retention without inferring it from process liveness.</summary>
+    /// <param name="state">The merged owner state.</param>
+    /// <returns>The retention label.</returns>
+    internal static string Retention(CompositionRunState state) => state.TestRun switch
+    {
+        null => "unavailable",
+        _ when state.CleanupDisposition == "complete" && state.TestRun.FailureRetained => "released",
+        { ResourceDisposition: "retained" } => "failure-retained",
+        _ when state.CreatedAt is null => "unavailable",
+        { FailureRetained: false } => "not-retained",
+        _ => "failure-retained",
+    };
 
     private static ToolCommandResult Incomplete(IEnumerable<string>? unverifiableOwners = null)
     {
@@ -87,13 +139,18 @@ public static class CompositionRunListing
         return new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [diagnostic]);
     }
 
-    private static string Retention(CompositionRunState state) => state.TestRun switch
+    private static string AttachmentInformation(bool legacy, int live, int recorded)
     {
-        null => "unavailable",
-        { ResourceDisposition: "retained" } => "failure-retained",
-        _ when state.CreatedAt is null => "unavailable",
-        { FailureRetained: false } => "not-retained",
-        _ when state.CleanupDisposition == "complete" => "released",
-        _ => "failure-retained",
-    };
+        if (legacy)
+        {
+            return "unavailable-legacy-state";
+        }
+
+        if (live > 0)
+        {
+            return "attached";
+        }
+
+        return recorded > 0 ? "ended-or-expired" : "none";
+    }
 }

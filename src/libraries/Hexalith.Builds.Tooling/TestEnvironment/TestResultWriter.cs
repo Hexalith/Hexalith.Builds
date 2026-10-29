@@ -42,17 +42,35 @@ public static class TestResultWriter
         JsonNode bindings = record.EnvironmentBindings is { } snapshot
             ? JsonNode.Parse(snapshot.GetRawText())!
             : PartialBindings(state, record);
-        JsonNode run = bindings["run"]!;
-        if (run["runId"]!.GetValue<string>() != state.RunId || run["attemptId"]!.GetValue<string>() != state.AttemptId
-            || run["environmentId"]!.GetValue<string>() != state.EnvironmentId)
+        if (bindings is JsonObject current)
+        {
+            // Holds are runner-owned and evolve after the first outcome, so they are always read from the durable records.
+            current["attachments"] = CompositionAttachmentStore.ReadContractBinding(directory, state.RunId, DateTimeOffset.UtcNow);
+        }
+
+        if (bindings is not JsonObject || bindings["run"] is not JsonObject run
+            || !Matches(run["runId"], state.RunId) || !Matches(run["attemptId"], state.AttemptId)
+            || !Matches(run["environmentId"], state.EnvironmentId))
         {
             throw new InvalidDataException("The result does not match the original owner identities.");
         }
 
+        static bool Matches(JsonNode? value, string identity) => value is JsonValue scalar
+            && scalar.TryGetValue(out string? observed) && observed == identity;
+
         // Only the runner's original activation advances; no timing file is read after test execution.
-        if (record.ExecutionTiming is { ActualDurationSeconds: not null } timing && bindings["deadlines"]!["execution"]?["state"]?.GetValue<string>() == "populated")
+        if (record.ExecutionTiming is { ActualDurationSeconds: not null } timing)
         {
-            bindings["deadlines"]!["execution"]!["actualDurationSeconds"] = timing.ActualDurationSeconds;
+            if (bindings["deadlines"] is not JsonObject deadlines || deadlines["execution"] is not JsonObject execution
+                || execution["state"] is not JsonValue population || !population.TryGetValue(out string? stateValue))
+            {
+                throw new InvalidDataException("The result execution deadline bindings cannot be verified.");
+            }
+
+            if (stateValue == "populated")
+            {
+                execution["actualDurationSeconds"] = timing.ActualDurationSeconds;
+            }
         }
 
         string outcome = (record.TerminalOutcome.ExitCode == Diagnostics.ToolExitCode.Success, record.TerminalOutcome.ExitCode == Diagnostics.ToolExitCode.Cancelled) switch

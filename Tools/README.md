@@ -546,3 +546,27 @@ result, 33/33 deterministic cases across the 21 selectors, retained OQ8 capture
 and command-log hashes, and isolated cleanup. The result schema is
 `schemas/hexalith.g6-current-evidence.v1.json`. The selected source-mode test
 does not qualify published EventStore archives, G-4, G-5, P1R, or release.
+
+### Historical 2026-09-27 toolchain disposition
+
+`runtime-toolchain-disposition-2026-09-27.json` records the superseded,
+unqualified disposition of the historical Aspire SDK split: the tuple names
+13.5.4, while audited AppHosts include both 13.5.3 and 13.5.4. The separate
+annotation binds the immutable baseline's normalized-LF SHA-256 (CRLF checkouts
+retain the same digest); it does not amend its
+approval or qualify the split, runtime, package adoption, deployment or release.
+Historical containment holds remain active. Lowercase `dapr` means runtime/.NET
+support-table metadata with an explicit historical exception; uppercase `Dapr`
+means the catalog package identity, recorded as not activated. They are distinct
+case-sensitive keys, not contradictory qualification claims.
+
+```bash
+python3 Tools/validate-runtime-toolchain-disposition.py
+python3 Tools/test-runtime-toolchain-disposition.py
+python3 Tools/test-runtime-toolchain-evidence-validator.py
+```
+
+The new validator permits only CRLF-to-LF equivalence and rejects substantive
+baseline drift even if the annotation digest is
+also changed, invented qualification or approval, weakened holds and conflated
+Dapr meanings. Existing historical evidence validators retain their contracts.

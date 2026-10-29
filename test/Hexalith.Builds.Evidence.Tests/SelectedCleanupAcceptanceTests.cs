@@ -93,6 +93,50 @@ public sealed class SelectedCleanupAcceptanceTests
         }
     }
 
+    /// <summary>Malformed selected records and asserted empty remainders cannot throw or grant cleanup proof.</summary>
+    /// <param name="fault">The tampered selected record.</param>
+    /// <returns>The atomic artifact refusal assertions.</returns>
+    [Theory]
+    [InlineData("null")]
+    [InlineData("array")]
+    [InlineData("string")]
+    [InlineData("workspaceIds")]
+    [InlineData("claimIds")]
+    [InlineData("containerIds")]
+    [InlineData("processIds")]
+    [InlineData("discoveryFailures")]
+    [InlineData("unverified")]
+    public async Task TamperedCleanupProofIsRefusedAsync(string fault)
+    {
+        byte[] original = await File.ReadAllBytesAsync(EvidenceFixturePath.Get("positive/evidence/release-passed.json"), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        JsonNode artifact = JsonNode.Parse(AttachSelected(original, "removed"))!;
+        JsonNode selected = artifact["selectedTestRun"]!;
+        if (fault is "null" or "array" or "string")
+        {
+            artifact["selectedTestRun"] = fault switch
+            {
+                "null" => null,
+                "array" => new JsonArray(),
+                _ => JsonValue.Create("invalid"),
+            };
+        }
+        else
+        {
+            JsonNode remaining = selected["remainingResources"]!;
+            remaining[fault] = fault switch
+            {
+                "unverified" => JsonValue.Create(true),
+                "processIds" => new JsonArray(12345),
+                _ => new JsonArray("leftover"),
+            };
+            remaining["isEmpty"] = true;
+        }
+
+        byte[] tampered = Encoding.UTF8.GetBytes(artifact.ToJsonString() + "\n");
+        ModuleRunEvidenceArtifactValidator.TryValidate(tampered, out ModuleRunEvidenceArtifactSummary? summary).ShouldBeFalse();
+        summary.ShouldBeNull();
+    }
+
     private static byte[] AttachSelected(byte[] bytes, string scenario)
     {
         JsonNode artifact = JsonNode.Parse(bytes)!;

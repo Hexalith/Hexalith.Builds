@@ -74,6 +74,7 @@ internal static class ModuleCommandApplication
         rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput, operationStarted));
         rootCommand.Subcommands.Add(CreatePrepareBuildCommand(standardOutput, operationStarted));
         rootCommand.Subcommands.Add(CreateListCommand(standardOutput, compositionOptions, operationStarted));
+        rootCommand.Subcommands.Add(CreateAttachCommand(standardOutput, compositionOptions, operationStarted));
         return rootCommand;
     }
 
@@ -126,6 +127,74 @@ internal static class ModuleCommandApplication
             {
                 ToolCommandResult result = await CompositionRunListing.ReadAsync(new CompositionRunStateStore(options?.StateDirectory ?? CompositionRunStateStore.DefaultDirectory()), DateTimeOffset.UtcNow, cancellation).ConfigureAwait(false);
                 await ToolDiagnosticFormatter.WriteAsync(output, result, ParseOutputFormat(parsed.GetValue(format)), CancellationToken.None).ConfigureAwait(false);
+                return (int)result.Outcome.ExitCode;
+            }
+        });
+        return command;
+    }
+
+    private static Command CreateAttachCommand(TextWriter output, CompositionEngineOptions? options, Action<Task<int>> operationStarted)
+    {
+        Command command = new("attach", "Admits a run to a compatible runner-owned environment with a finite hold, or ends one attachment.");
+        Option<string> owner = new("--owner-run-id") { Required = true };
+        Option<string> mode = new("--mode");
+        _ = mode.AcceptOnlyFromAmong("source", "package");
+        Option<string> composition = new("--composition-identity") { Description = "The composition content identity (manifest SHA-256) the attaching run expects." };
+        Option<string> hold = new("--hold-seconds") { Description = "Whole seconds from 1 to 14400; omit for 1800." };
+        Option<string> requestId = new("--attachment-request-id") { Description = "A runner-issued request or attached run identity being retried." };
+        Option<string> target = new("--target") { DefaultValueFactory = _ => "run-owned" };
+        _ = target.AcceptOnlyFromAmong("run-owned", "hosted", "developer-started");
+        Option<string> environment = new("--environment-id");
+        Option<string[]> artifacts = new("--artifact-identity") { Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = false };
+        Option<bool> end = new("--end") { Description = "Ends only the attachment named by --attached-run-id; the owner and other attachments keep running." };
+        Option<string> attached = new("--attached-run-id");
+        Option<string> format = new("--output") { DefaultValueFactory = _ => "human" };
+        _ = format.AcceptOnlyFromAmong("human", "json");
+        foreach (Option option in new Option[] { owner, mode, composition, hold, requestId, target, environment, artifacts, end, attached, format })
+        {
+            command.Options.Add(option);
+        }
+
+        command.SetAction((parsed, token) =>
+        {
+            Task<int> execution = ExecuteAsync(token);
+            operationStarted(execution);
+            return execution;
+
+            async Task<int> ExecuteAsync(CancellationToken cancellation)
+            {
+                CompositionRunStateStore store = new(options?.StateDirectory ?? CompositionRunStateStore.DefaultDirectory());
+                ToolOutputFormat outputFormat = ParseOutputFormat(parsed.GetValue(format));
+                bool ending = parsed.GetValue(end);
+                bool malformed = ending
+                    ? parsed.GetValue(attached) is null || new Option[] { hold, requestId, mode, composition, target, environment, artifacts }.Any(option => parsed.GetResult(option) is { Implicit: false })
+                    : parsed.GetValue(mode) is null || parsed.GetValue(composition) is null || parsed.GetResult(attached) is not null;
+                if (malformed)
+                {
+                    return await ToolCommandHost.WriteParseFailureAsync(output, outputFormat).ConfigureAwait(false);
+                }
+
+                ToolCommandResult result;
+                if (ending)
+                {
+                    result = await CompositionAttachAdmission.EndAsync(store, parsed.GetValue(owner)!, parsed.GetValue(attached)!, DateTimeOffset.UtcNow, cancellation).ConfigureAwait(false);
+                }
+                else
+                {
+                    string? holdSeconds = parsed.GetResult(hold) is null ? null : parsed.GetValue(hold) ?? string.Empty;
+                    string? presented = parsed.GetResult(requestId) is null ? null : parsed.GetValue(requestId) ?? string.Empty;
+                    CompositionAttachRequest request = new(parsed.GetValue(owner)!, parsed.GetValue(mode)!, parsed.GetValue(composition)!)
+                    {
+                        HoldSeconds = holdSeconds,
+                        PresentedRequestId = presented,
+                        Target = parsed.GetValue(target)!,
+                        EnvironmentId = parsed.GetValue(environment),
+                        ArtifactIdentities = parsed.GetValue(artifacts) ?? [],
+                    };
+                    result = await CompositionAttachAdmission.AdmitAsync(store, request, DateTimeOffset.UtcNow, cancellation).ConfigureAwait(false);
+                }
+
+                await ToolDiagnosticFormatter.WriteAsync(output, result, outputFormat, CancellationToken.None).ConfigureAwait(false);
                 return (int)result.Outcome.ExitCode;
             }
         });

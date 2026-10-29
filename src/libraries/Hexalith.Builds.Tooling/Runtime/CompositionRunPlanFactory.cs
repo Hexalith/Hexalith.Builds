@@ -33,6 +33,7 @@ public static class CompositionRunPlanFactory
             CreatedAt = requestedAt,
             AttemptId = NewRunId(),
             EnvironmentId = NewRunId(),
+            CleanupDisposition = "not-requested",
         };
 
     /// <summary>

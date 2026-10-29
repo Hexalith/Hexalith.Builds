@@ -58,7 +58,7 @@ public sealed record CompositionRunState(
     public CompositionRunResources? RemainingResources { get; init; }
 
     /// <summary>Gets the recorded cleanup disposition.</summary>
-    public string CleanupDisposition { get; init; } = "not-requested";
+    public string CleanupDisposition { get; init; } = "unavailable";
 
     /// <summary>Gets the elapsed seconds from the start request until this state was recorded.</summary>
     public double? StartupDurationSeconds { get; init; }

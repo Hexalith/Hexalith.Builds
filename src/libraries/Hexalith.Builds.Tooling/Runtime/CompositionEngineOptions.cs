@@ -110,6 +110,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// <summary>Gets a test-only replacement for the selected v2 session start boundary.</summary>
     internal Func<string, ModuleTestSelection, CancellationToken, Task<CompositionStartResult>>? SelectedPlatformStartOverride { get; init; }
 
+    /// <summary>Gets the longest pause between reads while an owner's success cleanup waits for live attachment holds.</summary>
+    internal TimeSpan HoldPollInterval { get; init; } = TimeSpan.FromSeconds(1);
+
     /// <summary>Gets a test-only CI policy override.</summary>
     internal bool? ContinuousIntegrationOverride { get; init; }
 

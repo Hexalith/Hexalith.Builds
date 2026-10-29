@@ -107,7 +107,8 @@ public sealed class LocalRunLifecycleTests
 
         exit.ShouldBe(expectedExit, output.ToString());
         cleanups.ShouldBe(fails ? 0 : 1);
-        Directory.Exists(session!.Plan.Workspace).ShouldBe(fails || cleanupFails);
+        session.ShouldNotBeNull().FirstObservedOutcome.ShouldNotBeNull().MetadataRecordingTimestamp.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(session.StoppingTimestamp.ShouldNotBeNull());
+        Directory.Exists(session.Plan.Workspace).ShouldBe(fails || cleanupFails);
         string resultPath = Path.Combine(options.StateDirectory, "diagnostics", session.RunId, "test-result.json");
         TestEnvironmentContractReadResult result = TestEnvironmentContractReader.ReadResult(resultPath, TestContext.Current.CancellationToken);
         result.IsValid.ShouldBeTrue(output.ToString());
@@ -368,15 +369,30 @@ public sealed class LocalRunLifecycleTests
         {
             CompositionRunStateStore store = new(Path.Combine(childRoot, "state"));
             CompositionRunState state = (await store.TryReadAsync(CompositionTestFiles.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
-            CompositionEngine child = new(LocalRunLifecycleFixture.Options(childRoot, state.SelectedTest!));
+            CompositionEngine child = new(LocalRunLifecycleFixture.Options(childRoot, state.SelectedTest!) with { StopTimeout = TimeSpan.FromSeconds(state.SelectedTest!.StopTimeoutSeconds) });
+            await File.WriteAllTextAsync(Path.Combine(childRoot, "cleanup-started"), "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
             CompositionDownResult down = await child.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            using CancellationTokenSource ownerFinished = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            ownerFinished.CancelAfter(TimeSpan.FromSeconds(10));
+            while (!File.Exists(Path.Combine(childRoot, "owner-updates-complete")))
+            {
+                await Task.Delay(10, ownerFinished.Token).ConfigureAwait(true);
+            }
+
+            if (down.Result.Outcome.ExitCode != ToolExitCode.Success)
+            {
+                // Retry only after the conflicting owner has finished, within a fresh declared cleanup allowance.
+                down.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXT008" || diagnostic.RuleId == "HXR023");
+                down = await child.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            }
+
             down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
             return;
         }
 
         using PlatformManifestTestWorkspace workspace = new();
         (ModuleTestSelection selected, CompositionRunState issued) = LocalRunLifecycleFixture.Create(workspace);
-        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected));
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected) with { StopTimeout = TimeSpan.FromSeconds(selected.StopTimeoutSeconds) });
         CompositionWorkspace.CreatePrivateDirectory(issued.Workspace);
         await engine.StateStore.WriteAsync(issued, TestContext.Current.CancellationToken).ConfigureAwait(true);
         ModuleTestRunRecord first = (await engine.RecordTestOutcomeAsync(issued.RunId, [], Failure("HXT007"), "retained", new CompositionRunResources([], [], true), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
@@ -391,12 +407,21 @@ public sealed class LocalRunLifecycleTests
         other.Start().ShouldBeTrue();
         Task<string> output = other.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
         Task<string> error = other.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
+        using CancellationTokenSource cleanupStarted = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cleanupStarted.CancelAfter(TimeSpan.FromSeconds(10));
+        while (!File.Exists(Path.Combine(workspace.Root, "cleanup-started")) && !other.HasExited)
+        {
+            await Task.Delay(10, cleanupStarted.Token).ConfigureAwait(true);
+        }
+
+        File.Exists(Path.Combine(workspace.Root, "cleanup-started")).ShouldBeTrue();
         for (int update = 0; update < 20; update++)
         {
             _ = await engine.RecordTestOutcomeAsync(issued.RunId, [], new ToolCommandResult("cancelled", ToolOutcome.Passed().Fail(ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "HXC130", ToolExitCode.Cancelled), []), "retained", new CompositionRunResources([], [], true), TestContext.Current.CancellationToken).ConfigureAwait(true);
             await Task.Delay(10, TestContext.Current.CancellationToken).ConfigureAwait(true);
         }
 
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "owner-updates-complete"), "finished", TestContext.Current.CancellationToken).ConfigureAwait(true);
         await other.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
         other.ExitCode.ShouldBe(0, await output.ConfigureAwait(true) + await error.ConfigureAwait(true));
 
@@ -761,6 +786,7 @@ public sealed class LocalRunLifecycleTests
         Stopwatch elapsed = Stopwatch.StartNew();
         _ = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, manifest, "verify", null, null, ToolOutputFormat.Json, output, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options).ConfigureAwait(true);
         session.ShouldNotBeNull().StoppingTimestamp.HasValue.ShouldBeTrue();
+        session.FirstObservedOutcome.ShouldNotBeNull().MetadataRecordingTimestamp.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(session.StoppingTimestamp.ShouldNotBeNull());
         cancelledCleanup.ShouldBe(true);
         elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(6));
     }

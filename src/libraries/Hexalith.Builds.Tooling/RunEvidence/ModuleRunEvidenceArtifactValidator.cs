@@ -173,8 +173,10 @@ internal static class ModuleRunEvidenceArtifactValidator
             JsonElement filterHashElement = invocation.GetProperty("filterHash");
             JsonElement testCounts = root.GetProperty("testCounts");
             bool cleanupVerified = !root.TryGetProperty("selectedTestRun", out JsonElement selected)
-                || (selected.GetProperty("resourceDisposition").GetString() == "removed"
-                    && selected.GetProperty("remainingResources").GetProperty("isEmpty").GetBoolean());
+                || (selected.ValueKind == JsonValueKind.Object
+                    && selected.GetProperty("resourceDisposition").GetString() == "removed"
+                    && selected.GetProperty("remainingResources").GetProperty("isEmpty").GetBoolean()
+                    && selected.Deserialize<Runtime.ModuleTestRunRecord>(_selectedTestJsonOptions)!.RemainingResources.IsEmpty);
             summary = new ModuleRunEvidenceArtifactSummary(
                 root.GetProperty("finalStatus").GetString()!,
                 exitCode,
@@ -462,7 +464,7 @@ internal static class ModuleRunEvidenceArtifactValidator
             return true;
         }
 
-        if (!_selectedTestSchema.Evaluate(root).IsValid || !SafeValues(selected))
+        if (selected.ValueKind != JsonValueKind.Object || !_selectedTestSchema.Evaluate(root).IsValid || !SafeValues(selected))
         {
             return false;
         }
