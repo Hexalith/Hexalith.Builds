@@ -75,6 +75,7 @@
     <PackageVersion Include="Hexalith.Conversations.Client" Version="$(HexalithConversationsVersion)" />
     <PackageVersion Include="Hexalith.Conversations.Contracts" Version="$(HexalithConversationsVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Contracts" Version="$(HexalithFrontComposerVersion)" />
+    <PackageVersion Include="Hexalith.FrontComposer.Contracts.UI" Version="$(HexalithFrontComposerVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Mcp" Version="$(HexalithFrontComposerVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.Shell" Version="$(HexalithFrontComposerVersion)" />
     <PackageVersion Include="Hexalith.FrontComposer.SourceTools" Version="$(HexalithFrontComposerVersion)" />
