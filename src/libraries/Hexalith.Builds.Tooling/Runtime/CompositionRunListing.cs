@@ -3,6 +3,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // </copyright>
 
+#pragma warning disable IDE0046 // Guard clauses read better than nested conditionals.
+
 namespace Hexalith.Builds.Tooling.Runtime;
 
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -65,6 +67,21 @@ public static class CompositionRunListing
                         _ = unverifiableOwners.Add(tracked.RunId);
                     }
 
+                    IReadOnlyList<CompositionAttachment> attachments = [];
+                    bool legacy = state.EnvironmentId is null || state.CreatedAt is null;
+                    try
+                    {
+                        attachments = await CompositionAttachmentStore.ReadAsync(directory, tracked.RunId, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+                    {
+                        _ = unverifiableOwners.Add(tracked.RunId);
+                    }
+
+                    CompositionAttachment[] live = [.. attachments.Where(item => item.IsLive(observedAt))];
+                    string cleanup = live.Length > 0 && state.TestRun?.TerminalOutcome.ExitCode == ToolExitCode.Success && state.CleanupDisposition == "not-requested"
+                        ? "pending"
+                        : state.CleanupDisposition;
                     entries.Add(new CompositionRunListingEntry(
                         state.RunId,
                         state.EnvironmentId,
@@ -73,13 +90,16 @@ public static class CompositionRunListing
                         state.CreatedAt is { } created ? Math.Max(0, (observedAt - created).TotalSeconds) : null,
                         state.TestRun?.TerminalOutcome.ExitCode is not (null or ToolExitCode.Success or ToolExitCode.Cancelled) ? [state.RunId] : [],
                         Retention(state),
-                        state.CleanupDisposition,
+                        cleanup,
                         state.StartupDeadlineUtc,
                         timing?.DeadlineUtc,
-                        [],
-                        "unavailable-admission-unsupported",
-                        null,
-                        state.RemainingResources ?? state.TestRun?.RemainingResources));
+                        [.. live.Select(item => item.AttachedRunId)],
+                        AttachmentInformation(legacy, live.Length, attachments.Count),
+                        live.Length > 0 ? live.Max(item => item.ExpiresAtUtc) : null,
+                        state.RemainingResources ?? state.TestRun?.RemainingResources)
+                    {
+                        Attachments = attachments,
+                    });
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
                 {
@@ -95,15 +115,10 @@ public static class CompositionRunListing
         }
     }
 
-    private static ToolCommandResult Incomplete(IEnumerable<string>? unverifiableOwners = null)
-    {
-        string[] ownerIds = [.. (unverifiableOwners ?? []).Where(CompositionRunPlanFactory.IsRunId).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
-        string owners = ownerIds.Length == 0 ? string.Empty : " Unverifiable owner run IDs: " + string.Join(", ", ownerIds) + ".";
-        ToolDiagnostic diagnostic = new("HXR024", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "Tracked environment metadata cannot be verified; listing is incomplete." + owners, "state");
-        return new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [diagnostic]);
-    }
-
-    private static string Retention(CompositionRunState state) => state.TestRun switch
+    /// <summary>Derives the recorded retention without inferring it from process liveness.</summary>
+    /// <param name="state">The merged owner state.</param>
+    /// <returns>The retention label.</returns>
+    internal static string Retention(CompositionRunState state) => state.TestRun switch
     {
         null => "unavailable",
         _ when state.CleanupDisposition == "complete" && state.TestRun.FailureRetained => "released",
@@ -112,4 +127,27 @@ public static class CompositionRunListing
         { FailureRetained: false } => "not-retained",
         _ => "failure-retained",
     };
+
+    private static ToolCommandResult Incomplete(IEnumerable<string>? unverifiableOwners = null)
+    {
+        string[] ownerIds = [.. (unverifiableOwners ?? []).Where(CompositionRunPlanFactory.IsRunId).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        string owners = ownerIds.Length == 0 ? string.Empty : " Unverifiable owner run IDs: " + string.Join(", ", ownerIds) + ".";
+        ToolDiagnostic diagnostic = new("HXR024", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "Tracked environment metadata cannot be verified; listing is incomplete." + owners, "state");
+        return new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [diagnostic]);
+    }
+
+    private static string AttachmentInformation(bool legacy, int live, int recorded)
+    {
+        if (legacy)
+        {
+            return "unavailable-legacy-state";
+        }
+
+        if (live > 0)
+        {
+            return "attached";
+        }
+
+        return recorded > 0 ? "ended-or-expired" : "none";
+    }
 }

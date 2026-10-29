@@ -41,12 +41,14 @@ public sealed class CompositionRunListingTests
         actual.AttemptId.ShouldBe(state.AttemptId);
         actual.Cleanup.ShouldBe("incomplete");
         actual.AttachedRunIds.ShouldBeEmpty();
-        actual.AttachmentInformation.ShouldContain("unsupported");
+        actual.AttachmentInformation.ShouldBe("none");
+        actual.HoldDeadlineUtc.ShouldBeNull();
         CompositionRunListingEntry legacy = listed.Environments!.Single(entry => entry.OwnerRunId == legacyRun);
         legacy.CreatedAt.ShouldBeNull();
         legacy.AgeSeconds.ShouldBeNull();
         legacy.EnvironmentId.ShouldBeNull();
         legacy.Cleanup.ShouldBe("unavailable");
+        legacy.AttachmentInformation.ShouldBe("unavailable-legacy-state");
         foreach (string format in new[] { "human", "json" })
         {
             StringWriter output = new();

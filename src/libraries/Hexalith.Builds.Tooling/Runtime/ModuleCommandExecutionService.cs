@@ -1340,6 +1340,30 @@ public static class ModuleCommandExecutionService
                 result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Automatic cleanup remains pending because the first terminal result could not be retained; retry down for this owner.", "evidence"));
             }
 
+            using CancellationTokenSource deferredStopping = new();
+            bool waitedForHolds = false;
+            if (cleanup && !ci && record is { TerminalOutcome.ExitCode: ToolExitCode.Success } && ownedRunId is not null)
+            {
+                // The first outcome is already recorded; success-cleanup waits until every accepted hold has ended or passed its deadline.
+                string holdDirectory = Path.Combine(options.StateDirectory, "diagnostics", ownedRunId);
+                try
+                {
+                    await CompositionAttachmentStore.WaitForNoLiveHoldsAsync(holdDirectory, ownedRunId, options.HoldPollInterval, cancellationToken).ConfigureAwait(false);
+                    waitedForHolds = true;
+                    deferredStopping.CancelAfter(TimeSpan.FromSeconds(selected!.StopTimeoutSeconds));
+                }
+                catch (OperationCanceledException)
+                {
+                    // Cleanup stays deferred and discoverable as pending; the recorded first outcome is untouched and down can retry it.
+                    cleanup = false;
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                {
+                    cleanup = false;
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Attachment holds could not be verified; cleanup remains pending and retryable with down for this owner.", "evidence"));
+                }
+            }
+
             if (cleanup && !ci && record is not null)
             {
                 using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
@@ -1384,7 +1408,7 @@ public static class ModuleCommandExecutionService
                 CompositionDownResult down;
                 try
                 {
-                    down = await (options.PlatformDownOverride?.Invoke(session!, stopping.Token) ?? engine!.DownWithinBudgetAsync(session!, stopping.Token)).ConfigureAwait(false);
+                    down = await (options.PlatformDownOverride?.Invoke(session!, (waitedForHolds ? deferredStopping : stopping).Token) ?? engine!.DownWithinBudgetAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token)).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (exception is not OutOfMemoryException)
                 {

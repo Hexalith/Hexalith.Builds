@@ -375,7 +375,7 @@ internal static class NativeTestExecutor
         byte[] descriptorSnapshot;
         try
         {
-            descriptorPath = await TestEnvironment.TestEnvironmentDescriptorWriter.WriteAsync(session, cancellationToken).ConfigureAwait(false);
+            descriptorPath = await TestEnvironment.TestEnvironmentDescriptorWriter.WriteAsync(session, archiveDirectory, cancellationToken).ConfigureAwait(false);
             TestEnvironment.TestEnvironmentContractReadResult validated = TestEnvironment.TestEnvironmentContractReader.ReadDescriptor(descriptorPath, cancellationToken);
             if (!validated.IsValid)
             {

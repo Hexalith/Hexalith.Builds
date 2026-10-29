@@ -204,4 +204,34 @@ public sealed class TestResultWriterTests
         _ = await Should.ThrowAsync<InvalidDataException>(() => TestResultWriter.WriteAsync(workspace.Root, state with { AttemptId = null }, record, TestContext.Current.CancellationToken)).ConfigureAwait(true);
         File.Exists(Path.Combine(workspace.Root, "test-result.json")).ShouldBeFalse();
     }
+
+    /// <summary>Accepted holds, an ended hold and a passively expired hold are published in the valid owner result.</summary>
+    /// <returns>The populated holds assertions.</returns>
+    [Fact]
+    public async Task ResultPublishesAcceptedHoldsWithActualEndsAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        string directory = Path.Combine(workspace.Root, "diagnostics");
+        DateTimeOffset accepted = DateTimeOffset.UtcNow.AddHours(-1);
+        CompositionAttachment Hold(int? requested, int effective, DateTimeOffset? ended = null) => new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), requested, accepted, effective, accepted.AddSeconds(effective))
+        {
+            EndedAtUtc = ended,
+            EndReason = ended is null ? null : "terminal-outcome",
+        };
+
+        CompositionAttachment[] holds = [Hold(null, 1800, accepted.AddMinutes(2)), Hold(60, 60), Hold(14400, 14400)];
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, current => (0, [.. current, .. holds]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord record = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "unknown", new([], [], true));
+        string path = await TestResultWriter.WriteAsync(directory, state, record, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        TestEnvironmentContractReadResult read = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        read.IsValid.ShouldBeTrue(string.Join(';', read.Diagnostics.Select(item => item.Message)));
+        JsonElement[] published = [.. read.Document!.Value.GetProperty("bindings").GetProperty("attachments").GetProperty("holds").EnumerateArray()];
+        published.Length.ShouldBe(3);
+        published[0].TryGetProperty("requestedHoldSeconds", out _).ShouldBeFalse();
+        published[0].GetProperty("end").GetProperty("reason").GetString().ShouldBe("terminal-outcome");
+        published[1].GetProperty("end").GetProperty("reason").GetString().ShouldBe("expired");
+        published[2].GetProperty("end").GetProperty("state").GetString().ShouldBe("active");
+        published[2].GetProperty("effectiveHoldSeconds").GetInt32().ShouldBe(14400);
+    }
 }

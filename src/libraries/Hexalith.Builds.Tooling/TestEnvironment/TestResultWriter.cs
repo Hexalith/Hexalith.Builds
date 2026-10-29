@@ -42,6 +42,12 @@ public static class TestResultWriter
         JsonNode bindings = record.EnvironmentBindings is { } snapshot
             ? JsonNode.Parse(snapshot.GetRawText())!
             : PartialBindings(state, record);
+        if (bindings is JsonObject current)
+        {
+            // Holds are runner-owned and evolve after the first outcome, so they are always read from the durable records.
+            current["attachments"] = CompositionAttachmentStore.ReadContractBinding(directory, state.RunId, DateTimeOffset.UtcNow);
+        }
+
         if (bindings is not JsonObject || bindings["run"] is not JsonObject run
             || !Matches(run["runId"], state.RunId) || !Matches(run["attemptId"], state.AttemptId)
             || !Matches(run["environmentId"], state.EnvironmentId))

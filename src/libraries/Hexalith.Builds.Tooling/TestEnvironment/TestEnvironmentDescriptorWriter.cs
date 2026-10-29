@@ -21,7 +21,16 @@ public static class TestEnvironmentDescriptorWriter
     /// <param name="cancellationToken">The execution cancellation token.</param>
     /// <returns>The absolute validated descriptor path.</returns>
     /// <exception cref="InvalidDataException">A required real observation or immutable binding is unavailable.</exception>
-    public static async Task<string> WriteAsync(CompositionRunSession session, CancellationToken cancellationToken = default)
+    public static Task<string> WriteAsync(CompositionRunSession session, CancellationToken cancellationToken = default)
+        => WriteAsync(session, null, cancellationToken);
+
+    /// <summary>Writes a private descriptor that also carries the owner's accepted attachment holds.</summary>
+    /// <param name="session">The ready runner-owned session.</param>
+    /// <param name="ownerDiagnosticsDirectory">The owner's durable diagnostics directory holding accepted attachments, when known.</param>
+    /// <param name="cancellationToken">The execution cancellation token.</param>
+    /// <returns>The absolute validated descriptor path.</returns>
+    /// <exception cref="InvalidDataException">A required real observation or immutable binding is unavailable.</exception>
+    public static async Task<string> WriteAsync(CompositionRunSession session, string? ownerDiagnosticsDirectory, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);
         CompositionRunPlan plan = session.Plan;
@@ -119,7 +128,7 @@ public static class TestEnvironmentDescriptorWriter
                 reuseLineage = unavailable,
                 artifacts = new { expected = unavailable, loaded = unavailable },
                 suite = new { declared = unavailable, completion = unavailable },
-                attachments = new { state = "populated", holds = Array.Empty<object>() },
+                attachments = System.Text.Json.Nodes.JsonNode.Parse(CompositionAttachmentStore.ReadContractBinding(ownerDiagnosticsDirectory, plan.RunId, DateTimeOffset.UtcNow).ToJsonString()),
                 deadlines = new
                 {
                     startup = new { state = "populated", origin = "environment-requested", originAt = Utc(startupOrigin), effectiveSeconds = plan.EffectiveDeadline.TimeoutSeconds, expiresAt = Utc(plan.StartupDeadlineUtc.Value), actualDurationSeconds = ready.StartupDurationSeconds.Value, @override = startupOverride },

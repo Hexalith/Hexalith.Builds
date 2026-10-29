@@ -244,13 +244,13 @@ Platform owns the canonical contract schemas and lifecycle semantics; these
 mirrors support independent consumption. The
 [descriptor and result samples](test/fixtures/module/test-environment-v1/) are
 fictional contract examples. They illustrate synthetic composition/catalog,
-isolation, readiness, startup, deadline and empty attachment data; unavailable
+isolation, readiness, startup, deadline and attachment data; unavailable
 tool, candidate and artifact producers remain `not-yet-populated`. These samples
 grant no runtime qualification. Populated tool,
 candidate, gate, loaded-artifact and completion fields remain claims to verify
 under the policy. Successful reads never provision resources, authenticate
 evidence, admit attachments or migrate the existing native handoff/internal run
-records. Lifecycle and candidate adoption belong to downstream work.
+records. Attachments are admitted only by `hexalith-module attach` (see G-4 Local Tools). Lifecycle and candidate adoption belong to downstream work.
 
 ## G-4 Local Tools
 
@@ -508,8 +508,28 @@ Listing reads durable owner/environment/attempt identities and creation times,
 independently of current manifests. It reports failed owners, retention, pending
 cleanup and recorded startup/execution deadlines. Execution activation is persisted
 before child launch, so running suites expose their actual independent deadline.
-Legacy unknowns stay unavailable;
-attachments are empty and admission/hold information is explicitly unsupported.
+Legacy unknowns stay unavailable. Accepted attachments are listed per owner with
+their attached run ids, absolute hold deadlines and the latest live deadline; an owner
+that passed with live holds shows cleanup as pending.
+
+```sh
+hexalith-module attach --owner-run-id <owner> --mode source --composition-identity <manifest-sha256> [--hold-seconds 300] --output json
+hexalith-module attach --owner-run-id <owner> --mode source --composition-identity <manifest-sha256> --attachment-request-id <issued-id>
+hexalith-module attach --end --owner-run-id <owner> --attached-run-id <issued-attached-run-id>
+```
+
+`attach` applies policy `hexalith.platform.candidate-and-attachment-policy.v1`. The hold is
+omitted (1800 seconds) or whole seconds from 1 to 14400; anything else is refused with
+`HXR032` and nothing is clamped, defaulted or recorded. `HXR033` refuses ineligible
+targets (hosted, developer-started, unknown, legacy, cross-context or cross-job), `HXR034`
+incompatible mode, composition, artifact identity, readiness or isolation, `HXR035` a
+finished owner (naming its state; a ready local failure-retained environment stays
+attachable until it is stopped or cleaned), and `HXR036` an unknown, ended or expired
+retry. The stable reason is the diagnostic field. An accepted attachment records the
+original request or omission, acceptance time, effective seconds and absolute expiry, and
+issues `originalAttachmentRequestId` and `attachedRunId`; a retry that presents either keeps
+the first acceptance and expiry. `--end` ends only that attachment. A passed local owner
+waits for every live hold to end or reach its deadline before automatic cleanup.
 Exact cleanup accepts an omitted, missing or changed manifest, removes only the
 requested owner's resources and claims, and can be retried safely. Exporting
 `--evidence` requires an explicit `--manifest`. Incomplete cleanup exposes exact known container/process/workspace/claim leftovers and
