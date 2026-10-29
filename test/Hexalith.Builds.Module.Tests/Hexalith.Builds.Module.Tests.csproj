@@ -15,6 +15,10 @@
     <ProjectReference Include="../../src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj" />
     <ProjectReference Include="../../src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj" />
   </ItemGroup>
+  <!-- The verified source mapping owns the model project; project-reference outputs also support private artifacts paths. -->
+  <ItemGroup Condition="'$(HexalithSourceMappingMode)' == 'source' and '$(HexalithPlatformFromSource)' == 'true'">
+    <ProjectReference Include="$(HexalithPlatformRoot)/src/Hexalith.Platform.Composition/Hexalith.Platform.Composition.csproj" IsAspireProjectResource="false" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Build">
       <HintPath>$(MSBuildBinPath)/Microsoft.Build.dll</HintPath>
