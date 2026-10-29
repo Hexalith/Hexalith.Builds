@@ -1,0 +1,34 @@
+{
+  "schema": "hexalith.runtime-toolchain-disposition.v1",
+  "historicalBaseline": {
+    "path": "runtime-toolchain-baseline-2026-09-27.json",
+    "sha256": "b9aa6791effe78cbb9bf405cd8384b81a6d750f996fabf8f79b7cd1c3bedad01"
+  },
+  "status": "superseded-unqualified",
+  "aspireSdkSplit": {
+    "tupleSdk": "13.5.4",
+    "auditedAppHostSdks": ["13.5.3", "13.5.4"],
+    "disposition": "superseded-without-split-qualification",
+    "qualified": false
+  },
+  "daprMeanings": {
+    "dapr": {
+      "meaning": "runtime-dotnet-support-table-metadata",
+      "historicalDecision": "approved-explicit-exception"
+    },
+    "Dapr": {
+      "meaning": "catalog-package-identity",
+      "historicalDecision": "catalog-only-not-activated"
+    }
+  },
+  "qualification": {
+    "runtimeQualified": false,
+    "packageAdoptionQualified": false
+  },
+  "containment": {
+    "g4Approved": false,
+    "g5Approved": false,
+    "deploymentApproved": false,
+    "releaseApproved": false
+  }
+}
