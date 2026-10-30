@@ -24,6 +24,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     private static readonly TimeSpan _pollInterval = TimeSpan.FromMilliseconds(500);
 
     private readonly CompositionEngineOptions _options = options ?? throw new ArgumentNullException(nameof(options));
+    private bool _candidateStateIssued;
 
     /// <summary>
     /// Gets the state store used by this engine.
@@ -42,6 +43,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <param name="cancellationToken">The cancellation token. Cancellation runs bounded teardown.</param>
     /// <returns>The start outcome; a session only when every resource is healthy.</returns>
     /// <exception cref="InvalidOperationException">A v2 command has no resolved source mapping.</exception>
+    /// <exception cref="CandidatePolicy.CandidatePolicyException">The producing candidate identity was already used.</exception>
     [System.Diagnostics.CodeAnalysis.SuppressMessage(
         "Reliability",
         "CA2000:Dispose objects before losing scope",
@@ -53,6 +55,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         CompositionEffectiveDeadline deadline = CompositionStartupDeadlineResolver.Resolve(null, _options.ReadinessTimeout);
         using CancellationTokenSource startupBound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
+        _candidateStateIssued = false;
         string? runId = null;
         string? preparedWorkspace = null;
         Process? appHost = null;
@@ -112,6 +115,13 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
 
             DateTimeOffset deadlineUtc = requestedAt + deadline.Timeout;
+            if (_options.CandidatePolicy is { } candidate)
+            {
+                runId = candidate.RunId;
+                manifestHash = _options.SelectedTest!.ManifestHash;
+                _ = await InitializeStateAsync(runId, manifestHash, requestedAt, deadline, startupBound.Token).ConfigureAwait(false);
+            }
+
             if (DateTimeOffset.UtcNow >= deadlineUtc)
             {
                 return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
@@ -172,7 +182,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             // A rejected pinned catalog must not run descriptor child code.
             if (_options.SourceMapping is { Mode: WorkspaceMode.Package } packageMapping)
             {
-                runId = CompositionRunPlanFactory.NewRunId();
+                runId = _options.CandidatePolicy?.RunId ?? CompositionRunPlanFactory.NewRunId();
                 _ = await InitializeStateAsync(runId, manifestHash, requestedAt, deadline, startupBound.Token).ConfigureAwait(false);
                 provisioningLease = await OpenOutcomeLockAsync(Path.Combine(DiagnosticsDirectory(runId), "provisioning.lock"), startupBound.Token).ConfigureAwait(false);
                 preparedWorkspace = WorkspaceFor(runId);
@@ -188,7 +198,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             if (platformComposition)
             {
                 SourceMapping mapping = _options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping.");
-                runId ??= CompositionRunPlanFactory.NewRunId();
+                runId ??= _options.CandidatePolicy?.RunId ?? CompositionRunPlanFactory.NewRunId();
                 _ = await InitializeStateAsync(runId, manifestHash, requestedAt, deadline, startupBound.Token).ConfigureAwait(false);
                 provisioningLease ??= await OpenOutcomeLockAsync(Path.Combine(DiagnosticsDirectory(runId), "provisioning.lock"), startupBound.Token).ConfigureAwait(false);
                 preparedWorkspace ??= WorkspaceFor(runId);
@@ -296,7 +306,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 }
             }
 
-            runId ??= CompositionRunPlanFactory.NewRunId();
+            runId ??= _options.CandidatePolicy?.RunId ?? CompositionRunPlanFactory.NewRunId();
             CompositionRunState issued = await InitializeStateAsync(runId, manifestHash, requestedAt, deadline, startupBound.Token).ConfigureAwait(false);
             provisioningLease ??= await OpenOutcomeLockAsync(Path.Combine(DiagnosticsDirectory(runId), "provisioning.lock"), startupBound.Token).ConfigureAwait(false);
             string workspace = preparedWorkspace ?? WorkspaceFor(runId);
@@ -324,6 +334,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             plan = plan with
             {
                 AttemptId = issued.AttemptId!,
+                CandidatePolicy = _options.CandidatePolicy,
                 EnvironmentId = issued.EnvironmentId!,
                 SelectedTest = _options.SelectedTest,
                 SelectedTests = _options.SelectedTests,
@@ -451,7 +462,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             ToolDiagnostic blocked = Diagnostic("HXR031", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, conflict.Message, "resources", "Stop the named owning run or choose independent resources; attachment is never implicit.");
             return await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Failed, blocked, ToolExitCode.TopologyOrLifecycle, requestedAt, deadline).ConfigureAwait(false);
         }
-        catch (Exception exception) when (runId is not null && exception is not OutOfMemoryException)
+        catch (CandidatePolicy.CandidatePolicyException)
+        {
+            // A duplicate producing identity belongs to another invocation; never tear down that owner.
+            throw;
+        }
+        catch (Exception exception) when (runId is not null && (_options.CandidatePolicy is null || _candidateStateIssued) && exception is not OutOfMemoryException)
         {
             // Once a run identity exists, resources may exist: every other failure (I/O, port allocation,
             // an inner timeout) is a lifecycle failure that must run bounded teardown instead of leaking the run.
@@ -643,6 +659,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <param name="archiveMetadata">Whether optional metadata copies may consume this allowance.</param>
     /// <returns>The first terminal record.</returns>
     /// <exception cref="IOException">Tracking for an already completed cleanup could not be finalized.</exception>
+    /// <exception cref="InvalidDataException">Original candidate environment bindings are unavailable.</exception>
     internal async Task<ModuleTestRunRecord?> RecordTestOutcomeAsync(string runId, IReadOnlyList<CompositionResourceReadiness> resources, ToolCommandResult result, string disposition, CompositionRunResources remaining, CancellationToken cancellationToken, NativeTestExecutionResult? native = null, bool waitForLock = true, ModuleTestExecutionTiming? executionTiming = null, System.Text.Json.JsonElement? environmentBindings = null, string? terminalCause = null, string? cleanupDisposition = null, string? cleanupAttemptId = null, CompositionTestObservation? testObservation = null, bool archiveMetadata = true)
     {
         CompositionRunState? state = await ReadOwnedStateAsync(runId, cancellationToken).ConfigureAwait(false);
@@ -719,8 +736,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
                 // First cause/time are committed before any optional metadata/report archive or teardown.
                 await CompositionDocumentStore.WriteAsync(path, record, cancellationToken).ConfigureAwait(false);
+                if (state is null && _options.CandidatePolicy is not null && environmentBindings is null)
+                {
+                    throw new InvalidDataException("Original candidate environment bindings are unavailable.");
+                }
+
                 state ??= CompositionRunPlanFactory.CreateInitialState(runId, WorkspaceFor(runId), selection.ManifestHash, selection.RequestedAtUtc) with
                 {
+                    CandidatePolicy = _options.CandidatePolicy,
                     SelectedTest = selection,
                     AttemptId = BindingIdentity(environmentBindings, "attemptId") ?? CompositionRunPlanFactory.NewRunId(),
                     EnvironmentId = BindingIdentity(environmentBindings, "environmentId") ?? CompositionRunPlanFactory.NewRunId(),
@@ -2307,12 +2330,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
         if (existing is not null)
         {
-            return existing;
+            return _options.CandidatePolicy is null || _candidateStateIssued ? existing : throw new CandidatePolicy.CandidatePolicyException("fresh-producing-run-required");
         }
 
         CompositionRunState initial = CompositionRunPlanFactory.CreateInitialState(runId, WorkspaceFor(runId), manifestHash, requestedAt) with
         {
             SelectedTest = _options.SelectedTest,
+            CandidatePolicy = _options.CandidatePolicy,
+            AttemptId = _options.CandidatePolicy?.AttemptId ?? CompositionRunPlanFactory.NewRunId(),
             RetainOnFailure = _options.RetainOnFailure,
             StartupDeadlineUtc = requestedAt + deadline.Timeout,
             EffectiveDeadlineSeconds = deadline.TimeoutSeconds,
@@ -2322,6 +2347,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             ExecutionContext = _options.SelectedTest is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(TestEnvironment.TestEnvironmentDescriptorWriter.ExecutionContext()),
         };
         await StateStore.WriteAsync(initial, cancellationToken).ConfigureAwait(false);
+        _candidateStateIssued = _options.CandidatePolicy is not null;
         await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "owner.json"), initial, cancellationToken).ConfigureAwait(false);
         return initial;
     }
@@ -2359,6 +2385,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             {
                 CreatedAt = previous?.CreatedAt,
                 AttemptId = previous?.AttemptId,
+                CandidatePolicy = previous?.CandidatePolicy,
                 EnvironmentId = previous?.EnvironmentId,
                 ExecutionContext = previous?.ExecutionContext,
                 StartupDeadlineUtc = previous?.StartupDeadlineUtc,

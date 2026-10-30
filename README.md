@@ -1085,3 +1085,65 @@ environment. Merging or pushing does not start a release.
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for
 details.
+
+
+### Authenticated candidate selection (policy v1)
+
+`hexalith-module test --manifest <v2-manifest> --profile <suite> --mode package
+--candidate-request <signed-request.json>` selects only the committed revision
+issued by the approved Builds `candidate-policy.yml` reusable workflow under
+`hexalith.platform.candidate-and-attachment-policy.v1`. Calls without a candidate
+request remain explicitly `baseline-only` diagnostics. Candidate selection refuses
+local/source execution, uncommitted inputs, a different module/revision, unavailable
+GitHub authentication, changed/closed/reopened/retargeted requests and superseded
+attempts before services start. The candidate checkout must be clean and exact;
+keep issuance and result files outside tracked candidate inputs (for example,
+`RUNNER_TEMP`). Selection does not confer acceptance or release authority.
+
+The workflow issues a private envelope containing base64 payload bytes and a GitHub
+OIDC attestation whose audience is `hexalith-candidate-v1:<sha256(payload)>`. The
+runner verifies RS256 against GitHub's TLS JWKS, the exact reusable workflow ref
+and SHA, protected environment, repository, run and attempt. Saved observation JSON
+is never authentication. The original workflow run identifies the decision; reruns
+retain it with distinct producing runs/attempts and `run_attempt` sequence. A new
+release workflow dispatch is a distinct request, even at identical bytes. PR
+selection also checks its original workflow-run head/base/merge identity, current
+open epoch (including reopen/retarget events), exact committed merge parents and
+current base branch tip. Only the newest registered workflow request/attempt can
+qualify; queued, failed and cancelled successors supersede older passes.
+
+Host operators must independently provision `HEXALITH_CANDIDATE_GATE_CONFIG` and
+read-only `HEXALITH_CANDIDATE_GITHUB_TOKEN`. The JSON configuration has the PascalCase
+fields `WorkflowRef`, `WorkflowSha`, `Environment` (exactly `candidate-policy`),
+`CallerWorkflowPath`, `CallerContentIdentity` (SHA-256 of approved workflow bytes),
+`ConsumerJobId` and `ConsumerJobName`. Enroll the approved reusable workflow ref and
+exact commit separately from its caller bytes and protected-environment reviewers.
+None of these trusted coordinates are accepted from a candidate request. Missing
+enrollment, reviewers, API access, signature keys or complete observations refuses.
+Archived issuance attestations may outlive their JWT expiry: they authenticate only
+the immutable original issuance; every use still requires fresh authenticated GitHub
+request and attempt observations. They are never bearer access credentials.
+
+`hexalith-module validate-result --candidate-request <signed-request.json>
+--environment <test-environment.json> --result <test-result.json>` refetches authority,
+compares immutable descriptor/result bindings, checks explicit empty reuse lineage,
+package/Release disposable Linux GitHub-hosted execution, artifact identities,
+required suite completion and applicable tool qualifications. All policy refusals
+use `HXP301` with a stable named condition. It never promotes local, baseline,
+cancelled, withdrawn, incomplete or foreign evidence.
+
+`domain-ci.yml` optionally accepts `candidate-module`, calls the approved gate,
+transports its signed artifact and makes candidate integration and validation
+blocking after isolated tests. An enrolled package runner script must pass
+`--candidate-request "$HEXALITH_CANDIDATE_REQUEST_PATH"` explicitly and export its
+`HEXALITH_CANDIDATE_ENVIRONMENT_PATH` and `HEXALITH_CANDIDATE_RESULT_PATH` for final
+validation. Trusted host configuration must come from the approved host setup.
+There are no publication permissions or provider credentials in this gate.
+
+Local signed HTTP and workflow fixtures exercise this enforcement. No live issuer,
+tool adoption, Platform acceptance or integration qualification is enrolled by these
+changes. Loaded artifact producers remain Story 3.9. Even fully populated JSON
+qualification references cannot authenticate themselves: final acceptance currently
+refuses `tool-qualification-authentication-unavailable` until an independently
+accepted qualification authority exists. Unavailable artifact/suite/tool proof also
+refuses; a passing fixture grants no live candidate qualification.

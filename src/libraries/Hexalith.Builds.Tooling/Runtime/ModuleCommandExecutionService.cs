@@ -64,6 +64,7 @@ public static class ModuleCommandExecutionService
     /// <param name="compositionOptions">The optional runner-owned composition settings.</param>
     /// <param name="mode">The tool-selected build mode.</param>
     /// <param name="profiles">Optional ordered batch profile names from the same manifest.</param>
+    /// <param name="candidateRequestPath">Optional GitHub-authenticated candidate request envelope.</param>
     /// <returns>The stable process exit code.</returns>
     public static async Task<int> ExecuteAsync(
         ModuleInvocationCommand command,
@@ -78,7 +79,8 @@ public static class ModuleCommandExecutionService
         string? runId = null,
         CompositionEngineOptions? compositionOptions = null,
         WorkspaceMode mode = WorkspaceMode.Source,
-        IReadOnlyList<string>? profiles = null)
+        IReadOnlyList<string>? profiles = null,
+        string? candidateRequestPath = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(manifestPath);
         ArgumentNullException.ThrowIfNull(writer);
@@ -109,6 +111,12 @@ public static class ModuleCommandExecutionService
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (candidateRequestPath is not null && (command != ModuleInvocationCommand.Test || !PlatformManifestCommand.IsV2(manifestPath)))
+            {
+                ToolCommandResult refusal = PlatformRefusal("HXP301", "Candidate policy refused: declared-candidate-suite-required", ToolExitCode.UsageOrManifest);
+                return await WriteResultAsync(refusal.Status, refusal.Outcome, refusal.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None).ConfigureAwait(false);
+            }
+
             if (command == ModuleInvocationCommand.Down && runId is not null)
             {
                 return await ExecuteExactDownAsync(manifestPath, runId, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, compositionOptions, cancellationToken).ConfigureAwait(false);
@@ -144,7 +152,7 @@ public static class ModuleCommandExecutionService
 
             if (PlatformManifestCommand.IsV2(manifestPath))
             {
-                return await ExecutePlatformAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, testBudget, startupRequest?.Deadline, startupRequest?.Token, profiles, cancellationToken).ConfigureAwait(false);
+                return await ExecutePlatformAsync(command, manifestPath, profile, filter, evidencePath, startedUtc, format, writer, descriptorChildEntryAssemblyPath, runId, compositionOptions, mode, preResolvedMapping, testBudget, startupRequest?.Deadline, startupRequest?.Token, profiles, candidateRequestPath, cancellationToken).ConfigureAwait(false);
             }
 
             ManifestLoadResult manifestResult = ModuleManifestLoader.Load(manifestPath);
@@ -1033,6 +1041,7 @@ public static class ModuleCommandExecutionService
         CompositionEffectiveDeadline? startupDeadline,
         CancellationToken? startupToken,
         IReadOnlyList<string>? profiles,
+        string? candidateRequestPath,
         CancellationToken cancellationToken)
     {
         if (command != ModuleInvocationCommand.Test)
@@ -1118,6 +1127,40 @@ public static class ModuleCommandExecutionService
                 SourceMapping mapping = preResolvedMapping ?? options.SourceMapping ?? await (options.MappingResolverOverride?.Invoke(manifestPath, mode, startupToken ?? cancellationToken) ?? WorkspaceRootResolver.ResolveAsync(manifestPath, mode, startupToken ?? cancellationToken)).ConfigureAwait(false);
                 (startupToken ?? cancellationToken).ThrowIfCancellationRequested();
                 options = options with { SourceMapping = mapping };
+                if (candidateRequestPath is not null)
+                {
+                    try
+                    {
+                        CandidatePolicy.CandidateGateClient gate = options.CandidateGateClientOverride ?? CandidatePolicy.CandidateGateClient.FromHost();
+                        CandidatePolicy.CandidatePolicyBinding candidate = await gate.ResolveAsync(candidateRequestPath, startupToken ?? cancellationToken).ConfigureAwait(false);
+                        System.Text.Json.JsonElement context;
+                        try
+                        {
+                            context = System.Text.Json.JsonSerializer.SerializeToElement(TestEnvironment.TestEnvironmentDescriptorWriter.ExecutionContext());
+                        }
+                        catch (InvalidDataException)
+                        {
+                            throw new CandidatePolicy.CandidatePolicyException("execution-context-unavailable");
+                        }
+
+                        CandidatePolicy.CandidatePolicyValidator.ValidateSelection(candidate, selected!.ModuleId, selected.Mode, context);
+                        await gate.VerifyExecutionAsync(candidate, context, startupToken ?? cancellationToken).ConfigureAwait(false);
+                        CompositionProcessResult head = await GitWorkspaceProcess.RunAsync(mapping.Root, startupToken ?? cancellationToken, "rev-parse", "HEAD").ConfigureAwait(false);
+                        CompositionProcessResult dirty = await GitWorkspaceProcess.RunAsync(mapping.Root, startupToken ?? cancellationToken, "status", "--porcelain", "--untracked-files=normal").ConfigureAwait(false);
+                        if (head.ExitCode != 0 || head.Output.Trim() != candidate.Candidate.GetProperty("committedRevision").GetString() || dirty.ExitCode != 0 || dirty.Output.Length != 0)
+                        {
+                            throw new CandidatePolicy.CandidatePolicyException("clean-exact-candidate-checkout-required");
+                        }
+
+                        options = options with { CandidatePolicy = candidate };
+                    }
+                    catch (CandidatePolicy.CandidatePolicyException refusal)
+                    {
+                        result = PlatformRefusal("HXP301", refusal.Message, ToolExitCode.UsageOrManifest);
+                        return await WriteResultAsync(result.Status, result.Outcome, result.Diagnostics, format, writer, command, manifestPath, null, profile, filter, evidencePath, startedUtc, CancellationToken.None).ConfigureAwait(false);
+                    }
+                }
+
                 engine = new CompositionEngine(options);
                 try
                 {
@@ -1132,13 +1175,14 @@ public static class ModuleCommandExecutionService
                 CompositionStartResult started = await (options.SelectedPlatformStartOverride?.Invoke(manifestPath, selected!, startupToken ?? cancellationToken) ?? options.PlatformStartOverride?.Invoke(manifestPath, startupToken ?? cancellationToken) ?? engine.StartAsync(manifestPath, startupToken ?? cancellationToken)).ConfigureAwait(false);
                 session = started.Session;
                 startupStoppingTimestamp = started.StoppingTimestamp;
-                ownedRunId = session?.RunId ?? started.RunId;
+                ownedRunId = session?.RunId ?? started.RunId ?? options.CandidatePolicy?.RunId;
                 bool ownerAvailable = true;
                 if (session is not null)
                 {
                     CompositionRunState issued = CompositionRunPlanFactory.CreateInitialState(session.RunId, session.Plan.Workspace, selected!.ManifestHash, startedUtc) with
                     {
                         AttemptId = session.Plan.AttemptId,
+                        CandidatePolicy = session.Plan.CandidatePolicy,
                         EnvironmentId = session.Plan.EnvironmentId,
                         SelectedTest = selected,
                         RetainOnFailure = retain,
@@ -1228,6 +1272,10 @@ public static class ModuleCommandExecutionService
                         ? PlatformRefusal("HXC130", "The owner cancelled the selected execution.", ToolExitCode.Cancelled) with { Status = "cancelled", RunId = ownedRunId }
                         : PlatformRefusal("HXT007", "The selected execution exhausted its finite execution lifetime.", ToolExitCode.ProductOrTest) with { RunId = ownedRunId };
                 }
+            }
+            catch (CandidatePolicy.CandidatePolicyException refusal)
+            {
+                result = PlatformRefusal("HXP301", refusal.Message, ToolExitCode.UsageOrManifest);
             }
             catch (Exception exception) when (exception is not OutOfMemoryException)
             {

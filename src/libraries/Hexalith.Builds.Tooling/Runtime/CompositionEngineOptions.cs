@@ -15,6 +15,9 @@ using Hexalith.Builds.Tooling.Workspace;
 /// <param name="DescriptorChildEntryAssemblyPath">The absolute path of the runner assembly hosting the descriptor child command.</param>
 public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string DescriptorChildEntryAssemblyPath)
 {
+    /// <summary>Gets the immutable authenticated candidate decision and producing attempt.</summary>
+    public CandidatePolicy.CandidatePolicyBinding? CandidatePolicy { get; init; }
+
     /// <summary>Gets the original command request time, including source mapping and other setup.</summary>
     public DateTimeOffset? StartupRequestedAtUtc { get; init; }
 
@@ -94,6 +97,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
 
     /// <summary>Gets the owner's cancellation separately from the finite selected execution clock.</summary>
     internal CancellationToken? SelectedExecutionOwnerToken { get; init; }
+
+    /// <summary>Gets a local-fixture replacement for the authenticated HTTP transport.</summary>
+    internal CandidatePolicy.CandidateGateClient? CandidateGateClientOverride { get; init; }
 
     /// <summary>Gets a test-only profile execution replacement for process-boundary verification.</summary>
     internal Func<CompositionRunSession, PersistedProfileDefinition, CancellationToken, Task<Diagnostics.ToolCommandResult>>? ProfileExecutorOverride { get; init; }

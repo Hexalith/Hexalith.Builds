@@ -53,6 +53,9 @@ public sealed record CompositionRunPlan(
     /// </summary>
     public const string SupportedSchema = "hexalith.g4-run-plan.v1";
 
+    /// <summary>Gets the immutable authenticated candidate decision and producing attempt.</summary>
+    public CandidatePolicy.CandidatePolicyBinding? CandidatePolicy { get; init; }
+
     /// <summary>Gets the immutable workspace source mapping, when resolved by the command.</summary>
     public SourceMapping? SourceMapping { get; init; }
 

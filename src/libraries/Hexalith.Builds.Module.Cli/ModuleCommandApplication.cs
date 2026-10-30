@@ -72,10 +72,57 @@ internal static class ModuleCommandApplication
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Down, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Test, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput, operationStarted));
+        rootCommand.Subcommands.Add(CreateResultValidationCommand(standardOutput, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreatePrepareBuildCommand(standardOutput, operationStarted));
         rootCommand.Subcommands.Add(CreateListCommand(standardOutput, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateAttachCommand(standardOutput, compositionOptions, operationStarted));
         return rootCommand;
+    }
+
+    private static Command CreateResultValidationCommand(TextWriter output, CompositionEngineOptions? options, Action<Task<int>> operationStarted)
+    {
+        Command command = new("validate-result", "Rechecks candidate policy, fresh GitHub authority and complete qualification before acceptance.");
+        Option<string> request = new("--candidate-request") { Required = true };
+        Option<string> environment = new("--environment") { Required = true };
+        Option<string> result = new("--result") { Required = true };
+        Option<string> format = new("--output") { DefaultValueFactory = _ => "human" };
+        _ = format.AcceptOnlyFromAmong("human", "json");
+        foreach (Option option in new Option[] { request, environment, result, format })
+        {
+            command.Options.Add(option);
+        }
+
+        command.SetAction((parsed, token) =>
+        {
+            Task<int> execution = ValidateAsync(token);
+            operationStarted(execution);
+            return execution;
+
+            async Task<int> ValidateAsync(CancellationToken cancellation)
+            {
+                ToolCommandResult observation;
+                try
+                {
+                    Hexalith.Builds.Tooling.CandidatePolicy.CandidateGateClient gate = options?.CandidateGateClientOverride ?? Hexalith.Builds.Tooling.CandidatePolicy.CandidateGateClient.FromHost();
+                    await Hexalith.Builds.Tooling.CandidatePolicy.CandidatePolicyValidator.ValidateAcceptanceAsync(gate, parsed.GetValue(request)!, parsed.GetValue(environment)!, parsed.GetValue(result)!, cancellation).ConfigureAwait(false);
+                    observation = new ToolCommandResult("validated", ToolOutcome.Passed(), []);
+                }
+                catch (Hexalith.Builds.Tooling.CandidatePolicy.CandidatePolicyException refusal)
+                {
+                    ToolDiagnostic diagnostic = new("HXP301", ToolPhase.Test, ToolFailureCategory.Manifest, refusal.Message, "candidatePolicy");
+                    observation = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.Manifest, diagnostic.RuleId, ToolExitCode.UsageOrManifest), [diagnostic]);
+                }
+                catch (OperationCanceledException)
+                {
+                    ToolDiagnostic diagnostic = new("HXC130", ToolPhase.Test, ToolFailureCategory.Cancelled, "Candidate validation was cancelled.", "candidatePolicy");
+                    observation = new ToolCommandResult("cancelled", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.Cancelled, diagnostic.RuleId, ToolExitCode.Cancelled), [diagnostic]);
+                }
+
+                await ToolDiagnosticFormatter.WriteAsync(output, observation, ParseOutputFormat(parsed.GetValue(format)), CancellationToken.None).ConfigureAwait(false);
+                return (int)observation.Outcome.ExitCode;
+            }
+        });
+        return command;
     }
 
     private static Command CreatePrepareBuildCommand(TextWriter output, Action<Task<int>> operationStarted)
@@ -312,6 +359,7 @@ internal static class ModuleCommandApplication
         };
         Option<string> filterOption = new("--filter");
         Option<string> evidenceOption = new("--evidence");
+        Option<string> candidateOption = new("--candidate-request") { Description = "Signed GitHub gate issuance; requires independently enrolled host authority." };
         Option<string> runIdOption = new("--run-id");
         Option<string> outputOption = new("--output")
         {
@@ -325,6 +373,11 @@ internal static class ModuleCommandApplication
         commandDefinition.Options.Add(profileOption);
         commandDefinition.Options.Add(filterOption);
         commandDefinition.Options.Add(evidenceOption);
+        if (command == ModuleInvocationCommand.Test)
+        {
+            commandDefinition.Options.Add(candidateOption);
+        }
+
         if (command == ModuleInvocationCommand.Down)
         {
             commandDefinition.Options.Add(runIdOption);
@@ -364,7 +417,8 @@ internal static class ModuleCommandApplication
                 command == ModuleInvocationCommand.Down ? parseResult.GetValue(runIdOption) : null,
                 compositionOptions,
                 mode,
-                parseResult.GetValue(profileOption));
+                parseResult.GetValue(profileOption),
+                command == ModuleInvocationCommand.Test ? parseResult.GetValue(candidateOption) : null);
             operationStarted(execution);
             return execution;
         });

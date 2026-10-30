@@ -110,7 +110,7 @@ public static class TestEnvironmentDescriptorWriter
             policyId = TestEnvironmentContractReader.PolicyId,
             bindings = new
             {
-                run = new { runId = plan.RunId, attemptId = plan.AttemptId, attemptSequence = 1, ownerRunId = plan.RunId, environmentId = plan.EnvironmentId, role = "owner" },
+                run = new { runId = plan.RunId, attemptId = plan.AttemptId, attemptSequence = plan.CandidatePolicy?.AttemptSequence ?? 1, ownerRunId = plan.RunId, environmentId = plan.EnvironmentId, role = "owner" },
                 environment = new
                 {
                     composition = new { id = plan.PlatformActiveModule ?? selected.ModuleId, contentIdentity = composition },
@@ -123,9 +123,9 @@ public static class TestEnvironmentDescriptorWriter
                     startupTasks = new { state = "populated", tasks = ready.StartupTaskResults.Select(task => new { taskId = task.TaskId, required = true, status = task.Status, startedAt = Utc(task.StartedAt!.Value), finishedAt = Utc(task.FinishedAt!.Value), diagnosticIds = Array.Empty<string>() }) },
                 },
                 tool = unavailable,
-                candidate = unavailable,
-                decision = unavailable,
-                reuseLineage = unavailable,
+                candidate = plan.CandidatePolicy is { } candidate ? (object)candidate.Candidate : new { state = "populated", classification = "baseline-only", reason = "No authenticated candidate request was selected." },
+                decision = plan.CandidatePolicy is { } decision ? decision.Decision : unavailable,
+                reuseLineage = plan.CandidatePolicy is { } lineage ? lineage.ReuseLineage : unavailable,
                 artifacts = new { expected = unavailable, loaded = unavailable },
                 suite = new { declared = unavailable, completion = unavailable },
                 attachments = System.Text.Json.Nodes.JsonNode.Parse(CompositionAttachmentStore.ReadContractBinding(ownerDiagnosticsDirectory, plan.RunId, DateTimeOffset.UtcNow).ToJsonString()),

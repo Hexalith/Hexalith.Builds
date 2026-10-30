@@ -65,6 +65,15 @@ public static class TestResultWriter
         static bool Matches(JsonNode? value, string identity) => value is JsonValue scalar
             && scalar.TryGetValue(out string? observed) && observed == identity;
 
+        if (state.CandidatePolicy is { } issued
+            && (run["attemptSequence"]?.GetValue<int>() != issued.AttemptSequence
+                || !JsonNode.DeepEquals(bindings["candidate"], JsonNode.Parse(issued.Candidate.GetRawText()))
+                || !JsonNode.DeepEquals(bindings["decision"], JsonNode.Parse(issued.Decision.GetRawText()))
+                || !JsonNode.DeepEquals(bindings["reuseLineage"], JsonNode.Parse(issued.ReuseLineage.GetRawText()))))
+        {
+            throw new InvalidDataException("The result changed its issued candidate decision or lineage.");
+        }
+
         // Only the runner's original activation advances; no timing file is read after test execution.
         if (record.ExecutionTiming is { ActualDurationSeconds: not null } timing)
         {
@@ -266,7 +275,7 @@ public static class TestResultWriter
         JsonNode context = state.ExecutionContext is { } actual ? JsonNode.Parse(actual.GetRawText())! : throw new InvalidDataException("Original execution context is unavailable.");
         return new JsonObject
         {
-            ["run"] = Node(new { runId = state.RunId, attemptId = state.AttemptId, attemptSequence = 1, ownerRunId = state.RunId, environmentId = state.EnvironmentId, role = "owner" }),
+            ["run"] = Node(new { runId = state.RunId, attemptId = state.AttemptId, attemptSequence = state.CandidatePolicy?.AttemptSequence ?? 1, ownerRunId = state.RunId, environmentId = state.EnvironmentId, role = "owner" }),
             ["environment"] = new JsonObject
             {
                 ["composition"] = Unavailable(),
@@ -281,9 +290,9 @@ public static class TestResultWriter
                 ["startupTasks"] = Unavailable(),
             },
             ["tool"] = Unavailable(),
-            ["candidate"] = Unavailable(),
-            ["decision"] = Unavailable(),
-            ["reuseLineage"] = Unavailable(),
+            ["candidate"] = state.CandidatePolicy is { } selected ? JsonNode.Parse(selected.Candidate.GetRawText()) : Node(new { state = "populated", classification = "baseline-only", reason = "No authenticated candidate request was selected." }),
+            ["decision"] = state.CandidatePolicy is { } decision ? JsonNode.Parse(decision.Decision.GetRawText()) : Unavailable(),
+            ["reuseLineage"] = state.CandidatePolicy is { } lineage ? JsonNode.Parse(lineage.ReuseLineage.GetRawText()) : Unavailable(),
             ["artifacts"] = new JsonObject { ["expected"] = Unavailable(), ["loaded"] = Unavailable() },
             ["suite"] = new JsonObject { ["declared"] = Unavailable(), ["completion"] = Unavailable() },
             ["attachments"] = new JsonObject { ["state"] = "populated", ["holds"] = new JsonArray() },

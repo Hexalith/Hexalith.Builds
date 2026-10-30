@@ -169,3 +169,16 @@ verification compare the actual Builds checkout, helper Git blobs, source
 workflow bytes and reproducible standalone closure; retained provenance changes
 invalidate prepared state. Source-pinned build props need not move to the
 execution checkout.
+
+
+Candidate policy issuance uses `candidate_policy.py` from the exact OIDC-bound
+Builds reusable workflow source. It selects PR committed merge results or the
+independently authorized release dispatch revision through authenticated GitHub
+API reads, then requests an OIDC audience bound to the immutable payload digest.
+It writes a private envelope for transport, not an unsigned authority snapshot.
+Retries preserve the original workflow decision and use new producing run/attempt
+identities; reopened/retargeted requests cannot reuse an older workflow run. The
+runtime verifies the signature and rechecks all current state independently.
+Same-commit nested reusable workflows and the candidate issuance helper are
+included in the governed source closure. Consumer-checkout actions remain refused.
+These fixtures and helper changes enroll no live issuer or publication authority.
