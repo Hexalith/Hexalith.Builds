@@ -72,6 +72,37 @@ public sealed class WorkspaceAppHostTests
         }
     }
 
+    /// <summary>Verifies source selection requires the actual mapped runner owner and physical containment.</summary>
+    [Fact]
+    public void SourceCompositionSelectsOnlyTheMappedBuildsSeed()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        string foreign = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string builds = Path.Combine(root, "selected-builds");
+            string project = Path.Combine(builds, "src", "hosts", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost.csproj");
+            Directory.CreateDirectory(Path.GetDirectoryName(project)!);
+            File.WriteAllText(project, "<Project />");
+            SourceMapping mapping = new(WorkspaceMode.Source, root, "Hexalith.Parties", [new("Hexalith.Builds", "source", builds)], false);
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { SourceMapping = mapping };
+            RunTopology.ResolveSourceEventStoreSeed(plan).ShouldBe(project);
+            Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan with { SourceMapping = mapping with { Mode = WorkspaceMode.Package } }));
+            Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan with { SourceMapping = mapping with { Entries = [] } }));
+            File.Delete(project);
+            Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan));
+            string outside = Path.Combine(foreign, "foreign.csproj");
+            File.WriteAllText(outside, "<Project />");
+            File.CreateSymbolicLink(project, outside);
+            Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan));
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+            CompositionTestFiles.Delete(foreign);
+        }
+    }
+
     /// <summary>Verifies every composed module project receives mapped imports and the selected launch configuration.</summary>
     /// <param name="mode">The tool-selected mode.</param>
     /// <param name="debugAttach">Whether source debugging is requested.</param>

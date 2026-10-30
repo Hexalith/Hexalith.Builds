@@ -20,6 +20,11 @@ internal static class WriterProtocolCutover
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(plan);
-        return CompositionWriterProtocolCutover.ActivateAsync(token => RunEndpoints.WaitForAsync(app, RunTopology.EventStoreName, token), plan.RunId, signingKey, cancellationToken);
+        return CompositionWriterProtocolCutover.ActivateAsync(
+            token => RunEndpoints.WaitForAsync(app, RunTopology.EventStoreName, token),
+            plan.RunId,
+            signingKey,
+            CompositionStartupClock.Remaining(plan.StartupDeadlineUtc, DateTimeOffset.UtcNow),
+            cancellationToken);
     }
 }

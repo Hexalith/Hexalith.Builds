@@ -228,6 +228,28 @@ internal static class RunTopology
         return Path.Combine(platform, "references", "Hexalith.Builds", "src", "hosts", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost.csproj");
     }
 
+    /// <summary>Resolves the runner-owned source host only from the command-selected Builds checkout.</summary>
+    /// <param name="plan">The signed source run plan.</param>
+    /// <returns>The physically contained source host project.</returns>
+    /// <exception cref="InvalidDataException">The selected source host is unavailable.</exception>
+    internal static string ResolveSourceEventStoreSeed(CompositionRunPlan plan)
+    {
+        SourceMapping mapping = plan.SourceMapping ?? throw new InvalidDataException("Source EventStore host requires the command-selected mapping.");
+        SourceMappingEntry? builds = mapping.Entries.SingleOrDefault(entry => entry.Identity == "Hexalith.Builds");
+        if (mapping.Mode != WorkspaceMode.Source || builds is not { Origin: "source", Path: not null })
+        {
+            throw new InvalidDataException("Source EventStore host requires the selected Builds source checkout.");
+        }
+
+        string project = Path.Combine(builds.Path, "src", "hosts", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost.csproj");
+        if (!(mapping with { Entries = [builds], PlatformIdentity = null }).ContainsProject(project))
+        {
+            throw new InvalidDataException("The selected Builds EventStore host is missing or outside its owner checkout.");
+        }
+
+        return project;
+    }
+
     /// <summary>Refuses an edited declaration before the Platform model can add resources.</summary>
     /// <param name="plan">The signed run plan.</param>
     /// <exception cref="InvalidDataException">The selected declaration changed or is unavailable.</exception>
@@ -283,6 +305,10 @@ internal static class RunTopology
         if (plan.SourceMapping?.Mode == WorkspaceMode.Package)
         {
             seed = ResolvePackageEventStoreSeed(plan, AppContext.BaseDirectory);
+        }
+        else if (plan.SelectedTest?.ModuleId == "parties")
+        {
+            seed = ResolveSourceEventStoreSeed(plan);
         }
 
         string modelDirectory = Path.GetDirectoryName(modelPath)!;

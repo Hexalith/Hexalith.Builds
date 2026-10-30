@@ -33,13 +33,24 @@ public static class CompositionWriterProtocolCutover
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task that completes once the protocol is active.</returns>
     /// <exception cref="TimeoutException">The writer-protocol cutover exceeded its own bound.</exception>
-    public static async Task ActivateAsync(Func<CancellationToken, Task<Uri>> endpointResolver, string runId, string signingKey, CancellationToken cancellationToken)
+    public static Task ActivateAsync(Func<CancellationToken, Task<Uri>> endpointResolver, string runId, string signingKey, CancellationToken cancellationToken)
+        => ActivateAsync(endpointResolver, runId, signingKey, TimeSpan.FromMinutes(2), cancellationToken);
+
+    /// <summary>Activates the writer protocol within the remaining declared startup deadline.</summary>
+    /// <param name="endpointResolver">Resolves the allocated gateway endpoint.</param>
+    /// <param name="runId">The isolated fresh-store run identity.</param>
+    /// <param name="signingKey">The in-memory operator signing key.</param>
+    /// <param name="activationTimeout">The remaining owning startup bound.</param>
+    /// <param name="cancellationToken">The owning startup cancellation.</param>
+    /// <returns>A task that completes once the protocol is active.</returns>
+    /// <exception cref="TimeoutException">The declared startup bound expired before activation.</exception>
+    public static async Task ActivateAsync(Func<CancellationToken, Task<Uri>> endpointResolver, string runId, string signingKey, TimeSpan activationTimeout, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(endpointResolver);
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
 
         using CancellationTokenSource probe = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        probe.CancelAfter(TimeSpan.FromMinutes(2));
+        probe.CancelAfter(activationTimeout);
         string lastStatus = "endpoint-unallocated";
         try
         {
