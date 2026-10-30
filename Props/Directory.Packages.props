@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageVersionOverrideEnabled>false</CentralPackageVersionOverrideEnabled>
     <HexalithVersionsLoaded>true</HexalithVersionsLoaded>
-    <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.30.4</HexalithCommonsVersion>
+    <HexalithCommonsVersion Condition="'$(HexalithCommonsVersion)' == ''">2.30.7</HexalithCommonsVersion>
     <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.3.1</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.6</HexalithPolymorphicSerializationsVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.128.4</HexalithEventStoreVersion>
@@ -191,11 +191,11 @@
     <!-- FrontComposer Story 2-1: xUnit v3 integration for property-based tests. -->
     <PackageVersion Include="FsCheck.Xunit.v3" Version="3.6.0" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="3.0.5" />
-    <PackageVersion Include="Google.Apis" Version="1.77.0" />
-    <PackageVersion Include="Google.Apis.Auth.AspNetCore3" Version="1.77.0" />
+    <PackageVersion Include="Google.Apis" Version="1.78.0" />
+    <PackageVersion Include="Google.Apis.Auth.AspNetCore3" Version="1.78.0" />
     <PackageVersion Include="Grpc" Version="2.46.6" />
-    <PackageVersion Include="Grpc.HealthCheck" Version="2.84.0" />
-    <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.84.0" />
+    <PackageVersion Include="Grpc.HealthCheck" Version="2.85.0" />
+    <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.85.0" />
     <PackageVersion Include="HotChocolate" Version="16.7.3" />
     <PackageVersion Include="Humanizer" Version="3.0.10" />
     <PackageVersion Include="ISO3166" Version="1.0.4" />
@@ -264,7 +264,7 @@
     <PackageVersion Include="Microsoft.FluentUI.AspNetCore.Components" Version="5.0.1" />
     <PackageVersion Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="5.0.1" />
     <PackageVersion Include="Microsoft.Graph" Version="6.9.0" />
-    <PackageVersion Include="Microsoft.Identity.Client" Version="4.91.1" />
+    <PackageVersion Include="Microsoft.Identity.Client" Version="4.92.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Abstractions" Version="8.23.0" />
     <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.23.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Logging" Version="8.23.0" />
