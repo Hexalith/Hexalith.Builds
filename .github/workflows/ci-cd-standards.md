@@ -257,14 +257,15 @@ commit after the change that alters those composites merges.
 - Staging intake and production promotion adopt the Builds-owned
   [image and dependency vulnerability policy v1](../../docs/vulnerability-policy-v1.md)
   (`hexalith.builds.vulnerability-policy.v1`). It requires complete Trivy scans
-  of the exact module and composed images, holds Unknown findings for trusted
-  classification and blocks High/Critical findings, including unfixed findings,
-  unless covered by a recorded Administrator `@jpiquot` exception for at most
-  30 days. Exceptions are scoped, expire exclusively in UTC and may be revoked.
-  The latest gate-issued scan attempt for the pending promotion decision must
-  cover the entire inventory, with no earlier-attempt fallback or cross-decision
-  reuse. Each attempt needs verified publisher-current databases; original scan
-  starts independently obey Story 5.1's maximum-age duration at admission.
+  of the exact module and composed images and blocks High/Critical findings,
+  including unfixed findings, unless covered by a recorded Administrator
+  `@jpiquot` exception for at most 30 days. Unknown findings block the same way
+  unless trusted classification rates them Low/Medium. Exceptions are scoped,
+  expire exclusively in UTC and may be revoked. The latest gate-issued scan
+  attempt for the pending promotion decision must cover the entire inventory,
+  with no earlier-attempt fallback or cross-decision reuse. Each attempt needs
+  verified publisher-current databases; original scan starts independently obey
+  Story 5.1's maximum-age duration at admission.
   Story 5.5 must implement scans, retained evidence and exception validation;
   Story 5.11 must enforce promotion acceptance. This policy publication does
   not establish current workflow enforcement. The PR dependency-review gate
