@@ -15,6 +15,7 @@ using Shouldly;
 using Xunit;
 
 /// <summary>Exercises the model builder against early catalog imports and immutable pin authority.</summary>
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class PlatformModelCatalogTests
 {
     /// <summary>Builds a real source-only contract through the exact mapped dependency while retaining pinned package authority.</summary>
@@ -181,6 +182,40 @@ public sealed class PlatformModelCatalogTests
         InvalidOperationException refusal = await Should.ThrowAsync<InvalidOperationException>(() => PlatformManifestCommand.BuildModelAsync(mapping, workspace, TestContext.Current.CancellationToken)).ConfigureAwait(true);
 
         refusal.Message.ShouldContain(drift == "catalog" ? "was not materialized" : "cannot use its pinned catalog");
+        Directory.Exists(Path.Combine(workspace, "hosts")).ShouldBeFalse();
+    }
+
+    /// <summary>Refuses missing or modified production early imports before any model process.</summary>
+    /// <param name="mode">The mapped source or package mode.</param>
+    /// <param name="remove">Whether to remove rather than modify the import.</param>
+    /// <returns>The fail-closed import assertion.</returns>
+    [Theory]
+    [InlineData(WorkspaceMode.Source, false)]
+    [InlineData(WorkspaceMode.Source, true)]
+    [InlineData(WorkspaceMode.Package, false)]
+    [InlineData(WorkspaceMode.Package, true)]
+    public async Task ModelBuildRefusesChangedProductionCommonPropsAsync(WorkspaceMode mode, bool remove)
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, mode, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "model-import-refusal");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string modelDirectory = Path.Combine(mapping.PlatformIdentity!.PlatformPath, "src", "Hexalith.Platform.Composition");
+        _ = Directory.CreateDirectory(modelDirectory);
+        await File.WriteAllTextAsync(Path.Combine(modelDirectory, "Hexalith.Platform.Composition.csproj"), "<Project />", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string import = SourceMappingMaterializer.ModelCommonPropsPath(workspace);
+        if (remove)
+        {
+            File.Delete(import);
+        }
+        else
+        {
+            await File.AppendAllTextAsync(import, "<!-- changed -->", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        InvalidDataException refusal = await Should.ThrowAsync<InvalidDataException>(() => PlatformManifestCommand.BuildModelAsync(mapping, workspace, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+
+        refusal.Message.ShouldContain("production model common-props import");
         Directory.Exists(Path.Combine(workspace, "hosts")).ShouldBeFalse();
     }
 

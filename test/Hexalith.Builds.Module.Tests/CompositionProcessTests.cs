@@ -14,8 +14,41 @@ using Xunit;
 /// <summary>
 /// Verifies helper processes start with a scrubbed environment.
 /// </summary>
+[Collection(nameof(PlatformManifestTestGrouping))]
 public sealed class CompositionProcessTests
 {
+    /// <summary>Retains explicit nonsecret SDK prevention and cache controls only for dotnet children.</summary>
+    [Fact]
+    public void DotnetChildrenRetainSdkControlsWithoutBroadeningOtherHelpers()
+    {
+        string[] names = ["DOTNET_GENERATE_ASPNET_CERTIFICATE", "MSBUILDDISABLENODEREUSE", "NUGET_HTTP_CACHE_PATH", "NUGET_PLUGINS_CACHE_PATH", "NUGET_SCRATCH"];
+        Dictionary<string, string?> original = names.ToDictionary(name => name, Environment.GetEnvironmentVariable, StringComparer.Ordinal);
+        try
+        {
+            foreach (string name in names)
+            {
+                Environment.SetEnvironmentVariable(name, name == "DOTNET_GENERATE_ASPNET_CERTIFICATE" ? "false" : "selected-private-control");
+            }
+
+            System.Diagnostics.ProcessStartInfo sdk = CompositionProcess.CreateStartInfo("dotnet", ["--version"], null, null);
+            System.Diagnostics.ProcessStartInfo other = CompositionProcess.CreateStartInfo("other-helper", [], null, null);
+            foreach (string name in names)
+            {
+                sdk.Environment[name].ShouldBe(Environment.GetEnvironmentVariable(name));
+                other.Environment.ContainsKey(name).ShouldBeFalse(name);
+            }
+
+            sdk.ArgumentList.ShouldBe(["--version"]);
+        }
+        finally
+        {
+            foreach ((string name, string? value) in original)
+            {
+                Environment.SetEnvironmentVariable(name, value);
+            }
+        }
+    }
+
     /// <summary>Verifies callers can distinguish complete output from a bounded prefix.</summary>
     /// <returns>A task for the assertion.</returns>
     [Fact]
