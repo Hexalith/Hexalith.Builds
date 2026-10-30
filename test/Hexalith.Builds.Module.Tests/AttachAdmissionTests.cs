@@ -964,6 +964,25 @@ public sealed class AttachAdmissionTests
         ended.EndReason.ShouldBe("developer-stop");
     }
 
+    /// <summary>Owner cancellation after a completed explicit down does not recreate the removed owner tracking.</summary>
+    /// <returns>The absent state and listing assertions.</returns>
+    [Fact]
+    public async Task OwnerCancellationAfterCompletedDownKeepsTrackingRemovedAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, _) = await ReadyOwnerAsync(workspace).ConfigureAwait(true);
+        CompositionWorkspace.CreatePrivateDirectory(owner.Workspace);
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, owner.SelectedTest!));
+        CompositionDownResult down = await engine.DownAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, string.Join(';', down.Result.Diagnostics.Select(item => item.Message)));
+        File.Exists(store.PathFor(owner.RunId)).ShouldBeFalse();
+
+        await engine.RecordOwnerCancellationAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        File.Exists(store.PathFor(owner.RunId)).ShouldBeFalse();
+        (await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Environments.ShouldNotBeNull().ShouldBeEmpty();
+    }
+
     /// <summary>An unrecordable owner-cancellation withdrawal leaves the environment intact for explicit retry.</summary>
     /// <returns>The pending cleanup diagnostic assertions.</returns>
     [Fact]
