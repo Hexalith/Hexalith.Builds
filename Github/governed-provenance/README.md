@@ -163,6 +163,11 @@ failed, skipped, pending, malformed or changing attempts refuse admission and
 retain JSON observations. Conditional jobs inside a successful workflow do not
 become additional required gates.
 
+The CLI evidence destination must resolve inside its current workspace. Recovery
+state and provenance file arguments must resolve inside the selected source
+workspace. Absolute paths inside that boundary are supported; traversal and
+symlink escapes are refused before accessing the destination.
+
 `execution_identity.py` binds recovery to the unique literal
 `HEXALITH_BUILDS_EXECUTION_SHA` approved by the source `release.yml`. Capture and
 verification compare the actual Builds checkout, helper Git blobs, source

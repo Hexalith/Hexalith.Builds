@@ -24,6 +24,7 @@ import datetime as dt
 import importlib.util
 import json
 import re
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -595,9 +596,10 @@ def run_baseline(real_baseline: Path, other_tuples: list[dict[str, str]]) -> tup
         changed = copy.deepcopy(packet); refresh_artifact(changed, "source-state", paths["source_state"])
         expect_rejected(workspace, baseline_path, baseline, paths["packet"], changed, "malformed nested structure")
 
+        redaction_control = secrets.token_urlsafe(24)
         for label, diagnostic in (
-            ("secret-bearing artifact", "Bearer mutation-control-value"),
-            ("quoted JSON credential", {'password': 'mutation-control-value'}),
+            ("secret-bearing artifact", f"Bearer {redaction_control}"),
+            ("quoted JSON credential", {'password': redaction_control}),
             ("macOS private path", "/Users/alice/private/output.json"),
             ("Windows private path", r"C:\Users\alice\private\output.json"),
         ):

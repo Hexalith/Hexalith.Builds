@@ -154,7 +154,11 @@ def main():
     parser.add_argument("--evidence", required=True)
     args = parser.parse_args()
     try:
-        qualify(args.repository, args.source, args.branch, args.workflow, args.evidence)
+        workspace = Path.cwd().resolve()
+        evidence = (workspace / args.evidence).resolve()
+        if evidence == workspace or not evidence.is_relative_to(workspace):
+            raise GateError("evidence path escapes the current workspace")
+        qualify(args.repository, args.source, args.branch, args.workflow, evidence)
     except GateError as error:
         print(f"[source-workflow-gates] {error}", file=sys.stderr)
         return 1

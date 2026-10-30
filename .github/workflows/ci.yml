@@ -260,6 +260,11 @@ jobs:
       - name: Test self-CI required status
         run: python3 Tools/test-self-ci.py
 
+      - name: Test qualification file boundaries
+        run: |
+          python3 Tools/test-g6-cli-paths.py
+          python3 -m unittest discover -s test/qualification -p test_stage3_live_qualification.py -v
+
       - name: Test G-6 runtime/toolchain evidence validator
         env:
           PYTHONDONTWRITEBYTECODE: '1'

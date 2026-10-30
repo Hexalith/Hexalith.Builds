@@ -107,6 +107,14 @@ def workspace_path(workspace: Path, relative: str) -> Path:
     return path
 
 
+def cli_workspace_path(workspace: Path, value: Path, context: str) -> Path:
+    """Confine explicit CLI file arguments, including symlinks, to their selected workspace."""
+    candidate = (workspace / value).resolve()
+    require(candidate != workspace and candidate.is_relative_to(workspace),
+            f"{context} escapes the selected workspace: {value}")
+    return candidate
+
+
 def policy_document(path: Path) -> dict[str, Any]:
     policy = read_json(path)
     require(policy.get("schema") == "hexalith.g6-current-policy.v1", "unsupported G-6 policy schema")
@@ -524,20 +532,22 @@ def main(argv: list[str] | None = None) -> int:
             command.add_argument("--evidence", type=Path, required=True)
             command.add_argument("--release", action="store_true")
     args = parser.parse_args(argv)
-    workspace = args.workspace.resolve()
-    policy = args.policy if args.policy.is_absolute() else workspace / args.policy
     try:
+        workspace = args.workspace.resolve(strict=True)
+        require(workspace.is_dir(), "the selected workspace must be a directory")
+        policy = cli_workspace_path(workspace, args.policy, "policy path")
         if args.mode == "audit":
+            target = cli_workspace_path(workspace, args.out, "audit output path") if args.out else None
             result = audit(workspace, policy)
             output = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
-            if args.out:
-                target = args.out if args.out.is_absolute() else workspace / args.out
+            if target is not None:
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(output, encoding="utf-8")
+                with target.open("w", encoding="utf-8") as stream:
+                    stream.write(output)
             else:
                 print(output, end="")
             return 0
-        evidence = args.evidence if args.evidence.is_absolute() else workspace / args.evidence
+        evidence = cli_workspace_path(workspace, args.evidence, "evidence path")
         validate(workspace, policy, evidence, args.release)
         print("G6-CURRENT-QUALIFIED: approved tuple, material inputs, critical proof, cleanup and source verified")
         return 0

@@ -14,6 +14,26 @@ SPEC.loader.exec_module(qualification)
 
 
 class Stage3LiveQualificationTests(unittest.TestCase):
+    def test_workspace_probe_uses_the_platform_temp_directory_without_following_links(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "hexalith-g4-it-owned").mkdir()
+            (root / "unrelated").mkdir()
+            try:
+                (root / "hexalith-g4-it-link").symlink_to(root / "unrelated", target_is_directory=True)
+            except OSError as error:
+                self.skipTest(f"directory symlinks unavailable: {error}")
+            with mock.patch.object(qualification.tempfile, "gettempdir", return_value=directory):
+                result = qualification.probe_workspaces()
+            self.assertEqual("verified", result["status"])
+            self.assertEqual(1, result["count"])
+
+    def test_inaccessible_workspace_probe_cannot_report_zero(self):
+        with mock.patch.object(qualification.os, "scandir", side_effect=PermissionError("denied")):
+            result = qualification.probe_workspaces()
+        self.assertEqual("unverified", result["status"])
+        self.assertIsNone(result["count"])
+
     def test_inaccessible_owned_process_environment_is_unverified(self):
         with tempfile.TemporaryDirectory() as directory:
             proc = Path(directory) / "12345"
