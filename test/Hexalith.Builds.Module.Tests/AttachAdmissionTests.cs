@@ -182,6 +182,41 @@ public sealed class AttachAdmissionTests
         }
     }
 
+    /// <summary>Attached failure retention permits admission only before cleanup has been requested.</summary>
+    /// <param name="cleanup">The owner's current cleanup disposition.</param>
+    /// <param name="reason">The expected refusal reason, or null for retained admission.</param>
+    /// <returns>The admission precedence and unchanged attachment assertions.</returns>
+    [Theory]
+    [InlineData("not-requested", null)]
+    [InlineData("pending", "owner-cleaning")]
+    [InlineData("in-progress", "owner-cleaning")]
+    [InlineData("incomplete", "owner-cleaning")]
+    [InlineData("complete", "owner-cleaned")]
+    public async Task AttachedFailureCannotOverrideCleanupRefusalAsync(string cleanup, string? reason)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace).ConfigureAwait(true);
+        CompositionAttachment hold = await SeedHoldAsync(store, owner).ConfigureAwait(true);
+        CompositionAttachment failed = (await CompositionAttachAdmission.EndAsync(store, owner.RunId, hold.AttachedRunId, "failed", DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Attachment.ShouldNotBeNull();
+        CompositionRunState finished = Finished(owner, "passed");
+        await store.WriteAsync(finished with { CleanupDisposition = cleanup, TestRun = finished.TestRun! with { CleanupDisposition = cleanup } }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition), DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (reason is null)
+        {
+            _ = result.Attachment.ShouldNotBeNull();
+        }
+        else
+        {
+            result.Attachment.ShouldBeNull();
+            result.Diagnostics.Single().RuleId.ShouldBe("HXR035");
+            result.Diagnostics.Single().Field.ShouldBe(reason);
+        }
+
+        IReadOnlyList<CompositionAttachment> recorded = await CompositionAttachmentStore.ReadAsync(Path.Combine(store.Directory, "diagnostics", owner.RunId), owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        recorded.Single(item => item.AttachedRunId == failed.AttachedRunId).ShouldBe(failed);
+        recorded.Count.ShouldBe(reason is null ? 2 : 1);
+    }
+
     /// <summary>A retry with an issued identity keeps the first acceptance and expiry; unknown and expired lineages are refused.</summary>
     /// <returns>The immutable lineage assertions.</returns>
     [Fact]

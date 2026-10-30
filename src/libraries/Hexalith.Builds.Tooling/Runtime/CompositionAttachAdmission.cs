@@ -294,14 +294,14 @@ public static class CompositionAttachAdmission
             return "owner-cleaned";
         }
 
-        if (IsLocal(owner) && attachments.Any(item => item.Outcome == "failed"))
-        {
-            return null;
-        }
-
         if (owner.CleanupDisposition is "pending" or "in-progress" or "incomplete")
         {
             return "owner-cleaning";
+        }
+
+        if (IsLocal(owner) && attachments.Any(item => item.Outcome == "failed"))
+        {
+            return null;
         }
 
         if (owner.TestRun is null)

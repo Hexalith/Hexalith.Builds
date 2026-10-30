@@ -10,13 +10,14 @@
     "log": "build.log"
   },
   "tests": {
-    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -class '*CompositionRunListingTests' -class '*LocalRunLifecycleTests' -class '*LocalRunLifecycleReviewTests' -class '*TestResultWriterTests' -noLogo",
+    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -class '*CompositionRunListingTests' -class '*LocalRunLifecycleTests' -class '*LocalRunLifecycleReviewTests' -class '*TestResultWriterTests' -noLogo -xml evidence/2-7/tests.xml",
     "exitCode": 0,
-    "total": 182,
+    "total": 187,
     "failed": 0,
     "skipped": 0,
     "errors": 0,
-    "log": "tests.log"
+    "log": "tests.log",
+    "xml": "tests.xml"
   },
   "regressionTests": {
     "exitCode": 0,
@@ -31,7 +32,40 @@
     "evidenceCommitExitCode": 0,
     "implementationMessage": "feat(module): record attachment outcomes and retain failed environments\n\nCo-authored-by: Cursor <cursoragent@cursor.com>",
     "evidenceMessage": "test(module): retain attachment withdrawal verification evidence",
-    "command": "node_modules/.bin/commitlint --edit <exact-message-file>"
+    "command": "node_modules/.bin/commitlint --edit <exact-message-file>",
+    "cleanupAdmissionCorrectionExitCode": 0,
+    "cleanupAdmissionCorrectionMessage": "fix(module): refuse attachments while cleanup is pending"
   },
-  "qualification": "Deterministic module tests only; no live topology or candidate acceptance qualification claimed."
+  "qualification": "Deterministic module tests only; no live topology or candidate acceptance qualification claimed.",
+  "verificationSource": {
+    "baseCommit": "157b4dacdd90148de76e576396f61dd5859556f3",
+    "modifiedFilesSha256": {
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionAttachAdmission.cs": "ff3ed02e3f1e3e93c5b6bbd0cd80be6b2c3da05774e0574dfe68ff8adce4f969",
+      "test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs": "1612aaf31b286b9d4dc1ce3f94a1417bbad4ba8ae9fb12b84f1c62297582a469"
+    }
+  },
+  "cleanupAdmissionRegressionBefore": {
+    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -method '*AttachedFailureCannotOverrideCleanupRefusalAsync' -noLogo -xml /tmp/story27-cleanup-before.xml",
+    "total": 5,
+    "failed": 3,
+    "expectedFailures": [
+      "pending",
+      "in-progress",
+      "incomplete"
+    ],
+    "log": "cleanup-admission-before.log",
+    "xml": "cleanup-admission-before.xml"
+  },
+  "cleanupAdmissionRegressionAfter": {
+    "total": 5,
+    "failed": 0,
+    "cases": [
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(cleanup: \\\"not-requested\\\", reason: null)",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(cleanup: \\\"pending\\\", reason: \\\"owner-cleaning\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(cleanup: \\\"in-progress\\\", reason: \\\"owner-cleaning\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(cleanup: \\\"incomplete\\\", reason: \\\"owner-cleaning\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(cleanup: \\\"complete\\\", reason: \\\"owner-cleaned\\\")"
+    ],
+    "xml": "tests.xml"
+  }
 }
