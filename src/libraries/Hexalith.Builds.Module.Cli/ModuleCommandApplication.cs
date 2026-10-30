@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.ModuleTool.Cli;
 
 using System.CommandLine;
+using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
@@ -27,6 +28,7 @@ internal static class ModuleCommandApplication
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <param name="descriptorChildEntryAssemblyPath">The optional private descriptor child entry assembly.</param>
     /// <param name="compositionOptions">The optional runner-owned composition settings.</param>
+    /// <param name="attacherContext">The optional controlled attachment context; null uses the process environment.</param>
     /// <returns>The stable process exit code.</returns>
     public static async Task<int> InvokeAsync(
         string[] arguments,
@@ -34,7 +36,8 @@ internal static class ModuleCommandApplication
         TextWriter standardError,
         CancellationToken cancellationToken,
         string? descriptorChildEntryAssemblyPath = null,
-        CompositionEngineOptions? compositionOptions = null)
+        CompositionEngineOptions? compositionOptions = null,
+        JsonElement? attacherContext = null)
     {
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(standardOutput);
@@ -45,7 +48,8 @@ internal static class ModuleCommandApplication
             standardOutput,
             descriptorChildEntryAssemblyPath,
             compositionOptions,
-            task => runningCommand = task);
+            task => runningCommand = task,
+            attacherContext);
         ParseResult parseResult = rootCommand.Parse(arguments);
         if (parseResult.Errors.Count > 0 || HasBlankManifestValue(arguments))
         {
@@ -64,7 +68,8 @@ internal static class ModuleCommandApplication
         TextWriter standardOutput,
         string? descriptorChildEntryAssemblyPath,
         CompositionEngineOptions? compositionOptions,
-        Action<Task<int>> operationStarted)
+        Action<Task<int>> operationStarted,
+        JsonElement? attacherContext)
     {
         RootCommand rootCommand = new("Runs supported Hexalith module qualifications.");
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Run, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
@@ -75,7 +80,7 @@ internal static class ModuleCommandApplication
         rootCommand.Subcommands.Add(CreateResultValidationCommand(standardOutput, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreatePrepareBuildCommand(standardOutput, operationStarted));
         rootCommand.Subcommands.Add(CreateListCommand(standardOutput, compositionOptions, operationStarted));
-        rootCommand.Subcommands.Add(CreateAttachCommand(standardOutput, compositionOptions, operationStarted));
+        rootCommand.Subcommands.Add(CreateAttachCommand(standardOutput, compositionOptions, operationStarted, attacherContext));
         return rootCommand;
     }
 
@@ -180,7 +185,7 @@ internal static class ModuleCommandApplication
         return command;
     }
 
-    private static Command CreateAttachCommand(TextWriter output, CompositionEngineOptions? options, Action<Task<int>> operationStarted)
+    private static Command CreateAttachCommand(TextWriter output, CompositionEngineOptions? options, Action<Task<int>> operationStarted, JsonElement? attacherContext)
     {
         Command command = new("attach", "Admits a run to a compatible runner-owned environment with a finite hold, or ends one attachment.");
         Option<string> owner = new("--owner-run-id") { Required = true };
@@ -238,6 +243,7 @@ internal static class ModuleCommandApplication
                         Target = parsed.GetValue(target)!,
                         EnvironmentId = parsed.GetValue(environment),
                         ArtifactIdentities = parsed.GetValue(artifacts) ?? [],
+                        AttacherContext = attacherContext,
                     };
                     result = await CompositionAttachAdmission.AdmitAsync(store, request, DateTimeOffset.UtcNow, cancellation).ConfigureAwait(false);
                 }
