@@ -11,6 +11,7 @@ using Hexalith.EventStore.Middleware;
 using Hexalith.EventStore.OpenApi;
 using Hexalith.EventStore.Server.Configuration;
 using Hexalith.EventStore.ServiceDefaults;
+using Hexalith.EventStore.ServiceDefaults.Authentication;
 
 using Microsoft.Extensions.Options;
 
@@ -36,8 +37,10 @@ WebApplication app = builder.Build();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
 app.MapDefaultEndpoints();
+app.UseRouting();
 app.UseAuthentication();
 app.UseRateLimiter();
+app.UseEventStoreHttpHostSecurity();
 app.UseAuthorization();
 if (!string.IsNullOrEmpty(app.Configuration["EventStore:RouteCatalog:DevelopmentBootstrap:CatalogPath"]))
 {
@@ -73,9 +76,9 @@ app.MapErrorReferences();
 app.MapApiVersionFallback();
 if (!declarativeSubscriptions)
 {
-    _ = app.MapSubscribeHandler();
+    _ = app.MapSubscribeHandler().RequireEventStoreChannel();
 }
 
-app.MapActorsHandlers();
+app.MapActorsHandlers().WithMetadata(EventStoreActorCallbackEndpointMetadata.Instance).RequireEventStoreChannel();
 
 await app.RunAsync().ConfigureAwait(false);
