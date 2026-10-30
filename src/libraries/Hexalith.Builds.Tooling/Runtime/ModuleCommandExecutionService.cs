@@ -1527,7 +1527,7 @@ public static class ModuleCommandExecutionService
                 {
                     if (cancellationWithdrawn)
                     {
-                        await engine!.StopWithdrawnSessionAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token).ConfigureAwait(false);
+                        await engine!.StopSessionAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token).ConfigureAwait(false);
                     }
 
                     down = await (options.PlatformDownOverride?.Invoke(session!, (waitedForHolds ? deferredStopping : stopping).Token) ?? engine!.DownWithinBudgetAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token)).ConfigureAwait(false);

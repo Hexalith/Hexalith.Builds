@@ -180,17 +180,23 @@ public static class TestEnvironmentDescriptorWriter
         _ = ExecutionContext();
     }
 
+    /// <summary>Reports whether <see cref="ExecutionContext"/> records a local context for owners started by this process.</summary>
+    /// <returns>Whether neither GitHub Actions nor CI execution is declared.</returns>
+    internal static bool IsLocalExecution() =>
+        !string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Captures actual supported execution context without inventing CI metadata.</summary>
     /// <returns>The local or complete actual CI identity.</returns>
     /// <exception cref="InvalidDataException">Actual CI metadata is incomplete or unsupported.</exception>
     internal static object ExecutionContext()
     {
-        bool github = string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase);
-        bool ci = github || string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
-        if (!ci)
+        if (IsLocalExecution())
         {
             return new { kind = "local" };
         }
+
+        bool github = string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase);
 
         string? repository = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
         string? run = Environment.GetEnvironmentVariable("GITHUB_RUN_ID");

@@ -80,7 +80,7 @@ public static class CompositionRunListing
 
                     attachments = [.. attachments.Select(item => item.ObservedAt(observedAt))];
                     CompositionAttachment[] live = [.. attachments.Where(item => item.IsLive(observedAt))];
-                    bool local = state.ExecutionContext is { ValueKind: System.Text.Json.JsonValueKind.Object } context && context.TryGetProperty("kind", out System.Text.Json.JsonElement kind) && kind.GetString() == "local";
+                    bool local = state.ExecutionContext is { ValueKind: System.Text.Json.JsonValueKind.Object } context && context.TryGetProperty("kind", out System.Text.Json.JsonElement kind) && kind.ValueKind == System.Text.Json.JsonValueKind.String && kind.GetString() == "local";
 
                     // CI owners do not wait for holds in this version, so their cleanup is never reported as hold-deferred.
                     string cleanup = local && live.Length > 0 && state.TestRun?.TerminalOutcome.ExitCode == ToolExitCode.Success && state.CleanupDisposition == "not-requested" && Retention(state, attachments) != "failure-retained"

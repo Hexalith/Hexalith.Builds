@@ -549,9 +549,12 @@ and environment-only owners cannot accept attachments; bookkeeping failures keep
 bounded exact-owner cleanup running and report `HXT008`. Cancellation metadata gets its
 own finite allowance even when the resource stopping budget is exhausted. After durable
 withdrawal, a session AppHost is stopped before provisioning-lock acquisition, including
-when that lock later stalls. Each command reports each withdrawn run id once.
-Withdrawal records outcomes;
-termination of attached processes at expiry is deferred to Platform story 2.9.
+when that lock later stalls. Sessions whose owners cannot accept attachments (CI, Run,
+Debug, profile and environment-only) stop their AppHost before any cleanup lock or
+bookkeeping, killing it without waiting once the stopping budget is exhausted, so no
+cleanup exit leaves it running. Each command reports each withdrawn run id once.
+Withdrawal records outcomes; termination of attached processes at expiry is deferred to
+the Platform follow-up `attached-test-execution-and-expiry-enforcement`.
 Exact cleanup accepts an omitted, missing or changed manifest, removes only the
 requested owner's resources and claims, and can be retried safely. Exporting
 `--evidence` requires an explicit `--manifest`. Incomplete cleanup exposes exact known container/process/workspace/claim leftovers and

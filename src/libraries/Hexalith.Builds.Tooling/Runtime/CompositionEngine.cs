@@ -489,7 +489,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     }
 
     /// <summary>
-    /// Tears down a run started by this engine instance, stopping its AppHost gracefully first.
+    /// Tears down a run started by this engine instance. A session whose owner attachment admission can never accept
+    /// stops its AppHost gracefully first; a local selected-test session keeps it until attachment withdrawal is durably
+    /// recorded, so a refused withdrawal leaves it running.
     /// </summary>
     /// <param name="session">The ready session.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -502,7 +504,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         ArgumentNullException.ThrowIfNull(session);
         cancellationToken.ThrowIfCancellationRequested();
         using CancellationTokenSource bound = TeardownBound();
-        return await DownCoreAsync(session.RunId, bound.Token, session: session).ConfigureAwait(false);
+        if (CanHoldAttachments(session))
+        {
+            return await DownCoreAsync(session.RunId, bound.Token, session: session).ConfigureAwait(false);
+        }
+
+        // No withdrawal can be owed, so every cleanup exit, including lock or state failures, leaves the AppHost stopped.
+        await StopSessionAsync(session, bound.Token).ConfigureAwait(false);
+        return await DownCoreAsync(session.RunId, bound.Token).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -549,18 +558,34 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     internal Task<CompositionStartResult> ReportSetupTimeoutAsync(DateTimeOffset requestedAt, CompositionEffectiveDeadline deadline) =>
         ReportStartupTimeoutAsync(requestedAt, deadline, null, string.Empty, null);
 
-    /// <summary>Stops an owned selected session using the command's single stopping budget.</summary>
+    /// <summary>
+    /// Stops an owned selected session using the command's single stopping budget. A session whose owner attachment
+    /// admission can never accept stops its AppHost first; an attachable local owner keeps it until withdrawal is durable.
+    /// </summary>
     /// <param name="session">The owned session.</param>
     /// <param name="stoppingToken">The original stopping deadline.</param>
     /// <returns>A truthful bounded cleanup result.</returns>
-    internal Task<CompositionDownResult> DownWithinBudgetAsync(CompositionRunSession session, CancellationToken stoppingToken) =>
-        DownCoreAsync(session.RunId, stoppingToken, new CompositionRunResources([], ProjectProcessIds(session.Readiness.Resources), true) { WorkspaceIds = ["workspace:" + session.RunId] }, session);
+    internal async Task<CompositionDownResult> DownWithinBudgetAsync(CompositionRunSession session, CancellationToken stoppingToken)
+    {
+        CompositionRunResources known = new([], ProjectProcessIds(session.Readiness.Resources), true) { WorkspaceIds = ["workspace:" + session.RunId] };
+        if (CanHoldAttachments(session))
+        {
+            return await DownCoreAsync(session.RunId, stoppingToken, known, session).ConfigureAwait(false);
+        }
 
-    /// <summary>Stops and disposes a session after durable withdrawal, killing without waiting when its resource allowance is exhausted.</summary>
-    /// <param name="session">The session whose attachments have already been withdrawn.</param>
+        // No withdrawal can be owed; an exhausted budget kills without waiting so no cleanup exit leaves the AppHost running.
+        await StopSessionAsync(session, stoppingToken).ConfigureAwait(false);
+        return await DownCoreAsync(session.RunId, stoppingToken, known).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Stops and disposes a session AppHost, killing without waiting when graceful stopping fails or its resource
+    /// allowance is exhausted. Attachable owners call it only after durable withdrawal.
+    /// </summary>
+    /// <param name="session">The session to stop.</param>
     /// <param name="stoppingToken">The original resource stopping allowance.</param>
     /// <returns>The bounded session stopping task.</returns>
-    internal async Task StopWithdrawnSessionAsync(CompositionRunSession session, CancellationToken stoppingToken)
+    internal async Task StopSessionAsync(CompositionRunSession session, CancellationToken stoppingToken)
     {
         try
         {
@@ -930,6 +955,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         ToolDiagnostic diagnostic = Diagnostic("HXR037", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Owner cleanup state or attachment withdrawal/report could not be durably recorded; no cleanup started.", "down", "Retry down for the same owner run identity.");
         return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [.. bookkeeping, diagnostic]) { RemainingResources = remaining }, remaining);
     }
+
+    // Mirrors admission: only a selected-test owner with a local execution context can ever hold attachments.
+    private static bool CanHoldAttachments(CompositionRunSession session) => session.Plan.SelectedTest is not null && session.LocalExecution;
 
     private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
 
@@ -1428,7 +1456,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         // Every later exit must leave the session stopped, including provisioning-lock failures.
         if (session is not null)
         {
-            await StopWithdrawnSessionAsync(session, bound).ConfigureAwait(false);
+            await StopSessionAsync(session, bound).ConfigureAwait(false);
         }
 
         FileStream? provisioning = null;
@@ -1442,7 +1470,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             if (bound.IsCancellationRequested)
             {
                 CompositionDownResult pending = IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Any(item => item.Category != ToolFailureCategory.None));
-                return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping, .. pending.Result.Diagnostics] } };
+                return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping.Concat(pending.Result.Diagnostics).Distinct()] } };
             }
 
             if (!Directory.Exists(directory))
@@ -1465,7 +1493,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
             CompositionDownResult pending = IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Any(item => item.Category != ToolFailureCategory.None));
-            return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping, .. pending.Result.Diagnostics] } };
+            return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping.Concat(pending.Result.Diagnostics).Distinct()] } };
         }
 
         if (state?.AppHostProcessId is int processId && TryGetRecordedProcess(processId, state.AppHostStartedAt) is Process recorded)
@@ -1746,7 +1774,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 return new CompositionStartResult(
                     new ToolCommandResult("ready", ToolOutcome.Passed(), readyDiagnostics),
                     plan.RunId,
-                    new CompositionRunSession(plan, readiness, signingKey, appHost));
+                    new CompositionRunSession(plan, readiness, signingKey, appHost) { LocalExecution = TestEnvironment.TestEnvironmentDescriptorWriter.IsLocalExecution() });
             }
 
             if (appHost.HasExited)

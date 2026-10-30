@@ -82,19 +82,19 @@ public sealed class WorkspaceAppHostTests
         {
             string builds = Path.Combine(root, "selected-builds");
             string project = Path.Combine(builds, "src", "hosts", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost.csproj");
-            Directory.CreateDirectory(Path.GetDirectoryName(project)!);
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(project)!);
             File.WriteAllText(project, "<Project />");
             SourceMapping mapping = new(WorkspaceMode.Source, root, "Hexalith.Parties", [new("Hexalith.Builds", "source", builds)], false);
             CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { SourceMapping = mapping };
             RunTopology.ResolveSourceEventStoreSeed(plan).ShouldBe(project);
-            Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan with { SourceMapping = mapping with { Mode = WorkspaceMode.Package } }));
-            Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan with { SourceMapping = mapping with { Entries = [] } }));
+            _ = Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan with { SourceMapping = mapping with { Mode = WorkspaceMode.Package } }));
+            _ = Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan with { SourceMapping = mapping with { Entries = [] } }));
             File.Delete(project);
-            Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan));
+            _ = Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan));
             string outside = Path.Combine(foreign, "foreign.csproj");
             File.WriteAllText(outside, "<Project />");
-            File.CreateSymbolicLink(project, outside);
-            Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan));
+            _ = File.CreateSymbolicLink(project, outside);
+            _ = Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan));
         }
         finally
         {

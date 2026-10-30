@@ -242,12 +242,9 @@ internal static class RunTopology
         }
 
         string project = Path.Combine(builds.Path, "src", "hosts", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost.csproj");
-        if (!(mapping with { Entries = [builds], PlatformIdentity = null }).ContainsProject(project))
-        {
-            throw new InvalidDataException("The selected Builds EventStore host is missing or outside its owner checkout.");
-        }
-
-        return project;
+        return (mapping with { Entries = [builds], PlatformIdentity = null }).ContainsProject(project)
+            ? project
+            : throw new InvalidDataException("The selected Builds EventStore host is missing or outside its owner checkout.");
     }
 
     /// <summary>Refuses an edited declaration before the Platform model can add resources.</summary>

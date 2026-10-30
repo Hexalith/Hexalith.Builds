@@ -101,7 +101,7 @@ public static class TestResultWriter
         string[] observed = [.. record.Resources.Select(resource => "resource:" + resource.Name).Where(SafeIdentity)];
         string[] owned = [.. observed.Concat(leftovers).Distinct(StringComparer.Ordinal)];
         bool removed = record.CleanupDisposition == "complete" && record.RemainingResources.IsEmpty;
-        bool local = state.ExecutionContext is { ValueKind: JsonValueKind.Object } context && context.TryGetProperty("kind", out JsonElement kind) && kind.GetString() == "local";
+        bool local = state.ExecutionContext is { ValueKind: JsonValueKind.Object } context && context.TryGetProperty("kind", out JsonElement kind) && kind.ValueKind == JsonValueKind.String && kind.GetString() == "local";
         string[] failureRunIds = [.. (record.FailureRetained ? new[] { record.RunId } : []).Concat(attachments.Where(item => local && item.Outcome == "failed").Select(item => item.AttachedRunId))];
         bool failureRetained = failureRunIds.Length > 0;
         bool retained = failureRetained && !removed;
