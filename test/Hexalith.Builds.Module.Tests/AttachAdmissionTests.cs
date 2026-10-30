@@ -1184,6 +1184,9 @@ public sealed class AttachAdmissionTests
         CompositionRunSession session = run.Session.ShouldNotBeNull();
         using System.Diagnostics.Process observer = System.Diagnostics.Process.GetProcessById(session.AppHost.Id);
         observer.HasExited.ShouldBeFalse(run.Output.ToString());
+        CompositionRunResourceScanner scanner = new(CompositionTestFiles.CreateStubDocker(workspace.Root));
+        CompositionRunResources unrelated = await scanner.FindAsync(CompositionTestFiles.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        unrelated.ProcessIds.ShouldNotContain(observer.Id);
         session.AppHost.StandardInput.Close();
         string directory = Path.Combine(run.Options.StateDirectory, "diagnostics", session.RunId);
         FileStream outcomeGate = new(Path.Combine(directory, "outcome.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
@@ -1463,8 +1466,11 @@ public sealed class AttachAdmissionTests
     private static async Task<(CompositionRunStateStore Store, CompositionRunState Owner, string Composition)> ReadyOwnerAsync(PlatformManifestTestWorkspace workspace, Func<CompositionRunState, CompositionRunState>? change = null)
     {
         (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        string runId = CompositionRunPlanFactory.NewRunId();
         state = state with
         {
+            RunId = runId,
+            Workspace = Path.Combine(workspace.Root, "runs", runId),
             Status = CompositionRunStatus.Ready,
             ReadinessResults = [new CompositionResourceReadiness("owned", "process", "Healthy")],
             RemainingResources = null,
@@ -1536,7 +1542,7 @@ public sealed class AttachAdmissionTests
                 HoldPollInterval = TimeSpan.FromMilliseconds(25),
                 SelectedPlatformStartOverride = async (_, selection, token) =>
                 {
-                    CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selection }, manifest, workspace.Root).ConfigureAwait(false);
+                    CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root, CompositionRunPlanFactory.NewRunId()) with { SelectedTest = selection }, manifest, workspace.Root).ConfigureAwait(false);
                     CompositionReadiness ready = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), "sample");
                     if (liveAppHost)
                     {
