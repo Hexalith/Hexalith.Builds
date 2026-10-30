@@ -1317,23 +1317,35 @@ public static class ModuleCommandExecutionService
                 withdrawn = record.TerminalStatus is "cancelled" or "withdrawn";
             }
 
-            if (record is { FailureRetained: true, CleanupDisposition: "not-requested" } && ownedRunId is not null)
+            bool attachedFailure = false;
+            bool holdsVerified = true;
+            string? attachmentDirectory = ownedRunId is null ? null : Path.Combine(options.StateDirectory, "diagnostics", ownedRunId);
+            if (!ci && attachmentDirectory is not null)
             {
                 try
                 {
-                    using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
-                    CompositionRunResources survivors = await engine!.ObserveOwnedResourcesAsync(ownedRunId, metadata.Token).ConfigureAwait(false);
-                    record = await engine.RecordTestOutcomeAsync(ownedRunId, record.Resources, result, "retained", survivors, metadata.Token, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings, archiveMetadata: false).ConfigureAwait(false);
+                    using CancellationTokenSource attachmentMetadata = new(TimeSpan.FromSeconds(5));
+                    IReadOnlyList<CompositionAttachment> attachments = await CompositionAttachmentStore.ReadAsync(attachmentDirectory, ownedRunId!, attachmentMetadata.Token).ConfigureAwait(false);
+                    DateTimeOffset observedAt = DateTimeOffset.UtcNow;
+                    CompositionAttachment[] expired = [.. attachments.Where(item => item.EndedAtUtc is null && observedAt >= item.ExpiresAtUtc).Select(item => item.ObservedAt(observedAt))];
+                    if (expired.Length > 0 && !cancellationToken.IsCancellationRequested)
+                    {
+                        attachments = await CompositionAttachmentStore.ObserveAsync(attachmentDirectory, ownedRunId!, observedAt, attachmentMetadata.Token).ConfigureAwait(false);
+                        result = result with { Diagnostics = [.. result.Diagnostics, .. CompositionAttachmentStore.WithdrawalDiagnostics(expired)] };
+                    }
+
+                    attachedFailure = attachments.Any(item => item.Outcome == "failed");
                 }
-                catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or OperationCanceledException)
                 {
-                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Retained resources could not be fully recorded.", "evidence"));
+                    holdsVerified = false;
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Attachment outcomes could not be verified; cleanup remains pending and retryable with down for this owner.", "evidence"));
                 }
             }
 
-            bool retentionEstablished = record?.FailureRetained == true || (record is null && retain && !passed && !withdrawn);
+            bool retentionEstablished = attachedFailure || record?.FailureRetained == true || record?.ResourceDisposition == "retained" || (record is null && retain && !passed && !withdrawn);
             bool cleanup = session is not null && !(PersistsAfterExit(command) && passed)
-                && !retentionEstablished && record?.CleanupDisposition != "complete";
+                && holdsVerified && !retentionEstablished && record?.CleanupDisposition != "complete";
             if (cleanup && !ci && record is null)
             {
                 cleanup = false;
@@ -1348,20 +1360,65 @@ public static class ModuleCommandExecutionService
                 string holdDirectory = Path.Combine(options.StateDirectory, "diagnostics", ownedRunId);
                 try
                 {
-                    await CompositionAttachmentStore.WaitForNoLiveHoldsAsync(holdDirectory, ownedRunId, options.HoldPollInterval, cancellationToken).ConfigureAwait(false);
+                    attachedFailure = await CompositionAttachmentStore.WaitForHoldsOrFailureAsync(holdDirectory, ownedRunId, options.HoldPollInterval, cancellationToken).ConfigureAwait(false);
+                    cleanup = !attachedFailure;
                     waitedForHolds = true;
                     deferredStopping.CancelAfter(TimeSpan.FromSeconds(selected!.StopTimeoutSeconds));
                 }
                 catch (OperationCanceledException)
                 {
-                    // Cleanup stays deferred and discoverable as pending; the recorded first outcome is untouched and down can retry it.
-                    cleanup = false;
-                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Waiting for attachment holds was cancelled; cleanup remains pending and retryable with down for this owner.", "evidence"));
+                    // Cancellation during the success hold wait withdraws holds within a fresh stop budget.
+                    waitedForHolds = true;
+                    deferredStopping.CancelAfter(TimeSpan.FromSeconds(selected!.StopTimeoutSeconds));
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
                 {
                     cleanup = false;
                     result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Attachment holds could not be verified; cleanup remains pending and retryable with down for this owner.", "evidence"));
+                }
+            }
+
+            if (!ci && cancellationToken.IsCancellationRequested && ownedRunId is not null && attachmentDirectory is not null)
+            {
+                try
+                {
+                    CancellationToken withdrawalToken = (waitedForHolds ? deferredStopping : stopping).Token;
+                    await engine!.RecordOwnerCancellationAsync(ownedRunId, withdrawalToken).ConfigureAwait(false);
+                    IReadOnlyList<CompositionAttachment> ended = await CompositionAttachmentStore.WithdrawAsync(attachmentDirectory, ownedRunId, "owner-cancelled", DateTimeOffset.UtcNow, withdrawalToken).ConfigureAwait(false);
+                    result = result with { Diagnostics = [.. result.Diagnostics, .. CompositionAttachmentStore.WithdrawalDiagnostics(ended)] };
+                    attachedFailure = (await CompositionAttachmentStore.ReadAsync(attachmentDirectory, ownedRunId, withdrawalToken).ConfigureAwait(false)).Any(item => item.Outcome == "failed");
+                    cleanup = cleanup && !attachedFailure;
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or OperationCanceledException)
+                {
+                    cleanup = false;
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Attachment withdrawal could not be durably recorded; cleanup remains pending and retryable with down for this owner.", "evidence"));
+                    if (record is not null)
+                    {
+                        try
+                        {
+                            using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
+                            record = await engine!.RecordTestOutcomeAsync(ownedRunId, record.Resources, result, record.ResourceDisposition, record.RemainingResources, metadata.Token, waitForLock: false, cleanupDisposition: "pending", cleanupAttemptId: record.CleanupAttemptId ?? CompositionRunPlanFactory.NewRunId(), archiveMetadata: false).ConfigureAwait(false);
+                        }
+                        catch (Exception pendingException) when (pendingException is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
+                        {
+                            // The first outcome and cancelled owner remain discoverable even if publication cannot be refreshed.
+                        }
+                    }
+                }
+            }
+
+            if ((record?.FailureRetained == true || attachedFailure) && record is { CleanupDisposition: "not-requested" } && ownedRunId is not null)
+            {
+                try
+                {
+                    using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
+                    CompositionRunResources survivors = await engine!.ObserveOwnedResourcesAsync(ownedRunId, metadata.Token).ConfigureAwait(false);
+                    record = await engine.RecordTestOutcomeAsync(ownedRunId, record.Resources, result, "retained", survivors, metadata.Token, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings, archiveMetadata: false).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
+                {
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Retained resources could not be fully recorded.", "evidence"));
                 }
             }
 

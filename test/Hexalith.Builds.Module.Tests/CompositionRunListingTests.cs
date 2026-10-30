@@ -70,6 +70,48 @@ public sealed class CompositionRunListingTests
         }
     }
 
+    /// <summary>Expired holds project withdrawn without a write; failed and legacy attachments retain their distinct outcomes.</summary>
+    /// <returns>The passive listing, failure retention, CLI output and legacy compatibility assertions.</returns>
+    [Fact]
+    public async Task ListingShowsAttachedFailurePassiveWithdrawalAndUnknownLegacyOutcomeAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected);
+        CompositionRunStateStore store = new(options.StateDirectory);
+        DateTimeOffset accepted = DateTimeOffset.UtcNow.AddMinutes(-2);
+        ModuleTestRunRecord passed = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), accepted, "unknown", new CompositionRunResources([], []));
+        await store.WriteAsync(state with { TestRun = passed, CleanupDisposition = "not-requested" }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionAttachment Hold() => new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), 60, accepted, 60, accepted.AddSeconds(60));
+        CompositionAttachment expired = Hold();
+        CompositionAttachment failed = Hold() with { Outcome = "failed", EndReason = "terminal-outcome", EndedAtUtc = accepted.AddSeconds(10) };
+        CompositionAttachment legacy = Hold() with { EndReason = "terminal-outcome", EndedAtUtc = accepted.AddSeconds(20) };
+        string directory = Path.Combine(store.Directory, "diagnostics", state.RunId);
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, _ => (0, new[] { expired, failed, legacy }), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        byte[] before = await File.ReadAllBytesAsync(CompositionAttachmentStore.PathFor(directory), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionRunListingEntry listed = (await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Environments.ShouldNotBeNull().Single();
+        listed.FailureRunIds.ShouldBe([failed.AttachedRunId]);
+        listed.Retention.ShouldBe("failure-retained");
+        listed.Attachments.Single(item => item.AttachedRunId == expired.AttachedRunId).Outcome.ShouldBe("withdrawn");
+        listed.Attachments.Single(item => item.AttachedRunId == expired.AttachedRunId).EndedAtUtc.ShouldBe(expired.ExpiresAtUtc);
+        listed.Attachments.Single(item => item.AttachedRunId == legacy.AttachedRunId).Outcome.ShouldBe("unknown");
+        foreach (string format in new[] { "human", "json" })
+        {
+            StringWriter output = new();
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+            (await ModuleCommandApplication.InvokeAsync(["list", "--output", format], output, TextWriter.Null, TestContext.Current.CancellationToken, compositionOptions: options).ConfigureAwait(true)).ShouldBe(0);
+            output.ToString().ShouldContain("withdrawn");
+            output.ToString().ShouldContain("unknown");
+            output.ToString().ShouldContain(failed.AttachedRunId);
+            if (format == "human")
+            {
+                output.ToString().ShouldContain("outcome=failed");
+            }
+        }
+
+        (await File.ReadAllBytesAsync(CompositionAttachmentStore.PathFor(directory), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(before);
+    }
+
     /// <summary>A missing state root is empty; an existing file at that root is an incomplete listing.</summary>
     /// <param name="existingFile">Whether the configured root is an existing file.</param>
     /// <returns>The confirmed-absence or structured storage-refusal assertions.</returns>

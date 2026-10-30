@@ -148,9 +148,10 @@ internal static class ModuleCommandApplication
         Option<string[]> artifacts = new("--artifact-identity") { Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = false };
         Option<bool> end = new("--end") { Description = "Ends only the attachment named by --attached-run-id; the owner and other attachments keep running." };
         Option<string> attached = new("--attached-run-id");
+        Option<string> outcome = new("--outcome") { Description = "The attachment's first terminal outcome: passed, failed or cancelled." };
         Option<string> format = new("--output") { DefaultValueFactory = _ => "human" };
         _ = format.AcceptOnlyFromAmong("human", "json");
-        foreach (Option option in new Option[] { owner, mode, composition, hold, requestId, target, environment, artifacts, end, attached, format })
+        foreach (Option option in new Option[] { owner, mode, composition, hold, requestId, target, environment, artifacts, end, attached, outcome, format })
         {
             command.Options.Add(option);
         }
@@ -168,7 +169,7 @@ internal static class ModuleCommandApplication
                 bool ending = parsed.GetValue(end);
                 bool malformed = ending
                     ? parsed.GetValue(attached) is null || new Option[] { hold, requestId, mode, composition, target, environment, artifacts }.Any(option => parsed.GetResult(option) is { Implicit: false })
-                    : parsed.GetValue(mode) is null || parsed.GetValue(composition) is null || parsed.GetResult(attached) is not null;
+                    : parsed.GetValue(mode) is null || parsed.GetValue(composition) is null || parsed.GetResult(attached) is not null || parsed.GetResult(outcome) is not null;
                 if (malformed)
                 {
                     return await ToolCommandHost.WriteParseFailureAsync(output, outputFormat).ConfigureAwait(false);
@@ -177,7 +178,7 @@ internal static class ModuleCommandApplication
                 ToolCommandResult result;
                 if (ending)
                 {
-                    result = await CompositionAttachAdmission.EndAsync(store, parsed.GetValue(owner)!, parsed.GetValue(attached)!, DateTimeOffset.UtcNow, cancellation).ConfigureAwait(false);
+                    result = await CompositionAttachAdmission.EndAsync(store, parsed.GetValue(owner)!, parsed.GetValue(attached)!, parsed.GetValue(outcome), DateTimeOffset.UtcNow, cancellation).ConfigureAwait(false);
                 }
                 else
                 {

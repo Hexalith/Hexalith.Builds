@@ -8,6 +8,8 @@ namespace Hexalith.Builds.Tooling.Runtime;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Hexalith.Builds.Tooling.Diagnostics;
+
 /// <summary>Persists accepted attachments beside the owner's diagnostics, serialized by an exclusive lock.</summary>
 public static class CompositionAttachmentStore
 {
@@ -75,29 +77,94 @@ public static class CompositionAttachmentStore
         return UpdateCoreAsync<T>(diagnosticsDirectory, ownerRunId, current => Task.FromResult(change(current)), cancellationToken);
     }
 
-    /// <summary>Waits until no accepted attachment is live. Deadlines are evaluated against UTC on every poll.</summary>
+    /// <summary>Durably withdraws every unended attachment, recording earlier expiries at their original deadline.</summary>
+    /// <param name="diagnosticsDirectory">The owner's durable diagnostics directory.</param>
+    /// <param name="ownerRunId">The owner identity.</param>
+    /// <param name="reason">The environment withdrawal reason.</param>
+    /// <param name="now">The runner's UTC clock reading.</param>
+    /// <param name="cancellationToken">The recording allowance.</param>
+    /// <returns>The newly withdrawn attachments.</returns>
+    public static Task<IReadOnlyList<CompositionAttachment>> WithdrawAsync(string diagnosticsDirectory, string ownerRunId, string reason, DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNotEqual(reason is "owner-cancelled" or "developer-stop", true);
+
+        return UpdateAsync<IReadOnlyList<CompositionAttachment>>(
+            diagnosticsDirectory,
+            ownerRunId,
+            current =>
+            {
+                List<CompositionAttachment> withdrawn = [];
+                List<CompositionAttachment> replacement = [];
+                foreach (CompositionAttachment item in current)
+                {
+                    if (item.EndedAtUtc is not null)
+                    {
+                        replacement.Add(item);
+                        continue;
+                    }
+
+                    CompositionAttachment ended = item.ObservedAt(now);
+                    if (ended.EndedAtUtc is null)
+                    {
+                        ended = item with { EndedAtUtc = now < item.AcceptedAtUtc ? item.AcceptedAtUtc : now, EndReason = reason, Outcome = "withdrawn" };
+                    }
+
+                    withdrawn.Add(ended);
+                    replacement.Add(ended);
+                }
+
+                return (withdrawn, withdrawn.Count == 0 ? null : replacement);
+            },
+            cancellationToken);
+    }
+
+    /// <summary>Waits until every hold ends or a first attached failure establishes retention, recording observed expiries.</summary>
     /// <param name="diagnosticsDirectory">The owner's durable diagnostics directory.</param>
     /// <param name="ownerRunId">The owner identity.</param>
     /// <param name="pollInterval">The longest pause between reads.</param>
     /// <param name="cancellationToken">The wait cancellation.</param>
-    /// <returns>The task that completes when every hold has ended or passed its deadline.</returns>
+    /// <returns>Whether an attached failure established retention.</returns>
     /// <exception cref="IOException">The attachment metadata cannot be verified.</exception>
-    public static async Task WaitForNoLiveHoldsAsync(string diagnosticsDirectory, string ownerRunId, TimeSpan pollInterval, CancellationToken cancellationToken)
+    public static async Task<bool> WaitForHoldsOrFailureAsync(string diagnosticsDirectory, string ownerRunId, TimeSpan pollInterval, CancellationToken cancellationToken)
     {
         while (true)
         {
             DateTimeOffset now = DateTimeOffset.UtcNow;
-            IReadOnlyList<CompositionAttachment> live = [.. (await ReadAsync(diagnosticsDirectory, ownerRunId, cancellationToken).ConfigureAwait(false)).Where(item => item.IsLive(now))];
-            if (live.Count == 0)
+            IReadOnlyList<CompositionAttachment> observed = await ObserveAsync(diagnosticsDirectory, ownerRunId, now, cancellationToken).ConfigureAwait(false);
+            bool failed = observed.Any(item => item.Outcome == "failed");
+            CompositionAttachment[] live = [.. observed.Where(item => item.IsLive(now))];
+            if (failed || live.Length == 0)
             {
-                return;
+                return failed;
             }
 
-            TimeSpan untilLastExpiry = live.Max(item => item.ExpiresAtUtc) - now;
-            TimeSpan pause = untilLastExpiry < pollInterval ? untilLastExpiry : pollInterval;
+            TimeSpan untilNextExpiry = live.Min(item => item.ExpiresAtUtc) - now;
+            TimeSpan pause = untilNextExpiry < pollInterval ? untilNextExpiry : pollInterval;
             await Task.Delay(pause > TimeSpan.Zero ? pause : TimeSpan.FromMilliseconds(1), cancellationToken).ConfigureAwait(false);
         }
     }
+
+    /// <summary>Builds the withdrawal report before any environment teardown.</summary>
+    /// <param name="withdrawn">The durably recorded withdrawals.</param>
+    /// <returns>Reports grouped by the actual withdrawal reason.</returns>
+    internal static IReadOnlyList<ToolDiagnostic> WithdrawalDiagnostics(IReadOnlyList<CompositionAttachment> withdrawn) => [.. withdrawn.GroupBy(item => item.EndReason).Select(group => new ToolDiagnostic("HXI011", ToolPhase.Cleanup, ToolFailureCategory.None, $"Attached runs withdrawn ({group.Key}): {string.Join(", ", group.Select(item => item.AttachedRunId))}.", group.Key))];
+
+    /// <summary>Records every expiry observed in an owner pass.</summary>
+    /// <param name="diagnosticsDirectory">The owner's durable diagnostics directory.</param>
+    /// <param name="ownerRunId">The owner identity.</param>
+    /// <param name="now">The runner's UTC clock reading.</param>
+    /// <param name="cancellationToken">The recording allowance.</param>
+    /// <returns>The attachments including durably recorded expiries.</returns>
+    internal static Task<IReadOnlyList<CompositionAttachment>> ObserveAsync(string diagnosticsDirectory, string ownerRunId, DateTimeOffset now, CancellationToken cancellationToken) =>
+        UpdateAsync<IReadOnlyList<CompositionAttachment>>(
+            diagnosticsDirectory,
+            ownerRunId,
+            current =>
+            {
+                CompositionAttachment[] updated = [.. current.Select(item => item.ObservedAt(now))];
+                return (updated, updated.SequenceEqual(current) ? null : updated);
+            },
+            cancellationToken);
 
     /// <summary>Applies one serialized change whose decision may itself read durable state under the lock.</summary>
     /// <typeparam name="T">The result type.</typeparam>
@@ -153,6 +220,6 @@ public static class CompositionAttachmentStore
             && document.Attachments.All(item => item?.IsConsistent() == true && item.OwnerRunId == ownerRunId)
             && document.Attachments.Select(item => item.AttachedRunId).Distinct(StringComparer.Ordinal).Count() == document.Attachments.Count
             && document.Attachments.Select(item => item.OriginalAttachmentRequestId).Distinct(StringComparer.Ordinal).Count() == document.Attachments.Count;
-        return valid ? document.Attachments : throw new IOException("Runner attachment metadata cannot be verified.");
+        return valid ? [.. document.Attachments.Select(item => item.EndReason == "terminal-outcome" && item.Outcome is null ? item with { Outcome = "unknown" } : item)] : throw new IOException("Runner attachment metadata cannot be verified.");
     }
 }

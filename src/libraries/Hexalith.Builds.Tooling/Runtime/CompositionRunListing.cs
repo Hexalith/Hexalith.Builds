@@ -78,11 +78,12 @@ public static class CompositionRunListing
                         _ = unverifiableOwners.Add(tracked.RunId);
                     }
 
+                    attachments = [.. attachments.Select(item => item.ObservedAt(observedAt))];
                     CompositionAttachment[] live = [.. attachments.Where(item => item.IsLive(observedAt))];
                     bool local = state.ExecutionContext is { ValueKind: System.Text.Json.JsonValueKind.Object } context && context.TryGetProperty("kind", out System.Text.Json.JsonElement kind) && kind.GetString() == "local";
 
                     // CI owners do not wait for holds in this version, so their cleanup is never reported as hold-deferred.
-                    string cleanup = local && live.Length > 0 && state.TestRun?.TerminalOutcome.ExitCode == ToolExitCode.Success && state.CleanupDisposition == "not-requested"
+                    string cleanup = local && live.Length > 0 && state.TestRun?.TerminalOutcome.ExitCode == ToolExitCode.Success && state.CleanupDisposition == "not-requested" && Retention(state, attachments) != "failure-retained"
                         ? "pending"
                         : state.CleanupDisposition;
                     entries.Add(new CompositionRunListingEntry(
@@ -91,8 +92,8 @@ public static class CompositionRunListing
                         state.AttemptId,
                         state.CreatedAt,
                         state.CreatedAt is { } created ? Math.Max(0, (observedAt - created).TotalSeconds) : null,
-                        state.TestRun?.TerminalOutcome.ExitCode is not (null or ToolExitCode.Success or ToolExitCode.Cancelled) ? [state.RunId] : [],
-                        Retention(state),
+                        [.. (state.TestRun?.TerminalOutcome.ExitCode is not (null or ToolExitCode.Success or ToolExitCode.Cancelled) ? new[] { state.RunId } : []).Concat(attachments.Where(item => item.Outcome == "failed").Select(item => item.AttachedRunId))],
+                        Retention(state, attachments),
                         cleanup,
                         state.StartupDeadlineUtc,
                         timing?.DeadlineUtc,
@@ -120,9 +121,11 @@ public static class CompositionRunListing
 
     /// <summary>Derives the recorded retention without inferring it from process liveness.</summary>
     /// <param name="state">The merged owner state.</param>
+    /// <param name="attachments">The owner's recorded attachments, when available.</param>
     /// <returns>The retention label.</returns>
-    internal static string Retention(CompositionRunState state) => state.TestRun switch
+    internal static string Retention(CompositionRunState state, IReadOnlyList<CompositionAttachment>? attachments = null) => state.TestRun switch
     {
+        _ when attachments?.Any(item => item.Outcome == "failed") == true => state.CleanupDisposition == "complete" ? "released" : "failure-retained",
         null => "unavailable",
         _ when state.CleanupDisposition == "complete" && state.TestRun.FailureRetained => "released",
         { ResourceDisposition: "retained" } => "failure-retained",

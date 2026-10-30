@@ -1,0 +1,13 @@
+# Story 2.7 evidence notes
+
+This implements the frozen Platform specification `spec-2-7-withdraw-attached-runs-and-keep-failure-retention.md`, building on Builds `2980efdf51f305dc5c39bb854261c252d13465f5` and policy `hexalith.platform.candidate-and-attachment-policy.v1`.
+
+Attachment records now carry first outcomes. `attach --end` requires `--outcome passed|failed|cancelled`; the first record survives later ends, cancellation, withdrawal and expiry. An end at or after expiry records `withdrawn`/`expired` at the immutable original expiry. Legacy terminal records without an outcome read as `unknown`. The v1 descriptor/result hold shapes and contract reader invariants are unchanged.
+
+Owner cancellation is recorded before `attachments.lock` is taken to withdraw active holds. Cancellation during the success hold wait uses a fresh finite stopping allowance, withdraws with `owner-cancelled`, and then cleans up. The owner's first terminal outcome remains immutable. Exact down records cleanup in progress, withdraws with `developer-stop`, and only then acquires the provisioning lock and stops resources. Session-based down also stops its AppHost after withdrawal. Both paths report `HXI011` with attached run ids and actual reasons; unrecorded expiries become `expired` in the same pass. Unrecordable withdrawal prevents teardown (`HXR037` for down, pending cleanup with `HXT008` for owner cancellation).
+
+A recorded local attached failure interrupts the owner's success hold wait and establishes failure retention. The owner records resource disposition `retained`; listing includes the failed attached run id and each attachment outcome. Later cancellation withdraws peers and preserves the failed attachment and resources. Ready failure-retained local environments remain attachable until explicit down. Listing projects unrecorded expiries without changing attachment metadata.
+
+Validation uses the Debug Module.Tests project and its built xUnit v3 assembly directly. The focused classes cover the matrix rows, prior admission/hold rules, listing honesty, outcome persistence, exact-owner bounded cleanup, cancellation and cleanup retries. Build and test logs alongside this note record the exact commands and results.
+
+The runner does not own or terminate attached processes/tasks. Stopping attached work and ending access at expiry is explicitly deferred to Platform story 2.9 in the Platform deferred-work ledger. CI withdrawal/job cleanup, fixture migration, attached-run result documents, candidate acceptance and publication changes remain outside this story. These deterministic tests do not claim live composition or candidate-evidence qualification.

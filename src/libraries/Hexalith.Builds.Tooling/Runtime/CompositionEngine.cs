@@ -488,22 +488,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         ArgumentNullException.ThrowIfNull(session);
         cancellationToken.ThrowIfCancellationRequested();
         using CancellationTokenSource bound = TeardownBound();
-        try
-        {
-            await StopAppHostAsync(session.AppHost, bound.Token).ConfigureAwait(false);
-        }
-        catch (Exception exception) when (IsTeardownFailure(exception))
-        {
-            if (session.Plan.SelectedTest is not null)
-            {
-                KillOwnedWithoutWaiting(session.AppHost);
-            }
-
-            // The tag sweep below still removes the AppHost and everything it started.
-        }
-
-        session.AppHost.Dispose();
-        return await DownCoreAsync(session.RunId, bound.Token).ConfigureAwait(false);
+        return await DownCoreAsync(session.RunId, bound.Token, session: session).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -554,21 +539,27 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <param name="session">The owned session.</param>
     /// <param name="stoppingToken">The original stopping deadline.</param>
     /// <returns>A truthful bounded cleanup result.</returns>
-    internal async Task<CompositionDownResult> DownWithinBudgetAsync(CompositionRunSession session, CancellationToken stoppingToken)
+    internal Task<CompositionDownResult> DownWithinBudgetAsync(CompositionRunSession session, CancellationToken stoppingToken) =>
+        DownCoreAsync(session.RunId, stoppingToken, new CompositionRunResources([], ProjectProcessIds(session.Readiness.Resources), true) { WorkspaceIds = ["workspace:" + session.RunId] }, session);
+
+    /// <summary>Records owner cancellation before serializing attachment withdrawal, preserving the first terminal outcome.</summary>
+    /// <param name="runId">The exact owner identity.</param>
+    /// <param name="cancellationToken">The stopping allowance.</param>
+    /// <returns>The durable cancellation task.</returns>
+    /// <exception cref="IOException">Verified owner state is unavailable.</exception>
+    internal async Task RecordOwnerCancellationAsync(string runId, CancellationToken cancellationToken)
     {
-        try
+        FileStream held = await OpenOutcomeLockAsync(Path.Combine(DiagnosticsDirectory(runId), "outcome.lock"), cancellationToken).ConfigureAwait(false);
+        await using (held.ConfigureAwait(false))
         {
-            await StopAppHostAsync(session.AppHost, stoppingToken).ConfigureAwait(false);
-        }
-        catch (Exception exception) when (IsTeardownFailure(exception))
-        {
-            KillOwnedWithoutWaiting(session.AppHost);
+            CompositionRunState state = await ReadOwnedStateAsync(runId, cancellationToken).ConfigureAwait(false)
+                ?? throw new IOException("Owner cancellation cannot be recorded without verified ownership.");
 
-            // Exact ownership scanning still runs when graceful stop or diagnostics fail.
+            if (state.CleanupDisposition != "complete")
+            {
+                await StateStore.WriteAsync(state with { Status = CompositionRunStatus.Cancelled, UpdatedAt = DateTimeOffset.UtcNow }, cancellationToken).ConfigureAwait(false);
+            }
         }
-
-        session.AppHost.Dispose();
-        return await DownCoreAsync(session.RunId, stoppingToken, new CompositionRunResources([], ProjectProcessIds(session.Readiness.Resources), true) { WorkspaceIds = ["workspace:" + session.RunId] }).ConfigureAwait(false);
     }
 
     /// <summary>Initializes a returned session only while no exact cleanup has claimed or completed its owner.</summary>
@@ -890,6 +881,13 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 await Task.Delay(TimeSpan.FromMilliseconds(20), bound.Token).ConfigureAwait(false);
             }
         }
+    }
+
+    private static CompositionDownResult WithdrawalRefusal(CompositionRunState? state, bool recordingFailed = false)
+    {
+        CompositionRunResources remaining = state?.RemainingResources ?? state?.TestRun?.RemainingResources ?? new CompositionRunResources([], [], true);
+        ToolDiagnostic diagnostic = Diagnostic("HXR037", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Attachment withdrawal could not be durably recorded; no cleanup started.", "down", "Retry down for the same owner run identity.");
+        return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [.. recordingFailed ? new[] { Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owner cleanup state could not be durably recorded; cleanup remains pending.", "evidence", null) } : [], diagnostic]) { RemainingResources = remaining }, remaining);
     }
 
     private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup continued, but its terminal metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
@@ -1275,7 +1273,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The acquired cleanup lock transfers into the configured await-using lifetime after guarded acquisition.")]
-    private async Task<CompositionDownResult> DownCoreAsync(string runId, CancellationToken bound, CompositionRunResources? known = null)
+    private async Task<CompositionDownResult> DownCoreAsync(string runId, CancellationToken bound, CompositionRunResources? known = null, CompositionRunSession? session = null)
     {
         FileStream? cleanupLock = null;
         bool recordingFailed = false;
@@ -1299,7 +1297,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable cleanupLifetime = (cleanupLock ?? Stream.Null).ConfigureAwait(false);
         try
         {
-            return await DownOwnedCoreAsync(runId, recordingFailed, bound).ConfigureAwait(false);
+            return await DownOwnedCoreAsync(runId, recordingFailed, session, bound).ConfigureAwait(false);
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
@@ -1308,7 +1306,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The acquired provisioning lock transfers immediately into the configured await-using lifetime after guarded acquisition.")]
-    private async Task<CompositionDownResult> DownOwnedCoreAsync(string runId, bool recordingFailed, CancellationToken bound)
+    private async Task<CompositionDownResult> DownOwnedCoreAsync(string runId, bool recordingFailed, CompositionRunSession? session, CancellationToken bound)
     {
         List<ToolDiagnostic> bookkeeping = recordingFailed ? [RecordingFailure()] : [];
         CompositionRunState? state = await ReadOwnedStateAsync(runId, bound).ConfigureAwait(false);
@@ -1329,7 +1327,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                bookkeeping.Add(RecordingFailure());
+                return WithdrawalRefusal(state, recordingFailed: true);
             }
         }
 
@@ -1344,8 +1342,23 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                bookkeeping.Add(RecordingFailure());
+                return WithdrawalRefusal(state, recordingFailed: true);
             }
+        }
+
+        try
+        {
+            if (state is not null && state.SelectedTest is null)
+            {
+                await StateStore.WriteAsync(state with { CleanupDisposition = "in-progress", UpdatedAt = DateTimeOffset.UtcNow }, bound).ConfigureAwait(false);
+            }
+
+            IReadOnlyList<CompositionAttachment> withdrawn = await CompositionAttachmentStore.WithdrawAsync(directory, runId, "developer-stop", DateTimeOffset.UtcNow, bound).ConfigureAwait(false);
+            bookkeeping.AddRange(CompositionAttachmentStore.WithdrawalDiagnostics(withdrawn));
+        }
+        catch (Exception exception) when (IsTeardownFailure(exception))
+        {
+            return WithdrawalRefusal(state);
         }
 
         FileStream? provisioning = null;
@@ -1358,7 +1371,8 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         {
             if (bound.IsCancellationRequested)
             {
-                return IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Count > 0);
+                CompositionDownResult pending = IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Any(item => item.Category != ToolFailureCategory.None));
+                return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping, .. pending.Result.Diagnostics] } };
             }
 
             if (!Directory.Exists(directory))
@@ -1369,7 +1383,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             {
                 CompositionRunResources pending = await ObserveOwnedResourcesAsync(runId, bound).ConfigureAwait(false);
                 ToolDiagnostic stalled = Diagnostic("HXR023", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Owned provisioning is still stopping; cleanup remains pending.", "down", "Retry down for the same run identity.");
-                return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(stalled.Phase, stalled.Category, stalled.RuleId, ToolExitCode.TopologyOrLifecycle), [stalled]) { RemainingResources = pending }, pending);
+                return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(stalled.Phase, stalled.Category, stalled.RuleId, ToolExitCode.TopologyOrLifecycle), [.. bookkeeping, stalled]) { RemainingResources = pending }, pending);
             }
         }
 
@@ -1380,7 +1394,22 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
-            return IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Count > 0);
+            CompositionDownResult pending = IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Any(item => item.Category != ToolFailureCategory.None));
+            return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping, .. pending.Result.Diagnostics] } };
+        }
+
+        if (session is not null)
+        {
+            try
+            {
+                await StopAppHostAsync(session.AppHost, bound).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (IsTeardownFailure(exception))
+            {
+                KillOwnedWithoutWaiting(session.AppHost);
+            }
+
+            session.AppHost.Dispose();
         }
 
         if (state?.AppHostProcessId is int processId && TryGetRecordedProcess(processId, state.AppHostStartedAt) is Process recorded)
@@ -1419,7 +1448,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             };
         }
 
-        bool complete = remaining.IsEmpty && workspaceRemoved && bookkeeping.Count == 0 && stopFailure is null;
+        bool complete = remaining.IsEmpty && workspaceRemoved && bookkeeping.All(item => item.Category == ToolFailureCategory.None) && stopFailure is null;
         bool stateRemoved = false;
         if (state?.SelectedTest is not null)
         {
@@ -1469,19 +1498,19 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
         }
 
-        if (stateRemoved && complete && bookkeeping.Count == 0)
+        if (stateRemoved && complete && bookkeeping.All(item => item.Category == ToolFailureCategory.None))
         {
             ToolDiagnostic completed = Diagnostic("HXI001", ToolPhase.Cleanup, ToolFailureCategory.None, "Runner-owned invocation cleanup completed.", "down", null);
-            return new CompositionDownResult(new ToolCommandResult("completed", ToolOutcome.Passed(), [completed]) { RemainingResources = remaining }, remaining);
+            return new CompositionDownResult(new ToolCommandResult("completed", ToolOutcome.Passed(), [.. bookkeeping, completed]) { RemainingResources = remaining }, remaining);
         }
 
-        if (stopFailure is not null && bookkeeping.Count == 0 && remaining.IsEmpty && workspaceRemoved)
+        if (stopFailure is not null && bookkeeping.All(item => item.Category == ToolFailureCategory.None) && remaining.IsEmpty && workspaceRemoved)
         {
-            return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(stopFailure.Phase, stopFailure.Category, stopFailure.RuleId, ToolExitCode.TopologyOrLifecycle), [stopFailure]) { RemainingResources = remaining }, remaining);
+            return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(stopFailure.Phase, stopFailure.Category, stopFailure.RuleId, ToolExitCode.TopologyOrLifecycle), [.. bookkeeping, stopFailure]) { RemainingResources = remaining }, remaining);
         }
 
         ToolDiagnostic incomplete = Diagnostic("HXR023", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Owned cleanup is incomplete or unverifiable.", "down", "Retry down for the same run identity.");
-        ToolDiagnostic first = bookkeeping.FirstOrDefault() ?? stopFailure ?? incomplete;
+        ToolDiagnostic first = bookkeeping.FirstOrDefault(item => item.Category != ToolFailureCategory.None) ?? stopFailure ?? incomplete;
         return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(first.Phase, first.Category, first.RuleId, first.RuleId == "HXT008" ? ToolExitCode.EvidenceSchemaOrPolicy : ToolExitCode.TopologyOrLifecycle), [.. bookkeeping, .. stopFailure is null ? [] : new ToolDiagnostic[] { stopFailure }, incomplete]) { RemainingResources = remaining }, remaining);
     }
 

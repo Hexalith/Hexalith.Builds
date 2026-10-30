@@ -515,7 +515,7 @@ that passed with live holds shows cleanup as pending.
 ```sh
 hexalith-module attach --owner-run-id <owner> --mode source --composition-identity <manifest-sha256> [--hold-seconds 300] --output json
 hexalith-module attach --owner-run-id <owner> --mode source --composition-identity <manifest-sha256> --attachment-request-id <issued-id>
-hexalith-module attach --end --owner-run-id <owner> --attached-run-id <issued-attached-run-id>
+hexalith-module attach --end --owner-run-id <owner> --attached-run-id <issued-attached-run-id> --outcome passed
 ```
 
 `attach` applies policy `hexalith.platform.candidate-and-attachment-policy.v1`. The hold is
@@ -529,8 +529,22 @@ retry. Artifact-identity matching is refused as unverifiable until Epic 3 popula
 and loaded identities. CI owners do not wait for holds in this version, so `HXR035` refuses an attachment to one (`owner-ci-holds-unsupported`). The stable reason is the diagnostic field. An accepted attachment records the
 original request or omission, acceptance time, effective seconds and absolute expiry, and
 issues `originalAttachmentRequestId` and `attachedRunId`; a retry that presents either keeps
-the first acceptance and expiry. `--end` ends only that attachment. A passed local owner
-waits for every live hold to end or reach its deadline before automatic cleanup.
+the first acceptance and expiry. `--end` requires `--outcome passed|failed|cancelled` and
+ends only that attachment. Its first outcome is immutable; a late end records `withdrawn`
+with reason `expired` at the original expiry. Legacy terminal records without an outcome
+are shown as `unknown`. Listings show each attachment's outcome, including passive expiry
+as `withdrawn`, and include failed attached runs in `failed-runs`.
+
+A passed local owner waits for live holds to end or expire. An attached failure ends that
+wait and retains the environment for debugging, with fresh attachments allowed while it
+remains ready. Later owner cancellation preserves this failure retention; only explicit
+`down` releases it. Owner cancellation, including Ctrl+C during the success hold wait,
+withdraws active attachments with reason `owner-cancelled` before cleanup. Explicit `down`
+withdraws them with reason `developer-stop`. Earlier unrecorded expiries are recorded as
+`expired` in the same pass, and `HXI011` reports withdrawn run ids and their reasons.
+If withdrawal cannot be durably recorded, no cleanup starts: `down` returns retryable
+`HXR037`, while owner cleanup remains pending with `HXT008`. Withdrawal records outcomes;
+termination of attached processes at expiry is deferred to Platform story 2.9.
 Exact cleanup accepts an omitted, missing or changed manifest, removes only the
 requested owner's resources and claims, and can be retried safely. Exporting
 `--evidence` requires an explicit `--manifest`. Incomplete cleanup exposes exact known container/process/workspace/claim leftovers and
