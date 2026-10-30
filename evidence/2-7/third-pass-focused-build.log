@@ -1,0 +1,42 @@
+== Module.Cli (builds Tooling) ==
+  Determining projects to restore...
+  Restored <worktree>/src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj (in 245 ms).
+  Restored <worktree>/src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj (in 245 ms).
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.128.4, CommunityToolkit.Aspire.Hosting.Dapr/13.6.2-beta.959, required range 13.6.2-beta.959 for net10.0.
+  Hexalith.Builds.Tooling -> <worktree>/src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll
+  Hexalith.Builds.Module.Cli -> <worktree>/src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:01:02.47
+== AppHost (-p:BuildProjectReferences=false) ==
+  Determining projects to restore...
+  Restored <worktree>/src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj (in 301 ms).
+  Restored <worktree>/src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj (in 311 ms).
+  2 of 4 projects are up-to-date for restore.
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.128.4, CommunityToolkit.Aspire.Hosting.Dapr/13.6.2-beta.959, required range 13.6.2-beta.959 for net10.0.
+  Hexalith.Builds.Module.AppHost -> <worktree>/src/hosts/Hexalith.Builds.Module.AppHost/bin/Debug/net10.0/Hexalith.Builds.Module.AppHost.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:05.88
+== Module.Tests (-p:BuildProjectReferences=false) ==
+  Determining projects to restore...
+  Restored <worktree>/src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj (in 241 ms).
+  Restored <worktree>/src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj (in 241 ms).
+  Restored <worktree>/test/fixtures/module/executable/P0Fixture.NativeMetadataProbe/P0Fixture.NativeMetadataProbe.csproj (in 242 ms).
+  Restored <worktree>/src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj (in 253 ms).
+  Restored <worktree>/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj (in 253 ms).
+  8 of 13 projects are up-to-date for restore.
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.128.4, CommunityToolkit.Aspire.Hosting.Dapr/13.6.2-beta.959, required range 13.6.2-beta.959 for net10.0.
+  Hexalith.Builds.Module.Tests -> <worktree>/test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:10.55

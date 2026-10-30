@@ -33,6 +33,26 @@ public sealed class CompositionRunListingTests
         listed.FailureRunIds.ShouldBeEmpty();
     }
 
+    /// <summary>A non-string recorded execution kind is not local, so its live hold never reports hold-deferred cleanup.</summary>
+    /// <returns>The listed owner and unchanged cleanup assertions.</returns>
+    [Fact]
+    public async Task NonStringExecutionKindIsListedAsNotLocalAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionRunStateStore store = new(Path.Combine(workspace.Root, "state"));
+        ModuleTestRunRecord passed = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "unknown", new CompositionRunResources([], []));
+        await store.WriteAsync(state with { TestRun = passed, CleanupDisposition = "not-requested", ExecutionContext = JsonSerializer.SerializeToElement(new { kind = 1 }) }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        DateTimeOffset accepted = DateTimeOffset.UtcNow;
+        CompositionAttachment live = new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), 600, accepted, 600, accepted.AddSeconds(600));
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(Path.Combine(store.Directory, "diagnostics", state.RunId), state.RunId, _ => (0, new[] { live }), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ToolCommandResult result = await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionRunListingEntry listed = result.Environments.ShouldNotBeNull().Single();
+        listed.OwnerRunId.ShouldBe(state.RunId);
+        listed.AttachedRunIds.ShouldBe([live.AttachedRunId]);
+        listed.Cleanup.ShouldBe("not-requested");
+    }
+
     /// <summary>Listing uses the original request time and exposes unavailable attachment and legacy metadata.</summary>
     /// <returns>The human and JSON listing assertions.</returns>
     [Fact]

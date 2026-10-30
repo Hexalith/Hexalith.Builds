@@ -56,6 +56,23 @@ public sealed class TestResultWriterTests
         passed.FailureRetained.ShouldBeFalse();
     }
 
+    /// <summary>A non-string recorded execution kind is not local and fails only with the writer's documented contract refusal.</summary>
+    /// <returns>The structured refusal and unpublished result assertions.</returns>
+    [Fact]
+    public async Task NonStringExecutionKindRefusesWithoutEscapingAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        state = state with { ExecutionContext = JsonSerializer.SerializeToElement(new { kind = 1 }) };
+        string directory = Path.Combine(workspace.Root, "state", "diagnostics", state.RunId);
+        DateTimeOffset accepted = DateTimeOffset.UtcNow;
+        CompositionAttachment failed = new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), 60, accepted, 60, accepted.AddSeconds(60)) { Outcome = "failed", EndReason = "terminal-outcome", EndedAtUtc = accepted.AddSeconds(1) };
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, _ => (0, new[] { failed }), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord passed = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), accepted, "retained", new CompositionRunResources([], []) { WorkspaceIds = ["workspace:" + state.RunId] });
+        _ = await Should.ThrowAsync<InvalidDataException>(() => TestResultWriter.WriteAsync(directory, state, passed, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        File.Exists(Path.Combine(directory, "test-result.json")).ShouldBeFalse();
+    }
+
     /// <summary>Malformed deadlines refuse durably without escaping JSON exceptions or replacing a prior result.</summary>
     /// <param name="field">The deadline object or population field to corrupt.</param>
     /// <param name="replacement">The replacement JSON, or null to omit the field.</param>

@@ -1,0 +1,61 @@
+[37m  Discovering: Hexalith.Builds.Module.Tests
+[0m[37m  Discovered:  Hexalith.Builds.Module.Tests
+[0m[37m  Starting:    Hexalith.Builds.Module.Tests
+[0m[91m    Hexalith.Builds.ModuleTool.Tests.PersistedProfileNativeTestsTests.VsTestFixtureSdkPinMatchesRepository [FAIL]
+[0m[37m      Shouldly.ShouldAssertException : fixture.RootElement.GetProperty("sdk").GetProperty("version").GetString()
+[0m[37m          should be
+[0m[37m      "10.0.403"
+[0m[37m          but was
+[0m[37m      "10.0.402"
+[0m[37m          difference
+[0m[37m      Difference     |                                     |   
+[0m[37m                     |                                    \|/  
+[0m[37m      Index          | 0    1    2    3    4    5    6    7    
+[0m[37m      Expected Value | 1    0    .    0    .    4    0    3    
+[0m[37m      Actual Value   | 1    0    .    0    .    4    0    2    
+[0m[37m      Expected Code  | 49   48   46   48   46   52   48   51   
+[0m[37m      Actual Code    | 49   48   46   48   46   52   48   50   
+[0m[90m      Stack Trace:
+[0m[37m        test/Hexalith.Builds.Module.Tests/PersistedProfileNativeTestsTests.cs(67,0): at Hexalith.Builds.ModuleTool.Tests.PersistedProfileNativeTestsTests.VsTestFixtureSdkPinMatchesRepository()
+[0m[37m           at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+[0m[37m           at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[0m[91m    Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureRetainsPassedOwnerWithoutWaitingForPeerAsync(beforeOwner: True) [FAIL]
+[0m[37m      Shouldly.ShouldAssertException : await run.Running.WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true)
+[0m[37m          should be
+[0m[37m      0
+[0m[37m          but was
+[0m[37m      4
+[0m[37m      
+[0m[37m      Additional Info:
+[0m[37m          {"status":"failed","outcome":{"exitCode":"ProductOrTest","phase":"Test","category":"ProductOrTest","ruleId":"HXT007"},"diagnostics":[{"ruleId":"HXT002","phase":"Test","category":"ProductOrTest","message":"The selected native report is missing, unsafe, uninspectable, or contains prohibited material.","field":"report","hint":null,"source":null,"location":null,"row":null}],"runId":"0123456789abcdef0123456789abcdef","remainingResources":{"containerIds":[],"processIds":[],"unverified":false,"isEmpty":false,"workspaceIds":["workspace:0123456789abcdef0123456789abcdef"],"claimIds":[],"discoveryFailures":[],"resourceIds":["workspace:0123456789abcdef0123456789abcdef"]},"testResultPath":"/tmp/hexalith-g4-unit-1e5272e58fc747a1a64bfb01240fc7d9/state/diagnostics/0123456789abcdef0123456789abcdef/test-result.json"}
+[0m[37m      
+[0m[90m      Stack Trace:
+[0m[37m        test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs(716,0): at Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureRetainsPassedOwnerWithoutWaitingForPeerAsync(Boolean beforeOwner)
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m        test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs(740,0): at Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureRetainsPassedOwnerWithoutWaitingForPeerAsync(Boolean beforeOwner)
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+[0m[37m        --- End of stack trace from previous location ---
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+[0m[91m    Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CumulativeWithdrawalDiagnosticsDoNotRepeatAttachedRunsAsync [FAIL]
+[0m[37m      Shouldly.ShouldAssertException : run.Cleanups
+[0m[37m          should be
+[0m[37m      1
+[0m[37m          but was
+[0m[37m      0
+[0m[90m      Stack Trace:
+[0m[37m        test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs(1288,0): at Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CumulativeWithdrawalDiagnosticsDoNotRepeatAttachedRunsAsync()
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m        test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs(1292,0): at Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CumulativeWithdrawalDiagnosticsDoNotRepeatAttachedRunsAsync()
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+[0m[37m        --- End of stack trace from previous location ---
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+[0m[37m  Finished:    Hexalith.Builds.Module.Tests (ID = '3a9d40a715264f3c632345967a4a267abc530054f8d8d9186e0e5f2ae4c9ad76')
+[0m[37m=== TEST EXECUTION SUMMARY ===
+[0m[37m   Hexalith.Builds.Module.Tests  Total: 555, Errors: 0, Failed: 3, Skipped: 0, Not Run: 0, Time: 319.518s
+[0m[0mexit=1

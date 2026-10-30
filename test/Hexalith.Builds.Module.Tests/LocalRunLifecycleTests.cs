@@ -841,6 +841,79 @@ public sealed class LocalRunLifecycleTests
         down.Remaining.Unverified.ShouldBeTrue();
     }
 
+    /// <summary>
+    /// A selected-test owner started by the real engine carries the process execution locality on its ready session, and
+    /// that flag agrees with the execution context recorded for the owner, locally and under complete GitHub Actions metadata.
+    /// </summary>
+    /// <param name="ci">Whether the ambient process declares CI with complete GitHub Actions metadata.</param>
+    /// <returns>The ready session locality and recorded owner context assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReadySessionLocalityMatchesRecordedExecutionContextAsync(bool ci)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("The fake AppHost toolchain uses POSIX scripts.");
+        }
+
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        string manifest = workspace.Save();
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            AppHostAssemblyPath = appHost,
+            AspireCommand = CompositionTestFiles.CreateAspire(workspace.Root),
+            DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+            SourceMapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root),
+            ReadinessTimeout = TimeSpan.FromSeconds(600),
+            StopTimeout = TimeSpan.FromSeconds(5),
+            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+        });
+        string[] names = ["CI", "GITHUB_ACTIONS", "GITHUB_REPOSITORY", "GITHUB_RUN_ID", "GITHUB_JOB", "RUNNER_OS", "RUNNER_ENVIRONMENT", "GITHUB_RUN_ATTEMPT"];
+        string?[] prior = [.. names.Select(Environment.GetEnvironmentVariable)];
+        CompositionStartResult result;
+        CompositionRunState? recorded;
+        try
+        {
+            string?[] values = ci ? ["true", "true", "owner/repository", "123", "tests", "Linux", "github-hosted", "1"] : new string?[names.Length];
+            for (int i = 0; i < names.Length; i++)
+            {
+                Environment.SetEnvironmentVariable(names[i], values[i]);
+            }
+
+            result = await engine.StartAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            recorded = result.Session is null ? null : await engine.StateStore.TryReadAsync(result.Session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        finally
+        {
+            for (int i = 0; i < names.Length; i++)
+            {
+                Environment.SetEnvironmentVariable(names[i], prior[i]);
+            }
+        }
+
+        try
+        {
+            result.IsReady.ShouldBeTrue(string.Join(" | ", result.Result.Diagnostics.Select(diagnostic => diagnostic.Message)));
+            CompositionRunSession session = result.Session.ShouldNotBeNull();
+            session.Plan.SelectedTest.ShouldBe(selected);
+            session.LocalExecution.ShouldBe(!ci);
+            JsonElement context = recorded.ShouldNotBeNull().ExecutionContext.ShouldNotBeNull();
+            string? kind = context.GetProperty("kind").GetString();
+            kind.ShouldBe(ci ? "ci" : "local");
+            (kind == "local").ShouldBe(session.LocalExecution);
+        }
+        finally
+        {
+            if (result.Session is not null)
+            {
+                _ = await engine.DownAsync(result.Session, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            }
+        }
+    }
+
     /// <summary>Exact down interrupts readiness and prelaunch for declared and ordinary owner invocations.</summary>
     /// <param name="declared">Whether this is a selected declared suite.</param>
     /// <param name="beforeLaunch">Whether cleanup claims the owner before AppHost launch.</param>

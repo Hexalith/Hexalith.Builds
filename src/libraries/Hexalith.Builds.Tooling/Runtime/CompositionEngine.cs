@@ -956,10 +956,23 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [.. bookkeeping, diagnostic]) { RemainingResources = remaining }, remaining);
     }
 
-    // Mirrors admission: only a selected-test owner with a local execution context can ever hold attachments.
+    /// <summary>Mirrors admission: only a selected-test owner with a local execution context can ever hold attachments.</summary>
+    /// <param name="session">The owned session.</param>
+    /// <returns>Whether attachment withdrawal must precede stopping this session.</returns>
     private static bool CanHoldAttachments(CompositionRunSession session) => session.Plan.SelectedTest is not null && session.LocalExecution;
 
     private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
+
+    /// <summary>Records the shared bookkeeping failure once, so a cleanup result reports HXT008 at most once however many writes fail.</summary>
+    /// <param name="bookkeeping">The cleanup bookkeeping diagnostics.</param>
+    private static void AddRecordingFailure(List<ToolDiagnostic> bookkeeping)
+    {
+        ToolDiagnostic failure = RecordingFailure();
+        if (!bookkeeping.Contains(failure))
+        {
+            bookkeeping.Add(failure);
+        }
+    }
 
     private static void KillOwnedWithoutWaiting(Process process)
     {
@@ -1401,7 +1414,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                bookkeeping.Add(RecordingFailure());
+                AddRecordingFailure(bookkeeping);
                 if (canHoldAttachments)
                 {
                     return WithdrawalRefusal(state, bookkeeping);
@@ -1420,7 +1433,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                bookkeeping.Add(RecordingFailure());
+                AddRecordingFailure(bookkeeping);
                 if (canHoldAttachments)
                 {
                     return WithdrawalRefusal(state, bookkeeping);
@@ -1436,7 +1449,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                bookkeeping.Add(RecordingFailure());
+                AddRecordingFailure(bookkeeping);
             }
         }
 
@@ -1475,7 +1488,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
             if (!Directory.Exists(directory))
             {
-                bookkeeping.Add(RecordingFailure());
+                AddRecordingFailure(bookkeeping);
             }
             else
             {
@@ -1518,7 +1531,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         }
         catch (Exception exception) when (IsTeardownFailure(exception))
         {
-            bookkeeping.Add(RecordingFailure());
+            AddRecordingFailure(bookkeeping);
         }
 
         (CompositionRunResources remaining, bool workspaceRemoved) = await TearDownAsync(runId, null, bound).ConfigureAwait(false);
@@ -1552,7 +1565,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                bookkeeping.Add(RecordingFailure());
+                AddRecordingFailure(bookkeeping);
                 complete = false;
             }
         }
@@ -1565,7 +1578,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                bookkeeping.Add(RecordingFailure());
+                AddRecordingFailure(bookkeeping);
             }
         }
 
@@ -1578,7 +1591,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                bookkeeping.Add(RecordingFailure());
+                AddRecordingFailure(bookkeeping);
             }
         }
 

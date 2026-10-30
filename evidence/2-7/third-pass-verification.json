@@ -1,0 +1,193 @@
+{
+  "story": "2.7 Withdraw attached runs and keep failure retention",
+  "pass": "third-pass review patches (2026-10-30)",
+  "isolation": "Verified in a detached scratch git worktree at Builds d409ba1 plus the uncommitted story changes (CompositionEngine.cs documentation comment, AttachAdmissionTests.cs, CompositionRunListingTests.cs, TestResultWriterTests.cs). The shared checkout carried concurrent, unrelated Story 3.1 edits that did not compile, so it was not used for verification.",
+  "worktreeBase": "d409ba1cba8736592a957b9c06717d1bd9e2eae3",
+  "sourceSha256": {
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs": "a463e88d2f79ba2b087bb3411be3b40940adca18afa4e1ad89cc51c80f8cd4c9",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunSession.cs": "10079caadeba7923ed8e0e890c867de2efff0c45e7f81b14352062aaca068e9a",
+    "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestEnvironmentDescriptorWriter.cs": "4e0908ce69130dd8e008716a8bc673b9487694e9418cd5a09fcb44bbcd232602",
+    "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestResultWriter.cs": "b7d6bd32a6b9d2a42d75894c52f1620dcc51f25dcfe41c7a17a601e1a0335f1f",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunListing.cs": "772a788c16a3f87e06c8183a47402e5a3c7bd569cf6cbadd3cf9a7f5809a6024",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs": "d01742be8eb74c2e086e0006d4fe7420f6e0079f34b25796e866cbdd740383df",
+    "test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs": "d89b3c9e9ba3e3e22ee2dd1b5b55e2ebee46182d6529a8cbc0775d223cb591a5",
+    "test/Hexalith.Builds.Module.Tests/CompositionRunListingTests.cs": "b57ab67047215221d1377d374041eff5538f664efbf176e8a3699b8367022c47",
+    "test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs": "95a2f3b9d48efec167ac25f8c3e0910a0df516c9906ef323b06828bf750bd949",
+    "README.md": "5c882e29370fe4e899f2e1666eac672dbfa96c21fda2fea78a7592148f485681"
+  },
+  "executedAssemblySha256": {
+    "Hexalith.Builds.Module.Tests.dll": "f7f08ddb2994e80ef276750b9939c1976c71ba902a5765b5132a1e967c4f8f94",
+    "Hexalith.Builds.Tooling.dll": "c6f262c2fc52ce3c9f8bb79af0d440b7bccb2389b1b7670f23de569584878661"
+  },
+  "build": {
+    "blocked": {
+      "command": "dotnet build test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj -c Debug -nodeReuse:false",
+      "result": "Pre-existing blocker: Hexalith.Builds.Module.EventStoreHost fails with EventStore routing API errors (CS0234, CS1061, CS0122, IDE0005). Tooling, Module.Cli and UiHost compiled.",
+      "log": "third-pass-build-blocked.log"
+    },
+    "focused": {
+      "commands": [
+        "dotnet build src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj -c Debug -nodeReuse:false",
+        "dotnet build src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj -c Debug -nodeReuse:false -p:BuildProjectReferences=false",
+        "dotnet build test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj -c Debug -nodeReuse:false -p:BuildProjectReferences=false"
+      ],
+      "result": "Build succeeded with 0 warnings and 0 errors for each command, with analyzers enabled.",
+      "log": "third-pass-focused-build.log"
+    }
+  },
+  "regressionTests": {
+    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -class '*CompositionRunListingTests' -class '*LocalRunLifecycleTests' -class '*LocalRunLifecycleReviewTests' -class '*TestResultWriterTests' -class '*ModuleRunnerReviewRegressionTests' -class '*LocalRunSourceReviewTests' -class '*StartupCoordinationTests' -class '*StartupReadinessTests' -class '*LocalRunFollowupTests' -class '*LocalRunCommittedReviewTests' -class '*McpCliRunBuildTests' -class '*ReadsProfileSelectionTests' -class '*PlatformExecutionReviewTests' -class '*CompositionEngineTests' -class '*PersistedProfileNativeTestsTests' -class '*PublicCompositionCommandTests' -class '*TestEnvironmentProvisioningTests' -noLogo -result-xml third-pass-tests.xml",
+    "total": 555,
+    "passed": 552,
+    "failed": [
+      {
+        "test": "PersistedProfileNativeTestsTests.VsTestFixtureSdkPinMatchesRepository",
+        "cause": "Pre-existing committed inconsistency at the worktree base: global.json pins SDK 10.0.403 while test/fixtures/module/executable/P0Fixture.NativeTests.VsTest/global.json pins 10.0.402. Unrelated to this story."
+      },
+      {
+        "test": "AttachAdmissionTests.AttachedFailureRetainsPassedOwnerWithoutWaitingForPeerAsync(beforeOwner: True)",
+        "cause": "Host load (load average above 40): the 2-second native fixture timed out (HXT007/HXT002). Passed in three isolated reruns."
+      },
+      {
+        "test": "AttachAdmissionTests.CumulativeWithdrawalDiagnosticsDoNotRepeatAttachedRunsAsync",
+        "cause": "Same load-induced native timeout. Passed in three isolated reruns."
+      }
+    ],
+    "storySevenClasses": "306 cases (299 before this pass plus 7 new); 304 passed in the loaded run and both failures pass in isolation.",
+    "log": "third-pass-tests.log",
+    "xml": "third-pass-tests.xml"
+  },
+  "attachClassRerun": {
+    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -noLogo -result-xml third-pass-attach-rerun.xml",
+    "total": 120,
+    "passed": 119,
+    "failed": "UnrecordableCancellationWithdrawalDefersCleanupAsync: the test's own outcome.lock gate raced the owner's recording step under load average 69 (IOException opening outcome.lock). Passed in three isolated reruns.",
+    "xml": "third-pass-attach-rerun.xml"
+  },
+  "isolatedReruns": {
+    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -method '*UnrecordableCancellationWithdrawalDefersCleanupAsync' -method '*AttachedFailureRetainsPassedOwnerWithoutWaitingForPeerAsync' -method '*CumulativeWithdrawalDiagnosticsDoNotRepeatAttachedRunsAsync' -noLogo",
+    "runs": 3,
+    "result": "4/4 passed in each run"
+  },
+  "reviewFixes": {
+    "scope": "Coordinator review of the third-pass patches: an engine-started session locality test, the LocalExecution documentation, at most one HXT008 per DownOwnedCoreAsync result (idempotent AddRecordingFailure), and the evidence README follow-up pointer. The sourceSha256 and regressionTests entries above predate these fixes.",
+    "worktreeBase": "d409ba1cba8736592a957b9c06717d1bd9e2eae3",
+    "sourceSha256": {
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs": "ab67a4dd12fb450fc0a6abdc01b88e827f598a8d43111355809efbbf3b8a1650",
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunSession.cs": "7f021698e64f4f4a75d9ecc2649b61cfbadf264cbadc00e49834e9ee152a50aa",
+      "test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs": "98c0e44cfe55d949c3becc4e8df6101e5ff97795f2f2bee3662dfc0fbdb495db",
+      "test/Hexalith.Builds.Module.Tests/LocalRunLifecycleTests.cs": "242342f8239bca7c502d085833124a314c93179c9599340b9deccc6b2690d49f",
+      "evidence/2-7/README.md": "ca4cf046a0e8a688e66ac3065daaf0f48abdfe349e12ce91d2c26126d7f94d66"
+    },
+    "build": "Module.Cli (with Tooling) and AppHost (-p:BuildProjectReferences=false) built with 0 warnings and 0 errors. The P0Fixture projects were built individually, then Module.Tests with -p:BuildProjectReferences=false: 0 warnings, 0 errors.",
+    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -method '*ReadySessionLocalityMatchesRecordedExecutionContextAsync' -method '*RepeatedBookkeepingFailuresReportOneRecordingFailureAsync' -method '*PostWithdrawalProvisioningFailureStopsSessionAppHostAsync' -method '*DownWithdrawalRequirementFollowsAdmissionLocalityAsync' -method '*SessionCleanupKeepsLiveAppHostUntilWithdrawalAndReportSucceedAsync' -method '*CiSessionStopsAppHostOnEarlyCleanupExitsAsync' -method '*IncompleteTeardownAfterWithdrawalKeepsCleanupClassificationAsync' -method '*DownRequiresDurableWithdrawalAndReportsBeforeTeardownAsync' -method '*FailedBookkeepingStillStopsOwnedProcessAsync' -noLogo -result-xml third-pass-review-fix-tests.xml",
+    "result": "25 of 25 passed.",
+    "xml": "third-pass-review-fix-tests.xml",
+    "mutationCheck": "Forcing LocalExecution = true at the engine session initializer and making AddRecordingFailure always add failed ReadySessionLocalityMatchesRecordedExecutionContextAsync(ci: True) and RepeatedBookkeepingFailuresReportOneRecordingFailureAsync; the local case still passed. The worktree source was restored afterwards."
+  },
+  "mutationChecks": {
+    "method": "Each production change was reverted in the scratch worktree only, rebuilt with -p:RunAnalyzers=false, the named tests were run, and the sources were restored before the final analyzer-enabled build.",
+    "groups": [
+      {
+        "mutations": [
+          "Remove Distinct() at both incomplete-down merge sites",
+          "Classify the provisioning-cancelled exit with bookkeeping.Count > 0",
+          "Use plain bookkeeping.FirstOrDefault() in the final incomplete classification",
+          "Drop the string guard on kind in TestResultWriter",
+          "Drop the string guard on kind in CompositionRunListing",
+          "Delete the attach result outcome= line in ToolDiagnosticFormatter"
+        ],
+        "result": "6 of 8 targeted cases failed as expected: NonStringExecutionKindRefusesWithoutEscapingAsync, NonStringExecutionKindIsListedAsNotLocalAsync, IncompleteTeardownAfterWithdrawalKeepsCleanupClassificationAsync, HumanOutputShowsAttachedRunAndHoldDeadlineAsync, PostWithdrawalProvisioningFailureStopsSessionAppHostAsync(True, False, False) and (True, True, True). The two cases that no mutation reaches still passed."
+      },
+      {
+        "mutations": [
+          "CanHoldAttachments always true, which restores the pre-fix session stop after withdrawal"
+        ],
+        "result": "3 of 3 targeted cases failed as expected: CiSessionStopsAppHostOnEarlyCleanupExitsAsync (exhausted-budget, unverifiable-state) and SessionDownStopsUnattachableAppHostWhileCleanupLockIsHeldAsync."
+      }
+    ]
+  },
+  "coordinatorVerification": {
+    "scope": "Coordinator re-verification after the fourth-pass review fixes, in a detached scratch worktree at Builds d409ba1 plus only the Story 2.7 uncommitted changes (concurrent Story 3.1 hunks in CompositionEngine.cs were excluded). Source hashes use LF line endings.",
+    "worktreeBase": "d409ba1cba8736592a957b9c06717d1bd9e2eae3",
+    "sourceSha256LF": {
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs": "382e40962599baea98f6c30daaedbeb53a2ff797bb2ccffd9262f4f041f4703d",
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunSession.cs": "91713040944bd538290e5b3cd415e52f31f6497d12a48c600c88b941366fdc93",
+      "test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs": "6190238ab8dd1fa6c96be71360a79b95374d4f99b07c6c24f70e955477eba54f",
+      "test/Hexalith.Builds.Module.Tests/LocalRunLifecycleTests.cs": "26b2d8d8eb1fa3f6966efde7052b914e059473bfa9d385eac42982a204f53777",
+      "test/Hexalith.Builds.Module.Tests/CompositionRunListingTests.cs": "9954323481ef25b907a5d5890d4de2f91516d5083af715bbac110243eec6c41f",
+      "test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs": "6d06da703caaa41be62349633e139612075b39fefd63351c9e415d443db2505a",
+      "evidence/2-7/README.md": "ca4cf046a0e8a688e66ac3065daaf0f48abdfe349e12ce91d2c26126d7f94d66"
+    },
+    "build": {
+      "commands": [
+        "dotnet build src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj -c Debug -nodeReuse:false",
+        "dotnet build src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj -c Debug -nodeReuse:false -p:BuildProjectReferences=false",
+        "dotnet build <each P0Fixture ProjectReference of Module.Tests> -c Debug -nodeReuse:false",
+        "dotnet build test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj -c Debug -nodeReuse:false -p:BuildProjectReferences=false"
+      ],
+      "result": "Every build: 0 warnings, 0 errors."
+    },
+    "fixtureTimeoutFix": "The first seven-class run failed AttachedFailureRetainsPassedOwnerWithoutWaitingForPeerAsync(beforeOwner: True) with HXT007/HXT002: its delayed native fixture sleeps 1 s against the fixture execution limit of 2 s. OwnerRun now raises executionTimeoutSeconds to 60 for delayNative as it already did for blockNative.",
+    "sevenClassRun": {
+      "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -class '*CompositionRunListingTests' -class '*LocalRunLifecycleTests' -class '*LocalRunLifecycleReviewTests' -class '*TestResultWriterTests' -class '*ModuleRunnerReviewRegressionTests' -class '*LocalRunSourceReviewTests' -noLogo -result-xml fourth-pass-tests.xml",
+      "summary": {
+        "Pass": 308,
+        "Fail": 1
+      },
+      "failed": [
+        "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CancellationPublicationRefusalPreservesLiveAppHostAsync"
+      ],
+      "xml": "fourth-pass-tests.xml"
+    },
+    "crossClassInterference": "CancellationPublicationRefusalPreservesLiveAppHostAsync asserts that a live fake AppHost tagged with the shared fixed run id CompositionTestFiles.RunId survives. It failed in both seven-class runs at the same position and passed everywhere else: 3 isolated reruns, 2 runs paired with its predecessor, the attach class alone and three bisect combinations. CompositionRunResourceScanner discovers run processes machine-wide through /proc/*/environ, so any teardown for that shared run id stops the AppHost. This test-isolation hazard predates this pass and is recorded in the Platform deferred-work ledger.",
+    "attachClassAlone": {
+      "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -noLogo -result-xml fourth-pass-attach-class.xml",
+      "summary": {
+        "Pass": 121
+      }
+    },
+    "bisect": {
+      "fourth-pass-bisect-a.xml": {
+        "classes": [
+          "AttachAdmissionTests",
+          "LocalRunLifecycleTests"
+        ],
+        "summary": {
+          "Pass": 178
+        }
+      },
+      "fourth-pass-bisect-b1.xml": {
+        "classes": [
+          "AttachAdmissionTests",
+          "CompositionRunListingTests",
+          "TestResultWriterTests"
+        ],
+        "summary": {
+          "Pass": 167
+        }
+      },
+      "fourth-pass-bisect-b2.xml": {
+        "classes": [
+          "AttachAdmissionTests",
+          "CompositionRunListingTests",
+          "TestResultWriterTests"
+        ],
+        "summary": {
+          "Pass": 167
+        }
+      },
+      "fourth-pass-bisect-c.xml": {
+        "classes": [
+          "AttachAdmissionTests",
+          "LocalRunLifecycleReviewTests",
+          "ModuleRunnerReviewRegressionTests",
+          "LocalRunSourceReviewTests"
+        ],
+        "summary": {
+          "Pass": 206
+        }
+      }
+    }
+  }
+}
