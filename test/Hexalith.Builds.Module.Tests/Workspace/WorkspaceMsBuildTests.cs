@@ -11,6 +11,8 @@ using System.Xml.Linq;
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
 
+using Microsoft.Build.Evaluation;
+using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
 using Shouldly;
@@ -491,6 +493,7 @@ public sealed class WorkspaceMsBuildTests
     [Theory]
     [InlineData("Version=1.0.0", true)]
     [InlineData("Version=1.0.0;", true)]
+    [InlineData("; ;Version=1.0.0;;", true)]
     [InlineData("Version=2.0.0", false)]
     [InlineData("Version=1.0.0;Configuration=Release", false)]
     public async Task RetainedProjectVersionMetadataMatchesCatalogAsync(string additionalProperties, bool accepted)
@@ -2265,27 +2268,34 @@ public sealed class WorkspaceMsBuildTests
     /// <summary>Verifies forwarded selections are canonical before child evaluation, restore and build.</summary>
     /// <param name="relative">Whether the root uses relative segments.</param>
     /// <param name="mixed">Whether a second mapping entry comes from packages.</param>
+    /// <param name="escaped">Whether the canonical root contains a literal percent escape.</param>
     /// <returns>The forwarded graph assertion.</returns>
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public async Task ForwardedMappedSelectionsRestoreWithCanonicalChildValuesAsync(bool relative, bool mixed)
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, true)]
+    [InlineData(true, false, true)]
+    public async Task ForwardedMappedSelectionsRestoreWithCanonicalChildValuesAsync(bool relative, bool mixed, bool escaped)
     {
         string root = NewDirectory();
         try
         {
             string active = Path.Combine(root, "active");
-            string dependency = Path.Combine(active, "references", "Hexalith.Dep");
-            string childDirectory = Path.Combine(dependency, "src", "Child");
+            string dependency = Path.Combine(active, "references", escaped ? "Hexalith.Dep%20" : "Hexalith.Dep");
+            _ = Directory.CreateDirectory(dependency);
+
+            // Keep SDK project paths ordinary while a mapped root makes the literal-escape round trip.
+            string childDirectory = Path.Combine(escaped ? active : dependency, "src", "Child");
             _ = Directory.CreateDirectory(childDirectory);
             string child = Path.Combine(childDirectory, "Child.csproj");
             string observed = Path.Combine(root, "child-values.txt");
             new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0")), new XElement("Target", new XAttribute("Name", "ObserveChild"), new XAttribute("BeforeTargets", "CoreCompile"), new XElement("WriteLinesToFile", new XAttribute("File", observed), new XAttribute("Overwrite", "true"), new XAttribute("Lines", "$(HexalithDepRoot)|$(HexalithDepFromSource)|$(Configuration)|$(Version)|$(HexalithOtherFromSource)"))))).Save(child);
-            string forwarded = relative ? "references/Hexalith.Dep/src/../" : dependency + Path.DirectorySeparatorChar;
+            string forwarded = relative ? Path.GetRelativePath(active, dependency) + "/src/../" : dependency + Path.DirectorySeparatorChar;
             string properties = "HexalithDepRoot=" + forwarded + ";HexalithDepFromSource=true;Version=1.0.0;HexalithOtherFromSource=" + (mixed ? "false" : "true");
-            string project = WriteProject(active, new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0")), new XElement("ItemGroup", new XElement("PackageVersion", new XAttribute("Include", "Child"), new XAttribute("Version", "1.0.0")), new XElement("ProjectReference", new XAttribute("Include", child), new XAttribute("AdditionalProperties", properties), new XAttribute("IsAspireProjectResource", "false"))))).ToString());
+            string authoredProperties = properties.Replace("%", "%25", StringComparison.Ordinal);
+            string project = WriteProject(active, new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0")), new XElement("ItemGroup", new XElement("PackageVersion", new XAttribute("Include", "Child"), new XAttribute("Version", "1.0.0")), new XElement("ProjectReference", new XAttribute("Include", ProjectCollection.Escape(child)), new XAttribute("AdditionalProperties", authoredProperties), new XAttribute("IsAspireProjectResource", "false"))))).ToString());
             SourceMapping mapping = Mapping(active, WorkspaceMode.Source) with
             {
                 Entries = [new("Hexalith.Active", "source", active), new("Hexalith.Dep", "source", dependency), new("Hexalith.Other", mixed ? "package" : "source", mixed ? null : active)],
@@ -2298,15 +2308,15 @@ public sealed class WorkspaceMsBuildTests
             JsonElement reference = items.RootElement.GetProperty("Items").GetProperty("ProjectReference")[0];
             reference.GetProperty("AdditionalProperties").GetString().ShouldBe(properties.Replace(forwarded, dependency, StringComparison.Ordinal));
             reference.GetProperty("IsAspireProjectResource").GetString().ShouldBe("false");
-            XDocument.Load(project).Descendants("ProjectReference").Single().Attribute("AdditionalProperties")!.Value.ShouldBe(properties);
+            XDocument.Load(project).Descendants("ProjectReference").Single().Attribute("AdditionalProperties")!.Value.ShouldBe(authoredProperties);
             CompositionProcessResult built = await RunDotnetAsync(active, mapping, workspace, "build", project, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
             built.ExitCode.ShouldBe(0, built.Output + built.ErrorOutput);
             (await File.ReadAllTextAsync(observed, TestContext.Current.CancellationToken).ConfigureAwait(true)).Trim().ShouldBe(dependency + "|true|Debug|1.0.0|" + (mixed ? "false" : "true"));
             using JsonDocument assets = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(active, "obj", "project.assets.json"), TestContext.Current.CancellationToken).ConfigureAwait(true));
             assets.RootElement.GetProperty("libraries").EnumerateObject().ShouldAllBe(item => item.Value.GetProperty("type").GetString() == "project");
 
-            TaskItem input = new(child);
-            input.SetMetadata("AdditionalProperties", properties.Replace(forwarded, dependency + Path.DirectorySeparatorChar, StringComparison.Ordinal));
+            TaskItem input = new(ProjectCollection.Escape(child));
+            ((ITaskItem2)input).SetMetadataValueLiteral("AdditionalProperties", properties.Replace(forwarded, dependency + Path.DirectorySeparatorChar, StringComparison.Ordinal));
             input.SetMetadata("IsAspireProjectResource", "false");
             TaskItem version = new("Child");
             version.SetMetadata("Version", "1.0.0");
@@ -2315,7 +2325,11 @@ public sealed class WorkspaceMsBuildTests
             task.Execute().ShouldBeTrue();
             input.GetMetadata("AdditionalProperties").ShouldBe(original);
             task.SelectedProjects[0].ShouldNotBeSameAs(input);
-            task.SelectedProjects[0].GetMetadata("AdditionalProperties").ShouldBe(original.Replace(dependency + Path.DirectorySeparatorChar, dependency, StringComparison.Ordinal));
+            string canonical = original.Replace(dependency + Path.DirectorySeparatorChar, dependency, StringComparison.Ordinal);
+            task.SelectedProjects[0].GetMetadata("AdditionalProperties").ShouldBe(canonical);
+            TaskItem copied = new(task.SelectedProjects[0]);
+            copied.GetMetadata("AdditionalProperties").ShouldBe(canonical);
+            new TaskItem(copied).GetMetadata("AdditionalProperties").ShouldBe(canonical);
         }
         finally
         {
@@ -2328,6 +2342,7 @@ public sealed class WorkspaceMsBuildTests
     /// <returns>The early refusal assertion.</returns>
     [Theory]
     [InlineData("Unknown=value")]
+    [InlineData(";;;")]
     [InlineData("HexalithDepRoot")]
     [InlineData("HexalithDepRoot=")]
     [InlineData("HexalithDepFromSource=true;HexalithDepFromSource=true")]
@@ -2338,6 +2353,8 @@ public sealed class WorkspaceMsBuildTests
     [InlineData("Configuration=Release")]
     [InlineData("Version=9.9.9")]
     [InlineData("HexalithDepFromSource=true;;Version=1.0.0")]
+    [InlineData(";HexalithDepFromSource=true")]
+    [InlineData("HexalithDepFromSource=true;")]
     [InlineData("HexalithDepRoot=../outside")]
     [InlineData("HexalithDepRoot=references/escape")]
     public async Task UnsafeForwardedAssignmentsStopBeforeChildEvaluationAsync(string properties)
@@ -2349,18 +2366,36 @@ public sealed class WorkspaceMsBuildTests
             string dependency = Path.Combine(active, "references", "Hexalith.Dep");
             _ = Directory.CreateDirectory(dependency);
             _ = Directory.CreateDirectory(Path.Combine(root, "outside"));
-            _ = Directory.CreateSymbolicLink(Path.Combine(active, "references", "escape"), Path.Combine(root, "outside"));
+            if (properties == "HexalithDepRoot=references/escape")
+            {
+                try
+                {
+                    _ = Directory.CreateSymbolicLink(Path.Combine(active, "references", "escape"), Path.Combine(root, "outside"));
+                }
+                catch (Exception exception) when (exception is UnauthorizedAccessException or IOException or PlatformNotSupportedException)
+                {
+                    Assert.Skip("The escape case requires symbolic-link support: " + exception.Message);
+                }
+            }
+
             string child = Path.Combine(dependency, "Child.csproj");
-            string marker = Path.Combine(root, "evaluated.txt");
-            new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0"), new XElement("Observed", "$([System.IO.File]::WriteAllText('" + marker + "', 'evaluated'))")))).Save(child);
+            const string marker = "HXW_CHILD_EVALUATION_PROBE";
+
+            // Int32.Parse is permitted by ordinary MSBuild property-function restrictions.
+            // Its deterministic evaluation failure avoids quoting fixture paths or enabling arbitrary functions.
+            new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0"), new XElement("Observed", "$([System.Int32]::Parse('" + marker + "'))")))).Save(child);
             string project = WriteProject(active, new XDocument(new XElement("Project", new XAttribute("Sdk", "Microsoft.NET.Sdk"), new XElement("PropertyGroup", new XElement("TargetFramework", "net10.0")), new XElement("ItemGroup", new XElement("PackageVersion", new XAttribute("Include", "Child"), new XAttribute("Version", "1.0.0")), new XElement("ProjectReference", new XAttribute("Include", child), new XAttribute("AdditionalProperties", properties))))).ToString());
             SourceMapping mapping = Mapping(active, WorkspaceMode.Source);
             string workspace = Path.Combine(root, "run");
             await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            CompositionProcessResult control = await RunDotnetAsync(active, mapping, workspace, "msbuild", child, "-nologo", "-getProperty:Observed").ConfigureAwait(true);
+            control.ExitCode.ShouldNotBe(0, control.Output + control.ErrorOutput);
+            (control.Output + control.ErrorOutput).ShouldContain("MSB4184");
+            (control.Output + control.ErrorOutput).ShouldContain(marker);
             CompositionProcessResult result = await RunDotnetAsync(active, mapping, workspace, "build", project, "-v:q", "-p:NuGetAudit=false").ConfigureAwait(true);
             result.ExitCode.ShouldNotBe(0, result.Output + result.ErrorOutput);
             (result.Output + result.ErrorOutput).ShouldContain("HXW006");
-            File.Exists(marker).ShouldBeFalse("unsafe metadata must refuse before child evaluation");
+            (result.Output + result.ErrorOutput).Contains(marker, StringComparison.Ordinal).ShouldBeFalse("unsafe metadata must refuse before the demonstrated child evaluation");
             File.Exists(Path.Combine(active, "obj", "project.assets.json")).ShouldBeFalse();
             File.Exists(Path.Combine(dependency, "obj", "project.assets.json")).ShouldBeFalse();
         }

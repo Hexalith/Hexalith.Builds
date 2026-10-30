@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.ModuleTool.Cli;
 
 using System.CommandLine;
+using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
@@ -27,6 +28,7 @@ internal static class ModuleCommandApplication
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <param name="descriptorChildEntryAssemblyPath">The optional private descriptor child entry assembly.</param>
     /// <param name="compositionOptions">The optional runner-owned composition settings.</param>
+    /// <param name="attacherContext">The optional controlled attachment context; null uses the process environment.</param>
     /// <returns>The stable process exit code.</returns>
     public static async Task<int> InvokeAsync(
         string[] arguments,
@@ -34,7 +36,8 @@ internal static class ModuleCommandApplication
         TextWriter standardError,
         CancellationToken cancellationToken,
         string? descriptorChildEntryAssemblyPath = null,
-        CompositionEngineOptions? compositionOptions = null)
+        CompositionEngineOptions? compositionOptions = null,
+        JsonElement? attacherContext = null)
     {
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(standardOutput);
@@ -45,7 +48,8 @@ internal static class ModuleCommandApplication
             standardOutput,
             descriptorChildEntryAssemblyPath,
             compositionOptions,
-            task => runningCommand = task);
+            task => runningCommand = task,
+            attacherContext);
         ParseResult parseResult = rootCommand.Parse(arguments);
         if (parseResult.Errors.Count > 0 || HasBlankManifestValue(arguments))
         {
@@ -64,7 +68,8 @@ internal static class ModuleCommandApplication
         TextWriter standardOutput,
         string? descriptorChildEntryAssemblyPath,
         CompositionEngineOptions? compositionOptions,
-        Action<Task<int>> operationStarted)
+        Action<Task<int>> operationStarted,
+        JsonElement? attacherContext)
     {
         RootCommand rootCommand = new("Runs supported Hexalith module qualifications.");
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Run, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
@@ -72,10 +77,57 @@ internal static class ModuleCommandApplication
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Down, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateCommand(ModuleInvocationCommand.Test, standardOutput, descriptorChildEntryAssemblyPath, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreateValidateCommand(standardOutput, operationStarted));
+        rootCommand.Subcommands.Add(CreateResultValidationCommand(standardOutput, compositionOptions, operationStarted));
         rootCommand.Subcommands.Add(CreatePrepareBuildCommand(standardOutput, operationStarted));
         rootCommand.Subcommands.Add(CreateListCommand(standardOutput, compositionOptions, operationStarted));
-        rootCommand.Subcommands.Add(CreateAttachCommand(standardOutput, compositionOptions, operationStarted));
+        rootCommand.Subcommands.Add(CreateAttachCommand(standardOutput, compositionOptions, operationStarted, attacherContext));
         return rootCommand;
+    }
+
+    private static Command CreateResultValidationCommand(TextWriter output, CompositionEngineOptions? options, Action<Task<int>> operationStarted)
+    {
+        Command command = new("validate-result", "Rechecks candidate policy, fresh GitHub authority and complete qualification before acceptance.");
+        Option<string> request = new("--candidate-request") { Required = true };
+        Option<string> environment = new("--environment") { Required = true };
+        Option<string> result = new("--result") { Required = true };
+        Option<string> format = new("--output") { DefaultValueFactory = _ => "human" };
+        _ = format.AcceptOnlyFromAmong("human", "json");
+        foreach (Option option in new Option[] { request, environment, result, format })
+        {
+            command.Options.Add(option);
+        }
+
+        command.SetAction((parsed, token) =>
+        {
+            Task<int> execution = ValidateAsync(token);
+            operationStarted(execution);
+            return execution;
+
+            async Task<int> ValidateAsync(CancellationToken cancellation)
+            {
+                ToolCommandResult observation;
+                try
+                {
+                    Hexalith.Builds.Tooling.CandidatePolicy.CandidateGateClient gate = options?.CandidateGateClientOverride ?? Hexalith.Builds.Tooling.CandidatePolicy.CandidateGateClient.FromHost();
+                    await Hexalith.Builds.Tooling.CandidatePolicy.CandidatePolicyValidator.ValidateAcceptanceAsync(gate, parsed.GetValue(request)!, parsed.GetValue(environment)!, parsed.GetValue(result)!, cancellation).ConfigureAwait(false);
+                    observation = new ToolCommandResult("validated", ToolOutcome.Passed(), []);
+                }
+                catch (Hexalith.Builds.Tooling.CandidatePolicy.CandidatePolicyException refusal)
+                {
+                    ToolDiagnostic diagnostic = new("HXP301", ToolPhase.Test, ToolFailureCategory.Manifest, refusal.Message, "candidatePolicy");
+                    observation = new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.Manifest, diagnostic.RuleId, ToolExitCode.UsageOrManifest), [diagnostic]);
+                }
+                catch (OperationCanceledException)
+                {
+                    ToolDiagnostic diagnostic = new("HXC130", ToolPhase.Test, ToolFailureCategory.Cancelled, "Candidate validation was cancelled.", "candidatePolicy");
+                    observation = new ToolCommandResult("cancelled", ToolOutcome.Passed().Fail(ToolPhase.Test, ToolFailureCategory.Cancelled, diagnostic.RuleId, ToolExitCode.Cancelled), [diagnostic]);
+                }
+
+                await ToolDiagnosticFormatter.WriteAsync(output, observation, ParseOutputFormat(parsed.GetValue(format)), CancellationToken.None).ConfigureAwait(false);
+                return (int)observation.Outcome.ExitCode;
+            }
+        });
+        return command;
     }
 
     private static Command CreatePrepareBuildCommand(TextWriter output, Action<Task<int>> operationStarted)
@@ -133,7 +185,7 @@ internal static class ModuleCommandApplication
         return command;
     }
 
-    private static Command CreateAttachCommand(TextWriter output, CompositionEngineOptions? options, Action<Task<int>> operationStarted)
+    private static Command CreateAttachCommand(TextWriter output, CompositionEngineOptions? options, Action<Task<int>> operationStarted, JsonElement? attacherContext)
     {
         Command command = new("attach", "Admits a run to a compatible runner-owned environment with a finite hold, or ends one attachment.");
         Option<string> owner = new("--owner-run-id") { Required = true };
@@ -148,9 +200,10 @@ internal static class ModuleCommandApplication
         Option<string[]> artifacts = new("--artifact-identity") { Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = false };
         Option<bool> end = new("--end") { Description = "Ends only the attachment named by --attached-run-id; the owner and other attachments keep running." };
         Option<string> attached = new("--attached-run-id");
+        Option<string> outcome = new("--outcome") { Description = "The attachment's first terminal outcome: passed, failed or cancelled." };
         Option<string> format = new("--output") { DefaultValueFactory = _ => "human" };
         _ = format.AcceptOnlyFromAmong("human", "json");
-        foreach (Option option in new Option[] { owner, mode, composition, hold, requestId, target, environment, artifacts, end, attached, format })
+        foreach (Option option in new Option[] { owner, mode, composition, hold, requestId, target, environment, artifacts, end, attached, outcome, format })
         {
             command.Options.Add(option);
         }
@@ -168,7 +221,7 @@ internal static class ModuleCommandApplication
                 bool ending = parsed.GetValue(end);
                 bool malformed = ending
                     ? parsed.GetValue(attached) is null || new Option[] { hold, requestId, mode, composition, target, environment, artifacts }.Any(option => parsed.GetResult(option) is { Implicit: false })
-                    : parsed.GetValue(mode) is null || parsed.GetValue(composition) is null || parsed.GetResult(attached) is not null;
+                    : parsed.GetValue(mode) is null || parsed.GetValue(composition) is null || parsed.GetResult(attached) is not null || parsed.GetResult(outcome) is not null;
                 if (malformed)
                 {
                     return await ToolCommandHost.WriteParseFailureAsync(output, outputFormat).ConfigureAwait(false);
@@ -177,7 +230,7 @@ internal static class ModuleCommandApplication
                 ToolCommandResult result;
                 if (ending)
                 {
-                    result = await CompositionAttachAdmission.EndAsync(store, parsed.GetValue(owner)!, parsed.GetValue(attached)!, DateTimeOffset.UtcNow, cancellation).ConfigureAwait(false);
+                    result = await CompositionAttachAdmission.EndAsync(store, parsed.GetValue(owner)!, parsed.GetValue(attached)!, parsed.GetValue(outcome), DateTimeOffset.UtcNow, cancellation).ConfigureAwait(false);
                 }
                 else
                 {
@@ -190,6 +243,7 @@ internal static class ModuleCommandApplication
                         Target = parsed.GetValue(target)!,
                         EnvironmentId = parsed.GetValue(environment),
                         ArtifactIdentities = parsed.GetValue(artifacts) ?? [],
+                        AttacherContext = attacherContext,
                     };
                     result = await CompositionAttachAdmission.AdmitAsync(store, request, DateTimeOffset.UtcNow, cancellation).ConfigureAwait(false);
                 }
@@ -311,6 +365,7 @@ internal static class ModuleCommandApplication
         };
         Option<string> filterOption = new("--filter");
         Option<string> evidenceOption = new("--evidence");
+        Option<string> candidateOption = new("--candidate-request") { Description = "Signed GitHub gate issuance; requires independently enrolled host authority." };
         Option<string> runIdOption = new("--run-id");
         Option<string> outputOption = new("--output")
         {
@@ -324,6 +379,11 @@ internal static class ModuleCommandApplication
         commandDefinition.Options.Add(profileOption);
         commandDefinition.Options.Add(filterOption);
         commandDefinition.Options.Add(evidenceOption);
+        if (command == ModuleInvocationCommand.Test)
+        {
+            commandDefinition.Options.Add(candidateOption);
+        }
+
         if (command == ModuleInvocationCommand.Down)
         {
             commandDefinition.Options.Add(runIdOption);
@@ -363,7 +423,8 @@ internal static class ModuleCommandApplication
                 command == ModuleInvocationCommand.Down ? parseResult.GetValue(runIdOption) : null,
                 compositionOptions,
                 mode,
-                parseResult.GetValue(profileOption));
+                parseResult.GetValue(profileOption),
+                command == ModuleInvocationCommand.Test ? parseResult.GetValue(candidateOption) : null);
             operationStarted(execution);
             return execution;
         });

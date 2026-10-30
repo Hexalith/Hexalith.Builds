@@ -1,0 +1,226 @@
+{
+  "story": "3.1",
+  "date": "2026-10-30",
+  "observedBuildsHeadAtRetention": "632474cb3fee7a09ccf89ea6eef5ade11b0466df",
+  "recordingOperations": "This implementation session performed no Git recording operations. Concurrent workspace activity recorded implementation and evidence bytes during final verification; source fingerprints use an explicit story file list to exclude unrelated writer-protocol work.",
+  "allFeasibleChecksPassed": true,
+  "requiredFullBuildPassed": false,
+  "commands": [
+    {
+      "cwd": "Builds",
+      "command": "dotnet build test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj -c Debug -m:1 -nodeReuse:false",
+      "status": "blocked",
+      "log": "review-followup-required-build-blocker.log",
+      "reason": "Existing EventStoreHost pinned package/API mismatch: Routing namespaces, UseEventStoreHttpHostSecurity, RequireEventStoreChannel and inaccessible EventStoreActorCallbackEndpointMetadata (7 build errors)."
+    },
+    {
+      "cwd": "Builds",
+      "command": "dotnet build src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj -c Debug -m:1 -nodeReuse:false",
+      "status": "passed",
+      "log": "review-followup-tooling-build.log"
+    },
+    {
+      "cwd": "Builds",
+      "command": "dotnet build test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj -c Debug -m:1 -nodeReuse:false -p:BuildProjectReferences=false",
+      "status": "passed",
+      "log": "review-followup-focused-build.log",
+      "scope": "Focused fallback uses already-built unaffected project dependencies; zero warnings/errors."
+    },
+    {
+      "cwd": "Builds",
+      "command": "dotnet test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests -class Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests -result-xml /tmp/story31-candidate-tests.xml",
+      "status": "passed",
+      "counts": {
+        "total": 132,
+        "passed": 132,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "not-run": 0
+      },
+      "log": "review-followup-candidate-tests.log",
+      "xml": "review-followup-candidate-tests.xml"
+    },
+    {
+      "cwd": "Builds",
+      "command": "dotnet test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class Hexalith.Builds.ModuleTool.Tests.TestEnvironmentContractReaderTests -class Hexalith.Builds.ModuleTool.Tests.TestEnvironmentProvisioningTests -class Hexalith.Builds.ModuleTool.Tests.TestResultWriterTests -class Hexalith.Builds.ModuleTool.Tests.CompositionEngineTests -class Hexalith.Builds.ModuleTool.Tests.CompositionRunStateStoreTests -class Hexalith.Builds.ModuleTool.Tests.LocalRunLifecycleTests -class Hexalith.Builds.ModuleTool.Tests.DeclarationClosureTests -result-xml /tmp/story31-regression-tests.xml",
+      "status": "passed",
+      "counts": {
+        "total": 429,
+        "passed": 429,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "not-run": 0
+      },
+      "log": "review-followup-regression-tests.log",
+      "xml": "review-followup-regression-tests.xml"
+    },
+    {
+      "cwd": "Builds",
+      "command": "python3 -m unittest discover -s Github/governed-provenance/tests",
+      "status": "passed",
+      "tests": 86,
+      "log": "review-followup-provenance-tests.log"
+    },
+    {
+      "cwd": "Platform",
+      "command": "python3 -m unittest discover -s tests/contracts -p test_test_environment_contract_mirrors.py",
+      "status": "passed",
+      "tests": 1,
+      "log": "review-followup-contract-mirror.log"
+    },
+    {
+      "cwd": "Builds",
+      "command": "actionlint .github/workflows/candidate-policy.yml .github/workflows/domain-ci.yml",
+      "status": "passed",
+      "log": "review-followup-workflow-lint.log"
+    },
+    {
+      "cwd": "Builds",
+      "command": "git diff --check",
+      "status": "passed",
+      "log": "review-followup-builds-whitespace.log"
+    },
+    {
+      "cwd": "Platform",
+      "command": "git diff --check -- docs/contracts/test-environment-v1.md _bmad-output/implementation-artifacts/spec-3-1-apply-the-candidate-selection-policy-to-the-runner-contract.md",
+      "status": "passed",
+      "log": "review-followup-platform-whitespace.log"
+    }
+  ],
+  "matrixToPassingNamedTests": {
+    "Authenticated pending PR/release request": [
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.DescriptorAndTerminalWritersPreserveSameIssuedCandidateAsync",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.AuthenticatedPendingRequestSelectsExactCommitAsync(release: False)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.AuthenticatedPendingRequestSelectsExactCommitAsync(release: True)"
+    ],
+    "Changed pair/revision, closed/completed request or fabricated issuer": [
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"head\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"base\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"parents\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"closed\\\", condition: \\\"request-not-pending\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"reopened\\\", condition: \\\"fresh-request-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"attempt\\\", condition: \\\"latest-issued-attempt-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"pending-successor\\\", condition: \\\"latest-issued-attempt-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"approval\\\", condition: \\\"approval-unavailable\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"review\\\", condition: \\\"approval-unavailable\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"retargeted\\\", condition: \\\"fresh-request-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"cancelled-successor\\\", condition: \\\"latest-issued-attempt-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"failed-successor\\\", condition: \\\"latest-issued-attempt-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"authentication\\\", condition: \\\"authority-unavailable\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"issuer\\\", condition: \\\"issuer-authentication-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ReleaseCompletionRaceRefusesPendingDecisionAsync",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ReleaseDispatchRequiresMainAsync(signedRef: \\\"refs/heads/feature\\\", apiBranch: \\\"main\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ReleaseDispatchRequiresMainAsync(signedRef: \\\"refs/tags/v1\\\", apiBranch: \\\"main\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ReleaseDispatchRequiresMainAsync(signedRef: \\\"refs/heads/main\\\", apiBranch: \\\"feature\\\")"
+    ],
+    "Earlier pass with a newer issued attempt": [
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.AttemptIssuanceRaceIsRecheckedAsync",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"head\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"base\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"parents\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"closed\\\", condition: \\\"request-not-pending\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"reopened\\\", condition: \\\"fresh-request-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"attempt\\\", condition: \\\"latest-issued-attempt-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"pending-successor\\\", condition: \\\"latest-issued-attempt-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"approval\\\", condition: \\\"approval-unavailable\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"review\\\", condition: \\\"approval-unavailable\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"retargeted\\\", condition: \\\"fresh-request-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"cancelled-successor\\\", condition: \\\"latest-issued-attempt-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"failed-successor\\\", condition: \\\"latest-issued-attempt-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"authentication\\\", condition: \\\"authority-unavailable\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"issuer\\\", condition: \\\"issuer-authentication-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.RetryKeepsDecisionAndSupersedesEarlierPassingAttemptAsync"
+    ],
+    "Foreign lineage or producer mismatch": [
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicValidatorNamesRawPolicyViolationsAsync(mutation: \\\"reuseAllowed\\\", documentKind: \\\"result\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicValidatorNamesRawPolicyViolationsAsync(mutation: \\\"sourceRunIds\\\", documentKind: \\\"result\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicValidatorNamesRawPolicyViolationsAsync(mutation: \\\"sourceDecisionIds\\\", documentKind: \\\"descriptor\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicValidatorNamesRawPolicyViolationsAsync(mutation: \\\"policyId\\\", documentKind: \\\"result\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicValidatorNamesRawPolicyViolationsAsync(mutation: \\\"policyId\\\", documentKind: \\\"descriptor\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ForeignOrUnchangedModuleEvidenceRefusesReuseAsync(foreignProducer: False)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ForeignOrUnchangedModuleEvidenceRefusesReuseAsync(foreignProducer: True)"
+    ],
+    "Local, baseline-only or missing identity/qualification/completion proof": [
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.CompleteFixtureStillRequiresAuthenticToolQualificationAsync",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.DescriptorWithoutCandidateRequestIsBaselineOnlyAsync",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"baseline\\\", condition: \\\"candidate-required-diagnostics-only\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"policy\\\", condition: \\\"exact-policy-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"descriptor\\\", condition: \\\"descriptor-result-disagreement\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"producer\\\", condition: \\\"decision-producer-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"loaded-missing\\\", condition: \\\"artifact-identities-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"loaded-mismatch\\\", condition: \\\"artifact-identity-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"wrong-suite\\\", condition: \\\"complete-required-suite-proof-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"skipped\\\", condition: \\\"complete-required-suite-proof-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"empty\\\", condition: \\\"complete-required-suite-proof-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"counts\\\", condition: \\\"complete-required-suite-proof-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"tool\\\", condition: \\\"tool-qualification-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"cancelled\\\", condition: \\\"passed-outcome-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.LocalAndSourceRunsRemainDiagnosticOnlyAsync"
+    ],
+    "Descriptor/result disagreement or partial startup": [
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PartialStartupPreservesIssuedBindingsAndSequenceAsync",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.StartupDeclarationPopulationIsImmutableAsync(missingSide: \\\"descriptor\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.StartupDeclarationPopulationIsImmutableAsync(missingSide: \\\"result\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(mutation: \\\"head\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(mutation: \\\"tracked\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(mutation: \\\"untracked\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(mutation: \\\"replay\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(mutation: \\\"startup\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(mutation: \\\"session\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(mutation: \\\"prior-state\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(mutation: \\\"prior-diagnostics\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingPopulatedDeadlinesRequireActualDurationAsync(deadline: \\\"startup\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingPopulatedDeadlinesRequireActualDurationAsync(deadline: \\\"execution\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.IssuedCandidatePrerequisiteFailurePublishesTerminalResultAsync"
+    ]
+  },
+  "sourceSha256": {
+    ".github/workflows/domain-ci.yml": "510b6e8d868c659846f921ed531d9c582468e718ad2c1caae9f506abd6817d14",
+    "Github/governed-provenance/candidate_policy.py": "5bf0099d44ec65fd2f10f7164298d7a9b2901ab639f72cebc5115829128ea631",
+    "Github/governed-provenance/tests/test_candidate_policy.py": "0ebc16a1a181f785850f80d524569ef33d4b1642020619da23db8aff532faab1",
+    "Github/governed-provenance/tests/test_candidate_workspace.py": "cccccccd2b942bb840b90bec47c4705603a814ad31cf7cf4464e696bddcd1902",
+    "README.md": "7a11ce9aa024614d4ce7f12cb0cc92db19bfe415c812d2cdd1904bd10dd6295f",
+    "src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidateGateClient.cs": "827a3e842603c6137cd1ab3973c081a989d7cb9a0d919298c8418d75044dee53",
+    "src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidatePolicyValidator.cs": "729b76dd075657e3e62dbb8c09c539c69cfd24503ececf1a0f94b1ae4f801c0c",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs": "94d4ceb7c91c97d608ea7932bc253bce1a7db7a3b1f0aa942f960df8d41a9d1f",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngineOptions.cs": "b215156dd9c8c5e44d2ebdc1661cacf83fd2703853c7336f4553ddf94e478fa8",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs": "7e6367d3b6417588e2c30b6cd09664cb598a8dbcec6d9da3ec363af0e7dc28ed",
+    "test/Hexalith.Builds.Module.Tests/CandidateGateFixture.cs": "9f1dec2dfb0ba67030a6647ece63940487ccb44b10baf7a9f2c510dcf6b8bbfd",
+    "test/Hexalith.Builds.Module.Tests/CandidatePolicyTests.cs": "4f3cb4b29f1ec35102a75cb4aa10d5157f034e9adefba44821935bd6b46514cd",
+    "test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs": "10401d963902e182a537bb5ff132b877e20a59578e96e42b89c65c0519733bdf",
+    "test/Hexalith.Builds.Module.Tests/DeclarationClosureTests.cs": "100561fb84dda8d8770a7c5169bf7d33c5dd9c3c46015089b5ccaae36a1245d0",
+    "test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs": "81c9aa4a33891894248ddd4fa8cefd9e62ac96f7e1557a17e65a25251bbc7c1a"
+  },
+  "platformContractSha256": "2b28e8ec9e650aa9ec83ad6940193bfeae36bb0b99ab1675537128bbaf184620",
+  "frozenIntentSha256": "81a432cf41c6e7834b202cf9b9f9626b623299d75e4af46b6a19ddc085cad909",
+  "artifactSha256": {
+    "review-followup-required-build-blocker.log": "9871d6f903b603302414ad3db466c1bfe2bc2d2940d68dbc4acaaec7fec4523a",
+    "review-followup-tooling-build.log": "c769c93618bd70fc39a57eb5f3cf2236546ac9a00bb6af6207afbad11b3484f8",
+    "review-followup-focused-build.log": "8740762b9f405c038dc661a2296ad7b721e6cebcc82dfb3d32a457e35c04a93f",
+    "review-followup-candidate-tests.log": "4b2157ef80a798a406a318a38651f1df6161bb5f971dc9a565f606eef1840ca2",
+    "review-followup-candidate-tests.xml": "c531937cca8701f7e63abad831b1de553cb5c457521275e4f40e84c321c13d07",
+    "review-followup-candidate-tests-initial.log": "0aa7192e8d179339cbcfb2006ba9f8890f20080213062732eadc9a96e7a46ebf",
+    "review-followup-candidate-tests-initial.xml": "cffed76f724280cf54fac9c8ab1c474bcab9b96ebf2793d998dbad8ff23ebc09",
+    "review-followup-regression-tests.log": "ea3e831c34e33af4f0089c604f81fb6a4e5398a6069cf106f990fd0f0e2dc9c3",
+    "review-followup-regression-tests.xml": "bf48c151c8ea758a1506023aa46f2fbe8f1ce4343da895e427d0dbdcccea4007",
+    "review-followup-provenance-tests.log": "a2bf3221d238398e6935735a3124b90b59df2dec449aceab6654710e7a0fb31a",
+    "review-followup-contract-mirror.log": "fb184ea57734512b1f088f9181209901b9cd46df3eb7eaa2500ea9e48dde20b5",
+    "review-followup-workflow-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "review-followup-builds-whitespace.log": "4b6228fc62960d9a54e3aceb233df0230908ca3aa3e33578065810e25d71ee0a",
+    "review-followup-platform-whitespace.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "testOnlySeam": "Internal CompositionEngineOptions.DeclarationOptionsOverride supplies explicit offline release declaration authorities to the real engine in public-command tests. Null in production; no public configuration or acceptance authority is added. Existing DeclarationClosureTests.PackageOptions fixture is shared.",
+  "limitations": [
+    "No live issuer enrollment, package integration qualification, tool acceptance authority or Story 3.9 loaded-artifact producer is supplied.",
+    "Final candidate acceptance still refuses tool-qualification-authentication-unavailable.",
+    "Unrelated required full-build blocker retained independently of successful focused source/test builds."
+  ],
+  "initialCandidateRun": {
+    "total": 131,
+    "failed": 7,
+    "reason": "Fixture setup and refusal-precedence expectations corrected before final passing run.",
+    "xml": "review-followup-candidate-tests-initial.xml"
+  }
+}

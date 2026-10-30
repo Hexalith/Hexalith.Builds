@@ -1,0 +1,166 @@
+{
+  "story": "3.1",
+  "fixtureOnly": true,
+  "liveQualification": false,
+  "allFinalChecksPassed": true,
+  "checks": [
+    {
+      "command": "dotnet build test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj -c Debug -m:1 -nodeReuse:false",
+      "outcome": "passed",
+      "warnings": 0,
+      "errors": 0,
+      "log": "parent-build.log"
+    },
+    {
+      "command": "dotnet test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests -class Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests -class Hexalith.Builds.ModuleTool.Tests.TestEnvironmentContractReaderTests -class Hexalith.Builds.ModuleTool.Tests.TestEnvironmentProvisioningTests -class Hexalith.Builds.ModuleTool.Tests.TestResultWriterTests -class Hexalith.Builds.ModuleTool.Tests.CompositionEngineTests -class Hexalith.Builds.ModuleTool.Tests.CompositionRunStateStoreTests -class Hexalith.Builds.ModuleTool.Tests.LocalRunLifecycleTests -result-xml evidence/3-1/parent-tests.xml",
+      "outcome": "passed",
+      "passed": 498,
+      "failed": 0,
+      "skipped": 0,
+      "xml": "parent-tests.xml",
+      "log": "parent-tests.log",
+      "errors": 0,
+      "notRun": 0
+    },
+    {
+      "command": "python3 -m unittest discover -s Github/governed-provenance/tests",
+      "outcome": "passed",
+      "passed": 74,
+      "log": "parent-python.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s tests/contracts -p test_test_environment_contract_mirrors.py",
+      "cwd": "Platform",
+      "outcome": "passed",
+      "passed": 1,
+      "log": "parent-mirrors.log"
+    },
+    {
+      "command": "actionlint .github/workflows/candidate-policy.yml .github/workflows/domain-ci.yml",
+      "outcome": "passed",
+      "log": "parent-workflow-lint.log"
+    },
+    {
+      "command": "git diff --check",
+      "outcome": "passed",
+      "log": "parent-builds-diff-check.log"
+    },
+    {
+      "command": "git diff --check -- docs/contracts/test-environment-v1.md _bmad-output/implementation-artifacts/spec-3-1-apply-the-candidate-selection-policy-to-the-runner-contract.md _bmad-output/implementation-artifacts/sprint-status.yaml",
+      "cwd": "Platform",
+      "outcome": "passed",
+      "log": "parent-platform-diff-check.log"
+    },
+    {
+      "command": "node node_modules/@commitlint/cli/cli.js --edit /tmp/story-3-1-builds-njutijvl.txt",
+      "cwd": "Builds",
+      "version": "21.2.4",
+      "outcome": "passed",
+      "log": "builds-commitlint.log",
+      "validatedMessage": "builds-commit-message.txt",
+      "validatedMessageSha256": "sha256:e7fd759ea9b5bba43cb44068dc5d927ab2bd4478c7b9dded092c95f56d06d98b"
+    },
+    {
+      "command": "node node_modules/@commitlint/cli/cli.js --edit /tmp/story-3-1-platform-upn6nfrb.txt",
+      "cwd": "Platform",
+      "version": "21.2.1",
+      "outcome": "passed",
+      "log": "platform-commitlint.log",
+      "validatedMessage": "platform-commit-message.txt",
+      "validatedMessageSha256": "sha256:cbb9c600d7cebadd9d11d711004cd7190c9f55b7088cbb38d34445e50e719ee1"
+    }
+  ],
+  "dotnetClasses": {
+    "Hexalith.Builds.ModuleTool.Tests.LocalRunLifecycleTests": 55,
+    "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests": 43,
+    "Hexalith.Builds.ModuleTool.Tests.CompositionEngineTests": 43,
+    "Hexalith.Builds.ModuleTool.Tests.TestEnvironmentProvisioningTests": 50,
+    "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests": 43,
+    "Hexalith.Builds.ModuleTool.Tests.CompositionRunStateStoreTests": 3,
+    "Hexalith.Builds.ModuleTool.Tests.TestResultWriterTests": 23,
+    "Hexalith.Builds.ModuleTool.Tests.TestEnvironmentContractReaderTests": 238
+  },
+  "candidateTests": 86,
+  "matrixRows": 6,
+  "matrixAudit": "Every referenced case ran and passed in parent-tests.xml.",
+  "review": {
+    "individualFindings": 18,
+    "fixedPatchGroups": 14,
+    "refutedClaims": 1,
+    "deferred": 0
+  },
+  "approvedIntentSha256": "275feda622a221245ed559a30e423bede2b06e9566d71374932824be3c98b8da",
+  "sourceArtifacts": {
+    "docs/contracts/test-environment-v1.md": "sha256:38fba3229199f35aad2ad1244d95109c70a66ab7a77d797c4e24227960efd12a",
+    "references/Hexalith.Builds/.gitattributes": "sha256:b60fb9d0bc573e1a044f8258fa168825c00e563fc94d975f89d2f51b444cd6e4",
+    "references/Hexalith.Builds/.github/workflows/candidate-policy.yml": "sha256:40bd57cacf6cabe72846c3c7ddb043346051b58c57cf132fa1cce1a0d2262f0e",
+    "references/Hexalith.Builds/.github/workflows/domain-ci.yml": "sha256:e0b01e291aecab1512a2d0b8fa3613afff2d07a6ba315e756710833639974908",
+    "references/Hexalith.Builds/.gitignore": "sha256:04bfb1df83fb07b450cfa90148c6d2421b663f4c98b03db74a1fa69cf401ba10",
+    "references/Hexalith.Builds/Github/governed-provenance/README.md": "sha256:20b89a2a7bb141c3b9f1d4a15d37fa478789ad3d9baac63a1b259f9f7b1ebb99",
+    "references/Hexalith.Builds/Github/governed-provenance/candidate_policy.py": "sha256:4c2805ebbb3c4639d07d1fb2c2965a1c7c1163172ce481b52cdb552942d52dfa",
+    "references/Hexalith.Builds/Github/governed-provenance/candidate_workspace.py": "sha256:123251685635b1ec2f1a682628d857a5a9ebda8e0c500654119b5a3bde0cd27f",
+    "references/Hexalith.Builds/Github/governed-provenance/governed_provenance.py": "sha256:2d8ffb319def62eec06da33bc489c50314e78809d5c7c49024bd9edd6fd94bba",
+    "references/Hexalith.Builds/Github/governed-provenance/tests/test_candidate_policy.py": "sha256:e1381605cd2c14243ac3288aee15f9d77acc6dff38e3282c596b53badfb7dd1b",
+    "references/Hexalith.Builds/Github/governed-provenance/tests/test_candidate_workspace.py": "sha256:7950104072efd366fede4edf06860db3b47dcb7522e8f815d925f4bc6b47fd2f",
+    "references/Hexalith.Builds/Github/governed-provenance/tests/test_governed_provenance.py": "sha256:b51edf78e0132b0eb70049efcc6ae62f19379a6a20645d8ee87090ef29445c99",
+    "references/Hexalith.Builds/README.md": "sha256:8dadf988c32e1445da787274cc3bd5dfec145c2f3a91fdb57ed2b2866f9d3365",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs": "sha256:5e40f82dde8e8ca43938c71df0965b95536efad2791052e6b80c138800955a35",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/AssemblyInfo.cs": "sha256:9a8d001bdf56cf8975ad93adece02a25eb4feb6e77e7b6ff033a00c2f3c091f9",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidateGateClient.cs": "sha256:595416c6c0ad843cb5aa15953f4f5c9bbdb702d54ee46195bef541dd8c17c19b",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidateGateConfiguration.cs": "sha256:e5f0c8d62a47baeeba69556b8484c2baf79c9a3997e31b1b3b92cfaf7a9f0e7e",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidatePolicyBinding.cs": "sha256:5b6464392835549bb347595bc93316e006ab702d9e23706695885f7177c4d610",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidatePolicyException.cs": "sha256:4893d861422d319774f06ec7a8df6bc3b8b7ef0d863a69045bdbc38cd50788a3",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidatePolicyValidator.cs": "sha256:7e5480cf374eead41494183aa328b967edb06b9af93ddd4e320ad8f5446a6fdb",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs": "sha256:330d9ac7dc43a8dfb0a5ea99bc97aa23db52e2623209321c4ea392492b613d58",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngineOptions.cs": "sha256:0534e9a98cb188b92253d9ae3c7d53ed56c4ca43731a08f99bd1a3002f63e85f",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunPlan.cs": "sha256:3b34b3912d43b042402cc077281467f92941d66281369267fb84ca0c5d775d00",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunState.cs": "sha256:f9bd87f09e23c3c64ef9ffd6c4a1ecdde977f76e8dc4f79cab1ec12ab593665a",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs": "sha256:6f1f44c648bef10303f3ea83729d5a2c4ff7e6aaafc7b3bb2e1fbb3b464a3fb2",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleInvocationCommand.cs": "sha256:0a3268c1b19856696f854f71ed033edf5aa6658649fea59e5656ba7a90854d6e",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestEnvironmentDescriptorWriter.cs": "sha256:a7d68ee27e85c1976793200a79c1689429354bb24df115e4a7cdbf7171c7d82e",
+    "references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestResultWriter.cs": "sha256:2cba17be0730bcc71c8cfc67c1e9b7fd92f230468ede6e61ec49dd22d58240f3",
+    "references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/CandidateGateFixture.cs": "sha256:1e05f6c8ec4c0afa5a962cff4a163e62368262c6cddba0c3e7239d868d502581",
+    "references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/CandidatePolicyTests.cs": "sha256:7b7930c734075d19dea1a50ee52e4a0f2ee74fbfa3794c1ca34ff4a01891f0d0",
+    "references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs": "sha256:4e90d455d2e9f6270d03e7253be77da0596a1fddf1b5b09daf0ff9181963d603",
+    "references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/LocalRunLifecycleTests.cs": "sha256:d233ab29b9a3a1836737ed7c7b04f2fd5c8900619e75a604d99306328efea88a"
+  },
+  "artifacts": {
+    "build-debug.log": "sha256:335bfd55ffad01980929a1543f5d477adfc82ba110371a306ec90b46708ac407",
+    "builds-commit-message.txt": "sha256:e7fd759ea9b5bba43cb44068dc5d927ab2bd4478c7b9dded092c95f56d06d98b",
+    "builds-commitlint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "builds-diff-check.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "candidate-tests.log": "sha256:1ceb98bbe2af35dbf09be761f0fb91e70f6ca6d46deb6a3cb2ffa87212a35c35",
+    "candidate-tests.xml": "sha256:c0463bd5b8824516196b753c457e70cf130741d208dd40afa8753fe4a27aafa9",
+    "governed-provenance-tests.log": "sha256:179a614e941c0e00581daf2b1e041109e7ed472ab541ef2cb24442b0fa0b8e13",
+    "parent-build.log": "sha256:36992f1eada8bf47ec51a39172441b542f4be114db124eb30b6b210f935ae0f4",
+    "parent-builds-diff-check.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "parent-mirrors.log": "sha256:d10ffbd9f0faa72cd6837063279524e199b59fbc3d035051302a1e8dbc4b36ad",
+    "parent-platform-diff-check.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "parent-python.log": "sha256:73236bbd48215791b6043fc414db0fe0a8f8fecb2efd837d60355f25efcc7846",
+    "parent-tests-initial.log": "sha256:6237b01d612d3fba4f52205a48ccbdf9b3057b209116eb10e6786b4f2054bacf",
+    "parent-tests-initial.xml": "sha256:077f12385bd758fc161bcb85948741c4b0b6cd5bcb9d3b1d8515373f59ca5d48",
+    "parent-tests.log": "sha256:c5f25b855d56556ec04292201ee0eaa6e3ff9920a64409abcf26a5ae1f76168f",
+    "parent-tests.xml": "sha256:eb78afc15263a07c337238b6fa674b0e3f368967fcc6ba3d440bdbd569d3fcb4",
+    "parent-workflow-lint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "platform-commit-message.txt": "sha256:cbb9c600d7cebadd9d11d711004cd7190c9f55b7088cbb38d34445e50e719ee1",
+    "platform-commitlint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "platform-diff-check.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "platform-mirrors.log": "sha256:fb184ea57734512b1f088f9181209901b9cd46df3eb7eaa2500ea9e48dde20b5",
+    "regression-tests.log": "sha256:68af474bd5b1316261f661ddf2ded2cd7cdf163f0ecbf4f5b02308a0f6fa73c3",
+    "regression-tests.xml": "sha256:ed2007cd1a810e8dfdb1cb94ba67f3a7bbe0aea5718eed3fde3f23f72aafb69d",
+    "review-fixes-build.log": "sha256:19a615497fbf360ba60fd633277b031d9f184277b131e3ea3527d3dc55cf8d09",
+    "review-fixes-candidate-tests.log": "sha256:e6aba6969d160478492220d20ff009ff288c5645625e5e1359c4e403cdcab329",
+    "review-fixes-candidate-tests.xml": "sha256:9fea9b004e25d30e7659ca90e9d5f72d825ee78d9fa1461cfa40d3337ec643d9",
+    "review-fixes-diff-check.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "review-fixes-provenance-tests.log": "sha256:6e29f7f8903ced4e2135d3012a099b934a0287db533a6f290c70ec4cc938e405",
+    "review-fixes-workflow-lint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "review-fixes-workflow-tests.log": "sha256:d9d734ee1c2de67b748aeef1c4126433aa438ad8375ca953916f12b1df11414d",
+    "review-fixes-workspace-tests.log": "sha256:ef2f4cc42a54a59dd5c54c351336c3e9b89486f4dc6d8a573195b91331f11494",
+    "workflow-lint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "historicalObservation": {
+    "xml": "parent-tests-initial.xml",
+    "failed": 1,
+    "resolution": "Updated existing private reflection invocation with absent candidate-request argument; final 498-test rerun passes."
+  }
+}

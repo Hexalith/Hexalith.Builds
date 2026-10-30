@@ -12,6 +12,7 @@ $evaluationText = [string]::Join(
             -getProperty:CentralPackageVersionOverrideEnabled `
             -getProperty:HexalithCommonsVersion `
             -getProperty:HexalithEventStoreVersion `
+            -getProperty:HexalithFrontComposerVersion `
             -getItem:PackageVersion 2>&1 |
             ForEach-Object { [string] $_ }
     )
@@ -70,6 +71,7 @@ $requiredPackages = @(
     'bunit'
     'Hexalith.EventStore.Contracts'
     'Hexalith.EventStore.Gateway'
+    'Hexalith.FrontComposer.Contracts.UI'
     'OpenTelemetry.Instrumentation.AspNetCore'
     'OpenTelemetry.Instrumentation.Http'
     'OpenTelemetry.Instrumentation.Runtime'
@@ -90,6 +92,7 @@ $sharedPackageVersions = [ordered] @{
     'Hexalith.Commons' = [string] $evaluation.Properties.HexalithCommonsVersion
     'Hexalith.EventStore.Contracts' = [string] $evaluation.Properties.HexalithEventStoreVersion
     'Hexalith.EventStore.Gateway' = [string] $evaluation.Properties.HexalithEventStoreVersion
+    'Hexalith.FrontComposer.Contracts.UI' = [string] $evaluation.Properties.HexalithFrontComposerVersion
 }
 foreach ($sharedPackageVersion in $sharedPackageVersions.GetEnumerator()) {
     if ([string]::IsNullOrWhiteSpace($sharedPackageVersion.Value)) {

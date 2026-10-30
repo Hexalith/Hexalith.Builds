@@ -41,6 +41,9 @@ public sealed record CompositionAttachment(
     /// <summary>Gets the recorded end reason, when ended.</summary>
     public string? EndReason { get; init; }
 
+    /// <summary>Gets the first terminal outcome, or null while the attachment is active.</summary>
+    public string? Outcome { get; init; }
+
     /// <summary>Parses a hold request. Only an absent request means omission; nothing is clamped or defaulted on error.</summary>
     /// <param name="raw">The raw request, or null when omitted.</param>
     /// <param name="requested">The explicit whole seconds, or null for omission.</param>
@@ -65,6 +68,13 @@ public sealed record CompositionAttachment(
         return true;
     }
 
+    /// <summary>Projects an unrecorded expiry without changing durable metadata.</summary>
+    /// <param name="now">The runner's UTC clock reading.</param>
+    /// <returns>The attachment with its observed first outcome.</returns>
+    public CompositionAttachment ObservedAt(DateTimeOffset now) => EndedAtUtc is null && now >= ExpiresAtUtc
+        ? this with { EndedAtUtc = ExpiresAtUtc, EndReason = "expired", Outcome = "withdrawn" }
+        : this;
+
     /// <summary>Checks the internal consistency of a persisted attachment.</summary>
     /// <returns>Whether the immutable bindings agree.</returns>
     public bool IsConsistent() => CompositionRunPlanFactory.IsRunId(OriginalAttachmentRequestId)
@@ -75,6 +85,7 @@ public sealed record CompositionAttachment(
         && (RequestedHoldSeconds is null ? EffectiveHoldSeconds == DefaultHoldSeconds : RequestedHoldSeconds == EffectiveHoldSeconds)
         && ExpiresAtUtc - AcceptedAtUtc == TimeSpan.FromSeconds(EffectiveHoldSeconds)
         && (EndedAtUtc is null) == (EndReason is null)
+        && HasConsistentOutcome()
         && (EndedAtUtc is null || (EndedAtUtc >= AcceptedAtUtc && EndReason is "terminal-outcome" or "expired" or "owner-cancelled" or "developer-stop" or "cleanup" or "ci-job-completed" or "ci-job-cancelled"));
 
     /// <summary>Gets whether the hold is still live at a time: not ended and before its exclusive expiry.</summary>
@@ -129,5 +140,22 @@ public sealed record CompositionAttachment(
         return hold;
     }
 
+    /// <summary>Normalizes outcomes omitted by supported 2.6 terminal records before verification.</summary>
+    /// <returns>The compatible first outcome without changing its end time or reason.</returns>
+    internal CompositionAttachment NormalizeLegacyOutcome() => (EndedAtUtc, EndReason, Outcome) switch
+    {
+        (not null, "expired", null) => this with { Outcome = "withdrawn" },
+        (not null, "terminal-outcome", null) => this with { Outcome = "unknown" },
+        _ => this,
+    };
+
     private static string Utc(DateTimeOffset value) => value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+
+    private bool HasConsistentOutcome() => (EndedAtUtc, EndReason, Outcome) switch
+    {
+        (null, _, null) => true,
+        (not null, "terminal-outcome", null or "unknown" or "passed" or "failed" or "cancelled") => true,
+        (not null, not "terminal-outcome", "withdrawn") => true,
+        _ => false,
+    };
 }

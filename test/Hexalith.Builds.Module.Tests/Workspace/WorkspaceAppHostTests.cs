@@ -72,6 +72,37 @@ public sealed class WorkspaceAppHostTests
         }
     }
 
+    /// <summary>Verifies source selection requires the actual mapped runner owner and physical containment.</summary>
+    [Fact]
+    public void SourceCompositionSelectsOnlyTheMappedBuildsSeed()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        string foreign = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            string builds = Path.Combine(root, "selected-builds");
+            string project = Path.Combine(builds, "src", "hosts", "Hexalith.Builds.Module.EventStoreHost", "Hexalith.Builds.Module.EventStoreHost.csproj");
+            _ = Directory.CreateDirectory(Path.GetDirectoryName(project)!);
+            File.WriteAllText(project, "<Project />");
+            SourceMapping mapping = new(WorkspaceMode.Source, root, "Hexalith.Parties", [new("Hexalith.Builds", "source", builds)], false);
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { SourceMapping = mapping };
+            RunTopology.ResolveSourceEventStoreSeed(plan).ShouldBe(project);
+            _ = Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan with { SourceMapping = mapping with { Mode = WorkspaceMode.Package } }));
+            _ = Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan with { SourceMapping = mapping with { Entries = [] } }));
+            File.Delete(project);
+            _ = Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan));
+            string outside = Path.Combine(foreign, "foreign.csproj");
+            File.WriteAllText(outside, "<Project />");
+            _ = File.CreateSymbolicLink(project, outside);
+            _ = Should.Throw<InvalidDataException>(() => RunTopology.ResolveSourceEventStoreSeed(plan));
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+            CompositionTestFiles.Delete(foreign);
+        }
+    }
+
     /// <summary>Verifies every composed module project receives mapped imports and the selected launch configuration.</summary>
     /// <param name="mode">The tool-selected mode.</param>
     /// <param name="debugAttach">Whether source debugging is requested.</param>
@@ -147,25 +178,50 @@ public sealed class WorkspaceAppHostTests
 
     /// <summary>Verifies v2 delegates to the pinned model and probes declared readiness through Dapr.</summary>
     /// <returns>The graph and invocation assertions.</returns>
+    /// <exception cref="InvalidOperationException">The selected mapping has no materialized props import.</exception>
     [Fact]
     public async Task PlatformPlanDelegatesToThePinnedModelAsync()
     {
-        DirectoryInfo? directory = new(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "apphost.cs")))
+        SourceMapping? verifiedMapping = null;
+        string platform;
+        string model;
+        if (Environment.GetEnvironmentVariable("HEXALITH_SOURCE_MAPPING_HASH") is string mappingHash)
         {
-            directory = directory.Parent;
-        }
+            string import = Environment.GetEnvironmentVariable("CustomAfterMicrosoftCommonProps")
+                ?? throw new InvalidOperationException("The selected source mapping has no materialized props import.");
+            verifiedMapping = SourceMapping.LoadVerified(Path.Combine(Path.GetDirectoryName(import)!, "mapping.json"), mappingHash);
+            if (verifiedMapping.Mode == WorkspaceMode.Package)
+            {
+                Assert.Skip("The mapped source-model assertion does not apply to package mode; its model project reference is excluded.");
+            }
 
-        if (directory is null)
-        {
-            Assert.Skip("This integration assertion requires the enclosing Platform checkout.");
+            verifiedMapping.Mode.ShouldBe(WorkspaceMode.Source);
+            verifiedMapping.HasGit.ShouldBeTrue();
+            SourceMappingEntry entry = verifiedMapping.Entries.Single(entry => entry.Identity == "Hexalith.Platform");
+            entry.Origin.ShouldBe("source");
+            platform = entry.Path.ShouldNotBeNull();
+            model = Path.Combine(AppContext.BaseDirectory, "Hexalith.Platform.Composition.dll");
+            File.Exists(model).ShouldBeTrue("The mapped Platform model must be built and copied by the original test project.");
         }
-
-        string platform = directory.FullName;
-        string model = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "bin", "Debug", "net10.0", "Hexalith.Platform.Composition.dll");
-        if (!File.Exists(model))
+        else
         {
-            Assert.Skip("Build the Platform composition model before its integration assertion.");
+            DirectoryInfo? directory = new(AppContext.BaseDirectory);
+            while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "apphost.cs")))
+            {
+                directory = directory.Parent;
+            }
+
+            if (directory is null)
+            {
+                Assert.Skip("This integration assertion requires the enclosing Platform checkout or a verified source mapping.");
+            }
+
+            platform = directory.FullName;
+            model = Path.Combine(platform, "src", "Hexalith.Platform.Composition", "bin", "Debug", "net10.0", "Hexalith.Platform.Composition.dll");
+            if (!File.Exists(model))
+            {
+                Assert.Skip("Build the Platform composition model before its integration assertion.");
+            }
         }
 
         string root = CompositionTestFiles.CreateDirectory();
@@ -179,8 +235,9 @@ public sealed class WorkspaceAppHostTests
                 new SourceMappingEntry("Hexalith.Tenants", "source", Path.Combine(platform, "references", "Hexalith.Tenants")),
                 new SourceMappingEntry("Hexalith.Memories", "source", Path.Combine(platform, "references", "Hexalith.Memories")),
             ];
-            SourceMapping mapping = new(WorkspaceMode.Source, platform, "Hexalith.Platform", entries, false);
-            string declaration = Path.Combine(platform, "references", "Hexalith.EventStore", "module", "hexalith.module-manifest.v2.json");
+            SourceMapping mapping = verifiedMapping ?? new(WorkspaceMode.Source, platform, "Hexalith.Platform", entries, false);
+            string eventStore = mapping.Entries.Single(entry => entry.Identity == "Hexalith.EventStore").Path!;
+            string declaration = Path.Combine(eventStore, "module", "hexalith.module-manifest.v2.json");
             string declarationHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(declaration, TestContext.Current.CancellationToken).ConfigureAwait(true)));
             CompositionRunPlan plan = sample with
             {
@@ -206,7 +263,7 @@ public sealed class WorkspaceAppHostTests
             builder.Resources.ShouldNotContain(resource => resource.Name == "eventstore-2" || resource.Name.Contains("admin", StringComparison.Ordinal));
             builder.Resources.Count(resource => resource.Annotations.Any(annotation => annotation.GetType().Name == "PlatformServerAnnotation")).ShouldBe(6);
             builder.Resources.OfType<ProjectResource>().Single(resource => resource.Name == "eventstore")
-                .Annotations.OfType<ExecutableAnnotation>().Last().WorkingDirectory.ShouldBe(Path.Combine(platform, "references", "Hexalith.EventStore", "src", "Hexalith.EventStore"));
+                .Annotations.OfType<ExecutableAnnotation>().Last().WorkingDirectory.ShouldBe(Path.Combine(eventStore, "src", "Hexalith.EventStore"));
             DistributedApplicationModel applicationModel = new(builder.Resources);
             IReadOnlyList<(string Resource, string AppId, string Endpoint)> probes = RunReadiness.InvocationProbes(plan, applicationModel);
             probes.Count.ShouldBe(5);

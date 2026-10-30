@@ -91,11 +91,15 @@ public static class PlatformManifestCommand
             "--artifacts-path", Path.Combine(workspace, "build", "platform-model"),
             "-p:BuildsToolingAssemblyPath=" + typeof(PlatformManifestCommand).Assembly.Location,
             "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0", "-nodeReuse:false", "-p:UseSharedCompilation=false",
-            .. PinnedCatalogArguments(pinnedCatalog),
+            .. mapping.Mode == WorkspaceMode.Source ? PinnedSourceModelCatalogArguments(pinnedCatalog) : PinnedCatalogArguments(pinnedCatalog),
         ];
 
         CompositionProcessResult result = await CompositionProcess.RunAsync(
-            CompositionProcess.CreateStartInfo("dotnet", arguments, root, null),
+            CompositionProcess.CreateStartInfo(
+                "dotnet",
+                arguments,
+                root,
+                mapping.Mode == WorkspaceMode.Source ? SourceMappingMaterializer.Environment(mapping, workspace) : null),
             CompositionStartupClock.Remaining(startupDeadlineUtc, DateTimeOffset.UtcNow),
             cancellationToken).ConfigureAwait(false);
         string assembly = Path.Combine(output, "Hexalith.Platform.Composition.dll");
@@ -244,6 +248,14 @@ public static class PlatformManifestCommand
     private static IEnumerable<string> PinnedCatalogArguments(string pinnedCatalog) =>
     [
         "-p:CustomBeforeDirectoryBuildProps=" + pinnedCatalog,
+        "-p:ImportDirectoryPackagesProps=false",
+        "-p:CentralPackageVersionsFileImported=true",
+        "-p:DirectoryPackagesPropsPath=" + pinnedCatalog,
+    ];
+
+    private static IEnumerable<string> PinnedSourceModelCatalogArguments(string pinnedCatalog) =>
+    [
+        "-p:HexalithPinnedModelCatalogBuild=true",
         "-p:ImportDirectoryPackagesProps=false",
         "-p:CentralPackageVersionsFileImported=true",
         "-p:DirectoryPackagesPropsPath=" + pinnedCatalog,

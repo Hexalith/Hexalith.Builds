@@ -363,7 +363,7 @@ jobs:
         uses: ./.hexalith/builds-execution/Github/initialize-build
       - name: Initialize root-declared submodules
         if: ${{ !inputs.governed-ci }}
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@fff4a212180d8cd1c5c0759655a9bc4fb6963c45 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -648,7 +648,7 @@ jobs:
           runtime-version: ${{ inputs.dapr-runtime-version }}
       - name: Install and initialize Dapr
         if: ${{ inputs.integration-test-projects != '' && !inputs.governed-ci }}
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@fff4a212180d8cd1c5c0759655a9bc4fb6963c45 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
@@ -943,7 +943,7 @@ jobs:
           retention-days: 7
 
   aspire-tests:
-    if: ${{ inputs.aspire-test-project != '' }}
+    if: ${{ !cancelled() && needs.build-and-test.result == 'success' && inputs.aspire-test-project != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.aspire-timeout-minutes }}
     needs: build-and-test
@@ -962,7 +962,7 @@ jobs:
           path: .hexalith/builds-execution
           persist-credentials: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@fff4a212180d8cd1c5c0759655a9bc4fb6963c45 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
       - name: Validate Aspire hooks
         id: validate-aspire-hooks
         if: ${{ inputs.aspire-prepare-script != '' || inputs.aspire-runner-script != '' }}
@@ -1030,7 +1030,7 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles(inputs.packages-lock-file) }}
           restore-keys: nuget-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: ${{ inputs.aspire-browser-project != '' }}
         with:
           node-version: '24'
@@ -1092,7 +1092,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@fff4a212180d8cd1c5c0759655a9bc4fb6963c45 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}
@@ -1230,7 +1230,7 @@ jobs:
           path: .hexalith/builds-execution
           persist-credentials: false
       - name: Initialize root-declared submodules
-        uses: Hexalith/Hexalith.Builds/Github/initialize-build@fff4a212180d8cd1c5c0759655a9bc4fb6963c45 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/initialize-build@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
       - name: Initialize .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -1282,7 +1282,7 @@ jobs:
           dotnet restore "$SOLUTION"
           dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
       - name: Install and initialize Dapr
-        uses: Hexalith/Hexalith.Builds/Github/dapr-init@fff4a212180d8cd1c5c0759655a9bc4fb6963c45 # BUILD-REL-1
+        uses: Hexalith/Hexalith.Builds/Github/dapr-init@e171c5a788eab183b32683431b084198c9b8d373 # BUILD-REL-1
         with:
           version: ${{ inputs.dapr-version }}
           runtime-version: ${{ inputs.dapr-runtime-version }}

@@ -16,6 +16,8 @@ internal static class CompositionSdkProcess
 {
     private static readonly string _privateRoot = Path.Combine(Path.GetTempPath(), "hexalith-sdk-tests-" + Guid.NewGuid().ToString("N"));
 
+    static CompositionSdkProcess() => AppDomain.CurrentDomain.ProcessExit += (_, _) => CompositionTestFiles.Delete(_privateRoot);
+
     /// <summary>Creates a scrubbed SDK start description with explicit safety and serial controls.</summary>
     /// <param name="arguments">The SDK command and arguments.</param>
     /// <param name="directory">The working directory.</param>
@@ -72,7 +74,7 @@ internal static class CompositionSdkProcess
         {
             string value = start.Environment.TryGetValue(name, out string? explicitValue) && explicitValue is not null
                 ? explicitValue
-                : Environment.GetEnvironmentVariable(name) ?? Path.Combine(_privateRoot, leaf);
+                : Path.Combine(_privateRoot, leaf);
             if (!Path.IsPathFullyQualified(value))
             {
                 throw new ArgumentException("SDK test directory must be absolute: " + name, nameof(environment));
@@ -90,7 +92,8 @@ internal static class CompositionSdkProcess
         start.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
         start.Environment["DOTNET_ADD_GLOBAL_TOOLS_TO_PATH"] = "false";
         start.Environment["MSBUILDDISABLENODEREUSE"] = "1";
-        start.Environment["DOTNET_ROOT"] = Path.GetDirectoryName(selected);
+        string physicalExecutable = new FileInfo(selected).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? selected;
+        start.Environment["DOTNET_ROOT"] = Path.GetDirectoryName(physicalExecutable);
         start.Environment["DOTNET_HOST_PATH"] = selected;
 
         string[] command = [.. arguments];

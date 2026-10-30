@@ -174,7 +174,7 @@ public sealed class SourceMappingReconciliationTask : ITask
                     }
                     else if (!string.IsNullOrWhiteSpace(additional))
                     {
-                        retained.SetMetadata("AdditionalProperties", additional);
+                        ((ITaskItem2)retained).SetMetadataValueLiteral("AdditionalProperties", additional);
                     }
 
                     if (unsupportedRetainedMetadata is not null)
@@ -347,8 +347,18 @@ public sealed class SourceMappingReconciliationTask : ITask
         string? version = PackageVersions.FirstOrDefault(item => item.ItemSpec.Equals(retainedId, StringComparison.OrdinalIgnoreCase))?.GetMetadata("Version");
         HashSet<string> assigned = new(StringComparer.OrdinalIgnoreCase);
         List<string> assignments = [];
-        foreach (string assignment in canonical.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        string[] supplied = canonical.Split(';', StringSplitOptions.TrimEntries);
+        string[] nonempty = [.. supplied.Where(assignment => assignment.Length > 0)];
+        bool versionOnly = nonempty.Length > 0 && nonempty.All(assignment =>
+            assignment.Split('=', 2)[0].Trim().Equals("Version", StringComparison.OrdinalIgnoreCase));
+        foreach (string assignment in supplied)
         {
+            // Version-only metadata historically ignores empty separators. Forwarding lists stay closed.
+            if (assignment.Length == 0 && versionOnly)
+            {
+                continue;
+            }
+
             int equals = assignment.IndexOf('=', StringComparison.Ordinal);
             if (equals <= 0 || equals == assignment.Length - 1)
             {

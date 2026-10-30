@@ -461,6 +461,60 @@ public sealed class AppHostRunnerValidationTests
         }
     }
 
+    /// <summary>Verifies healthy resources cannot publish readiness before the owning preparation completes.</summary>
+    /// <returns>The actual readiness publication assertions.</returns>
+    [Fact]
+    public async Task HealthyResourcesWaitForOwnerPreparationBeforePublishingAsync()
+    {
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { Modules = [], UiMarkers = [] };
+            IDistributedApplicationBuilder builder = CreateBuilder();
+            ExecutableResource resource = builder.AddExecutable("eventstore", "unused", root).WithHttpEndpoint(port: 32124).Resource;
+            ExecutableResource sidecar = builder.AddExecutable("eventstore-dapr-cli", "unused", root).Resource;
+            EndpointAnnotation endpoint = resource.Annotations.OfType<EndpointAnnotation>().Single();
+            endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, "127.0.0.1", 32124);
+            await using DistributedApplication app = builder.Build();
+            ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
+            await PublishAsync(notifications, resource, HealthStatus.Healthy, 4243).ConfigureAwait(true);
+            await PublishAsync(notifications, sidecar, HealthStatus.Healthy, 4243).ConfigureAwait(true);
+            using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            bound.CancelAfter(TimeSpan.FromSeconds(5));
+            TaskCompletionSource preparation = new(TaskCreationOptions.RunContinuationsAsynchronously);
+#pragma warning disable CA2025 // The finally block cancels and drains readiness before the application and startup bound are disposed.
+            Task<bool> readiness = RunReadiness.WaitAndWriteAsync(app, plan, preparation.Task, bound.Token);
+#pragma warning restore CA2025
+            try
+            {
+                Task observationWindow = Task.Delay(250, bound.Token);
+                (await Task.WhenAny(readiness, observationWindow).ConfigureAwait(true)).ShouldBeSameAs(observationWindow);
+                await observationWindow.ConfigureAwait(true);
+                File.Exists(plan.ReadinessPath).ShouldBeFalse();
+                preparation.SetResult();
+                (await readiness.ConfigureAwait(true)).ShouldBeTrue();
+                File.Exists(plan.ReadinessPath).ShouldBeTrue();
+            }
+            finally
+            {
+                _ = preparation.TrySetCanceled(bound.Token);
+                await bound.CancelAsync().ConfigureAwait(true);
+                try
+                {
+                    _ = await readiness.ConfigureAwait(true);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Failed assertions still drain the original bounded startup task.
+                }
+            }
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     /// <summary>Verifies a real runner cutover failure reports the current unready list.</summary>
     /// <returns>The HXR027 document assertions.</returns>
     [Fact]

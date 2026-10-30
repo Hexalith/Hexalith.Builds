@@ -21,11 +21,17 @@ public static class CompositionTokenFactory
     /// <param name="request">The identity.</param>
     /// <param name="now">The issue time.</param>
     /// <returns>The compact JWT.</returns>
+    /// <exception cref="ArgumentException">The explicit authenticated surface is outside the closed owner vocabulary.</exception>
+    /// <exception cref="ArgumentException">The request contains an unsupported authenticated surface.</exception>
     public static string Create(string signingKey, CompositionTokenRequest request, DateTimeOffset now)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(signingKey);
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Subject);
+        if (request.Surface is not (null or "ui" or "agent" or "service"))
+        {
+            throw new ArgumentException("The authenticated surface must use the closed owner vocabulary.", nameof(request));
+        }
 
         Dictionary<string, object> claims = new(StringComparer.Ordinal)
         {
@@ -54,6 +60,11 @@ public static class CompositionTokenFactory
         if (request.GlobalAdministrator)
         {
             claims["role"] = "GlobalAdministrator";
+        }
+
+        if (request.Surface is not null)
+        {
+            claims["eventstore:surface"] = request.Surface;
         }
 
         string header = Encode(JsonSerializer.SerializeToUtf8Bytes(new Dictionary<string, string>(StringComparer.Ordinal) { ["alg"] = "HS256", ["typ"] = "JWT" }));

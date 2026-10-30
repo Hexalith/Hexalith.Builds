@@ -407,7 +407,20 @@ internal static class NativeTestExecutor
         }
 
         DateTimeOffset issued = DateTimeOffset.UtcNow;
-        string token = CompositionTokenFactory.Create(session.SigningKey, new CompositionTokenRequest("g4-native-tests", [session.Plan.TenantNamespace], [selection.ModuleId], ["command:submit", "query:read"], false, timing.CredentialExpiryUtc - issued), issued);
+        CompositionNativeTestScope? nativeScope = session.Readiness.NativeTestScope;
+        if (nativeScope is not null && (nativeScope.RunId != session.Plan.RunId || nativeScope.ModuleId != selection.ModuleId
+            || nativeScope.RoutingCatalogRoot.Length != 64 || nativeScope.Domains.Count == 0 || nativeScope.Tenants.Count == 0
+            || nativeScope.Domains.Concat(nativeScope.Tenants).Any(value => string.IsNullOrWhiteSpace(value) || value.Contains('*', StringComparison.Ordinal))
+            || !nativeScope.Tenants.Contains(session.Plan.TenantNamespace, StringComparer.Ordinal)))
+        {
+            return Failed("HXT009", ToolPhase.Test, ToolFailureCategory.ProductOrTest, ToolExitCode.ProductOrTest);
+        }
+
+        CompositionTokenRequest nativeIdentity = new("g4-native-tests", nativeScope?.Tenants ?? [session.Plan.TenantNamespace], nativeScope?.Domains ?? [selection.ModuleId], ["command:submit", "query:read"], false, timing.CredentialExpiryUtc - issued)
+        {
+            Surface = nativeScope is null ? null : "agent",
+        };
+        string token = CompositionTokenFactory.Create(session.SigningKey, nativeIdentity, issued);
         List<string> handoffSecrets = [token, session.SigningKey];
         if (session.Readiness.TestObservation?.AccessPath is { } accessPath)
         {

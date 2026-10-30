@@ -214,8 +214,10 @@ commit after the change that alters those composites merges.
   (`NU1901`–`NU1904`) from warnings-as-errors by adding them to
   `WarningsNotAsErrors`, so a transitive advisory that cannot be upgraded
   immediately does not block CI, while still surfacing it in build logs.
-- Acknowledge or waive an individual advisory with `<NuGetAuditSuppress>` rather
-  than turning the whole audit off.
+- Acknowledge or waive an individual advisory in the NuGet build audit with
+  `<NuGetAuditSuppress>` rather than turning the whole audit off. Such a
+  suppression does not grant a promotion exception under the
+  [image and dependency vulnerability policy v1](../../docs/vulnerability-policy-v1.md).
 
 ## Security Scanning
 
@@ -251,6 +253,23 @@ commit after the change that alters those composites merges.
     dependency-review:
       uses: Hexalith/Hexalith.Builds/.github/workflows/dependency-review.yml@main
   ```
+
+- Staging intake and production promotion adopt the Builds-owned
+  [image and dependency vulnerability policy v1](../../docs/vulnerability-policy-v1.md)
+  (`hexalith.builds.vulnerability-policy.v1`). It requires complete Trivy scans
+  of the exact module and composed images, holds Unknown findings for trusted
+  classification and blocks High/Critical findings, including unfixed findings,
+  unless covered by a recorded Administrator `@jpiquot` exception for at most
+  30 days. Exceptions are scoped, expire exclusively in UTC and may be revoked.
+  The latest gate-issued scan attempt for the pending promotion decision must
+  cover the entire inventory, with no earlier-attempt fallback or cross-decision
+  reuse. Each attempt needs verified publisher-current databases; original scan
+  starts independently obey Story 5.1's maximum-age duration at admission.
+  Story 5.5 must implement scans, retained evidence and exception validation;
+  Story 5.11 must enforce promotion acceptance. This policy publication does
+  not establish current workflow enforcement. The PR dependency-review gate
+  (default threshold High), a green PR check and NuGet advisory suppressions
+  confer no promotion exception authority and do not replace image scans.
 
 ## Commit Message Validation
 

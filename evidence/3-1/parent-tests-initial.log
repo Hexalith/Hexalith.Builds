@@ -1,0 +1,15 @@
+xUnit.net v3 In-Process Runner v4.0.2+0c7aa4991f (64-bit .NET 10.0.14)
+  Discovering: Hexalith.Builds.Module.Tests
+  Discovered:  Hexalith.Builds.Module.Tests
+  Starting:    Hexalith.Builds.Module.Tests
+    Hexalith.Builds.ModuleTool.Tests.LocalRunLifecycleTests.ExhaustedExecutionLifetimeBeforeNativeReturnRecordsTimeoutCauseAsync [FAIL]
+      System.Reflection.TargetParameterCountException : Parameter count mismatch.
+      Stack Trace:
+           at System.Reflection.MethodBaseInvoker.ThrowTargetParameterCountException()
+           at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+        test/Hexalith.Builds.Module.Tests/LocalRunLifecycleTests.cs(1110,0): at Hexalith.Builds.ModuleTool.Tests.LocalRunLifecycleTests.ExhaustedExecutionLifetimeBeforeNativeReturnRecordsTimeoutCauseAsync()
+        test/Hexalith.Builds.Module.Tests/LocalRunLifecycleTests.cs(1116,0): at Hexalith.Builds.ModuleTool.Tests.LocalRunLifecycleTests.ExhaustedExecutionLifetimeBeforeNativeReturnRecordsTimeoutCauseAsync()
+        --- End of stack trace from previous location ---
+  Finished:    Hexalith.Builds.Module.Tests (ID = '7cae78b6043dc846a09ef8121a894fb5df1d7d69afe29b3798a2e05ca632ba7c')
+=== TEST EXECUTION SUMMARY ===
+   Hexalith.Builds.Module.Tests  Total: 498, Errors: 0, Failed: 1, Skipped: 0, Not Run: 0, Time: 93.329s

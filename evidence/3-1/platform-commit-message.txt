@@ -1,0 +1,3 @@
+feat(platform): apply story 3.1 candidate runner policy
+
+Record reviewed runner policy implementation and verification evidence.

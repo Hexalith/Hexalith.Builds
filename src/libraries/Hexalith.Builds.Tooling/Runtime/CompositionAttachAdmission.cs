@@ -79,7 +79,7 @@ public static class CompositionAttachAdmission
             return context;
         }
 
-        ToolCommandResult? ownerState = CheckOwnerState(owner);
+        ToolCommandResult? ownerState = CheckOwnerState(owner, existing);
         if (ownerState is not null)
         {
             return ownerState;
@@ -110,7 +110,7 @@ public static class CompositionAttachAdmission
                 {
                     // The owner may have finished or started cleanup since it was first read; decide again under the lock.
                     CompositionRunState? latest = await ReadOwnerAsync(store, request.OwnerRunId, directory, cancellationToken).ConfigureAwait(false);
-                    ToolCommandResult? finished = latest is null ? Refuse("HXR033", "owner-unknown", "No runner-owned environment is tracked for this owner run.") : CheckOwnerState(latest);
+                    ToolCommandResult? finished = latest is null ? Refuse("HXR033", "owner-unknown", "No runner-owned environment is tracked for this owner run.") : CheckOwnerState(latest, current);
                     if (finished is not null)
                     {
                         return (finished, null);
@@ -139,12 +139,18 @@ public static class CompositionAttachAdmission
     /// <param name="store">The runner-owned state store.</param>
     /// <param name="ownerRunId">The owner run.</param>
     /// <param name="attachedRunId">The runner-issued attached run identity (or its original request identity).</param>
+    /// <param name="outcome">The attached run's reported terminal outcome.</param>
     /// <param name="now">The runner's UTC clock reading.</param>
     /// <param name="cancellationToken">The allowance.</param>
     /// <returns>The ended attachment or a stable refusal.</returns>
-    public static async Task<ToolCommandResult> EndAsync(CompositionRunStateStore store, string ownerRunId, string attachedRunId, DateTimeOffset now, CancellationToken cancellationToken = default)
+    public static async Task<ToolCommandResult> EndAsync(CompositionRunStateStore store, string ownerRunId, string attachedRunId, string? outcome, DateTimeOffset now, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(store);
+        if (outcome is not ("passed" or "failed" or "cancelled"))
+        {
+            return Usage("outcome", "Ending an attachment requires outcome passed, failed or cancelled.");
+        }
+
         if (!CompositionRunPlanFactory.IsRunId(ownerRunId) || !CompositionRunPlanFactory.IsRunId(attachedRunId))
         {
             return Usage("request", "The owner run and attached run identities must be well formed.");
@@ -174,7 +180,7 @@ public static class CompositionAttachAdmission
                         return (target, null);
                     }
 
-                    CompositionAttachment updated = target with { EndedAtUtc = EndTime(target, now), EndReason = now >= target.ExpiresAtUtc ? "expired" : "terminal-outcome" };
+                    CompositionAttachment updated = target with { EndedAtUtc = EndTime(target, now), EndReason = now >= target.ExpiresAtUtc ? "expired" : "terminal-outcome", Outcome = now >= target.ExpiresAtUtc ? "withdrawn" : outcome };
                     return (updated, [.. current.Select(item => ReferenceEquals(item, target) ? updated : item)]);
                 },
                 cancellationToken).ConfigureAwait(false);
@@ -281,7 +287,7 @@ public static class CompositionAttachAdmission
 
     private static bool IsLocal(CompositionRunState owner) => owner.ExecutionContext is { } context && Text(context, "kind") == "local";
 
-    private static string? FinishedOwnerReason(CompositionRunState owner)
+    private static string? FinishedOwnerReason(CompositionRunState owner, IReadOnlyList<CompositionAttachment> attachments)
     {
         if (owner.CleanupDisposition == "complete")
         {
@@ -291,6 +297,11 @@ public static class CompositionAttachAdmission
         if (owner.CleanupDisposition is "pending" or "in-progress" or "incomplete")
         {
             return "owner-cleaning";
+        }
+
+        if (IsLocal(owner) && attachments.Any(item => item.Outcome == "failed"))
+        {
+            return null;
         }
 
         if (owner.TestRun is null)
@@ -320,14 +331,14 @@ public static class CompositionAttachAdmission
         };
     }
 
-    private static ToolCommandResult? CheckOwnerState(CompositionRunState owner)
+    private static ToolCommandResult? CheckOwnerState(CompositionRunState owner, IReadOnlyList<CompositionAttachment> attachments)
     {
         if (!IsLocal(owner))
         {
             return Refuse("HXR035", "owner-ci-holds-unsupported", "CI owners do not wait for holds in this version, so an attachment to a CI owner cannot be honored.");
         }
 
-        string? reason = FinishedOwnerReason(owner);
+        string? reason = FinishedOwnerReason(owner, attachments);
         string message = reason == "owner-starting" ? "The owner environment is not ready yet." : "The owner environment is finished, stopped, being cleaned or not failure-retained.";
         return reason is null ? null : Refuse("HXR035", reason, message);
     }

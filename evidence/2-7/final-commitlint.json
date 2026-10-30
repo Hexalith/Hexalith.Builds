@@ -1,0 +1,8 @@
+{
+  "message": "fix(module): finish attachment withdrawal cleanup regressions\n",
+  "command": "node node_modules/@commitlint/cli/cli.js --edit /tmp/story27-builds-final-commit.txt",
+  "exitCode": 0,
+  "stdout": "",
+  "stderr": "",
+  "cliVersion": "21.2.4"
+}

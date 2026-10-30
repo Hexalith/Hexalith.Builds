@@ -378,7 +378,11 @@ FrontComposer.Shell resolve to Debug projects under their mapped roots.
 EventStore.Aspire keeps `IsAspireProjectResource="false"` when its package
 reference becomes a project reference. In package mode, the source-tree
 EventStoreHost and UiHost remain outside consumer reconciliation, preserving
-their isolated central package selections. Generated projects under a run
+their isolated central package selections. The published EventStore host uses
+the public sidecar-channel authorization policy. Source-only route-catalog
+and HTTP security APIs are compiled only against the mapped EventStore source;
+requesting a run-scoped route catalog with the published package fails at startup.
+Generated projects under a run
 workspace's `hosts/` directory stay outside reconciliation in both modes;
 their existing catalog validation still applies.
 
@@ -515,7 +519,7 @@ that passed with live holds shows cleanup as pending.
 ```sh
 hexalith-module attach --owner-run-id <owner> --mode source --composition-identity <manifest-sha256> [--hold-seconds 300] --output json
 hexalith-module attach --owner-run-id <owner> --mode source --composition-identity <manifest-sha256> --attachment-request-id <issued-id>
-hexalith-module attach --end --owner-run-id <owner> --attached-run-id <issued-attached-run-id>
+hexalith-module attach --end --owner-run-id <owner> --attached-run-id <issued-attached-run-id> --outcome passed
 ```
 
 `attach` applies policy `hexalith.platform.candidate-and-attachment-policy.v1`. The hold is
@@ -529,8 +533,32 @@ retry. Artifact-identity matching is refused as unverifiable until Epic 3 popula
 and loaded identities. CI owners do not wait for holds in this version, so `HXR035` refuses an attachment to one (`owner-ci-holds-unsupported`). The stable reason is the diagnostic field. An accepted attachment records the
 original request or omission, acceptance time, effective seconds and absolute expiry, and
 issues `originalAttachmentRequestId` and `attachedRunId`; a retry that presents either keeps
-the first acceptance and expiry. `--end` ends only that attachment. A passed local owner
-waits for every live hold to end or reach its deadline before automatic cleanup.
+the first acceptance and expiry. `--end` requires `--outcome passed|failed|cancelled` and
+ends only that attachment. Its first outcome is immutable; a late end records `withdrawn`
+with reason `expired` at the original expiry. Legacy terminal records without an outcome
+are shown as `unknown`. Listings show each attachment's outcome, including passive expiry
+as `withdrawn`, and include failed attached runs in `failed-runs`.
+
+A passed local owner waits for live holds to end or expire. An attached failure ends that
+wait and retains the environment for debugging, with fresh attachments allowed while it
+remains ready. Later owner cancellation preserves this failure retention; only explicit
+`down` releases it. Owner cancellation, including Ctrl+C during the success hold wait,
+withdraws active attachments with reason `owner-cancelled` before cleanup. Explicit `down`
+withdraws them with reason `developer-stop`. Earlier unrecorded expiries are recorded as
+`expired` in the same pass, and `HXI011` reports withdrawn run ids and their reasons.
+For local selected-test owners that can accept attachments, cleanup state and withdrawal
+must be durably recorded before cleanup starts: `down` returns retryable `HXR037` on a
+recording failure, while owner cleanup remains pending with `HXT008`. CI, context-less
+and environment-only owners cannot accept attachments; bookkeeping failures keep their
+bounded exact-owner cleanup running and report `HXT008`. Cancellation metadata gets its
+own finite allowance even when the resource stopping budget is exhausted. After durable
+withdrawal, a session AppHost is stopped before provisioning-lock acquisition, including
+when that lock later stalls. Sessions whose owners cannot accept attachments (CI, Run,
+Debug, profile and environment-only) stop their AppHost before any cleanup lock or
+bookkeeping, killing it without waiting once the stopping budget is exhausted, so no
+cleanup exit leaves it running. Each command reports each withdrawn run id once.
+Withdrawal records outcomes; termination of attached processes at expiry is deferred to
+the Platform follow-up `attached-test-execution-and-expiry-enforcement`.
 Exact cleanup accepts an omitted, missing or changed manifest, removes only the
 requested owner's resources and claims, and can be retried safely. Exporting
 `--evidence` requires an explicit `--manifest`. Incomplete cleanup exposes exact known container/process/workspace/claim leftovers and
@@ -566,6 +594,76 @@ naming the last blocking run. Independent environments coexist. Port
 probes are not operating-system reservations. Claims are released only after the
 existing ownership-limited cleanup verifies that the owning resources are gone.
 `down --run-id <owner>` continues to target only that run.
+
+### Authenticated candidate selection (policy v1)
+
+`hexalith-module test --manifest <v2-manifest> --profile <suite> --mode package
+--candidate-request <signed-request.json>` selects only the committed revision
+issued by the approved Builds `candidate-policy.yml` reusable workflow under
+`hexalith.platform.candidate-and-attachment-policy.v1`. Calls without a candidate
+request remain explicitly `baseline-only` diagnostics. Candidate selection refuses
+local/source execution, uncommitted inputs, a different module/revision, unavailable
+GitHub authentication, changed/closed/reopened/retargeted requests and superseded
+attempts before services start. The candidate checkout must be clean and exact;
+keep issuance and result files outside tracked candidate inputs (for example,
+`RUNNER_TEMP`). Each job attempt permits one candidate invocation; preserved
+diagnostics prevent reuse of its producing run even after active state cleanup. Selection does not confer acceptance or release authority.
+
+The workflow issues a private envelope containing base64 payload bytes and a GitHub
+OIDC attestation whose audience is `hexalith-candidate-v1:<sha256(payload)>`. The
+runner verifies RS256 against GitHub's TLS JWKS, the exact reusable workflow ref
+and SHA, protected environment, repository, run and attempt. Saved observation JSON
+is never authentication. The original workflow run identifies the decision; reruns
+retain it with distinct producing runs/attempts and `run_attempt` sequence. A new
+release workflow dispatch on `refs/heads/main` is a distinct request, even at
+identical bytes; other dispatch refs are refused. PR
+selection also checks its original workflow-run head/base/merge identity, current
+open epoch (including reopen/retarget events), exact committed merge parents and
+current base branch tip. Only the newest registered workflow request/attempt can
+qualify; queued, failed and cancelled successors supersede older passes.
+
+Selection and final validation also require a fresh nonce-bound consumer OIDC
+proof from the approved Builds consumer workflow at the same enrolled revision
+(currently `domain-ci.yml`; see the CI wiring note below). The proof binds the current run,
+attempt and candidate; copied issuance artifacts or CI environment variables
+cannot authenticate a local process. The fresh proof is not retained as evidence.
+
+Host operators must independently provision `HEXALITH_CANDIDATE_GATE_CONFIG` and
+read-only `HEXALITH_CANDIDATE_GITHUB_TOKEN`. The JSON configuration has the PascalCase
+fields `WorkflowRef`, `WorkflowSha`, `Environment` (exactly `candidate-policy`),
+`CallerWorkflowPath`, `CallerContentIdentity` (`sha256:` plus 64 lowercase hex digits for approved workflow bytes),
+`ConsumerJobId` and `ConsumerJobName`. Enroll the approved reusable workflow ref and
+exact lowercase commit separately from its caller bytes and protected-environment reviewers.
+None of these trusted coordinates are accepted from a candidate request. Missing
+enrollment, reviewers, API access, signature keys or complete observations refuses.
+Archived issuance attestations may outlive their JWT expiry: they authenticate only
+the immutable original issuance; every use still requires fresh authenticated GitHub
+request and attempt observations. They are never bearer access credentials.
+
+`hexalith-module validate-result --candidate-request <signed-request.json>
+--environment <test-environment.json> --result <test-result.json>` refetches authority,
+compares immutable descriptor/result bindings, checks explicit empty reuse lineage,
+package/Release disposable Linux GitHub-hosted execution, artifact identities,
+required suite completion and applicable tool qualifications. All policy refusals
+use `HXP301` with a stable named condition. It never promotes local, baseline,
+cancelled, withdrawn, incomplete or foreign evidence.
+
+`domain-ci.yml` carries no candidate wiring and requests only `contents: read`.
+GitHub validates a called workflow's job permissions before evaluating `if:`, so
+an opt-in job requesting `id-token: write` breaks every caller that grants only
+`contents: read`. `candidate-policy.yml` remains a standalone reusable workflow.
+A separate opt-in consumer workflow will be added with live issuer enrollment.
+That workflow must supply the trusted gate configuration from Builds-owned
+per-repository enrollment at its own workflow SHA, never from consumer scripts.
+There are no publication permissions or provider credentials in this gate.
+
+Local signed HTTP and workflow fixtures exercise this enforcement. No live issuer,
+tool adoption, Platform acceptance or integration qualification is enrolled by these
+changes. Loaded artifact producers remain Story 3.9. Even fully populated JSON
+qualification references cannot authenticate themselves: final acceptance currently
+refuses `tool-qualification-authentication-unavailable` until an independently
+accepted qualification authority exists. Unavailable artifact/suite/tool proof also
+refuses; a passing fixture grants no live candidate qualification.
 
 ### Platform version catalog and startup prerequisites
 

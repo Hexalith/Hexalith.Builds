@@ -65,7 +65,10 @@ public sealed record SourceMapping(
         return Entries.Any(entry => entry.Origin == "source"
             && entry.Path is not null
             && (!HasGit || !insideReferences || entry.Path != Root)
-            && RepositoryPathResolver.TryResolveExistingFile(entry.Path, Path.GetRelativePath(entry.Path, fullPath), out _));
+            && RepositoryPathResolver.TryResolveExistingFile(entry.Path, Path.GetRelativePath(entry.Path, fullPath), out _))
+            || (Mode == WorkspaceMode.Source && PlatformIdentity is { PlatformPath.Length: > 0 } platform
+                && !RepositoryPathResolver.TryResolvePathWithinRoot(Path.Combine(platform.PlatformPath, "references"), Path.GetRelativePath(Path.Combine(platform.PlatformPath, "references"), fullPath), out _)
+                && RepositoryPathResolver.TryResolveExistingFile(platform.PlatformPath, Path.GetRelativePath(platform.PlatformPath, fullPath), out _));
     }
 
     /// <summary>Gets the MSBuild property suffix generated for an identity.</summary>

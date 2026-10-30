@@ -1,0 +1,60 @@
+name: Candidate policy issuance
+
+on:
+  workflow_call:
+    inputs:
+      candidate-module:
+        description: 'Selected declaration owner. Revision and decision are established from authenticated GitHub state.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  id-token: write
+
+jobs:
+  issue:
+    # The host also verifies that required reviewers remain configured here.
+    environment: candidate-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Resolve issuing workflow source from GitHub OIDC
+        id: issuer
+        shell: bash
+        run: |
+          python3 - <<'PYCODE'
+          import base64, json, os, re, urllib.request
+          request = urllib.request.Request(os.environ['ACTIONS_ID_TOKEN_REQUEST_URL'] + '&audience=hexalith-candidate-bootstrap', headers={'Authorization': 'Bearer ' + os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']})
+          with urllib.request.urlopen(request, timeout=30) as response:
+              token = json.load(response)['value']
+          part = token.split('.')[1]
+          claims = json.loads(base64.urlsafe_b64decode(part + '=' * (-len(part) % 4)))
+          assert claims['job_workflow_ref'].startswith('Hexalith/Hexalith.Builds/.github/workflows/candidate-policy.yml@')
+          assert re.fullmatch('[0-9a-f]{40}', claims['job_workflow_sha'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('sha=' + claims['job_workflow_sha'] + '\n')
+          PYCODE
+      - name: Checkout issuing Builds workflow source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ steps.issuer.outputs.sha }}
+          path: candidate-issuer
+          persist-credentials: false
+          submodules: false
+      - name: Issue signed candidate request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_MODULE: ${{ inputs.candidate-module }}
+          CANDIDATE_REQUEST_PATH: ${{ runner.temp }}/candidate-policy/request.json
+        run: python3 candidate-issuer/Github/governed-provenance/candidate_policy.py
+      - name: Preserve immutable signed issuance
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: candidate-request-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/candidate-policy/request.json
+          if-no-files-found: error
+          retention-days: 7

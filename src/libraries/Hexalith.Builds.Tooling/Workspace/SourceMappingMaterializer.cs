@@ -216,9 +216,10 @@ public static class SourceMappingMaterializer
         string catalogTask = "<CatalogVersionValidationTask MappingFile=\"$(MSBuildThisFileDirectory)mapping.json\" MappingHash=\""
             + mapping.ContentHash
             + "\" CatalogFile=\"$(MSBuildThisFileDirectory)catalog-versions.json\" AssetsFile=\"$(ProjectAssetsFile)\" ProjectName=\"$(MSBuildProjectName)\" TargetFramework=\"$(TargetFramework)\" RuntimeIdentifier=\"$(RuntimeIdentifier)\" Packages=\"@(PackageReference);@(GlobalPackageReference)\" PackageVersions=\"@(PackageVersion)\" CheckAssets=\"false\" />";
-        string catalogTargets = mapping.Mode == WorkspaceMode.Package && mapping.PlatformIdentity is not null
-            ? "<Target Name=\"HexalithValidateCatalogBeforeRestore\" BeforeTargets=\"Restore;CollectPackageReferences;_GenerateRestoreGraphProjectEntry;CoreCompile\">"
-                + catalogTask + "</Target><Target Name=\"HexalithValidateCatalogAfterRestore\" DependsOnTargets=\"ResolvePackageAssets\" BeforeTargets=\"CoreCompile\">"
+        string catalogCondition = mapping.Mode == WorkspaceMode.Source ? " Condition=\"'$(HexalithPinnedModelCatalogBuild)' == 'true'\"" : string.Empty;
+        string catalogTargets = mapping.PlatformIdentity is not null
+            ? "<Target Name=\"HexalithValidateCatalogBeforeRestore\" BeforeTargets=\"Restore;CollectPackageReferences;_GenerateRestoreGraphProjectEntry;CoreCompile\"" + catalogCondition + ">"
+                + catalogTask + "</Target><Target Name=\"HexalithValidateCatalogAfterRestore\" DependsOnTargets=\"ResolvePackageAssets\" BeforeTargets=\"CoreCompile\"" + catalogCondition + ">"
                 + catalogTask.Replace("CheckAssets=\"false\"", "CheckAssets=\"true\"", StringComparison.Ordinal) + "</Target>"
             : string.Empty;
         StringBuilder guard = new();

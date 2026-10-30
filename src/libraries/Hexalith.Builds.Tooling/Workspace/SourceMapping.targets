@@ -1,4 +1,7 @@
 <Project>
+  <!-- The model builder opts in only after verifying the command's materialized catalog closure.
+       Keep this inside the sealed early entry point so owner early props see the pin once. -->
+  <Import Project="$(MSBuildThisFileDirectory)pinned-tree/Props/Directory.Packages.props" Condition="'$(HexalithPinnedModelCatalogBuild)' == 'true'" />
   <UsingTask TaskName="Hexalith.Builds.Tooling.Workspace.SourceMappingValidationTask" AssemblyFile="__TOOLING_ASSEMBLY__" />
   <UsingTask TaskName="Hexalith.Builds.Tooling.Workspace.SourceMappingReconciliationTask" AssemblyFile="__TOOLING_ASSEMBLY__" />
   <UsingTask TaskName="Hexalith.Builds.Tooling.Workspace.CatalogVersionValidationTask" AssemblyFile="__TOOLING_ASSEMBLY__" />

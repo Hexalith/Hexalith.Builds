@@ -20,4 +20,8 @@ public sealed record CompositionTokenRequest(
     IReadOnlyList<string> Domains,
     IReadOnlyList<string> Permissions,
     bool GlobalAdministrator,
-    TimeSpan Lifetime);
+    TimeSpan Lifetime)
+{
+    /// <summary>Gets the explicit authenticated owner surface, or null for legacy compositions without surface policy.</summary>
+    public string? Surface { get; init; }
+}

@@ -19,5 +19,13 @@ evidence/g4/approved-tuple-20261020/** whitespace=cr-at-eol
 evidence/g4/approved-tuple-20261020/*.patch -whitespace
 evidence/g4/approved-tuple-20261020/*.log -whitespace
 
-# Existing provenance tests use authored CRLF; retain their bytes during workflow changes.
+# Existing provenance sources use authored CRLF; retain their bytes during workflow changes.
 Github/governed-provenance/tests/test_governed_provenance.py -text diff whitespace=cr-at-eol
+Github/governed-provenance/governed_provenance.py -text diff whitespace=cr-at-eol
+
+# Preserve raw Story 2.7 xUnit observations, including assertion CRLF output.
+evidence/2-7/*.log whitespace=cr-at-eol
+
+# Preserve the exact Story 3.1 verification bytes recorded by its manifest.
+evidence/3-1/** -text
+evidence/3-1/*.log whitespace=cr-at-eol

@@ -110,7 +110,7 @@ public static class TestEnvironmentDescriptorWriter
             policyId = TestEnvironmentContractReader.PolicyId,
             bindings = new
             {
-                run = new { runId = plan.RunId, attemptId = plan.AttemptId, attemptSequence = 1, ownerRunId = plan.RunId, environmentId = plan.EnvironmentId, role = "owner" },
+                run = new { runId = plan.RunId, attemptId = plan.AttemptId, attemptSequence = plan.CandidatePolicy?.AttemptSequence ?? 1, ownerRunId = plan.RunId, environmentId = plan.EnvironmentId, role = "owner" },
                 environment = new
                 {
                     composition = new { id = plan.PlatformActiveModule ?? selected.ModuleId, contentIdentity = composition },
@@ -123,9 +123,9 @@ public static class TestEnvironmentDescriptorWriter
                     startupTasks = new { state = "populated", tasks = ready.StartupTaskResults.Select(task => new { taskId = task.TaskId, required = true, status = task.Status, startedAt = Utc(task.StartedAt!.Value), finishedAt = Utc(task.FinishedAt!.Value), diagnosticIds = Array.Empty<string>() }) },
                 },
                 tool = unavailable,
-                candidate = unavailable,
-                decision = unavailable,
-                reuseLineage = unavailable,
+                candidate = plan.CandidatePolicy is { } candidate ? (object)candidate.Candidate : new { state = "populated", classification = "baseline-only", reason = "No authenticated candidate request was selected." },
+                decision = plan.CandidatePolicy is { } decision ? decision.Decision : unavailable,
+                reuseLineage = plan.CandidatePolicy is { } lineage ? lineage.ReuseLineage : unavailable,
                 artifacts = new { expected = unavailable, loaded = unavailable },
                 suite = new { declared = unavailable, completion = unavailable },
                 attachments = System.Text.Json.Nodes.JsonNode.Parse(CompositionAttachmentStore.ReadContractBinding(ownerDiagnosticsDirectory, plan.RunId, DateTimeOffset.UtcNow).ToJsonString()),
@@ -180,17 +180,23 @@ public static class TestEnvironmentDescriptorWriter
         _ = ExecutionContext();
     }
 
+    /// <summary>Reports whether <see cref="ExecutionContext"/> records a local context for owners started by this process.</summary>
+    /// <returns>Whether neither GitHub Actions nor CI execution is declared.</returns>
+    internal static bool IsLocalExecution() =>
+        !string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Captures actual supported execution context without inventing CI metadata.</summary>
     /// <returns>The local or complete actual CI identity.</returns>
     /// <exception cref="InvalidDataException">Actual CI metadata is incomplete or unsupported.</exception>
     internal static object ExecutionContext()
     {
-        bool github = string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase);
-        bool ci = github || string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase);
-        if (!ci)
+        if (IsLocalExecution())
         {
             return new { kind = "local" };
         }
+
+        bool github = string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase);
 
         string? repository = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
         string? run = Environment.GetEnvironmentVariable("GITHUB_RUN_ID");

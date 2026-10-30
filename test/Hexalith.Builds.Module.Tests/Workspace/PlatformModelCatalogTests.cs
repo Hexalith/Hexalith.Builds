@@ -15,6 +15,37 @@ using Xunit;
 /// <summary>Exercises the model builder against early catalog imports and immutable pin authority.</summary>
 public sealed class PlatformModelCatalogTests
 {
+    /// <summary>Builds a real source-only contract through the exact mapped dependency while retaining pinned package authority.</summary>
+    /// <returns>The actual SDK build and restored dependency assertions.</returns>
+    [Fact]
+    public async Task ModelBuildCompilesActualMappedSourceDependencyAsync()
+    {
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync().ConfigureAwait(true);
+        SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, WorkspaceMode.Source, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string workspace = Path.Combine(fixture.Directory, "source-model-run");
+        await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string dependency = Path.Combine(mapping.Entries.Single(entry => entry.Identity == "Hexalith.Dep").Path!, "src", "Hexalith.Dep");
+        _ = Directory.CreateDirectory(dependency);
+        await File.WriteAllTextAsync(Path.Combine(dependency, "Hexalith.Dep.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Hexalith.Dep</PackageId><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(dependency, "SourceOnlyContract.cs"), "namespace MappedOwner; public sealed class SourceOnlyContract { }", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string root = mapping.PlatformIdentity!.PlatformPath;
+        string model = Path.Combine(root, "src", "Hexalith.Platform.Composition");
+        _ = Directory.CreateDirectory(model);
+        await File.WriteAllTextAsync(Path.Combine(root, "NuGet.Config"), "<configuration><packageSources><clear /></packageSources></configuration>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        const string modelProject = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup><ItemGroup>"
+            + "<ProjectReference Include=\"$(HexalithDepRoot)/src/Hexalith.Dep/Hexalith.Dep.csproj\" Condition=\"'$(HexalithDepFromSource)' == 'true'\" />"
+            + "<PackageReference Include=\"Hexalith.Dep\" Condition=\"'$(HexalithDepFromSource)' != 'true'\" /></ItemGroup></Project>";
+        await File.WriteAllTextAsync(Path.Combine(model, "Hexalith.Platform.Composition.csproj"), modelProject, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(model, "Consumer.cs"), "public sealed class Consumer { public MappedOwner.SourceOnlyContract Value { get; } = new(); }", TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        string assembly = await PlatformManifestCommand.BuildModelAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        File.Exists(assembly).ShouldBeTrue();
+        string assetsPath = Directory.GetFiles(Path.Combine(workspace, "build", "platform-model", "obj", "Hexalith.Platform.Composition"), "project.assets.json", SearchOption.AllDirectories).ShouldHaveSingleItem();
+        using System.Text.Json.JsonDocument assets = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(assetsPath, TestContext.Current.CancellationToken).ConfigureAwait(true));
+        assets.RootElement.GetProperty("libraries").GetProperty("Hexalith.Dep/1.0.0").GetProperty("type").GetString().ShouldBe("project");
+    }
+
     /// <summary>Builds an actual SDK project graph with early properties and conditional pinned versions.</summary>
     /// <param name="mode">The selected source or package build mode.</param>
     /// <param name="changeLiveCatalog">Whether the live catalog disagrees with the committed pin.</param>
@@ -26,7 +57,8 @@ public sealed class PlatformModelCatalogTests
     [InlineData(WorkspaceMode.Package, true)]
     public async Task ModelBuildAppliesPinnedCatalogOnceBeforeOwnerPropsAsync(WorkspaceMode mode, bool changeLiveCatalog)
     {
-        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(conditionalCatalog: true).ConfigureAwait(true);
+        // The pin probe is intentionally a package in both configurations; source binding is tested separately above.
+        using WorkspaceGitFixture fixture = await WorkspaceGitFixture.CreateAsync(conditionalCatalog: true, conditionalPackageId: "Local.CatalogProbe").ConfigureAwait(true);
         SourceMapping mapping = await WorkspaceRootResolver.ResolveAsync(fixture.Manifest, mode, TestContext.Current.CancellationToken).ConfigureAwait(true);
         string workspace = Path.Combine(fixture.Directory, "model-run");
         await SourceMappingMaterializer.WriteAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -44,7 +76,7 @@ public sealed class PlatformModelCatalogTests
         _ = Directory.CreateDirectory(feed);
         _ = Directory.CreateDirectory(packageDirectory);
         string packageProject = Path.Combine(packageDirectory, "Package.csproj");
-        await File.WriteAllTextAsync(packageProject, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Hexalith.Dep</PackageId><Version>1.0.0</Version></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(packageProject, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Local.CatalogProbe</PackageId><Version>1.0.0</Version></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult pack = await CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo("dotnet", ["pack", packageProject, "-c", "Debug", "-o", feed, "-v:q", "-p:NuGetAudit=false", "-p:RestoreSources=" + feed], packageDirectory, null),
             TimeSpan.FromMinutes(1),
@@ -70,9 +102,9 @@ public sealed class PlatformModelCatalogTests
         _ = Directory.CreateDirectory(modelDirectory);
         _ = Directory.CreateDirectory(dependencyDirectory);
         const string model = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup>"
-            + "<ItemGroup><ProjectReference Include=\"../../early/Hexalith.Folders.Aspire.csproj\" /><PackageReference Include=\"Hexalith.Dep\" /></ItemGroup></Project>";
+            + "<ItemGroup><ProjectReference Include=\"../../early/Hexalith.Folders.Aspire.csproj\" /><PackageReference Include=\"Local.CatalogProbe\" /></ItemGroup></Project>";
         await File.WriteAllTextAsync(Path.Combine(modelDirectory, "Hexalith.Platform.Composition.csproj"), model, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        const string dependency = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup><ItemGroup><PackageReference Include=\"Hexalith.Dep\" /></ItemGroup></Project>";
+        const string dependency = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup><ItemGroup><PackageReference Include=\"Local.CatalogProbe\" /></ItemGroup></Project>";
         await File.WriteAllTextAsync(Path.Combine(dependencyDirectory, "Hexalith.Folders.Aspire.csproj"), dependency, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
         string assembly = await PlatformManifestCommand.BuildModelAsync(mapping, workspace, TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -82,13 +114,13 @@ public sealed class PlatformModelCatalogTests
         foreach ((string directory, string projectName, string version) in new[] { (modelDirectory, "Hexalith.Platform.Composition", "13.6.0-preview.1"), (dependencyDirectory, "Hexalith.Folders.Aspire", "13.0.0") })
         {
             string[] observed = await File.ReadAllLinesAsync(Path.Combine(directory, "observed-catalog.txt"), TestContext.Current.CancellationToken).ConfigureAwait(true);
-            observed.ShouldBe([mode == WorkspaceMode.Source ? "Debug" : "Release", version, "Hexalith.Dep=1.0.0", "CommunityToolkit.Aspire.Hosting.Dapr=" + version]);
+            observed.ShouldBe([mode == WorkspaceMode.Source ? "Debug" : "Release", version, "Local.CatalogProbe=1.0.0", "CommunityToolkit.Aspire.Hosting.Dapr=" + version]);
             string marker = Path.DirectorySeparatorChar + projectName + Path.DirectorySeparatorChar;
             string assetsPath = Directory.GetFiles(intermediate, "project.assets.json", SearchOption.AllDirectories).Single(path => path.Contains(marker, StringComparison.Ordinal));
             using System.Text.Json.JsonDocument assets = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(assetsPath, TestContext.Current.CancellationToken).ConfigureAwait(true));
-            assets.RootElement.GetProperty("libraries").TryGetProperty("Hexalith.Dep/1.0.0", out _).ShouldBeTrue();
+            assets.RootElement.GetProperty("libraries").TryGetProperty("Local.CatalogProbe/1.0.0", out _).ShouldBeTrue();
             assets.RootElement.GetProperty("project").GetProperty("restore").GetProperty("centralPackageVersionsManagementEnabled").GetBoolean().ShouldBeTrue();
-            assets.RootElement.GetProperty("project").GetProperty("frameworks").GetProperty("net10.0").GetProperty("dependencies").GetProperty("Hexalith.Dep").GetProperty("versionCentrallyManaged").GetBoolean().ShouldBeTrue();
+            assets.RootElement.GetProperty("project").GetProperty("frameworks").GetProperty("net10.0").GetProperty("dependencies").GetProperty("Local.CatalogProbe").GetProperty("versionCentrallyManaged").GetBoolean().ShouldBeTrue();
             assets.RootElement.GetProperty("project").GetProperty("restore").GetProperty("packagesPath").GetString()!.TrimEnd(Path.DirectorySeparatorChar).ShouldBe(packageCache);
         }
     }

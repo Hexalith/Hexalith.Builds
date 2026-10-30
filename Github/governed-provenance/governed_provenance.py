@@ -330,6 +330,13 @@ class ClosureCollector:
         if literal.lower().startswith("docker://"):
             raise ProvenanceError(f"{context}: Docker action references are not governable: {literal!r}")
         if literal.startswith("./"):
+            # Reusable workflows resolve within the very same immutable workflow source.
+            # This does not permit consumer-checkout actions or cross-repository helpers.
+            if literal.startswith("./.github/workflows/") and context.startswith(".github/workflows/") and not self.workflow_root:
+                workflow = normalize_path(literal[2:], f"{context} local workflow")
+                if not workflow.endswith((".yml", ".yaml")):
+                    raise ProvenanceError(f"{context}: local workflow must be YAML")
+                return ("workflow", workflow)
             if not literal.startswith(LOCAL_EXECUTION_PREFIX):
                 raise ProvenanceError(
                     f"{context}: a governed local uses: reference must load from "
@@ -376,6 +383,9 @@ class ClosureCollector:
 
     def _visit(self, literal, depth, context):
         kind, target = self._resolve_literal(literal, context)
+        if kind == "workflow":
+            self.visit_workflow(target, depth)
+            return
         if kind == "external":
             identity, path, commit = target
             self.external[(identity, path, commit)] = {
@@ -412,6 +422,17 @@ class ClosureCollector:
                 "blob_sha256": hashlib.sha256(payload).hexdigest(),
             }
             text = self._decode(payload, workflow_path)
+            workflow_helpers = {
+                ".github/workflows/candidate-policy.yml": "Github/governed-provenance/candidate_policy.py",
+                ".github/workflows/domain-ci.yml": "Github/governed-provenance/candidate_workspace.py",
+            }
+            if workflow_path in workflow_helpers and workflow_helpers[workflow_path] in text and not self.workflow_root:
+                helper = workflow_helpers[workflow_path]
+                helper_bytes = self._read_source(helper, workflow_path)
+                self.helpers[helper] = {
+                    "repository": BUILDS_IDENTITY, "path": helper, "commit": self.commit,
+                    "blob_sha256": hashlib.sha256(helper_bytes).hexdigest(),
+                }
             for line_number, literal in scan_uses(text, workflow_path):
                 self._visit(literal, depth + 1, f"{workflow_path}:{line_number}")
         finally:
@@ -456,8 +477,12 @@ class ClosureCollector:
             self.actions.values(),
             key=lambda source: (source["repository"], source["path"], source["commit"], source["blob_sha256"]),
         )
+        nested_workflows = [
+            {"repository": source["repository"], "path": source["workflow_path"], "commit": source["commit"], "blob_sha256": source["blob_sha256"]}
+            for path, source in self.workflows.items() if path != workflow_path
+        ]
         helpers = sorted(
-            self.helpers.values(),
+            [*self.helpers.values(), *nested_workflows],
             key=lambda source: (source["repository"], source["path"], source["commit"], source["blob_sha256"]),
         )
         external = sorted(

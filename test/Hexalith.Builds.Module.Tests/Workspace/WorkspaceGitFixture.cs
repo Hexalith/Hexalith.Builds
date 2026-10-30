@@ -52,8 +52,9 @@ internal sealed class WorkspaceGitFixture : IDisposable
     /// <param name="toolVersionRange">The Platform's accepted tool range.</param>
     /// <param name="emptyCatalogVersion">Whether the catalog evaluates an empty package version.</param>
     /// <param name="onDemandCatalogFailure">Whether one project name fails during isolated evaluation.</param>
+    /// <param name="conditionalPackageId">The local package sentinel used by the conditional catalog fixture.</param>
     /// <returns>The fixture.</returns>
-    public static async Task<WorkspaceGitFixture> CreateAsync(bool withNested = false, bool withSecond = false, bool withDirectManifest = false, bool conditionalCatalog = false, bool largeCatalog = false, bool relativeCatalogImport = false, bool compoundCatalogCondition = false, bool optionalCatalogImport = false, bool malformedCatalog = false, bool functionCatalogCondition = false, string? toolVersionRange = null, bool emptyCatalogVersion = false, bool onDemandCatalogFailure = false)
+    public static async Task<WorkspaceGitFixture> CreateAsync(bool withNested = false, bool withSecond = false, bool withDirectManifest = false, bool conditionalCatalog = false, bool largeCatalog = false, bool relativeCatalogImport = false, bool compoundCatalogCondition = false, bool optionalCatalogImport = false, bool malformedCatalog = false, bool functionCatalogCondition = false, string? toolVersionRange = null, bool emptyCatalogVersion = false, bool onDemandCatalogFailure = false, string conditionalPackageId = "Hexalith.Dep")
     {
         string directory = Path.Combine(Path.GetTempPath(), "hexalith-workspace-tests", Guid.NewGuid().ToString("N"));
         _ = System.IO.Directory.CreateDirectory(directory);
@@ -88,7 +89,7 @@ internal sealed class WorkspaceGitFixture : IDisposable
             string builds = await fixture.CreateRepositoryAsync("builds", "builds.txt").ConfigureAwait(true);
             _ = System.IO.Directory.CreateDirectory(Path.Combine(builds, "Props"));
             string catalog = conditionalCatalog
-                ? "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"'$(msbuildprojectname)' == 'Hexalith.Folders.Aspire'\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>"
+                ? "<Project><PropertyGroup><DaprVersion>13.6.0-preview.1</DaprVersion><DaprVersion Condition=\"'$(msbuildprojectname)' == 'Hexalith.Folders.Aspire'\">13.0.0</DaprVersion></PropertyGroup><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /><PackageVersion Include=\"CommunityToolkit.Aspire.Hosting.Dapr\" Version=\"$(DaprVersion)\" /></ItemGroup></Project>".Replace("Hexalith.Dep", conditionalPackageId, StringComparison.Ordinal)
                 : "<Project><ItemGroup><PackageVersion Include=\"Hexalith.Dep\" Version=\"1.0.0\" /></ItemGroup></Project>";
             if (compoundCatalogCondition)
             {

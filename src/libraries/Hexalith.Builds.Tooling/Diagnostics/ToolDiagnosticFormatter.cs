@@ -89,6 +89,7 @@ public static class ToolDiagnosticFormatter
                 {
                     _ = builder.Append('\n').Append("  attached=").Append(attachment.AttachedRunId);
                     AppendField(builder, "state", attachment.EndedAtUtc is not null ? "ended" : "recorded");
+                    AppendField(builder, "outcome", attachment.Outcome ?? "active");
                     AppendField(builder, "accepted", attachment.AcceptedAtUtc.ToString("O", CultureInfo.InvariantCulture));
                     AppendField(builder, "expires", attachment.ExpiresAtUtc.ToString("O", CultureInfo.InvariantCulture));
                     if (attachment.EndedAtUtc is { } endedAt)
@@ -119,6 +120,7 @@ public static class ToolDiagnosticFormatter
             AppendField(builder, "hold-seconds", attached.EffectiveHoldSeconds.ToString(CultureInfo.InvariantCulture));
             AppendField(builder, "accepted", attached.AcceptedAtUtc.ToString("O", CultureInfo.InvariantCulture));
             AppendField(builder, "expires", attached.ExpiresAtUtc.ToString("O", CultureInfo.InvariantCulture));
+            AppendField(builder, "outcome", attached.Outcome ?? "active");
             if (attached.EndedAtUtc is { } attachmentEnd)
             {
                 AppendField(builder, "ended", attachmentEnd.ToString("O", CultureInfo.InvariantCulture) + "/" + attached.EndReason);
