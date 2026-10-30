@@ -142,7 +142,8 @@ public static class CandidatePolicyValidator
                 throw new CandidatePolicyException("passed-outcome-required");
             }
 
-            if (!Populated(currentDeadlines.GetProperty("startup")))
+            // A passed run measured its startup; execution timing is either measured or explicitly undeclared.
+            if (!Populated(currentDeadlines.GetProperty("startup")) || S(currentDeadlines.GetProperty("execution"), "state") is not ("populated" or "not-declared"))
             {
                 throw new CandidatePolicyException("passing-duration-required");
             }

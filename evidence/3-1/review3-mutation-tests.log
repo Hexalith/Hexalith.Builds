@@ -1,0 +1,66 @@
+xUnit.net v3 In-Process Runner v4.0.2+0c7aa4991f (64-bit .NET 10.0.14)
+[37m  Discovering: Hexalith.Builds.Module.Tests
+[0m[37m  Discovered:  Hexalith.Builds.Module.Tests
+[0m[37m  Starting:    Hexalith.Builds.Module.Tests
+[0m[91m    Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.EnrollmentRejectsUnmatchableIdentityFormatsAsync(field: "CallerContentIdentity", prefixed: True) [FAIL]
+[0m[37m      Shouldly.ShouldAssertException : refusal.Condition
+[0m[37m          should be
+[0m[37m      "issuer-not-enrolled"
+[0m[37m          but was
+[0m[37m      "issuer-workflow-mismatch"
+[0m[37m          difference
+[0m[37m      Difference     |                           |         |    |    |    |    |    |    |    |    |    |    |    |    |    |    |   
+[0m[37m                     |                          \|/       \|/  \|/  \|/  \|/  \|/  \|/  \|/  \|/  \|/  \|/  \|/  \|/  \|/  \|/  \|/  
+[0m[37m      Index          | ...  3    4    5    6    7    8    9    10   11   12   13   14   15   16   17   18   19   20   21   22   23   
+[0m[37m      Expected Value | ...  u    e    r    -    n    o    t    -    e    n    r    o    l    l    e    d                             
+[0m[37m      Actual Value   | ...  u    e    r    -    w    o    r    k    f    l    o    w    -    m    i    s    m    a    t    c    h    
+[0m[37m      Expected Code  | ...  117  101  114  45   110  111  116  45   101  110  114  111  108  108  101  100                           
+[0m[37m      Actual Code    | ...  117  101  114  45   119  111  114  107  102  108  111  119  45   109  105  115  109  97   116  99   104  
+[0m[90m      Stack Trace:
+[0m[37m        /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs(790,0): at Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.EnrollmentRejectsUnmatchableIdentityFormatsAsync(String field, Boolean prefixed)
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+[0m[37m        --- End of stack trace from previous location ---
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+[0m[91m    Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(mutation: "unissued") [FAIL]
+[0m[37m      Shouldly.ShouldAssertException : exit
+[0m[37m          should be
+[0m[37m      2
+[0m[37m          but was
+[0m[37m      0
+[0m[37m      
+[0m[37m      Additional Info:
+[0m[37m          {"status":"completed","outcome":{"exitCode":"Success","phase":"None","category":"None","ruleId":null},"diagnostics":[],"runId":"5ee272e75c1642c4948b37e10835fa14","remainingResources":{"containerIds":[],"processIds":[],"unverified":false,"isEmpty":true,"workspaceIds":[],"claimIds":[],"discoveryFailures":[],"resourceIds":[]}}
+[0m[37m      
+[0m[90m      Stack Trace:
+[0m[37m        /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs(580,0): at Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(String mutation)
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m        /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs(648,0): at Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(String mutation)
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+[0m[37m        --- End of stack trace from previous location ---
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+[0m[91m    Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingResultRefusesMatchingUnavailableTimingAsync(deadline: "execution") [FAIL]
+[0m[37m      Shouldly.ShouldAssertException : `CandidatePolicyValidator.ValidateEvidence(binding, JsonSerializer.SerializeToElement(descriptor), JsonSerializer.SerializeToElement(result))`
+[0m[37m          should throw
+[0m[37m      Hexalith.Builds.Tooling.CandidatePolicy.CandidatePolicyException
+[0m[37m          but did not
+[0m[90m      Stack Trace:
+[0m[37m        /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs(940,0): at Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingResultRefusesMatchingUnavailableTimingAsync(String deadline)
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+[0m[37m        --- End of stack trace from previous location ---
+[0m[37m           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+[0m[37m           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+[0m[37m  Finished:    Hexalith.Builds.Module.Tests (ID = '523df0d5eda6834dbf803c79c8ed0c061ea700ec5b5a25fa122c6b6f7568ba98')
+[0m[37m=== TEST EXECUTION SUMMARY ===
+[0m[37m   Hexalith.Builds.Module.Tests  Total: 15, Errors: 0, Failed: 3, Skipped: 0, Not Run: 0, Time: 4.487s
+[0m[0m

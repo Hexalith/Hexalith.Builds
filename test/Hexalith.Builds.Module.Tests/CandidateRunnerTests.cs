@@ -117,10 +117,13 @@ public sealed class CandidateRunnerTests
         refusal.Condition.ShouldBe("tool-qualification-authentication-unavailable");
     }
 
-    /// <summary>The actual descriptor writer and terminal writer preserve one issued attempt. Fixture execution grants no qualification.</summary>
+    /// <summary>The actual descriptor writer and terminal writer preserve one issued attempt of either kind. Fixture execution grants no qualification.</summary>
+    /// <param name="release">Whether the issued decision is a release dispatch rather than a PR merge.</param>
     /// <returns>The validated shared binding snapshots.</returns>
-    [Fact]
-    public async Task DescriptorAndTerminalWritersPreserveSameIssuedCandidateAsync()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DescriptorAndTerminalWritersPreserveSameIssuedCandidateAsync(bool release)
     {
         using PlatformManifestTestWorkspace workspace = new();
         (ModuleTestSelection selected, CompositionRunState original) = LocalRunLifecycleFixture.Create(workspace);
@@ -128,6 +131,11 @@ public sealed class CandidateRunnerTests
         fixture.Payload["moduleId"] = selected.ModuleId;
         fixture.Payload["attemptSequence"] = 2;
         fixture.CurrentAttempt = 2;
+        if (release)
+        {
+            UseReleaseDispatch(fixture);
+        }
+
         CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with { RunId = binding.RunId, AttemptId = binding.AttemptId, CandidatePolicy = binding, SelectedTest = selected };
         plan = await TestEnvironmentProvisioningFixture.PrepareAsync(plan, workspace.Save(), workspace.Root).ConfigureAwait(true);
@@ -147,6 +155,8 @@ public sealed class CandidateRunnerTests
         }
 
         result.GetProperty("bindings").GetProperty("run").GetProperty("attemptSequence").GetInt32().ShouldBe(2);
+        result.GetProperty("bindings").GetProperty("decision").GetProperty("kind").GetString().ShouldBe(release ? "release" : "pr-merge");
+        result.GetProperty("bindings").GetProperty("candidate").TryGetProperty("pr", out _).ShouldBe(!release);
         record.QualificationCredit.ShouldBeFalse();
     }
 
@@ -413,7 +423,7 @@ public sealed class CandidateRunnerTests
         output.ToString().ShouldNotContain("/private/");
     }
 
-    /// <summary>Public candidate invocations preserve startup ownership and refuse stale, dirty or repeated inputs.</summary>
+    /// <summary>Public candidate invocations preserve startup ownership of either kind, never adopt an unissued identity, and refuse stale, dirty or repeated inputs.</summary>
     /// <param name="mutation">The checkout violation.</param>
     /// <returns>The issued startup bindings or named refusal with preserved prior owners.</returns>
     [Theory]
@@ -422,9 +432,11 @@ public sealed class CandidateRunnerTests
     [InlineData("untracked")]
     [InlineData("replay")]
     [InlineData("startup")]
+    [InlineData("startup-release")]
     [InlineData("session")]
     [InlineData("prior-state")]
     [InlineData("prior-diagnostics")]
+    [InlineData("unissued")]
     public async Task PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(string mutation)
     {
         using PlatformManifestTestWorkspace workspace = new();
@@ -432,7 +444,8 @@ public sealed class CandidateRunnerTests
         using System.Diagnostics.Process readyHost = new();
         (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace, "package");
         string manifest = workspace.Save();
-        bool acceptedStartup = mutation is "startup" or "session" or "prior-state" or "prior-diagnostics";
+        bool startup = mutation is "startup" or "startup-release";
+        bool acceptedStartup = startup || mutation is "session" or "prior-state" or "prior-diagnostics";
 
         // Explicit offline release fixtures exercise real engine ownership without claiming live qualification.
         CompositionDeclarationOptions? packageDeclarations = acceptedStartup ? DeclarationClosureTests.PackageOptions(workspace.Root) : null;
@@ -451,6 +464,11 @@ public sealed class CandidateRunnerTests
         using CandidateGateFixture fixture = new();
         fixture.Payload["moduleId"] = selected.ModuleId;
         fixture.BindCandidate(merge, head, baseCommit);
+        if (mutation == "startup-release")
+        {
+            UseReleaseDispatch(fixture);
+        }
+
         string request = fixture.Sign();
         if (mutation == "head")
         {
@@ -478,7 +496,12 @@ public sealed class CandidateRunnerTests
         }
 
         Func<string, ModuleTestSelection, CancellationToken, Task<CompositionStartResult>>? selectedStartOverride = null;
-        if (mutation == "session")
+        if (mutation == "unissued")
+        {
+            // A start that reports no run cannot borrow the binding's identity or its prior committed outcome.
+            selectedStartOverride = (_, _, _) => Task.FromResult(new CompositionStartResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, "HXR014", ToolExitCode.PrerequisiteUnavailable), []), null, null));
+        }
+        else if (mutation == "session")
         {
             selectedStartOverride = async (_, selection, token) =>
             {
@@ -513,7 +536,16 @@ public sealed class CandidateRunnerTests
         string ownerWorkspace = Path.Combine(options.WorkspaceRoot, binding.RunId);
         string priorDiagnostics = Path.Combine(options.StateDirectory, "diagnostics", binding.RunId);
         byte[]? originalState = null;
-        if (mutation is "prior-state" or "prior-diagnostics")
+        string priorRecord = Path.Combine(priorDiagnostics, "selected-test.json");
+        byte[]? originalRecord = null;
+        if (mutation == "unissued")
+        {
+            ModuleTestRunRecord passed = new(binding.RunId, binding.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "unknown", new([], []));
+            _ = Directory.CreateDirectory(priorDiagnostics);
+            await CompositionDocumentStore.WriteAsync(priorRecord, passed, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            originalRecord = await File.ReadAllBytesAsync(priorRecord, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        else if (mutation is "prior-state" or "prior-diagnostics")
         {
             _ = Directory.CreateDirectory(ownerWorkspace);
             await File.WriteAllTextAsync(Path.Combine(ownerWorkspace, "peer.txt"), "owner survives", TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -543,9 +575,19 @@ public sealed class CandidateRunnerTests
             await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
             int exit = await ModuleCommandApplication.InvokeAsync(["test", "--manifest", manifest, "--profile", "verify", "--mode", "package", "--candidate-request", request, "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
             starts.ShouldBe(0);
-            if (mutation is "startup" or "session")
+            if (mutation == "unissued")
             {
-                exit.ShouldBe((int)(mutation == "startup" ? ToolExitCode.PrerequisiteUnavailable : ToolExitCode.ProductOrTest), output.ToString());
+                exit.ShouldBe((int)ToolExitCode.PrerequisiteUnavailable, output.ToString());
+                output.ToString().ShouldContain("HXR014");
+                output.ToString().ShouldNotContain(binding.RunId);
+                (await File.ReadAllBytesAsync(priorRecord, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(originalRecord);
+                _ = Directory.GetFileSystemEntries(priorDiagnostics).ShouldHaveSingleItem();
+                return;
+            }
+
+            if (startup || mutation == "session")
+            {
+                exit.ShouldBe((int)(startup ? ToolExitCode.PrerequisiteUnavailable : ToolExitCode.ProductOrTest), output.ToString());
                 string path = Path.Combine(priorDiagnostics, "test-result.json");
                 TestEnvironmentContractReadResult observed = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
                 observed.IsValid.ShouldBeTrue(output.ToString());
@@ -558,6 +600,8 @@ public sealed class CandidateRunnerTests
                     JsonNode.DeepEquals(JsonNode.Parse(bindings.GetProperty(field).GetRawText()), JsonNode.Parse(expected.GetRawText())).ShouldBeTrue();
                 }
 
+                bindings.GetProperty("decision").GetProperty("kind").GetString().ShouldBe(mutation == "startup-release" ? "release" : "pr-merge");
+                bindings.GetProperty("candidate").GetProperty("committedRevision").GetString().ShouldBe(merge);
                 observed.Document.Value.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("failed");
                 if (mutation == "session")
                 {
@@ -729,15 +773,18 @@ public sealed class CandidateRunnerTests
 
     /// <summary>Only canonical independently enrolled identities can ever match GitHub observations.</summary>
     /// <param name="field">The noncanonical enrollment value.</param>
+    /// <param name="prefixed">Whether a content identity keeps its <c>sha256:</c> prefix but uses uppercase hex.</param>
     /// <returns>The enrollment refusal.</returns>
     [Theory]
-    [InlineData("WorkflowSha")]
-    [InlineData("CallerContentIdentity")]
-    public async Task EnrollmentRejectsUnmatchableIdentityFormatsAsync(string field)
+    [InlineData("WorkflowSha", false)]
+    [InlineData("CallerContentIdentity", false)]
+    [InlineData("CallerContentIdentity", true)]
+    public async Task EnrollmentRejectsUnmatchableIdentityFormatsAsync(string field, bool prefixed)
     {
         using CandidateGateFixture fixture = new();
         JsonObject config = JsonSerializer.SerializeToNode(fixture.Configuration)!.AsObject();
-        config[field] = field == "WorkflowSha" ? new string('F', 40) : new string('a', 64);
+        string contentIdentity = prefixed ? "sha256:" + new string('A', 64) : new string('a', 64);
+        config[field] = field == "WorkflowSha" ? new string('F', 40) : contentIdentity;
         CandidateGateClient gate = new(fixture.Client, JsonSerializer.Deserialize<CandidateGateConfiguration>(config.ToJsonString())!, "fixture-read-token");
         CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
         refusal.Condition.ShouldBe("issuer-not-enrolled");
@@ -877,20 +924,31 @@ public sealed class CandidateRunnerTests
         (await File.ReadAllTextAsync(sentinel, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("owner survives");
     }
 
-    /// <summary>Matching unavailable startup timing cannot qualify a passed result.</summary>
+    /// <summary>Matching unavailable startup or execution timing cannot qualify a passed result.</summary>
+    /// <param name="deadline">The deadline left unpopulated in both documents.</param>
     /// <returns>The missing timing refusal while complete fixtures still require independent qualification.</returns>
-    [Fact]
-    public async Task PassingResultRefusesMatchingUnavailableStartupTimingAsync()
+    [Theory]
+    [InlineData("startup")]
+    [InlineData("execution")]
+    public async Task PassingResultRefusesMatchingUnavailableTimingAsync(string deadline)
     {
         using CandidateGateFixture fixture = new();
         CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
         (JsonObject descriptor, JsonObject result) = Evidence(binding, fixture.Context);
-        descriptor["bindings"]!["deadlines"]!["startup"] = JsonSerializer.SerializeToNode(new { state = "not-yet-populated" });
-        result["bindings"]!["deadlines"]!["startup"] = descriptor["bindings"]!["deadlines"]!["startup"]!.DeepClone();
+        descriptor["bindings"]!["deadlines"]![deadline] = JsonSerializer.SerializeToNode(new { state = "not-yet-populated" });
+        result["bindings"]!["deadlines"]![deadline] = descriptor["bindings"]!["deadlines"]![deadline]!.DeepClone();
         Should.Throw<CandidatePolicyException>(() => CandidatePolicyValidator.ValidateEvidence(binding, JsonSerializer.SerializeToElement(descriptor), JsonSerializer.SerializeToElement(result))).Condition.ShouldBe("passing-duration-required");
     }
 
     private static string CandidateIssuanceLock(CompositionEngineOptions options, CandidatePolicyBinding binding) => Path.Combine(options.StateDirectory, "candidate-issuance-" + binding.RunId + ".lock");
+
+    private static void UseReleaseDispatch(CandidateGateFixture fixture)
+    {
+        // A release dispatch carries no PR binding; its decision targets the dispatched main revision.
+        fixture.Payload["kind"] = "release";
+        _ = fixture.Payload.Remove("pr");
+        _ = fixture.Payload.Remove("epoch");
+    }
 
     private static async Task<CandidatePolicyException?> ObserveCandidateStartAsync(CompositionEngine engine, string manifest)
     {

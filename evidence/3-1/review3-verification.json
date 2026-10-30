@@ -1,0 +1,73 @@
+{
+  "story": "3-1-apply-the-candidate-selection-policy-to-the-runner-contract",
+  "scope": "Resolution of the 2026-10-30 follow-up review findings; no live issuer, tool qualification or Platform acceptance is claimed.",
+  "buildsHead": "69701dfcf54cb9c69fc6cb0c51b031af8d218142",
+  "sourceState": "uncommitted working-tree edits on the recorded head",
+  "commands": [
+    {
+      "command": "dotnet build src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj -c Debug -m:1 -nodeReuse:false -p:UseSharedCompilation=false",
+      "result": "0 warnings, 0 errors",
+      "log": "evidence/3-1/review3-tooling-build.log"
+    },
+    {
+      "command": "dotnet build test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj -c Debug -m:1 -nodeReuse:false -p:BuildProjectReferences=false -p:UseSharedCompilation=false",
+      "result": "0 warnings, 0 errors",
+      "log": "evidence/3-1/review3-focused-build.log"
+    },
+    {
+      "command": "dotnet test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class ...CandidatePolicyTests -class ...CandidateRunnerTests",
+      "result": "161 passed; 0 failed, errors, skipped or not run",
+      "xml": "evidence/3-1/review3-candidate-tests.xml"
+    },
+    {
+      "command": "dotnet test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class TestEnvironmentContractReaderTests -class TestEnvironmentProvisioningTests -class TestResultWriterTests -class CompositionEngineTests -class CompositionRunStateStoreTests -class LocalRunLifecycleTests -class DeclarationClosureTests",
+      "result": "432 passed; 0 failed, errors, skipped or not run",
+      "xml": "evidence/3-1/review3-regression-tests.xml"
+    },
+    {
+      "command": "python3 -m unittest discover -s Github/governed-provenance/tests",
+      "result": "86 passed",
+      "log": "evidence/3-1/review3-provenance-tests.log"
+    },
+    {
+      "command": "python3 -m unittest discover -s tests/contracts -p test_test_environment_contract_mirrors.py (Platform)",
+      "result": "1 passed",
+      "log": "evidence/3-1/review3-contract-mirror.log"
+    },
+    {
+      "command": "git diff --check -- src test Github README.md",
+      "result": "clean",
+      "log": "evidence/3-1/review3-builds-whitespace.log"
+    }
+  ],
+  "mutationCheck": {
+    "method": "Scratch worktree at the recorded head with the validator fix plus three mutations, Tooling built with -p:RunAnalyzers=false, checkout test bin copied with the mutated Tooling swapped in.",
+    "mutations": [
+      "drop the execution-state guard in ValidateEvidence",
+      "restore '?? options.CandidatePolicy?.RunId' as the owned-run fallback",
+      "drop the uppercase-hex rule for CallerContentIdentity"
+    ],
+    "result": "15 selected cases: exactly the three new cases failed (execution timing, unissued, prefixed uppercase identity); the unissued case reported exit 0 from the prior owner's committed pass",
+    "xml": "evidence/3-1/review3-mutation-tests.xml"
+  },
+  "notRerun": "The required full test-project Debug build was not rerun; its seven EventStoreHost API errors from b8d1952 are deferred by the 2026-10-30 decision.",
+  "sources": {
+    "src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidatePolicyValidator.cs": "sha256:554b66dc5776b0d4221339414e657a0b09094f7d388b132f2a63daaea166e84c",
+    "test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs": "sha256:47bfbdb55102cd2b456f3ecb051380dd1c2ceae032144b32657499b0eca3d1ee",
+    "Github/governed-provenance/tests/test_candidate_policy.py": "sha256:ec475d3cbf8a03ad2cfb04ae9e9f5fe202d31b28ed636fb2753211ec5cb3ea8e",
+    "README.md": "sha256:4450e1c670c0c53c7a95eef82dcfdb3547c0324f7d4cd06a0999161192f0e963"
+  },
+  "evidence": {
+    "evidence/3-1/review3-builds-whitespace.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/3-1/review3-candidate-tests.log": "sha256:42f7e283dfb57b68ad344b57b88a7d629f2bef0064c179f2123d2dab80bec988",
+    "evidence/3-1/review3-candidate-tests.xml": "sha256:37dde2c34b99ccd0141feb17ba208df658b9d08679d6493eb9a6b488ac85c1f6",
+    "evidence/3-1/review3-contract-mirror.log": "sha256:fb184ea57734512b1f088f9181209901b9cd46df3eb7eaa2500ea9e48dde20b5",
+    "evidence/3-1/review3-focused-build.log": "sha256:c5dfee59138e6a7e014d2eea504599697523e00d0fa44e7780b718df6806c392",
+    "evidence/3-1/review3-mutation-tests.log": "sha256:263bf3bf25dda2cf447450c1218fbf55b6ad0e00f7d6a70d2c22f3cf561e96ec",
+    "evidence/3-1/review3-mutation-tests.xml": "sha256:434a7f9094bd668248ea383e6cbd9e0d211b609a61d3f78d13fbf6f77d29db97",
+    "evidence/3-1/review3-provenance-tests.log": "sha256:6144ef6e430bf2a3241ead369844b9341f910e99535cd523593382f80cc4d309",
+    "evidence/3-1/review3-regression-tests.log": "sha256:33ad6f3832e3469889224dfef20f3887ebc365ccf43e75638e4d9cf040f8e40f",
+    "evidence/3-1/review3-regression-tests.xml": "sha256:7f15e7e7eb9fdb232e0f3267f746f720361511d9b5580e2cb4305ed8590fc8c8",
+    "evidence/3-1/review3-tooling-build.log": "sha256:4ae06d095b34c770c4ef3e37a73772b1ccdee4ad64ce7d91d48730ef1157f37b"
+  }
+}

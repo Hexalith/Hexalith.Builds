@@ -622,8 +622,10 @@ current base branch tip. Only the newest registered workflow request/attempt can
 qualify; queued, failed and cancelled successors supersede older passes.
 
 Selection and final validation also require a fresh nonce-bound consumer OIDC
-proof from the approved Builds consumer workflow at the same enrolled revision
-(currently `domain-ci.yml`; see the CI wiring note below). The proof binds the current run,
+proof from the approved Builds consumer workflow at the same enrolled revision.
+No consumer workflow is enrolled yet, so no shipped workflow can mint this proof;
+the opt-in consumer workflow described in the CI wiring note below will replace the
+verifier's `domain-ci.yml` consumer reference. The proof binds the current run,
 attempt and candidate; copied issuance artifacts or CI environment variables
 cannot authenticate a local process. The fresh proof is not retained as evidence.
 
