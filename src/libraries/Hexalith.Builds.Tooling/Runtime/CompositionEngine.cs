@@ -2235,7 +2235,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         Process? appHost)
     {
         ToolDiagnostic timeout = Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run resources did not become healthy within the readiness bound.", "readiness", "Inspect the preserved startup diagnostics.");
-        if (runId is null && _options.SelectedTest is { } selected)
+        if (_options.CandidatePolicy is not null && !CandidateStateIssued)
+        {
+            runId = null;
+        }
+
+        if (runId is null && _options.CandidatePolicy is null && _options.SelectedTest is { } selected)
         {
             runId = CompositionRunPlanFactory.NewRunId();
             manifestHash = selected.ManifestHash;
@@ -2387,18 +2392,30 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
     private async Task<CompositionRunState> InitializeStateAsync(string runId, string manifestHash, DateTimeOffset requestedAt, CompositionEffectiveDeadline deadline, CancellationToken cancellationToken)
     {
+        if (_options.CandidatePolicy is not null && !CandidateStateIssued)
+        {
+            // Serialize admission outside the diagnostic directory, which may belong to a prior invocation.
+            CompositionWorkspace.CreatePrivateDirectory(StateStore.Directory);
+            FileStream issuanceLock = await OpenOutcomeLockAsync(Path.Combine(StateStore.Directory, "candidate-issuance-" + runId + ".lock"), cancellationToken).ConfigureAwait(false);
+            await using (issuanceLock.ConfigureAwait(false))
+            {
+                return Path.Exists(StateStore.PathFor(runId)) || Path.Exists(DiagnosticsDirectory(runId))
+                    ? throw new CandidatePolicy.CandidatePolicyException("fresh-producing-run-required")
+                    : await InitializeOwnedStateAsync(runId, manifestHash, requestedAt, deadline, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        return await InitializeOwnedStateAsync(runId, manifestHash, requestedAt, deadline, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<CompositionRunState> InitializeOwnedStateAsync(string runId, string manifestHash, DateTimeOffset requestedAt, CompositionEffectiveDeadline deadline, CancellationToken cancellationToken)
+    {
         if (await HasCleanupRequestAsync(runId, cancellationToken).ConfigureAwait(false))
         {
             throw new IOException("Exact cleanup already claimed this owner.");
         }
 
         string directory = DiagnosticsDirectory(runId);
-        if (_options.CandidatePolicy is not null && !CandidateStateIssued
-            && (Directory.Exists(directory) || await StateStore.TryReadAsync(runId, cancellationToken).ConfigureAwait(false) is not null))
-        {
-            throw new CandidatePolicy.CandidatePolicyException("fresh-producing-run-required");
-        }
-
         CompositionWorkspace.CreatePrivateDirectory(directory);
         FileStream outcomeLock = await OpenOutcomeLockAsync(Path.Combine(directory, "outcome.lock"), cancellationToken).ConfigureAwait(false);
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outcomeLifetime = outcomeLock.ConfigureAwait(false);

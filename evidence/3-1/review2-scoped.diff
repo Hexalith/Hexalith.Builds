@@ -1,0 +1,1943 @@
+diff --git a/.github/workflows/domain-ci.yml b/.github/workflows/domain-ci.yml
+index 66af01c..870b39b 100644
+--- a/.github/workflows/domain-ci.yml
++++ b/.github/workflows/domain-ci.yml
+@@ -943,7 +943,7 @@ jobs:
+           retention-days: 7
+ 
+   aspire-tests:
+-    if: ${{ inputs.aspire-test-project != '' }}
++    if: ${{ !cancelled() && needs.build-and-test.result == 'success' && inputs.aspire-test-project != '' }}
+     runs-on: ubuntu-latest
+     timeout-minutes: ${{ inputs.aspire-timeout-minutes }}
+     needs: build-and-test
+diff --git a/Github/governed-provenance/candidate_policy.py b/Github/governed-provenance/candidate_policy.py
+index c64ea4d..af5c818 100644
+--- a/Github/governed-provenance/candidate_policy.py
++++ b/Github/governed-provenance/candidate_policy.py
+@@ -11,6 +11,7 @@ import base64
+ import hashlib
+ import json
+ import os
++import re
+ from pathlib import Path
+ import urllib.parse
+ import urllib.request
+@@ -78,7 +79,9 @@ def issue(module_id, environ, get=get_json):
+                 break
+         else:
+             raise ValueError("authority-pagination-incomplete")
+-        target = pr["merge_commit_sha"]
++        target = pr.get("merge_commit_sha")
++        if not isinstance(target, str) or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", target):
++            raise ValueError("pr-binding-mismatch")
+         commit = get(f"{root}/git/commits/{target}", token)
+         base = pr["base"]["sha"]
+         head = pr["head"]["sha"]
+@@ -95,6 +98,8 @@ def issue(module_id, environ, get=get_json):
+             "id": number, "headCommit": head, "baseCommit": base, "mergeResultCommit": target,
+         })
+     elif run["event"] == "workflow_dispatch":
++        if environ["GITHUB_REF"] != "refs/heads/main" or run["head_branch"] != "main":
++            raise ValueError("release-authority-mismatch")
+         target = run["head_sha"]
+         if environ["GITHUB_SHA"] != target or get(f"{root}/git/commits/{target}", token)["sha"] != target:
+             raise ValueError("committed-candidate-required")
+diff --git a/Github/governed-provenance/tests/test_candidate_policy.py b/Github/governed-provenance/tests/test_candidate_policy.py
+index c70bc0a..fd91541 100644
+--- a/Github/governed-provenance/tests/test_candidate_policy.py
++++ b/Github/governed-provenance/tests/test_candidate_policy.py
+@@ -4,6 +4,7 @@ import importlib.util
+ import json
+ from pathlib import Path
+ import unittest
++from unittest.mock import MagicMock, patch
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ SPEC = importlib.util.spec_from_file_location("candidate_policy", ROOT / "candidate_policy.py")
+@@ -27,6 +28,12 @@ class CandidatePolicyTests(unittest.TestCase):
+         self.events = []
+         self.calls = []
+         self.run_head = None
++        self.dispatch_branch = "main"
++        self.approved = True
++        self.review_approved = True
++        self.run_attempt = None
++        self.merge_commit = "a" * 40
++        self.omit_merge_commit = False
+ 
+     def get(self, url, token):
+         self.calls.append((url, token))
+@@ -35,16 +42,19 @@ class CandidatePolicyTests(unittest.TestCase):
+             return {"value": "fixture-signed-token"}
+         self.assertEqual(token, "read-only-fixture")
+         if url.endswith("/approvals"):
+-            return [{"state": "approved", "user": {"id": 1}, "environments": [{"name": "candidate-policy"}]}]
++            return [{"state": "approved" if self.review_approved else "rejected", "user": {"id": 1}, "environments": [{"name": "candidate-policy"}]}]
+         if "/environments/" in url:
+-            return {"protection_rules": [{"type": "required_reviewers", "reviewers": [{"id": 1}]}]}
++            return {"protection_rules": [{"type": "required_reviewers", "reviewers": [{"id": 1}] if self.approved else []}]}
+         if "/actions/runs/" in url:
+             return {"id": int(self.env["GITHUB_RUN_ID"]), "repository": {"full_name": "Hexalith/Orders"},
+-                    "run_attempt": int(self.env["GITHUB_RUN_ATTEMPT"]), "event": self.event,
++                    "run_attempt": self.run_attempt or int(self.env["GITHUB_RUN_ATTEMPT"]), "event": self.event, "head_branch": self.dispatch_branch,
+                     "head_sha": self.run_head or ("a" * 40 if self.event == "workflow_dispatch" else "b" * 40), "created_at": "2026-10-10T00:00:00Z", "pull_requests": [{"number": 7, "head": {"sha": "b" * 40}, "base": {"sha": "c" * 40}}]}
+         if "/pulls/" in url:
+-            return {"state": self.state, "merged": False, "created_at": "2026-10-01T00:00:00Z",
+-                    "merge_commit_sha": "a" * 40, "base": {"sha": "c" * 40, "ref": "main"}, "head": {"sha": "b" * 40}}
++            pr = {"state": self.state, "merged": False, "created_at": "2026-10-01T00:00:00Z",
++                  "base": {"sha": "c" * 40, "ref": "main"}, "head": {"sha": "b" * 40}}
++            if not self.omit_merge_commit:
++                pr["merge_commit_sha"] = self.merge_commit
++            return pr
+         if "/events?" in url:
+             return self.events
+         if "/git/commits/" in url:
+@@ -69,6 +79,10 @@ class CandidatePolicyTests(unittest.TestCase):
+         self.assertEqual(value["pr"]["baseCommit"], "c" * 40)
+         self.assertEqual(value["epoch"], "9001")
+         self.assertEqual(value["policyId"], POLICY.POLICY_ID)
++        self.assertEqual(value["repository"], "Hexalith/Orders")
++        self.assertEqual(value["moduleId"], "orders")
++        self.assertEqual(value["pr"]["id"], "7")
++        self.assertEqual(value["pr"]["mergeResultCommit"], value["targetCommit"])
+ 
+     def test_pr_run_head_and_merge_execution_context_are_distinct(self):
+         value = self.issue()
+@@ -146,6 +160,68 @@ class CandidatePolicyTests(unittest.TestCase):
+             self.assertNotIn(permission, text)
+ 
+ 
++    def test_release_requires_main_dispatch_ref_and_branch(self):
++        self.event = self.env["GITHUB_EVENT_NAME"] = "workflow_dispatch"
++        for dispatched_ref, branch in [("refs/heads/feature", "main"),
++                                       ("refs/tags/v1", "main"),
++                                       ("refs/heads/main", "feature")]:
++            with self.subTest(dispatched_ref=dispatched_ref, branch=branch):
++                self.env["GITHUB_REF"] = dispatched_ref
++                self.dispatch_branch = branch
++                self.calls.clear()
++                with self.assertRaisesRegex(ValueError, "release-authority-mismatch"):
++                    self.issue()
++                self.assertFalse(any("oidc.invalid" in url for url, _ in self.calls))
++
++    def test_missing_merge_result_refuses_before_commit_lookup(self):
++        self.merge_commit = None
++        for omitted in (False, True):
++            with self.subTest(omitted=omitted):
++                self.omit_merge_commit = omitted
++                self.calls.clear()
++                with self.assertRaisesRegex(ValueError, "pr-binding-mismatch"):
++                    self.issue()
++                self.assertFalse(any("/git/commits/" in url for url, _ in self.calls))
++
++    def test_missing_reviewers_or_rejected_review_refuses(self):
++        for approved, review in [(False, True), (True, False)]:
++            with self.subTest(approved=approved, review=review):
++                self.approved, self.review_approved = approved, review
++                with self.assertRaisesRegex(ValueError, "approval-unavailable"):
++                    self.issue()
++
++    def test_reopen_after_request_refuses(self):
++        self.events = [{"event": "reopened", "id": 9001, "created_at": "2026-10-11T00:00:00Z"}]
++        with self.assertRaisesRegex(ValueError, "fresh-request-required"):
++            self.issue()
++
++    def test_attempt_mismatch_refuses(self):
++        self.run_attempt = 2
++        with self.assertRaisesRegex(ValueError, "latest-issued-attempt-required"):
++            self.issue()
++
++    def test_incomplete_event_pagination_refuses(self):
++        self.events = [{"event": "labeled", "id": index} for index in range(100)]
++        with self.assertRaisesRegex(ValueError, "authority-pagination-incomplete"):
++            self.issue()
++        self.assertEqual(sum("/events?" in url for url, _ in self.calls), 100)
++
++    def test_oversized_http_response_refuses(self):
++        response = MagicMock()
++        response.__enter__.return_value.read.return_value = b"x" * (1024 * 1024 + 1)
++        with patch.object(POLICY.urllib.request, "urlopen", return_value=response):
++            with self.assertRaisesRegex(ValueError, "authority-response-too-large"):
++                POLICY.get_json("https://fixture.invalid/oversized", "fixture")
++        response.__enter__.return_value.read.assert_called_once_with(1024 * 1024 + 1)
++
++    def test_aspire_job_respects_cancellation_and_build_success(self):
++        text = (ROOT.parents[1] / ".github/workflows/domain-ci.yml").read_text()
++        job = text.split("  aspire-tests:\n", 1)[1]
++        predicate = job.splitlines()[0]
++        self.assertIn("!cancelled()", predicate)
++        self.assertIn("needs.build-and-test.result == 'success'", predicate)
++        self.assertNotIn("always()", predicate)
++
+ 
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/Github/governed-provenance/tests/test_candidate_workspace.py b/Github/governed-provenance/tests/test_candidate_workspace.py
+index 9818067..93dedcb 100644
+--- a/Github/governed-provenance/tests/test_candidate_workspace.py
++++ b/Github/governed-provenance/tests/test_candidate_workspace.py
+@@ -53,3 +53,45 @@ class CandidateWorkspaceTests(unittest.TestCase):
+     def test_wrong_preparation_revision_refuses(self):
+         with self.assertRaisesRegex(ValueError, "checkout-mismatch"):
+             MODULE.register(self.root, "0" * 40)
++
++
++    def test_foreign_preparation_origin_refuses(self):
++        self.gitrun(self.output, "remote", "set-url", "origin", "https://github.com/attacker/Hexalith.Builds.git")
++        with self.assertRaisesRegex(ValueError, "checkout-mismatch"):
++            MODULE.register(self.root, self.commit)
++
++    def test_output_and_parent_symlinks_refuse(self):
++        original = self.output
++        moved = self.root / "moved-preparation"
++        original.rename(moved)
++        original.symlink_to(moved, target_is_directory=True)
++        with self.assertRaisesRegex(ValueError, "policy-unavailable"):
++            MODULE.register(self.root, self.commit)
++        original.unlink()
++        moved.rename(original)
++        parent = self.root / ".hexalith"
++        renamed = self.root / "moved-parent"
++        parent.rename(renamed)
++        parent.symlink_to(renamed, target_is_directory=True)
++        with self.assertRaisesRegex(ValueError, "policy-unavailable"):
++            MODULE.register(self.root, self.commit)
++
++    def test_exclusion_symlink_refuses_without_touching_target(self):
++        target = self.root / "private-exclusion"
++        target.write_text("unchanged")
++        exclusion = self.root / ".git/info/exclude"
++        exclusion.unlink(missing_ok=True)
++        exclusion.symlink_to(target)
++        with self.assertRaisesRegex(ValueError, "policy-unavailable"):
++            MODULE.register(self.root, self.commit)
++        self.assertEqual(target.read_text(), "unchanged")
++
++    def test_registration_is_idempotent_and_preserves_existing_exclusions(self):
++        exclusion = self.root / ".git/info/exclude"
++        exclusion.write_text("# existing comment\n/existing-output")
++        MODULE.register(self.root, self.commit)
++        original = exclusion.read_bytes()
++        MODULE.register(self.root, self.commit)
++        self.assertEqual(exclusion.read_bytes(), original)
++        self.assertIn(b"# existing comment\n/existing-output\n", original)
++        self.assertEqual(original.count(b"/.hexalith/builds-execution/\n"), 1)
+diff --git a/README.md b/README.md
+index da8cc14..f9a77b6 100644
+--- a/README.md
++++ b/README.md
+@@ -549,9 +549,12 @@ and environment-only owners cannot accept attachments; bookkeeping failures keep
+ bounded exact-owner cleanup running and report `HXT008`. Cancellation metadata gets its
+ own finite allowance even when the resource stopping budget is exhausted. After durable
+ withdrawal, a session AppHost is stopped before provisioning-lock acquisition, including
+-when that lock later stalls. Each command reports each withdrawn run id once.
+-Withdrawal records outcomes;
+-termination of attached processes at expiry is deferred to Platform story 2.9.
++when that lock later stalls. Sessions whose owners cannot accept attachments (CI, Run,
++Debug, profile and environment-only) stop their AppHost before any cleanup lock or
++bookkeeping, killing it without waiting once the stopping budget is exhausted, so no
++cleanup exit leaves it running. Each command reports each withdrawn run id once.
++Withdrawal records outcomes; termination of attached processes at expiry is deferred to
++the Platform follow-up `attached-test-execution-and-expiry-enforcement`.
+ Exact cleanup accepts an omitted, missing or changed manifest, removes only the
+ requested owner's resources and claims, and can be retried safely. Exporting
+ `--evidence` requires an explicit `--manifest`. Incomplete cleanup exposes exact known container/process/workspace/claim leftovers and
+@@ -588,6 +591,76 @@ probes are not operating-system reservations. Claims are released only after the
+ existing ownership-limited cleanup verifies that the owning resources are gone.
+ `down --run-id <owner>` continues to target only that run.
+ 
++### Authenticated candidate selection (policy v1)
++
++`hexalith-module test --manifest <v2-manifest> --profile <suite> --mode package
++--candidate-request <signed-request.json>` selects only the committed revision
++issued by the approved Builds `candidate-policy.yml` reusable workflow under
++`hexalith.platform.candidate-and-attachment-policy.v1`. Calls without a candidate
++request remain explicitly `baseline-only` diagnostics. Candidate selection refuses
++local/source execution, uncommitted inputs, a different module/revision, unavailable
++GitHub authentication, changed/closed/reopened/retargeted requests and superseded
++attempts before services start. The candidate checkout must be clean and exact;
++keep issuance and result files outside tracked candidate inputs (for example,
++`RUNNER_TEMP`). Each job attempt permits one candidate invocation; preserved
++diagnostics prevent reuse of its producing run even after active state cleanup. Selection does not confer acceptance or release authority.
++
++The workflow issues a private envelope containing base64 payload bytes and a GitHub
++OIDC attestation whose audience is `hexalith-candidate-v1:<sha256(payload)>`. The
++runner verifies RS256 against GitHub's TLS JWKS, the exact reusable workflow ref
++and SHA, protected environment, repository, run and attempt. Saved observation JSON
++is never authentication. The original workflow run identifies the decision; reruns
++retain it with distinct producing runs/attempts and `run_attempt` sequence. A new
++release workflow dispatch on `refs/heads/main` is a distinct request, even at
++identical bytes; other dispatch refs are refused. PR
++selection also checks its original workflow-run head/base/merge identity, current
++open epoch (including reopen/retarget events), exact committed merge parents and
++current base branch tip. Only the newest registered workflow request/attempt can
++qualify; queued, failed and cancelled successors supersede older passes.
++
++Selection and final validation also require a fresh nonce-bound consumer OIDC
++proof from the approved Builds consumer workflow at the same enrolled revision
++(currently `domain-ci.yml`; see the CI wiring note below). The proof binds the current run,
++attempt and candidate; copied issuance artifacts or CI environment variables
++cannot authenticate a local process. The fresh proof is not retained as evidence.
++
++Host operators must independently provision `HEXALITH_CANDIDATE_GATE_CONFIG` and
++read-only `HEXALITH_CANDIDATE_GITHUB_TOKEN`. The JSON configuration has the PascalCase
++fields `WorkflowRef`, `WorkflowSha`, `Environment` (exactly `candidate-policy`),
++`CallerWorkflowPath`, `CallerContentIdentity` (`sha256:` plus 64 lowercase hex digits for approved workflow bytes),
++`ConsumerJobId` and `ConsumerJobName`. Enroll the approved reusable workflow ref and
++exact lowercase commit separately from its caller bytes and protected-environment reviewers.
++None of these trusted coordinates are accepted from a candidate request. Missing
++enrollment, reviewers, API access, signature keys or complete observations refuses.
++Archived issuance attestations may outlive their JWT expiry: they authenticate only
++the immutable original issuance; every use still requires fresh authenticated GitHub
++request and attempt observations. They are never bearer access credentials.
++
++`hexalith-module validate-result --candidate-request <signed-request.json>
++--environment <test-environment.json> --result <test-result.json>` refetches authority,
++compares immutable descriptor/result bindings, checks explicit empty reuse lineage,
++package/Release disposable Linux GitHub-hosted execution, artifact identities,
++required suite completion and applicable tool qualifications. All policy refusals
++use `HXP301` with a stable named condition. It never promotes local, baseline,
++cancelled, withdrawn, incomplete or foreign evidence.
++
++`domain-ci.yml` carries no candidate wiring and requests only `contents: read`.
++GitHub validates a called workflow's job permissions before evaluating `if:`, so
++an opt-in job requesting `id-token: write` breaks every caller that grants only
++`contents: read`. `candidate-policy.yml` remains a standalone reusable workflow.
++A separate opt-in consumer workflow will be added with live issuer enrollment.
++That workflow must supply the trusted gate configuration from Builds-owned
++per-repository enrollment at its own workflow SHA, never from consumer scripts.
++There are no publication permissions or provider credentials in this gate.
++
++Local signed HTTP and workflow fixtures exercise this enforcement. No live issuer,
++tool adoption, Platform acceptance or integration qualification is enrolled by these
++changes. Loaded artifact producers remain Story 3.9. Even fully populated JSON
++qualification references cannot authenticate themselves: final acceptance currently
++refuses `tool-qualification-authentication-unavailable` until an independently
++accepted qualification authority exists. Unavailable artifact/suite/tool proof also
++refuses; a passing fixture grants no live candidate qualification.
++
+ ### Platform version catalog and startup prerequisites
+ 
+ The tools are published. The `toolVersionRange` in Platform's
+@@ -1092,72 +1165,3 @@ environment. Merging or pushing does not start a release.
+ 
+ This project is licensed under the MIT License. See [LICENSE](LICENSE) for
+ details.
+-
+-
+-### Authenticated candidate selection (policy v1)
+-
+-`hexalith-module test --manifest <v2-manifest> --profile <suite> --mode package
+---candidate-request <signed-request.json>` selects only the committed revision
+-issued by the approved Builds `candidate-policy.yml` reusable workflow under
+-`hexalith.platform.candidate-and-attachment-policy.v1`. Calls without a candidate
+-request remain explicitly `baseline-only` diagnostics. Candidate selection refuses
+-local/source execution, uncommitted inputs, a different module/revision, unavailable
+-GitHub authentication, changed/closed/reopened/retargeted requests and superseded
+-attempts before services start. The candidate checkout must be clean and exact;
+-keep issuance and result files outside tracked candidate inputs (for example,
+-`RUNNER_TEMP`). Selection does not confer acceptance or release authority.
+-
+-The workflow issues a private envelope containing base64 payload bytes and a GitHub
+-OIDC attestation whose audience is `hexalith-candidate-v1:<sha256(payload)>`. The
+-runner verifies RS256 against GitHub's TLS JWKS, the exact reusable workflow ref
+-and SHA, protected environment, repository, run and attempt. Saved observation JSON
+-is never authentication. The original workflow run identifies the decision; reruns
+-retain it with distinct producing runs/attempts and `run_attempt` sequence. A new
+-release workflow dispatch is a distinct request, even at identical bytes. PR
+-selection also checks its original workflow-run head/base/merge identity, current
+-open epoch (including reopen/retarget events), exact committed merge parents and
+-current base branch tip. Only the newest registered workflow request/attempt can
+-qualify; queued, failed and cancelled successors supersede older passes.
+-
+-Selection and final validation also require a fresh nonce-bound consumer OIDC
+-proof from the approved Builds consumer workflow at the same enrolled revision
+-(currently `domain-ci.yml`; see the CI wiring note below). The proof binds the current run,
+-attempt and candidate; copied issuance artifacts or CI environment variables
+-cannot authenticate a local process. The fresh proof is not retained as evidence.
+-
+-Host operators must independently provision `HEXALITH_CANDIDATE_GATE_CONFIG` and
+-read-only `HEXALITH_CANDIDATE_GITHUB_TOKEN`. The JSON configuration has the PascalCase
+-fields `WorkflowRef`, `WorkflowSha`, `Environment` (exactly `candidate-policy`),
+-`CallerWorkflowPath`, `CallerContentIdentity` (SHA-256 of approved workflow bytes),
+-`ConsumerJobId` and `ConsumerJobName`. Enroll the approved reusable workflow ref and
+-exact commit separately from its caller bytes and protected-environment reviewers.
+-None of these trusted coordinates are accepted from a candidate request. Missing
+-enrollment, reviewers, API access, signature keys or complete observations refuses.
+-Archived issuance attestations may outlive their JWT expiry: they authenticate only
+-the immutable original issuance; every use still requires fresh authenticated GitHub
+-request and attempt observations. They are never bearer access credentials.
+-
+-`hexalith-module validate-result --candidate-request <signed-request.json>
+---environment <test-environment.json> --result <test-result.json>` refetches authority,
+-compares immutable descriptor/result bindings, checks explicit empty reuse lineage,
+-package/Release disposable Linux GitHub-hosted execution, artifact identities,
+-required suite completion and applicable tool qualifications. All policy refusals
+-use `HXP301` with a stable named condition. It never promotes local, baseline,
+-cancelled, withdrawn, incomplete or foreign evidence.
+-
+-`domain-ci.yml` carries no candidate wiring and requests only `contents: read`.
+-GitHub validates a called workflow's job permissions before evaluating `if:`, so
+-an opt-in job requesting `id-token: write` breaks every caller that grants only
+-`contents: read`. `candidate-policy.yml` remains a standalone reusable workflow.
+-A separate opt-in consumer workflow will be added with live issuer enrollment.
+-That workflow must supply the trusted gate configuration from Builds-owned
+-per-repository enrollment at its own workflow SHA, never from consumer scripts.
+-There are no publication permissions or provider credentials in this gate.
+-
+-Local signed HTTP and workflow fixtures exercise this enforcement. No live issuer,
+-tool adoption, Platform acceptance or integration qualification is enrolled by these
+-changes. Loaded artifact producers remain Story 3.9. Even fully populated JSON
+-qualification references cannot authenticate themselves: final acceptance currently
+-refuses `tool-qualification-authentication-unavailable` until an independently
+-accepted qualification authority exists. Unavailable artifact/suite/tool proof also
+-refuses; a passing fixture grants no live candidate qualification.
+diff --git a/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidateGateClient.cs b/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidateGateClient.cs
+index cf2859e..8785112 100644
+--- a/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidateGateClient.cs
++++ b/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidateGateClient.cs
+@@ -85,7 +85,7 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
+             }
+ 
+             if (S(run, "path").Split('@')[0] != configuration.CallerWorkflowPath
+-                || !S(claims, "workflow_ref").StartsWith(repository + "/" + configuration.CallerWorkflowPath + "@", StringComparison.Ordinal)
++                || S(claims, "workflow_ref") != repository + "/" + configuration.CallerWorkflowPath + "@" + S(claims, "ref")
+                 || !Commit(S(claims, "workflow_sha")))
+             {
+                 throw new CandidatePolicyException("issuer-workflow-mismatch");
+@@ -175,14 +175,15 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
+                     throw new CandidatePolicyException("pr-binding-mismatch");
+                 }
+ 
+-                JsonElement[] candidates = await PagesAsync(prefix + "/actions/workflows/" + run.GetProperty("workflow_id").ToString() + "/runs?event=pull_request", "workflow_runs", cancellationToken).ConfigureAwait(false);
++                JsonElement[] candidates = await PagesAsync(prefix + "/actions/workflows/" + run.GetProperty("workflow_id").ToString() + "/runs?event=pull_request&created=" + Uri.EscapeDataString(">=" + S(run, "created_at")), "workflow_runs", cancellationToken).ConfigureAwait(false);
+                 if (candidates.Any(newer => newer.GetProperty("run_number").GetInt64() > run.GetProperty("run_number").GetInt64()
+                     && newer.GetProperty("pull_requests").EnumerateArray().Any(item => item.GetProperty("number").ToString() == number)))
+                 {
+                     throw new CandidatePolicyException("latest-issued-attempt-required");
+                 }
+             }
+-            else if (kind != "release" || S(run, "event") != "workflow_dispatch" || S(run, "head_sha") != target || S(claims, "sha") != target)
++            else if (kind != "release" || S(run, "event") != "workflow_dispatch" || S(run, "head_sha") != target || S(claims, "sha") != target
++                || S(claims, "ref") != "refs/heads/main" || S(run, "head_branch") != "main")
+             {
+                 throw new CandidatePolicyException("release-authority-mismatch");
+             }
+@@ -284,9 +285,9 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
+             if (S(claims, "repository") != repository || S(claims, "run_id") != gateRun
+                 || S(claims, "run_attempt") != binding.AttemptSequence.ToString(CultureInfo.InvariantCulture)
+                 || S(claims, "sha") != S(binding.Candidate, "committedRevision") || S(claims, "runner_environment") != "github-hosted"
+-                || !S(claims, "workflow_ref").StartsWith(repository + "/" + configuration.CallerWorkflowPath + "@", StringComparison.Ordinal)
++                || S(claims, "workflow_ref") != repository + "/" + configuration.CallerWorkflowPath + "@" + S(claims, "ref")
+                 || S(claims, "event_name") != (S(binding.Decision, "kind") == "pr-merge" ? "pull_request" : "workflow_dispatch")
+-                || (S(binding.Decision, "kind") == "pr-merge" && S(claims, "ref") != "refs/pull/" + S(binding.Decision.GetProperty("pr"), "id") + "/merge"))
++                || S(claims, "ref") != (S(binding.Decision, "kind") == "pr-merge" ? "refs/pull/" + S(binding.Decision.GetProperty("pr"), "id") + "/merge" : "refs/heads/main"))
+             {
+                 throw new CandidatePolicyException("consumer-authentication-required");
+             }
+@@ -378,7 +379,10 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
+             || string.IsNullOrWhiteSpace(configuration.CallerContentIdentity) || string.IsNullOrWhiteSpace(configuration.ConsumerJobId)
+             || string.IsNullOrWhiteSpace(configuration.ConsumerJobName)
+             || !configuration.WorkflowRef.StartsWith("Hexalith/Hexalith.Builds/.github/workflows/candidate-policy.yml@", StringComparison.Ordinal)
+-            || !Commit(configuration.WorkflowSha) || !configuration.CallerWorkflowPath.StartsWith(".github/workflows/", StringComparison.Ordinal)
++            || !Commit(configuration.WorkflowSha) || configuration.WorkflowSha.Any(char.IsAsciiLetterUpper)
++            || configuration.CallerContentIdentity.Length != 71 || !configuration.CallerContentIdentity.StartsWith("sha256:", StringComparison.Ordinal)
++            || !configuration.CallerContentIdentity[7..].All(character => char.IsAsciiHexDigit(character) && !char.IsAsciiLetterUpper(character))
++            || !configuration.CallerWorkflowPath.StartsWith(".github/workflows/", StringComparison.Ordinal)
+             || configuration.Environment != "candidate-policy")
+         {
+             throw new CandidatePolicyException("issuer-not-enrolled");
+@@ -410,10 +414,28 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
+         JsonElement header = Parse(Decode(parts[0]));
+         JsonElement claims = Parse(Decode(parts[1]));
+         JsonElement jwks = await GetAsync("https://token.actions.githubusercontent.com/.well-known/jwks", cancellationToken, authenticated: false).ConfigureAwait(false);
+-        JsonElement key = jwks.GetProperty("keys").EnumerateArray().Single(item => S(item, "kid") == S(header, "kid"));
++        JsonElement[] matchingKeys = [.. jwks.GetProperty("keys").EnumerateArray().Where(item => S(item, "kid") == S(header, "kid"))];
++        if (matchingKeys.Length != 1 || S(matchingKeys[0], "kty") != "RSA"
++            || !matchingKeys[0].TryGetProperty("n", out JsonElement modulus) || modulus.ValueKind != JsonValueKind.String
++            || !matchingKeys[0].TryGetProperty("e", out JsonElement exponent) || exponent.ValueKind != JsonValueKind.String)
++        {
++            throw new CandidatePolicyException("issuer-authentication-required");
++        }
++
++        JsonElement key = matchingKeys[0];
+         using RSA rsa = RSA.Create();
+-        rsa.ImportParameters(new RSAParameters { Modulus = Decode(S(key, "n")), Exponent = Decode(S(key, "e")) });
+-        if (S(header, "alg") != "RS256" || S(key, "kty") != "RSA" || !rsa.VerifyData(Encoding.ASCII.GetBytes(parts[0] + "." + parts[1]), Decode(parts[2]), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
++        bool signatureValid;
++        try
++        {
++            rsa.ImportParameters(new RSAParameters { Modulus = Decode(S(key, "n")), Exponent = Decode(S(key, "e")) });
++            signatureValid = rsa.VerifyData(Encoding.ASCII.GetBytes(parts[0] + "." + parts[1]), Decode(parts[2]), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
++        }
++        catch (Exception exception) when (exception is FormatException or CryptographicException or ArgumentException)
++        {
++            throw new CandidatePolicyException("issuer-authentication-required");
++        }
++
++        if (S(header, "alg") != "RS256" || S(key, "kty") != "RSA" || !signatureValid
+             || S(claims, "iss") != "https://token.actions.githubusercontent.com" || S(claims, "aud") != expectedAudience
+             || S(claims, "job_workflow_ref") != (consumer ? configuration.WorkflowRef.Replace("/candidate-policy.yml@", "/domain-ci.yml@", StringComparison.Ordinal) : configuration.WorkflowRef)
+             || S(claims, "job_workflow_sha") != configuration.WorkflowSha || (!consumer && S(claims, "environment") != configuration.Environment)
+@@ -435,14 +457,15 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
+         int? totalCount = null;
+         HashSet<long> runIds = [];
+         bool filteredRuns = collection == "workflow_runs";
++        int pageSize = filteredRuns ? 30 : 100;
+         for (int page = 1; page <= 100; page++)
+         {
+-            JsonElement response = await GetAsync(path + (path.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "per_page=100&page=" + page.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
++            JsonElement response = await GetAsync(path + (path.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "per_page=" + pageSize.ToString(CultureInfo.InvariantCulture) + "&page=" + page.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+             JsonElement array = collection is null ? response : response.GetProperty(collection);
+             if (filteredRuns)
+             {
+                 if (!response.TryGetProperty("total_count", out JsonElement count) || count.ValueKind != JsonValueKind.Number || !count.TryGetInt32(out int observedTotal) || observedTotal < 0 || observedTotal >= 1000
+-                    || (totalCount is not null && totalCount != observedTotal) || array.GetArrayLength() > 100)
++                    || (totalCount is not null && totalCount != observedTotal) || array.GetArrayLength() > pageSize)
+                 {
+                     throw new CandidatePolicyException("authority-pagination-incomplete");
+                 }
+@@ -458,7 +481,7 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
+             }
+ 
+             items.AddRange(array.EnumerateArray());
+-            if (array.GetArrayLength() < 100)
++            if (array.GetArrayLength() < pageSize)
+             {
+                 return filteredRuns && items.Count != totalCount ? throw new CandidatePolicyException("authority-pagination-incomplete") : [.. items];
+             }
+diff --git a/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidatePolicyValidator.cs b/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidatePolicyValidator.cs
+index 76dc65b..d970135 100644
+--- a/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidatePolicyValidator.cs
++++ b/src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidatePolicyValidator.cs
+@@ -5,9 +5,12 @@
+ 
+ namespace Hexalith.Builds.Tooling.CandidatePolicy;
+ 
++using System.Text;
+ using System.Text.Json;
+ using System.Text.Json.Nodes;
+ 
++using Hexalith.Builds.Tooling.Manifest;
++using Hexalith.Builds.Tooling.Runtime;
+ using Hexalith.Builds.Tooling.TestEnvironment;
+ 
+ /// <summary>Applies the published selection and acceptance policy without treating JSON claims as authority.</summary>
+@@ -59,6 +62,8 @@ public static class CandidatePolicyValidator
+         TestEnvironmentContractReadResult result = TestEnvironmentContractReader.ReadResult(resultPath, cancellationToken);
+         if (!descriptor.IsValid || !result.IsValid)
+         {
++            ValidateRawPolicy(descriptorPath, cancellationToken);
++            ValidateRawPolicy(resultPath, cancellationToken);
+             throw new CandidatePolicyException("contract-invalid");
+         }
+ 
+@@ -137,6 +142,11 @@ public static class CandidatePolicyValidator
+                 throw new CandidatePolicyException("passed-outcome-required");
+             }
+ 
++            if (!Populated(currentDeadlines.GetProperty("startup")))
++            {
++                throw new CandidatePolicyException("passing-duration-required");
++            }
++
+             ValidatePassingDuration(currentDeadlines.GetProperty("startup"));
+             ValidatePassingDuration(currentDeadlines.GetProperty("execution"));
+             JsonElement readiness = environment.GetProperty("readiness");
+@@ -286,7 +296,12 @@ public static class CandidatePolicyValidator
+ 
+     private static void ValidateStartupDeclarations(JsonElement before, JsonElement after)
+     {
+-        if (!Populated(before) || !Populated(after))
++        if (Populated(before) != Populated(after))
++        {
++            throw new CandidatePolicyException("descriptor-result-disagreement");
++        }
++
++        if (!Populated(before))
+         {
+             return;
+         }
+@@ -338,6 +353,11 @@ public static class CandidatePolicyValidator
+ 
+     private static void ValidatePassingDuration(JsonElement deadline)
+     {
++        if (Populated(deadline) && !deadline.TryGetProperty("actualDurationSeconds", out _))
++        {
++            throw new CandidatePolicyException("passing-duration-required");
++        }
++
+         if (deadline.TryGetProperty("actualDurationSeconds", out JsonElement actual) && deadline.TryGetProperty("effectiveSeconds", out JsonElement budget)
+             && actual.GetDouble() > budget.GetDouble())
+         {
+@@ -345,6 +365,46 @@ public static class CandidatePolicyValidator
+         }
+     }
+ 
++    private static void ValidateRawPolicy(string path, CancellationToken cancellationToken)
++    {
++        try
++        {
++            using FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(path, respectSharing: true);
++            if (!stream.CanSeek || stream.Length > TestEnvironmentContractReader.MaximumDocumentBytes)
++            {
++                return;
++            }
++
++            byte[] bytes = new byte[checked((int)stream.Length)];
++            stream.ReadExactly(bytes);
++            cancellationToken.ThrowIfCancellationRequested();
++            int offset = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
++            using JsonDocument document = JsonDocument.Parse(new UTF8Encoding(false, true).GetString(bytes, offset, bytes.Length - offset), new JsonDocumentOptions { MaxDepth = TestEnvironmentContractReader.MaximumDepth });
++            JsonElement root = document.RootElement;
++            if (JsonDuplicatePropertyValidator.FindDuplicateProperty(root) is not null)
++            {
++                return;
++            }
++
++            if (!root.TryGetProperty("policyId", out JsonElement policy) || policy.ValueKind != JsonValueKind.String || policy.GetString() != TestEnvironmentContractReader.PolicyId)
++            {
++                throw new CandidatePolicyException("exact-policy-required");
++            }
++
++            if (root.TryGetProperty("bindings", out JsonElement bindings) && bindings.TryGetProperty("reuseLineage", out JsonElement lineage)
++                && ((lineage.TryGetProperty("reuseAllowed", out JsonElement allowed) && allowed.ValueKind == JsonValueKind.True)
++                    || (lineage.TryGetProperty("sourceRunIds", out JsonElement runs) && runs.ValueKind == JsonValueKind.Array && runs.GetArrayLength() > 0)
++                    || (lineage.TryGetProperty("sourceDecisionIds", out JsonElement decisions) && decisions.ValueKind == JsonValueKind.Array && decisions.GetArrayLength() > 0)))
++            {
++                throw new CandidatePolicyException("no-cross-decision-reuse");
++            }
++        }
++        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or JsonException or InvalidOperationException)
++        {
++            // Raw inspection only names policy refusals; invalid documents still fail the strict reader.
++        }
++    }
++
+     private static bool EqualDeadline(JsonElement left, JsonElement right)
+     {
+         JsonObject prior = JsonNode.Parse(left.GetRawText())!.AsObject();
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs b/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs
+index 4666cc7..1b08711 100644
+--- a/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs
++++ b/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs
+@@ -24,7 +24,6 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+     private static readonly TimeSpan _pollInterval = TimeSpan.FromMilliseconds(500);
+ 
+     private readonly CompositionEngineOptions _options = options ?? throw new ArgumentNullException(nameof(options));
+-    private bool _candidateStateIssued;
+ 
+     /// <summary>
+     /// Gets the state store used by this engine.
+@@ -36,6 +35,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+     /// </summary>
+     public CompositionRunResourceScanner Scanner { get; } = new(options.DockerCommand);
+ 
++    /// <summary>Gets a value indicating whether this invocation issued its candidate state.</summary>
++    internal bool CandidateStateIssued { get; private set; }
++
+     /// <summary>
+     /// Starts one run for a validated manifest.
+     /// </summary>
+@@ -55,7 +57,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+         CompositionEffectiveDeadline deadline = CompositionStartupDeadlineResolver.Resolve(null, _options.ReadinessTimeout);
+         using CancellationTokenSource startupBound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+ 
+-        _candidateStateIssued = false;
++        CandidateStateIssued = false;
+         string? runId = null;
+         string? preparedWorkspace = null;
+         Process? appHost = null;
+@@ -95,12 +97,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+ 
+             ModuleManifest manifest = manifestResult.Manifest!;
+             string? activeModule = PlatformManifestCommand.ActiveModule(platformDeclarations?.Declarations);
+-            IReadOnlyList<PlatformModuleDeclaration>? closure = platformComposition
+-                ? CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(
+-                    _options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping."),
+-                    [Path.GetFullPath(manifestPath)])
+-                { ActiveModule = activeModule })
++            CompositionDeclarationOptions? declarationOptions = platformComposition
++                ? new CompositionDeclarationOptions(_options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping."), [Path.GetFullPath(manifestPath)]) { ActiveModule = activeModule }
+                 : null;
++            IReadOnlyList<PlatformModuleDeclaration>? closure = declarationOptions is null
++                ? null
++                : CompositionDeclarationClosure.Load(_options.DeclarationOptionsOverride?.Invoke(declarationOptions) ?? declarationOptions);
+             deadline = CompositionStartupDeadlineResolver.Resolve(closure, _options.ReadinessTimeout);
+             if (_options.SelectedTest is not null)
+             {
+@@ -413,17 +415,17 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+         {
+             if (_options.SelectedTest is not null && _options.SelectedExecutionOwnerToken is { IsCancellationRequested: false })
+             {
+-                return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
++                return await ReportStartupTimeoutAsync(requestedAt, deadline, _options.CandidatePolicy is null || CandidateStateIssued ? runId : null, manifestHash, appHost).ConfigureAwait(false);
+             }
+ 
+             ToolDiagnostic cancelled = Diagnostic("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The invocation was cancelled; bounded teardown ran.", "cancellation", null);
+-            return runId is null
++            return runId is null || (_options.CandidatePolicy is not null && !CandidateStateIssued)
+                 ? Failed("cancelled", ToolExitCode.Cancelled, [cancelled], null)
+                 : await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Cancelled, cancelled, ToolExitCode.Cancelled, requestedAt, deadline).ConfigureAwait(false);
+         }
+         catch (OperationCanceledException) when (startupBound.IsCancellationRequested)
+         {
+-            return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
++            return await ReportStartupTimeoutAsync(requestedAt, deadline, _options.CandidatePolicy is null || CandidateStateIssued ? runId : null, manifestHash, appHost).ConfigureAwait(false);
+         }
+         catch (InvalidDataException exception) when (runId is null)
+         {
+@@ -463,7 +465,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+             // A duplicate producing identity belongs to another invocation; never tear down that owner.
+             throw;
+         }
+-        catch (Exception exception) when (runId is not null && (_options.CandidatePolicy is null || _candidateStateIssued) && exception is not OutOfMemoryException)
++        catch (Exception exception) when (runId is not null && (_options.CandidatePolicy is null || CandidateStateIssued) && exception is not OutOfMemoryException)
+         {
+             // Once a run identity exists, resources may exist: every other failure (I/O, port allocation,
+             // an inner timeout) is a lifecycle failure that must run bounded teardown instead of leaking the run.
+@@ -487,7 +489,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+     }
+ 
+     /// <summary>
+-    /// Tears down a run started by this engine instance, stopping its AppHost gracefully first.
++    /// Tears down a run started by this engine instance. A session whose owner attachment admission can never accept
++    /// stops its AppHost gracefully first; a local selected-test session keeps it until attachment withdrawal is durably
++    /// recorded, so a refused withdrawal leaves it running.
+     /// </summary>
+     /// <param name="session">The ready session.</param>
+     /// <param name="cancellationToken">The cancellation token.</param>
+@@ -500,7 +504,14 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+         ArgumentNullException.ThrowIfNull(session);
+         cancellationToken.ThrowIfCancellationRequested();
+         using CancellationTokenSource bound = TeardownBound();
+-        return await DownCoreAsync(session.RunId, bound.Token, session: session).ConfigureAwait(false);
++        if (CanHoldAttachments(session))
++        {
++            return await DownCoreAsync(session.RunId, bound.Token, session: session).ConfigureAwait(false);
++        }
++
++        // No withdrawal can be owed, so every cleanup exit, including lock or state failures, leaves the AppHost stopped.
++        await StopSessionAsync(session, bound.Token).ConfigureAwait(false);
++        return await DownCoreAsync(session.RunId, bound.Token).ConfigureAwait(false);
+     }
+ 
+     /// <summary>
+@@ -547,18 +558,34 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+     internal Task<CompositionStartResult> ReportSetupTimeoutAsync(DateTimeOffset requestedAt, CompositionEffectiveDeadline deadline) =>
+         ReportStartupTimeoutAsync(requestedAt, deadline, null, string.Empty, null);
+ 
+-    /// <summary>Stops an owned selected session using the command's single stopping budget.</summary>
++    /// <summary>
++    /// Stops an owned selected session using the command's single stopping budget. A session whose owner attachment
++    /// admission can never accept stops its AppHost first; an attachable local owner keeps it until withdrawal is durable.
++    /// </summary>
+     /// <param name="session">The owned session.</param>
+     /// <param name="stoppingToken">The original stopping deadline.</param>
+     /// <returns>A truthful bounded cleanup result.</returns>
+-    internal Task<CompositionDownResult> DownWithinBudgetAsync(CompositionRunSession session, CancellationToken stoppingToken) =>
+-        DownCoreAsync(session.RunId, stoppingToken, new CompositionRunResources([], ProjectProcessIds(session.Readiness.Resources), true) { WorkspaceIds = ["workspace:" + session.RunId] }, session);
++    internal async Task<CompositionDownResult> DownWithinBudgetAsync(CompositionRunSession session, CancellationToken stoppingToken)
++    {
++        CompositionRunResources known = new([], ProjectProcessIds(session.Readiness.Resources), true) { WorkspaceIds = ["workspace:" + session.RunId] };
++        if (CanHoldAttachments(session))
++        {
++            return await DownCoreAsync(session.RunId, stoppingToken, known, session).ConfigureAwait(false);
++        }
+ 
+-    /// <summary>Stops and disposes a session after durable withdrawal, killing without waiting when its resource allowance is exhausted.</summary>
+-    /// <param name="session">The session whose attachments have already been withdrawn.</param>
++        // No withdrawal can be owed; an exhausted budget kills without waiting so no cleanup exit leaves the AppHost running.
++        await StopSessionAsync(session, stoppingToken).ConfigureAwait(false);
++        return await DownCoreAsync(session.RunId, stoppingToken, known).ConfigureAwait(false);
++    }
++
++    /// <summary>
++    /// Stops and disposes a session AppHost, killing without waiting when graceful stopping fails or its resource
++    /// allowance is exhausted. Attachable owners call it only after durable withdrawal.
++    /// </summary>
++    /// <param name="session">The session to stop.</param>
+     /// <param name="stoppingToken">The original resource stopping allowance.</param>
+     /// <returns>The bounded session stopping task.</returns>
+-    internal async Task StopWithdrawnSessionAsync(CompositionRunSession session, CancellationToken stoppingToken)
++    internal async Task StopSessionAsync(CompositionRunSession session, CancellationToken stoppingToken)
+     {
+         try
+         {
+@@ -929,6 +956,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+         return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [.. bookkeeping, diagnostic]) { RemainingResources = remaining }, remaining);
+     }
+ 
++    /// <summary>Mirrors admission: only a selected-test owner with a local execution context can ever hold attachments.</summary>
++    /// <param name="session">The owned session.</param>
++    /// <returns>Whether attachment withdrawal must precede stopping this session.</returns>
++    private static bool CanHoldAttachments(CompositionRunSession session) => session.Plan.SelectedTest is not null && session.LocalExecution;
++
+     private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
+ 
+     private static void KillOwnedWithoutWaiting(Process process)
+@@ -1426,7 +1458,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+         // Every later exit must leave the session stopped, including provisioning-lock failures.
+         if (session is not null)
+         {
+-            await StopWithdrawnSessionAsync(session, bound).ConfigureAwait(false);
++            await StopSessionAsync(session, bound).ConfigureAwait(false);
+         }
+ 
+         FileStream? provisioning = null;
+@@ -1440,7 +1472,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+             if (bound.IsCancellationRequested)
+             {
+                 CompositionDownResult pending = IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Any(item => item.Category != ToolFailureCategory.None));
+-                return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping, .. pending.Result.Diagnostics] } };
++                return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping.Concat(pending.Result.Diagnostics).Distinct()] } };
+             }
+ 
+             if (!Directory.Exists(directory))
+@@ -1463,7 +1495,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+         catch (Exception exception) when (IsTeardownFailure(exception))
+         {
+             CompositionDownResult pending = IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Any(item => item.Category != ToolFailureCategory.None));
+-            return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping, .. pending.Result.Diagnostics] } };
++            return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping.Concat(pending.Result.Diagnostics).Distinct()] } };
+         }
+ 
+         if (state?.AppHostProcessId is int processId && TryGetRecordedProcess(processId, state.AppHostStartedAt) is Process recorded)
+@@ -1744,7 +1776,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+                 return new CompositionStartResult(
+                     new ToolCommandResult("ready", ToolOutcome.Passed(), readyDiagnostics),
+                     plan.RunId,
+-                    new CompositionRunSession(plan, readiness, signingKey, appHost));
++                    new CompositionRunSession(plan, readiness, signingKey, appHost) { LocalExecution = TestEnvironment.TestEnvironmentDescriptorWriter.IsLocalExecution() });
+             }
+ 
+             if (appHost.HasExited)
+@@ -2192,7 +2224,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+         Process? appHost)
+     {
+         ToolDiagnostic timeout = Diagnostic("HXR021", ToolPhase.Topology, ToolFailureCategory.TopologyOrLifecycle, "The run resources did not become healthy within the readiness bound.", "readiness", "Inspect the preserved startup diagnostics.");
+-        if (runId is null && _options.SelectedTest is { } selected)
++        if (_options.CandidatePolicy is not null && !CandidateStateIssued)
++        {
++            runId = null;
++        }
++
++        if (runId is null && _options.CandidatePolicy is null && _options.SelectedTest is { } selected)
+         {
+             runId = CompositionRunPlanFactory.NewRunId();
+             manifestHash = selected.ManifestHash;
+@@ -2343,6 +2380,24 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+     }
+ 
+     private async Task<CompositionRunState> InitializeStateAsync(string runId, string manifestHash, DateTimeOffset requestedAt, CompositionEffectiveDeadline deadline, CancellationToken cancellationToken)
++    {
++        if (_options.CandidatePolicy is not null && !CandidateStateIssued)
++        {
++            // Serialize admission outside the diagnostic directory, which may belong to a prior invocation.
++            CompositionWorkspace.CreatePrivateDirectory(StateStore.Directory);
++            FileStream issuanceLock = await OpenOutcomeLockAsync(Path.Combine(StateStore.Directory, "candidate-issuance-" + runId + ".lock"), cancellationToken).ConfigureAwait(false);
++            await using (issuanceLock.ConfigureAwait(false))
++            {
++                return Path.Exists(StateStore.PathFor(runId)) || Path.Exists(DiagnosticsDirectory(runId))
++                    ? throw new CandidatePolicy.CandidatePolicyException("fresh-producing-run-required")
++                    : await InitializeOwnedStateAsync(runId, manifestHash, requestedAt, deadline, cancellationToken).ConfigureAwait(false);
++            }
++        }
++
++        return await InitializeOwnedStateAsync(runId, manifestHash, requestedAt, deadline, cancellationToken).ConfigureAwait(false);
++    }
++
++    private async Task<CompositionRunState> InitializeOwnedStateAsync(string runId, string manifestHash, DateTimeOffset requestedAt, CompositionEffectiveDeadline deadline, CancellationToken cancellationToken)
+     {
+         if (await HasCleanupRequestAsync(runId, cancellationToken).ConfigureAwait(false))
+         {
+@@ -2361,7 +2416,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+ 
+         if (existing is not null)
+         {
+-            return _options.CandidatePolicy is null || _candidateStateIssued ? existing : throw new CandidatePolicy.CandidatePolicyException("fresh-producing-run-required");
++            return _options.CandidatePolicy is null || CandidateStateIssued ? existing : throw new CandidatePolicy.CandidatePolicyException("fresh-producing-run-required");
+         }
+ 
+         CompositionRunState initial = CompositionRunPlanFactory.CreateInitialState(runId, WorkspaceFor(runId), manifestHash, requestedAt) with
+@@ -2378,7 +2433,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
+             ExecutionContext = _options.SelectedTest is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(TestEnvironment.TestEnvironmentDescriptorWriter.ExecutionContext()),
+         };
+         await StateStore.WriteAsync(initial, cancellationToken).ConfigureAwait(false);
+-        _candidateStateIssued = _options.CandidatePolicy is not null;
++        CandidateStateIssued = _options.CandidatePolicy is not null;
+         await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "owner.json"), initial, cancellationToken).ConfigureAwait(false);
+         return initial;
+     }
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngineOptions.cs b/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngineOptions.cs
+index 013a069..eae8875 100644
+--- a/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngineOptions.cs
++++ b/src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngineOptions.cs
+@@ -113,6 +113,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
+     /// <summary>Gets an offline replacement for the existing source-mapping resolver.</summary>
+     internal Func<string, WorkspaceMode, CancellationToken, Task<SourceMapping>>? MappingResolverOverride { get; init; }
+ 
++    /// <summary>Gets explicit offline release-declaration authorities for fixture verification.</summary>
++    internal Func<CompositionDeclarationOptions, CompositionDeclarationOptions>? DeclarationOptionsOverride { get; init; }
++
+     /// <summary>Gets a test-only replacement for the selected v2 session start boundary.</summary>
+     internal Func<string, ModuleTestSelection, CancellationToken, Task<CompositionStartResult>>? SelectedPlatformStartOverride { get; init; }
+ 
+diff --git a/src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs b/src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs
+index 461e927..7543dd4 100644
+--- a/src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs
++++ b/src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs
+@@ -1175,7 +1175,7 @@ public static class ModuleCommandExecutionService
+                 CompositionStartResult started = await (options.SelectedPlatformStartOverride?.Invoke(manifestPath, selected!, startupToken ?? cancellationToken) ?? options.PlatformStartOverride?.Invoke(manifestPath, startupToken ?? cancellationToken) ?? engine.StartAsync(manifestPath, startupToken ?? cancellationToken)).ConfigureAwait(false);
+                 session = started.Session;
+                 startupStoppingTimestamp = started.StoppingTimestamp;
+-                ownedRunId = session?.RunId ?? started.RunId ?? options.CandidatePolicy?.RunId;
++                ownedRunId = session?.RunId ?? started.RunId ?? (engine.CandidateStateIssued ? options.CandidatePolicy?.RunId : null);
+                 bool ownerAvailable = true;
+                 if (session is not null)
+                 {
+@@ -1527,7 +1527,7 @@ public static class ModuleCommandExecutionService
+                 {
+                     if (cancellationWithdrawn)
+                     {
+-                        await engine!.StopWithdrawnSessionAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token).ConfigureAwait(false);
++                        await engine!.StopSessionAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token).ConfigureAwait(false);
+                     }
+ 
+                     down = await (options.PlatformDownOverride?.Invoke(session!, (waitedForHolds ? deferredStopping : stopping).Token) ?? engine!.DownWithinBudgetAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token)).ConfigureAwait(false);
+diff --git a/test/Hexalith.Builds.Module.Tests/CandidateGateFixture.cs b/test/Hexalith.Builds.Module.Tests/CandidateGateFixture.cs
+index 845ffbe..7e442f7 100644
+--- a/test/Hexalith.Builds.Module.Tests/CandidateGateFixture.cs
++++ b/test/Hexalith.Builds.Module.Tests/CandidateGateFixture.cs
+@@ -148,6 +148,33 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
+     /// <summary>Gets or sets the filtered workflow pagination scenario.</summary>
+     public string WorkflowPaginationMode { get; set; } = "complete";
+ 
++    /// <summary>Gets or sets a signed issuance claim mutation.</summary>
++    public Action<JsonObject>? IssuanceClaims { get; set; }
++
++    /// <summary>Gets or sets a signed consumer claim mutation.</summary>
++    public Action<JsonObject>? ConsumerClaims { get; set; }
++
++    /// <summary>Gets or sets the JWT header algorithm.</summary>
++    public string Algorithm { get; set; } = "RS256";
++
++    /// <summary>Gets or sets the JWT signing key scenario.</summary>
++    public string KeyMode { get; set; } = "valid";
++
++    /// <summary>Gets or sets the caller workflow API path.</summary>
++    public string CallerPath { get; set; } = ".github/workflows/ci.yml";
++
++    /// <summary>Gets or sets a value indicating whether the approved caller bytes changed.</summary>
++    public bool ChangedCallerBytes { get; set; }
++
++    /// <summary>Gets or sets the dispatched branch reported by GitHub.</summary>
++    public string DispatchBranch { get; set; } = "main";
++
++    /// <summary>Gets the successor-list query observed by the fixture.</summary>
++    public string? SuccessorQuery { get; private set; }
++
++    /// <summary>Gets the filtered workflow pages requested by the verifier.</summary>
++    public List<int> WorkflowPages { get; } = [];
++
+     /// <summary>Gets the actual CI representation used by the runner fixture.</summary>
+     public JsonElement Context => JsonSerializer.SerializeToElement(new { kind = "ci", repository = "Hexalith/Orders", workflowRunId = GateRunId, workflowAttempt = CurrentAttempt, jobId = "integration", runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true });
+ 
+@@ -167,13 +194,14 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
+             ["event_name"] = SignedEvent ?? (Payload["kind"]!.GetValue<string>() == "release" ? "workflow_dispatch" : "pull_request"),
+             ["sha"] = SignedSha ?? _targetCommit,
+             ["ref"] = SignedRef ?? (Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge"),
+-            ["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@" + (Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge"),
++            ["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@" + (SignedRef ?? (Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge")),
+             ["workflow_sha"] = _targetCommit,
+             ["run_id"] = Payload["gateRunId"]!.GetValue<string>(),
+             ["run_attempt"] = Payload["attemptSequence"]!.ToString(),
+             ["iat"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 10,
+             ["exp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 300,
+         };
++        IssuanceClaims?.Invoke(claims);
+         string token = CreateToken(claims);
+         _issuanceToken = token;
+         string path = Path.Combine(_directory, Guid.NewGuid().ToString("N") + ".json");
+@@ -208,7 +236,38 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
+             }
+ 
+             RSAParameters parameters = _rsa.ExportParameters(false);
+-            result = new { keys = new[] { new { kid = "fixture", kty = "RSA", n = Encode(parameters.Modulus!), e = Encode(parameters.Exponent!) } } };
++            JsonObject key = new()
++            {
++                ["kid"] = KeyMode == "unknown" ? "other" : "fixture",
++                ["kty"] = KeyMode == "non-rsa" ? "EC" : "RSA",
++                ["n"] = Encode(parameters.Modulus!),
++                ["e"] = Encode(parameters.Exponent!),
++            };
++            if (KeyMode == "missing-modulus")
++            {
++                _ = key.Remove("n");
++            }
++            else if (KeyMode == "malformed-modulus")
++            {
++                key["n"] = "invalid!";
++            }
++            else if (KeyMode == "malformed-exponent")
++            {
++                key["e"] = "invalid!";
++            }
++            else if (KeyMode == "invalid-rsa")
++            {
++                key["n"] = Encode([0]);
++                key["e"] = Encode([0]);
++            }
++
++            JsonArray keys = new(key);
++            if (KeyMode == "duplicate")
++            {
++                keys.Add(key.DeepClone());
++            }
++
++            result = new JsonObject { ["keys"] = keys };
+         }
+         else
+         {
+@@ -240,18 +299,23 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
+                 }
+             }
+ 
++            if (path.Contains("/actions/workflows/", StringComparison.Ordinal))
++            {
++                SuccessorQuery = request.RequestUri.Query;
++            }
++
+             result = path switch
+             {
+                 var value when value.EndsWith("/approvals", StringComparison.Ordinal) => ReviewApproved ? new[] { new { state = "approved", user = new { id = 1 }, environments = new[] { new { name = "candidate-policy" } } } } : [],
+                 var value when value.EndsWith("/jobs", StringComparison.Ordinal) => new { jobs = new[] { new { name = "Integration", runner_group_name = JobRunnerGroup, labels = JobLabels } } },
+-                var value when value.Contains("/actions/runs/", StringComparison.Ordinal) => new { id = long.Parse(GateRunId, System.Globalization.CultureInfo.InvariantCulture), repository = new { full_name = "Hexalith/Orders" }, run_attempt = CurrentAttempt, run_number = 10, path = ".github/workflows/ci.yml", head_sha = RunHead ?? (Payload["kind"]!.GetValue<string>() == "release" ? _targetCommit : _headCommit), created_at = "2026-10-10T00:00:00Z", workflow_id = 1, status = RunStatus, conclusion = Conclusion, @event = Payload["kind"]!.GetValue<string>() == "release" ? "workflow_dispatch" : "pull_request", pull_requests = new[] { new { number = 7, head = new { sha = _headCommit }, @base = new { sha = _baseCommit } } } },
+-                var value when value.Contains("/contents/", StringComparison.Ordinal) => new { encoding = "base64", content = Convert.ToBase64String(request.RequestUri.Query == "?ref=" + _targetCommit ? "trusted workflow"u8 : "wrong workflow source"u8) },
++                var value when value.Contains("/actions/runs/", StringComparison.Ordinal) => new { id = long.Parse(GateRunId, System.Globalization.CultureInfo.InvariantCulture), repository = new { full_name = "Hexalith/Orders" }, run_attempt = CurrentAttempt, run_number = 10, path = CallerPath, head_branch = DispatchBranch, head_sha = RunHead ?? (Payload["kind"]!.GetValue<string>() == "release" ? _targetCommit : _headCommit), created_at = "2026-10-10T00:00:00Z", workflow_id = 1, status = RunStatus, conclusion = Conclusion, @event = Payload["kind"]!.GetValue<string>() == "release" ? "workflow_dispatch" : "pull_request", pull_requests = new[] { new { number = 7, head = new { sha = _headCommit }, @base = new { sha = _baseCommit } } } },
++                var value when value.Contains("/contents/", StringComparison.Ordinal) => new { encoding = "base64", content = Convert.ToBase64String(request.RequestUri.Query == "?ref=" + _targetCommit && !ChangedCallerBytes ? "trusted workflow"u8 : "wrong workflow source"u8) },
+                 var value when value.Contains("/environments/", StringComparison.Ordinal) => new { protection_rules = new[] { new { type = "required_reviewers", reviewers = Approved ? new[] { new { id = 1 } } : [] } } },
+                 var value when value.Contains("/git/commits/", StringComparison.Ordinal) => new { sha = _targetCommit, parents = new[] { new { sha = WrongParents ? _headCommit : _baseCommit }, new { sha = WrongParents ? _baseCommit : _headCommit } } },
+                 var value when value.Contains("/git/ref/", StringComparison.Ordinal) => new { @object = new { sha = ChangedBase ? _headCommit : _baseCommit } },
+                 var value when value.EndsWith("/pulls/7", StringComparison.Ordinal) => new { state = PrState, merged = false, created_at = "2026-10-01T00:00:00Z", head = new { sha = ChangedHead ? _baseCommit : _headCommit }, @base = new { sha = _baseCommit, @ref = "main" }, merge_commit_sha = _targetCommit },
+                 var value when value.EndsWith("/events", StringComparison.Ordinal) => ReopenEpoch is null ? [] : new object[] { new { @event = EpochEvent, id = ReopenEpoch, created_at = "2026-10-11T00:00:00Z" } },
+-                var value when value.Contains("/actions/workflows/", StringComparison.Ordinal) => WorkflowRunsResponse(),
++                var value when value.Contains("/actions/workflows/", StringComparison.Ordinal) => WorkflowRunsResponse(request.RequestUri.Query),
+                 _ => throw new InvalidOperationException("Unexpected fixture path: " + path),
+             };
+         }
+@@ -276,8 +340,24 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
+ 
+     private string CreateToken(JsonObject claims)
+     {
+-        string input = Encode(JsonSerializer.SerializeToUtf8Bytes(new { alg = "RS256", kid = "fixture" })) + "." + Encode(JsonSerializer.SerializeToUtf8Bytes(claims));
+-        return input + "." + Encode(_rsa.SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
++        string input = Encode(JsonSerializer.SerializeToUtf8Bytes(new { alg = Algorithm, kid = "fixture" })) + "." + Encode(JsonSerializer.SerializeToUtf8Bytes(claims));
++        byte[] signature;
++        if (KeyMode == "foreign")
++        {
++            using RSA foreign = RSA.Create(2048);
++            signature = foreign.SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
++        }
++        else
++        {
++            signature = _rsa.SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
++        }
++
++        if (KeyMode == "tampered")
++        {
++            signature[0] ^= 1;
++        }
++
++        return input + "." + Encode(signature);
+     }
+ 
+     private Task<string> ConsumerProofAsync(string audience, CancellationToken cancellationToken)
+@@ -300,7 +380,7 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
+             ["job_workflow_ref"] = ConsumerProofMode == "wrong-workflow" ? Configuration.WorkflowRef : Configuration.WorkflowRef.Replace("/candidate-policy.yml@", "/domain-ci.yml@", StringComparison.Ordinal),
+             ["job_workflow_sha"] = Configuration.WorkflowSha,
+             ["repository"] = "Hexalith/Orders",
+-            ["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@refs/heads/main",
++            ["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@" + (Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge"),
+             ["runner_environment"] = "github-hosted",
+             ["run_id"] = Payload["gateRunId"]!.GetValue<string>(),
+             ["run_attempt"] = Payload["attemptSequence"]!.ToString(),
+@@ -310,13 +390,29 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
+             ["iat"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 1,
+             ["exp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 300,
+         };
++        ConsumerClaims?.Invoke(claims);
+         _consumerToken = CreateToken(claims);
+         return Task.FromResult(_consumerToken);
+     }
+ 
+-    private JsonObject WorkflowRunsResponse()
++    private JsonObject WorkflowRunsResponse(string query)
+     {
++        Dictionary<string, string> parameters = query.TrimStart('?').Split('&').Select(item => item.Split('=', 2)).ToDictionary(item => item[0], item => Uri.UnescapeDataString(item[1]), StringComparer.Ordinal);
++        int page = int.Parse(parameters["page"], System.Globalization.CultureInfo.InvariantCulture);
++        WorkflowPages.Add(page);
+         JsonArray runs = [];
++        if (WorkflowPaginationMode is "paged" or "paged-successor")
++        {
++            int pageSize = int.Parse(parameters["per_page"], System.Globalization.CultureInfo.InvariantCulture);
++            foreach (int index in Enumerable.Range(0, 31).Skip((page - 1) * pageSize).Take(pageSize))
++            {
++                bool successor = index == 30 && WorkflowPaginationMode == "paged-successor";
++                runs.Add(JsonSerializer.SerializeToNode(new { id = 200 + index, run_number = successor ? 51 : 20 + index, pull_requests = new[] { new { number = successor ? 7 : 8 } } }));
++            }
++
++            return new JsonObject { ["workflow_runs"] = runs, ["total_count"] = 31 };
++        }
++
+         if (NewerRequest)
+         {
+             runs.Add(JsonSerializer.SerializeToNode(new { id = 102, run_number = 11, status = "queued", conclusion = (string?)null, pull_requests = new[] { new { number = 7 } } }));
+diff --git a/test/Hexalith.Builds.Module.Tests/CandidatePolicyTests.cs b/test/Hexalith.Builds.Module.Tests/CandidatePolicyTests.cs
+index ab0283d..8ff1a50 100644
+--- a/test/Hexalith.Builds.Module.Tests/CandidatePolicyTests.cs
++++ b/test/Hexalith.Builds.Module.Tests/CandidatePolicyTests.cs
+@@ -17,6 +17,9 @@ using Xunit;
+ /// <summary>Exercises authenticated issuance, current-state changes, retries and policy refusals.</summary>
+ public sealed class CandidatePolicyTests
+ {
++    private static readonly int[] _twoPages = [1, 2];
++    private static readonly int[] _twoPageRechecks = [1, 2, 1, 2];
++
+     /// <summary>Both kinds bind their own committed revision and original gate request.</summary>
+     /// <param name="release">Whether this is a distinct release dispatch.</param>
+     /// <returns>The exact selected bindings.</returns>
+@@ -299,4 +302,292 @@ public sealed class CandidatePolicyTests
+         Should.Throw<CandidatePolicyException>(() => CandidatePolicyValidator.ValidateSelection(binding, "orders", "package", JsonSerializer.SerializeToElement(new { kind = "local" }))).Condition.ShouldBe("local-diagnostics-only");
+         Should.Throw<CandidatePolicyException>(() => CandidatePolicyValidator.ValidateSelection(binding, "another-module", "package", fixture.Context)).Condition.ShouldBe("candidate-module-mismatch");
+     }
++
++    /// <summary>Signed issuance authentication refuses individual key, header, issuer and payload substitutions.</summary>
++    /// <param name="mutation">The isolated authentication violation.</param>
++    /// <returns>The stable authentication refusal.</returns>
++    [Theory]
++    [InlineData("foreign")]
++    [InlineData("tampered")]
++    [InlineData("unknown")]
++    [InlineData("non-rsa")]
++    [InlineData("alg")]
++    [InlineData("iss")]
++    [InlineData("job_workflow_sha")]
++    [InlineData("environment")]
++    [InlineData("payload")]
++    public async Task IssuanceAuthenticationRefusesSubstitutionsAsync(string mutation)
++    {
++        using CandidateGateFixture fixture = new();
++        if (mutation is "foreign" or "tampered" or "unknown" or "non-rsa")
++        {
++            fixture.KeyMode = mutation;
++        }
++        else if (mutation == "alg")
++        {
++            fixture.Algorithm = "HS256";
++        }
++        else if (mutation != "payload")
++        {
++            fixture.IssuanceClaims = claims => claims[mutation] = "foreign-value";
++        }
++
++        string path = fixture.Sign();
++        if (mutation == "payload")
++        {
++            JsonObject envelope = JsonNode.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true))!.AsObject();
++            fixture.Payload["moduleId"] = "substituted";
++            envelope["payload"] = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(fixture.Payload));
++            await File.WriteAllTextAsync(path, envelope.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        }
++
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(path, TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("issuer-authentication-required");
++    }
++
++    /// <summary>A single mismatched consumer claim cannot authenticate the executing process.</summary>
++    /// <param name="claim">The substituted claim.</param>
++    /// <returns>The stable consumer authentication refusal.</returns>
++    [Theory]
++    [InlineData("repository")]
++    [InlineData("run_id")]
++    [InlineData("run_attempt")]
++    [InlineData("sha")]
++    [InlineData("runner_environment")]
++    [InlineData("workflow_ref")]
++    [InlineData("event_name")]
++    [InlineData("ref")]
++    [InlineData("stale")]
++    public async Task ConsumerProofBindsEveryExecutionClaimAsync(string claim)
++    {
++        using CandidateGateFixture fixture = new();
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        fixture.ConsumerClaims = claims =>
++        {
++            if (claim == "stale")
++            {
++                claims["iat"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 120;
++            }
++            else
++            {
++                claims[claim] = "foreign-value";
++                if (claim == "ref")
++                {
++                    claims["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@foreign-value";
++                }
++            }
++        };
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe(claim == "stale" ? "issuer-authentication-required" : "consumer-authentication-required");
++    }
++
++    /// <summary>Every actual CI job coordinate is bound independently of the signed request.</summary>
++    /// <param name="field">The substituted context field.</param>
++    /// <returns>The stable same-job refusal.</returns>
++    [Theory]
++    [InlineData("repository")]
++    [InlineData("workflowRunId")]
++    [InlineData("workflowAttempt")]
++    [InlineData("jobId")]
++    public async Task ExecutionContextBindsEveryJobCoordinateAsync(string field)
++    {
++        using CandidateGateFixture fixture = new();
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        JsonObject context = JsonNode.Parse(fixture.Context.GetRawText())!.AsObject();
++        context[field] = field == "workflowAttempt" ? JsonValue.Create(2) : JsonValue.Create("foreign-value");
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, JsonSerializer.SerializeToElement(context), TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("same-ci-job-required");
++    }
++
++    /// <summary>The caller's authenticated path, ref and bytes must match the enrolled workflow.</summary>
++    /// <param name="mutation">The caller workflow substitution.</param>
++    /// <returns>The named workflow refusal.</returns>
++    [Theory]
++    [InlineData("bytes")]
++    [InlineData("path")]
++    [InlineData("ref")]
++    public async Task CallerWorkflowSubstitutionsRefuseAsync(string mutation)
++    {
++        using CandidateGateFixture fixture = new() { ChangedCallerBytes = mutation == "bytes" };
++        if (mutation == "path")
++        {
++            fixture.CallerPath = ".github/workflows/other.yml";
++        }
++        else if (mutation == "ref")
++        {
++            fixture.IssuanceClaims = claims => claims["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@refs/heads/foreign";
++        }
++
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("issuer-workflow-mismatch");
++    }
++
++    /// <summary>Duplicate JSON request keys are rejected without selecting an interpretation.</summary>
++    /// <returns>The duplicate-field refusal.</returns>
++    [Fact]
++    public async Task DuplicateRequestKeysRefuseAsync()
++    {
++        using CandidateGateFixture fixture = new();
++        string path = fixture.Sign();
++        string original = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true);
++        await File.WriteAllTextAsync(path, "{\"token\":\"foreign\"," + original[1..], TestContext.Current.CancellationToken).ConfigureAwait(true);
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(path, TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("duplicate-request-field");
++    }
++
++    /// <summary>Release authority is restricted to the authenticated dispatch of main.</summary>
++    /// <param name="signedRef">The signed dispatch ref.</param>
++    /// <param name="apiBranch">The authenticated dispatch branch.</param>
++    /// <returns>The release authority refusal.</returns>
++    [Theory]
++    [InlineData("refs/heads/feature", "main")]
++    [InlineData("refs/tags/v1", "main")]
++    [InlineData("refs/heads/main", "feature")]
++    public async Task ReleaseDispatchRequiresMainAsync(string signedRef, string apiBranch)
++    {
++        using CandidateGateFixture fixture = new() { SignedRef = signedRef, DispatchBranch = apiBranch };
++        fixture.Payload["kind"] = "release";
++        _ = fixture.Payload.Remove("pr");
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("release-authority-mismatch");
++    }
++
++    /// <summary>Successor lookup is bounded to relevant creation times with pages below the response cap.</summary>
++    /// <returns>The exact API query assertions.</returns>
++    [Fact]
++    public async Task SuccessorLookupStartsAtGateCreationAsync()
++    {
++        using CandidateGateFixture fixture = new();
++        _ = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        Uri.UnescapeDataString(fixture.SuccessorQuery!).ShouldContain("created=>=2026-10-10T00:00:00Z");
++        fixture.SuccessorQuery!.ShouldContain("per_page=30");
++    }
++
++    /// <summary>Full successor pages are traversed before selecting or rejecting the exact issued identity.</summary>
++    /// <param name="successor">Whether page two contains a superseding request.</param>
++    /// <returns>The exact candidate identity or successor refusal after both pages were observed.</returns>
++    [Theory]
++    [InlineData(false)]
++    [InlineData(true)]
++    public async Task SuccessorHistoryTraversesFullPageAndTerminalPageAsync(bool successor)
++    {
++        using CandidateGateFixture fixture = new() { WorkflowPaginationMode = successor ? "paged-successor" : "paged" };
++        string request = fixture.Sign();
++        if (successor)
++        {
++            CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(request, TestContext.Current.CancellationToken)).ConfigureAwait(true);
++            refusal.Condition.ShouldBe("latest-issued-attempt-required");
++            fixture.WorkflowPaginationMode = "paged";
++        }
++
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(request, TestContext.Current.CancellationToken).ConfigureAwait(true);
++        binding.RunId.ShouldBe(fixture.Payload["runId"]!.GetValue<string>());
++        binding.AttemptId.ShouldBe(fixture.Payload["attemptId"]!.GetValue<string>());
++        binding.Candidate.GetProperty("committedRevision").GetString().ShouldBe(CandidateGateFixture.Merge);
++        binding.Decision.GetProperty("requestId").GetString().ShouldBe("github:Hexalith/Orders:101");
++        fixture.WorkflowPages.ShouldBe(successor ? _twoPageRechecks : _twoPages);
++    }
++
++    /// <summary>Ambiguous signing keys and malformed RSA parameters are authentication refusals.</summary>
++    /// <param name="keyMode">The isolated signing-key violation.</param>
++    /// <returns>The stable signing-key authentication refusal.</returns>
++    [Theory]
++    [InlineData("duplicate")]
++    [InlineData("missing-modulus")]
++    [InlineData("malformed-modulus")]
++    [InlineData("malformed-exponent")]
++    [InlineData("invalid-rsa")]
++    public async Task SigningKeyRejectionRemainsAuthenticationFailureAsync(string keyMode)
++    {
++        using CandidateGateFixture fixture = new() { KeyMode = keyMode };
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("issuer-authentication-required");
++    }
++
++    /// <summary>Consumer proofs must have a current, ordered lifetime with no future issuance.</summary>
++    /// <param name="lifetime">The isolated temporal violation.</param>
++    /// <returns>The consumer proof authentication refusal.</returns>
++    [Theory]
++    [InlineData("expired")]
++    [InlineData("future")]
++    [InlineData("reversed")]
++    [InlineData("empty")]
++    public async Task ConsumerTemporalClaimsRefuseAsync(string lifetime)
++    {
++        using CandidateGateFixture fixture = new();
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        fixture.ConsumerClaims = claims => MutateLifetime(claims, lifetime);
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("issuer-authentication-required");
++    }
++
++    /// <summary>Archival issuance still requires an ordered lifetime and cannot originate in the future.</summary>
++    /// <param name="lifetime">The invalid issuance lifetime.</param>
++    /// <returns>The issuance authentication refusal.</returns>
++    [Theory]
++    [InlineData("future")]
++    [InlineData("reversed")]
++    public async Task ArchivedIssuanceRejectsInvalidLifetimeAsync(string lifetime)
++    {
++        using CandidateGateFixture fixture = new() { IssuanceClaims = claims => MutateLifetime(claims, lifetime) };
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("issuer-authentication-required");
++    }
++
++    /// <summary>Expired issuance authenticates its archived bytes while fresh authority and consumer proof govern reuse.</summary>
++    /// <returns>The authenticated archived identity and fresh supersession refusal.</returns>
++    [Fact]
++    public async Task ExpiredArchivedIssuanceStillRechecksCurrentAuthorityAsync()
++    {
++        using CandidateGateFixture fixture = new() { IssuanceClaims = claims => MutateLifetime(claims, "expired") };
++        string request = fixture.Sign();
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(request, TestContext.Current.CancellationToken).ConfigureAwait(true);
++        binding.Candidate.GetProperty("committedRevision").GetString().ShouldBe(CandidateGateFixture.Merge);
++        binding.Decision.GetProperty("requestId").GetString().ShouldBe("github:Hexalith/Orders:101");
++        await fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken).ConfigureAwait(true);
++        fixture.CurrentAttempt = 2;
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(request, TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("latest-issued-attempt-required");
++    }
++
++    /// <summary>Coherent caller-workflow refs cannot bypass the explicit permitted PR or release ref guard.</summary>
++    /// <param name="release">Whether the request is a release dispatch.</param>
++    /// <param name="foreignRef">The coherent but forbidden ref.</param>
++    /// <returns>The consumer ref authentication refusal.</returns>
++    [Theory]
++    [InlineData(false, "refs/pull/7/head")]
++    [InlineData(false, "refs/pull/8/merge")]
++    [InlineData(true, "refs/heads/feature")]
++    [InlineData(true, "refs/tags/v1")]
++    public async Task ConsumerPermittedRefIsCheckedIndependentlyAsync(bool release, string foreignRef)
++    {
++        using CandidateGateFixture fixture = new();
++        if (release)
++        {
++            fixture.Payload["kind"] = "release";
++            _ = fixture.Payload.Remove("pr");
++        }
++
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        fixture.ConsumerClaims = claims =>
++        {
++            claims["ref"] = foreignRef;
++            claims["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@" + foreignRef;
++        };
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("consumer-authentication-required");
++    }
++
++    private static void MutateLifetime(JsonObject claims, string lifetime)
++    {
++        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
++        claims["iat"] = lifetime == "future" ? now + 120 : now - 20;
++        claims["exp"] = lifetime switch
++        {
++            "expired" => now - 1,
++            "reversed" => now - 21,
++            "empty" => now - 20,
++            _ => now + 300,
++        };
++    }
+ }
+\ No newline at end of file
+diff --git a/test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs b/test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs
+index f40704b..88f1d25 100644
+--- a/test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs
++++ b/test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs
+@@ -413,19 +413,29 @@ public sealed class CandidateRunnerTests
+         output.ToString().ShouldNotContain("/private/");
+     }
+ 
+-    /// <summary>Eligible authenticated candidates reach the actual Git source check and refuse wrong or dirty inputs.</summary>
++    /// <summary>Public candidate invocations preserve startup ownership and refuse stale, dirty or repeated inputs.</summary>
+     /// <param name="mutation">The checkout violation.</param>
+-    /// <returns>The named source refusal with zero service starts.</returns>
++    /// <returns>The issued startup bindings or named refusal with preserved prior owners.</returns>
+     [Theory]
+     [InlineData("head")]
+     [InlineData("tracked")]
+     [InlineData("untracked")]
+     [InlineData("replay")]
++    [InlineData("startup")]
++    [InlineData("session")]
++    [InlineData("prior-state")]
++    [InlineData("prior-diagnostics")]
+     public async Task PublicCandidateCommandRefusesReplayAndInvalidGitInputsAsync(string mutation)
+     {
+         using PlatformManifestTestWorkspace workspace = new();
++        using PlatformManifestTestWorkspace storage = new();
++        using System.Diagnostics.Process readyHost = new();
+         (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace, "package");
+         string manifest = workspace.Save();
++        bool acceptedStartup = mutation is "startup" or "session" or "prior-state" or "prior-diagnostics";
++
++        // Explicit offline release fixtures exercise real engine ownership without claiming live qualification.
++        CompositionDeclarationOptions? packageDeclarations = acceptedStartup ? DeclarationClosureTests.PackageOptions(workspace.Root) : null;
+         _ = await GitAsync(workspace.Root, "init", "--quiet").ConfigureAwait(true);
+         _ = await GitAsync(workspace.Root, "config", "user.name", "Fixture").ConfigureAwait(true);
+         _ = await GitAsync(workspace.Root, "config", "user.email", "fixture@example.invalid").ConfigureAwait(true);
+@@ -450,25 +460,75 @@ public sealed class CandidateRunnerTests
+         {
+             fixture.ConsumerProofMode = "issuance";
+         }
+-        else
++        else if (mutation is "tracked" or "untracked")
+         {
+             await File.WriteAllTextAsync(Path.Combine(workspace.Root, mutation == "tracked" ? "README.md" : "uncommitted.cs"), "uncommitted candidate input", TestContext.Current.CancellationToken).ConfigureAwait(true);
+         }
+ 
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(request, TestContext.Current.CancellationToken).ConfigureAwait(true);
+         int starts = 0;
++        Func<string, CancellationToken, Task<CompositionStartResult>>? startOverride = null;
++        if (!acceptedStartup)
++        {
++            startOverride = (_, _) =>
++            {
++                starts++;
++                throw new InvalidOperationException("An invalid checkout started services.");
++            };
++        }
++
++        Func<string, ModuleTestSelection, CancellationToken, Task<CompositionStartResult>>? selectedStartOverride = null;
++        if (mutation == "session")
++        {
++            selectedStartOverride = async (_, selection, token) =>
++            {
++                // A ready offline session exercises the command's issued-state handoff; its source
++                // observations still refuse package qualification before any native child can start.
++                CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(storage.Root) with { RunId = binding.RunId, AttemptId = binding.AttemptId, CandidatePolicy = binding, SelectedTest = selection, Workspace = Path.Combine(storage.Root, "runs", binding.RunId) }, manifest, storage.Root).ConfigureAwait(false);
++                CompositionReadiness readiness = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("source-owned", "process", "Healthy")]), selection.ModuleId);
++                token.ThrowIfCancellationRequested();
++                return new CompositionStartResult(new("ready", ToolOutcome.Passed(), []), plan.RunId, new(plan, readiness, "offline-session-key", readyHost));
++            };
++        }
++
+         CompositionEngineOptions options = new("unused-apphost", "unused-child")
+         {
+             CandidateGateClientOverride = fixture.Gate,
+             SourceMapping = new Hexalith.Builds.Tooling.Workspace.SourceMapping(Hexalith.Builds.Tooling.Workspace.WorkspaceMode.Package, workspace.Root, "sample", [new("sample", "source", workspace.Root)], true),
+             RootManifestCheckOverride = (_, _) => Task.FromResult(true),
+-            StateDirectory = Path.Combine(workspace.Root, "state"),
+-            WorkspaceRoot = Path.Combine(workspace.Root, "runs"),
+-            PlatformStartOverride = (_, _) =>
++            StateDirectory = Path.Combine(storage.Root, "state"),
++            WorkspaceRoot = Path.Combine(storage.Root, "runs"),
++            AspireCommand = Path.Combine(storage.Root, "missing-aspire"),
++            DockerCommand = CompositionTestFiles.CreateStubDocker(storage.Root),
++            RetainOnFailure = false,
++            PlatformStartOverride = startOverride,
++            SelectedPlatformStartOverride = selectedStartOverride,
++            DeclarationOptionsOverride = declarations => declarations with
+             {
+-                starts++;
+-                throw new InvalidOperationException("An invalid checkout started services.");
++                ReleaseCommits = packageDeclarations?.ReleaseCommits ?? declarations.ReleaseCommits,
++                ReleaseSnapshotHashes = packageDeclarations?.ReleaseSnapshotHashes ?? declarations.ReleaseSnapshotHashes,
+             },
+         };
++        CompositionRunStateStore store = new(options.StateDirectory);
++        string ownerWorkspace = Path.Combine(options.WorkspaceRoot, binding.RunId);
++        string priorDiagnostics = Path.Combine(options.StateDirectory, "diagnostics", binding.RunId);
++        byte[]? originalState = null;
++        if (mutation is "prior-state" or "prior-diagnostics")
++        {
++            _ = Directory.CreateDirectory(ownerWorkspace);
++            await File.WriteAllTextAsync(Path.Combine(ownerWorkspace, "peer.txt"), "owner survives", TestContext.Current.CancellationToken).ConfigureAwait(true);
++            if (mutation == "prior-state")
++            {
++                await store.WriteAsync(CompositionRunPlanFactory.CreateInitialState(binding.RunId, ownerWorkspace, selected.ManifestHash, DateTimeOffset.UtcNow), TestContext.Current.CancellationToken).ConfigureAwait(true);
++                originalState = await File.ReadAllBytesAsync(store.PathFor(binding.RunId), TestContext.Current.CancellationToken).ConfigureAwait(true);
++            }
++            else
++            {
++                _ = Directory.CreateDirectory(priorDiagnostics);
++                await File.WriteAllTextAsync(Path.Combine(priorDiagnostics, "first-result.txt"), "first result survives", TestContext.Current.CancellationToken).ConfigureAwait(true);
++            }
++        }
++
+         string[] variables = ["CI", "GITHUB_ACTIONS", "GITHUB_REPOSITORY", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_JOB", "RUNNER_OS", "RUNNER_ENVIRONMENT"];
+         string?[] previous = [.. variables.Select(Environment.GetEnvironmentVariable)];
+         string[] values = ["true", "true", "Hexalith/Orders", "101", "1", "integration", "Linux", "github-hosted"];
+@@ -482,12 +542,66 @@ public sealed class CandidateRunnerTests
+             StringWriter output = new();
+             await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
+             int exit = await ModuleCommandApplication.InvokeAsync(["test", "--manifest", manifest, "--profile", "verify", "--mode", "package", "--candidate-request", request, "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
+-            exit.ShouldBe((int)ToolExitCode.UsageOrManifest, output.ToString());
+-            output.ToString().ShouldContain("HXP301");
+-            output.ToString().ShouldContain(mutation == "replay" ? "issuer-authentication-required" : "clean-exact-candidate-checkout-required");
+             starts.ShouldBe(0);
+-            Directory.Exists(options.StateDirectory).ShouldBeFalse();
+-            Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
++            if (mutation is "startup" or "session")
++            {
++                exit.ShouldBe((int)(mutation == "startup" ? ToolExitCode.PrerequisiteUnavailable : ToolExitCode.ProductOrTest), output.ToString());
++                string path = Path.Combine(priorDiagnostics, "test-result.json");
++                TestEnvironmentContractReadResult observed = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
++                observed.IsValid.ShouldBeTrue(output.ToString());
++                JsonElement bindings = observed.Document!.Value.GetProperty("bindings");
++                bindings.GetProperty("run").GetProperty("runId").GetString().ShouldBe(binding.RunId);
++                bindings.GetProperty("run").GetProperty("attemptId").GetString().ShouldBe(binding.AttemptId);
++                foreach (string field in new[] { "candidate", "decision", "reuseLineage" })
++                {
++                    JsonElement expected = field switch { "candidate" => binding.Candidate, "decision" => binding.Decision, _ => binding.ReuseLineage };
++                    JsonNode.DeepEquals(JsonNode.Parse(bindings.GetProperty(field).GetRawText()), JsonNode.Parse(expected.GetRawText())).ShouldBeTrue();
++                }
++
++                observed.Document.Value.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("failed");
++                if (mutation == "session")
++                {
++                    output.ToString().ShouldContain("HXT009");
++                    return;
++                }
++
++                observed.Document.Value.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("startup-failure");
++
++                // Cleanup may delete active state; preserved diagnostics still make a second invocation a reuse.
++                _ = store.Delete(binding.RunId);
++                StringWriter repeated = new();
++                await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable repeatedLifetime = repeated.ConfigureAwait(true);
++                int retry = await ModuleCommandApplication.InvokeAsync(["test", "--manifest", manifest, "--profile", "verify", "--mode", "package", "--candidate-request", request, "--output", "json"], repeated, TextWriter.Null, TestContext.Current.CancellationToken, typeof(ModuleCommandApplication).Assembly.Location, options).ConfigureAwait(true);
++                retry.ShouldBe((int)ToolExitCode.UsageOrManifest, repeated.ToString());
++                repeated.ToString().ShouldContain("fresh-producing-run-required");
++                TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken).Document!.Value.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("startup-failure");
++            }
++            else
++            {
++                exit.ShouldBe((int)ToolExitCode.UsageOrManifest, output.ToString());
++                output.ToString().ShouldContain("HXP301");
++                string condition = mutation switch { "replay" => "issuer-authentication-required", "prior-state" or "prior-diagnostics" => "fresh-producing-run-required", _ => "clean-exact-candidate-checkout-required" };
++                output.ToString().ShouldContain(condition);
++                if (acceptedStartup)
++                {
++                    (await File.ReadAllTextAsync(Path.Combine(ownerWorkspace, "peer.txt"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("owner survives");
++                    if (originalState is not null)
++                    {
++                        (await File.ReadAllBytesAsync(store.PathFor(binding.RunId), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(originalState);
++                        Directory.Exists(priorDiagnostics).ShouldBeFalse();
++                    }
++                    else
++                    {
++                        (await File.ReadAllTextAsync(Path.Combine(priorDiagnostics, "first-result.txt"), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("first result survives");
++                        Directory.GetFileSystemEntries(priorDiagnostics).Length.ShouldBe(1);
++                    }
++                }
++                else
++                {
++                    Directory.Exists(options.StateDirectory).ShouldBeFalse();
++                    Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
++                }
++            }
+         }
+         finally
+         {
+@@ -537,6 +651,276 @@ public sealed class CandidateRunnerTests
+         _ = (await engine.StateStore.TryReadAsync(peer, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+     }
+ 
++    /// <summary>The public validator names exact-policy and no-reuse violations before schema refusals.</summary>
++    /// <param name="mutation">The raw policy violation.</param>
++    /// <param name="documentKind">The document carrying the violation.</param>
++    /// <returns>The stable HXP301 policy condition.</returns>
++    [Theory]
++    [InlineData("reuseAllowed", "result")]
++    [InlineData("sourceRunIds", "result")]
++    [InlineData("sourceDecisionIds", "descriptor")]
++    [InlineData("policyId", "result")]
++    [InlineData("policyId", "descriptor")]
++    public async Task PublicValidatorNamesRawPolicyViolationsAsync(string mutation, string documentKind)
++    {
++        using CandidateGateFixture fixture = new();
++        string request = fixture.Sign();
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(request, TestContext.Current.CancellationToken).ConfigureAwait(true);
++        (JsonObject descriptor, JsonObject result) = Evidence(binding, fixture.Context);
++        JsonObject target = documentKind == "result" ? result : descriptor;
++        if (mutation == "policyId")
++        {
++            target["policyId"] = "foreign-policy";
++        }
++        else
++        {
++            target["bindings"]!["reuseLineage"]![mutation] = mutation == "reuseAllowed" ? JsonValue.Create(true) : new JsonArray("unchanged-module-evidence");
++        }
++
++        using PlatformManifestTestWorkspace workspace = new();
++        string descriptorPath = Path.Combine(workspace.Root, "environment.json");
++        string resultPath = Path.Combine(workspace.Root, "result.json");
++        await File.WriteAllTextAsync(descriptorPath, descriptor.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        await File.WriteAllTextAsync(resultPath, result.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        StringWriter output = new();
++        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
++        int exit = await ModuleCommandApplication.InvokeAsync(["validate-result", "--candidate-request", request, "--environment", descriptorPath, "--result", resultPath, "--output", "json"], output, TextWriter.Null, TestContext.Current.CancellationToken, compositionOptions: new("unused", "unused") { CandidateGateClientOverride = fixture.Gate }).ConfigureAwait(true);
++        exit.ShouldBe((int)ToolExitCode.UsageOrManifest);
++        output.ToString().ShouldContain("HXP301");
++        output.ToString().ShouldContain(mutation == "policyId" ? "exact-policy-required" : "no-cross-decision-reuse");
++    }
++
++    /// <summary>A passing observation must measure every populated independent deadline.</summary>
++    /// <param name="deadline">The populated deadline lacking its measurement.</param>
++    /// <returns>The missing measurement refusal.</returns>
++    [Theory]
++    [InlineData("startup")]
++    [InlineData("execution")]
++    public async Task PassingPopulatedDeadlinesRequireActualDurationAsync(string deadline)
++    {
++        using CandidateGateFixture fixture = new();
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        (JsonObject descriptor, JsonObject result) = Evidence(binding, fixture.Context);
++        if (deadline == "execution")
++        {
++            JsonNode timing = JsonSerializer.SerializeToNode(new { state = "populated", origin = "test-execution-started", originAt = "2026-10-22T12:00:10Z", effectiveSeconds = 10, expiresAt = "2026-10-22T12:00:20Z", configurationContentIdentity = "sha256:" + new string('1', 64) })!;
++            descriptor["bindings"]!["deadlines"]![deadline] = timing.DeepClone();
++            result["bindings"]!["deadlines"]![deadline] = timing;
++        }
++
++        _ = result["bindings"]!["deadlines"]![deadline]!.AsObject().Remove("actualDurationSeconds");
++        Should.Throw<CandidatePolicyException>(() => CandidatePolicyValidator.ValidateEvidence(binding, JsonSerializer.SerializeToElement(descriptor), JsonSerializer.SerializeToElement(result))).Condition.ShouldBe("passing-duration-required");
++    }
++
++    /// <summary>Startup declarations cannot appear or disappear between descriptor and result.</summary>
++    /// <param name="missingSide">The snapshot lacking its startup declarations.</param>
++    /// <returns>The immutable declaration refusal.</returns>
++    [Theory]
++    [InlineData("descriptor")]
++    [InlineData("result")]
++    public async Task StartupDeclarationPopulationIsImmutableAsync(string missingSide)
++    {
++        using CandidateGateFixture fixture = new();
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        (JsonObject descriptor, JsonObject result) = Evidence(binding, fixture.Context);
++        (missingSide == "descriptor" ? descriptor : result)["bindings"]!["environment"]!["startupTasks"] = JsonSerializer.SerializeToNode(new { state = "not-yet-populated" });
++        Should.Throw<CandidatePolicyException>(() => CandidatePolicyValidator.ValidateEvidence(binding, JsonSerializer.SerializeToElement(descriptor), JsonSerializer.SerializeToElement(result))).Condition.ShouldBe("descriptor-result-disagreement");
++    }
++
++    /// <summary>Only canonical independently enrolled identities can ever match GitHub observations.</summary>
++    /// <param name="field">The noncanonical enrollment value.</param>
++    /// <returns>The enrollment refusal.</returns>
++    [Theory]
++    [InlineData("WorkflowSha")]
++    [InlineData("CallerContentIdentity")]
++    public async Task EnrollmentRejectsUnmatchableIdentityFormatsAsync(string field)
++    {
++        using CandidateGateFixture fixture = new();
++        JsonObject config = JsonSerializer.SerializeToNode(fixture.Configuration)!.AsObject();
++        config[field] = field == "WorkflowSha" ? new string('F', 40) : new string('a', 64);
++        CandidateGateClient gate = new(fixture.Client, JsonSerializer.Deserialize<CandidateGateConfiguration>(config.ToJsonString())!, "fixture-read-token");
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("issuer-not-enrolled");
++    }
++
++    /// <summary>A descriptor with no candidate issuance remains an explicit baseline diagnostic.</summary>
++    /// <returns>The writer's baseline-only classification.</returns>
++    [Fact]
++    public async Task DescriptorWithoutCandidateRequestIsBaselineOnlyAsync()
++    {
++        using PlatformManifestTestWorkspace workspace = new();
++        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
++        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selected }, workspace.Save(), workspace.Root).ConfigureAwait(true);
++        plan = plan with { ExecutionTiming = ModuleTestExecutionTiming.Start(selected, DateTimeOffset.UtcNow) };
++        CompositionReadiness ready = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("eventstore", "project", "Healthy")]), selected.ModuleId);
++        using System.Diagnostics.Process host = new();
++        string path = await TestEnvironmentDescriptorWriter.WriteAsync(new(plan, ready, "fixture-key", host), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        TestEnvironmentContractReader.ReadDescriptor(path, TestContext.Current.CancellationToken).Document!.Value.GetProperty("bindings").GetProperty("candidate").GetProperty("classification").GetString().ShouldBe("baseline-only");
++    }
++
++    /// <summary>Pre-issuance cancellation cannot invent a producing run or attach candidate bindings to a random identity.</summary>
++    /// <param name="startupTimeout">Whether cancellation belongs to the startup clock rather than the owner.</param>
++    /// <returns>The unowned timeout or cancellation and untouched producing identity.</returns>
++    [Theory]
++    [InlineData(false)]
++    [InlineData(true)]
++    public async Task CancellationWhileCandidateInitializationWaitsRemainsUnownedAsync(bool startupTimeout)
++    {
++        using PlatformManifestTestWorkspace workspace = new();
++        using CandidateGateFixture fixture = new();
++        (string manifest, CandidatePolicyBinding binding, CompositionEngineOptions options) = await PrepareCandidateEngineAsync(workspace, fixture).ConfigureAwait(true);
++        options = options with { SelectedExecutionOwnerToken = startupTimeout ? CancellationToken.None : null };
++        CompositionEngine engine = new(options);
++        _ = Directory.CreateDirectory(options.StateDirectory);
++        FileStream held = new(CandidateIssuanceLock(options, binding), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
++        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable heldLifetime = held.ConfigureAwait(true);
++        using CancellationTokenSource invocation = new();
++        Task<CompositionStartResult> pending = engine.StartAsync(manifest, invocation.Token);
++        pending.IsCompleted.ShouldBeFalse();
++        await invocation.CancelAsync().ConfigureAwait(true);
++        CompositionStartResult result = await pending.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        result.RunId.ShouldBeNull();
++        result.Result.Outcome.ExitCode.ShouldBe(startupTimeout ? ToolExitCode.TopologyOrLifecycle : ToolExitCode.Cancelled);
++        engine.CandidateStateIssued.ShouldBeFalse();
++        Path.Exists(engine.StateStore.PathFor(binding.RunId)).ShouldBeFalse();
++        Directory.Exists(Path.Combine(options.StateDirectory, "diagnostics", binding.RunId)).ShouldBeFalse();
++        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
++        Directory.GetFiles(options.StateDirectory, "test-result.json", SearchOption.AllDirectories).ShouldBeEmpty();
++        if (startupTimeout)
++        {
++            string report = Directory.GetFiles(Path.Combine(options.StateDirectory, "diagnostics", "before-run"), "summary.json", SearchOption.AllDirectories).ShouldHaveSingleItem();
++            using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(report, TestContext.Current.CancellationToken).ConfigureAwait(true));
++            summary.RootElement.GetProperty("runId").ValueKind.ShouldBe(JsonValueKind.Null);
++        }
++    }
++
++    /// <summary>A malformed existing state entry is reserved and remains byte-for-byte intact without diagnostic mutation.</summary>
++    /// <returns>The fresh-run refusal and preserved malformed owner bytes.</returns>
++    [Fact]
++    public async Task MalformedExistingCandidateStateRefusesBeforeTouchingDiagnosticsAsync()
++    {
++        using PlatformManifestTestWorkspace workspace = new();
++        using CandidateGateFixture fixture = new();
++        (string manifest, CandidatePolicyBinding binding, CompositionEngineOptions options) = await PrepareCandidateEngineAsync(workspace, fixture).ConfigureAwait(true);
++        CompositionEngine engine = new(options);
++        _ = Directory.CreateDirectory(options.StateDirectory);
++        string statePath = engine.StateStore.PathFor(binding.RunId);
++        byte[] malformed = "{malformed owner bytes"u8.ToArray();
++        await File.WriteAllBytesAsync(statePath, malformed, TestContext.Current.CancellationToken).ConfigureAwait(true);
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => engine.StartAsync(manifest, TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("fresh-producing-run-required");
++        (await File.ReadAllBytesAsync(statePath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(malformed);
++        Directory.Exists(Path.Combine(options.StateDirectory, "diagnostics")).ShouldBeFalse();
++        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
++        engine.CandidateStateIssued.ShouldBeFalse();
++    }
++
++    /// <summary>Two simultaneous candidate invocations cannot both issue the same producing identity.</summary>
++    /// <returns>Exactly one issued owner, one stable refusal, and an unchanged durable producer binding.</returns>
++    [Fact]
++    public async Task ConcurrentCandidateStartsIssueExactlyOneOwnerAsync()
++    {
++        using PlatformManifestTestWorkspace workspace = new();
++        using CandidateGateFixture fixture = new();
++        (string manifest, CandidatePolicyBinding binding, CompositionEngineOptions options) = await PrepareCandidateEngineAsync(workspace, fixture).ConfigureAwait(true);
++        CompositionEngine first = new(options);
++        CompositionEngine second = new(options);
++        _ = Directory.CreateDirectory(options.StateDirectory);
++        FileStream held = new(CandidateIssuanceLock(options, binding), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
++        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable heldLifetime = held.ConfigureAwait(true);
++        Task<CandidatePolicyException?> AttemptAsync(CompositionEngine engine) => ObserveCandidateStartAsync(engine, manifest);
++        Task<CandidatePolicyException?> one = AttemptAsync(first);
++        Task<CandidatePolicyException?> two = AttemptAsync(second);
++        one.IsCompleted.ShouldBeFalse();
++        two.IsCompleted.ShouldBeFalse();
++        await held.DisposeAsync().ConfigureAwait(true);
++        CandidatePolicyException?[] results = await Task.WhenAll(one, two).WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        results.Count(result => result is null).ShouldBe(1);
++        results.OfType<CandidatePolicyException>().ShouldHaveSingleItem().Condition.ShouldBe("fresh-producing-run-required");
++        new[] { first, second }.Count(engine => engine.CandidateStateIssued).ShouldBe(1);
++        JsonElement result = TestEnvironmentContractReader.ReadResult(Path.Combine(options.StateDirectory, "diagnostics", binding.RunId, "test-result.json"), TestContext.Current.CancellationToken).Document!.Value;
++        result.GetProperty("bindings").GetProperty("run").GetProperty("runId").GetString().ShouldBe(binding.RunId);
++        result.GetProperty("bindings").GetProperty("decision").GetProperty("producingAttemptId").GetString().ShouldBe(binding.AttemptId);
++    }
++
++    /// <summary>A waiting duplicate cannot reclaim a durable owner after active state cleanup.</summary>
++    /// <returns>The refusal with unchanged archived owner, result and workspace bytes.</returns>
++    [Fact]
++    public async Task WaitingDuplicatePreservesOwnerWhenActiveStateIsRemovedAsync()
++    {
++        using PlatformManifestTestWorkspace workspace = new();
++        using CandidateGateFixture fixture = new();
++        (string manifest, CandidatePolicyBinding binding, CompositionEngineOptions options) = await PrepareCandidateEngineAsync(workspace, fixture).ConfigureAwait(true);
++        CompositionEngine owner = new(options);
++        _ = await owner.StartAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true);
++        string directory = Path.Combine(options.StateDirectory, "diagnostics", binding.RunId);
++        string archivePath = Path.Combine(directory, "owner.json");
++        string resultPath = Path.Combine(directory, "test-result.json");
++        byte[] archived = await File.ReadAllBytesAsync(archivePath, TestContext.Current.CancellationToken).ConfigureAwait(true);
++        byte[] terminal = await File.ReadAllBytesAsync(resultPath, TestContext.Current.CancellationToken).ConfigureAwait(true);
++        string ownedWorkspace = Path.Combine(options.WorkspaceRoot, binding.RunId);
++        _ = Directory.CreateDirectory(ownedWorkspace);
++        string sentinel = Path.Combine(ownedWorkspace, "owner.txt");
++        await File.WriteAllTextAsync(sentinel, "owner survives", TestContext.Current.CancellationToken).ConfigureAwait(true);
++        FileStream held = new(CandidateIssuanceLock(options, binding), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
++        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable heldLifetime = held.ConfigureAwait(true);
++        CompositionEngine duplicate = new(options);
++        Task<CompositionStartResult> pending = duplicate.StartAsync(manifest, TestContext.Current.CancellationToken);
++        pending.IsCompleted.ShouldBeFalse();
++        owner.StateStore.Delete(binding.RunId).ShouldBeTrue();
++        await held.DisposeAsync().ConfigureAwait(true);
++        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => pending.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        refusal.Condition.ShouldBe("fresh-producing-run-required");
++        duplicate.CandidateStateIssued.ShouldBeFalse();
++        (await File.ReadAllBytesAsync(archivePath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(archived);
++        (await File.ReadAllBytesAsync(resultPath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(terminal);
++        (await File.ReadAllTextAsync(sentinel, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("owner survives");
++    }
++
++    /// <summary>Matching unavailable startup timing cannot qualify a passed result.</summary>
++    /// <returns>The missing timing refusal while complete fixtures still require independent qualification.</returns>
++    [Fact]
++    public async Task PassingResultRefusesMatchingUnavailableStartupTimingAsync()
++    {
++        using CandidateGateFixture fixture = new();
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        (JsonObject descriptor, JsonObject result) = Evidence(binding, fixture.Context);
++        descriptor["bindings"]!["deadlines"]!["startup"] = JsonSerializer.SerializeToNode(new { state = "not-yet-populated" });
++        result["bindings"]!["deadlines"]!["startup"] = descriptor["bindings"]!["deadlines"]!["startup"]!.DeepClone();
++        Should.Throw<CandidatePolicyException>(() => CandidatePolicyValidator.ValidateEvidence(binding, JsonSerializer.SerializeToElement(descriptor), JsonSerializer.SerializeToElement(result))).Condition.ShouldBe("passing-duration-required");
++    }
++
++    private static string CandidateIssuanceLock(CompositionEngineOptions options, CandidatePolicyBinding binding) => Path.Combine(options.StateDirectory, "candidate-issuance-" + binding.RunId + ".lock");
++
++    private static async Task<CandidatePolicyException?> ObserveCandidateStartAsync(CompositionEngine engine, string manifest)
++    {
++        try
++        {
++            _ = await engine.StartAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(false);
++            return null;
++        }
++        catch (CandidatePolicyException refusal)
++        {
++            return refusal;
++        }
++    }
++
++    private static async Task<(string Manifest, CandidatePolicyBinding Binding, CompositionEngineOptions Options)> PrepareCandidateEngineAsync(PlatformManifestTestWorkspace workspace, CandidateGateFixture fixture)
++    {
++        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
++        string manifest = workspace.Save();
++        fixture.Payload["moduleId"] = selected.ModuleId;
++        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(false);
++        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selected }, manifest, workspace.Root).ConfigureAwait(false);
++        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
++        {
++            CandidatePolicy = binding,
++            SourceMapping = plan.SourceMapping,
++            AspireCommand = Path.Combine(workspace.Root, "missing-aspire"),
++        };
++        return (manifest, binding, options);
++    }
++
+     private static async Task<CompositionProcessResult> GitAsync(string root, params string[] arguments)
+     {
+         CompositionProcessResult result = await Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceGitFixture.RunGitAsync(root, arguments).ConfigureAwait(true);
+diff --git a/test/Hexalith.Builds.Module.Tests/DeclarationClosureTests.cs b/test/Hexalith.Builds.Module.Tests/DeclarationClosureTests.cs
+index 93b21b0..7f711dd 100644
+--- a/test/Hexalith.Builds.Module.Tests/DeclarationClosureTests.cs
++++ b/test/Hexalith.Builds.Module.Tests/DeclarationClosureTests.cs
+@@ -159,7 +159,10 @@ public sealed class DeclarationClosureTests
+         }
+     }
+ 
+-    private static CompositionDeclarationOptions PackageOptions(string root)
++    /// <summary>Creates explicit offline package snapshots with fixture-only release authorities.</summary>
++    /// <param name="root">The isolated repository root.</param>
++    /// <returns>The fixture declaration authorities.</returns>
++    internal static CompositionDeclarationOptions PackageOptions(string root)
+     {
+         SourceMapping source = CompositionTestFiles.CreatePlatformMapping(root);
+         string directory = Path.Combine(root, "src", "Hexalith.Platform.Composition", "Declarations");
+diff --git a/test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs b/test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs
+index 439bf1d..ea57640 100644
+--- a/test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs
++++ b/test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs
+@@ -56,6 +56,23 @@ public sealed class TestResultWriterTests
+         passed.FailureRetained.ShouldBeFalse();
+     }
+ 
++    /// <summary>A non-string recorded execution kind is not local and fails only with the writer's documented contract refusal.</summary>
++    /// <returns>The structured refusal and unpublished result assertions.</returns>
++    [Fact]
++    public async Task NonStringExecutionKindRefusesWithoutEscapingAsync()
++    {
++        using PlatformManifestTestWorkspace workspace = new();
++        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
++        state = state with { ExecutionContext = JsonSerializer.SerializeToElement(new { kind = 1 }) };
++        string directory = Path.Combine(workspace.Root, "state", "diagnostics", state.RunId);
++        DateTimeOffset accepted = DateTimeOffset.UtcNow;
++        CompositionAttachment failed = new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), 60, accepted, 60, accepted.AddSeconds(60)) { Outcome = "failed", EndReason = "terminal-outcome", EndedAtUtc = accepted.AddSeconds(1) };
++        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, _ => (0, new[] { failed }), TestContext.Current.CancellationToken).ConfigureAwait(true);
++        ModuleTestRunRecord passed = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), accepted, "retained", new CompositionRunResources([], []) { WorkspaceIds = ["workspace:" + state.RunId] });
++        _ = await Should.ThrowAsync<InvalidDataException>(() => TestResultWriter.WriteAsync(directory, state, passed, TestContext.Current.CancellationToken)).ConfigureAwait(true);
++        File.Exists(Path.Combine(directory, "test-result.json")).ShouldBeFalse();
++    }
++
+     /// <summary>Malformed deadlines refuse durably without escaping JSON exceptions or replacing a prior result.</summary>
+     /// <param name="field">The deadline object or population field to corrupt.</param>
+     /// <param name="replacement">The replacement JSON, or null to omit the field.</param>
+@@ -133,6 +150,7 @@ public sealed class TestResultWriterTests
+         JsonElement document = result.Document!.Value;
+         document.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe(outcome);
+         document.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe(cause);
++        document.GetProperty("bindings").GetProperty("candidate").GetProperty("classification").GetString().ShouldBe("baseline-only");
+         document.GetProperty("bindings").GetProperty("environment").GetProperty("resources").GetProperty("state").GetString().ShouldBe("not-yet-populated");
+         document.GetProperty("bindings").GetProperty("environment").GetProperty("catalog").GetProperty("state").GetString().ShouldBe("not-yet-populated");
+         document.GetProperty("bindings").GetProperty("deadlines").GetProperty("execution").GetProperty("state").GetString().ShouldBe("not-yet-populated");
+diff --git a/docs/contracts/test-environment-v1.md b/docs/contracts/test-environment-v1.md
+index 5ac38f8c..8412ce3f 100644
+--- a/docs/contracts/test-environment-v1.md
++++ b/docs/contracts/test-environment-v1.md
+@@ -384,11 +384,14 @@ GitHub gate issuance for a declared package-mode suite. The independently enroll
+ Builds reusable `candidate-policy.yml` workflow selects the committed PR merge
+ result for the exact repository/module/PR/head/base and current open/reopen/retarget
+ epoch, or the exact committed revision independently selected by a release workflow
+-dispatch. Host-owned workflow coordinates, protected-environment approval settings,
++dispatch on `refs/heads/main`. Other release-dispatch refs are refused. Host-owned workflow coordinates, protected-environment approval settings,
+ GitHub OIDC signatures and fresh authenticated GitHub API observations establish
+ its authority. Saved request or observation JSON is insufficient. Unavailable
+ approval, authentication, immutable source, request state or committed merge-parent
+ proof refuses before service startup. Candidate checkouts must be clean and exact.
++Each job attempt permits one candidate invocation; the producing identity stays
++reserved by its diagnostics after active state cleanup. A repeated invocation
++refuses without changing the original owner, workspace or result.
+ No live issuer enrollment or release-publication authority is supplied here.
+ 
+ The executing consumer also obtains a fresh nonce-bound OIDC proof from the

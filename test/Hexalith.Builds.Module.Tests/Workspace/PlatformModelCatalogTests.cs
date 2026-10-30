@@ -5,6 +5,8 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests.Workspace;
 
+using System.Runtime.Loader;
+
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.Workspace;
 
@@ -77,6 +79,7 @@ public sealed class PlatformModelCatalogTests
         _ = Directory.CreateDirectory(packageDirectory);
         string packageProject = Path.Combine(packageDirectory, "Package.csproj");
         await File.WriteAllTextAsync(packageProject, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>Local.CatalogProbe</PackageId><Version>1.0.0</Version></PropertyGroup></Project>", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(packageDirectory, "RuntimeValue.cs"), "public static class OfflineCatalogRuntime { public static string Value => \"catalog-runtime\"; }", TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionProcessResult pack = await CompositionProcess.RunAsync(
             CompositionProcess.CreateStartInfo("dotnet", ["pack", packageProject, "-c", "Debug", "-o", feed, "-v:q", "-p:NuGetAudit=false", "-p:RestoreSources=" + feed], packageDirectory, null),
             TimeSpan.FromMinutes(1),
@@ -104,6 +107,7 @@ public sealed class PlatformModelCatalogTests
         const string model = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup>"
             + "<ItemGroup><ProjectReference Include=\"../../early/Hexalith.Folders.Aspire.csproj\" /><PackageReference Include=\"Local.CatalogProbe\" /></ItemGroup></Project>";
         await File.WriteAllTextAsync(Path.Combine(modelDirectory, "Hexalith.Platform.Composition.csproj"), model, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(modelDirectory, "RuntimeProbe.cs"), "public static class PinnedRuntimeProbe { public static string Read() => OfflineCatalogRuntime.Value; }", TestContext.Current.CancellationToken).ConfigureAwait(true);
         const string dependency = "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally></PropertyGroup><ItemGroup><PackageReference Include=\"Local.CatalogProbe\" /></ItemGroup></Project>";
         await File.WriteAllTextAsync(Path.Combine(dependencyDirectory, "Hexalith.Folders.Aspire.csproj"), dependency, TestContext.Current.CancellationToken).ConfigureAwait(true);
 
@@ -123,6 +127,8 @@ public sealed class PlatformModelCatalogTests
             assets.RootElement.GetProperty("project").GetProperty("frameworks").GetProperty("net10.0").GetProperty("dependencies").GetProperty("Local.CatalogProbe").GetProperty("versionCentrallyManaged").GetBoolean().ShouldBeTrue();
             assets.RootElement.GetProperty("project").GetProperty("restore").GetProperty("packagesPath").GetString()!.TrimEnd(Path.DirectorySeparatorChar).ShouldBe(packageCache);
         }
+
+        ReadRuntimeProbe(assembly).ShouldBe("catalog-runtime");
     }
 
     /// <summary>Refuses unavailable or changed pinned authority before a model process can build.</summary>
@@ -223,5 +229,24 @@ public sealed class PlatformModelCatalogTests
 
         refusal.Message.ShouldContain("cannot use its pinned catalog");
         Directory.Exists(Path.Combine(workspace, "hosts")).ShouldBeFalse();
+    }
+
+    private static object? ReadRuntimeProbe(string assembly)
+    {
+        AssemblyLoadContext context = new("model-runtime-" + Guid.NewGuid().ToString("N"), isCollectible: true);
+        context.Resolving += (loader, name) =>
+        {
+            string dependency = Path.Combine(Path.GetDirectoryName(assembly)!, name.Name + ".dll");
+            return File.Exists(dependency) ? loader.LoadFromAssemblyPath(dependency) : null;
+        };
+        try
+        {
+            return context.LoadFromAssemblyPath(assembly).GetType("PinnedRuntimeProbe", throwOnError: true)!
+                .GetMethod("Read")!.Invoke(null, null);
+        }
+        finally
+        {
+            context.Unload();
+        }
     }
 }

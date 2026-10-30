@@ -758,6 +758,169 @@ public sealed class CandidateRunnerTests
         TestEnvironmentContractReader.ReadDescriptor(path, TestContext.Current.CancellationToken).Document!.Value.GetProperty("bindings").GetProperty("candidate").GetProperty("classification").GetString().ShouldBe("baseline-only");
     }
 
+    /// <summary>Pre-issuance cancellation cannot invent a producing run or attach candidate bindings to a random identity.</summary>
+    /// <param name="startupTimeout">Whether cancellation belongs to the startup clock rather than the owner.</param>
+    /// <returns>The unowned timeout or cancellation and untouched producing identity.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CancellationWhileCandidateInitializationWaitsRemainsUnownedAsync(bool startupTimeout)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        using CandidateGateFixture fixture = new();
+        (string manifest, CandidatePolicyBinding binding, CompositionEngineOptions options) = await PrepareCandidateEngineAsync(workspace, fixture).ConfigureAwait(true);
+        options = options with { SelectedExecutionOwnerToken = startupTimeout ? CancellationToken.None : null };
+        CompositionEngine engine = new(options);
+        _ = Directory.CreateDirectory(options.StateDirectory);
+        FileStream held = new(CandidateIssuanceLock(options, binding), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable heldLifetime = held.ConfigureAwait(true);
+        using CancellationTokenSource invocation = new();
+        Task<CompositionStartResult> pending = engine.StartAsync(manifest, invocation.Token);
+        pending.IsCompleted.ShouldBeFalse();
+        await invocation.CancelAsync().ConfigureAwait(true);
+        CompositionStartResult result = await pending.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        result.RunId.ShouldBeNull();
+        result.Result.Outcome.ExitCode.ShouldBe(startupTimeout ? ToolExitCode.TopologyOrLifecycle : ToolExitCode.Cancelled);
+        engine.CandidateStateIssued.ShouldBeFalse();
+        Path.Exists(engine.StateStore.PathFor(binding.RunId)).ShouldBeFalse();
+        Directory.Exists(Path.Combine(options.StateDirectory, "diagnostics", binding.RunId)).ShouldBeFalse();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+        Directory.GetFiles(options.StateDirectory, "test-result.json", SearchOption.AllDirectories).ShouldBeEmpty();
+        if (startupTimeout)
+        {
+            string report = Directory.GetFiles(Path.Combine(options.StateDirectory, "diagnostics", "before-run"), "summary.json", SearchOption.AllDirectories).ShouldHaveSingleItem();
+            using JsonDocument summary = JsonDocument.Parse(await File.ReadAllTextAsync(report, TestContext.Current.CancellationToken).ConfigureAwait(true));
+            summary.RootElement.GetProperty("runId").ValueKind.ShouldBe(JsonValueKind.Null);
+        }
+    }
+
+    /// <summary>A malformed existing state entry is reserved and remains byte-for-byte intact without diagnostic mutation.</summary>
+    /// <returns>The fresh-run refusal and preserved malformed owner bytes.</returns>
+    [Fact]
+    public async Task MalformedExistingCandidateStateRefusesBeforeTouchingDiagnosticsAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        using CandidateGateFixture fixture = new();
+        (string manifest, CandidatePolicyBinding binding, CompositionEngineOptions options) = await PrepareCandidateEngineAsync(workspace, fixture).ConfigureAwait(true);
+        CompositionEngine engine = new(options);
+        _ = Directory.CreateDirectory(options.StateDirectory);
+        string statePath = engine.StateStore.PathFor(binding.RunId);
+        byte[] malformed = "{malformed owner bytes"u8.ToArray();
+        await File.WriteAllBytesAsync(statePath, malformed, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => engine.StartAsync(manifest, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("fresh-producing-run-required");
+        (await File.ReadAllBytesAsync(statePath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(malformed);
+        Directory.Exists(Path.Combine(options.StateDirectory, "diagnostics")).ShouldBeFalse();
+        Directory.Exists(options.WorkspaceRoot).ShouldBeFalse();
+        engine.CandidateStateIssued.ShouldBeFalse();
+    }
+
+    /// <summary>Two simultaneous candidate invocations cannot both issue the same producing identity.</summary>
+    /// <returns>Exactly one issued owner, one stable refusal, and an unchanged durable producer binding.</returns>
+    [Fact]
+    public async Task ConcurrentCandidateStartsIssueExactlyOneOwnerAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        using CandidateGateFixture fixture = new();
+        (string manifest, CandidatePolicyBinding binding, CompositionEngineOptions options) = await PrepareCandidateEngineAsync(workspace, fixture).ConfigureAwait(true);
+        CompositionEngine first = new(options);
+        CompositionEngine second = new(options);
+        _ = Directory.CreateDirectory(options.StateDirectory);
+        FileStream held = new(CandidateIssuanceLock(options, binding), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable heldLifetime = held.ConfigureAwait(true);
+        Task<CandidatePolicyException?> AttemptAsync(CompositionEngine engine) => ObserveCandidateStartAsync(engine, manifest);
+        Task<CandidatePolicyException?> one = AttemptAsync(first);
+        Task<CandidatePolicyException?> two = AttemptAsync(second);
+        one.IsCompleted.ShouldBeFalse();
+        two.IsCompleted.ShouldBeFalse();
+        await held.DisposeAsync().ConfigureAwait(true);
+        CandidatePolicyException?[] results = await Task.WhenAll(one, two).WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        results.Count(result => result is null).ShouldBe(1);
+        results.OfType<CandidatePolicyException>().ShouldHaveSingleItem().Condition.ShouldBe("fresh-producing-run-required");
+        new[] { first, second }.Count(engine => engine.CandidateStateIssued).ShouldBe(1);
+        JsonElement result = TestEnvironmentContractReader.ReadResult(Path.Combine(options.StateDirectory, "diagnostics", binding.RunId, "test-result.json"), TestContext.Current.CancellationToken).Document!.Value;
+        result.GetProperty("bindings").GetProperty("run").GetProperty("runId").GetString().ShouldBe(binding.RunId);
+        result.GetProperty("bindings").GetProperty("decision").GetProperty("producingAttemptId").GetString().ShouldBe(binding.AttemptId);
+    }
+
+    /// <summary>A waiting duplicate cannot reclaim a durable owner after active state cleanup.</summary>
+    /// <returns>The refusal with unchanged archived owner, result and workspace bytes.</returns>
+    [Fact]
+    public async Task WaitingDuplicatePreservesOwnerWhenActiveStateIsRemovedAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        using CandidateGateFixture fixture = new();
+        (string manifest, CandidatePolicyBinding binding, CompositionEngineOptions options) = await PrepareCandidateEngineAsync(workspace, fixture).ConfigureAwait(true);
+        CompositionEngine owner = new(options);
+        _ = await owner.StartAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string directory = Path.Combine(options.StateDirectory, "diagnostics", binding.RunId);
+        string archivePath = Path.Combine(directory, "owner.json");
+        string resultPath = Path.Combine(directory, "test-result.json");
+        byte[] archived = await File.ReadAllBytesAsync(archivePath, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        byte[] terminal = await File.ReadAllBytesAsync(resultPath, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string ownedWorkspace = Path.Combine(options.WorkspaceRoot, binding.RunId);
+        _ = Directory.CreateDirectory(ownedWorkspace);
+        string sentinel = Path.Combine(ownedWorkspace, "owner.txt");
+        await File.WriteAllTextAsync(sentinel, "owner survives", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        FileStream held = new(CandidateIssuanceLock(options, binding), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable heldLifetime = held.ConfigureAwait(true);
+        CompositionEngine duplicate = new(options);
+        Task<CompositionStartResult> pending = duplicate.StartAsync(manifest, TestContext.Current.CancellationToken);
+        pending.IsCompleted.ShouldBeFalse();
+        owner.StateStore.Delete(binding.RunId).ShouldBeTrue();
+        await held.DisposeAsync().ConfigureAwait(true);
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => pending.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("fresh-producing-run-required");
+        duplicate.CandidateStateIssued.ShouldBeFalse();
+        (await File.ReadAllBytesAsync(archivePath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(archived);
+        (await File.ReadAllBytesAsync(resultPath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(terminal);
+        (await File.ReadAllTextAsync(sentinel, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("owner survives");
+    }
+
+    /// <summary>Matching unavailable startup timing cannot qualify a passed result.</summary>
+    /// <returns>The missing timing refusal while complete fixtures still require independent qualification.</returns>
+    [Fact]
+    public async Task PassingResultRefusesMatchingUnavailableStartupTimingAsync()
+    {
+        using CandidateGateFixture fixture = new();
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        (JsonObject descriptor, JsonObject result) = Evidence(binding, fixture.Context);
+        descriptor["bindings"]!["deadlines"]!["startup"] = JsonSerializer.SerializeToNode(new { state = "not-yet-populated" });
+        result["bindings"]!["deadlines"]!["startup"] = descriptor["bindings"]!["deadlines"]!["startup"]!.DeepClone();
+        Should.Throw<CandidatePolicyException>(() => CandidatePolicyValidator.ValidateEvidence(binding, JsonSerializer.SerializeToElement(descriptor), JsonSerializer.SerializeToElement(result))).Condition.ShouldBe("passing-duration-required");
+    }
+
+    private static string CandidateIssuanceLock(CompositionEngineOptions options, CandidatePolicyBinding binding) => Path.Combine(options.StateDirectory, "candidate-issuance-" + binding.RunId + ".lock");
+
+    private static async Task<CandidatePolicyException?> ObserveCandidateStartAsync(CompositionEngine engine, string manifest)
+    {
+        try
+        {
+            _ = await engine.StartAsync(manifest, TestContext.Current.CancellationToken).ConfigureAwait(false);
+            return null;
+        }
+        catch (CandidatePolicyException refusal)
+        {
+            return refusal;
+        }
+    }
+
+    private static async Task<(string Manifest, CandidatePolicyBinding Binding, CompositionEngineOptions Options)> PrepareCandidateEngineAsync(PlatformManifestTestWorkspace workspace, CandidateGateFixture fixture)
+    {
+        (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
+        string manifest = workspace.Save();
+        fixture.Payload["moduleId"] = selected.ModuleId;
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(false);
+        CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selected }, manifest, workspace.Root).ConfigureAwait(false);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            CandidatePolicy = binding,
+            SourceMapping = plan.SourceMapping,
+            AspireCommand = Path.Combine(workspace.Root, "missing-aspire"),
+        };
+        return (manifest, binding, options);
+    }
+
     private static async Task<CompositionProcessResult> GitAsync(string root, params string[] arguments)
     {
         CompositionProcessResult result = await Hexalith.Builds.ModuleTool.Tests.Workspace.WorkspaceGitFixture.RunGitAsync(root, arguments).ConfigureAwait(true);

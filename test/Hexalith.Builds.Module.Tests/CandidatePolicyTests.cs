@@ -17,6 +17,9 @@ using Xunit;
 /// <summary>Exercises authenticated issuance, current-state changes, retries and policy refusals.</summary>
 public sealed class CandidatePolicyTests
 {
+    private static readonly int[] _twoPages = [1, 2];
+    private static readonly int[] _twoPageRechecks = [1, 2, 1, 2];
+
     /// <summary>Both kinds bind their own committed revision and original gate request.</summary>
     /// <param name="release">Whether this is a distinct release dispatch.</param>
     /// <returns>The exact selected bindings.</returns>
@@ -368,6 +371,10 @@ public sealed class CandidatePolicyTests
             else
             {
                 claims[claim] = "foreign-value";
+                if (claim == "ref")
+                {
+                    claims["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@foreign-value";
+                }
             }
         };
         CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken)).ConfigureAwait(true);
@@ -454,5 +461,133 @@ public sealed class CandidatePolicyTests
         _ = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
         Uri.UnescapeDataString(fixture.SuccessorQuery!).ShouldContain("created=>=2026-10-10T00:00:00Z");
         fixture.SuccessorQuery!.ShouldContain("per_page=30");
+    }
+
+    /// <summary>Full successor pages are traversed before selecting or rejecting the exact issued identity.</summary>
+    /// <param name="successor">Whether page two contains a superseding request.</param>
+    /// <returns>The exact candidate identity or successor refusal after both pages were observed.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SuccessorHistoryTraversesFullPageAndTerminalPageAsync(bool successor)
+    {
+        using CandidateGateFixture fixture = new() { WorkflowPaginationMode = successor ? "paged-successor" : "paged" };
+        string request = fixture.Sign();
+        if (successor)
+        {
+            CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(request, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+            refusal.Condition.ShouldBe("latest-issued-attempt-required");
+            fixture.WorkflowPaginationMode = "paged";
+        }
+
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(request, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        binding.RunId.ShouldBe(fixture.Payload["runId"]!.GetValue<string>());
+        binding.AttemptId.ShouldBe(fixture.Payload["attemptId"]!.GetValue<string>());
+        binding.Candidate.GetProperty("committedRevision").GetString().ShouldBe(CandidateGateFixture.Merge);
+        binding.Decision.GetProperty("requestId").GetString().ShouldBe("github:Hexalith/Orders:101");
+        fixture.WorkflowPages.ShouldBe(successor ? _twoPageRechecks : _twoPages);
+    }
+
+    /// <summary>Ambiguous signing keys and malformed RSA parameters are authentication refusals.</summary>
+    /// <param name="keyMode">The isolated signing-key violation.</param>
+    /// <returns>The stable signing-key authentication refusal.</returns>
+    [Theory]
+    [InlineData("duplicate")]
+    [InlineData("missing-modulus")]
+    [InlineData("malformed-modulus")]
+    [InlineData("malformed-exponent")]
+    [InlineData("invalid-rsa")]
+    public async Task SigningKeyRejectionRemainsAuthenticationFailureAsync(string keyMode)
+    {
+        using CandidateGateFixture fixture = new() { KeyMode = keyMode };
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("issuer-authentication-required");
+    }
+
+    /// <summary>Consumer proofs must have a current, ordered lifetime with no future issuance.</summary>
+    /// <param name="lifetime">The isolated temporal violation.</param>
+    /// <returns>The consumer proof authentication refusal.</returns>
+    [Theory]
+    [InlineData("expired")]
+    [InlineData("future")]
+    [InlineData("reversed")]
+    [InlineData("empty")]
+    public async Task ConsumerTemporalClaimsRefuseAsync(string lifetime)
+    {
+        using CandidateGateFixture fixture = new();
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        fixture.ConsumerClaims = claims => MutateLifetime(claims, lifetime);
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("issuer-authentication-required");
+    }
+
+    /// <summary>Archival issuance still requires an ordered lifetime and cannot originate in the future.</summary>
+    /// <param name="lifetime">The invalid issuance lifetime.</param>
+    /// <returns>The issuance authentication refusal.</returns>
+    [Theory]
+    [InlineData("future")]
+    [InlineData("reversed")]
+    public async Task ArchivedIssuanceRejectsInvalidLifetimeAsync(string lifetime)
+    {
+        using CandidateGateFixture fixture = new() { IssuanceClaims = claims => MutateLifetime(claims, lifetime) };
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("issuer-authentication-required");
+    }
+
+    /// <summary>Expired issuance authenticates its archived bytes while fresh authority and consumer proof govern reuse.</summary>
+    /// <returns>The authenticated archived identity and fresh supersession refusal.</returns>
+    [Fact]
+    public async Task ExpiredArchivedIssuanceStillRechecksCurrentAuthorityAsync()
+    {
+        using CandidateGateFixture fixture = new() { IssuanceClaims = claims => MutateLifetime(claims, "expired") };
+        string request = fixture.Sign();
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(request, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        binding.Candidate.GetProperty("committedRevision").GetString().ShouldBe(CandidateGateFixture.Merge);
+        binding.Decision.GetProperty("requestId").GetString().ShouldBe("github:Hexalith/Orders:101");
+        await fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        fixture.CurrentAttempt = 2;
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(request, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("latest-issued-attempt-required");
+    }
+
+    /// <summary>Coherent caller-workflow refs cannot bypass the explicit permitted PR or release ref guard.</summary>
+    /// <param name="release">Whether the request is a release dispatch.</param>
+    /// <param name="foreignRef">The coherent but forbidden ref.</param>
+    /// <returns>The consumer ref authentication refusal.</returns>
+    [Theory]
+    [InlineData(false, "refs/pull/7/head")]
+    [InlineData(false, "refs/pull/8/merge")]
+    [InlineData(true, "refs/heads/feature")]
+    [InlineData(true, "refs/tags/v1")]
+    public async Task ConsumerPermittedRefIsCheckedIndependentlyAsync(bool release, string foreignRef)
+    {
+        using CandidateGateFixture fixture = new();
+        if (release)
+        {
+            fixture.Payload["kind"] = "release";
+            _ = fixture.Payload.Remove("pr");
+        }
+
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        fixture.ConsumerClaims = claims =>
+        {
+            claims["ref"] = foreignRef;
+            claims["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@" + foreignRef;
+        };
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("consumer-authentication-required");
+    }
+
+    private static void MutateLifetime(JsonObject claims, string lifetime)
+    {
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        claims["iat"] = lifetime == "future" ? now + 120 : now - 20;
+        claims["exp"] = lifetime switch
+        {
+            "expired" => now - 1,
+            "reversed" => now - 21,
+            "empty" => now - 20,
+            _ => now + 300,
+        };
     }
 }

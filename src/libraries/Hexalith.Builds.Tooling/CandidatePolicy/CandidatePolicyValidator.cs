@@ -142,6 +142,11 @@ public static class CandidatePolicyValidator
                 throw new CandidatePolicyException("passed-outcome-required");
             }
 
+            if (!Populated(currentDeadlines.GetProperty("startup")))
+            {
+                throw new CandidatePolicyException("passing-duration-required");
+            }
+
             ValidatePassingDuration(currentDeadlines.GetProperty("startup"));
             ValidatePassingDuration(currentDeadlines.GetProperty("execution"));
             JsonElement readiness = environment.GetProperty("readiness");

@@ -544,6 +544,7 @@ public sealed class AppHostRunnerValidationTests
             exit.ShouldBe(3);
             CompositionStartupFailure failure = (await CompositionDocumentStore.TryReadAsync<CompositionStartupFailure>(CompositionStartupFailure.PathFor(plan.Workspace), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
             failure.RuleId.ShouldBe("HXR027");
+            failure.Status.ShouldBe("cutover-activation-HTTP-403;stage=writer-cutover");
             failure.UnreadyResources.Select(resource => resource.Name).ShouldBe(["first", "second"]);
         }
         finally

@@ -90,6 +90,7 @@ public static class PlatformManifestCommand
             "build", project, "--configuration", mapping.Mode == WorkspaceMode.Source ? "Debug" : "Release", "--output", output,
             "--artifacts-path", Path.Combine(workspace, "build", "platform-model"),
             "-p:BuildsToolingAssemblyPath=" + typeof(PlatformManifestCommand).Assembly.Location,
+            "-p:CopyLocalLockFileAssemblies=true",
             "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0", "-nodeReuse:false", "-p:UseSharedCompilation=false",
             .. mapping.Mode == WorkspaceMode.Source ? PinnedSourceModelCatalogArguments(pinnedCatalog) : PinnedCatalogArguments(pinnedCatalog),
         ];

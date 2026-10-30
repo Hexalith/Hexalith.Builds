@@ -117,12 +117,13 @@ internal static class AppHostRunner
             Task? starting = null;
             Task<bool>? readiness = null;
             Task? resourceControl = null;
+            string preparationStage = "writer-cutover";
             try
             {
                 // Start blocks while dependents wait for a healthy EventStore, and EventStore becomes healthy
                 // only after the runner-owned writer-protocol cutover, so the cutover runs concurrently.
 #pragma warning disable CA2025 // The cutover task is awaited below, before the application is disposed.
-                cutover = ActivateAndPrepareAsync(app, plan, signingKey, activate ?? WriterProtocolCutover.ActivateAsync, readinessBound.Token);
+                cutover = ActivateAndPrepareAsync(app, plan, signingKey, activate ?? WriterProtocolCutover.ActivateAsync, stage => preparationStage = stage, readinessBound.Token);
 #pragma warning restore CA2025
                 starting = app.StartAsync(readinessBound.Token);
 #pragma warning disable CA2025 // The readiness task is cancelled and drained below before the application is disposed.
@@ -168,7 +169,7 @@ internal static class AppHostRunner
             }
             catch (Exception exception) when (!stop.IsStopRequested && cutover?.IsFaulted == true && exception is not OutOfMemoryException)
             {
-                string status = exception is TimeoutException or InvalidOperationException && exception.Message.StartsWith("cutover-", StringComparison.Ordinal) ? exception.Message : "fault-" + exception.GetType().Name;
+                string status = RunPreparationDiagnostic.SupportSafeStatus(cutover.Exception.GetBaseException(), preparationStage);
                 await RunReadiness.ReportFailureAsync(plan, "HXR027", RunTopology.EventStoreName, RunTopology.EventStoreName, status, RunReadiness.CurrentUnready(app), null).ConfigureAwait(false);
                 exitCode = 3;
             }
@@ -243,9 +244,11 @@ internal static class AppHostRunner
         CompositionRunPlan plan,
         string signingKey,
         Func<DistributedApplication, CompositionRunPlan, string, CancellationToken, Task> activate,
+        Action<string> setStage,
         CancellationToken cancellationToken)
     {
         await activate(app, plan, signingKey, cancellationToken).ConfigureAwait(false);
+        setStage("owner-preparation");
         foreach (ICompositionRunPreparation preparation in app.Services.GetServices<ICompositionRunPreparation>())
         {
             await preparation.PrepareAsync(app.Services, cancellationToken).ConfigureAwait(false);

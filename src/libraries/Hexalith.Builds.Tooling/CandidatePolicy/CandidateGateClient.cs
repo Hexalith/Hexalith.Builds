@@ -424,8 +424,18 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
 
         JsonElement key = matchingKeys[0];
         using RSA rsa = RSA.Create();
-        rsa.ImportParameters(new RSAParameters { Modulus = Decode(S(key, "n")), Exponent = Decode(S(key, "e")) });
-        if (S(header, "alg") != "RS256" || S(key, "kty") != "RSA" || !rsa.VerifyData(Encoding.ASCII.GetBytes(parts[0] + "." + parts[1]), Decode(parts[2]), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+        bool signatureValid;
+        try
+        {
+            rsa.ImportParameters(new RSAParameters { Modulus = Decode(S(key, "n")), Exponent = Decode(S(key, "e")) });
+            signatureValid = rsa.VerifyData(Encoding.ASCII.GetBytes(parts[0] + "." + parts[1]), Decode(parts[2]), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        }
+        catch (Exception exception) when (exception is FormatException or CryptographicException or ArgumentException)
+        {
+            throw new CandidatePolicyException("issuer-authentication-required");
+        }
+
+        if (S(header, "alg") != "RS256" || S(key, "kty") != "RSA" || !signatureValid
             || S(claims, "iss") != "https://token.actions.githubusercontent.com" || S(claims, "aud") != expectedAudience
             || S(claims, "job_workflow_ref") != (consumer ? configuration.WorkflowRef.Replace("/candidate-policy.yml@", "/domain-ci.yml@", StringComparison.Ordinal) : configuration.WorkflowRef)
             || S(claims, "job_workflow_sha") != configuration.WorkflowSha || (!consumer && S(claims, "environment") != configuration.Environment)

@@ -26,6 +26,7 @@ public static class CompositionEnvironment
     public const string ContainerRunLabel = "hexalith.g4.run";
 
     /// <summary>The token issuer used for per-run development identities.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "S6418:Secrets should not be hard-coded", Justification = "This public issuer identifies a trust domain. Signing keys are generated separately for each run.")]
     public const string TokenIssuer = "hexalith-g4-runner";
 
     /// <summary>The token audience accepted by the EventStore host.</summary>

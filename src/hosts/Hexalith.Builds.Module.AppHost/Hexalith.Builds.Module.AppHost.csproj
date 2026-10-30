@@ -6,6 +6,7 @@
     <AssemblyName>Hexalith.Builds.Module.AppHost</AssemblyName>
     <RootNamespace>Hexalith.Builds.ModuleHosts.AppHost</RootNamespace>
     <Description>Builds-owned Aspire AppHost that composes one G-4 run from a runner-written run plan.</Description>
+    <BuildsHostingFromMappedSource Condition="'$(Configuration)' == 'Debug' and Exists('$(HexalithEventStoreRoot)/src/Hexalith.EventStore.Aspire/Hexalith.EventStore.Aspire.csproj')">true</BuildsHostingFromMappedSource>
     <!-- CommunityToolkit.Aspire.Hosting.Dapr and the EventStore Aspire extensions are prerelease-only integrations. -->
     <NoWarn>$(NoWarn);NU5104;ASPIRE010;CA1303</NoWarn>
   </PropertyGroup>
@@ -14,7 +15,8 @@
     <!-- Align published EventStore transitive hosting dependencies with the approved catalog; Keycloak runtime remains unqualified. -->
     <PackageReference Include="Aspire.Hosting.Keycloak" />
     <PackageReference Include="Aspire.Hosting.Redis" />
-    <PackageReference Include="Hexalith.EventStore.Aspire" IsAspireProjectResource="false" />
+    <PackageReference Include="Hexalith.EventStore.Aspire" IsAspireProjectResource="false" Condition="'$(BuildsHostingFromMappedSource)' != 'true'" />
+    <ProjectReference Include="$(HexalithEventStoreRoot)/src/Hexalith.EventStore.Aspire/Hexalith.EventStore.Aspire.csproj" IsAspireProjectResource="false" Condition="'$(BuildsHostingFromMappedSource)' == 'true'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj" />

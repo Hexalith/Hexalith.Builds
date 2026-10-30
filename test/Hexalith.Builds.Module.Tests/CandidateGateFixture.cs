@@ -172,6 +172,9 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
     /// <summary>Gets the successor-list query observed by the fixture.</summary>
     public string? SuccessorQuery { get; private set; }
 
+    /// <summary>Gets the filtered workflow pages requested by the verifier.</summary>
+    public List<int> WorkflowPages { get; } = [];
+
     /// <summary>Gets the actual CI representation used by the runner fixture.</summary>
     public JsonElement Context => JsonSerializer.SerializeToElement(new { kind = "ci", repository = "Hexalith/Orders", workflowRunId = GateRunId, workflowAttempt = CurrentAttempt, jobId = "integration", runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true });
 
@@ -233,14 +236,38 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
             }
 
             RSAParameters parameters = _rsa.ExportParameters(false);
-            if (KeyMode == "non-rsa")
+            JsonObject key = new()
             {
-                result = new { keys = new[] { new { kid = "fixture", kty = "EC" } } };
-            }
-            else
+                ["kid"] = KeyMode == "unknown" ? "other" : "fixture",
+                ["kty"] = KeyMode == "non-rsa" ? "EC" : "RSA",
+                ["n"] = Encode(parameters.Modulus!),
+                ["e"] = Encode(parameters.Exponent!),
+            };
+            if (KeyMode == "missing-modulus")
             {
-                result = new { keys = new[] { new { kid = KeyMode == "unknown" ? "other" : "fixture", kty = "RSA", n = Encode(parameters.Modulus!), e = Encode(parameters.Exponent!) } } };
+                _ = key.Remove("n");
             }
+            else if (KeyMode == "malformed-modulus")
+            {
+                key["n"] = "invalid!";
+            }
+            else if (KeyMode == "malformed-exponent")
+            {
+                key["e"] = "invalid!";
+            }
+            else if (KeyMode == "invalid-rsa")
+            {
+                key["n"] = Encode([0]);
+                key["e"] = Encode([0]);
+            }
+
+            JsonArray keys = new(key);
+            if (KeyMode == "duplicate")
+            {
+                keys.Add(key.DeepClone());
+            }
+
+            result = new JsonObject { ["keys"] = keys };
         }
         else
         {
@@ -288,7 +315,7 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
                 var value when value.Contains("/git/ref/", StringComparison.Ordinal) => new { @object = new { sha = ChangedBase ? _headCommit : _baseCommit } },
                 var value when value.EndsWith("/pulls/7", StringComparison.Ordinal) => new { state = PrState, merged = false, created_at = "2026-10-01T00:00:00Z", head = new { sha = ChangedHead ? _baseCommit : _headCommit }, @base = new { sha = _baseCommit, @ref = "main" }, merge_commit_sha = _targetCommit },
                 var value when value.EndsWith("/events", StringComparison.Ordinal) => ReopenEpoch is null ? [] : new object[] { new { @event = EpochEvent, id = ReopenEpoch, created_at = "2026-10-11T00:00:00Z" } },
-                var value when value.Contains("/actions/workflows/", StringComparison.Ordinal) => WorkflowRunsResponse(),
+                var value when value.Contains("/actions/workflows/", StringComparison.Ordinal) => WorkflowRunsResponse(request.RequestUri.Query),
                 _ => throw new InvalidOperationException("Unexpected fixture path: " + path),
             };
         }
@@ -314,8 +341,17 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
     private string CreateToken(JsonObject claims)
     {
         string input = Encode(JsonSerializer.SerializeToUtf8Bytes(new { alg = Algorithm, kid = "fixture" })) + "." + Encode(JsonSerializer.SerializeToUtf8Bytes(claims));
-        using RSA foreign = RSA.Create(2048);
-        byte[] signature = (KeyMode == "foreign" ? foreign : _rsa).SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        byte[] signature;
+        if (KeyMode == "foreign")
+        {
+            using RSA foreign = RSA.Create(2048);
+            signature = foreign.SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        }
+        else
+        {
+            signature = _rsa.SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        }
+
         if (KeyMode == "tampered")
         {
             signature[0] ^= 1;
@@ -359,9 +395,24 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
         return Task.FromResult(_consumerToken);
     }
 
-    private JsonObject WorkflowRunsResponse()
+    private JsonObject WorkflowRunsResponse(string query)
     {
+        Dictionary<string, string> parameters = query.TrimStart('?').Split('&').Select(item => item.Split('=', 2)).ToDictionary(item => item[0], item => Uri.UnescapeDataString(item[1]), StringComparer.Ordinal);
+        int page = int.Parse(parameters["page"], System.Globalization.CultureInfo.InvariantCulture);
+        WorkflowPages.Add(page);
         JsonArray runs = [];
+        if (WorkflowPaginationMode is "paged" or "paged-successor")
+        {
+            int pageSize = int.Parse(parameters["per_page"], System.Globalization.CultureInfo.InvariantCulture);
+            foreach (int index in Enumerable.Range(0, 31).Skip((page - 1) * pageSize).Take(pageSize))
+            {
+                bool successor = index == 30 && WorkflowPaginationMode == "paged-successor";
+                runs.Add(JsonSerializer.SerializeToNode(new { id = 200 + index, run_number = successor ? 51 : 20 + index, pull_requests = new[] { new { number = successor ? 7 : 8 } } }));
+            }
+
+            return new JsonObject { ["workflow_runs"] = runs, ["total_count"] = 31 };
+        }
+
         if (NewerRequest)
         {
             runs.Add(JsonSerializer.SerializeToNode(new { id = 102, run_number = 11, status = "queued", conclusion = (string?)null, pull_requests = new[] { new { number = 7 } } }));

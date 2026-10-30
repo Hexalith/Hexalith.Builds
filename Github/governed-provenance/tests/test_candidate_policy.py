@@ -33,6 +33,7 @@ class CandidatePolicyTests(unittest.TestCase):
         self.review_approved = True
         self.run_attempt = None
         self.merge_commit = "a" * 40
+        self.omit_merge_commit = False
 
     def get(self, url, token):
         self.calls.append((url, token))
@@ -49,8 +50,11 @@ class CandidatePolicyTests(unittest.TestCase):
                     "run_attempt": self.run_attempt or int(self.env["GITHUB_RUN_ATTEMPT"]), "event": self.event, "head_branch": self.dispatch_branch,
                     "head_sha": self.run_head or ("a" * 40 if self.event == "workflow_dispatch" else "b" * 40), "created_at": "2026-10-10T00:00:00Z", "pull_requests": [{"number": 7, "head": {"sha": "b" * 40}, "base": {"sha": "c" * 40}}]}
         if "/pulls/" in url:
-            return {"state": self.state, "merged": False, "created_at": "2026-10-01T00:00:00Z",
-                    "merge_commit_sha": self.merge_commit, "base": {"sha": "c" * 40, "ref": "main"}, "head": {"sha": "b" * 40}}
+            pr = {"state": self.state, "merged": False, "created_at": "2026-10-01T00:00:00Z",
+                  "base": {"sha": "c" * 40, "ref": "main"}, "head": {"sha": "b" * 40}}
+            if not self.omit_merge_commit:
+                pr["merge_commit_sha"] = self.merge_commit
+            return pr
         if "/events?" in url:
             return self.events
         if "/git/commits/" in url:
@@ -171,9 +175,13 @@ class CandidatePolicyTests(unittest.TestCase):
 
     def test_missing_merge_result_refuses_before_commit_lookup(self):
         self.merge_commit = None
-        with self.assertRaisesRegex(ValueError, "pr-binding-mismatch"):
-            self.issue()
-        self.assertFalse(any("/git/commits/" in url for url, _ in self.calls))
+        for omitted in (False, True):
+            with self.subTest(omitted=omitted):
+                self.omit_merge_commit = omitted
+                self.calls.clear()
+                with self.assertRaisesRegex(ValueError, "pr-binding-mismatch"):
+                    self.issue()
+                self.assertFalse(any("/git/commits/" in url for url, _ in self.calls))
 
     def test_missing_reviewers_or_rejected_review_refuses(self):
         for approved, review in [(False, True), (True, False)]:

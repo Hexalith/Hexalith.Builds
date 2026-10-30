@@ -79,7 +79,7 @@ def issue(module_id, environ, get=get_json):
                 break
         else:
             raise ValueError("authority-pagination-incomplete")
-        target = pr["merge_commit_sha"]
+        target = pr.get("merge_commit_sha")
         if not isinstance(target, str) or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", target):
             raise ValueError("pr-binding-mismatch")
         commit = get(f"{root}/git/commits/{target}", token)
