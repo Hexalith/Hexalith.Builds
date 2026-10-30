@@ -1,6 +1,8 @@
 {
   "story": "3.1",
   "date": "2026-10-30",
+  "observedBuildsHeadAtRetention": "632474cb3fee7a09ccf89ea6eef5ade11b0466df",
+  "recordingOperations": "This implementation session performed no Git recording operations. Concurrent workspace activity recorded implementation and evidence bytes during final verification; source fingerprints use an explicit story file list to exclude unrelated writer-protocol work.",
   "allFeasibleChecksPassed": true,
   "requiredFullBuildPassed": false,
   "commands": [
@@ -175,10 +177,21 @@
     ]
   },
   "sourceSha256": {
-    "src/hosts/Hexalith.Builds.Module.AppHost/RunTopology.cs": "84cb7791d040886b0af992c9403d6b2725761e811790832c8eaecf448e4b6356",
-    "src/hosts/Hexalith.Builds.Module.AppHost/WriterProtocolCutover.cs": "4f1443bee98ed8b452bc586d9828d7629d18c22ab08a50cfdf2eb6c89c7a3609",
-    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionWriterProtocolCutover.cs": "36a78305821f0495a59a9fbabc10edc0a7079312754b967bfe6deae55cc6b5c3",
-    "test/Hexalith.Builds.Module.Tests/Workspace/WorkspaceAppHostTests.cs": "8a630bc39be6ad8b9c757a6f38549130db94deaf6adebf5bc613cda52796cffc"
+    ".github/workflows/domain-ci.yml": "510b6e8d868c659846f921ed531d9c582468e718ad2c1caae9f506abd6817d14",
+    "Github/governed-provenance/candidate_policy.py": "5bf0099d44ec65fd2f10f7164298d7a9b2901ab639f72cebc5115829128ea631",
+    "Github/governed-provenance/tests/test_candidate_policy.py": "0ebc16a1a181f785850f80d524569ef33d4b1642020619da23db8aff532faab1",
+    "Github/governed-provenance/tests/test_candidate_workspace.py": "cccccccd2b942bb840b90bec47c4705603a814ad31cf7cf4464e696bddcd1902",
+    "README.md": "7a11ce9aa024614d4ce7f12cb0cc92db19bfe415c812d2cdd1904bd10dd6295f",
+    "src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidateGateClient.cs": "827a3e842603c6137cd1ab3973c081a989d7cb9a0d919298c8418d75044dee53",
+    "src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidatePolicyValidator.cs": "729b76dd075657e3e62dbb8c09c539c69cfd24503ececf1a0f94b1ae4f801c0c",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs": "94d4ceb7c91c97d608ea7932bc253bce1a7db7a3b1f0aa942f960df8d41a9d1f",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngineOptions.cs": "b215156dd9c8c5e44d2ebdc1661cacf83fd2703853c7336f4553ddf94e478fa8",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs": "7e6367d3b6417588e2c30b6cd09664cb598a8dbcec6d9da3ec363af0e7dc28ed",
+    "test/Hexalith.Builds.Module.Tests/CandidateGateFixture.cs": "9f1dec2dfb0ba67030a6647ece63940487ccb44b10baf7a9f2c510dcf6b8bbfd",
+    "test/Hexalith.Builds.Module.Tests/CandidatePolicyTests.cs": "4f3cb4b29f1ec35102a75cb4aa10d5157f034e9adefba44821935bd6b46514cd",
+    "test/Hexalith.Builds.Module.Tests/CandidateRunnerTests.cs": "10401d963902e182a537bb5ff132b877e20a59578e96e42b89c65c0519733bdf",
+    "test/Hexalith.Builds.Module.Tests/DeclarationClosureTests.cs": "100561fb84dda8d8770a7c5169bf7d33c5dd9c3c46015089b5ccaae36a1245d0",
+    "test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs": "81c9aa4a33891894248ddd4fa8cefd9e62ac96f7e1557a17e65a25251bbc7c1a"
   },
   "platformContractSha256": "2b28e8ec9e650aa9ec83ad6940193bfeae36bb0b99ab1675537128bbaf184620",
   "frozenIntentSha256": "81a432cf41c6e7834b202cf9b9f9626b623299d75e4af46b6a19ddc085cad909",
