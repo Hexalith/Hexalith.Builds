@@ -1167,17 +1167,19 @@ public sealed class AttachAdmissionTests
         string resultPath = await run.WaitForResultAsync().ConfigureAwait(true);
         CompositionRunSession session = run.Session.ShouldNotBeNull();
         using System.Diagnostics.Process observer = System.Diagnostics.Process.GetProcessById(session.AppHost.Id);
+        observer.HasExited.ShouldBeFalse(run.Output.ToString());
+        session.AppHost.StandardInput.Close();
         string directory = Path.Combine(run.Options.StateDirectory, "diagnostics", session.RunId);
         FileStream outcomeGate = new(Path.Combine(directory, "outcome.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outcomeGateLifetime = outcomeGate.ConfigureAwait(true);
         await File.WriteAllTextAsync(resultPath, "{invalid", TestContext.Current.CancellationToken).ConfigureAwait(true);
         await cancel.CancelAsync().ConfigureAwait(true);
         await Task.Delay(TimeSpan.FromSeconds(4.5), TestContext.Current.CancellationToken).ConfigureAwait(true);
-        observer.HasExited.ShouldBeFalse();
+        observer.HasExited.ShouldBeFalse(run.Output.ToString());
         await outcomeGate.DisposeAsync().ConfigureAwait(true);
         _ = await run.Running.WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
         run.Cleanups.ShouldBe(0);
-        observer.HasExited.ShouldBeFalse();
+        observer.HasExited.ShouldBeFalse(run.Output.ToString());
         run.Output.ToString().ShouldContain("Automatic cleanup is pending until a valid terminal result is durably retained");
         (await CompositionAttachmentStore.ReadAsync(directory, session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single().Outcome.ShouldBe("withdrawn");
         ModuleTestRunRecord committed = (await new CompositionEngine(run.Options).ReadCommittedOutcomeAsync(session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
@@ -1522,7 +1524,7 @@ public sealed class AttachAdmissionTests
                     CompositionReadiness ready = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), "sample");
                     if (liveAppHost)
                     {
-                        run._appHost.StartInfo = CompositionProcess.CreateStartInfo("python3", ["-u", "-c", "import sys; print('ready',flush=True); sys.stdin.readline()"], workspace.Root, new Dictionary<string, string> { [CompositionEnvironment.RunId] = plan.RunId });
+                        run._appHost.StartInfo = CompositionProcess.CreateStartInfo("python3", ["-u", "-c", "import sys,time; print('ready',flush=True)\nfor line in sys.stdin:\n if line.strip() == '" + CompositionEnvironment.StopCommand + "': break\nelse:\n while True: time.sleep(1)"], workspace.Root, new Dictionary<string, string> { [CompositionEnvironment.RunId] = plan.RunId });
                         run._appHost.Start().ShouldBeTrue();
                         (await run._appHost.StandardOutput.ReadLineAsync(token).ConfigureAwait(false)).ShouldBe("ready");
                         run._appHostObserver = System.Diagnostics.Process.GetProcessById(run._appHost.Id);
