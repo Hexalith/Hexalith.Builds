@@ -149,6 +149,11 @@ jobs:
       shell: bash
       run: bash ./Tools/test-g4-release-source.sh
 
+    # Match CI's disposable-runner setup before invoking package build gates.
+    - name: Initialize runner NuGet configuration
+      shell: bash
+      run: install -D -m 600 test/fixtures/package-consumer/NuGet.Config "$HOME/.nuget/NuGet/NuGet.Config"
+
     - name: Test G-4 tool package qualification gate
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contract-gate.ps1

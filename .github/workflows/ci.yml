@@ -24,11 +24,58 @@ permissions:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
     name: Build and test
-    timeout-minutes: 45
-    permissions:
-      contents: read
+    runs-on: ubuntu-latest
+    needs: [catalog, contracts, dotnet]
+    if: always()
+    timeout-minutes: 5
+    steps:
+      - name: Require every validation job to pass
+        env:
+          CATALOG_RESULT: ${{ needs.catalog.result }}
+          CONTRACTS_RESULT: ${{ needs.contracts.result }}
+          DOTNET_RESULT: ${{ needs.dotnet.result }}
+        shell: bash
+        run: |
+          [[ "$CATALOG_RESULT" == "success" && "$CONTRACTS_RESULT" == "success" && "$DOTNET_RESULT" == "success" ]]
+
+  dotnet:
+    runs-on: ubuntu-latest
+    name: .NET tests
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: false
+          persist-credentials: false
+
+      - name: Initialize .NET
+        uses: ./Github/initialize-dotnet
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Hexalith.Builds.slnx
+
+      - name: Build
+        run: dotnet build Hexalith.Builds.slnx --no-restore --configuration Release -warnaserror -p:GeneratePackageOnBuild=false
+
+      # One project at a time: solution-level `dotnet test` is not used in this
+      # repository (see the validation harness in DEVELOPMENT.md).
+      - name: Test Hexalith.Builds.Module.Tests
+        run: dotnet test test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj --no-restore --configuration Release
+
+      - name: Test Hexalith.Builds.Evidence.Tests
+        run: dotnet test test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj --no-restore --configuration Release
+
+      - name: Test Hexalith.Builds.Tooling.IntegrationTests
+        run: dotnet test test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj --no-restore --configuration Release
+
+  catalog:
+    runs-on: ubuntu-latest
+    name: Package catalog contracts
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -97,6 +144,24 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-dapr-package-version-validator.ps1
 
+  contracts:
+    runs-on: ubuntu-latest
+    name: Build and package contracts
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: false
+          persist-credentials: false
+
+      - name: Initialize .NET
+        uses: ./Github/initialize-dotnet
+        with:
+          global-json-file: global.json
+
       - name: Test domain workflow test-platform contracts
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
@@ -140,6 +205,12 @@ jobs:
         shell: bash
         run: bash ./Tools/test-g4-release-source.sh
 
+      # Each job owns a disposable runner. Keep build gates independent of a
+      # missing or empty user NuGet.Config inherited from the runner image.
+      - name: Initialize runner NuGet configuration
+        shell: bash
+        run: install -D -m 600 test/fixtures/package-consumer/NuGet.Config "$HOME/.nuget/NuGet/NuGet.Config"
+
       - name: Test G-4 tool package qualification gate
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contract-gate.ps1
@@ -153,17 +224,6 @@ jobs:
 
       - name: Build
         run: dotnet build Hexalith.Builds.slnx --no-restore --configuration Release -warnaserror -p:GeneratePackageOnBuild=false
-
-      # One project at a time: solution-level `dotnet test` is not used in this
-      # repository (see the validation harness in DEVELOPMENT.md).
-      - name: Test Hexalith.Builds.Module.Tests
-        run: dotnet test test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj --no-restore --configuration Release
-
-      - name: Test Hexalith.Builds.Evidence.Tests
-        run: dotnet test test/Hexalith.Builds.Evidence.Tests/Hexalith.Builds.Evidence.Tests.csproj --no-restore --configuration Release
-
-      - name: Test Hexalith.Builds.Tooling.IntegrationTests
-        run: dotnet test test/Hexalith.Builds.Tooling.IntegrationTests/Hexalith.Builds.Tooling.IntegrationTests.csproj --no-restore --configuration Release
 
       # Runs the packaged-tool qualification exactly as the release does, so a
       # missing control fixture or a broken packaged CLI fails on the pull
@@ -196,6 +256,9 @@ jobs:
         uses: ./Github/initialize-dotnet
         with:
           global-json-file: global.json
+
+      - name: Test self-CI required status
+        run: python3 Tools/test-self-ci.py
 
       - name: Test G-6 runtime/toolchain evidence validator
         env:

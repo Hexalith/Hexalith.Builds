@@ -191,11 +191,12 @@ internal static class CompositionTestFiles
     /// Creates a sample run plan.
     /// </summary>
     /// <param name="root">The root directory.</param>
+    /// <param name="runId">The run identity; live parallel fixtures supply a fresh identity.</param>
     /// <returns>The plan.</returns>
-    public static CompositionRunPlan CreatePlan(string root) =>
+    public static CompositionRunPlan CreatePlan(string root, string runId = RunId) =>
         CompositionRunPlanFactory.Create(
-            RunId,
-            Path.Combine(root, "workspace", RunId),
+            runId,
+            Path.Combine(root, "workspace", runId),
             Path.Combine(root, "dapr-home"),
             new CompositionRunPorts(20001, 20002, 20003, 20004, 20005, 20006, 20007, 20008, 20009, 20010, 20011, 20012, 20013, [20014, 20015], 20016, 20017, 20018, [new(20019, 20020, 20021, 20022), new(20023, 20024, 20025, 20026)]),
             [
