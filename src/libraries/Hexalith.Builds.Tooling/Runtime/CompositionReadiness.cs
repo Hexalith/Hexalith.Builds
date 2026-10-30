@@ -31,6 +31,9 @@ public sealed record CompositionReadiness(
     /// <summary>Gets actual selected-composition test measurements and scoped access, when supported.</summary>
     public CompositionTestObservation? TestObservation { get; init; }
 
+    /// <summary>Gets actual owner-derived consumer scopes after startup preparation; this never grants an administrator role.</summary>
+    public CompositionNativeTestScope? NativeTestScope { get; init; }
+
     /// <summary>Gets the effective deadline in seconds.</summary>
     public double? EffectiveDeadlineSeconds { get; init; }
 

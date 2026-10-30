@@ -7,8 +7,6 @@ namespace Hexalith.Builds.Tooling.Workspace;
 
 using System.Text.Json;
 
-using Hexalith.Builds.Tooling.Filesystem;
-
 using Microsoft.Build.Framework;
 
 /// <summary>Rejects package copies of source identities and project paths outside mapped roots.</summary>
@@ -54,8 +52,6 @@ public sealed class SourceMappingValidationTask : ITask
         try
         {
             SourceMapping mapping = SourceMapping.LoadVerified(MappingFile, MappingHash);
-            string root = mapping.Root;
-            string references = Path.Combine(root, "references");
             List<(string Identity, string Path)> sources = [];
             foreach (SourceMappingEntry entry in mapping.Entries.Where(entry => entry.Origin == "source"))
             {
@@ -70,8 +66,7 @@ public sealed class SourceMappingValidationTask : ITask
                     return Error("HXW006", $"Unmapped ProjectReference '{requested}' does not exist.");
                 }
 
-                bool mapped = sources.Any(source => RepositoryPathResolver.TryResolvePathWithinRoot(source.Path, Path.GetRelativePath(source.Path, requested), out _)
-                    && (!SamePath(source.Path, root) || !RepositoryPathResolver.TryResolvePathWithinRoot(references, Path.GetRelativePath(references, requested), out _)));
+                bool mapped = mapping.ContainsProject(requested);
                 if (!mapped)
                 {
                     return Error("HXW006", $"Unmapped ProjectReference '{requested}' is outside the active module and mapped source roots.");
@@ -101,8 +96,6 @@ public sealed class SourceMappingValidationTask : ITask
             return Error("HXW006", $"Source mapping validation failed: {exception.Message}");
         }
     }
-
-    private static bool SamePath(string left, string right) => string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), FilesystemPathRules.Comparison(right));
 
     private bool CheckDirectPackages(IReadOnlyList<(string Identity, string Path)> sources)
     {

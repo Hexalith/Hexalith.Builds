@@ -26,6 +26,10 @@ builder.Services.AddHealthChecks()
 builder.Services.AddEventStore();
 builder.Services.AddEventStoreServer(builder.Configuration);
 builder.Services.AddEventStoreDomainQueryRouting();
+if (!string.IsNullOrEmpty(builder.Configuration["EventStore:RouteCatalog:DevelopmentBootstrap:CatalogPath"]))
+{
+    _ = Hexalith.EventStore.Server.Routing.RunScopedRouteCatalogGateway.AddEventStoreRunScopedCatalogGateway(builder.Services, builder.Configuration);
+}
 
 WebApplication app = builder.Build();
 
@@ -35,6 +39,13 @@ app.MapDefaultEndpoints();
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
+if (!string.IsNullOrEmpty(app.Configuration["EventStore:RouteCatalog:DevelopmentBootstrap:CatalogPath"]))
+{
+    _ = Hexalith.EventStore.ServiceDefaults.Routing.FiniteRouteCatalogReceiver.UseFiniteDevelopmentRouteCatalogReceiver(
+        app,
+        Hexalith.EventStore.Server.Routing.RunScopedRouteCatalogGateway.Operation);
+}
+
 app.UseCloudEvents();
 
 bool declarativeSubscriptions = app.Configuration.GetValue<bool>("Dapr:DeclarativeSubscriptions");

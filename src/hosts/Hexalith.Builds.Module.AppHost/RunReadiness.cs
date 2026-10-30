@@ -30,6 +30,16 @@ internal static class RunReadiness
     public static Task<bool> WaitAndWriteAsync(DistributedApplication app, CompositionRunPlan plan, CancellationToken cancellationToken) =>
         WaitAndWriteCoreAsync(app, plan, null, cancellationToken);
 
+    /// <summary>Waits for actual resource health and the owning startup preparation before publishing readiness.</summary>
+    /// <param name="app">The actual started distributed application.</param>
+    /// <param name="plan">The exact run plan.</param>
+    /// <param name="preparation">The writer activation and owner preparation task.</param>
+    /// <param name="cancellationToken">The original startup bound.</param>
+    /// <returns>Whether readiness was published.</returns>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD003:Avoid awaiting foreign Tasks", Justification = "The runner owns and starts preparation alongside this readiness task in the same asynchronous startup context; the original cancellation bound controls both and the runner drains both before disposal.")]
+    public static Task<bool> WaitAndWriteAsync(DistributedApplication app, CompositionRunPlan plan, Task preparation, CancellationToken cancellationToken) =>
+        WaitAndWriteCoreAsync(app, plan, null, cancellationToken, preparation);
+
     /// <summary>
     /// Reports every stalled resource when the AppHost startup bound expires.
     /// </summary>
@@ -291,7 +301,7 @@ internal static class RunReadiness
     internal static Task<bool> RefreshAsync(DistributedApplication app, CompositionRunPlan plan, string refreshId, CancellationToken cancellationToken) =>
         WaitAndWriteCoreAsync(app, plan, refreshId, cancellationToken);
 
-    private static async Task<bool> WaitAndWriteCoreAsync(DistributedApplication app, CompositionRunPlan plan, string? refreshId, CancellationToken cancellationToken)
+    private static async Task<bool> WaitAndWriteCoreAsync(DistributedApplication app, CompositionRunPlan plan, string? refreshId, CancellationToken cancellationToken, Task? preparation = null)
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(plan);
@@ -362,6 +372,11 @@ internal static class RunReadiness
                 }
             }
 
+            if (preparation is not null)
+            {
+                await preparation.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             resources = Observe(runnable, notifications);
             if (resources.Any(resource => resource.State != "Healthy"))
             {
@@ -385,6 +400,7 @@ internal static class RunReadiness
                     RefreshId = refreshId,
                     SelectedTest = plan.SelectedTest,
                     TestObservation = testObservation,
+                    NativeTestScope = app.Services.GetServices<ICompositionRunPreparation>().Select(owner => owner.NativeTestScope).OfType<CompositionNativeTestScope>().SingleOrDefault(),
                     EffectiveDeadlineSeconds = plan.EffectiveDeadline?.TimeoutSeconds,
                     EffectiveDeadlineIsOverride = plan.EffectiveDeadline?.IsOverride ?? false,
                     EffectiveDeadlineJustification = plan.EffectiveDeadline?.Justification,

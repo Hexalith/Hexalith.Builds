@@ -2,10 +2,13 @@
   <PropertyGroup>
     <AssemblyName>Hexalith.Builds.Module.EventStoreHost</AssemblyName>
     <RootNamespace>Hexalith.Builds.ModuleHosts.EventStoreHost</RootNamespace>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <Description>Builds-owned EventStore composition root over the Hexalith.EventStore.Gateway package for G-4 runs.</Description>
+    <BuildsCatalogFromMappedSource Condition="'$(Configuration)' == 'Debug' and Exists('$(HexalithEventStoreRoot)/src/Hexalith.EventStore.Gateway/Hexalith.EventStore.Gateway.csproj')">true</BuildsCatalogFromMappedSource>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Hexalith.EventStore.Gateway" />
+    <PackageReference Include="Hexalith.EventStore.Gateway" Condition="'$(BuildsCatalogFromMappedSource)' != 'true'" />
+    <ProjectReference Include="$(HexalithEventStoreRoot)/src/Hexalith.EventStore.Gateway/Hexalith.EventStore.Gateway.csproj" Condition="'$(BuildsCatalogFromMappedSource)' == 'true'" />
     <InternalsVisibleTo Include="Hexalith.Platform.Composition.Tests" />
   </ItemGroup>
 </Project>

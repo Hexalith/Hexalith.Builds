@@ -7,6 +7,7 @@ namespace Hexalith.Builds.ModuleHosts.AppHost;
 
 using Hexalith.Builds.Tooling.Runtime;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 /// <summary>
@@ -121,11 +122,11 @@ internal static class AppHostRunner
                 // Start blocks while dependents wait for a healthy EventStore, and EventStore becomes healthy
                 // only after the runner-owned writer-protocol cutover, so the cutover runs concurrently.
 #pragma warning disable CA2025 // The cutover task is awaited below, before the application is disposed.
-                cutover = (activate ?? WriterProtocolCutover.ActivateAsync)(app, plan, signingKey, readinessBound.Token);
+                cutover = ActivateAndPrepareAsync(app, plan, signingKey, activate ?? WriterProtocolCutover.ActivateAsync, readinessBound.Token);
 #pragma warning restore CA2025
                 starting = app.StartAsync(readinessBound.Token);
 #pragma warning disable CA2025 // The readiness task is cancelled and drained below before the application is disposed.
-                readiness = RunReadiness.WaitAndWriteAsync(app, plan, readinessBound.Token);
+                readiness = RunReadiness.WaitAndWriteAsync(app, plan, cutover, readinessBound.Token);
 #pragma warning restore CA2025
                 List<Task> pending = [starting, cutover, readiness];
                 bool healthy = false;
@@ -235,5 +236,19 @@ internal static class AppHostRunner
         }
 
         return builder;
+    }
+
+    private static async Task ActivateAndPrepareAsync(
+        DistributedApplication app,
+        CompositionRunPlan plan,
+        string signingKey,
+        Func<DistributedApplication, CompositionRunPlan, string, CancellationToken, Task> activate,
+        CancellationToken cancellationToken)
+    {
+        await activate(app, plan, signingKey, cancellationToken).ConfigureAwait(false);
+        foreach (ICompositionRunPreparation preparation in app.Services.GetServices<ICompositionRunPreparation>())
+        {
+            await preparation.PrepareAsync(app.Services, cancellationToken).ConfigureAwait(false);
+        }
     }
 }

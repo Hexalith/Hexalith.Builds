@@ -86,7 +86,7 @@ public static class NativeTestHandoff
                 values[TestEnvironmentPath] = descriptorPath;
             }
 
-            values[Domains] = selected.ModuleId;
+            values[Domains] = readiness.NativeTestScope is { } nativeScope ? string.Join(',', nativeScope.Domains.Order(StringComparer.Ordinal)) : selected.ModuleId;
             values["HEXALITH_G4_TEST_NAME"] = selected.Name;
             values["HEXALITH_G4_TEST_OWNER"] = selected.ModuleId;
             values["HEXALITH_G4_TEST_MANIFEST_HASH"] = selected.ManifestHash;
