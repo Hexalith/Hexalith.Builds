@@ -510,7 +510,8 @@ cleanup and recorded startup/execution deadlines. Execution activation is persis
 before child launch, so running suites expose their actual independent deadline.
 Legacy unknowns stay unavailable. Accepted attachments are listed per owner with
 their attached run ids, absolute hold deadlines and the latest live deadline; an owner
-that passed with live holds shows cleanup as pending.
+that passed with live holds shows cleanup as pending, unless an attached failure retained
+the environment.
 
 ```sh
 hexalith-module attach --owner-run-id <owner> --mode source --composition-identity <manifest-sha256> [--hold-seconds 300] --output json
@@ -532,7 +533,7 @@ issues `originalAttachmentRequestId` and `attachedRunId`; a retry that presents 
 the first acceptance and expiry. `--end` requires `--outcome passed|failed|cancelled` and
 ends only that attachment. A missing or invalid end outcome is refused with `HXR032`.
 Mixed admission/end options, including `--outcome` without `--end`, are refused with
-`HXC001`. Its first outcome is immutable; a late end records `withdrawn`
+`HXC001`. An attachment's first outcome is immutable; a late end records `withdrawn`
 with reason `expired` at the original expiry. Legacy terminal records without an outcome
 are shown as `unknown`. Listings show each attachment's outcome, including passive expiry
 as `withdrawn`, and include failed attached runs in `failed-runs`.
