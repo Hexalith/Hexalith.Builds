@@ -11,6 +11,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import urllib.parse
 import urllib.request
@@ -79,6 +80,8 @@ def issue(module_id, environ, get=get_json):
         else:
             raise ValueError("authority-pagination-incomplete")
         target = pr["merge_commit_sha"]
+        if not isinstance(target, str) or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", target):
+            raise ValueError("pr-binding-mismatch")
         commit = get(f"{root}/git/commits/{target}", token)
         base = pr["base"]["sha"]
         head = pr["head"]["sha"]
@@ -95,6 +98,8 @@ def issue(module_id, environ, get=get_json):
             "id": number, "headCommit": head, "baseCommit": base, "mergeResultCommit": target,
         })
     elif run["event"] == "workflow_dispatch":
+        if environ["GITHUB_REF"] != "refs/heads/main" or run["head_branch"] != "main":
+            raise ValueError("release-authority-mismatch")
         target = run["head_sha"]
         if environ["GITHUB_SHA"] != target or get(f"{root}/git/commits/{target}", token)["sha"] != target:
             raise ValueError("committed-candidate-required")

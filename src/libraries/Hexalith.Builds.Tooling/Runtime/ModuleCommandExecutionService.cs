@@ -1175,7 +1175,7 @@ public static class ModuleCommandExecutionService
                 CompositionStartResult started = await (options.SelectedPlatformStartOverride?.Invoke(manifestPath, selected!, startupToken ?? cancellationToken) ?? options.PlatformStartOverride?.Invoke(manifestPath, startupToken ?? cancellationToken) ?? engine.StartAsync(manifestPath, startupToken ?? cancellationToken)).ConfigureAwait(false);
                 session = started.Session;
                 startupStoppingTimestamp = started.StoppingTimestamp;
-                ownedRunId = session?.RunId ?? started.RunId ?? options.CandidatePolicy?.RunId;
+                ownedRunId = session?.RunId ?? started.RunId ?? (engine.CandidateStateIssued ? options.CandidatePolicy?.RunId : null);
                 bool ownerAvailable = true;
                 if (session is not null)
                 {

@@ -85,7 +85,7 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
             }
 
             if (S(run, "path").Split('@')[0] != configuration.CallerWorkflowPath
-                || !S(claims, "workflow_ref").StartsWith(repository + "/" + configuration.CallerWorkflowPath + "@", StringComparison.Ordinal)
+                || S(claims, "workflow_ref") != repository + "/" + configuration.CallerWorkflowPath + "@" + S(claims, "ref")
                 || !Commit(S(claims, "workflow_sha")))
             {
                 throw new CandidatePolicyException("issuer-workflow-mismatch");
@@ -175,14 +175,15 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
                     throw new CandidatePolicyException("pr-binding-mismatch");
                 }
 
-                JsonElement[] candidates = await PagesAsync(prefix + "/actions/workflows/" + run.GetProperty("workflow_id").ToString() + "/runs?event=pull_request", "workflow_runs", cancellationToken).ConfigureAwait(false);
+                JsonElement[] candidates = await PagesAsync(prefix + "/actions/workflows/" + run.GetProperty("workflow_id").ToString() + "/runs?event=pull_request&created=" + Uri.EscapeDataString(">=" + S(run, "created_at")), "workflow_runs", cancellationToken).ConfigureAwait(false);
                 if (candidates.Any(newer => newer.GetProperty("run_number").GetInt64() > run.GetProperty("run_number").GetInt64()
                     && newer.GetProperty("pull_requests").EnumerateArray().Any(item => item.GetProperty("number").ToString() == number)))
                 {
                     throw new CandidatePolicyException("latest-issued-attempt-required");
                 }
             }
-            else if (kind != "release" || S(run, "event") != "workflow_dispatch" || S(run, "head_sha") != target || S(claims, "sha") != target)
+            else if (kind != "release" || S(run, "event") != "workflow_dispatch" || S(run, "head_sha") != target || S(claims, "sha") != target
+                || S(claims, "ref") != "refs/heads/main" || S(run, "head_branch") != "main")
             {
                 throw new CandidatePolicyException("release-authority-mismatch");
             }
@@ -284,9 +285,9 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
             if (S(claims, "repository") != repository || S(claims, "run_id") != gateRun
                 || S(claims, "run_attempt") != binding.AttemptSequence.ToString(CultureInfo.InvariantCulture)
                 || S(claims, "sha") != S(binding.Candidate, "committedRevision") || S(claims, "runner_environment") != "github-hosted"
-                || !S(claims, "workflow_ref").StartsWith(repository + "/" + configuration.CallerWorkflowPath + "@", StringComparison.Ordinal)
+                || S(claims, "workflow_ref") != repository + "/" + configuration.CallerWorkflowPath + "@" + S(claims, "ref")
                 || S(claims, "event_name") != (S(binding.Decision, "kind") == "pr-merge" ? "pull_request" : "workflow_dispatch")
-                || (S(binding.Decision, "kind") == "pr-merge" && S(claims, "ref") != "refs/pull/" + S(binding.Decision.GetProperty("pr"), "id") + "/merge"))
+                || S(claims, "ref") != (S(binding.Decision, "kind") == "pr-merge" ? "refs/pull/" + S(binding.Decision.GetProperty("pr"), "id") + "/merge" : "refs/heads/main"))
             {
                 throw new CandidatePolicyException("consumer-authentication-required");
             }
@@ -378,7 +379,10 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
             || string.IsNullOrWhiteSpace(configuration.CallerContentIdentity) || string.IsNullOrWhiteSpace(configuration.ConsumerJobId)
             || string.IsNullOrWhiteSpace(configuration.ConsumerJobName)
             || !configuration.WorkflowRef.StartsWith("Hexalith/Hexalith.Builds/.github/workflows/candidate-policy.yml@", StringComparison.Ordinal)
-            || !Commit(configuration.WorkflowSha) || !configuration.CallerWorkflowPath.StartsWith(".github/workflows/", StringComparison.Ordinal)
+            || !Commit(configuration.WorkflowSha) || configuration.WorkflowSha.Any(char.IsAsciiLetterUpper)
+            || configuration.CallerContentIdentity.Length != 71 || !configuration.CallerContentIdentity.StartsWith("sha256:", StringComparison.Ordinal)
+            || !configuration.CallerContentIdentity[7..].All(character => char.IsAsciiHexDigit(character) && !char.IsAsciiLetterUpper(character))
+            || !configuration.CallerWorkflowPath.StartsWith(".github/workflows/", StringComparison.Ordinal)
             || configuration.Environment != "candidate-policy")
         {
             throw new CandidatePolicyException("issuer-not-enrolled");
@@ -410,7 +414,15 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
         JsonElement header = Parse(Decode(parts[0]));
         JsonElement claims = Parse(Decode(parts[1]));
         JsonElement jwks = await GetAsync("https://token.actions.githubusercontent.com/.well-known/jwks", cancellationToken, authenticated: false).ConfigureAwait(false);
-        JsonElement key = jwks.GetProperty("keys").EnumerateArray().Single(item => S(item, "kid") == S(header, "kid"));
+        JsonElement[] matchingKeys = [.. jwks.GetProperty("keys").EnumerateArray().Where(item => S(item, "kid") == S(header, "kid"))];
+        if (matchingKeys.Length != 1 || S(matchingKeys[0], "kty") != "RSA"
+            || !matchingKeys[0].TryGetProperty("n", out JsonElement modulus) || modulus.ValueKind != JsonValueKind.String
+            || !matchingKeys[0].TryGetProperty("e", out JsonElement exponent) || exponent.ValueKind != JsonValueKind.String)
+        {
+            throw new CandidatePolicyException("issuer-authentication-required");
+        }
+
+        JsonElement key = matchingKeys[0];
         using RSA rsa = RSA.Create();
         rsa.ImportParameters(new RSAParameters { Modulus = Decode(S(key, "n")), Exponent = Decode(S(key, "e")) });
         if (S(header, "alg") != "RS256" || S(key, "kty") != "RSA" || !rsa.VerifyData(Encoding.ASCII.GetBytes(parts[0] + "." + parts[1]), Decode(parts[2]), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
@@ -435,14 +447,15 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
         int? totalCount = null;
         HashSet<long> runIds = [];
         bool filteredRuns = collection == "workflow_runs";
+        int pageSize = filteredRuns ? 30 : 100;
         for (int page = 1; page <= 100; page++)
         {
-            JsonElement response = await GetAsync(path + (path.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "per_page=100&page=" + page.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+            JsonElement response = await GetAsync(path + (path.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "per_page=" + pageSize.ToString(CultureInfo.InvariantCulture) + "&page=" + page.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
             JsonElement array = collection is null ? response : response.GetProperty(collection);
             if (filteredRuns)
             {
                 if (!response.TryGetProperty("total_count", out JsonElement count) || count.ValueKind != JsonValueKind.Number || !count.TryGetInt32(out int observedTotal) || observedTotal < 0 || observedTotal >= 1000
-                    || (totalCount is not null && totalCount != observedTotal) || array.GetArrayLength() > 100)
+                    || (totalCount is not null && totalCount != observedTotal) || array.GetArrayLength() > pageSize)
                 {
                     throw new CandidatePolicyException("authority-pagination-incomplete");
                 }
@@ -458,7 +471,7 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
             }
 
             items.AddRange(array.EnumerateArray());
-            if (array.GetArrayLength() < 100)
+            if (array.GetArrayLength() < pageSize)
             {
                 return filteredRuns && items.Count != totalCount ? throw new CandidatePolicyException("authority-pagination-incomplete") : [.. items];
             }

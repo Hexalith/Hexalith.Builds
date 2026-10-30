@@ -943,7 +943,7 @@ jobs:
           retention-days: 7
 
   aspire-tests:
-    if: ${{ inputs.aspire-test-project != '' }}
+    if: ${{ !cancelled() && needs.build-and-test.result == 'success' && inputs.aspire-test-project != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.aspire-timeout-minutes }}
     needs: build-and-test

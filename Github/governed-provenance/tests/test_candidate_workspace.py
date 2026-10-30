@@ -53,3 +53,45 @@ class CandidateWorkspaceTests(unittest.TestCase):
     def test_wrong_preparation_revision_refuses(self):
         with self.assertRaisesRegex(ValueError, "checkout-mismatch"):
             MODULE.register(self.root, "0" * 40)
+
+
+    def test_foreign_preparation_origin_refuses(self):
+        self.gitrun(self.output, "remote", "set-url", "origin", "https://github.com/attacker/Hexalith.Builds.git")
+        with self.assertRaisesRegex(ValueError, "checkout-mismatch"):
+            MODULE.register(self.root, self.commit)
+
+    def test_output_and_parent_symlinks_refuse(self):
+        original = self.output
+        moved = self.root / "moved-preparation"
+        original.rename(moved)
+        original.symlink_to(moved, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "policy-unavailable"):
+            MODULE.register(self.root, self.commit)
+        original.unlink()
+        moved.rename(original)
+        parent = self.root / ".hexalith"
+        renamed = self.root / "moved-parent"
+        parent.rename(renamed)
+        parent.symlink_to(renamed, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "policy-unavailable"):
+            MODULE.register(self.root, self.commit)
+
+    def test_exclusion_symlink_refuses_without_touching_target(self):
+        target = self.root / "private-exclusion"
+        target.write_text("unchanged")
+        exclusion = self.root / ".git/info/exclude"
+        exclusion.unlink(missing_ok=True)
+        exclusion.symlink_to(target)
+        with self.assertRaisesRegex(ValueError, "policy-unavailable"):
+            MODULE.register(self.root, self.commit)
+        self.assertEqual(target.read_text(), "unchanged")
+
+    def test_registration_is_idempotent_and_preserves_existing_exclusions(self):
+        exclusion = self.root / ".git/info/exclude"
+        exclusion.write_text("# existing comment\n/existing-output")
+        MODULE.register(self.root, self.commit)
+        original = exclusion.read_bytes()
+        MODULE.register(self.root, self.commit)
+        self.assertEqual(exclusion.read_bytes(), original)
+        self.assertIn(b"# existing comment\n/existing-output\n", original)
+        self.assertEqual(original.count(b"/.hexalith/builds-execution/\n"), 1)

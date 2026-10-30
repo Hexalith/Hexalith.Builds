@@ -113,6 +113,9 @@ public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string
     /// <summary>Gets an offline replacement for the existing source-mapping resolver.</summary>
     internal Func<string, WorkspaceMode, CancellationToken, Task<SourceMapping>>? MappingResolverOverride { get; init; }
 
+    /// <summary>Gets explicit offline release-declaration authorities for fixture verification.</summary>
+    internal Func<CompositionDeclarationOptions, CompositionDeclarationOptions>? DeclarationOptionsOverride { get; init; }
+
     /// <summary>Gets a test-only replacement for the selected v2 session start boundary.</summary>
     internal Func<string, ModuleTestSelection, CancellationToken, Task<CompositionStartResult>>? SelectedPlatformStartOverride { get; init; }
 

@@ -299,4 +299,160 @@ public sealed class CandidatePolicyTests
         Should.Throw<CandidatePolicyException>(() => CandidatePolicyValidator.ValidateSelection(binding, "orders", "package", JsonSerializer.SerializeToElement(new { kind = "local" }))).Condition.ShouldBe("local-diagnostics-only");
         Should.Throw<CandidatePolicyException>(() => CandidatePolicyValidator.ValidateSelection(binding, "another-module", "package", fixture.Context)).Condition.ShouldBe("candidate-module-mismatch");
     }
+
+    /// <summary>Signed issuance authentication refuses individual key, header, issuer and payload substitutions.</summary>
+    /// <param name="mutation">The isolated authentication violation.</param>
+    /// <returns>The stable authentication refusal.</returns>
+    [Theory]
+    [InlineData("foreign")]
+    [InlineData("tampered")]
+    [InlineData("unknown")]
+    [InlineData("non-rsa")]
+    [InlineData("alg")]
+    [InlineData("iss")]
+    [InlineData("job_workflow_sha")]
+    [InlineData("environment")]
+    [InlineData("payload")]
+    public async Task IssuanceAuthenticationRefusesSubstitutionsAsync(string mutation)
+    {
+        using CandidateGateFixture fixture = new();
+        if (mutation is "foreign" or "tampered" or "unknown" or "non-rsa")
+        {
+            fixture.KeyMode = mutation;
+        }
+        else if (mutation == "alg")
+        {
+            fixture.Algorithm = "HS256";
+        }
+        else if (mutation != "payload")
+        {
+            fixture.IssuanceClaims = claims => claims[mutation] = "foreign-value";
+        }
+
+        string path = fixture.Sign();
+        if (mutation == "payload")
+        {
+            JsonObject envelope = JsonNode.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true))!.AsObject();
+            fixture.Payload["moduleId"] = "substituted";
+            envelope["payload"] = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(fixture.Payload));
+            await File.WriteAllTextAsync(path, envelope.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(path, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("issuer-authentication-required");
+    }
+
+    /// <summary>A single mismatched consumer claim cannot authenticate the executing process.</summary>
+    /// <param name="claim">The substituted claim.</param>
+    /// <returns>The stable consumer authentication refusal.</returns>
+    [Theory]
+    [InlineData("repository")]
+    [InlineData("run_id")]
+    [InlineData("run_attempt")]
+    [InlineData("sha")]
+    [InlineData("runner_environment")]
+    [InlineData("workflow_ref")]
+    [InlineData("event_name")]
+    [InlineData("ref")]
+    [InlineData("stale")]
+    public async Task ConsumerProofBindsEveryExecutionClaimAsync(string claim)
+    {
+        using CandidateGateFixture fixture = new();
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        fixture.ConsumerClaims = claims =>
+        {
+            if (claim == "stale")
+            {
+                claims["iat"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 120;
+            }
+            else
+            {
+                claims[claim] = "foreign-value";
+            }
+        };
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe(claim == "stale" ? "issuer-authentication-required" : "consumer-authentication-required");
+    }
+
+    /// <summary>Every actual CI job coordinate is bound independently of the signed request.</summary>
+    /// <param name="field">The substituted context field.</param>
+    /// <returns>The stable same-job refusal.</returns>
+    [Theory]
+    [InlineData("repository")]
+    [InlineData("workflowRunId")]
+    [InlineData("workflowAttempt")]
+    [InlineData("jobId")]
+    public async Task ExecutionContextBindsEveryJobCoordinateAsync(string field)
+    {
+        using CandidateGateFixture fixture = new();
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        JsonObject context = JsonNode.Parse(fixture.Context.GetRawText())!.AsObject();
+        context[field] = field == "workflowAttempt" ? JsonValue.Create(2) : JsonValue.Create("foreign-value");
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, JsonSerializer.SerializeToElement(context), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("same-ci-job-required");
+    }
+
+    /// <summary>The caller's authenticated path, ref and bytes must match the enrolled workflow.</summary>
+    /// <param name="mutation">The caller workflow substitution.</param>
+    /// <returns>The named workflow refusal.</returns>
+    [Theory]
+    [InlineData("bytes")]
+    [InlineData("path")]
+    [InlineData("ref")]
+    public async Task CallerWorkflowSubstitutionsRefuseAsync(string mutation)
+    {
+        using CandidateGateFixture fixture = new() { ChangedCallerBytes = mutation == "bytes" };
+        if (mutation == "path")
+        {
+            fixture.CallerPath = ".github/workflows/other.yml";
+        }
+        else if (mutation == "ref")
+        {
+            fixture.IssuanceClaims = claims => claims["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@refs/heads/foreign";
+        }
+
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("issuer-workflow-mismatch");
+    }
+
+    /// <summary>Duplicate JSON request keys are rejected without selecting an interpretation.</summary>
+    /// <returns>The duplicate-field refusal.</returns>
+    [Fact]
+    public async Task DuplicateRequestKeysRefuseAsync()
+    {
+        using CandidateGateFixture fixture = new();
+        string path = fixture.Sign();
+        string original = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(path, "{\"token\":\"foreign\"," + original[1..], TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(path, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("duplicate-request-field");
+    }
+
+    /// <summary>Release authority is restricted to the authenticated dispatch of main.</summary>
+    /// <param name="signedRef">The signed dispatch ref.</param>
+    /// <param name="apiBranch">The authenticated dispatch branch.</param>
+    /// <returns>The release authority refusal.</returns>
+    [Theory]
+    [InlineData("refs/heads/feature", "main")]
+    [InlineData("refs/tags/v1", "main")]
+    [InlineData("refs/heads/main", "feature")]
+    public async Task ReleaseDispatchRequiresMainAsync(string signedRef, string apiBranch)
+    {
+        using CandidateGateFixture fixture = new() { SignedRef = signedRef, DispatchBranch = apiBranch };
+        fixture.Payload["kind"] = "release";
+        _ = fixture.Payload.Remove("pr");
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("release-authority-mismatch");
+    }
+
+    /// <summary>Successor lookup is bounded to relevant creation times with pages below the response cap.</summary>
+    /// <returns>The exact API query assertions.</returns>
+    [Fact]
+    public async Task SuccessorLookupStartsAtGateCreationAsync()
+    {
+        using CandidateGateFixture fixture = new();
+        _ = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        Uri.UnescapeDataString(fixture.SuccessorQuery!).ShouldContain("created=>=2026-10-10T00:00:00Z");
+        fixture.SuccessorQuery!.ShouldContain("per_page=30");
+    }
 }

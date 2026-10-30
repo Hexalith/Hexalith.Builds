@@ -24,7 +24,6 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     private static readonly TimeSpan _pollInterval = TimeSpan.FromMilliseconds(500);
 
     private readonly CompositionEngineOptions _options = options ?? throw new ArgumentNullException(nameof(options));
-    private bool _candidateStateIssued;
 
     /// <summary>
     /// Gets the state store used by this engine.
@@ -35,6 +34,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// Gets the resource scanner used by this engine.
     /// </summary>
     public CompositionRunResourceScanner Scanner { get; } = new(options.DockerCommand);
+
+    /// <summary>Gets a value indicating whether this invocation issued its candidate state.</summary>
+    internal bool CandidateStateIssued { get; private set; }
 
     /// <summary>
     /// Starts one run for a validated manifest.
@@ -55,7 +57,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         CompositionEffectiveDeadline deadline = CompositionStartupDeadlineResolver.Resolve(null, _options.ReadinessTimeout);
         using CancellationTokenSource startupBound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        _candidateStateIssued = false;
+        CandidateStateIssued = false;
         string? runId = null;
         string? preparedWorkspace = null;
         Process? appHost = null;
@@ -95,12 +97,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
             ModuleManifest manifest = manifestResult.Manifest!;
             string? activeModule = PlatformManifestCommand.ActiveModule(platformDeclarations?.Declarations);
-            IReadOnlyList<PlatformModuleDeclaration>? closure = platformComposition
-                ? CompositionDeclarationClosure.Load(new CompositionDeclarationOptions(
-                    _options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping."),
-                    [Path.GetFullPath(manifestPath)])
-                { ActiveModule = activeModule })
+            CompositionDeclarationOptions? declarationOptions = platformComposition
+                ? new CompositionDeclarationOptions(_options.SourceMapping ?? throw new InvalidOperationException("Platform v2 requires a resolved source mapping."), [Path.GetFullPath(manifestPath)]) { ActiveModule = activeModule }
                 : null;
+            IReadOnlyList<PlatformModuleDeclaration>? closure = declarationOptions is null
+                ? null
+                : CompositionDeclarationClosure.Load(_options.DeclarationOptionsOverride?.Invoke(declarationOptions) ?? declarationOptions);
             deadline = CompositionStartupDeadlineResolver.Resolve(closure, _options.ReadinessTimeout);
             if (_options.SelectedTest is not null)
             {
@@ -413,17 +415,17 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         {
             if (_options.SelectedTest is not null && _options.SelectedExecutionOwnerToken is { IsCancellationRequested: false })
             {
-                return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
+                return await ReportStartupTimeoutAsync(requestedAt, deadline, _options.CandidatePolicy is null || CandidateStateIssued ? runId : null, manifestHash, appHost).ConfigureAwait(false);
             }
 
             ToolDiagnostic cancelled = Diagnostic("HXC130", ToolPhase.Cleanup, ToolFailureCategory.Cancelled, "The invocation was cancelled; bounded teardown ran.", "cancellation", null);
-            return runId is null
+            return runId is null || (_options.CandidatePolicy is not null && !CandidateStateIssued)
                 ? Failed("cancelled", ToolExitCode.Cancelled, [cancelled], null)
                 : await FailAndTearDownAsync(runId, appHost, manifestHash, CompositionRunStatus.Cancelled, cancelled, ToolExitCode.Cancelled, requestedAt, deadline).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (startupBound.IsCancellationRequested)
         {
-            return await ReportStartupTimeoutAsync(requestedAt, deadline, runId, manifestHash, appHost).ConfigureAwait(false);
+            return await ReportStartupTimeoutAsync(requestedAt, deadline, _options.CandidatePolicy is null || CandidateStateIssued ? runId : null, manifestHash, appHost).ConfigureAwait(false);
         }
         catch (InvalidDataException exception) when (runId is null)
         {
@@ -463,7 +465,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             // A duplicate producing identity belongs to another invocation; never tear down that owner.
             throw;
         }
-        catch (Exception exception) when (runId is not null && (_options.CandidatePolicy is null || _candidateStateIssued) && exception is not OutOfMemoryException)
+        catch (Exception exception) when (runId is not null && (_options.CandidatePolicy is null || CandidateStateIssued) && exception is not OutOfMemoryException)
         {
             // Once a run identity exists, resources may exist: every other failure (I/O, port allocation,
             // an inner timeout) is a lifecycle failure that must run bounded teardown instead of leaking the run.
@@ -2350,6 +2352,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         }
 
         string directory = DiagnosticsDirectory(runId);
+        if (_options.CandidatePolicy is not null && !CandidateStateIssued
+            && (Directory.Exists(directory) || await StateStore.TryReadAsync(runId, cancellationToken).ConfigureAwait(false) is not null))
+        {
+            throw new CandidatePolicy.CandidatePolicyException("fresh-producing-run-required");
+        }
+
         CompositionWorkspace.CreatePrivateDirectory(directory);
         FileStream outcomeLock = await OpenOutcomeLockAsync(Path.Combine(directory, "outcome.lock"), cancellationToken).ConfigureAwait(false);
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outcomeLifetime = outcomeLock.ConfigureAwait(false);
@@ -2361,7 +2369,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
         if (existing is not null)
         {
-            return _options.CandidatePolicy is null || _candidateStateIssued ? existing : throw new CandidatePolicy.CandidatePolicyException("fresh-producing-run-required");
+            return _options.CandidatePolicy is null || CandidateStateIssued ? existing : throw new CandidatePolicy.CandidatePolicyException("fresh-producing-run-required");
         }
 
         CompositionRunState initial = CompositionRunPlanFactory.CreateInitialState(runId, WorkspaceFor(runId), manifestHash, requestedAt) with
@@ -2378,7 +2386,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             ExecutionContext = _options.SelectedTest is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(TestEnvironment.TestEnvironmentDescriptorWriter.ExecutionContext()),
         };
         await StateStore.WriteAsync(initial, cancellationToken).ConfigureAwait(false);
-        _candidateStateIssued = _options.CandidatePolicy is not null;
+        CandidateStateIssued = _options.CandidatePolicy is not null;
         await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "owner.json"), initial, cancellationToken).ConfigureAwait(false);
         return initial;
     }

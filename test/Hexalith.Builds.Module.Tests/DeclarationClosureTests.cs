@@ -159,7 +159,10 @@ public sealed class DeclarationClosureTests
         }
     }
 
-    private static CompositionDeclarationOptions PackageOptions(string root)
+    /// <summary>Creates explicit offline package snapshots with fixture-only release authorities.</summary>
+    /// <param name="root">The isolated repository root.</param>
+    /// <returns>The fixture declaration authorities.</returns>
+    internal static CompositionDeclarationOptions PackageOptions(string root)
     {
         SourceMapping source = CompositionTestFiles.CreatePlatformMapping(root);
         string directory = Path.Combine(root, "src", "Hexalith.Platform.Composition", "Declarations");

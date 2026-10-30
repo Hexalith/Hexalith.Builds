@@ -148,6 +148,30 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
     /// <summary>Gets or sets the filtered workflow pagination scenario.</summary>
     public string WorkflowPaginationMode { get; set; } = "complete";
 
+    /// <summary>Gets or sets a signed issuance claim mutation.</summary>
+    public Action<JsonObject>? IssuanceClaims { get; set; }
+
+    /// <summary>Gets or sets a signed consumer claim mutation.</summary>
+    public Action<JsonObject>? ConsumerClaims { get; set; }
+
+    /// <summary>Gets or sets the JWT header algorithm.</summary>
+    public string Algorithm { get; set; } = "RS256";
+
+    /// <summary>Gets or sets the JWT signing key scenario.</summary>
+    public string KeyMode { get; set; } = "valid";
+
+    /// <summary>Gets or sets the caller workflow API path.</summary>
+    public string CallerPath { get; set; } = ".github/workflows/ci.yml";
+
+    /// <summary>Gets or sets a value indicating whether the approved caller bytes changed.</summary>
+    public bool ChangedCallerBytes { get; set; }
+
+    /// <summary>Gets or sets the dispatched branch reported by GitHub.</summary>
+    public string DispatchBranch { get; set; } = "main";
+
+    /// <summary>Gets the successor-list query observed by the fixture.</summary>
+    public string? SuccessorQuery { get; private set; }
+
     /// <summary>Gets the actual CI representation used by the runner fixture.</summary>
     public JsonElement Context => JsonSerializer.SerializeToElement(new { kind = "ci", repository = "Hexalith/Orders", workflowRunId = GateRunId, workflowAttempt = CurrentAttempt, jobId = "integration", runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true });
 
@@ -167,13 +191,14 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
             ["event_name"] = SignedEvent ?? (Payload["kind"]!.GetValue<string>() == "release" ? "workflow_dispatch" : "pull_request"),
             ["sha"] = SignedSha ?? _targetCommit,
             ["ref"] = SignedRef ?? (Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge"),
-            ["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@" + (Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge"),
+            ["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@" + (SignedRef ?? (Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge")),
             ["workflow_sha"] = _targetCommit,
             ["run_id"] = Payload["gateRunId"]!.GetValue<string>(),
             ["run_attempt"] = Payload["attemptSequence"]!.ToString(),
             ["iat"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 10,
             ["exp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 300,
         };
+        IssuanceClaims?.Invoke(claims);
         string token = CreateToken(claims);
         _issuanceToken = token;
         string path = Path.Combine(_directory, Guid.NewGuid().ToString("N") + ".json");
@@ -208,7 +233,14 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
             }
 
             RSAParameters parameters = _rsa.ExportParameters(false);
-            result = new { keys = new[] { new { kid = "fixture", kty = "RSA", n = Encode(parameters.Modulus!), e = Encode(parameters.Exponent!) } } };
+            if (KeyMode == "non-rsa")
+            {
+                result = new { keys = new[] { new { kid = "fixture", kty = "EC" } } };
+            }
+            else
+            {
+                result = new { keys = new[] { new { kid = KeyMode == "unknown" ? "other" : "fixture", kty = "RSA", n = Encode(parameters.Modulus!), e = Encode(parameters.Exponent!) } } };
+            }
         }
         else
         {
@@ -240,12 +272,17 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
                 }
             }
 
+            if (path.Contains("/actions/workflows/", StringComparison.Ordinal))
+            {
+                SuccessorQuery = request.RequestUri.Query;
+            }
+
             result = path switch
             {
                 var value when value.EndsWith("/approvals", StringComparison.Ordinal) => ReviewApproved ? new[] { new { state = "approved", user = new { id = 1 }, environments = new[] { new { name = "candidate-policy" } } } } : [],
                 var value when value.EndsWith("/jobs", StringComparison.Ordinal) => new { jobs = new[] { new { name = "Integration", runner_group_name = JobRunnerGroup, labels = JobLabels } } },
-                var value when value.Contains("/actions/runs/", StringComparison.Ordinal) => new { id = long.Parse(GateRunId, System.Globalization.CultureInfo.InvariantCulture), repository = new { full_name = "Hexalith/Orders" }, run_attempt = CurrentAttempt, run_number = 10, path = ".github/workflows/ci.yml", head_sha = RunHead ?? (Payload["kind"]!.GetValue<string>() == "release" ? _targetCommit : _headCommit), created_at = "2026-10-10T00:00:00Z", workflow_id = 1, status = RunStatus, conclusion = Conclusion, @event = Payload["kind"]!.GetValue<string>() == "release" ? "workflow_dispatch" : "pull_request", pull_requests = new[] { new { number = 7, head = new { sha = _headCommit }, @base = new { sha = _baseCommit } } } },
-                var value when value.Contains("/contents/", StringComparison.Ordinal) => new { encoding = "base64", content = Convert.ToBase64String(request.RequestUri.Query == "?ref=" + _targetCommit ? "trusted workflow"u8 : "wrong workflow source"u8) },
+                var value when value.Contains("/actions/runs/", StringComparison.Ordinal) => new { id = long.Parse(GateRunId, System.Globalization.CultureInfo.InvariantCulture), repository = new { full_name = "Hexalith/Orders" }, run_attempt = CurrentAttempt, run_number = 10, path = CallerPath, head_branch = DispatchBranch, head_sha = RunHead ?? (Payload["kind"]!.GetValue<string>() == "release" ? _targetCommit : _headCommit), created_at = "2026-10-10T00:00:00Z", workflow_id = 1, status = RunStatus, conclusion = Conclusion, @event = Payload["kind"]!.GetValue<string>() == "release" ? "workflow_dispatch" : "pull_request", pull_requests = new[] { new { number = 7, head = new { sha = _headCommit }, @base = new { sha = _baseCommit } } } },
+                var value when value.Contains("/contents/", StringComparison.Ordinal) => new { encoding = "base64", content = Convert.ToBase64String(request.RequestUri.Query == "?ref=" + _targetCommit && !ChangedCallerBytes ? "trusted workflow"u8 : "wrong workflow source"u8) },
                 var value when value.Contains("/environments/", StringComparison.Ordinal) => new { protection_rules = new[] { new { type = "required_reviewers", reviewers = Approved ? new[] { new { id = 1 } } : [] } } },
                 var value when value.Contains("/git/commits/", StringComparison.Ordinal) => new { sha = _targetCommit, parents = new[] { new { sha = WrongParents ? _headCommit : _baseCommit }, new { sha = WrongParents ? _baseCommit : _headCommit } } },
                 var value when value.Contains("/git/ref/", StringComparison.Ordinal) => new { @object = new { sha = ChangedBase ? _headCommit : _baseCommit } },
@@ -276,8 +313,15 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
 
     private string CreateToken(JsonObject claims)
     {
-        string input = Encode(JsonSerializer.SerializeToUtf8Bytes(new { alg = "RS256", kid = "fixture" })) + "." + Encode(JsonSerializer.SerializeToUtf8Bytes(claims));
-        return input + "." + Encode(_rsa.SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+        string input = Encode(JsonSerializer.SerializeToUtf8Bytes(new { alg = Algorithm, kid = "fixture" })) + "." + Encode(JsonSerializer.SerializeToUtf8Bytes(claims));
+        using RSA foreign = RSA.Create(2048);
+        byte[] signature = (KeyMode == "foreign" ? foreign : _rsa).SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        if (KeyMode == "tampered")
+        {
+            signature[0] ^= 1;
+        }
+
+        return input + "." + Encode(signature);
     }
 
     private Task<string> ConsumerProofAsync(string audience, CancellationToken cancellationToken)
@@ -300,7 +344,7 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
             ["job_workflow_ref"] = ConsumerProofMode == "wrong-workflow" ? Configuration.WorkflowRef : Configuration.WorkflowRef.Replace("/candidate-policy.yml@", "/domain-ci.yml@", StringComparison.Ordinal),
             ["job_workflow_sha"] = Configuration.WorkflowSha,
             ["repository"] = "Hexalith/Orders",
-            ["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@refs/heads/main",
+            ["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@" + (Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge"),
             ["runner_environment"] = "github-hosted",
             ["run_id"] = Payload["gateRunId"]!.GetValue<string>(),
             ["run_attempt"] = Payload["attemptSequence"]!.ToString(),
@@ -310,6 +354,7 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
             ["iat"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 1,
             ["exp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 300,
         };
+        ConsumerClaims?.Invoke(claims);
         _consumerToken = CreateToken(claims);
         return Task.FromResult(_consumerToken);
     }

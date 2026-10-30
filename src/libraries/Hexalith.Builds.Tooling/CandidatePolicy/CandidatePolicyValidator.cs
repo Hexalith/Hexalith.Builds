@@ -5,9 +5,12 @@
 
 namespace Hexalith.Builds.Tooling.CandidatePolicy;
 
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Hexalith.Builds.Tooling.Manifest;
+using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.TestEnvironment;
 
 /// <summary>Applies the published selection and acceptance policy without treating JSON claims as authority.</summary>
@@ -59,6 +62,8 @@ public static class CandidatePolicyValidator
         TestEnvironmentContractReadResult result = TestEnvironmentContractReader.ReadResult(resultPath, cancellationToken);
         if (!descriptor.IsValid || !result.IsValid)
         {
+            ValidateRawPolicy(descriptorPath, cancellationToken);
+            ValidateRawPolicy(resultPath, cancellationToken);
             throw new CandidatePolicyException("contract-invalid");
         }
 
@@ -286,7 +291,12 @@ public static class CandidatePolicyValidator
 
     private static void ValidateStartupDeclarations(JsonElement before, JsonElement after)
     {
-        if (!Populated(before) || !Populated(after))
+        if (Populated(before) != Populated(after))
+        {
+            throw new CandidatePolicyException("descriptor-result-disagreement");
+        }
+
+        if (!Populated(before))
         {
             return;
         }
@@ -338,10 +348,55 @@ public static class CandidatePolicyValidator
 
     private static void ValidatePassingDuration(JsonElement deadline)
     {
+        if (Populated(deadline) && !deadline.TryGetProperty("actualDurationSeconds", out _))
+        {
+            throw new CandidatePolicyException("passing-duration-required");
+        }
+
         if (deadline.TryGetProperty("actualDurationSeconds", out JsonElement actual) && deadline.TryGetProperty("effectiveSeconds", out JsonElement budget)
             && actual.GetDouble() > budget.GetDouble())
         {
             throw new CandidatePolicyException("passing-deadline-exceeded");
+        }
+    }
+
+    private static void ValidateRawPolicy(string path, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(path, respectSharing: true);
+            if (!stream.CanSeek || stream.Length > TestEnvironmentContractReader.MaximumDocumentBytes)
+            {
+                return;
+            }
+
+            byte[] bytes = new byte[checked((int)stream.Length)];
+            stream.ReadExactly(bytes);
+            cancellationToken.ThrowIfCancellationRequested();
+            int offset = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+            using JsonDocument document = JsonDocument.Parse(new UTF8Encoding(false, true).GetString(bytes, offset, bytes.Length - offset), new JsonDocumentOptions { MaxDepth = TestEnvironmentContractReader.MaximumDepth });
+            JsonElement root = document.RootElement;
+            if (JsonDuplicatePropertyValidator.FindDuplicateProperty(root) is not null)
+            {
+                return;
+            }
+
+            if (!root.TryGetProperty("policyId", out JsonElement policy) || policy.ValueKind != JsonValueKind.String || policy.GetString() != TestEnvironmentContractReader.PolicyId)
+            {
+                throw new CandidatePolicyException("exact-policy-required");
+            }
+
+            if (root.TryGetProperty("bindings", out JsonElement bindings) && bindings.TryGetProperty("reuseLineage", out JsonElement lineage)
+                && ((lineage.TryGetProperty("reuseAllowed", out JsonElement allowed) && allowed.ValueKind == JsonValueKind.True)
+                    || (lineage.TryGetProperty("sourceRunIds", out JsonElement runs) && runs.ValueKind == JsonValueKind.Array && runs.GetArrayLength() > 0)
+                    || (lineage.TryGetProperty("sourceDecisionIds", out JsonElement decisions) && decisions.ValueKind == JsonValueKind.Array && decisions.GetArrayLength() > 0)))
+            {
+                throw new CandidatePolicyException("no-cross-decision-reuse");
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or JsonException or InvalidOperationException)
+        {
+            // Raw inspection only names policy refusals; invalid documents still fail the strict reader.
         }
     }
 

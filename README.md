@@ -588,6 +588,76 @@ probes are not operating-system reservations. Claims are released only after the
 existing ownership-limited cleanup verifies that the owning resources are gone.
 `down --run-id <owner>` continues to target only that run.
 
+### Authenticated candidate selection (policy v1)
+
+`hexalith-module test --manifest <v2-manifest> --profile <suite> --mode package
+--candidate-request <signed-request.json>` selects only the committed revision
+issued by the approved Builds `candidate-policy.yml` reusable workflow under
+`hexalith.platform.candidate-and-attachment-policy.v1`. Calls without a candidate
+request remain explicitly `baseline-only` diagnostics. Candidate selection refuses
+local/source execution, uncommitted inputs, a different module/revision, unavailable
+GitHub authentication, changed/closed/reopened/retargeted requests and superseded
+attempts before services start. The candidate checkout must be clean and exact;
+keep issuance and result files outside tracked candidate inputs (for example,
+`RUNNER_TEMP`). Each job attempt permits one candidate invocation; preserved
+diagnostics prevent reuse of its producing run even after active state cleanup. Selection does not confer acceptance or release authority.
+
+The workflow issues a private envelope containing base64 payload bytes and a GitHub
+OIDC attestation whose audience is `hexalith-candidate-v1:<sha256(payload)>`. The
+runner verifies RS256 against GitHub's TLS JWKS, the exact reusable workflow ref
+and SHA, protected environment, repository, run and attempt. Saved observation JSON
+is never authentication. The original workflow run identifies the decision; reruns
+retain it with distinct producing runs/attempts and `run_attempt` sequence. A new
+release workflow dispatch on `refs/heads/main` is a distinct request, even at
+identical bytes; other dispatch refs are refused. PR
+selection also checks its original workflow-run head/base/merge identity, current
+open epoch (including reopen/retarget events), exact committed merge parents and
+current base branch tip. Only the newest registered workflow request/attempt can
+qualify; queued, failed and cancelled successors supersede older passes.
+
+Selection and final validation also require a fresh nonce-bound consumer OIDC
+proof from the approved Builds consumer workflow at the same enrolled revision
+(currently `domain-ci.yml`; see the CI wiring note below). The proof binds the current run,
+attempt and candidate; copied issuance artifacts or CI environment variables
+cannot authenticate a local process. The fresh proof is not retained as evidence.
+
+Host operators must independently provision `HEXALITH_CANDIDATE_GATE_CONFIG` and
+read-only `HEXALITH_CANDIDATE_GITHUB_TOKEN`. The JSON configuration has the PascalCase
+fields `WorkflowRef`, `WorkflowSha`, `Environment` (exactly `candidate-policy`),
+`CallerWorkflowPath`, `CallerContentIdentity` (`sha256:` plus 64 lowercase hex digits for approved workflow bytes),
+`ConsumerJobId` and `ConsumerJobName`. Enroll the approved reusable workflow ref and
+exact lowercase commit separately from its caller bytes and protected-environment reviewers.
+None of these trusted coordinates are accepted from a candidate request. Missing
+enrollment, reviewers, API access, signature keys or complete observations refuses.
+Archived issuance attestations may outlive their JWT expiry: they authenticate only
+the immutable original issuance; every use still requires fresh authenticated GitHub
+request and attempt observations. They are never bearer access credentials.
+
+`hexalith-module validate-result --candidate-request <signed-request.json>
+--environment <test-environment.json> --result <test-result.json>` refetches authority,
+compares immutable descriptor/result bindings, checks explicit empty reuse lineage,
+package/Release disposable Linux GitHub-hosted execution, artifact identities,
+required suite completion and applicable tool qualifications. All policy refusals
+use `HXP301` with a stable named condition. It never promotes local, baseline,
+cancelled, withdrawn, incomplete or foreign evidence.
+
+`domain-ci.yml` carries no candidate wiring and requests only `contents: read`.
+GitHub validates a called workflow's job permissions before evaluating `if:`, so
+an opt-in job requesting `id-token: write` breaks every caller that grants only
+`contents: read`. `candidate-policy.yml` remains a standalone reusable workflow.
+A separate opt-in consumer workflow will be added with live issuer enrollment.
+That workflow must supply the trusted gate configuration from Builds-owned
+per-repository enrollment at its own workflow SHA, never from consumer scripts.
+There are no publication permissions or provider credentials in this gate.
+
+Local signed HTTP and workflow fixtures exercise this enforcement. No live issuer,
+tool adoption, Platform acceptance or integration qualification is enrolled by these
+changes. Loaded artifact producers remain Story 3.9. Even fully populated JSON
+qualification references cannot authenticate themselves: final acceptance currently
+refuses `tool-qualification-authentication-unavailable` until an independently
+accepted qualification authority exists. Unavailable artifact/suite/tool proof also
+refuses; a passing fixture grants no live candidate qualification.
+
 ### Platform version catalog and startup prerequisites
 
 The tools are published. The `toolVersionRange` in Platform's
@@ -1092,72 +1162,3 @@ environment. Merging or pushing does not start a release.
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for
 details.
-
-
-### Authenticated candidate selection (policy v1)
-
-`hexalith-module test --manifest <v2-manifest> --profile <suite> --mode package
---candidate-request <signed-request.json>` selects only the committed revision
-issued by the approved Builds `candidate-policy.yml` reusable workflow under
-`hexalith.platform.candidate-and-attachment-policy.v1`. Calls without a candidate
-request remain explicitly `baseline-only` diagnostics. Candidate selection refuses
-local/source execution, uncommitted inputs, a different module/revision, unavailable
-GitHub authentication, changed/closed/reopened/retargeted requests and superseded
-attempts before services start. The candidate checkout must be clean and exact;
-keep issuance and result files outside tracked candidate inputs (for example,
-`RUNNER_TEMP`). Selection does not confer acceptance or release authority.
-
-The workflow issues a private envelope containing base64 payload bytes and a GitHub
-OIDC attestation whose audience is `hexalith-candidate-v1:<sha256(payload)>`. The
-runner verifies RS256 against GitHub's TLS JWKS, the exact reusable workflow ref
-and SHA, protected environment, repository, run and attempt. Saved observation JSON
-is never authentication. The original workflow run identifies the decision; reruns
-retain it with distinct producing runs/attempts and `run_attempt` sequence. A new
-release workflow dispatch is a distinct request, even at identical bytes. PR
-selection also checks its original workflow-run head/base/merge identity, current
-open epoch (including reopen/retarget events), exact committed merge parents and
-current base branch tip. Only the newest registered workflow request/attempt can
-qualify; queued, failed and cancelled successors supersede older passes.
-
-Selection and final validation also require a fresh nonce-bound consumer OIDC
-proof from the approved Builds consumer workflow at the same enrolled revision
-(currently `domain-ci.yml`; see the CI wiring note below). The proof binds the current run,
-attempt and candidate; copied issuance artifacts or CI environment variables
-cannot authenticate a local process. The fresh proof is not retained as evidence.
-
-Host operators must independently provision `HEXALITH_CANDIDATE_GATE_CONFIG` and
-read-only `HEXALITH_CANDIDATE_GITHUB_TOKEN`. The JSON configuration has the PascalCase
-fields `WorkflowRef`, `WorkflowSha`, `Environment` (exactly `candidate-policy`),
-`CallerWorkflowPath`, `CallerContentIdentity` (SHA-256 of approved workflow bytes),
-`ConsumerJobId` and `ConsumerJobName`. Enroll the approved reusable workflow ref and
-exact commit separately from its caller bytes and protected-environment reviewers.
-None of these trusted coordinates are accepted from a candidate request. Missing
-enrollment, reviewers, API access, signature keys or complete observations refuses.
-Archived issuance attestations may outlive their JWT expiry: they authenticate only
-the immutable original issuance; every use still requires fresh authenticated GitHub
-request and attempt observations. They are never bearer access credentials.
-
-`hexalith-module validate-result --candidate-request <signed-request.json>
---environment <test-environment.json> --result <test-result.json>` refetches authority,
-compares immutable descriptor/result bindings, checks explicit empty reuse lineage,
-package/Release disposable Linux GitHub-hosted execution, artifact identities,
-required suite completion and applicable tool qualifications. All policy refusals
-use `HXP301` with a stable named condition. It never promotes local, baseline,
-cancelled, withdrawn, incomplete or foreign evidence.
-
-`domain-ci.yml` carries no candidate wiring and requests only `contents: read`.
-GitHub validates a called workflow's job permissions before evaluating `if:`, so
-an opt-in job requesting `id-token: write` breaks every caller that grants only
-`contents: read`. `candidate-policy.yml` remains a standalone reusable workflow.
-A separate opt-in consumer workflow will be added with live issuer enrollment.
-That workflow must supply the trusted gate configuration from Builds-owned
-per-repository enrollment at its own workflow SHA, never from consumer scripts.
-There are no publication permissions or provider credentials in this gate.
-
-Local signed HTTP and workflow fixtures exercise this enforcement. No live issuer,
-tool adoption, Platform acceptance or integration qualification is enrolled by these
-changes. Loaded artifact producers remain Story 3.9. Even fully populated JSON
-qualification references cannot authenticate themselves: final acceptance currently
-refuses `tool-qualification-authentication-unavailable` until an independently
-accepted qualification authority exists. Unavailable artifact/suite/tool proof also
-refuses; a passing fixture grants no live candidate qualification.
