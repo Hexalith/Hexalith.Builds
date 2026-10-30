@@ -101,6 +101,9 @@
     <PackageVersion Include="Hexalith.Parties.Client" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.ConsumerPortal" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.Contracts" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Parties.EventStoreExtensions" Version="$(HexalithPartiesVersion)" />
+    <PackageVersion Include="Hexalith.Memories.EventStore" Version="$(HexalithMemoriesVersion)" />
+    <PackageVersion Include="Hexalith.Memories.EventStoreExtensions" Version="$(HexalithMemoriesVersion)" />
     <PackageVersion Include="Hexalith.Parties.Picker" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Parties.Testing" Version="$(HexalithPartiesVersion)" />
     <PackageVersion Include="Hexalith.Projects" Version="$(HexalithProjectsVersion)" />

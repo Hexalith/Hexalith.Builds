@@ -162,6 +162,40 @@ public sealed class CompositionRedactionTests
         }
     }
 
+    /// <summary>Verifies explicit native surfaces are signed once without granting an administrator role.</summary>
+    /// <param name="surface">The closed owner surface.</param>
+    [Theory]
+    [InlineData("agent")]
+    [InlineData("ui")]
+    [InlineData("service")]
+    public void ExplicitSurfacesDoNotGrantAdministratorAuthority(string surface)
+    {
+        string token = CompositionTokenFactory.Create(
+            CompositionSigningKey.Create(),
+            new CompositionTokenRequest("g4-native-tests", ["synthetic", "system"], ["party", "tenants"], ["command:submit", "query:read"], false, TimeSpan.FromMinutes(1)) { Surface = surface },
+            DateTimeOffset.UtcNow);
+        using JsonDocument payload = JsonDocument.Parse(Decode(token.Split('.')[1]));
+        payload.RootElement.GetProperty("eventstore:surface").GetString().ShouldBe(surface);
+        payload.RootElement.EnumerateObject().Count(property => property.Name == "eventstore:surface").ShouldBe(1);
+        payload.RootElement.TryGetProperty("role", out _).ShouldBeFalse();
+        payload.RootElement.GetProperty("domains").GetString().ShouldBe("party tenants");
+    }
+
+    /// <summary>Verifies unknown, ambiguous and wildcard surface requests cannot mint credentials.</summary>
+    /// <param name="surface">The rejected surface.</param>
+    [Theory]
+    [InlineData("operator")]
+    [InlineData("agent ui")]
+    [InlineData("*")]
+    [InlineData("")]
+    public void UnknownAuthenticatedSurfaceIsRefused(string surface)
+    {
+        _ = Should.Throw<ArgumentException>(() => CompositionTokenFactory.Create(
+            CompositionSigningKey.Create(),
+            new CompositionTokenRequest("native", ["synthetic"], ["party"], [], false, TimeSpan.FromMinutes(1)) { Surface = surface },
+            DateTimeOffset.UtcNow));
+    }
+
     /// <summary>
     /// Verifies minted tokens are HS256-signed with the run key and carry the requested claims.
     /// </summary>
