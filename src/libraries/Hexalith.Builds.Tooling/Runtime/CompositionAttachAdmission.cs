@@ -159,7 +159,17 @@ public static class CompositionAttachAdmission
         string directory = Path.Combine(store.Directory, "diagnostics", ownerRunId);
         try
         {
-            if (!CompositionRunStateStore.IsVerified(await store.TryReadAsync(ownerRunId, cancellationToken).ConfigureAwait(false), ownerRunId))
+            CompositionRunState? owner = await CompositionDocumentStore.ReadIfExistsAsync<CompositionRunState>(store.PathFor(ownerRunId), cancellationToken).ConfigureAwait(false);
+            if (owner is null)
+            {
+                IReadOnlyList<CompositionAttachment> archived = await CompositionAttachmentStore.ReadAsync(directory, ownerRunId, cancellationToken).ConfigureAwait(false);
+                CompositionAttachment? first = archived.FirstOrDefault(item => item.AttachedRunId == attachedRunId || item.OriginalAttachmentRequestId == attachedRunId);
+                return first?.EndedAtUtc is not null
+                    ? new ToolCommandResult("ended", ToolOutcome.Passed(), []) { Attachment = first }
+                    : Refuse("HXR033", "owner-unknown", "No verified runner-owned environment is tracked for this owner run.");
+            }
+
+            if (!CompositionRunStateStore.IsVerified(owner, ownerRunId))
             {
                 return Refuse("HXR033", "owner-unknown", "No verified runner-owned environment is tracked for this owner run.");
             }
@@ -271,8 +281,8 @@ public static class CompositionAttachAdmission
             return Refuse("HXR036", "unknown-attachment-request", "The presented attachment identity was not issued for this environment.");
         }
 
-        string? ended = lineage.EndedAtUtc is not null ? "attachment-ended" : null;
-        if (ended is null && now >= lineage.ExpiresAtUtc)
+        string? ended = lineage.EndedAtUtc is not null && lineage.EndReason != "expired" ? "attachment-ended" : null;
+        if (ended is null && (lineage.EndReason == "expired" || now >= lineage.ExpiresAtUtc))
         {
             ended = "attachment-expired";
         }

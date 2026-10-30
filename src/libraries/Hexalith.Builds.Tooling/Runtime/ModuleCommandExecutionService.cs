@@ -1366,6 +1366,7 @@ public static class ModuleCommandExecutionService
             }
 
             bool attachedFailure = false;
+            string[] attachedFailureRunIds = [];
             bool holdsVerified = true;
             bool cleanupPending = false;
             bool cancellationWithdrawn = false;
@@ -1380,7 +1381,8 @@ public static class ModuleCommandExecutionService
                         : await CompositionAttachmentStore.ObserveAsync(attachmentDirectory, ownedRunId!, DateTimeOffset.UtcNow, attachmentMetadata.Token).ConfigureAwait(false);
                     result = result with { Diagnostics = [.. result.Diagnostics.Where(item => item.RuleId != "HXI011"), .. CompositionAttachmentStore.WithdrawalDiagnostics(attachments)] };
 
-                    attachedFailure = attachments.Any(item => item.Outcome == "failed");
+                    attachedFailureRunIds = [.. attachments.Where(item => item.Outcome == "failed").Select(item => item.AttachedRunId)];
+                    attachedFailure = attachedFailureRunIds.Length > 0;
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or OperationCanceledException)
                 {
@@ -1409,6 +1411,7 @@ public static class ModuleCommandExecutionService
                 {
                     attachedFailure = await CompositionAttachmentStore.WaitForHoldsOrFailureAsync(holdDirectory, ownedRunId, options.HoldPollInterval, cancellationToken).ConfigureAwait(false);
                     IReadOnlyList<CompositionAttachment> completedHolds = await CompositionAttachmentStore.ReadAsync(holdDirectory, ownedRunId, cancellationToken).ConfigureAwait(false);
+                    attachedFailureRunIds = [.. completedHolds.Where(item => item.Outcome == "failed").Select(item => item.AttachedRunId)];
                     result = result with { Diagnostics = [.. result.Diagnostics.Where(item => item.RuleId != "HXI011"), .. CompositionAttachmentStore.WithdrawalDiagnostics(completedHolds)] };
                     cleanup = !attachedFailure;
                     waitedForHolds = true;
@@ -1437,7 +1440,9 @@ public static class ModuleCommandExecutionService
                     await engine!.RecordOwnerCancellationAsync(ownedRunId, withdrawalToken).ConfigureAwait(false);
                     IReadOnlyList<CompositionAttachment> ended = await CompositionAttachmentStore.WithdrawAsync(attachmentDirectory, ownedRunId, "owner-cancelled", DateTimeOffset.UtcNow, withdrawalToken).ConfigureAwait(false);
                     result = result with { Diagnostics = [.. result.Diagnostics.Where(item => item.RuleId != "HXI011"), .. CompositionAttachmentStore.WithdrawalDiagnostics(ended)] };
-                    attachedFailure = (await CompositionAttachmentStore.ReadAsync(attachmentDirectory, ownedRunId, withdrawalToken).ConfigureAwait(false)).Any(item => item.Outcome == "failed");
+                    IReadOnlyList<CompositionAttachment> attachments = await CompositionAttachmentStore.ReadAsync(attachmentDirectory, ownedRunId, withdrawalToken).ConfigureAwait(false);
+                    attachedFailureRunIds = [.. attachments.Where(item => item.Outcome == "failed").Select(item => item.AttachedRunId)];
+                    attachedFailure = attachedFailureRunIds.Length > 0;
                     cleanup = cleanup && !attachedFailure;
                     cancellationWithdrawn = true;
                 }
@@ -1469,6 +1474,10 @@ public static class ModuleCommandExecutionService
                     using CancellationTokenSource metadata = new(TimeSpan.FromSeconds(5));
                     CompositionRunResources survivors = await engine!.ObserveOwnedResourcesAsync(ownedRunId, metadata.Token).ConfigureAwait(false);
                     record = await engine.RecordTestOutcomeAsync(ownedRunId, record.Resources, result, "retained", survivors, metadata.Token, executionTiming: session?.Plan.ExecutionTiming, environmentBindings: session?.EnvironmentBindings, archiveMetadata: false).ConfigureAwait(false);
+                    if (attachedFailure && record is { TerminalOutcome.ExitCode: ToolExitCode.Success, ResourceDisposition: "retained", CleanupDisposition: "not-requested" })
+                    {
+                        result = result with { Diagnostics = [.. result.Diagnostics, new ToolDiagnostic("HXI012", ToolPhase.Cleanup, ToolFailureCategory.None, $"Attached runs failed: {string.Join(", ", attachedFailureRunIds)}. The environment remains running for debugging; run down to release.", "retained")] };
+                    }
                 }
                 catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
                 {

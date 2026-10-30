@@ -1,0 +1,112 @@
+{
+  "scope": "The five review-patch corrections after the original fifth-pass implementation. The earlier 316-case run remains unchanged and historical. No broader tests were run in this patch handoff.",
+  "historicalRunManifest": "evidence/2-7/fifth-pass-verification.json",
+  "builds": [
+    {
+      "command": "dotnet build src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj -c Debug -nodeReuse:false",
+      "exitCode": 0,
+      "warnings": 0,
+      "errors": 0,
+      "log": "evidence/2-7/fifth-pass-review-patch-cli-build.txt"
+    },
+    {
+      "command": "dotnet build test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj -c Debug -nodeReuse:false -p:BuildProjectReferences=false",
+      "exitCode": 0,
+      "warnings": 0,
+      "errors": 0,
+      "log": "evidence/2-7/fifth-pass-review-patch-tests-build.txt"
+    }
+  ],
+  "tests": {
+    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -method '*RetryKeepsFirstAcceptanceAndExpiryAsync' -method '*ArchivedEndRefusesDirectoryAtOwnerStatePathAsync' -method '*MissingOwnerRefusesUnendedOrUnknownAttachmentWithoutWritingAsync' -method '*AttachedFailureRetainsPassedOwnerWithoutWaitingForPeerAsync' -method '*ConcurrentCompleteDownSuppressesAttachedRetentionDiagnosticAsync' -method '*AttachedFailureAfterLastHoldPollThenCancellationKeepsRetentionAsync' -method '*AttachedFailureThenOwnerCancellationKeepsRetentionAsync' -method '*CliRejectsMixedOptionCombinationsAsync' -method '*EndRequiresSupportedOutcomeAsync' -method '*AttachedFirstOutcomeIsImmutableAsync' -parallelMode none -noLogo -result-xml evidence/2-7/fifth-pass-review-patch-tests.xml",
+    "exitCode": 0,
+    "total": 24,
+    "passed": 24,
+    "errors": 0,
+    "failed": 0,
+    "skipped": 0,
+    "notRun": 0,
+    "durationSeconds": 4.837,
+    "log": "evidence/2-7/fifth-pass-review-patch-tests.txt",
+    "xml": "evidence/2-7/fifth-pass-review-patch-tests.xml",
+    "namedCases": [
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.RetryKeepsFirstAcceptanceAndExpiryAsync",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.EndRequiresSupportedOutcomeAsync(outcome: null)",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.EndRequiresSupportedOutcomeAsync(outcome: \\\"withdrawn\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.EndRequiresSupportedOutcomeAsync(outcome: \\\"unknown\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.EndRequiresSupportedOutcomeAsync(outcome: \\\"\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.ArchivedEndRefusesDirectoryAtOwnerStatePathAsync",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.MissingOwnerRefusesUnendedOrUnknownAttachmentWithoutWritingAsync(known: False)",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.MissingOwnerRefusesUnendedOrUnknownAttachmentWithoutWritingAsync(known: True)",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureRetainsPassedOwnerWithoutWaitingForPeerAsync(beforeOwner: False)",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureRetainsPassedOwnerWithoutWaitingForPeerAsync(beforeOwner: True)",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureAfterLastHoldPollThenCancellationKeepsRetentionAsync",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.ConcurrentCompleteDownSuppressesAttachedRetentionDiagnosticAsync",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFirstOutcomeIsImmutableAsync(outcome: \\\"passed\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFirstOutcomeIsImmutableAsync(outcome: \\\"failed\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFirstOutcomeIsImmutableAsync(outcome: \\\"cancelled\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CliRejectsMixedOptionCombinationsAsync(kind: \\\"end\\\", option: \\\"--mode\\\", value: \\\"source\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CliRejectsMixedOptionCombinationsAsync(kind: \\\"end\\\", option: \\\"--composition-identity\\\", value: \\\"abc\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CliRejectsMixedOptionCombinationsAsync(kind: \\\"end\\\", option: \\\"--target\\\", value: \\\"hosted\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CliRejectsMixedOptionCombinationsAsync(kind: \\\"end\\\", option: \\\"--environment-id\\\", value: \\\"00000000000000000000000000000000\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CliRejectsMixedOptionCombinationsAsync(kind: \\\"end\\\", option: \\\"--artifact-identity\\\", value: \\\"sha256:abc\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CliRejectsMixedOptionCombinationsAsync(kind: \\\"end\\\", option: \\\"--hold-seconds\\\", value: \\\"5\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CliRejectsMixedOptionCombinationsAsync(kind: \\\"admit\\\", option: \\\"--outcome\\\", value: \\\"passed\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.CliRejectsMixedOptionCombinationsAsync(kind: \\\"admit\\\", option: \\\"--attached-run-id\\\", value: \\\"00000000000000000000000000000000\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureThenOwnerCancellationKeepsRetentionAsync"
+    ]
+  },
+  "sourceHashes": {
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionAttachAdmission.cs": "d2698ed63cef3d3aaeb5e8795eb0c0c78d0fedf0222abffe5aa51e69fe660247",
+    "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs": "614e304871f4fa1144bfdd00ae620f5e485a27e586ef4317dad7da6280bbe241",
+    "test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs": "3ce81b97e64f8e194a503b47627c2cbaf91c8457805fb2d92a9e9867122b7366",
+    "README.md": "a6d0de88e4b7a9ec53a44c453342026b10421c55cee9c14219cfcf6089f1f4f9"
+  },
+  "artifactHashes": {
+    "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll": "6cad4ec02de6d484ebcbdc7699c4e11657bb11f8a9bf0b97bd799343c1db65c1",
+    "src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll": "97bae7259ec4bac4a6ee7692d7d45ff86a56b01e7f77098049db7e2fc618684b",
+    "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll": "97bae7259ec4bac4a6ee7692d7d45ff86a56b01e7f77098049db7e2fc618684b",
+    "src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll": "51cab5dc508fce80cf9cc3d5be19270e6759c91ffe482bc2b4a1a8cbb80605b7",
+    "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll": "51cab5dc508fce80cf9cc3d5be19270e6759c91ffe482bc2b4a1a8cbb80605b7"
+  },
+  "compiledSourceChecksumEvidence": [
+    {
+      "source": "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionAttachAdmission.cs",
+      "pdb": "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Tooling.pdb",
+      "pdbSha256": "cea2269e0eebf07f869a8f6db82f1a8a3d7850a177601e82c7b79c8e1321f4a3",
+      "sourceChecksumByteOffset": 150663
+    },
+    {
+      "source": "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs",
+      "pdb": "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Tooling.pdb",
+      "pdbSha256": "cea2269e0eebf07f869a8f6db82f1a8a3d7850a177601e82c7b79c8e1321f4a3",
+      "sourceChecksumByteOffset": 156296
+    },
+    {
+      "source": "test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs",
+      "pdb": "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.pdb",
+      "pdbSha256": "d8fb292923d627bc07e79e255f9f3854c8bba883065c9abca36301b39080718d",
+      "sourceChecksumByteOffset": 145518
+    }
+  ],
+  "testedToolingAndCliCopiesMatchFreshBuilds": true,
+  "verbatimHistoricalLogCopiesVerified": true,
+  "prebuiltEventStoreHostArtifactsUnchangedSincePatchObservation": true,
+  "prebuiltEventStoreHostArtifactHashes": {
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Debug/net10.0/Hexalith.Builds.Module.EventStoreHost.deps.json": "c33e85fb24e2a2f76cba203c809ba62843471d2bde4cca6e8a1872bbb25d0c1f",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Debug/net10.0/Hexalith.Builds.Module.EventStoreHost.dll": "29ae9a05bed425bee05ae857c7318c8c240750a7061b90239eb110ea4c994610",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Debug/net10.0/Hexalith.Builds.Module.EventStoreHost.pdb": "d0ec382feb0a1cf804dff97221820e4adf57157670f1fedd85b3caa9db26485d",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Debug/net10.0/Hexalith.Builds.Module.EventStoreHost.runtimeconfig.json": "2854c873c21edc9fa7c2056f9d4744054aeb11f009d271702daa7794b74e895f",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/bin/Debug/net10.0/Hexalith.Builds.Module.EventStoreHost.staticwebassets.endpoints.json": "eb6525c892afda953a2560f151f9c5e5bc6e79ef6741d886488ac450262c91e3",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/obj/Debug/net10.0/Hexalith.Builds.Module.EventStoreHost.dll": "29ae9a05bed425bee05ae857c7318c8c240750a7061b90239eb110ea4c994610",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/obj/Debug/net10.0/Hexalith.Builds.Module.EventStoreHost.pdb": "d0ec382feb0a1cf804dff97221820e4adf57157670f1fedd85b3caa9db26485d",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/obj/Debug/net10.0/Hexalith.Builds.Module.EventStoreHost.sourcelink.json": "64ec8f4dc72893036ea3e03dec6823413b98a3f93fd8b4769ec47f90e346d6a4",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/obj/Debug/net10.0/ref/Hexalith.Builds.Module.EventStoreHost.dll": "139b5e133b8b026c87a4afa7eb1f34037038a8745a7b8d96f22ee5075fbcc7ee",
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/obj/Debug/net10.0/refint/Hexalith.Builds.Module.EventStoreHost.dll": "139b5e133b8b026c87a4afa7eb1f34037038a8745a7b8d96f22ee5075fbcc7ee"
+  },
+  "prebuiltEventStoreHostSourceProvenance": "unknown; no originating revision is asserted. Current observations do not establish artifact stability during the earlier 316-case run.",
+  "limitations": [
+    "Full verification is delegated to the coordinator.",
+    "The focused test build reused existing host reference artifacts; EventStoreHost source provenance remains unknown."
+  ]
+}

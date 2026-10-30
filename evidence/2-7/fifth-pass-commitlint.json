@@ -1,0 +1,17 @@
+{
+  "message": "fix(module): complete attached-run withdrawal and retention review\n",
+  "command": [
+    "/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/node_modules/.bin/commitlint",
+    "--edit",
+    "/tmp/bmad-2-7-builds-message-puk55j1j.txt",
+    "--config",
+    "commitlint.config.mjs"
+  ],
+  "cwd": "/home/administrator/projects/hexalith/platform/references/Hexalith.Builds",
+  "pinnedVersion": "21.2.4",
+  "installedVersion": "21.2.4",
+  "exitCode": 0,
+  "stdout": "",
+  "stderr": "",
+  "messageFile": "/tmp/bmad-2-7-builds-message-puk55j1j.txt"
+}

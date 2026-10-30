@@ -121,12 +121,15 @@ public sealed class CompositionRunListingTests
         CompositionAttachment expired = Hold();
         CompositionAttachment failed = Hold() with { Outcome = "failed", EndReason = "terminal-outcome", EndedAtUtc = accepted.AddSeconds(10) };
         CompositionAttachment legacy = Hold() with { EndReason = "terminal-outcome", EndedAtUtc = accepted.AddSeconds(20) };
+        CompositionAttachment cancelled = Hold() with { Outcome = "cancelled", EndReason = "terminal-outcome", EndedAtUtc = accepted.AddSeconds(30) };
         string directory = Path.Combine(store.Directory, "diagnostics", state.RunId);
-        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, _ => (0, new[] { expired, failed, legacy }), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, _ => (0, new[] { expired, failed, legacy, cancelled }), TestContext.Current.CancellationToken).ConfigureAwait(true);
         byte[] before = await File.ReadAllBytesAsync(CompositionAttachmentStore.PathFor(directory), TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionRunListingEntry listed = (await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Environments.ShouldNotBeNull().Single();
         listed.FailureRunIds.ShouldBe([failed.AttachedRunId]);
         listed.Retention.ShouldBe("failure-retained");
+        listed.FailureRunIds.ShouldNotContain(cancelled.AttachedRunId);
+        listed.Attachments.Single(item => item.AttachedRunId == cancelled.AttachedRunId).Outcome.ShouldBe("cancelled");
         listed.Attachments.Single(item => item.AttachedRunId == expired.AttachedRunId).Outcome.ShouldBe("withdrawn");
         listed.Attachments.Single(item => item.AttachedRunId == expired.AttachedRunId).EndedAtUtc.ShouldBe(expired.ExpiresAtUtc);
         listed.Attachments.Single(item => item.AttachedRunId == legacy.AttachedRunId).Outcome.ShouldBe("unknown");
@@ -145,6 +148,33 @@ public sealed class CompositionRunListingTests
         }
 
         (await File.ReadAllBytesAsync(CompositionAttachmentStore.PathFor(directory), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(before);
+    }
+
+    /// <summary>An attached pass or cancellation never establishes failure retention for a passed owner.</summary>
+    /// <param name="outcome">The attachment's non-failure outcome.</param>
+    /// <returns>The honest failed-run list and retention disposition.</returns>
+    [Theory]
+    [InlineData("passed")]
+    [InlineData("cancelled")]
+    public async Task NonFailedAttachmentDoesNotEstablishFailureRetentionAsync(string outcome)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionRunStateStore store = new(Path.Combine(workspace.Root, "state"));
+        DateTimeOffset accepted = DateTimeOffset.UtcNow.AddMinutes(-2);
+        ModuleTestRunRecord passed = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), accepted, "unknown", new CompositionRunResources([], []));
+        await store.WriteAsync(state with { TestRun = passed, CleanupDisposition = "not-requested" }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionAttachment attachment = new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), 60, accepted, 60, accepted.AddSeconds(60))
+        {
+            Outcome = outcome,
+            EndReason = "terminal-outcome",
+            EndedAtUtc = accepted.AddSeconds(10),
+        };
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(Path.Combine(store.Directory, "diagnostics", state.RunId), state.RunId, _ => (0, new[] { attachment }), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionRunListingEntry listed = (await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Environments.ShouldNotBeNull().Single();
+        listed.Attachments.Single().Outcome.ShouldBe(outcome);
+        listed.FailureRunIds.ShouldBeEmpty();
+        listed.Retention.ShouldBe("not-retained");
     }
 
     /// <summary>A missing state root is empty; an existing file at that root is an incomplete listing.</summary>

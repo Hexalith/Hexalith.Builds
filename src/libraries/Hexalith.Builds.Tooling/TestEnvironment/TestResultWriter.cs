@@ -47,9 +47,10 @@ public static class TestResultWriter
         {
             // Holds are runner-owned and evolve after the first outcome, so they are always read from the durable records.
             JsonArray holds = [];
+            DateTimeOffset observedAt = DateTimeOffset.UtcNow;
             foreach (CompositionAttachment attachment in attachments)
             {
-                holds.Add(attachment.ToContract(DateTimeOffset.UtcNow));
+                holds.Add(attachment.ToContract(observedAt));
             }
 
             current["attachments"] = new JsonObject { ["state"] = "populated", ["holds"] = holds };

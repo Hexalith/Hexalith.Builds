@@ -195,7 +195,7 @@ internal static class ModuleCommandApplication
         Option<string[]> artifacts = new("--artifact-identity") { Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = false };
         Option<bool> end = new("--end") { Description = "Ends only the attachment named by --attached-run-id; the owner and other attachments keep running." };
         Option<string> attached = new("--attached-run-id");
-        Option<string> outcome = new("--outcome") { Description = "The attachment's first terminal outcome: passed, failed or cancelled." };
+        Option<string> outcome = new("--outcome") { Description = "The attachment's first terminal outcome: passed, failed or cancelled. Required with --end." };
         Option<string> format = new("--output") { DefaultValueFactory = _ => "human" };
         _ = format.AcceptOnlyFromAmong("human", "json");
         foreach (Option option in new Option[] { owner, mode, composition, hold, requestId, target, environment, artifacts, end, attached, outcome, format })

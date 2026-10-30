@@ -530,15 +530,18 @@ and loaded identities. CI owners do not wait for holds in this version, so `HXR0
 original request or omission, acceptance time, effective seconds and absolute expiry, and
 issues `originalAttachmentRequestId` and `attachedRunId`; a retry that presents either keeps
 the first acceptance and expiry. `--end` requires `--outcome passed|failed|cancelled` and
-ends only that attachment. Its first outcome is immutable; a late end records `withdrawn`
+ends only that attachment. A missing or invalid end outcome is refused with `HXR032`.
+Mixed admission/end options, including `--outcome` without `--end`, are refused with
+`HXC001`. Its first outcome is immutable; a late end records `withdrawn`
 with reason `expired` at the original expiry. Legacy terminal records without an outcome
 are shown as `unknown`. Listings show each attachment's outcome, including passive expiry
 as `withdrawn`, and include failed attached runs in `failed-runs`.
 
 A passed local owner waits for live holds to end or expire. An attached failure ends that
 wait and retains the environment for debugging, with fresh attachments allowed while it
-remains ready. Later owner cancellation preserves this failure retention; only explicit
-`down` releases it. Owner cancellation, including Ctrl+C during the success hold wait,
+remains ready. The passed owner reports `HXI012`, naming the failed attached runs and
+instructing you to run `down` to release the environment. Later owner cancellation preserves
+this failure retention; only explicit `down` releases it. Owner cancellation, including Ctrl+C during the success hold wait,
 withdraws active attachments with reason `owner-cancelled` before cleanup. Explicit `down`
 withdraws them with reason `developer-stop`. Earlier unrecorded expiries are recorded as
 `expired` in the same pass, and `HXI011` reports withdrawn run ids and their reasons.
