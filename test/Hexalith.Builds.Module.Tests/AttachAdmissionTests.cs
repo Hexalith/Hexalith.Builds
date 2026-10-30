@@ -336,8 +336,8 @@ public sealed class AttachAdmissionTests
         (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace).ConfigureAwait(true);
         string directory = Path.Combine(store.Directory, "diagnostics", owner.RunId);
         CompositionAttachment ended = (await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition), DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Attachment.ShouldNotBeNull();
-        CompositionAttachment expiring = (await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { HoldSeconds = "2" }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Attachment.ShouldNotBeNull();
-        CompositionAttachment earlier = (await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { HoldSeconds = "1" }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Attachment.ShouldNotBeNull();
+        CompositionAttachment expiring = (await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { HoldSeconds = "8" }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Attachment.ShouldNotBeNull();
+        CompositionAttachment earlier = (await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { HoldSeconds = "6" }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Attachment.ShouldNotBeNull();
         Task waiting = CompositionAttachmentStore.WaitForHoldsOrFailureAsync(directory, owner.RunId, TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
         await Task.Delay(300, TestContext.Current.CancellationToken).ConfigureAwait(true);
         waiting.IsCompleted.ShouldBeFalse();
@@ -785,14 +785,26 @@ public sealed class AttachAdmissionTests
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable runLifetime = run.ConfigureAwait(true);
         _ = await run.WaitForResultAsync().ConfigureAwait(true);
 
-        // A directory at the lock path makes acquisition fail without allowing an attachment mutation.
-        string lockPath = Path.Combine(run.Options.StateDirectory, "diagnostics", run.Session!.RunId, "attachments.lock");
+        CompositionEngine engine = new(run.Options);
+        ModuleTestRunRecord first = (await engine.ReadCommittedOutcomeAsync(run.Session!.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        string directory = Path.Combine(run.Options.StateDirectory, "diagnostics", run.Session.RunId);
+        FileStream cancellationGate = new(Path.Combine(directory, "outcome.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable cancellationGateLifetime = cancellationGate.ConfigureAwait(true);
+
+        // Cancel the waiter before obstructing withdrawal; the outcome gate holds the cancellation pass.
+        await cancel.CancelAsync().ConfigureAwait(true);
+        string lockPath = Path.Combine(directory, "attachments.lock");
         File.Delete(lockPath);
         _ = Directory.CreateDirectory(lockPath);
-        await cancel.CancelAsync().ConfigureAwait(true);
+        await cancellationGate.DisposeAsync().ConfigureAwait(true);
         _ = await run.Running.WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
         run.Cleanups.ShouldBe(0);
-        run.Output.ToString().ShouldContain("HXT008");
+        run.Output.ToString().ShouldContain("Attachment withdrawal or its report could not be durably recorded");
+        ModuleTestRunRecord committed = (await engine.ReadCommittedOutcomeAsync(run.Session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        committed.CleanupDisposition.ShouldBe("pending");
+        committed.TerminalOutcome.ShouldBe(first.TerminalOutcome);
+        committed.TerminalAtUtc.ShouldBe(first.TerminalAtUtc);
+        committed.TerminalOutcome.ExitCode.ShouldBe(ToolExitCode.Success);
         Directory.Exists(run.Session.Plan.Workspace).ShouldBeTrue();
     }
 
@@ -1087,6 +1099,196 @@ public sealed class AttachAdmissionTests
             : engine.DownAsync(session, TestContext.Current.CancellationToken);
     }
 
+    /// <summary>Invalid outcome/end combinations cannot influence admission or failure retention.</summary>
+    /// <param name="reason">The recorded end reason, or null while active.</param>
+    /// <param name="outcome">The inconsistent recorded outcome.</param>
+    /// <returns>The rejected durable read and owner-unverifiable admission assertions.</returns>
+    [Theory]
+    [InlineData(null, "failed")]
+    [InlineData("terminal-outcome", "withdrawn")]
+    [InlineData("expired", "passed")]
+    [InlineData("developer-stop", null)]
+    public async Task InconsistentAttachmentOutcomesRefuseReadAndAdmissionAsync(string? reason, string? outcome)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace).ConfigureAwait(true);
+        CompositionAttachment hold = await SeedHoldAsync(store, owner).ConfigureAwait(true);
+        CompositionAttachment invalid = hold with { EndReason = reason, Outcome = outcome, EndedAtUtc = reason is null ? null : hold.ExpiresAtUtc };
+        string directory = Path.Combine(store.Directory, "diagnostics", owner.RunId);
+        await CompositionDocumentStore.WriteAsync(CompositionAttachmentStore.PathFor(directory), new CompositionAttachmentDocument(CompositionAttachmentDocument.SupportedSchema, owner.RunId, [invalid]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await Should.ThrowAsync<IOException>(() => CompositionAttachmentStore.ReadAsync(directory, owner.RunId, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        ToolCommandResult refused = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition), DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        refused.Attachment.ShouldBeNull();
+        refused.Diagnostics.ShouldContain(item => item.RuleId == "HXR033" && item.Field == "owner-unverifiable");
+    }
+
+    /// <summary>A spent resource stopping allowance still permits durable owner cancellation and withdrawal.</summary>
+    /// <returns>The immutable cancellation, withdrawn hold and exhausted cleanup-token assertions.</returns>
+    [Fact]
+    public async Task ExhaustedStopBudgetStillRecordsCancellationAndWithdrawsAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        using CancellationTokenSource cancel = new();
+        OwnerRun run = await OwnerRun.StartAsync(workspace, cancel.Token, delayNative: true).ConfigureAwait(true);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = run.ConfigureAwait(true);
+        CompositionRunState owner = await run.WaitForOwnerAsync().ConfigureAwait(true);
+        for (int attempt = 0; attempt < 400 && !File.Exists(Path.Combine(workspace.Root, "native-started")); attempt++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        File.Exists(Path.Combine(workspace.Root, "native-started")).ShouldBeTrue();
+        string directory = Path.Combine(run.Options.StateDirectory, "diagnostics", owner.RunId);
+        FileStream outcomeGate = new(Path.Combine(directory, "outcome.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outcomeGateLifetime = outcomeGate.ConfigureAwait(true);
+        await cancel.CancelAsync().ConfigureAwait(true);
+        await Task.Delay(TimeSpan.FromSeconds(4.5), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await outcomeGate.DisposeAsync().ConfigureAwait(true);
+        _ = await run.Running.WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        run.Cleanups.ShouldBe(1);
+        run.CleanupTokenWasCancelled.ShouldBeTrue(run.Output.ToString());
+        run.WithdrawalsAtCleanup.Single().Outcome.ShouldBe("withdrawn");
+        run.WithdrawalsAtCleanup.Single().EndReason.ShouldBe("owner-cancelled");
+        run.OwnerStatusAtCleanup.ShouldBe(CompositionRunStatus.Cancelled);
+        ModuleTestRunRecord committed = (await new CompositionEngine(run.Options).ReadCommittedOutcomeAsync(owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        committed.TerminalOutcome.ExitCode.ShouldBe(ToolExitCode.Cancelled);
+        run.Output.ToString().ShouldContain("HXI011");
+    }
+
+    /// <summary>A failed attempt to persist pending cleanup remains visible in diagnostics.</summary>
+    /// <returns>The unchanged durable disposition and explicit unrecorded-state diagnostic.</returns>
+    [Fact]
+    public async Task UnrecordablePendingCleanupStateReportsEvidenceFailureAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        using CancellationTokenSource cancel = new();
+        OwnerRun run = await OwnerRun.StartAsync(workspace, cancel.Token).ConfigureAwait(true);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = run.ConfigureAwait(true);
+        _ = await run.WaitForResultAsync().ConfigureAwait(true);
+        string directory = Path.Combine(run.Options.StateDirectory, "diagnostics", run.Session!.RunId);
+        FileStream gate = new(Path.Combine(directory, "outcome.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable gateLifetime = gate.ConfigureAwait(true);
+        await cancel.CancelAsync().ConfigureAwait(true);
+        _ = await run.Running.WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        run.Cleanups.ShouldBe(0);
+        run.Output.ToString().ShouldContain("Pending cleanup state could not be durably recorded");
+        await gate.DisposeAsync().ConfigureAwait(true);
+        ModuleTestRunRecord committed = (await new CompositionEngine(run.Options).ReadCommittedOutcomeAsync(run.Session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        committed.CleanupDisposition.ShouldBe("not-requested");
+        committed.TerminalOutcome.ExitCode.ShouldBe(ToolExitCode.Success);
+    }
+
+    /// <summary>Cumulative observation, cancellation and teardown reports name each withdrawn run once.</summary>
+    /// <returns>The unique command-level HXI011 assertions through incomplete cleanup.</returns>
+    [Fact]
+    public async Task CumulativeWithdrawalDiagnosticsDoNotRepeatAttachedRunsAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        using CancellationTokenSource cancel = new();
+        OwnerRun run = await OwnerRun.StartAsync(workspace, cancel.Token, delayNative: true, failCleanup: true).ConfigureAwait(true);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = run.ConfigureAwait(true);
+        CompositionRunState owner = await run.WaitForOwnerAsync().ConfigureAwait(true);
+        CompositionRunStateStore store = new(run.Options.StateDirectory);
+        CompositionAttachment expired = await SeedHoldAsync(store, owner).ConfigureAwait(true);
+        string directory = Path.Combine(store.Directory, "diagnostics", owner.RunId);
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, owner.RunId, current => (0, [.. current.Select(item => item.AttachedRunId == expired.AttachedRunId ? item with { AcceptedAtUtc = item.AcceptedAtUtc.AddHours(-1), ExpiresAtUtc = item.ExpiresAtUtc.AddHours(-1) } : item)]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await run.WaitForResultAsync().ConfigureAwait(true);
+        await cancel.CancelAsync().ConfigureAwait(true);
+        _ = await run.Running.WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        run.Cleanups.ShouldBe(1);
+        using JsonDocument output = JsonDocument.Parse(run.Output.ToString());
+        JsonElement[] reports = [.. output.RootElement.GetProperty("diagnostics").EnumerateArray().Where(item => item.GetProperty("ruleId").GetString() == "HXI011")];
+        reports.Count(item => item.GetProperty("message").GetString()!.Contains(expired.AttachedRunId, StringComparison.Ordinal)).ShouldBe(1);
+        reports.Count(item => item.GetProperty("message").GetString()!.Contains(run.Seeded.AttachedRunId, StringComparison.Ordinal)).ShouldBe(1);
+    }
+
+    /// <summary>Only local selected-test owners require durable withdrawal before resource stopping.</summary>
+    /// <param name="context">The recorded owner locality or environment-only category.</param>
+    /// <returns>The strict local refusal or best-effort nonattachable cleanup assertions.</returns>
+    [Theory]
+    [InlineData("local")]
+    [InlineData("ci")]
+    [InlineData("missing")]
+    [InlineData("environment")]
+    public async Task DownWithdrawalRequirementFollowsAdmissionLocalityAsync(string context)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState original, _) = await ReadyOwnerAsync(workspace).ConfigureAwait(true);
+        string kind = context == "ci" ? "ci" : "local";
+        CompositionRunState owner = original with { ExecutionContext = context == "missing" ? null : JsonSerializer.SerializeToElement(new { kind }), SelectedTest = context == "environment" ? null : original.SelectedTest };
+        await store.WriteAsync(owner, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionWorkspace.CreatePrivateDirectory(owner.Workspace);
+        string directory = Path.Combine(store.Directory, "diagnostics", owner.RunId);
+        CompositionWorkspace.CreatePrivateDirectory(directory);
+        _ = Directory.CreateDirectory(Path.Combine(directory, "cleanup-request.json"));
+        using System.Diagnostics.Process appHost = new() { StartInfo = CompositionProcess.CreateStartInfo("python3", ["-u", "-c", "import sys; print('ready',flush=True); sys.stdin.readline()"], workspace.Root, new Dictionary<string, string> { [CompositionEnvironment.RunId] = owner.RunId }) };
+        appHost.Start().ShouldBeTrue();
+        (await appHost.StandardOutput.ReadLineAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("ready");
+        using System.Diagnostics.Process observer = System.Diagnostics.Process.GetProcessById(appHost.Id);
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with { RunId = owner.RunId, EnvironmentId = owner.EnvironmentId!, AttemptId = owner.AttemptId!, Workspace = owner.Workspace, SelectedTest = owner.SelectedTest };
+        CompositionRunSession session = new(plan, new(CompositionReadiness.SupportedSchema, owner.RunId, new Uri("http://127.0.0.1:20012/"), null, [.. owner.ReadinessResults]), "private-key", appHost);
+        try
+        {
+            CompositionDownResult result = await new CompositionEngine(LocalRunLifecycleFixture.Options(workspace.Root, original.SelectedTest!)).DownWithinBudgetAsync(session, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            result.Result.Diagnostics.ShouldContain(item => item.RuleId == "HXT008");
+            if (context == "local")
+            {
+                result.Result.Diagnostics.ShouldContain(item => item.RuleId == "HXR037" && item.Message.Contains("cleanup state", StringComparison.Ordinal));
+                observer.HasExited.ShouldBeFalse();
+                Directory.Exists(owner.Workspace).ShouldBeTrue();
+            }
+            else
+            {
+                result.Result.Diagnostics.ShouldNotContain(item => item.RuleId == "HXR037");
+                await observer.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken).ConfigureAwait(true);
+                Directory.Exists(owner.Workspace).ShouldBeFalse();
+            }
+        }
+        finally
+        {
+            CompositionProcess.Kill(observer);
+        }
+    }
+
+    /// <summary>Provisioning lock stalls after withdrawal still stop and dispose the live session AppHost.</summary>
+    /// <param name="cancelBound">Whether the stop bound expires rather than the provisioning lock timing out.</param>
+    /// <returns>The durable withdrawal, stopped process and retained workspace assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PostWithdrawalProvisioningFailureStopsSessionAppHostAsync(bool cancelBound)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (CompositionRunStateStore store, CompositionRunState owner, _) = await ReadyOwnerAsync(workspace).ConfigureAwait(true);
+        CompositionAttachment hold = await SeedHoldAsync(store, owner).ConfigureAwait(true);
+        CompositionWorkspace.CreatePrivateDirectory(owner.Workspace);
+        string directory = Path.Combine(store.Directory, "diagnostics", owner.RunId);
+        using System.Diagnostics.Process appHost = new() { StartInfo = CompositionProcess.CreateStartInfo("python3", ["-u", "-c", "import sys; print('ready',flush=True); sys.stdin.readline()"], workspace.Root, new Dictionary<string, string> { [CompositionEnvironment.RunId] = owner.RunId }) };
+        appHost.Start().ShouldBeTrue();
+        (await appHost.StandardOutput.ReadLineAsync(TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe("ready");
+        using System.Diagnostics.Process observer = System.Diagnostics.Process.GetProcessById(appHost.Id);
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with { RunId = owner.RunId, EnvironmentId = owner.EnvironmentId!, AttemptId = owner.AttemptId!, Workspace = owner.Workspace, SelectedTest = owner.SelectedTest };
+        CompositionRunSession session = new(plan, new(CompositionReadiness.SupportedSchema, owner.RunId, new Uri("http://127.0.0.1:20012/"), null, [.. owner.ReadinessResults]), "private-key", appHost);
+        FileStream gate = new(Path.Combine(directory, "provisioning.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable gateLifetime = gate.ConfigureAwait(true);
+        using CancellationTokenSource stopping = new(cancelBound ? TimeSpan.FromSeconds(1) : TimeSpan.FromSeconds(10));
+        try
+        {
+            CompositionDownResult result = await new CompositionEngine(LocalRunLifecycleFixture.Options(workspace.Root, owner.SelectedTest!)).DownWithinBudgetAsync(session, stopping.Token).ConfigureAwait(true);
+            result.Result.Diagnostics.ShouldContain(item => item.RuleId == "HXR023");
+            result.Result.Diagnostics.ShouldContain(item => item.RuleId == "HXI011" && item.Message.Contains(hold.AttachedRunId, StringComparison.Ordinal));
+            await observer.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            observer.HasExited.ShouldBeTrue();
+            _ = Should.Throw<InvalidOperationException>(() => appHost.HasExited);
+            (await CompositionAttachmentStore.ReadAsync(directory, owner.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single().Outcome.ShouldBe("withdrawn");
+            Directory.Exists(owner.Workspace).ShouldBeTrue();
+        }
+        finally
+        {
+            CompositionProcess.Kill(observer);
+        }
+    }
+
     private static JsonElement AssertWithdrawalReport(string directory, IReadOnlyList<CompositionAttachment> attachments)
     {
         using JsonDocument report = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, "attachment-withdrawals.json")));
@@ -1183,13 +1385,13 @@ public sealed class AttachAdmissionTests
 
         public JsonElement? ReportAtCleanup { get; private set; }
 
-        public static async Task<OwnerRun> StartAsync(PlatformManifestTestWorkspace workspace, CancellationToken runToken, bool failing = false, bool delayNative = false, int holdSeconds = 600)
+        public static async Task<OwnerRun> StartAsync(PlatformManifestTestWorkspace workspace, CancellationToken runToken, bool failing = false, bool delayNative = false, int holdSeconds = 600, bool failCleanup = false)
         {
             OwnerRun run = new();
             (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
             await File.WriteAllTextAsync(
                 Path.Combine(workspace.Root, "runner.py"),
-                "import os, pathlib, shutil, time\n" + (delayNative ? "time.sleep(1)\n" : string.Empty) + "shutil.copy(os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], pathlib.Path(__file__).parent / 'descriptor-copy.json')\npathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text('<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" /></ResultSummary></TestRun>')\n" + (failing ? "raise SystemExit(1)\n" : string.Empty),
+                "import os, pathlib, shutil, time\npathlib.Path(__file__).with_name('native-started').write_text('started')\n" + (delayNative ? "time.sleep(1)\n" : string.Empty) + "shutil.copy(os.environ['HEXALITH_TEST_ENVIRONMENT_PATH'], pathlib.Path(__file__).parent / 'descriptor-copy.json')\npathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text('<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" /></ResultSummary></TestRun>')\n" + (failing ? "raise SystemExit(1)\n" : string.Empty),
                 TestContext.Current.CancellationToken).ConfigureAwait(false);
             string manifest = workspace.Save();
             string nativeDotnet = Path.Combine(workspace.Root, "native-dotnet");
@@ -1228,18 +1430,20 @@ public sealed class AttachAdmissionTests
                 },
                 PlatformDownOverride = async (_, token) =>
                 {
-                    run.WithdrawalsAtCleanup = await CompositionAttachmentStore.ReadAsync(Path.Combine(run.Options.StateDirectory, "diagnostics", run.Session!.RunId), run.Session.RunId, token).ConfigureAwait(false);
-                    run.OwnerStatusAtCleanup = (await new CompositionRunStateStore(run.Options.StateDirectory).TryReadAsync(run.Session.RunId, token).ConfigureAwait(false))?.Status;
+                    run.Cleanups++;
+                    run.CleanupTokenWasCancelled = token.IsCancellationRequested;
+                    run.WithdrawalsAtCleanup = await CompositionAttachmentStore.ReadAsync(Path.Combine(run.Options.StateDirectory, "diagnostics", run.Session!.RunId), run.Session.RunId, CancellationToken.None).ConfigureAwait(false);
+                    run.OwnerStatusAtCleanup = (await new CompositionRunStateStore(run.Options.StateDirectory).TryReadAsync(run.Session.RunId, CancellationToken.None).ConfigureAwait(false))?.Status;
                     run.WithdrawalsAtCleanup.ShouldAllBe(item => !item.IsLive(DateTimeOffset.UtcNow));
                     if (run.WithdrawalsAtCleanup.Any(item => item.Outcome == "withdrawn"))
                     {
                         run.ReportAtCleanup = AssertWithdrawalReport(Path.Combine(run.Options.StateDirectory, "diagnostics", run.Session.RunId), run.WithdrawalsAtCleanup);
                     }
 
-                    run.Cleanups++;
-                    run.CleanupTokenWasCancelled = token.IsCancellationRequested;
                     Directory.Delete(run.Session.Plan.Workspace, true);
-                    return new CompositionDownResult(new ToolCommandResult("completed", ToolOutcome.Passed(), []), new CompositionRunResources([], []));
+                    return new CompositionDownResult(
+                        new ToolCommandResult(failCleanup ? "failed" : "completed", failCleanup ? ToolOutcome.Passed().Fail(ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "HXR023", ToolExitCode.TopologyOrLifecycle) : ToolOutcome.Passed(), CompositionAttachmentStore.WithdrawalDiagnostics(run.WithdrawalsAtCleanup)),
+                        new CompositionRunResources([], []));
                 },
             };
             run.Running = ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, manifest, "verify", null, null, ToolOutputFormat.Json, run.Output, runToken, "child.dll", compositionOptions: run.Options, mode: Hexalith.Builds.Tooling.Workspace.WorkspaceMode.Source);

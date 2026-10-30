@@ -542,8 +542,15 @@ remains ready. Later owner cancellation preserves this failure retention; only e
 withdraws active attachments with reason `owner-cancelled` before cleanup. Explicit `down`
 withdraws them with reason `developer-stop`. Earlier unrecorded expiries are recorded as
 `expired` in the same pass, and `HXI011` reports withdrawn run ids and their reasons.
-If withdrawal cannot be durably recorded, no cleanup starts: `down` returns retryable
-`HXR037`, while owner cleanup remains pending with `HXT008`. Withdrawal records outcomes;
+For local selected-test owners that can accept attachments, cleanup state and withdrawal
+must be durably recorded before cleanup starts: `down` returns retryable `HXR037` on a
+recording failure, while owner cleanup remains pending with `HXT008`. CI, context-less
+and environment-only owners cannot accept attachments; bookkeeping failures keep their
+bounded exact-owner cleanup running and report `HXT008`. Cancellation metadata gets its
+own finite allowance even when the resource stopping budget is exhausted. After durable
+withdrawal, a session AppHost is stopped before provisioning-lock acquisition, including
+when that lock later stalls. Each command reports each withdrawn run id once.
+Withdrawal records outcomes;
 termination of attached processes at expiry is deferred to Platform story 2.9.
 Exact cleanup accepts an omitted, missing or changed manifest, removes only the
 requested owner's resources and claims, and can be retried safely. Exporting

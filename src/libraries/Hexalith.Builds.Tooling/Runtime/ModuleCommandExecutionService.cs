@@ -1377,7 +1377,7 @@ public static class ModuleCommandExecutionService
                     IReadOnlyList<CompositionAttachment> attachments = cancellationToken.IsCancellationRequested
                         ? await CompositionAttachmentStore.ReadAsync(attachmentDirectory, ownedRunId!, attachmentMetadata.Token).ConfigureAwait(false)
                         : await CompositionAttachmentStore.ObserveAsync(attachmentDirectory, ownedRunId!, DateTimeOffset.UtcNow, attachmentMetadata.Token).ConfigureAwait(false);
-                    result = result with { Diagnostics = [.. result.Diagnostics, .. CompositionAttachmentStore.WithdrawalDiagnostics(attachments)] };
+                    result = result with { Diagnostics = [.. result.Diagnostics.Where(item => item.RuleId != "HXI011"), .. CompositionAttachmentStore.WithdrawalDiagnostics(attachments)] };
 
                     attachedFailure = attachments.Any(item => item.Outcome == "failed");
                 }
@@ -1389,7 +1389,7 @@ public static class ModuleCommandExecutionService
                 }
             }
 
-            bool retentionEstablished = attachedFailure || record?.FailureRetained == true || record?.ResourceDisposition == "retained" || (record is null && retain && !passed && !withdrawn);
+            bool retentionEstablished = attachedFailure || record?.FailureRetained == true || (record is null && retain && !passed && !withdrawn);
             bool cleanup = session is not null && !(PersistsAfterExit(command) && passed)
                 && holdsVerified && !retentionEstablished && record?.CleanupDisposition != "complete";
             if (cleanup && !ci && record is null)
@@ -1408,7 +1408,7 @@ public static class ModuleCommandExecutionService
                 {
                     attachedFailure = await CompositionAttachmentStore.WaitForHoldsOrFailureAsync(holdDirectory, ownedRunId, options.HoldPollInterval, cancellationToken).ConfigureAwait(false);
                     IReadOnlyList<CompositionAttachment> completedHolds = await CompositionAttachmentStore.ReadAsync(holdDirectory, ownedRunId, cancellationToken).ConfigureAwait(false);
-                    result = result with { Diagnostics = [.. result.Diagnostics, .. CompositionAttachmentStore.WithdrawalDiagnostics(completedHolds)] };
+                    result = result with { Diagnostics = [.. result.Diagnostics.Where(item => item.RuleId != "HXI011"), .. CompositionAttachmentStore.WithdrawalDiagnostics(completedHolds)] };
                     cleanup = !attachedFailure;
                     waitedForHolds = true;
                     deferredStopping.CancelAfter(TimeSpan.FromSeconds(selected!.StopTimeoutSeconds));
@@ -1431,12 +1431,17 @@ public static class ModuleCommandExecutionService
             {
                 try
                 {
-                    CancellationToken withdrawalToken = (waitedForHolds ? deferredStopping : stopping).Token;
+                    using CancellationTokenSource withdrawalMetadata = new(TimeSpan.FromSeconds(5));
+                    CancellationToken withdrawalToken = withdrawalMetadata.Token;
                     await engine!.RecordOwnerCancellationAsync(ownedRunId, withdrawalToken).ConfigureAwait(false);
                     IReadOnlyList<CompositionAttachment> ended = await CompositionAttachmentStore.WithdrawAsync(attachmentDirectory, ownedRunId, "owner-cancelled", DateTimeOffset.UtcNow, withdrawalToken).ConfigureAwait(false);
-                    result = result with { Diagnostics = [.. result.Diagnostics, .. CompositionAttachmentStore.WithdrawalDiagnostics(ended)] };
+                    result = result with { Diagnostics = [.. result.Diagnostics.Where(item => item.RuleId != "HXI011"), .. CompositionAttachmentStore.WithdrawalDiagnostics(ended)] };
                     attachedFailure = (await CompositionAttachmentStore.ReadAsync(attachmentDirectory, ownedRunId, withdrawalToken).ConfigureAwait(false)).Any(item => item.Outcome == "failed");
                     cleanup = cleanup && !attachedFailure;
+                    if (cleanup && session is not null && (waitedForHolds ? deferredStopping : stopping).IsCancellationRequested)
+                    {
+                        await engine.StopWithdrawnSessionAsync(session, (waitedForHolds ? deferredStopping : stopping).Token).ConfigureAwait(false);
+                    }
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or OperationCanceledException)
                 {
@@ -1455,7 +1460,7 @@ public static class ModuleCommandExecutionService
                 }
                 catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
                 {
-                    // The first outcome remains immutable even when pending-result publication cannot be refreshed.
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Pending cleanup state could not be durably recorded; retry down for this owner.", "evidence"));
                 }
             }
 
@@ -1536,6 +1541,7 @@ public static class ModuleCommandExecutionService
                 }
 
                 result = CombineTestResults(result, null, cleanupResult) with { RunId = ownedRunId };
+                result = result with { Diagnostics = [.. result.Diagnostics.Distinct()] };
                 if (record is not null)
                 {
                     string disposition = down.Remaining.Unverified ? "unknown" : "remaining";

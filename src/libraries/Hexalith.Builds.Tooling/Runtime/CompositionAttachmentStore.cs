@@ -84,9 +84,14 @@ public static class CompositionAttachmentStore
     /// <param name="now">The runner's UTC clock reading.</param>
     /// <param name="cancellationToken">The recording allowance.</param>
     /// <returns>The owner's cumulative committed withdrawals.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The withdrawal reason is unsupported.</exception>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Validate the reason before constructing the serialized attachment change.")]
     public static Task<IReadOnlyList<CompositionAttachment>> WithdrawAsync(string diagnosticsDirectory, string ownerRunId, string reason, DateTimeOffset now, CancellationToken cancellationToken = default)
     {
-        ArgumentOutOfRangeException.ThrowIfNotEqual(reason is "owner-cancelled" or "developer-stop", true);
+        if (reason is not ("owner-cancelled" or "developer-stop"))
+        {
+            throw new ArgumentOutOfRangeException(nameof(reason), reason, "The withdrawal reason must be owner-cancelled or developer-stop.");
+        }
 
         return UpdateWithReportAsync<IReadOnlyList<CompositionAttachment>>(
             diagnosticsDirectory,

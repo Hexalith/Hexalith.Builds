@@ -554,6 +554,26 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     internal Task<CompositionDownResult> DownWithinBudgetAsync(CompositionRunSession session, CancellationToken stoppingToken) =>
         DownCoreAsync(session.RunId, stoppingToken, new CompositionRunResources([], ProjectProcessIds(session.Readiness.Resources), true) { WorkspaceIds = ["workspace:" + session.RunId] }, session);
 
+    /// <summary>Stops and disposes a session after durable withdrawal, killing without waiting when its resource allowance is exhausted.</summary>
+    /// <param name="session">The session whose attachments have already been withdrawn.</param>
+    /// <param name="stoppingToken">The original resource stopping allowance.</param>
+    /// <returns>The bounded session stopping task.</returns>
+    internal async Task StopWithdrawnSessionAsync(CompositionRunSession session, CancellationToken stoppingToken)
+    {
+        try
+        {
+            await StopAppHostAsync(session.AppHost, stoppingToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (IsTeardownFailure(exception))
+        {
+            KillOwnedWithoutWaiting(session.AppHost);
+        }
+        finally
+        {
+            session.AppHost.Dispose();
+        }
+    }
+
     /// <summary>Records owner cancellation before serializing attachment withdrawal, preserving the first terminal outcome.</summary>
     /// <param name="runId">The exact owner identity.</param>
     /// <param name="cancellationToken">The stopping allowance.</param>
@@ -902,11 +922,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         }
     }
 
-    private static CompositionDownResult WithdrawalRefusal(CompositionRunState? state, bool recordingFailed = false)
+    private static CompositionDownResult WithdrawalRefusal(CompositionRunState? state, IReadOnlyList<ToolDiagnostic> bookkeeping)
     {
         CompositionRunResources remaining = state?.RemainingResources ?? state?.TestRun?.RemainingResources ?? new CompositionRunResources([], [], true);
-        ToolDiagnostic diagnostic = Diagnostic("HXR037", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Attachment withdrawal or its report could not be durably recorded; no cleanup started.", "down", "Retry down for the same owner run identity.");
-        return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [.. recordingFailed ? new[] { Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owner cleanup state could not be durably recorded; cleanup remains pending.", "evidence", null) } : [], diagnostic]) { RemainingResources = remaining }, remaining);
+        ToolDiagnostic diagnostic = Diagnostic("HXR037", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Owner cleanup state or attachment withdrawal/report could not be durably recorded; no cleanup started.", "down", "Retry down for the same owner run identity.");
+        return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [.. bookkeeping, diagnostic]) { RemainingResources = remaining }, remaining);
     }
 
     private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup continued, but its terminal metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
@@ -1335,6 +1355,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(invalid.Phase, invalid.Category, invalid.RuleId, ToolExitCode.UsageOrManifest), [invalid]), new CompositionRunResources([], [], true) { DiscoveryFailures = ["ownership"] });
         }
 
+        // Admission only permits selected-test owners with a recorded local execution context.
+        bool canHoldAttachments = state?.SelectedTest is not null
+            && state.ExecutionContext is { ValueKind: System.Text.Json.JsonValueKind.Object } context
+            && context.TryGetProperty("kind", out System.Text.Json.JsonElement kind)
+            && kind.ValueKind == System.Text.Json.JsonValueKind.String && kind.GetString() == "local";
         string attemptId = CompositionRunPlanFactory.NewRunId();
         string directory = DiagnosticsDirectory(runId);
         if (state is not null)
@@ -1346,7 +1371,11 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                return WithdrawalRefusal(state, recordingFailed: true);
+                bookkeeping.Add(RecordingFailure());
+                if (canHoldAttachments)
+                {
+                    return WithdrawalRefusal(state, bookkeeping);
+                }
             }
         }
 
@@ -1361,23 +1390,31 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
-                return WithdrawalRefusal(state, recordingFailed: true);
+                bookkeeping.Add(RecordingFailure());
+                if (canHoldAttachments)
+                {
+                    return WithdrawalRefusal(state, bookkeeping);
+                }
             }
         }
 
-        try
+        if (canHoldAttachments)
         {
-            if (state is not null && state.SelectedTest is null)
+            try
             {
-                await StateStore.WriteAsync(state with { CleanupDisposition = "in-progress", UpdatedAt = DateTimeOffset.UtcNow }, bound).ConfigureAwait(false);
+                IReadOnlyList<CompositionAttachment> withdrawn = await CompositionAttachmentStore.WithdrawAsync(directory, runId, "developer-stop", DateTimeOffset.UtcNow, bound).ConfigureAwait(false);
+                bookkeeping.AddRange(CompositionAttachmentStore.WithdrawalDiagnostics(withdrawn));
             }
-
-            IReadOnlyList<CompositionAttachment> withdrawn = await CompositionAttachmentStore.WithdrawAsync(directory, runId, "developer-stop", DateTimeOffset.UtcNow, bound).ConfigureAwait(false);
-            bookkeeping.AddRange(CompositionAttachmentStore.WithdrawalDiagnostics(withdrawn));
+            catch (Exception exception) when (IsTeardownFailure(exception))
+            {
+                return WithdrawalRefusal(state, bookkeeping);
+            }
         }
-        catch (Exception exception) when (IsTeardownFailure(exception))
+
+        // Every later exit must leave the session stopped, including provisioning-lock failures.
+        if (session is not null)
         {
-            return WithdrawalRefusal(state);
+            await StopWithdrawnSessionAsync(session, bound).ConfigureAwait(false);
         }
 
         FileStream? provisioning = null;
@@ -1415,20 +1452,6 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         {
             CompositionDownResult pending = IncompleteDown(runId, state?.RemainingResources ?? state?.TestRun?.RemainingResources, recordingFailed: bookkeeping.Any(item => item.Category != ToolFailureCategory.None));
             return pending with { Result = pending.Result with { Diagnostics = [.. bookkeeping, .. pending.Result.Diagnostics] } };
-        }
-
-        if (session is not null)
-        {
-            try
-            {
-                await StopAppHostAsync(session.AppHost, bound).ConfigureAwait(false);
-            }
-            catch (Exception exception) when (IsTeardownFailure(exception))
-            {
-                KillOwnedWithoutWaiting(session.AppHost);
-            }
-
-            session.AppHost.Dispose();
         }
 
         if (state?.AppHostProcessId is int processId && TryGetRecordedProcess(processId, state.AppHostStartedAt) is Process recorded)
