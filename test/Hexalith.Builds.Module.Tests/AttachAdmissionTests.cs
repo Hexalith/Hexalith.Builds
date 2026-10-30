@@ -805,7 +805,7 @@ public sealed class AttachAdmissionTests
         CompositionEngine engine = new(run.Options);
         ModuleTestRunRecord first = (await engine.ReadCommittedOutcomeAsync(run.Session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
         string directory = Path.Combine(run.Options.StateDirectory, "diagnostics", run.Session.RunId);
-        FileStream cancellationGate = new(Path.Combine(directory, "outcome.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        FileStream cancellationGate = await OpenOutcomeGateAsync(directory).ConfigureAwait(true);
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable cancellationGateLifetime = cancellationGate.ConfigureAwait(true);
 
         // Cancel the waiter before obstructing withdrawal; the outcome gate holds the cancellation pass.
@@ -1189,7 +1189,7 @@ public sealed class AttachAdmissionTests
         unrelated.ProcessIds.ShouldNotContain(observer.Id);
         session.AppHost.StandardInput.Close();
         string directory = Path.Combine(run.Options.StateDirectory, "diagnostics", session.RunId);
-        FileStream outcomeGate = new(Path.Combine(directory, "outcome.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        FileStream outcomeGate = await OpenOutcomeGateAsync(directory).ConfigureAwait(true);
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outcomeGateLifetime = outcomeGate.ConfigureAwait(true);
         await File.WriteAllTextAsync(resultPath, "{invalid", TestContext.Current.CancellationToken).ConfigureAwait(true);
         await cancel.CancelAsync().ConfigureAwait(true);
@@ -1256,7 +1256,7 @@ public sealed class AttachAdmissionTests
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = run.ConfigureAwait(true);
         _ = await run.WaitForResultAsync().ConfigureAwait(true);
         string directory = Path.Combine(run.Options.StateDirectory, "diagnostics", run.Session!.RunId);
-        FileStream gate = new(Path.Combine(directory, "outcome.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        FileStream gate = await OpenOutcomeGateAsync(directory).ConfigureAwait(true);
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable gateLifetime = gate.ConfigureAwait(true);
         await cancel.CancelAsync().ConfigureAwait(true);
         _ = await run.Running.WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken).ConfigureAwait(true);
@@ -1480,6 +1480,26 @@ public sealed class AttachAdmissionTests
         CompositionRunStateStore store = new(options.StateDirectory);
         await store.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
         return (store, state, selected.ManifestHash);
+    }
+
+    /// <summary>Acquires the test obstruction after any concurrent owner outcome write completes.</summary>
+    /// <param name="directory">The owner diagnostics directory.</param>
+    /// <returns>The exclusive outcome gate held by the test.</returns>
+    private static async Task<FileStream> OpenOutcomeGateAsync(string directory)
+    {
+        System.Diagnostics.Stopwatch elapsed = System.Diagnostics.Stopwatch.StartNew();
+        while (true)
+        {
+            TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                return new FileStream(Path.Combine(directory, "outcome.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (elapsed.Elapsed < TimeSpan.FromSeconds(10))
+            {
+                await Task.Delay(10, TestContext.Current.CancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 
     private static async Task<(int ExitCode, string Text)> RunAsync(string[] arguments, CompositionEngineOptions options, JsonElement? attacherContext = null)
