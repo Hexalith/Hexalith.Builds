@@ -138,16 +138,12 @@ class CandidatePolicyTests(unittest.TestCase):
         self.assertNotIn("packages: write", text)
         self.assertNotIn("contents: write", text)
 
-    def test_only_approved_consumer_gets_nonce_proof_capability_and_exact_output_policy(self):
+    def test_domain_ci_never_requests_elevated_token_permissions(self):
+        # GitHub validates called-workflow job permissions before `if:`; any elevated
+        # request breaks every caller that grants only contents: read.
         text = (ROOT.parents[1] / ".github/workflows/domain-ci.yml").read_text()
-        consumer = text.split("  aspire-tests:", 1)[1].split("  performance-tests:", 1)[0]
-        build = text.split("  build-and-test:", 1)[1].split("  aspire-tests:", 1)[0]
-        self.assertIn("id-token: write", consumer)
-        self.assertNotIn("id-token: write", build)
-        self.assertNotIn("id-token: write", text.split("  performance-tests:", 1)[1])
-        self.assertNotIn("id-token: write", text.split("jobs:", 1)[0])
-        self.assertIn("candidate_workspace.py", consumer)
-        self.assertIn("CANDIDATE_BUILDS_WORKFLOW_SHA: ${{ job.workflow_sha }}", consumer)
+        for permission in ("id-token: write", "actions: read", "pull-requests: read", "candidate-policy.yml"):
+            self.assertNotIn(permission, text)
 
 
 

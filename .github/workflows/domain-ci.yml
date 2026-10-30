@@ -7,11 +7,6 @@ on:
         description: 'Path to the .slnx/.sln solution to restore and build.'
         required: true
         type: string
-      candidate-module:
-        description: 'Opt-in authenticated candidate gate; requires protected candidate-policy environment and independent host enrollment.'
-        required: false
-        type: string
-        default: ''
       module-manifest:
         description: 'Optional v2 declaration for exact pinned tool package/Release build preparation; requires a qualified producer release.'
         required: false
@@ -252,17 +247,6 @@ permissions:
   contents: read
 
 jobs:
-  candidate-policy:
-    if: ${{ inputs.candidate-module != '' }}
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: read
-      id-token: write
-    uses: ./.github/workflows/candidate-policy.yml
-    with:
-      candidate-module: ${{ inputs.candidate-module }}
-
   build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.build-timeout-minutes }}
@@ -278,16 +262,6 @@ jobs:
       governed-actions-json: ${{ steps.governed-provenance.outputs.actions-json }}
       governed-external-actions-json: ${{ steps.governed-provenance.outputs.external-actions-json }}
     steps:
-      - name: Check candidate integration declaration
-        if: ${{ inputs.candidate-module != '' }}
-        env:
-          MODULE_MANIFEST: ${{ inputs.module-manifest }}
-          CANDIDATE_PROJECT: ${{ inputs.aspire-test-project }}
-          CANDIDATE_RUNNER_SCRIPT: ${{ inputs.aspire-runner-script }}
-        run: |
-          test -n "$MODULE_MANIFEST"
-          test -n "$CANDIDATE_PROJECT"
-          test -n "$CANDIDATE_RUNNER_SCRIPT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -969,42 +943,16 @@ jobs:
           retention-days: 7
 
   aspire-tests:
-    if: ${{ always() && inputs.aspire-test-project != '' && needs.build-and-test.result == 'success' && (inputs.candidate-module == '' || needs.candidate-policy.result == 'success') }}
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: read
-      id-token: write
+    if: ${{ inputs.aspire-test-project != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.aspire-timeout-minutes }}
-    needs: [build-and-test, candidate-policy]
-    continue-on-error: ${{ inputs.candidate-module == '' && inputs.aspire-continue-on-error }}
+    needs: build-and-test
+    continue-on-error: ${{ inputs.aspire-continue-on-error }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: false
-      - name: Check candidate consumer prerequisites
-        if: ${{ inputs.candidate-module != '' }}
-        env:
-          MODULE_MANIFEST: ${{ inputs.module-manifest }}
-          CANDIDATE_RUNNER_SCRIPT: ${{ inputs.aspire-runner-script }}
-        run: |
-          test -n "$MODULE_MANIFEST"
-          test -n "$CANDIDATE_RUNNER_SCRIPT"
-      - name: Fetch signed candidate issuance
-        if: ${{ inputs.candidate-module != '' }}
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: candidate-request-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/candidate-policy
-      - name: Bind explicit candidate request transport
-        if: ${{ inputs.candidate-module != '' }}
-        env:
-          CANDIDATE_REQUEST: ${{ runner.temp }}/candidate-policy/request.json
-        run: |
-          test -f "$CANDIDATE_REQUEST"
-          echo "HEXALITH_CANDIDATE_REQUEST_PATH=$CANDIDATE_REQUEST" >> "$GITHUB_ENV"
       - name: Checkout approved Builds preparation
         if: ${{ inputs.module-manifest != '' && inputs.governed-ci }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1071,11 +1019,6 @@ jobs:
           ref: ${{ job.workflow_sha }}
           path: .hexalith/builds-execution
           persist-credentials: false
-      - name: Register exact workflow-owned preparation output
-        if: ${{ inputs.candidate-module != '' }}
-        env:
-          CANDIDATE_BUILDS_WORKFLOW_SHA: ${{ job.workflow_sha }}
-        run: python3 .hexalith/builds-execution/Github/governed-provenance/candidate_workspace.py
       - name: Prepare module build
         if: ${{ inputs.module-manifest != '' }}
         uses: ./.hexalith/builds-execution/Github/prepare-module-build
@@ -1253,18 +1196,6 @@ jobs:
         run: |
           echo "## Tier 3 Aspire Contract Tests" >> "$GITHUB_STEP_SUMMARY"
           echo "Status: $JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
-      - name: Recheck candidate acceptance
-        if: ${{ inputs.candidate-module != '' }}
-        env:
-          HEXALITH_CANDIDATE_GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          test -n "${HEXALITH_CANDIDATE_GATE_CONFIG:-}"
-          test -n "${HEXALITH_CANDIDATE_ENVIRONMENT_PATH:-}"
-          test -n "${HEXALITH_CANDIDATE_RESULT_PATH:-}"
-          dotnet tool run hexalith-module -- validate-result \
-            --candidate-request "$HEXALITH_CANDIDATE_REQUEST_PATH" \
-            --environment "$HEXALITH_CANDIDATE_ENVIRONMENT_PATH" \
-            --result "$HEXALITH_CANDIDATE_RESULT_PATH"
       - name: Upload Aspire hook evidence
         if: ${{ always() && steps.validate-aspire-hooks.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
