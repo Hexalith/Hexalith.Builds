@@ -23,6 +23,30 @@ def run(**changes):
 
 
 class SourceWorkflowGateTests(unittest.TestCase):
+    def test_cli_refuses_evidence_escape_before_api_requests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory).resolve()
+            for evidence in ("../outside.json", str(workspace.parent / "outside.json")):
+                with self.subTest(evidence=evidence), mock.patch.object(gates.Path, "cwd", return_value=workspace), \
+                        mock.patch.object(sys, "argv", [
+                            "source_workflow_gates.py", "--repository", "owner/repository", "--source", SOURCE,
+                            "--workflow", WORKFLOW, "--evidence", evidence,
+                        ]), mock.patch.object(gates, "qualify") as qualify:
+                    self.assertEqual(gates.main(), 1)
+                    qualify.assert_not_called()
+
+    def test_cli_accepts_absolute_evidence_inside_the_workspace(self):
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory).resolve()
+            evidence = workspace / "evidence.json"
+            with mock.patch.object(gates.Path, "cwd", return_value=workspace), \
+                    mock.patch.object(sys, "argv", [
+                        "source_workflow_gates.py", "--repository", "owner/repository", "--source", SOURCE,
+                        "--workflow", WORKFLOW, "--evidence", str(evidence),
+                    ]), mock.patch.object(gates, "qualify") as qualify:
+                self.assertEqual(gates.main(), 0)
+                self.assertEqual(evidence, qualify.call_args.args[-1])
+
     def test_accepts_latest_exact_source_success(self):
         selected = gates.select_latest([{"workflow_runs": [run(id=6, run_number=2), run()]}], SOURCE, "main", WORKFLOW)
         self.assertEqual(gates.require_success(selected, SOURCE, "main", WORKFLOW)["id"], 7)

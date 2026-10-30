@@ -56,6 +56,22 @@ class ExecutionIdentityTests(unittest.TestCase):
         self.assertEqual(len(result["helpers"]), 2)
         self.assertEqual(len(result["provenance_sha256"]), 64)
 
+    def test_cli_refuses_state_escape_before_reading_source(self):
+        with mock.patch.object(sys, "argv", [
+            "execution_identity.py", "capture", "--workspace", str(self.source),
+            "--source", self.source_sha, "--state", "../outside.json",
+        ]), mock.patch.object(identity, "identity") as capture:
+            self.assertEqual(identity.main(), 1)
+            capture.assert_not_called()
+        self.assertFalse((self.root / "outside.json").exists())
+
+    def test_provenance_outside_the_source_workspace_is_refused(self):
+        outside = self.root / "outside.json"
+        outside.write_text("preserved")
+        with self.assertRaisesRegex(ValueError, "escapes the selected source workspace"):
+            self.capture(provenance=outside)
+        self.assertEqual("preserved", outside.read_text())
+
     def test_resolve_refuses_unvalidated_git_arguments_before_reading_source(self):
         for source in ("main", "--output=unapproved-file", "a" * 40 + "\n"):
             with self.subTest(source=source), mock.patch.object(

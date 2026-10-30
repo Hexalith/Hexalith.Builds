@@ -11,6 +11,7 @@ import re
 import shlex
 import subprocess
 import sys
+import tempfile
 import time
 
 
@@ -154,10 +155,11 @@ def probe_processes(proc_root=Path("/proc"), since_ticks=0):
     return outcome
 
 
-def probe_workspaces(temp_root=Path("/tmp")):
+def probe_workspaces(temp_root=None):
+    temp_root = Path(tempfile.gettempdir()) if temp_root is None else Path(temp_root)
     try:
         with os.scandir(temp_root) as entries:
-            count = sum(entry.name.startswith("hexalith-g4-it-") and entry.is_dir()
+            count = sum(entry.name.startswith("hexalith-g4-it-") and entry.is_dir(follow_symlinks=False)
                         for entry in entries)
         return {"command": f"scan {temp_root}/hexalith-g4-it-*", "exit": 0,
                 "count": count, "errors": [], "status": "verified"}

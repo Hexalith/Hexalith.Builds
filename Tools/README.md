@@ -525,6 +525,11 @@ stale restored packages, a checkout/root-gitlink mismatch, or tuple drift are
 reported as `issues` and set `tupleApproved` to false. An audit does not claim
 that the live runtime passed.
 
+CLI policy, evidence and audit output paths must resolve inside the selected
+workspace. Relative paths and absolute paths inside that workspace are accepted;
+parent traversal and symlink escapes are refused before reading or writing.
+Run `python3 Tools/test-g6-cli-paths.py` for the isolated boundary controls.
+
 The v3 policy approves the current Toolkit pin `13.6.0-preview.1.261001-0243`
 and its prerelease exception. Jérôme Piquot, as Builds/Platform/FrontComposer-Web
 owner, answered verbatim "Approve" at `2026-10-03T07:15:52Z` for tuple

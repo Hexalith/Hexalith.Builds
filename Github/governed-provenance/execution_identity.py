@@ -15,6 +15,15 @@ from pathlib import Path
 HELPER_DIRECTORIES = ("Github/governed-provenance", "Github/publish-containers")
 
 
+def workspace_file(workspace, value):
+    """Confine recovery state and provenance files to the selected source workspace."""
+    root = Path(workspace).resolve()
+    path = (root / value).resolve()
+    if path == root or not path.is_relative_to(root):
+        raise ValueError("recovery file path escapes the selected source workspace")
+    return path
+
+
 def git(root, *arguments, binary=False):
     result = subprocess.run(["git", "-C", str(root), *arguments], capture_output=True)
     if result.returncode:
@@ -132,7 +141,7 @@ def identity(workspace, builds_root, source, declared, provenance=None):
               "builds_execution_sha": approved, "builds_root": str(builds_root),
               "source_workflow_sha256": hashlib.sha256(workflow_bytes).hexdigest(), "helpers": helpers}
     if provenance:
-        payload = Path(provenance).read_bytes()
+        payload = workspace_file(workspace, provenance).read_bytes()
         document = json.loads(payload)
         if (document.get("candidate") != source or document.get("workflow_mode") != "standalone"
                 or document.get("builds_execution_sha") != approved or document.get("stage") != "release"):
@@ -169,8 +178,8 @@ def main():
             return 0
         if not args.state:
             raise ValueError("execution identity state path is required")
+        path = workspace_file(args.workspace, args.state)
         current = identity(args.workspace, args.builds_root, args.source, args.declared, args.provenance)
-        path = Path(args.state)
         if args.mode == "verify":
             if json.loads(path.read_text()) != current:
                 raise ValueError("recovery tooling or provenance changed after validation")
