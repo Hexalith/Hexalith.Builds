@@ -11,6 +11,12 @@ public interface ICompositionRunPreparation
     /// <summary>Gets the owner-derived native scope after successful preparation, or null when this composition supplies none.</summary>
     CompositionNativeTestScope? NativeTestScope => null;
 
+    /// <summary>Gets metadata-only invocation endpoints after successful actual preparation.</summary>
+    IReadOnlyList<CompositionNativeHttpEndpoint> NativeHttpEndpoints => [];
+
+    /// <summary>Gets the fixed owned private credential file path after successful preparation; values are never readiness metadata.</summary>
+    string? NativeEndpointCredentialsPath => null;
+
     /// <summary>Prepares only the resources and private identity owned by this exact run.</summary>
     /// <param name="services">The actual started composition services.</param>
     /// <param name="cancellationToken">The original startup deadline and run-stop bound.</param>

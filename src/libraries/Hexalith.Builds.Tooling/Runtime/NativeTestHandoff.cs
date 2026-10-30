@@ -39,6 +39,15 @@ public static class NativeTestHandoff
     /// <summary>The absolute path to the private, validated v1 environment descriptor.</summary>
     public const string TestEnvironmentPath = "HEXALITH_TEST_ENVIRONMENT_PATH";
 
+    /// <summary>The explicitly supplied private endpoint credential file, separate from the v1 descriptor.</summary>
+    public const string EndpointCredentialsPath = "HEXALITH_TEST_ENDPOINT_CREDENTIALS_PATH";
+
+    /// <summary>The fixed owner-workspace file name for private endpoint credentials.</summary>
+    public const string EndpointCredentialsFileName = "native-endpoint-credentials.json";
+
+    /// <summary>The strict private channel version, independent of the credential-free v1 environment schema.</summary>
+    public const string EndpointCredentialsSchema = "hexalith.test-endpoint-credentials.v1";
+
     /// <summary>
     /// Creates the handoff for one ready run. The signing key is never part of it.
     /// </summary>
@@ -62,6 +71,16 @@ public static class NativeTestHandoff
             [Domains] = string.Join(',', plan.Modules.Select(module => module.Domain).Order(StringComparer.Ordinal)),
             [AccessToken] = accessToken,
         };
+        if (readiness.NativeEndpointCredentialsPath is { } credentialPath)
+        {
+            if (credentialPath != Path.Combine(Path.GetFullPath(plan.Workspace), EndpointCredentialsFileName))
+            {
+                throw new InvalidDataException("The private endpoint credential channel must use the fixed owned workspace path.");
+            }
+
+            values[EndpointCredentialsPath] = credentialPath;
+        }
+
         if (plan.Ports.SecondEventStoreHttp is int peer)
         {
             values[PeerEventStoreUrl] = string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{peer}/");

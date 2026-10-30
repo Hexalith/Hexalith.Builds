@@ -34,6 +34,12 @@ public sealed record CompositionReadiness(
     /// <summary>Gets actual owner-derived consumer scopes after startup preparation; this never grants an administrator role.</summary>
     public CompositionNativeTestScope? NativeTestScope { get; init; }
 
+    /// <summary>Gets explicit owner-prepared invocation metadata reconciled with actual allocations.</summary>
+    public IReadOnlyList<CompositionNativeHttpEndpoint> NativeHttpEndpoints { get; init; } = [];
+
+    /// <summary>Gets the fixed private endpoint credential channel path; this file is never retained evidence.</summary>
+    public string? NativeEndpointCredentialsPath { get; init; }
+
     /// <summary>Gets the effective deadline in seconds.</summary>
     public double? EffectiveDeadlineSeconds { get; init; }
 

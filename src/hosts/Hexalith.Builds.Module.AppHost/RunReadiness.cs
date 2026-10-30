@@ -384,6 +384,16 @@ internal static class RunReadiness
                 continue;
             }
 
+            ICompositionRunPreparation[] preparedOwners = [.. app.Services.GetServices<ICompositionRunPreparation>()];
+            CompositionNativeHttpEndpoint[] nativeEndpoints = [.. preparedOwners.SelectMany(owner => owner.NativeHttpEndpoints)];
+            resources = [.. CompositionNativeHttpEndpoints.Bind(resources, nativeEndpoints)];
+            string? endpointCredentialPath = preparedOwners.Select(owner => owner.NativeEndpointCredentialsPath).OfType<string>().SingleOrDefault();
+            if ((nativeEndpoints.Length > 0) != (endpointCredentialPath is not null)
+                || (endpointCredentialPath is not null && endpointCredentialPath != Path.Combine(Path.GetFullPath(plan.Workspace), NativeTestHandoff.EndpointCredentialsFileName)))
+            {
+                throw new InvalidDataException("The prepared endpoint credential channel is outside its fixed owned path.");
+            }
+
             resources = [.. resources.Select(resource => resource with { Detail = "module-ready" })];
 
             Console.WriteLine("g4: every resource is healthy.");
@@ -400,6 +410,8 @@ internal static class RunReadiness
                     RefreshId = refreshId,
                     SelectedTest = plan.SelectedTest,
                     TestObservation = testObservation,
+                    NativeHttpEndpoints = nativeEndpoints,
+                    NativeEndpointCredentialsPath = endpointCredentialPath,
                     NativeTestScope = app.Services.GetServices<ICompositionRunPreparation>().Select(owner => owner.NativeTestScope).OfType<CompositionNativeTestScope>().SingleOrDefault(),
                     EffectiveDeadlineSeconds = plan.EffectiveDeadline?.TimeoutSeconds,
                     EffectiveDeadlineIsOverride = plan.EffectiveDeadline?.IsOverride ?? false,

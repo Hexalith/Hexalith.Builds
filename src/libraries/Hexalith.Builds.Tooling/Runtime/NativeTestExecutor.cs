@@ -422,6 +422,13 @@ internal static class NativeTestExecutor
         };
         string token = CompositionTokenFactory.Create(session.SigningKey, nativeIdentity, issued);
         List<string> handoffSecrets = [token, session.SigningKey];
+        IReadOnlyList<string>? endpointSecrets = await CompositionEndpointCredentials.ReadSecretsAsync(session.Plan, session.Readiness, cancellationToken).ConfigureAwait(false);
+        if (endpointSecrets is null)
+        {
+            return Failed("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, ToolExitCode.EvidenceSchemaOrPolicy);
+        }
+
+        handoffSecrets.AddRange(endpointSecrets);
         if (session.Readiness.TestObservation?.AccessPath is { } accessPath)
         {
             IReadOnlyList<string>? accessSecrets = await SelectedNativeTestReport.ReadAccessSecretsAsync(accessPath, session.Plan.Workspace, cancellationToken).ConfigureAwait(false);
