@@ -1107,7 +1107,7 @@ public sealed class LocalRunLifecycleTests
         StringWriter output = new();
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lifetime = output.ConfigureAwait(true);
         System.Reflection.MethodInfo execute = typeof(ModuleCommandExecutionService).GetMethod("ExecutePlatformAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).ShouldNotBeNull();
-        Task<int> invocation = (Task<int>)execute.Invoke(null, [ModuleInvocationCommand.Test, manifest, "verify", null, null, selected.RequestedAtUtc, ToolOutputFormat.Json, output, "child.dll", null, options, WorkspaceMode.Source, options.SourceMapping, budget, null, null, null, TestContext.Current.CancellationToken])!;
+        Task<int> invocation = (Task<int>)execute.Invoke(null, [ModuleInvocationCommand.Test, manifest, "verify", null, null, selected.RequestedAtUtc, ToolOutputFormat.Json, output, "child.dll", null, options, WorkspaceMode.Source, options.SourceMapping, budget, null, null, null, null, TestContext.Current.CancellationToken])!;
         (await invocation.ConfigureAwait(true)).ShouldBe((int)ToolExitCode.ProductOrTest, output.ToString());
         using JsonDocument rendered = JsonDocument.Parse(output.ToString());
         rendered.RootElement.TryGetProperty("testResultPath", out JsonElement resultPath).ShouldBeTrue(output.ToString());

@@ -1,0 +1,10 @@
+...............[execution-identity] source identity must be an exact lowercase commit SHA
+[execution-identity] source identity must be an exact lowercase commit SHA
+[execution-identity] source identity must be an exact lowercase commit SHA
+........................::error title=Governed provenance rejected::the evaluated closure digest does not match the expected evaluator digest (computed 4a447ff70ac6b8a12ef2d47dd5341b12cde1b07ed1e810fe3637985cb0e4c6d7, expected cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc); the authorized closure and the executing closure are not the same bytes
+......::error title=Governed provenance rejected::job.workflow_sha does not match the approved builds-execution-sha
+.............................
+----------------------------------------------------------------------
+Ran 74 tests in 0.658s
+
+OK

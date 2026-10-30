@@ -139,7 +139,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
             if (aspire is not null)
             {
-                return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, [aspire], null);
+                return await RefuseUnstartedAsync([aspire], ToolExitCode.PrerequisiteUnavailable, "unavailable").ConfigureAwait(false);
             }
 
             CompositionPrerequisiteResult prerequisites = await CompositionPrerequisiteProbe.ProbeAsync(
@@ -149,7 +149,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 _options.SelectedTest?.DaprRuntimeVersion).ConfigureAwait(false);
             if (!prerequisites.IsAvailable)
             {
-                return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, prerequisites.Diagnostics, null);
+                return await RefuseUnstartedAsync(prerequisites.Diagnostics, ToolExitCode.PrerequisiteUnavailable, "unavailable").ConfigureAwait(false);
             }
 
             if (DateTimeOffset.UtcNow >= deadlineUtc)
@@ -159,11 +159,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 
             if (!Path.IsPathFullyQualified(_options.AppHostAssemblyPath) || !File.Exists(_options.AppHostAssemblyPath))
             {
-                return Failed(
-                    "unavailable",
-                    ToolExitCode.PrerequisiteUnavailable,
-                    [Diagnostic("HXR014", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, "The Builds-owned AppHost is not built.", "apphost", "Build Hexalith.Builds.Module.AppHost before retrying.")],
-                    null);
+                return await RefuseUnstartedAsync([Diagnostic("HXR014", ToolPhase.Prerequisite, ToolFailureCategory.PrerequisiteUnavailable, "The Builds-owned AppHost is not built.", "apphost", "Build Hexalith.Builds.Module.AppHost before retrying.")], ToolExitCode.PrerequisiteUnavailable, "unavailable").ConfigureAwait(false);
             }
 
             // The AppHost's assembly metadata names the DCP, dashboard and project paths of the machine that built it.
@@ -174,7 +170,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 out CompositionAspireHostPaths? aspireHost);
             if (aspireHostUnavailable is not null)
             {
-                return Failed("unavailable", ToolExitCode.PrerequisiteUnavailable, [aspireHostUnavailable], null);
+                return await RefuseUnstartedAsync([aspireHostUnavailable], ToolExitCode.PrerequisiteUnavailable, "unavailable").ConfigureAwait(false);
             }
 
             manifestHash = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(manifestPath, startupBound.Token).ConfigureAwait(false)));

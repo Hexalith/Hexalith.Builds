@@ -42,6 +42,8 @@ def issue(module_id, environ, get=get_json):
     run = get(f"{root}/actions/runs/{run_id}", token)
     if str(run["id"]) != run_id or run["repository"]["full_name"] != repository or run["run_attempt"] != attempt:
         raise ValueError("latest-issued-attempt-required")
+    if run["event"] != environ["GITHUB_EVENT_NAME"]:
+        raise ValueError("github-event-binding-mismatch")
     environment = get(f"{root}/environments/candidate-policy", token)
     if not any(rule["type"] == "required_reviewers" and rule.get("reviewers") for rule in environment["protection_rules"]):
         raise ValueError("approval-unavailable")
@@ -81,7 +83,10 @@ def issue(module_id, environ, get=get_json):
         base = pr["base"]["sha"]
         head = pr["head"]["sha"]
         current_base = get(f"{root}/git/ref/heads/{urllib.parse.quote(pr['base']['ref'], safe='')}", token)
-        if (commit["sha"] != target or run["head_sha"] != target
+        # GITHUB_SHA is GitHub's merge-context M; the workflow-run API head_sha is the PR head H.
+        # The consumer independently authenticates the same sha/ref/event_name in the signed OIDC token.
+        if (commit["sha"] != target or environ["GITHUB_SHA"] != target
+                or environ["GITHUB_REF"] != f"refs/pull/{number}/merge" or run["head_sha"] != head
                 or prs[0]["head"]["sha"] != head or prs[0]["base"]["sha"] != base
                 or [p["sha"] for p in commit["parents"]] != [base, head]
                 or current_base["object"]["sha"] != base):
@@ -91,7 +96,7 @@ def issue(module_id, environ, get=get_json):
         })
     elif run["event"] == "workflow_dispatch":
         target = run["head_sha"]
-        if get(f"{root}/git/commits/{target}", token)["sha"] != target:
+        if environ["GITHUB_SHA"] != target or get(f"{root}/git/commits/{target}", token)["sha"] != target:
             raise ValueError("committed-candidate-required")
         payload.update(kind="release", targetCommit=target)
     else:

@@ -1112,6 +1112,12 @@ open epoch (including reopen/retarget events), exact committed merge parents and
 current base branch tip. Only the newest registered workflow request/attempt can
 qualify; queued, failed and cancelled successors supersede older passes.
 
+Selection and final validation also require a fresh nonce-bound consumer OIDC
+proof from the approved Builds consumer workflow at the same enrolled revision
+(currently `domain-ci.yml`; see the CI wiring note below). The proof binds the current run,
+attempt and candidate; copied issuance artifacts or CI environment variables
+cannot authenticate a local process. The fresh proof is not retained as evidence.
+
 Host operators must independently provision `HEXALITH_CANDIDATE_GATE_CONFIG` and
 read-only `HEXALITH_CANDIDATE_GITHUB_TOKEN`. The JSON configuration has the PascalCase
 fields `WorkflowRef`, `WorkflowSha`, `Environment` (exactly `candidate-policy`),
@@ -1132,12 +1138,13 @@ required suite completion and applicable tool qualifications. All policy refusal
 use `HXP301` with a stable named condition. It never promotes local, baseline,
 cancelled, withdrawn, incomplete or foreign evidence.
 
-`domain-ci.yml` optionally accepts `candidate-module`, calls the approved gate,
-transports its signed artifact and makes candidate integration and validation
-blocking after isolated tests. An enrolled package runner script must pass
-`--candidate-request "$HEXALITH_CANDIDATE_REQUEST_PATH"` explicitly and export its
-`HEXALITH_CANDIDATE_ENVIRONMENT_PATH` and `HEXALITH_CANDIDATE_RESULT_PATH` for final
-validation. Trusted host configuration must come from the approved host setup.
+`domain-ci.yml` carries no candidate wiring and requests only `contents: read`.
+GitHub validates a called workflow's job permissions before evaluating `if:`, so
+an opt-in job requesting `id-token: write` breaks every caller that grants only
+`contents: read`. `candidate-policy.yml` remains a standalone reusable workflow.
+A separate opt-in consumer workflow will be added with live issuer enrollment.
+That workflow must supply the trusted gate configuration from Builds-owned
+per-repository enrollment at its own workflow SHA, never from consumer scripts.
 There are no publication permissions or provider credentials in this gate.
 
 Local signed HTTP and workflow fixtures exercise this enforcement. No live issuer,

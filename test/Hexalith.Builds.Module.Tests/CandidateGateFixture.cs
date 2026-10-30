@@ -20,6 +20,11 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
     private readonly RSA _rsa = RSA.Create(2048);
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "candidate-fixture-" + Guid.NewGuid().ToString("N"));
     private int _runReads;
+    private string _targetCommit = Merge;
+    private string _headCommit = Head;
+    private string _baseCommit = Base;
+    private string? _issuanceToken;
+    private string? _consumerToken;
 
     /// <summary>Initializes a new instance of the <see cref="CandidateGateFixture"/> class.</summary>
     public CandidateGateFixture()
@@ -41,7 +46,7 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
             ["pr"] = new JsonObject { ["id"] = "7", ["headCommit"] = Head, ["baseCommit"] = Base, ["mergeResultCommit"] = Merge },
         };
         Client = new HttpClient(this, disposeHandler: false) { BaseAddress = new Uri("http://fixture.invalid/") };
-        Gate = new CandidateGateClient(Client, Configuration, "fixture-read-token");
+        Gate = new CandidateGateClient(Client, Configuration, "fixture-read-token") { ConsumerTokenRequestOverride = ConsumerProofAsync };
     }
 
     /// <summary>Gets the exact committed merge result.</summary>
@@ -113,6 +118,36 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
     /// <summary>Gets or sets the current workflow dispatch identity.</summary>
     public string GateRunId { get; set; } = "101";
 
+    /// <summary>Gets or sets an alternative signed event claim for refusal tests.</summary>
+    public string? SignedEvent { get; set; }
+
+    /// <summary>Gets or sets an alternative signed candidate SHA for refusal tests.</summary>
+    public string? SignedSha { get; set; }
+
+    /// <summary>Gets or sets an alternative signed candidate ref for refusal tests.</summary>
+    public string? SignedRef { get; set; }
+
+    /// <summary>Gets or sets an alternative workflow-run API head for refusal tests.</summary>
+    public string? RunHead { get; set; }
+
+    /// <summary>Gets or sets the authenticated runner group.</summary>
+    public string JobRunnerGroup { get; set; } = "GitHub Actions";
+
+    /// <summary>Gets or sets the authenticated requested runner labels.</summary>
+    public string[] JobLabels { get; set; } = ["ubuntu-latest"];
+
+    /// <summary>Gets or sets the live consumer proof scenario.</summary>
+    public string ConsumerProofMode { get; set; } = "live";
+
+    /// <summary>Gets or sets a transport failure at the job authority boundary.</summary>
+    public string? JobFailure { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether release completion races the final refetch.</summary>
+    public bool CompleteOnFinalRefetch { get; set; }
+
+    /// <summary>Gets or sets the filtered workflow pagination scenario.</summary>
+    public string WorkflowPaginationMode { get; set; } = "complete";
+
     /// <summary>Gets the actual CI representation used by the runner fixture.</summary>
     public JsonElement Context => JsonSerializer.SerializeToElement(new { kind = "ci", repository = "Hexalith/Orders", workflowRunId = GateRunId, workflowAttempt = CurrentAttempt, jobId = "integration", runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true });
 
@@ -129,16 +164,34 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
             ["job_workflow_sha"] = Configuration.WorkflowSha,
             ["environment"] = Configuration.Environment,
             ["repository"] = "Hexalith/Orders",
+            ["event_name"] = SignedEvent ?? (Payload["kind"]!.GetValue<string>() == "release" ? "workflow_dispatch" : "pull_request"),
+            ["sha"] = SignedSha ?? _targetCommit,
+            ["ref"] = SignedRef ?? (Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge"),
+            ["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@" + (Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge"),
+            ["workflow_sha"] = _targetCommit,
             ["run_id"] = Payload["gateRunId"]!.GetValue<string>(),
             ["run_attempt"] = Payload["attemptSequence"]!.ToString(),
             ["iat"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 10,
             ["exp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 300,
         };
-        string input = Encode(JsonSerializer.SerializeToUtf8Bytes(new { alg = "RS256", kid = "fixture" })) + "." + Encode(JsonSerializer.SerializeToUtf8Bytes(claims));
-        string token = input + "." + Encode(_rsa.SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+        string token = CreateToken(claims);
+        _issuanceToken = token;
         string path = Path.Combine(_directory, Guid.NewGuid().ToString("N") + ".json");
         File.WriteAllText(path, JsonSerializer.Serialize(new { payload = Convert.ToBase64String(payload), token }));
         return path;
+    }
+
+    /// <summary>Binds authenticated fixture observations to a temporary Git merge checkout.</summary>
+    /// <param name="target">The exact committed merge result.</param>
+    /// <param name="head">The exact PR head.</param>
+    /// <param name="baseCommit">The exact base.</param>
+    public void BindCandidate(string target, string head, string baseCommit)
+    {
+        _targetCommit = target;
+        _headCommit = head;
+        _baseCommit = baseCommit;
+        Payload["targetCommit"] = target;
+        Payload["pr"] = new JsonObject { ["id"] = "7", ["headCommit"] = head, ["baseCommit"] = baseCommit, ["mergeResultCommit"] = target };
     }
 
     /// <inheritdoc/>
@@ -169,18 +222,36 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
                 CurrentAttempt++;
             }
 
+            if (path.EndsWith("/runs/" + GateRunId, StringComparison.Ordinal) && _runReads == 2 && CompleteOnFinalRefetch)
+            {
+                RunStatus = "completed";
+            }
+
+            if (path.EndsWith("/jobs", StringComparison.Ordinal))
+            {
+                if (JobFailure == "timeout")
+                {
+                    throw new OperationCanceledException();
+                }
+
+                if (JobFailure == "io")
+                {
+                    throw new IOException("Private transport detail must not escape.");
+                }
+            }
+
             result = path switch
             {
                 var value when value.EndsWith("/approvals", StringComparison.Ordinal) => ReviewApproved ? new[] { new { state = "approved", user = new { id = 1 }, environments = new[] { new { name = "candidate-policy" } } } } : [],
-                var value when value.EndsWith("/jobs", StringComparison.Ordinal) => new { jobs = new[] { new { name = "Integration", runner_group_name = "GitHub Actions", labels = new[] { "Linux" } } } },
-                var value when value.Contains("/actions/runs/", StringComparison.Ordinal) => new { id = long.Parse(GateRunId, System.Globalization.CultureInfo.InvariantCulture), repository = new { full_name = "Hexalith/Orders" }, run_attempt = CurrentAttempt, run_number = 10, path = ".github/workflows/ci.yml", head_sha = Merge, created_at = "2026-10-10T00:00:00Z", workflow_id = 1, status = RunStatus, conclusion = Conclusion, @event = Payload["kind"]!.GetValue<string>() == "release" ? "workflow_dispatch" : "pull_request", pull_requests = new[] { new { number = 7, head = new { sha = Head }, @base = new { sha = Base } } } },
-                var value when value.Contains("/contents/", StringComparison.Ordinal) => new { encoding = "base64", content = Convert.ToBase64String("trusted workflow"u8) },
+                var value when value.EndsWith("/jobs", StringComparison.Ordinal) => new { jobs = new[] { new { name = "Integration", runner_group_name = JobRunnerGroup, labels = JobLabels } } },
+                var value when value.Contains("/actions/runs/", StringComparison.Ordinal) => new { id = long.Parse(GateRunId, System.Globalization.CultureInfo.InvariantCulture), repository = new { full_name = "Hexalith/Orders" }, run_attempt = CurrentAttempt, run_number = 10, path = ".github/workflows/ci.yml", head_sha = RunHead ?? (Payload["kind"]!.GetValue<string>() == "release" ? _targetCommit : _headCommit), created_at = "2026-10-10T00:00:00Z", workflow_id = 1, status = RunStatus, conclusion = Conclusion, @event = Payload["kind"]!.GetValue<string>() == "release" ? "workflow_dispatch" : "pull_request", pull_requests = new[] { new { number = 7, head = new { sha = _headCommit }, @base = new { sha = _baseCommit } } } },
+                var value when value.Contains("/contents/", StringComparison.Ordinal) => new { encoding = "base64", content = Convert.ToBase64String(request.RequestUri.Query == "?ref=" + _targetCommit ? "trusted workflow"u8 : "wrong workflow source"u8) },
                 var value when value.Contains("/environments/", StringComparison.Ordinal) => new { protection_rules = new[] { new { type = "required_reviewers", reviewers = Approved ? new[] { new { id = 1 } } : [] } } },
-                var value when value.Contains("/git/commits/", StringComparison.Ordinal) => new { sha = Merge, parents = new[] { new { sha = WrongParents ? Head : Base }, new { sha = WrongParents ? Base : Head } } },
-                var value when value.Contains("/git/ref/", StringComparison.Ordinal) => new { @object = new { sha = ChangedBase ? Head : Base } },
-                var value when value.EndsWith("/pulls/7", StringComparison.Ordinal) => new { state = PrState, merged = false, created_at = "2026-10-01T00:00:00Z", head = new { sha = ChangedHead ? Base : Head }, @base = new { sha = Base, @ref = "main" }, merge_commit_sha = Merge },
+                var value when value.Contains("/git/commits/", StringComparison.Ordinal) => new { sha = _targetCommit, parents = new[] { new { sha = WrongParents ? _headCommit : _baseCommit }, new { sha = WrongParents ? _baseCommit : _headCommit } } },
+                var value when value.Contains("/git/ref/", StringComparison.Ordinal) => new { @object = new { sha = ChangedBase ? _headCommit : _baseCommit } },
+                var value when value.EndsWith("/pulls/7", StringComparison.Ordinal) => new { state = PrState, merged = false, created_at = "2026-10-01T00:00:00Z", head = new { sha = ChangedHead ? _baseCommit : _headCommit }, @base = new { sha = _baseCommit, @ref = "main" }, merge_commit_sha = _targetCommit },
                 var value when value.EndsWith("/events", StringComparison.Ordinal) => ReopenEpoch is null ? [] : new object[] { new { @event = EpochEvent, id = ReopenEpoch, created_at = "2026-10-11T00:00:00Z" } },
-                var value when value.Contains("/actions/workflows/", StringComparison.Ordinal) => new { workflow_runs = NewerRequest ? new[] { new { run_number = 11, status = "queued", conclusion = (string?)null, pull_requests = new[] { new { number = 7 } } } } : [] },
+                var value when value.Contains("/actions/workflows/", StringComparison.Ordinal) => WorkflowRunsResponse(),
                 _ => throw new InvalidOperationException("Unexpected fixture path: " + path),
             };
         }
@@ -202,4 +273,73 @@ internal sealed class CandidateGateFixture : HttpMessageHandler
     }
 
     private static string Encode(byte[] value) => Convert.ToBase64String(value).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+    private string CreateToken(JsonObject claims)
+    {
+        string input = Encode(JsonSerializer.SerializeToUtf8Bytes(new { alg = "RS256", kid = "fixture" })) + "." + Encode(JsonSerializer.SerializeToUtf8Bytes(claims));
+        return input + "." + Encode(_rsa.SignData(Encoding.ASCII.GetBytes(input), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+    }
+
+    private Task<string> ConsumerProofAsync(string audience, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (ConsumerProofMode == "issuance")
+        {
+            return Task.FromResult(_issuanceToken!);
+        }
+
+        if (ConsumerProofMode == "replay" && _consumerToken is not null)
+        {
+            return Task.FromResult(_consumerToken);
+        }
+
+        JsonObject claims = new()
+        {
+            ["iss"] = "https://token.actions.githubusercontent.com",
+            ["aud"] = audience,
+            ["job_workflow_ref"] = ConsumerProofMode == "wrong-workflow" ? Configuration.WorkflowRef : Configuration.WorkflowRef.Replace("/candidate-policy.yml@", "/domain-ci.yml@", StringComparison.Ordinal),
+            ["job_workflow_sha"] = Configuration.WorkflowSha,
+            ["repository"] = "Hexalith/Orders",
+            ["workflow_ref"] = "Hexalith/Orders/.github/workflows/ci.yml@refs/heads/main",
+            ["runner_environment"] = "github-hosted",
+            ["run_id"] = Payload["gateRunId"]!.GetValue<string>(),
+            ["run_attempt"] = Payload["attemptSequence"]!.ToString(),
+            ["sha"] = _targetCommit,
+            ["ref"] = Payload["kind"]!.GetValue<string>() == "release" ? "refs/heads/main" : "refs/pull/7/merge",
+            ["event_name"] = Payload["kind"]!.GetValue<string>() == "release" ? "workflow_dispatch" : "pull_request",
+            ["iat"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 1,
+            ["exp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 300,
+        };
+        _consumerToken = CreateToken(claims);
+        return Task.FromResult(_consumerToken);
+    }
+
+    private JsonObject WorkflowRunsResponse()
+    {
+        JsonArray runs = [];
+        if (NewerRequest)
+        {
+            runs.Add(JsonSerializer.SerializeToNode(new { id = 102, run_number = 11, status = "queued", conclusion = (string?)null, pull_requests = new[] { new { number = 7 } } }));
+        }
+
+        JsonObject response = new() { ["workflow_runs"] = runs, ["total_count"] = runs.Count };
+        if (WorkflowPaginationMode == "missing")
+        {
+            _ = response.Remove("total_count");
+        }
+        else if (WorkflowPaginationMode == "ceiling")
+        {
+            response["total_count"] = 1000;
+        }
+        else if (WorkflowPaginationMode == "truncated")
+        {
+            response["total_count"] = runs.Count + 1;
+        }
+        else if (WorkflowPaginationMode == "negative")
+        {
+            response["total_count"] = -1;
+        }
+
+        return response;
+    }
 }

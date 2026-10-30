@@ -129,12 +129,16 @@ public static class CandidatePolicyValidator
                 throw new CandidatePolicyException("descriptor-result-disagreement");
             }
 
+            ValidateStartupDeclarations(priorEnvironment.GetProperty("startupTasks"), environment.GetProperty("startupTasks"));
+            ValidateHoldProgression(before.GetProperty("attachments"), after.GetProperty("attachments"));
             ValidateSelection(authority, S(candidate, "moduleId"), S(environment, "mode"), environment.GetProperty("executionContext"));
             if (S(result.GetProperty("terminal"), "outcome") != "passed")
             {
                 throw new CandidatePolicyException("passed-outcome-required");
             }
 
+            ValidatePassingDuration(currentDeadlines.GetProperty("startup"));
+            ValidatePassingDuration(currentDeadlines.GetProperty("execution"));
             JsonElement readiness = environment.GetProperty("readiness");
             JsonElement tasks = environment.GetProperty("startupTasks");
             if (!Populated(readiness) || S(readiness, "status") != "ready" || !Populated(tasks)
@@ -242,10 +246,11 @@ public static class CandidatePolicyValidator
         JsonElement[] items = [.. expected.GetProperty("items").EnumerateArray()];
         JsonElement[] observed = [.. loaded.GetProperty("items").EnumerateArray()];
         string module = S(authority.Candidate, "moduleId");
-        if (!items.Any(item => S(item, "moduleId") == module)
+        if (items.Select(item => (S(item, "artifactId"), S(item, "moduleId"))).Distinct().Count() != items.Length
+            || !items.Any(item => S(item, "moduleId") == module)
             || items.Any(item => S(item, "moduleId") == module && (S(item, "configuration") != "Release" || S(item, "committedRevision") != S(authority.Candidate, "committedRevision") || S(item, "repository") != S(authority.Candidate, "repository")))
-            || observed.Any(item => !items.Any(expectedItem => S(item, "artifactId") == S(expectedItem, "artifactId") && S(item, "moduleId") == S(expectedItem, "moduleId") && S(item, "contentIdentity") == S(expectedItem, "contentIdentity")))
-            || items.Any(item => !observed.Any(actual => S(item, "artifactId") == S(actual, "artifactId")))
+            || observed.Any(item => !items.Any(expectedItem => SameArtifact(item, expectedItem)))
+            || items.Any(item => !observed.Any(actual => SameArtifact(item, actual)))
             || _consumers.Any(consumer => !observed.Any(item => S(item, "consumerKind") == consumer)))
         {
             throw new CandidatePolicyException("artifact-identity-mismatch");
@@ -273,6 +278,70 @@ public static class CandidatePolicyValidator
             || counts.GetProperty("failed").GetInt32() != 0 || counts.GetProperty("skipped").GetInt32() != 0)
         {
             throw new CandidatePolicyException("complete-required-suite-proof-required");
+        }
+    }
+
+    private static bool SameArtifact(JsonElement left, JsonElement right) => S(left, "artifactId") == S(right, "artifactId")
+        && S(left, "moduleId") == S(right, "moduleId") && S(left, "contentIdentity") == S(right, "contentIdentity");
+
+    private static void ValidateStartupDeclarations(JsonElement before, JsonElement after)
+    {
+        if (!Populated(before) || !Populated(after))
+        {
+            return;
+        }
+
+        JsonElement[] original = [.. before.GetProperty("tasks").EnumerateArray()];
+        JsonElement[] current = [.. after.GetProperty("tasks").EnumerateArray()];
+        if (original.Length != current.Length || original.Any(task => current.Count(item => S(item, "taskId") == S(task, "taskId") && item.GetProperty("required").GetBoolean() == task.GetProperty("required").GetBoolean()) != 1))
+        {
+            throw new CandidatePolicyException("descriptor-result-disagreement");
+        }
+    }
+
+    private static void ValidateHoldProgression(JsonElement before, JsonElement after)
+    {
+        if (!Populated(before))
+        {
+            return;
+        }
+
+        if (!Populated(after))
+        {
+            throw new CandidatePolicyException("descriptor-result-disagreement");
+        }
+
+        JsonElement[] current = [.. after.GetProperty("holds").EnumerateArray()];
+        foreach (JsonElement prior in before.GetProperty("holds").EnumerateArray())
+        {
+            JsonElement[] matching = [.. current.Where(item => S(item, "originalAttachmentRequestId") == S(prior, "originalAttachmentRequestId"))];
+            if (matching.Length != 1)
+            {
+                throw new CandidatePolicyException("descriptor-result-disagreement");
+            }
+
+            JsonObject original = JsonNode.Parse(prior.GetRawText())!.AsObject();
+            JsonObject observed = JsonNode.Parse(matching[0].GetRawText())!.AsObject();
+            if (S(prior.GetProperty("end"), "state") == "ended" && !Equal(prior.GetProperty("end"), matching[0].GetProperty("end")))
+            {
+                throw new CandidatePolicyException("descriptor-result-disagreement");
+            }
+
+            _ = original.Remove("end");
+            _ = observed.Remove("end");
+            if (!JsonNode.DeepEquals(original, observed))
+            {
+                throw new CandidatePolicyException("descriptor-result-disagreement");
+            }
+        }
+    }
+
+    private static void ValidatePassingDuration(JsonElement deadline)
+    {
+        if (deadline.TryGetProperty("actualDurationSeconds", out JsonElement actual) && deadline.TryGetProperty("effectiveSeconds", out JsonElement budget)
+            && actual.GetDouble() > budget.GetDouble())
+        {
+            throw new CandidatePolicyException("passing-deadline-exceeded");
         }
     }
 

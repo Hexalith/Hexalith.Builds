@@ -337,6 +337,20 @@ class ClosureResolutionTests(unittest.TestCase):
 
         self.assertNotEqual(digest, changed.projection(WORKFLOW_PATH)["closure_digest"])
 
+    def test_nested_workflow_execution_bytes_are_bound_in_the_existing_projection(self):
+        self.builder.workflow("jobs:\n  gate:\n    uses: ./.github/workflows/candidate-policy.yml\n")
+        nested = Path(self.temporary) / ".github/workflows/candidate-policy.yml"
+        nested.write_text("jobs:\n  issue:\n    environment: candidate-policy\n    steps:\n      - run: echo original\n")
+        self.collector.visit_workflow(WORKFLOW_PATH)
+        original = self.collector.projection(WORKFLOW_PATH)
+        recorded = [entry for entry in original["helpers"] if entry["path"] == ".github/workflows/candidate-policy.yml"]
+        self.assertEqual(len(recorded), 1)
+        for replacement in ["jobs:\n  issue:\n    environment: unapproved\n    steps:\n      - run: echo original\n", "jobs:\n  issue:\n    environment: candidate-policy\n    steps:\n      - run: echo changed\n"]:
+            nested.write_text(replacement)
+            changed = evaluator.ClosureCollector(self.temporary, COMMIT)
+            changed.visit_workflow(WORKFLOW_PATH)
+            self.assertNotEqual(original["closure_digest"], changed.projection(WORKFLOW_PATH)["closure_digest"])
+
     def test_only_reusable_workflow_paths_may_be_the_closure_root(self):
         for path in ("Github/dapr-init/action.yml", ".github/workflows/notes.md", "domain-ci.yml"):
             with self.subTest(path=path):
