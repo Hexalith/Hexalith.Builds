@@ -378,7 +378,11 @@ FrontComposer.Shell resolve to Debug projects under their mapped roots.
 EventStore.Aspire keeps `IsAspireProjectResource="false"` when its package
 reference becomes a project reference. In package mode, the source-tree
 EventStoreHost and UiHost remain outside consumer reconciliation, preserving
-their isolated central package selections. Generated projects under a run
+their isolated central package selections. The published EventStore host uses
+the public sidecar-channel authorization policy. Source-only route-catalog
+and HTTP security APIs are compiled only against the mapped EventStore source;
+requesting a run-scoped route catalog with the published package fails at startup.
+Generated projects under a run
 workspace's `hosts/` directory stay outside reconciliation in both modes;
 their existing catalog validation still applies.
 

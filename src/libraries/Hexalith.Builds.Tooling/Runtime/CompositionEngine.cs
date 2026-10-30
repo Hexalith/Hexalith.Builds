@@ -956,7 +956,9 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [.. bookkeeping, diagnostic]) { RemainingResources = remaining }, remaining);
     }
 
-    // Mirrors admission: only a selected-test owner with a local execution context can ever hold attachments.
+    /// <summary>Determines whether the owner can hold attachments under the admission policy.</summary>
+    /// <param name="session">The owner session being evaluated.</param>
+    /// <returns>Whether the session is a locally executed owner with a selected test.</returns>
     private static bool CanHoldAttachments(CompositionRunSession session) => session.Plan.SelectedTest is not null && session.LocalExecution;
 
     private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
