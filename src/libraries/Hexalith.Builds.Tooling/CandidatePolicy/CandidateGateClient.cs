@@ -23,6 +23,9 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
 {
     private static readonly HttpClient _transport = new(new HttpClientHandler { AllowAutoRedirect = false, CheckCertificateRevocationList = true }) { BaseAddress = new Uri("https://api.github.com/"), Timeout = TimeSpan.FromSeconds(30) };
 
+    /// <summary>Gets a fixture-only replacement for the live consumer OIDC request transport.</summary>
+    internal Func<string, CancellationToken, Task<string>>? ConsumerTokenRequestOverride { get; init; }
+
     /// <summary>Loads independently provisioned host enrollment and authentication. There is no default enrolled issuer.</summary>
     /// <returns>The authenticated client.</returns>
     /// <exception cref="CandidatePolicyException">A named policy prerequisite is not satisfied.</exception>
@@ -50,18 +53,13 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(githubToken) || !configuration.WorkflowRef.StartsWith("Hexalith/Hexalith.Builds/.github/workflows/candidate-policy.yml@", StringComparison.Ordinal)
-                || !Commit(configuration.WorkflowSha) || !configuration.CallerWorkflowPath.StartsWith(".github/workflows/", StringComparison.Ordinal)
-                || configuration.Environment != "candidate-policy")
-            {
-                throw new CandidatePolicyException("issuer-not-enrolled");
-            }
+            ValidateEnrollment();
 
             JsonElement envelope = Parse(ReadFile(requestPath));
             byte[] payloadBytes = Convert.FromBase64String(S(envelope, "payload"));
             JsonElement payload = Parse(payloadBytes);
             string token = S(envelope, "token");
-            JsonElement claims = await AuthenticateAsync(token, payloadBytes, cancellationToken).ConfigureAwait(false);
+            JsonElement claims = await AuthenticateAsync(token, "hexalith-candidate-v1:" + Hash(payloadBytes)[7..], false, cancellationToken).ConfigureAwait(false);
             string repository = S(payload, "repository");
             if (!Repository(repository)
                 || S(payload, "policyId") != TestEnvironmentContractReader.PolicyId || S(claims, "repository") != repository)
@@ -86,12 +84,20 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
                 throw new CandidatePolicyException("latest-issued-attempt-required");
             }
 
-            if (S(run, "path").Split('@')[0] != configuration.CallerWorkflowPath)
+            if (S(run, "path").Split('@')[0] != configuration.CallerWorkflowPath
+                || !S(claims, "workflow_ref").StartsWith(repository + "/" + configuration.CallerWorkflowPath + "@", StringComparison.Ordinal)
+                || !Commit(S(claims, "workflow_sha")))
             {
                 throw new CandidatePolicyException("issuer-workflow-mismatch");
             }
 
-            JsonElement workflow = await GetAsync(prefix + "/contents/" + configuration.CallerWorkflowPath + "?ref=" + S(run, "head_sha"), cancellationToken).ConfigureAwait(false);
+            if (S(run, "event") != S(claims, "event_name"))
+            {
+                throw new CandidatePolicyException("github-event-binding-mismatch");
+            }
+
+            // The API run head is H for pull_request; the signed workflow SHA identifies the executed caller source.
+            JsonElement workflow = await GetAsync(prefix + "/contents/" + configuration.CallerWorkflowPath + "?ref=" + S(claims, "workflow_sha"), cancellationToken).ConfigureAwait(false);
             if (S(workflow, "encoding") != "base64" || Hash(Convert.FromBase64String(S(workflow, "content"))) != configuration.CallerContentIdentity)
             {
                 throw new CandidatePolicyException("issuer-workflow-mismatch");
@@ -158,7 +164,10 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
                 JsonElement baseRef = await GetAsync(prefix + "/git/ref/heads/" + Uri.EscapeDataString(S(currentBase, "ref")), cancellationToken).ConfigureAwait(false);
                 string[] parents = [.. commit.GetProperty("parents").EnumerateArray().Select(parent => S(parent, "sha"))];
                 JsonElement originalPr = run.GetProperty("pull_requests").EnumerateArray().Single(item => item.GetProperty("number").ToString() == number);
-                if (S(run, "head_sha") != target || S(originalPr.GetProperty("head"), "sha") != S(pr, "headCommit")
+
+                // GitHub signs the pull_request merge context M, while the workflow-run API identifies its head H.
+                if (S(claims, "sha") != target || S(claims, "ref") != "refs/pull/" + number + "/merge"
+                    || S(run, "head_sha") != S(pr, "headCommit") || S(originalPr.GetProperty("head"), "sha") != S(pr, "headCommit")
                     || S(originalPr.GetProperty("base"), "sha") != S(pr, "baseCommit") || S(current.GetProperty("head"), "sha") != S(pr, "headCommit") || S(currentBase, "sha") != S(pr, "baseCommit")
                     || S(baseRef.GetProperty("object"), "sha") != S(pr, "baseCommit") || S(current, "merge_commit_sha") != target
                     || S(pr, "mergeResultCommit") != target || parents.Length != 2 || parents[0] != S(pr, "baseCommit") || parents[1] != S(pr, "headCommit"))
@@ -173,7 +182,7 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
                     throw new CandidatePolicyException("latest-issued-attempt-required");
                 }
             }
-            else if (kind != "release" || S(run, "event") != "workflow_dispatch" || S(run, "head_sha") != target)
+            else if (kind != "release" || S(run, "event") != "workflow_dispatch" || S(run, "head_sha") != target || S(claims, "sha") != target)
             {
                 throw new CandidatePolicyException("release-authority-mismatch");
             }
@@ -188,6 +197,11 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
             if (refreshed.GetProperty("run_attempt").GetInt32() != sequence)
             {
                 throw new CandidatePolicyException("latest-issued-attempt-required");
+            }
+
+            if (kind == "release" && S(refreshed, "status") == "completed")
+            {
+                throw new CandidatePolicyException("request-not-pending");
             }
 
             if (S(refreshed, "status") == "completed" && S(refreshed, "conclusion") != "success")
@@ -251,27 +265,55 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
     public async Task VerifyExecutionAsync(CandidatePolicyBinding binding, JsonElement context, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(binding);
-        CandidatePolicyValidator.RequireCi(context);
-        string repository = S(binding.Candidate, "repository");
-        string gateRun = S(binding.Decision, "requestId")[("github:" + repository + ":").Length..];
-        if (S(context, "repository") != repository || S(context, "workflowRunId") != gateRun || context.GetProperty("workflowAttempt").GetInt32() != binding.AttemptSequence || S(context, "jobId") != configuration.ConsumerJobId)
-        {
-            throw new CandidatePolicyException("same-ci-job-required");
-        }
-
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            ValidateEnrollment();
+            CandidatePolicyValidator.RequireCi(context);
+            string repository = S(binding.Candidate, "repository");
+            string gateRun = S(binding.Decision, "requestId")[("github:" + repository + ":").Length..];
+            if (S(context, "repository") != repository || S(context, "workflowRunId") != gateRun || context.GetProperty("workflowAttempt").GetInt32() != binding.AttemptSequence || S(context, "jobId") != configuration.ConsumerJobId)
+            {
+                throw new CandidatePolicyException("same-ci-job-required");
+            }
+
+            // Possessing an archived issuance and copying CI variables never establishes a live consumer.
+            string audience = "hexalith-candidate-consumer-v1:" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32)) + ":" + Hash(Encoding.UTF8.GetBytes(binding.Decision.GetRawText()))[7..];
+            string proof = await (ConsumerTokenRequestOverride?.Invoke(audience, cancellationToken) ?? RequestConsumerTokenAsync(audience, cancellationToken)).ConfigureAwait(false);
+            JsonElement claims = await AuthenticateAsync(proof, audience, true, cancellationToken).ConfigureAwait(false);
+            if (S(claims, "repository") != repository || S(claims, "run_id") != gateRun
+                || S(claims, "run_attempt") != binding.AttemptSequence.ToString(CultureInfo.InvariantCulture)
+                || S(claims, "sha") != S(binding.Candidate, "committedRevision") || S(claims, "runner_environment") != "github-hosted"
+                || !S(claims, "workflow_ref").StartsWith(repository + "/" + configuration.CallerWorkflowPath + "@", StringComparison.Ordinal)
+                || S(claims, "event_name") != (S(binding.Decision, "kind") == "pr-merge" ? "pull_request" : "workflow_dispatch")
+                || (S(binding.Decision, "kind") == "pr-merge" && S(claims, "ref") != "refs/pull/" + S(binding.Decision.GetProperty("pr"), "id") + "/merge"))
+            {
+                throw new CandidatePolicyException("consumer-authentication-required");
+            }
+
             JsonElement[] jobs = await PagesAsync("repos/" + repository + "/actions/runs/" + gateRun + "/attempts/" + binding.AttemptSequence.ToString(CultureInfo.InvariantCulture) + "/jobs", "jobs", cancellationToken).ConfigureAwait(false);
-            if (!jobs.Any(job => S(job, "name") == configuration.ConsumerJobName && S(job, "runner_group_name") == "GitHub Actions"
-                && job.GetProperty("labels").EnumerateArray().Any(label => label.GetString() == "Linux")))
+            if (!jobs.Any(job => S(job, "name") == configuration.ConsumerJobName && IsApprovedHostedLinuxJob(job)))
             {
                 throw new CandidatePolicyException("github-hosted-linux-required");
             }
         }
-        catch (Exception exception) when (exception is HttpRequestException or JsonException or KeyNotFoundException or InvalidOperationException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or UnauthorizedAccessException or JsonException or FormatException or InvalidOperationException or KeyNotFoundException or CryptographicException or ArgumentException or OverflowException or OperationCanceledException)
         {
             throw new CandidatePolicyException("authority-unavailable");
         }
+    }
+
+    private static bool IsApprovedHostedLinuxJob(JsonElement job)
+    {
+        // The approved consumer workflow requests runs-on: ubuntu-latest. GitHub reports that requested
+        // image label here, rather than a generic OS label. Exact matching also excludes self-hosted labels.
+        JsonElement labels = job.GetProperty("labels");
+        return S(job, "runner_group_name") == "GitHub Actions" && labels.GetArrayLength() == 1
+            && labels[0].GetString() == "ubuntu-latest";
     }
 
     private static byte[] ReadFile(string path)
@@ -328,7 +370,36 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
 
     private static bool Repository(string value) => value.Split('/') is { Length: 2 } parts && parts.All(part => part.Length > 0 && part.All(character => char.IsAsciiLetterOrDigit(character) || character is '_' or '.' or '-'));
 
-    private async Task<JsonElement> AuthenticateAsync(string token, byte[] payload, CancellationToken cancellationToken)
+    private void ValidateEnrollment()
+    {
+        if (configuration is null || string.IsNullOrWhiteSpace(githubToken)
+            || string.IsNullOrWhiteSpace(configuration.WorkflowRef) || string.IsNullOrWhiteSpace(configuration.WorkflowSha)
+            || string.IsNullOrWhiteSpace(configuration.Environment) || string.IsNullOrWhiteSpace(configuration.CallerWorkflowPath)
+            || string.IsNullOrWhiteSpace(configuration.CallerContentIdentity) || string.IsNullOrWhiteSpace(configuration.ConsumerJobId)
+            || string.IsNullOrWhiteSpace(configuration.ConsumerJobName)
+            || !configuration.WorkflowRef.StartsWith("Hexalith/Hexalith.Builds/.github/workflows/candidate-policy.yml@", StringComparison.Ordinal)
+            || !Commit(configuration.WorkflowSha) || !configuration.CallerWorkflowPath.StartsWith(".github/workflows/", StringComparison.Ordinal)
+            || configuration.Environment != "candidate-policy")
+        {
+            throw new CandidatePolicyException("issuer-not-enrolled");
+        }
+    }
+
+    private async Task<string> RequestConsumerTokenAsync(string audience, CancellationToken cancellationToken)
+    {
+        string? url = Environment.GetEnvironmentVariable("ACTIONS_ID_TOKEN_REQUEST_URL");
+        string? credential = Environment.GetEnvironmentVariable("ACTIONS_ID_TOKEN_REQUEST_TOKEN");
+        if (string.IsNullOrWhiteSpace(credential) || !Uri.TryCreate(url, UriKind.Absolute, out Uri? endpoint) || endpoint.Scheme != "https"
+            || endpoint.UserInfo.Length != 0 || !(endpoint.Host.EndsWith(".actions.githubusercontent.com", StringComparison.Ordinal) || endpoint.Host.EndsWith(".githubapp.com", StringComparison.Ordinal)))
+        {
+            throw new CandidatePolicyException("consumer-authentication-required");
+        }
+
+        JsonElement response = await GetAsync(endpoint.AbsoluteUri + (endpoint.Query.Length > 0 ? "&" : "?") + "audience=" + Uri.EscapeDataString(audience), cancellationToken, authenticated: false, bearerToken: credential).ConfigureAwait(false);
+        return S(response, "value");
+    }
+
+    private async Task<JsonElement> AuthenticateAsync(string token, string expectedAudience, bool consumer, CancellationToken cancellationToken)
     {
         string[] parts = token.Split('.');
         if (parts.Length != 3)
@@ -343,10 +414,13 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
         using RSA rsa = RSA.Create();
         rsa.ImportParameters(new RSAParameters { Modulus = Decode(S(key, "n")), Exponent = Decode(S(key, "e")) });
         if (S(header, "alg") != "RS256" || S(key, "kty") != "RSA" || !rsa.VerifyData(Encoding.ASCII.GetBytes(parts[0] + "." + parts[1]), Decode(parts[2]), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
-            || S(claims, "iss") != "https://token.actions.githubusercontent.com" || S(claims, "aud") != "hexalith-candidate-v1:" + Hash(payload)[7..]
-            || S(claims, "job_workflow_ref") != configuration.WorkflowRef || S(claims, "job_workflow_sha") != configuration.WorkflowSha || S(claims, "environment") != configuration.Environment
+            || S(claims, "iss") != "https://token.actions.githubusercontent.com" || S(claims, "aud") != expectedAudience
+            || S(claims, "job_workflow_ref") != (consumer ? configuration.WorkflowRef.Replace("/candidate-policy.yml@", "/domain-ci.yml@", StringComparison.Ordinal) : configuration.WorkflowRef)
+            || S(claims, "job_workflow_sha") != configuration.WorkflowSha || (!consumer && S(claims, "environment") != configuration.Environment)
             || claims.GetProperty("iat").GetInt64() > DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 60
-            || claims.GetProperty("exp").GetInt64() <= claims.GetProperty("iat").GetInt64())
+            || claims.GetProperty("exp").GetInt64() <= claims.GetProperty("iat").GetInt64()
+            || (consumer && (claims.GetProperty("exp").GetInt64() <= DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                || claims.GetProperty("iat").GetInt64() < DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 60)))
         {
             throw new CandidatePolicyException("issuer-authentication-required");
         }
@@ -358,21 +432,42 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
     private async Task<JsonElement[]> PagesAsync(string path, string? collection, CancellationToken cancellationToken)
     {
         List<JsonElement> items = [];
+        int? totalCount = null;
+        HashSet<long> runIds = [];
+        bool filteredRuns = collection == "workflow_runs";
         for (int page = 1; page <= 100; page++)
         {
             JsonElement response = await GetAsync(path + (path.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "per_page=100&page=" + page.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
             JsonElement array = collection is null ? response : response.GetProperty(collection);
+            if (filteredRuns)
+            {
+                if (!response.TryGetProperty("total_count", out JsonElement count) || count.ValueKind != JsonValueKind.Number || !count.TryGetInt32(out int observedTotal) || observedTotal < 0 || observedTotal >= 1000
+                    || (totalCount is not null && totalCount != observedTotal) || array.GetArrayLength() > 100)
+                {
+                    throw new CandidatePolicyException("authority-pagination-incomplete");
+                }
+
+                totalCount = observedTotal;
+                foreach (JsonElement run in array.EnumerateArray())
+                {
+                    if (!run.TryGetProperty("id", out JsonElement identity) || !identity.TryGetInt64(out long id) || id <= 0 || !runIds.Add(id))
+                    {
+                        throw new CandidatePolicyException("authority-pagination-incomplete");
+                    }
+                }
+            }
+
             items.AddRange(array.EnumerateArray());
             if (array.GetArrayLength() < 100)
             {
-                return [.. items];
+                return filteredRuns && items.Count != totalCount ? throw new CandidatePolicyException("authority-pagination-incomplete") : [.. items];
             }
         }
 
         throw new CandidatePolicyException("authority-pagination-incomplete");
     }
 
-    private async Task<JsonElement> GetAsync(string path, CancellationToken cancellationToken, bool authenticated = true)
+    private async Task<JsonElement> GetAsync(string path, CancellationToken cancellationToken, bool authenticated = true, string? bearerToken = null)
     {
         using HttpRequestMessage request = new(HttpMethod.Get, path);
         request.Headers.UserAgent.ParseAdd("hexalith-candidate-policy/1");
@@ -381,6 +476,11 @@ public sealed class CandidateGateClient(HttpClient http, CandidateGateConfigurat
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", githubToken);
             request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
+        }
+
+        if (bearerToken is not null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
         }
 
         using HttpResponseMessage response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);

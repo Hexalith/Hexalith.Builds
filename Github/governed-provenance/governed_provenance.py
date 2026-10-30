@@ -422,8 +422,12 @@ class ClosureCollector:
                 "blob_sha256": hashlib.sha256(payload).hexdigest(),
             }
             text = self._decode(payload, workflow_path)
-            if workflow_path == ".github/workflows/candidate-policy.yml" and not self.workflow_root:
-                helper = "Github/governed-provenance/candidate_policy.py"
+            workflow_helpers = {
+                ".github/workflows/candidate-policy.yml": "Github/governed-provenance/candidate_policy.py",
+                ".github/workflows/domain-ci.yml": "Github/governed-provenance/candidate_workspace.py",
+            }
+            if workflow_path in workflow_helpers and workflow_helpers[workflow_path] in text and not self.workflow_root:
+                helper = workflow_helpers[workflow_path]
                 helper_bytes = self._read_source(helper, workflow_path)
                 self.helpers[helper] = {
                     "repository": BUILDS_IDENTITY, "path": helper, "commit": self.commit,
@@ -473,8 +477,12 @@ class ClosureCollector:
             self.actions.values(),
             key=lambda source: (source["repository"], source["path"], source["commit"], source["blob_sha256"]),
         )
+        nested_workflows = [
+            {"repository": source["repository"], "path": source["workflow_path"], "commit": source["commit"], "blob_sha256": source["blob_sha256"]}
+            for path, source in self.workflows.items() if path != workflow_path
+        ]
         helpers = sorted(
-            self.helpers.values(),
+            [*self.helpers.values(), *nested_workflows],
             key=lambda source: (source["repository"], source["path"], source["commit"], source["blob_sha256"]),
         )
         external = sorted(

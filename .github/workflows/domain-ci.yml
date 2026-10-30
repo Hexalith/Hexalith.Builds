@@ -974,6 +974,7 @@ jobs:
       contents: read
       actions: read
       pull-requests: read
+      id-token: write
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.aspire-timeout-minutes }}
     needs: [build-and-test, candidate-policy]
@@ -1070,6 +1071,11 @@ jobs:
           ref: ${{ job.workflow_sha }}
           path: .hexalith/builds-execution
           persist-credentials: false
+      - name: Register exact workflow-owned preparation output
+        if: ${{ inputs.candidate-module != '' }}
+        env:
+          CANDIDATE_BUILDS_WORKFLOW_SHA: ${{ job.workflow_sha }}
+        run: python3 .hexalith/builds-execution/Github/governed-provenance/candidate_workspace.py
       - name: Prepare module build
         if: ${{ inputs.module-manifest != '' }}
         uses: ./.hexalith/builds-execution/Github/prepare-module-build

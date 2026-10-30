@@ -13,7 +13,7 @@
     {
       "command": "dotnet test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests -class Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests -result-xml evidence/3-1/candidate-tests.xml",
       "outcome": "passed",
-      "passed": 40,
+      "passed": 50,
       "xml": "candidate-tests.xml"
     },
     {
@@ -25,7 +25,7 @@
     {
       "command": "python3 -m unittest discover -s Github/governed-provenance/tests",
       "outcome": "passed",
-      "passed": 67,
+      "passed": 69,
       "log": "governed-provenance-tests.log"
     },
     {
@@ -68,7 +68,11 @@
       "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"authentication\\\", condition: \\\"authority-unavailable\\\")",
       "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.SavedIssuanceNeverOverridesCurrentAuthorityAsync(change: \\\"issuer\\\", condition: \\\"issuer-authentication-required\\\")",
       "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.NewReleaseDispatchRequiresFreshDecisionAsync",
-      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandChecksCurrentStateBeforeStartupAsync"
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PublicCandidateCommandChecksCurrentStateBeforeStartupAsync",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.PrMergeRequiresSignedMergeContextAndApiHeadAsync(claim: \\\"sha\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.PrMergeRequiresSignedMergeContextAndApiHeadAsync(claim: \\\"ref\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.PrMergeRequiresSignedMergeContextAndApiHeadAsync(claim: \\\"event\\\", condition: \\\"github-event-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.PrMergeRequiresSignedMergeContextAndApiHeadAsync(claim: \\\"api-head\\\", condition: \\\"pr-binding-mismatch\\\")"
     ],
     "Earlier pass with a newer issued attempt": [
       "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.AttemptIssuanceRaceIsRecheckedAsync",
@@ -94,7 +98,13 @@
       "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"empty\\\", condition: \\\"complete-required-suite-proof-required\\\")",
       "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"counts\\\", condition: \\\"complete-required-suite-proof-required\\\")",
       "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"tool\\\", condition: \\\"tool-qualification-required\\\")",
-      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"cancelled\\\", condition: \\\"passed-outcome-required\\\")"
+      "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.PassingLabelCannotOverrideMissingOrMismatchedProofAsync(scenario: \\\"cancelled\\\", condition: \\\"passed-outcome-required\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"ubuntu-latest\\\", group: \\\"GitHub Actions\\\", eligible: True)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"Linux\\\", group: \\\"GitHub Actions\\\", eligible: False)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"windows-latest\\\", group: \\\"GitHub Actions\\\", eligible: False)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"macos-latest\\\", group: \\\"GitHub Actions\\\", eligible: False)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"ubuntu-latest\\\", group: \\\"Default\\\", eligible: False)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"self-hosted,ubuntu-latest\\\", group: \\\"GitHub Actions\\\", eligible: False)"
     ],
     "Descriptor/result disagreement or partial startup": [
       "Hexalith.Builds.ModuleTool.Tests.CandidateRunnerTests.DescriptorAndTerminalWritersPreserveSameIssuedCandidateAsync",
@@ -108,14 +118,85 @@
     "Loaded-artifact producers in Story 3.9"
   ],
   "artifacts": {
-    "regression-tests.xml": "sha256:ed2007cd1a810e8dfdb1cb94ba67f3a7bbe0aea5718eed3fde3f23f72aafb69d",
-    "regression-tests.log": "sha256:68af474bd5b1316261f661ddf2ded2cd7cdf163f0ecbf4f5b02308a0f6fa73c3",
-    "build-debug.log": "sha256:0e20b951026bcc5805d5c94ae17a60bafed359b95ccfb07122288e94482426eb",
-    "platform-mirrors.log": "sha256:fb184ea57734512b1f088f9181209901b9cd46df3eb7eaa2500ea9e48dde20b5",
-    "workflow-lint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "candidate-tests.log": "sha256:8f59c47b3d92873a700656c48993b93abeea65f3cf90187e74bb6ab95df487b0",
+    "build-debug.log": "sha256:335bfd55ffad01980929a1543f5d477adfc82ba110371a306ec90b46708ac407",
+    "builds-commit-message.txt": "sha256:e7fd759ea9b5bba43cb44068dc5d927ab2bd4478c7b9dded092c95f56d06d98b",
+    "builds-commitlint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "builds-diff-check.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "governed-provenance-tests.log": "sha256:92e8d20062aa348154a360b5211851d3d72f5b82795a340cbf64853addbde659",
-    "candidate-tests.xml": "sha256:382dbfe2a74bd1b4f2572e149987069cfb9c86d4c51ba19c969edc0a9eb80db8"
+    "candidate-tests.log": "sha256:1ceb98bbe2af35dbf09be761f0fb91e70f6ca6d46deb6a3cb2ffa87212a35c35",
+    "candidate-tests.xml": "sha256:c0463bd5b8824516196b753c457e70cf130741d208dd40afa8753fe4a27aafa9",
+    "governed-provenance-tests.log": "sha256:179a614e941c0e00581daf2b1e041109e7ed472ab541ef2cb24442b0fa0b8e13",
+    "parent-build.log": "sha256:36992f1eada8bf47ec51a39172441b542f4be114db124eb30b6b210f935ae0f4",
+    "parent-builds-diff-check.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "parent-mirrors.log": "sha256:d10ffbd9f0faa72cd6837063279524e199b59fbc3d035051302a1e8dbc4b36ad",
+    "parent-platform-diff-check.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "parent-python.log": "sha256:73236bbd48215791b6043fc414db0fe0a8f8fecb2efd837d60355f25efcc7846",
+    "parent-tests-initial.log": "sha256:6237b01d612d3fba4f52205a48ccbdf9b3057b209116eb10e6786b4f2054bacf",
+    "parent-tests-initial.xml": "sha256:077f12385bd758fc161bcb85948741c4b0b6cd5bcb9d3b1d8515373f59ca5d48",
+    "parent-tests.log": "sha256:c5f25b855d56556ec04292201ee0eaa6e3ff9920a64409abcf26a5ae1f76168f",
+    "parent-tests.xml": "sha256:eb78afc15263a07c337238b6fa674b0e3f368967fcc6ba3d440bdbd569d3fcb4",
+    "parent-verification.json": "sha256:b5b8913d7c264cca7da64905b232efd161f5d161deb94a42d0524e07ad858b86",
+    "parent-workflow-lint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "platform-commit-message.txt": "sha256:cbb9c600d7cebadd9d11d711004cd7190c9f55b7088cbb38d34445e50e719ee1",
+    "platform-commitlint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "platform-diff-check.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "platform-mirrors.log": "sha256:fb184ea57734512b1f088f9181209901b9cd46df3eb7eaa2500ea9e48dde20b5",
+    "regression-tests.log": "sha256:68af474bd5b1316261f661ddf2ded2cd7cdf163f0ecbf4f5b02308a0f6fa73c3",
+    "regression-tests.xml": "sha256:ed2007cd1a810e8dfdb1cb94ba67f3a7bbe0aea5718eed3fde3f23f72aafb69d",
+    "review-fixes-build.log": "sha256:19a615497fbf360ba60fd633277b031d9f184277b131e3ea3527d3dc55cf8d09",
+    "review-fixes-candidate-tests.log": "sha256:e6aba6969d160478492220d20ff009ff288c5645625e5e1359c4e403cdcab329",
+    "review-fixes-candidate-tests.xml": "sha256:9fea9b004e25d30e7659ca90e9d5f72d825ee78d9fa1461cfa40d3337ec643d9",
+    "review-fixes-diff-check.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "review-fixes-provenance-tests.log": "sha256:6e29f7f8903ced4e2135d3012a099b934a0287db533a6f290c70ec4cc938e405",
+    "review-fixes-workflow-lint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "review-fixes-workflow-tests.log": "sha256:d9d734ee1c2de67b748aeef1c4126433aa438ad8375ca953916f12b1df11414d",
+    "review-fixes-workspace-tests.log": "sha256:ef2f4cc42a54a59dd5c54c351336c3e9b89486f4dc6d8a573195b91331f11494",
+    "workflow-lint.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "productionShapeFollowup": {
+    "changes": [
+      "PR workflow-run API head_sha binds PR head H; signed OIDC sha/ref/event_name bind merge result M; exact merge parents and current bindings remain mandatory.",
+      "Caller workflow bytes are authenticated at signed workflow_sha instead of API head_sha.",
+      "GitHub Actions runner_group_name plus the approved ubuntu-latest requested job label corroborate disposable Linux hosting; self-hosted and non-Linux observations refuse."
+    ],
+    "tests": [
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.PrMergeRequiresSignedMergeContextAndApiHeadAsync(claim: \\\"sha\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.PrMergeRequiresSignedMergeContextAndApiHeadAsync(claim: \\\"ref\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.PrMergeRequiresSignedMergeContextAndApiHeadAsync(claim: \\\"event\\\", condition: \\\"github-event-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.PrMergeRequiresSignedMergeContextAndApiHeadAsync(claim: \\\"api-head\\\", condition: \\\"pr-binding-mismatch\\\")",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"ubuntu-latest\\\", group: \\\"GitHub Actions\\\", eligible: True)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"Linux\\\", group: \\\"GitHub Actions\\\", eligible: False)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"windows-latest\\\", group: \\\"GitHub Actions\\\", eligible: False)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"macos-latest\\\", group: \\\"GitHub Actions\\\", eligible: False)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"ubuntu-latest\\\", group: \\\"Default\\\", eligible: False)",
+      "Hexalith.Builds.ModuleTool.Tests.CandidatePolicyTests.ExecutionUsesRealHostedRunnerLabelsAsync(labels: \\\"self-hosted,ubuntu-latest\\\", group: \\\"GitHub Actions\\\", eligible: False)"
+    ],
+    "rerunChecks": [
+      "Serialized Debug build: passed, 0 warnings/errors",
+      "Named candidate policy/runner selection: 50 passed",
+      "Governed provenance Python suite: 69 passed",
+      "Builds/scoped Platform diff checks: passed"
+    ],
+    "retainedEarlierChecks": [
+      "311 reader/provisioning/result-writer regressions",
+      "1 Platform schema mirror",
+      "Workflow actionlint"
+    ],
+    "changedSourceFiles": [
+      "src/libraries/Hexalith.Builds.Tooling/CandidatePolicy/CandidateGateClient.cs",
+      "Github/governed-provenance/candidate_policy.py",
+      "test/Hexalith.Builds.Module.Tests/CandidateGateFixture.cs",
+      "test/Hexalith.Builds.Module.Tests/CandidatePolicyTests.cs",
+      "Github/governed-provenance/tests/test_candidate_policy.py"
+    ]
+  },
+  "parentVerification": "parent-verification.json",
+  "finalVerification": {
+    "dotnetPassed": 498,
+    "candidatePassed": 86,
+    "pythonPassed": 74,
+    "mirrorsPassed": 1,
+    "warnings": 0,
+    "errors": 0,
+    "deferredReviewFindings": 0
   }
 }

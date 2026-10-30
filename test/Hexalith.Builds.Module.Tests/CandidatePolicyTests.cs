@@ -43,6 +43,129 @@ public sealed class CandidatePolicyTests
         CandidatePolicyValidator.ValidateSelection(binding, "orders", "package", fixture.Context);
     }
 
+    /// <summary>The GitHub-signed merge context binds M while authenticated workflow-run metadata binds H.</summary>
+    /// <param name="claim">The contradictory signed or API observation.</param>
+    /// <param name="condition">The named refusal.</param>
+    /// <returns>The refusal for an incorrectly bound execution context.</returns>
+    [Theory]
+    [InlineData("sha", "pr-binding-mismatch")]
+    [InlineData("ref", "pr-binding-mismatch")]
+    [InlineData("event", "github-event-binding-mismatch")]
+    [InlineData("api-head", "pr-binding-mismatch")]
+    public async Task PrMergeRequiresSignedMergeContextAndApiHeadAsync(string claim, string condition)
+    {
+        using CandidateGateFixture fixture = new();
+        fixture.SignedSha = claim == "sha" ? CandidateGateFixture.Head : null;
+        fixture.SignedRef = claim == "ref" ? "refs/pull/7/head" : null;
+        fixture.SignedEvent = claim == "event" ? "workflow_dispatch" : null;
+        fixture.RunHead = claim == "api-head" ? CandidateGateFixture.Merge : null;
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe(condition);
+    }
+
+    /// <summary>The approved hosted Ubuntu label authenticates Linux without a nonexistent generic API label.</summary>
+    /// <param name="labels">The authenticated requested image labels.</param>
+    /// <param name="group">The authenticated runner group.</param>
+    /// <param name="eligible">Whether these match the approved hosted Linux job.</param>
+    /// <returns>The execution hosting assertions.</returns>
+    /// <exception cref="ArgumentNullException">The fixture labels are missing.</exception>
+    [Theory]
+    [InlineData("ubuntu-latest", "GitHub Actions", true)]
+    [InlineData("Linux", "GitHub Actions", false)]
+    [InlineData("windows-latest", "GitHub Actions", false)]
+    [InlineData("macos-latest", "GitHub Actions", false)]
+    [InlineData("ubuntu-latest", "Default", false)]
+    [InlineData("self-hosted,ubuntu-latest", "GitHub Actions", false)]
+    public async Task ExecutionUsesRealHostedRunnerLabelsAsync(string labels, string group, bool eligible)
+    {
+        ArgumentNullException.ThrowIfNull(labels);
+        using CandidateGateFixture fixture = new() { JobLabels = labels.Split(','), JobRunnerGroup = group };
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (eligible)
+        {
+            await fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+        else
+        {
+            CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+            refusal.Condition.ShouldBe("github-hosted-linux-required");
+        }
+    }
+
+    /// <summary>Archived issuance and a token minted for an earlier nonce cannot prove a live consumer.</summary>
+    /// <param name="mode">The invalid process proof.</param>
+    /// <returns>The replay refusal.</returns>
+    [Theory]
+    [InlineData("issuance")]
+    [InlineData("replay")]
+    [InlineData("wrong-workflow")]
+    public async Task LocalReplayAndUnapprovedConsumerProofRefuseAsync(string mode)
+    {
+        using CandidateGateFixture fixture = new() { ConsumerProofMode = mode };
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (mode == "replay")
+        {
+            await fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("issuer-authentication-required");
+    }
+
+    /// <summary>Unavailable job transport is not a caller cancellation and does not expose exception details.</summary>
+    /// <param name="failure">The transport failure.</param>
+    /// <returns>The stable unavailable-authority refusal.</returns>
+    [Theory]
+    [InlineData("timeout")]
+    [InlineData("io")]
+    public async Task ExecutionTransportFailuresRefuseAsUnavailableAsync(string failure)
+    {
+        using CandidateGateFixture fixture = new() { JobFailure = failure };
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("authority-unavailable");
+        refusal.Message.ShouldNotContain("Private transport");
+    }
+
+    /// <summary>Caller cancellation remains cancellation at the consumer proof boundary.</summary>
+    /// <returns>The requested cancellation assertion.</returns>
+    [Fact]
+    public async Task ExecutionPreservesRequestedCancellationAsync()
+    {
+        using CandidateGateFixture fixture = new();
+        CandidatePolicyBinding binding = await fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        using CancellationTokenSource caller = new();
+        await caller.CancelAsync().ConfigureAwait(true);
+        _ = await Should.ThrowAsync<OperationCanceledException>(() => fixture.Gate.VerifyExecutionAsync(binding, fixture.Context, caller.Token)).ConfigureAwait(true);
+    }
+
+    /// <summary>A successful completion racing the final release refetch closes its request.</summary>
+    /// <returns>The pending-only release refusal.</returns>
+    [Fact]
+    public async Task ReleaseCompletionRaceRefusesPendingDecisionAsync()
+    {
+        using CandidateGateFixture fixture = new() { CompleteOnFinalRefetch = true };
+        fixture.Payload["kind"] = "release";
+        _ = fixture.Payload.Remove("pr");
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("request-not-pending");
+    }
+
+    /// <summary>Filtered GitHub history cannot silently establish completeness at its result ceiling.</summary>
+    /// <param name="mode">The missing or contradictory total-count observation.</param>
+    /// <returns>The named incomplete-authority refusal.</returns>
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("ceiling")]
+    [InlineData("truncated")]
+    [InlineData("negative")]
+    public async Task IncompleteWorkflowPaginationRefusesAsync(string mode)
+    {
+        using CandidateGateFixture fixture = new() { WorkflowPaginationMode = mode };
+        CandidatePolicyException refusal = await Should.ThrowAsync<CandidatePolicyException>(() => fixture.Gate.ResolveAsync(fixture.Sign(), TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        refusal.Condition.ShouldBe("authority-pagination-incomplete");
+    }
+
     /// <summary>Current GitHub observations can invalidate saved authentic evidence.</summary>
     /// <param name="change">The authority change.</param>
     /// <param name="condition">The stable refusal.</param>

@@ -1112,6 +1112,12 @@ open epoch (including reopen/retarget events), exact committed merge parents and
 current base branch tip. Only the newest registered workflow request/attempt can
 qualify; queued, failed and cancelled successors supersede older passes.
 
+Selection and final validation also require a fresh nonce-bound consumer OIDC
+proof from `domain-ci.yml` at the same enrolled Builds revision. Its consumer job
+alone receives that workflow's token permission. The proof binds the current run,
+attempt and candidate; copied issuance artifacts or CI environment variables
+cannot authenticate a local process. The fresh proof is not retained as evidence.
+
 Host operators must independently provision `HEXALITH_CANDIDATE_GATE_CONFIG` and
 read-only `HEXALITH_CANDIDATE_GITHUB_TOKEN`. The JSON configuration has the PascalCase
 fields `WorkflowRef`, `WorkflowSha`, `Environment` (exactly `candidate-policy`),

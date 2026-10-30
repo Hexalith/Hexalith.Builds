@@ -16,6 +16,8 @@ class CandidatePolicyTests(unittest.TestCase):
         self.env = {
             "GITHUB_REPOSITORY": "Hexalith/Orders", "GITHUB_RUN_ID": "101",
             "GITHUB_RUN_ATTEMPT": "1", "GH_TOKEN": "read-only-fixture",
+            "GITHUB_EVENT_NAME": "pull_request", "GITHUB_SHA": "a" * 40,
+            "GITHUB_REF": "refs/pull/7/merge",
             "ACTIONS_ID_TOKEN_REQUEST_URL": "https://oidc.invalid/?request=fixture",
             "ACTIONS_ID_TOKEN_REQUEST_TOKEN": "fixture-oidc-request",
         }
@@ -24,6 +26,7 @@ class CandidatePolicyTests(unittest.TestCase):
         self.parents = ["c" * 40, "b" * 40]
         self.events = []
         self.calls = []
+        self.run_head = None
 
     def get(self, url, token):
         self.calls.append((url, token))
@@ -38,7 +41,7 @@ class CandidatePolicyTests(unittest.TestCase):
         if "/actions/runs/" in url:
             return {"id": int(self.env["GITHUB_RUN_ID"]), "repository": {"full_name": "Hexalith/Orders"},
                     "run_attempt": int(self.env["GITHUB_RUN_ATTEMPT"]), "event": self.event,
-                    "head_sha": "a" * 40, "created_at": "2026-10-10T00:00:00Z", "pull_requests": [{"number": 7, "head": {"sha": "b" * 40}, "base": {"sha": "c" * 40}}]}
+                    "head_sha": self.run_head or ("a" * 40 if self.event == "workflow_dispatch" else "b" * 40), "created_at": "2026-10-10T00:00:00Z", "pull_requests": [{"number": 7, "head": {"sha": "b" * 40}, "base": {"sha": "c" * 40}}]}
         if "/pulls/" in url:
             return {"state": self.state, "merged": False, "created_at": "2026-10-01T00:00:00Z",
                     "merge_commit_sha": "a" * 40, "base": {"sha": "c" * 40, "ref": "main"}, "head": {"sha": "b" * 40}}
@@ -67,6 +70,29 @@ class CandidatePolicyTests(unittest.TestCase):
         self.assertEqual(value["epoch"], "9001")
         self.assertEqual(value["policyId"], POLICY.POLICY_ID)
 
+    def test_pr_run_head_and_merge_execution_context_are_distinct(self):
+        value = self.issue()
+        self.assertNotEqual(value["targetCommit"], value["pr"]["headCommit"])
+        self.assertNotEqual(value["pr"]["headCommit"], value["pr"]["baseCommit"])
+        self.assertEqual(self.get("https://api.github.com/repos/Hexalith/Orders/actions/runs/101", "read-only-fixture")["head_sha"], value["pr"]["headCommit"])
+        self.assertEqual(self.env["GITHUB_SHA"], value["targetCommit"])
+
+    def test_wrong_github_execution_context_or_api_head_refuses(self):
+        for field, replacement, message in [
+            ("GITHUB_SHA", "b" * 40, "pr-binding-mismatch"),
+            ("GITHUB_REF", "refs/pull/7/head", "pr-binding-mismatch"),
+            ("GITHUB_EVENT_NAME", "workflow_dispatch", "github-event-binding-mismatch"),
+        ]:
+            with self.subTest(field=field):
+                original = self.env[field]
+                self.env[field] = replacement
+                with self.assertRaisesRegex(ValueError, message):
+                    self.issue()
+                self.env[field] = original
+        self.run_head = "a" * 40
+        with self.assertRaisesRegex(ValueError, "pr-binding-mismatch"):
+            self.issue()
+
     def test_retry_same_request_distinct_run_and_attempt(self):
         original = self.issue()
         self.env["GITHUB_RUN_ATTEMPT"] = "2"
@@ -78,6 +104,8 @@ class CandidatePolicyTests(unittest.TestCase):
 
     def test_release_dispatch_independent_exact_revision(self):
         self.event = "workflow_dispatch"
+        self.env["GITHUB_EVENT_NAME"] = "workflow_dispatch"
+        self.env["GITHUB_REF"] = "refs/heads/main"
         first = self.issue()
         self.env["GITHUB_RUN_ID"] = "102"
         second = self.issue()
@@ -97,6 +125,7 @@ class CandidatePolicyTests(unittest.TestCase):
 
     def test_unrecognized_event_refuses(self):
         self.event = "push"
+        self.env["GITHUB_EVENT_NAME"] = "push"
         with self.assertRaisesRegex(ValueError, "authenticated-request-required"):
             self.issue()
 
@@ -108,6 +137,18 @@ class CandidatePolicyTests(unittest.TestCase):
         self.assertIn("id-token: write", text)
         self.assertNotIn("packages: write", text)
         self.assertNotIn("contents: write", text)
+
+    def test_only_approved_consumer_gets_nonce_proof_capability_and_exact_output_policy(self):
+        text = (ROOT.parents[1] / ".github/workflows/domain-ci.yml").read_text()
+        consumer = text.split("  aspire-tests:", 1)[1].split("  performance-tests:", 1)[0]
+        build = text.split("  build-and-test:", 1)[1].split("  aspire-tests:", 1)[0]
+        self.assertIn("id-token: write", consumer)
+        self.assertNotIn("id-token: write", build)
+        self.assertNotIn("id-token: write", text.split("  performance-tests:", 1)[1])
+        self.assertNotIn("id-token: write", text.split("jobs:", 1)[0])
+        self.assertIn("candidate_workspace.py", consumer)
+        self.assertIn("CANDIDATE_BUILDS_WORKFLOW_SHA: ${{ job.workflow_sha }}", consumer)
+
 
 
 if __name__ == "__main__":
