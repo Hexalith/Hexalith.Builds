@@ -18,6 +18,21 @@ using Xunit;
 /// <summary>Verifies read-only durable listings independent of manifest changes and last-update timestamps.</summary>
 public sealed class CompositionRunListingTests
 {
+    /// <summary>A retained resource disposition does not manufacture failure retention for a passed owner.</summary>
+    /// <returns>The honest retention and failed-run listing assertions.</returns>
+    [Fact]
+    public async Task PassedRetainedDispositionWithoutFailureIsNotFailureRetainedAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionRunStateStore store = new(Path.Combine(workspace.Root, "state"));
+        ModuleTestRunRecord terminal = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "retained", new CompositionRunResources([], [])) { FailureRetained = false };
+        await store.WriteAsync(state with { TestRun = terminal, CleanupDisposition = "not-requested" }, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionRunListingEntry listed = (await CompositionRunListing.ReadAsync(store, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true)).Environments.ShouldNotBeNull().Single();
+        listed.Retention.ShouldBe("not-retained");
+        listed.FailureRunIds.ShouldBeEmpty();
+    }
+
     /// <summary>Listing uses the original request time and exposes unavailable attachment and legacy metadata.</summary>
     /// <returns>The human and JSON listing assertions.</returns>
     [Fact]

@@ -929,7 +929,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [.. bookkeeping, diagnostic]) { RemainingResources = remaining }, remaining);
     }
 
-    private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup continued, but its terminal metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
+    private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
 
     private static void KillOwnedWithoutWaiting(Process process)
     {
@@ -1395,6 +1395,18 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
                 {
                     return WithdrawalRefusal(state, bookkeeping);
                 }
+            }
+        }
+
+        if (state is not null && state.SelectedTest is null)
+        {
+            try
+            {
+                await StateStore.WriteAsync(state with { CleanupDisposition = "in-progress", UpdatedAt = DateTimeOffset.UtcNow }, bound).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (IsTeardownFailure(exception))
+            {
+                bookkeeping.Add(RecordingFailure());
             }
         }
 

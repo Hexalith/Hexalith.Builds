@@ -1368,6 +1368,7 @@ public static class ModuleCommandExecutionService
             bool attachedFailure = false;
             bool holdsVerified = true;
             bool cleanupPending = false;
+            bool cancellationWithdrawn = false;
             string? attachmentDirectory = ownedRunId is null ? null : Path.Combine(options.StateDirectory, "diagnostics", ownedRunId);
             if (!ci && attachmentDirectory is not null)
             {
@@ -1438,10 +1439,7 @@ public static class ModuleCommandExecutionService
                     result = result with { Diagnostics = [.. result.Diagnostics.Where(item => item.RuleId != "HXI011"), .. CompositionAttachmentStore.WithdrawalDiagnostics(ended)] };
                     attachedFailure = (await CompositionAttachmentStore.ReadAsync(attachmentDirectory, ownedRunId, withdrawalToken).ConfigureAwait(false)).Any(item => item.Outcome == "failed");
                     cleanup = cleanup && !attachedFailure;
-                    if (cleanup && session is not null && (waitedForHolds ? deferredStopping : stopping).IsCancellationRequested)
-                    {
-                        await engine.StopWithdrawnSessionAsync(session, (waitedForHolds ? deferredStopping : stopping).Token).ConfigureAwait(false);
-                    }
+                    cancellationWithdrawn = true;
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or OperationCanceledException)
                 {
@@ -1527,6 +1525,11 @@ public static class ModuleCommandExecutionService
                 CompositionDownResult down;
                 try
                 {
+                    if (cancellationWithdrawn)
+                    {
+                        await engine!.StopWithdrawnSessionAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token).ConfigureAwait(false);
+                    }
+
                     down = await (options.PlatformDownOverride?.Invoke(session!, (waitedForHolds ? deferredStopping : stopping).Token) ?? engine!.DownWithinBudgetAsync(session!, (waitedForHolds ? deferredStopping : stopping).Token)).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (exception is not OutOfMemoryException)

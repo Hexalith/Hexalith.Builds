@@ -128,7 +128,6 @@ public static class CompositionRunListing
         _ when attachments?.Any(item => item.Outcome == "failed") == true => state.CleanupDisposition == "complete" ? "released" : "failure-retained",
         null => "unavailable",
         _ when state.CleanupDisposition == "complete" && state.TestRun.FailureRetained => "released",
-        { ResourceDisposition: "retained" } => "failure-retained",
         _ when state.CreatedAt is null => "unavailable",
         { FailureRetained: false } => "not-retained",
         _ => "failure-retained",

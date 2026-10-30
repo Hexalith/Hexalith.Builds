@@ -49,3 +49,5 @@ hashes confirm the test directory loaded the freshly built Tooling/CLI outputs.
 `verification.json` records all commands and subset scopes; the prior manifest is
 preserved as `verification-before-review-patches.json`. The exhausted-budget regression
 also passed independently after synchronizing cancellation with native startup.
+
+Final coordinator review verification: all 299 cases in the seven-class suite pass, including live exhausted-budget cancellation, publication-refusal AppHost survival, cleanup-lock expiry, both locality bookkeeping branches, passed-owner admission/listing and environment-only cleanup progress. The focused Debug build has zero warnings/errors. The normal build still fails on seven unrelated EventStoreHost API diagnostics in the concurrent checkout; final-build-blocked.log preserves them. Story source and executed artifact hashes were stable throughout the run; unrelated concurrent source edits are identified in the manifest. Final command stopping follows both durable withdrawal and valid terminal publication.

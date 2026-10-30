@@ -6,17 +6,17 @@
     "command": "dotnet build test/Hexalith.Builds.Module.Tests -nodeReuse:false",
     "exitCode": 1,
     "warnings": 0,
-    "errors": 3,
-    "log": "review-patch-build-blocked.log",
-    "blocker": "Unrelated EventStoreHost CS0234: resolved Hexalith.EventStore packages lack Server.Routing and ServiceDefaults.Routing referenced by Program.cs lines 31, 44 and 46. Tooling and Module.Cli compile successfully before this blocker."
+    "errors": 7,
+    "log": "final-build-blocked.log",
+    "blocker": "Unrelated EventStoreHost API mismatches in the concurrent checkout: missing routing/channel APIs and inaccessible EventStoreActorCallbackEndpointMetadata; see exact diagnostics in the log. Tooling/CLI compiled current story sources before this blocker."
   },
   "focusedBuild": {
     "command": "dotnet build test/Hexalith.Builds.Module.Tests -nodeReuse:false -p:BuildProjectReferences=false",
     "exitCode": 0,
     "warnings": 0,
     "errors": 0,
-    "log": "review-patch-focused-build.log",
-    "scope": "Compiles current Module.Tests source against freshly built Tooling/Module.Cli DLLs and existing AppHost reference artifacts; does not rebuild the unrelated blocked EventStoreHost."
+    "log": "final-focused-build.log",
+    "scope": "Builds current Module.Tests against freshly compiled current Tooling/Module.Cli outputs and existing AppHost reference artifacts; does not rebuild the unrelated blocked EventStoreHost."
   },
   "tests": {
     "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -class '*CompositionRunListingTests' -class '*LocalRunLifecycleTests' -class '*LocalRunLifecycleReviewTests' -class '*TestResultWriterTests' -class '*ModuleRunnerReviewRegressionTests' -class '*LocalRunSourceReviewTests' -noLogo -result-xml evidence/2-7/tests.xml",
@@ -30,8 +30,8 @@
       "LocalRunSourceReviewTests"
     ],
     "exitCode": 0,
-    "total": 291,
-    "passed": 291,
+    "total": 299,
+    "passed": 299,
     "failed": 0,
     "skipped": 0,
     "errors": 0,
@@ -70,22 +70,22 @@
       "AttachAdmissionTests",
       "TestResultWriterTests"
     ],
-    "total": 131,
-    "passed": 131,
+    "total": 138,
+    "passed": 138,
     "failed": 0,
     "skipped": 0,
     "log": "tests.log",
     "xml": "tests.xml"
   },
   "exhaustedBudgetRegression": {
-    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -method '*ExhaustedStopBudgetStillRecordsCancellationAndWithdrawsAsync' -noLogo -result-xml evidence/2-7/exhausted-budget-tests.xml",
-    "exitCode": 0,
+    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -class '*CompositionRunListingTests' -class '*LocalRunLifecycleTests' -class '*LocalRunLifecycleReviewTests' -class '*TestResultWriterTests' -class '*ModuleRunnerReviewRegressionTests' -class '*LocalRunSourceReviewTests' -noLogo -result-xml evidence/2-7/tests.xml",
+    "selection": "Subset audit: ExhaustedStopBudgetStillRecordsCancellationAndWithdrawsAsync in the final seven-class run, including the live AppHost assertions; not a separate invocation.",
     "total": 1,
     "passed": 1,
     "failed": 0,
     "skipped": 0,
-    "log": "exhausted-budget-tests.log",
-    "xml": "exhausted-budget-tests.xml"
+    "log": "tests.log",
+    "xml": "tests.xml"
   },
   "verificationSource": {
     "baseCommit": "5e24c8b2d2fa766274a29219bfcfbd74a4c77a28",
@@ -95,26 +95,35 @@
       "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionAttachAdmission.cs": "ff3ed02e3f1e3e93c5b6bbd0cd80be6b2c3da05774e0574dfe68ff8adce4f969",
       "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionAttachment.cs": "98f5b16e8c98e2d9bb8854096d63f15de5d69b351a5f9bb98e30fe915b0141e8",
       "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionAttachmentStore.cs": "14b02a8742f49290b271b29060c56685919bdb547d1954ca52849702e25cd44c",
-      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs": "a36805640706656720006f5861c49b055a944512cf9b61d7e8c1000afb08544a",
-      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunListing.cs": "cce3519dcf9c60ae699c902c5305141864f1aae8eaf42411d07fb457a80d2cfb",
-      "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs": "48c02640b3e507252d32fd58da7dceac3bef3215e2ab9c1e8c44523f44d5efe2",
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs": "44c678e461fcaa12eaadba204a926c58c8db213c6fa322c3db479167848a7def",
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunListing.cs": "591aec22ddff16c612852243b739b29c4edf01bf2e0065675d77a067e9c79fc1",
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs": "2846592e8030029a0f5b515b148a856d8360e3b4218f865286190b4352008015",
       "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestResultWriter.cs": "2cba17be0730bcc71c8cfc67c1e9b7fd92f230468ede6e61ec49dd22d58240f3",
-      "test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs": "be5a88be3ce0c658afb445970f9a0df722771ede5058f162e405a62bb957f42a",
-      "test/Hexalith.Builds.Module.Tests/CompositionRunListingTests.cs": "784b09cb2040e8b8b249450dd5660e4a32e13a4b151e5d4a86f6256fc1fb8979",
-      "test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs": "dc092817088bcae7ba5d181da5edb70a0a9e106fc37b67c484d6fc9b3ad8ef87"
+      "test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs": "1fe4ffcf63115012cf2cfc41dd40202dfd0e6a74808d1311635de8a4bd7adc29",
+      "test/Hexalith.Builds.Module.Tests/CompositionRunListingTests.cs": "b5f1d336b64fde598fee61814a882c776ce0d210da0b1d27a292ff3a3c13707b",
+      "test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs": "dc092817088bcae7ba5d181da5edb70a0a9e106fc37b67c484d6fc9b3ad8ef87",
+      "test/Hexalith.Builds.Module.Tests/LocalRunLifecycleTests.cs": "d233ab29b9a3a1836737ed7c7b04f2fd5c8900619e75a604d99306328efea88a",
+      "test/Hexalith.Builds.Module.Tests/LocalRunLifecycleReviewTests.cs": "03fe9d5289696f5fd093f6cde1e7503437ffafa16fa79db8b40f400da67bef9c",
+      "test/Hexalith.Builds.Module.Tests/ModuleRunnerReviewRegressionTests.cs": "0b58e6666e84ceb1b04f0288c1f98f24e0b695d44cf500fd610fe3f575e58807",
+      "test/Hexalith.Builds.Module.Tests/LocalRunSourceReviewTests.cs": "986ed54b98fabffa190af7d33fdc72353502923d851f784c363abd75d463ae85"
     },
     "executedArtifactsSha256": {
-      "src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll": "bca479ca8e7a1ba2b237a5be53e64457e699537b7e561e3629d39ec0ca9cae7c",
-      "src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll": "a63bea5da0930f88508a50d32aadab0297c7074db4e00bc77b781c1d23c4366b",
-      "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll": "489805e9320d432c89fcd51945b4fff940036e79a6feefc6d6deb2a1fd81c461",
-      "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll": "bca479ca8e7a1ba2b237a5be53e64457e699537b7e561e3629d39ec0ca9cae7c",
-      "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll": "a63bea5da0930f88508a50d32aadab0297c7074db4e00bc77b781c1d23c4366b"
+      "src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll": "2eea91a4f122822f223ac64ca7c88f64cbe1b77410cff3c29b4fd6f084323a75",
+      "src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll": "e9498057626d8184194eb0d1234eb4d4f900b4e828b2cd3f9f8199dbe8866442",
+      "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll": "5e587ef88ae90661c67d05a9c30099e7771b401818040f137c20fb34d357fe83",
+      "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll": "7d3dc165bbb97c93d94a277fcdca2667a245074204d95d6011958ab89933baca",
+      "test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll": "2a546e73f562d859defa59b6c63719a13a16b4f6ef294458015e5afd9901d70d"
     },
     "currentDependencyCopiesMatch": true,
     "preExistingAppHostReference": {
       "path": "src/hosts/Hexalith.Builds.Module.AppHost/bin/Debug/net10.0/Hexalith.Builds.Module.AppHost.dll",
-      "sha256": "2972082d9cbbd38cb12b00654a8109674ebc90b709fe3b41182370cc809fb37a"
-    }
+      "sha256": "8f34910225ab171b81e9cde25e067a965a4a035efddaf03008efdabcf724eaab"
+    },
+    "coordinatorStartCommit": "4be4b28d90c992d5aaedaf32ea036556e236057e",
+    "storySourcesAndArtifactsStableDuringFinalRun": true,
+    "unrelatedSourceEditsDuringRun": [
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/PlatformManifestCommand.cs"
+    ]
   },
   "reviewMatrixAudit": {
     "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -class '*CompositionRunListingTests' -class '*LocalRunLifecycleTests' -class '*LocalRunLifecycleReviewTests' -class '*TestResultWriterTests' -class '*ModuleRunnerReviewRegressionTests' -class '*LocalRunSourceReviewTests' -noLogo -result-xml evidence/2-7/tests.xml",
@@ -146,20 +155,25 @@
       "ExhaustedStopBudgetStillRecordsCancellationAndWithdrawsAsync": 1,
       "UnrecordablePendingCleanupStateReportsEvidenceFailureAsync": 1,
       "CumulativeWithdrawalDiagnosticsDoNotRepeatAttachedRunsAsync": 1,
-      "DownWithdrawalRequirementFollowsAdmissionLocalityAsync": 4,
-      "PostWithdrawalProvisioningFailureStopsSessionAppHostAsync": 2,
+      "DownWithdrawalRequirementFollowsAdmissionLocalityAsync": 7,
+      "PostWithdrawalProvisioningFailureStopsSessionAppHostAsync": 3,
       "FailedBookkeepingStillStopsOwnedProcessAsync": 3,
-      "SessionRecoveryWaitsForCommittedPassAsync": 1
+      "SessionRecoveryWaitsForCommittedPassAsync": 1,
+      "CancellationPublicationRefusalPreservesLiveAppHostAsync": 1,
+      "CancellationStopsLiveAppHostBeforeCleanupLockExpiresAsync": 1,
+      "PassedOwnerWithRetainedDispositionRefusesAttachmentAsync": 1,
+      "PassedRetainedDispositionWithoutFailureIsNotFailureRetainedAsync": 1
     }
   },
   "reviewResolution": {
     "locality": "Only local selected-test owners require strict marker, in-progress state and withdrawal; nonattachable owners preserve bounded best-effort cleanup and HXT008. HXR037 names state/withdrawal and retains bookkeeping diagnostics.",
-    "retention": "Resource disposition retained alone no longer bypasses passed-owner cleanup. Recorded owner or attached failure remains the retention cause.",
-    "cancellation": "Cancellation and withdrawal get a separate five-second metadata allowance; the original resource stop budget is unchanged, with kill without waiting after withdrawal when spent.",
-    "sessionStop": "The session AppHost stops and is disposed immediately after durable withdrawal, before provisioning-lock acquisition and all later exits.",
+    "retention": "A retained resource disposition alone cannot suppress cleanup, manufacture failure retention in listing, or reopen a passed owner for admission. Recorded owner or attached failure remains the cause.",
+    "cancellation": "Cancellation and withdrawal get five seconds of metadata allowance; after valid publication, the withdrawn cancellation AppHost is stopped before down even if cleanup-lock acquisition later expires.",
+    "sessionStop": "Engine sessions stop and dispose after durable withdrawal and before provisioning-lock acquisition. Command cancellation stops after verified terminal publication and successful withdrawal, before down, even if the resource budget expires later.",
     "reporting": "Cumulative HXI011 reports name each run once per command result; pending-state write failure adds explicit HXT008.",
     "tests": "Durable pending/first-pass assertions, native-start synchronization, negative outcome theory, longer wait holds and cleanup-attempt counting precede assertions.",
-    "contractBoundary": "Policy, v1 schemas and contract reader unchanged."
+    "contractBoundary": "Policy, v1 schemas and contract reader unchanged.",
+    "finalReview": "All patch findings resolved: command AppHost stopping follows verified publication and successful withdrawal without a token snapshot race; environment-only in-progress bookkeeping restored; retention projection requires recorded failure; live-process, native-barrier and state-write obstruction regressions passed."
   },
-  "qualification": "Deterministic module tests and local live-process doubles only; no live topology or candidate acceptance qualification claimed."
+  "qualification": "299 passing deterministic module tests and live inert process doubles; no live topology or candidate acceptance qualification claimed. The broad build remains blocked by unrelated EventStoreHost APIs."
 }
