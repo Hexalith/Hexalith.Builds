@@ -83,12 +83,12 @@ public static class CompositionAttachmentStore
     /// <param name="reason">The environment withdrawal reason.</param>
     /// <param name="now">The runner's UTC clock reading.</param>
     /// <param name="cancellationToken">The recording allowance.</param>
-    /// <returns>The newly withdrawn attachments.</returns>
+    /// <returns>The owner's cumulative committed withdrawals.</returns>
     public static Task<IReadOnlyList<CompositionAttachment>> WithdrawAsync(string diagnosticsDirectory, string ownerRunId, string reason, DateTimeOffset now, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNotEqual(reason is "owner-cancelled" or "developer-stop", true);
 
-        return UpdateAsync<IReadOnlyList<CompositionAttachment>>(
+        return UpdateWithReportAsync<IReadOnlyList<CompositionAttachment>>(
             diagnosticsDirectory,
             ownerRunId,
             current =>
@@ -113,7 +113,7 @@ public static class CompositionAttachmentStore
                     replacement.Add(ended);
                 }
 
-                return (withdrawn, withdrawn.Count == 0 ? null : replacement);
+                return ([.. replacement.Where(item => item.Outcome == "withdrawn")], withdrawn.Count == 0 ? null : replacement);
             },
             cancellationToken);
     }
@@ -147,7 +147,7 @@ public static class CompositionAttachmentStore
     /// <summary>Builds the withdrawal report before any environment teardown.</summary>
     /// <param name="withdrawn">The durably recorded withdrawals.</param>
     /// <returns>Reports grouped by the actual withdrawal reason.</returns>
-    internal static IReadOnlyList<ToolDiagnostic> WithdrawalDiagnostics(IReadOnlyList<CompositionAttachment> withdrawn) => [.. withdrawn.GroupBy(item => item.EndReason).Select(group => new ToolDiagnostic("HXI011", ToolPhase.Cleanup, ToolFailureCategory.None, $"Attached runs withdrawn ({group.Key}): {string.Join(", ", group.Select(item => item.AttachedRunId))}.", group.Key))];
+    internal static IReadOnlyList<ToolDiagnostic> WithdrawalDiagnostics(IReadOnlyList<CompositionAttachment> withdrawn) => [.. withdrawn.Where(item => item.Outcome == "withdrawn").GroupBy(item => item.EndReason).Select(group => new ToolDiagnostic("HXI011", ToolPhase.Cleanup, ToolFailureCategory.None, $"Attached runs withdrawn ({group.Key}): {string.Join(", ", group.Select(item => item.AttachedRunId))}.", group.Key))];
 
     /// <summary>Records every expiry observed in an owner pass.</summary>
     /// <param name="diagnosticsDirectory">The owner's durable diagnostics directory.</param>
@@ -156,7 +156,7 @@ public static class CompositionAttachmentStore
     /// <param name="cancellationToken">The recording allowance.</param>
     /// <returns>The attachments including durably recorded expiries.</returns>
     internal static Task<IReadOnlyList<CompositionAttachment>> ObserveAsync(string diagnosticsDirectory, string ownerRunId, DateTimeOffset now, CancellationToken cancellationToken) =>
-        UpdateAsync<IReadOnlyList<CompositionAttachment>>(
+        UpdateWithReportAsync<IReadOnlyList<CompositionAttachment>>(
             diagnosticsDirectory,
             ownerRunId,
             current =>
@@ -172,12 +172,14 @@ public static class CompositionAttachmentStore
     /// <param name="ownerRunId">The owner identity.</param>
     /// <param name="change">Receives the current attachments and returns the result plus the replacement list, or null for no write.</param>
     /// <param name="cancellationToken">The allowance.</param>
+    /// <param name="reportWithdrawals">Whether this withdrawal/observation pass must retain its cumulative report before returning.</param>
     /// <returns>The change result.</returns>
     internal static async Task<T> UpdateCoreAsync<T>(
         string diagnosticsDirectory,
         string ownerRunId,
         Func<IReadOnlyList<CompositionAttachment>, Task<(T Result, IReadOnlyList<CompositionAttachment>? Replacement)>> change,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool reportWithdrawals = false)
     {
         CompositionWorkspace.CreatePrivateDirectory(diagnosticsDirectory);
         string lockPath = Path.Combine(diagnosticsDirectory, "attachments.lock");
@@ -205,21 +207,34 @@ public static class CompositionAttachmentStore
                 await CompositionDocumentStore.WriteAsync(PathFor(diagnosticsDirectory), new CompositionAttachmentDocument(CompositionAttachmentDocument.SupportedSchema, ownerRunId, replacement), cancellationToken).ConfigureAwait(false);
             }
 
+            if (reportWithdrawals)
+            {
+                CompositionAttachment[] withdrawn = [.. (replacement ?? current).Where(item => item.Outcome == "withdrawn")];
+                if (withdrawn.Length > 0)
+                {
+                    await CompositionDocumentStore.WriteAsync(Path.Combine(diagnosticsDirectory, "attachment-withdrawals.json"), new { ownerRunId, diagnostics = WithdrawalDiagnostics(withdrawn), attachments = withdrawn }, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
             return result;
         }
     }
 
-    private static IReadOnlyList<CompositionAttachment> Verified(CompositionAttachmentDocument document, string ownerRunId)
+    private static Task<T> UpdateWithReportAsync<T>(string diagnosticsDirectory, string ownerRunId, Func<IReadOnlyList<CompositionAttachment>, (T Result, IReadOnlyList<CompositionAttachment>? Replacement)> change, CancellationToken cancellationToken) =>
+        UpdateCoreAsync(diagnosticsDirectory, ownerRunId, current => Task.FromResult(change(current)), cancellationToken, reportWithdrawals: true);
+
+    private static CompositionAttachment[] Verified(CompositionAttachmentDocument document, string ownerRunId)
     {
-        if (document.Attachments is null)
+        if (document.Attachments?.Any(item => item is null) != false)
         {
             throw new IOException("Runner attachment metadata cannot be verified.");
         }
 
+        CompositionAttachment[] normalized = [.. document.Attachments.Select(item => item.NormalizeLegacyOutcome())];
         bool valid = document.Schema == CompositionAttachmentDocument.SupportedSchema && document.OwnerRunId == ownerRunId
-            && document.Attachments.All(item => item?.IsConsistent() == true && item.OwnerRunId == ownerRunId)
+            && normalized.All(item => item.IsConsistent() && item.OwnerRunId == ownerRunId)
             && document.Attachments.Select(item => item.AttachedRunId).Distinct(StringComparer.Ordinal).Count() == document.Attachments.Count
             && document.Attachments.Select(item => item.OriginalAttachmentRequestId).Distinct(StringComparer.Ordinal).Count() == document.Attachments.Count;
-        return valid ? [.. document.Attachments.Select(item => item.EndReason == "terminal-outcome" && item.Outcome is null ? item with { Outcome = "unknown" } : item)] : throw new IOException("Runner attachment metadata cannot be verified.");
+        return valid ? normalized : throw new IOException("Runner attachment metadata cannot be verified.");
     }
 }

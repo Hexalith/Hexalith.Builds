@@ -10,9 +10,9 @@
     "log": "build.log"
   },
   "tests": {
-    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -class '*CompositionRunListingTests' -class '*LocalRunLifecycleTests' -class '*LocalRunLifecycleReviewTests' -class '*TestResultWriterTests' -noLogo -xml evidence/2-7/tests.xml",
+    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -class '*CompositionRunListingTests' -class '*LocalRunLifecycleTests' -class '*LocalRunLifecycleReviewTests' -class '*TestResultWriterTests' -noLogo -result-xml /tmp/story27-final-tests.xml",
     "exitCode": 0,
-    "total": 187,
+    "total": 203,
     "failed": 0,
     "skipped": 0,
     "errors": 0,
@@ -34,14 +34,27 @@
     "evidenceMessage": "test(module): retain attachment withdrawal verification evidence",
     "command": "node_modules/.bin/commitlint --edit <exact-message-file>",
     "cleanupAdmissionCorrectionExitCode": 0,
-    "cleanupAdmissionCorrectionMessage": "fix(module): refuse attachments while cleanup is pending"
+    "cleanupAdmissionCorrectionMessage": "fix(module): refuse attachments while cleanup is pending",
+    "reviewPatchExitCode": 0,
+    "reviewPatchMessage": "fix(module): harden attachment withdrawal reporting and retention",
+    "reviewPatchLog": "review-commitlint.log"
   },
   "qualification": "Deterministic module tests only; no live topology or candidate acceptance qualification claimed.",
   "verificationSource": {
-    "baseCommit": "157b4dacdd90148de76e576396f61dd5859556f3",
+    "baseCommit": "4d93e4fdec4f0e3805a42f4206bc0c8ddb92ac26",
     "modifiedFilesSha256": {
+      "src/libraries/Hexalith.Builds.Module.Cli/ModuleCommandApplication.cs": "b61a9241dbcb72d69f3091ecd97b6316407ff93d99b5cb4f0f66b98c4ad54878",
+      "src/libraries/Hexalith.Builds.Tooling/Diagnostics/ToolDiagnosticFormatter.cs": "1eff27d8017577b03b70d3355880c61f05782a534a8864f59e644b290f39695b",
       "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionAttachAdmission.cs": "ff3ed02e3f1e3e93c5b6bbd0cd80be6b2c3da05774e0574dfe68ff8adce4f969",
-      "test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs": "1612aaf31b286b9d4dc1ce3f94a1417bbad4ba8ae9fb12b84f1c62297582a469"
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionAttachment.cs": "98f5b16e8c98e2d9bb8854096d63f15de5d69b351a5f9bb98e30fe915b0141e8",
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionAttachmentStore.cs": "aa1a4c108f9d3576b8cf138422f2925b0cafb9b2fdc94f5e371127408cf8ed6b",
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionEngine.cs": "15c7d2a6aa891840e9d75beff1b3f8950c86271d91ffecfb51ce906552c1d6b4",
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/CompositionRunListing.cs": "cce3519dcf9c60ae699c902c5305141864f1aae8eaf42411d07fb457a80d2cfb",
+      "src/libraries/Hexalith.Builds.Tooling/Runtime/ModuleCommandExecutionService.cs": "66e2a987c81c6cfe1e5c56d5729d56d3201d44c0093421c02d142199773ba318",
+      "src/libraries/Hexalith.Builds.Tooling/TestEnvironment/TestResultWriter.cs": "2e1191cbfcae3110192e9cab1e3e92f3e8b4f7171260d7ec06bce8604b5a8020",
+      "test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs": "6d5fd208b374021bcb23a9dc7f829eae4f11bd49ad82a16727623fd1c61ffa06",
+      "test/Hexalith.Builds.Module.Tests/CompositionRunListingTests.cs": "784b09cb2040e8b8b249450dd5660e4a32e13a4b151e5d4a86f6256fc1fb8979",
+      "test/Hexalith.Builds.Module.Tests/TestResultWriterTests.cs": "dc092817088bcae7ba5d181da5edb70a0a9e106fc37b67c484d6fc9b3ad8ef87"
     }
   },
   "cleanupAdmissionRegressionBefore": {
@@ -67,5 +80,50 @@
       "Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(cleanup: \\\"complete\\\", reason: \\\"owner-cleaned\\\")"
     ],
     "xml": "tests.xml"
+  },
+  "reviewFocusedTests": {
+    "classes": [
+      "AttachAdmissionTests",
+      "TestResultWriterTests"
+    ],
+    "total": 118,
+    "failed": 0,
+    "skipped": 0,
+    "log": "review-focused-tests.log",
+    "xml": "review-focused-tests.xml"
+  },
+  "reviewMatrixAudit": {
+    "xml": "tests.xml",
+    "allResults": "Pass",
+    "caseCounts": {
+      "AttachedFirstOutcomeIsImmutableAsync": 3,
+      "EndRequiresSupportedOutcomeAsync": 4,
+      "WaitReturnsOnlyAfterEveryHoldEndsOrExpiresAsync": 1,
+      "ExpiredHoldEndsAtItsExpiryAsync": 1,
+      "ListingShowsAttachedFailurePassiveWithdrawalAndUnknownLegacyOutcomeAsync": 1,
+      "WithdrawalRecordsExpiryAndLiveHoldsInOnePassAsync": 2,
+      "CancelledWaitWithdrawsBeforeCleanupAndPreservesFirstOutcomeAsync": 1,
+      "UnrecordableCancellationWithdrawalDefersCleanupAsync": 1,
+      "DownRequiresDurableWithdrawalAndReportsBeforeTeardownAsync": 1,
+      "AttachedFailureRetainsPassedOwnerWithoutWaitingForPeerAsync": 2,
+      "AttachedFailureThenOwnerCancellationKeepsRetentionAsync": 1,
+      "AttachedFailureCannotOverrideCleanupRefusalAsync": 5,
+      "LegacyExpiredAndTerminalAttachmentsUpgradeBeforeCleanupAsync": 1,
+      "BlockedWithdrawalReportDoesNotChangeAdmissionSemanticsAsync": 1,
+      "OwnerWaitExpiryIsDurablyReportedBeforeCleanupAsync": 1,
+      "InitialAttachmentReadFailureRecordsPendingCleanupAsync": 1,
+      "ExpiryObservationReportsOnlyCommittedWithdrawalsAsync": 1,
+      "UnrecordableWaitExpiryReportDefersCleanupUntilDownAsync": 1,
+      "AdmissionAndWithdrawalRespectBothLockOrderingsAsync": 4,
+      "SessionCleanupKeepsLiveAppHostUntilWithdrawalAndReportSucceedAsync": 4,
+      "AttachedFailuresPopulateExistingRetentionAndReleaseAsync": 2
+    }
+  },
+  "reviewResolution": {
+    "legacyExpiry": "Normalized before verification; first times/reasons preserved.",
+    "withdrawalReport": "Internal cumulative attachment-withdrawals.json is atomically recorded under attachments.lock before teardown; report failures prevent cleanup. Admission/end updates do not depend on report persistence.",
+    "retention": "Existing owner result fields include verified local attached failures and explicit release, without changing the owner first outcome.",
+    "pendingCleanup": "Attachment read/wait/report failures persist pending disposition through the existing outcome path.",
+    "contractBoundary": "Policy, v1 schemas and contract reader unchanged."
   }
 }

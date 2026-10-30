@@ -140,6 +140,15 @@ public sealed record CompositionAttachment(
         return hold;
     }
 
+    /// <summary>Normalizes outcomes omitted by supported 2.6 terminal records before verification.</summary>
+    /// <returns>The compatible first outcome without changing its end time or reason.</returns>
+    internal CompositionAttachment NormalizeLegacyOutcome() => (EndedAtUtc, EndReason, Outcome) switch
+    {
+        (not null, "expired", null) => this with { Outcome = "withdrawn" },
+        (not null, "terminal-outcome", null) => this with { Outcome = "unknown" },
+        _ => this,
+    };
+
     private static string Utc(DateTimeOffset value) => value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
 
     private bool HasConsistentOutcome() => (EndedAtUtc, EndReason, Outcome) switch

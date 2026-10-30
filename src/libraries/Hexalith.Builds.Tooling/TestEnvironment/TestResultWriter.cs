@@ -39,13 +39,20 @@ public static class TestResultWriter
             throw new InvalidDataException("Original run identities are unavailable.");
         }
 
+        IReadOnlyList<CompositionAttachment> attachments = await CompositionAttachmentStore.ReadAsync(directory, state.RunId, cancellationToken).ConfigureAwait(false);
         JsonNode bindings = record.EnvironmentBindings is { } snapshot
             ? JsonNode.Parse(snapshot.GetRawText())!
             : PartialBindings(state, record);
         if (bindings is JsonObject current)
         {
             // Holds are runner-owned and evolve after the first outcome, so they are always read from the durable records.
-            current["attachments"] = CompositionAttachmentStore.ReadContractBinding(directory, state.RunId, DateTimeOffset.UtcNow);
+            JsonArray holds = [];
+            foreach (CompositionAttachment attachment in attachments)
+            {
+                holds.Add(attachment.ToContract(DateTimeOffset.UtcNow));
+            }
+
+            current["attachments"] = new JsonObject { ["state"] = "populated", ["holds"] = holds };
         }
 
         if (bindings is not JsonObject || bindings["run"] is not JsonObject run
@@ -85,8 +92,11 @@ public static class TestResultWriter
         string[] observed = [.. record.Resources.Select(resource => "resource:" + resource.Name).Where(SafeIdentity)];
         string[] owned = [.. observed.Concat(leftovers).Distinct(StringComparer.Ordinal)];
         bool removed = record.CleanupDisposition == "complete" && record.RemainingResources.IsEmpty;
-        bool retained = record.FailureRetained && !removed;
-        string retention = (retained, record.FailureRetained && removed) switch
+        bool local = state.ExecutionContext is { ValueKind: JsonValueKind.Object } context && context.TryGetProperty("kind", out JsonElement kind) && kind.GetString() == "local";
+        string[] failureRunIds = [.. (record.FailureRetained ? new[] { record.RunId } : []).Concat(attachments.Where(item => local && item.Outcome == "failed").Select(item => item.AttachedRunId))];
+        bool failureRetained = failureRunIds.Length > 0;
+        bool retained = failureRetained && !removed;
+        string retention = (retained, failureRetained && removed) switch
         {
             (true, _) => "failure-retained",
             (_, true) => "released",
@@ -164,7 +174,7 @@ public static class TestResultWriter
 
             // The native child has stopped, but discovery alone cannot authenticate every work/access termination.
             ["termination"] = Unavailable(),
-            ["retention"] = Node(new { state = "populated", disposition = retention, failureRunIds = record.FailureRetained ? new[] { record.RunId } : [], retainedResourceIds = retained ? leftovers : [], reason = retentionReason, recordedAt = now }),
+            ["retention"] = Node(new { state = "populated", disposition = retention, failureRunIds, retainedResourceIds = retained ? leftovers : [], reason = retentionReason, recordedAt = now }),
             ["cleanup"] = cleanupNode,
             ["diagnostics"] = JsonSerializer.SerializeToNode(diagnostics),
         };

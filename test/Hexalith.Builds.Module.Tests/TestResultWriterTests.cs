@@ -20,6 +20,42 @@ using Xunit;
 /// <summary>Verifies durable validated result snapshots with truthful partial-startup observations.</summary>
 public sealed class TestResultWriterTests
 {
+    /// <summary>A passed owner's existing result records attached failure retention and explicit release without changing the first outcome.</summary>
+    /// <param name="local">Whether the attachment can establish local retention.</param>
+    /// <returns>The reader-valid retained/released snapshots, failed ids and immutable owner outcome.</returns>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AttachedFailuresPopulateExistingRetentionAndReleaseAsync(bool local)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        if (!local)
+        {
+            state = state with { ExecutionContext = JsonSerializer.SerializeToElement(new { kind = "ci", repository = "o/r", workflowRunId = "1", workflowAttempt = 1, jobId = "j", runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true }) };
+        }
+
+        string directory = Path.Combine(workspace.Root, "state", "diagnostics", state.RunId);
+        DateTimeOffset accepted = DateTimeOffset.UtcNow;
+        CompositionAttachment failed = new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), 60, accepted, 60, accepted.AddSeconds(60)) { Outcome = "failed", EndReason = "terminal-outcome", EndedAtUtc = accepted.AddSeconds(1) };
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, _ => (0, new[] { failed }), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord passed = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), accepted, "retained", new CompositionRunResources([], []) { WorkspaceIds = ["workspace:" + state.RunId] });
+        string path = await TestResultWriter.WriteAsync(directory, state, passed, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        TestEnvironmentContractReadResult retained = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        retained.IsValid.ShouldBeTrue(string.Join(';', retained.Diagnostics.Select(item => item.Message)));
+        retained.Document!.Value.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe(local ? "failure-retained" : "not-retained");
+        retained.Document.Value.GetProperty("retention").GetProperty("failureRunIds").EnumerateArray().Select(item => item.GetString()).ShouldBe(local ? [failed.AttachedRunId] : []);
+        ModuleTestRunRecord removed = passed with { ResourceDisposition = "removed", CleanupDisposition = "complete", CleanupAttemptId = CompositionRunPlanFactory.NewRunId(), RemainingResources = new CompositionRunResources([], []) };
+        _ = await TestResultWriter.WriteAsync(directory, state, removed, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        TestEnvironmentContractReadResult released = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        released.IsValid.ShouldBeTrue(string.Join(';', released.Diagnostics.Select(item => item.Message)));
+        released.Document!.Value.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe(local ? "released" : "not-retained");
+        released.Document.Value.GetProperty("retention").GetProperty("failureRunIds").EnumerateArray().Select(item => item.GetString()).ShouldBe(local ? [failed.AttachedRunId] : []);
+        released.Document.Value.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("passed");
+        released.Document.Value.GetProperty("terminal").GetProperty("recordedAt").GetDateTimeOffset().ShouldBe(passed.TerminalAtUtc);
+        passed.FailureRetained.ShouldBeFalse();
+    }
+
     /// <summary>Malformed deadlines refuse durably without escaping JSON exceptions or replacing a prior result.</summary>
     /// <param name="field">The deadline object or population field to corrupt.</param>
     /// <param name="replacement">The replacement JSON, or null to omit the field.</param>

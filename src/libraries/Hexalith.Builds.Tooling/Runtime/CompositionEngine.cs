@@ -886,7 +886,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     private static CompositionDownResult WithdrawalRefusal(CompositionRunState? state, bool recordingFailed = false)
     {
         CompositionRunResources remaining = state?.RemainingResources ?? state?.TestRun?.RemainingResources ?? new CompositionRunResources([], [], true);
-        ToolDiagnostic diagnostic = Diagnostic("HXR037", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Attachment withdrawal could not be durably recorded; no cleanup started.", "down", "Retry down for the same owner run identity.");
+        ToolDiagnostic diagnostic = Diagnostic("HXR037", ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "Attachment withdrawal or its report could not be durably recorded; no cleanup started.", "down", "Retry down for the same owner run identity.");
         return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [.. recordingFailed ? new[] { Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owner cleanup state could not be durably recorded; cleanup remains pending.", "evidence", null) } : [], diagnostic]) { RemainingResources = remaining }, remaining);
     }
 
