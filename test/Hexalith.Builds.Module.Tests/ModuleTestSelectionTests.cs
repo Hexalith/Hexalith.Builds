@@ -94,6 +94,9 @@ public sealed class ModuleTestSelectionTests
     [InlineData("secret", 6, 0, "retained")]
     [InlineData("app-secret", 6, 0, "retained")]
     [InlineData("dapr-secret", 6, 0, "retained")]
+    [InlineData("endpoint-secret", 6, 0, "retained")]
+    [InlineData("parties-source-missing-detail", 6, 0, "retained")]
+    [InlineData("parties-package-missing-detail", 6, 0, "retained")]
     [InlineData("entry-drift", 4, 0, "retained")]
     [InlineData("manifest-drift", 4, 0, "retained")]
     [InlineData("ci-failure", 4, 1, "removed")]
@@ -106,7 +109,12 @@ public sealed class ModuleTestSelectionTests
         ArgumentNullException.ThrowIfNull(scenario);
         using PlatformManifestTestWorkspace workspace = new();
         Declare(workspace, scenario);
-        string profile = scenario.StartsWith("memories-", StringComparison.Ordinal) ? "functional-retention" : "verify";
+        string profile = scenario switch
+        {
+            "parties-source-missing-detail" => "platform-source",
+            "parties-package-missing-detail" => "platform-package",
+            _ => scenario.StartsWith("memories-", StringComparison.Ordinal) ? "functional-retention" : "verify",
+        };
         string manifest = workspace.Save();
         using Process appHost = new();
         using CancellationTokenSource owner = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
@@ -142,6 +150,33 @@ public sealed class ModuleTestSelectionTests
                     CompositionWorkspace.CreatePrivateDirectory(Path.GetDirectoryName(accessPath)!);
                     await File.WriteAllTextAsync(accessPath, JsonSerializer.Serialize(Enumerable.Range(0, 3).ToDictionary(index => "service" + index, _ => new { APP_API_TOKEN = "fixture-app-credential", DAPR_API_TOKEN = "fixture-dapr-credential" })), TestContext.Current.CancellationToken).ConfigureAwait(true);
                     readiness = readiness with { TestObservation = new CompositionTestObservation { RunId = selectedPlan.RunId, ModuleId = "memories", ProfileHash = "offline", ProfileJson = "offline", AccessPath = accessPath } };
+                }
+
+                if (scenario == "endpoint-secret")
+                {
+                    Uri invocation = new("http://127.0.0.1:20012/v1.0/invoke/sample/method/api/v1/");
+                    string credentialPath = Path.Combine(selectedPlan.Workspace, NativeTestHandoff.EndpointCredentialsFileName);
+                    CompositionWorkspace.CreatePrivateDirectory(selectedPlan.Workspace);
+                    string credentialJson = JsonSerializer.Serialize(new
+                    {
+                        schema = NativeTestHandoff.EndpointCredentialsSchema,
+                        runId = selectedPlan.RunId,
+                        syntheticTenantId = selectedPlan.TenantNamespace,
+                        dataIsolationId = selectedPlan.ResourceNamespace,
+                        endpoints = new[] { new { resourceId = "owned-resource", moduleId = "sample", endpointName = "dapr-invocation", uri = invocation.AbsoluteUri, headerName = "dapr-api-token", value = "fixture-endpoint-key" } },
+                    });
+                    await File.WriteAllTextAsync(credentialPath, credentialJson, TestContext.Current.CancellationToken).ConfigureAwait(true);
+                    if (!OperatingSystem.IsWindows())
+                    {
+                        File.SetUnixFileMode(credentialPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+                    }
+
+                    readiness = readiness with
+                    {
+                        NativeEndpointCredentialsPath = credentialPath,
+                        NativeHttpEndpoints = [new("owned-resource", "sample", "dapr-invocation", invocation, "owned-sidecar")],
+                        Resources = [.. readiness.Resources.Select(resource => resource with { Endpoints = [.. resource.Endpoints, new("dapr-invocation", "http", invocation)] })],
+                    };
                 }
 
                 if (scenario == "observed-identities")
@@ -221,10 +256,10 @@ public sealed class ModuleTestSelectionTests
             File.Exists(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId, "functional-observations.json")).ShouldBeTrue();
         }
 
-        if (scenario == "memories-missing-detail")
+        if (scenario == "memories-missing-detail" || scenario.StartsWith("parties-", StringComparison.Ordinal))
         {
-            selectedRun.GetProperty("selection").GetProperty("moduleId").GetString().ShouldBe("memories");
-            selectedRun.GetProperty("selection").GetProperty("name").GetString().ShouldBe("functional-retention");
+            selectedRun.GetProperty("selection").GetProperty("moduleId").GetString().ShouldBe(scenario == "memories-missing-detail" ? "memories" : "parties");
+            selectedRun.GetProperty("selection").GetProperty("name").GetString().ShouldBe(profile);
             selectedRun.GetProperty("terminalOutcome").GetProperty("ruleId").GetString().ShouldBe("HXT008");
             selectedRun.GetProperty("terminalStatus").GetString().ShouldBe("failed");
         }
@@ -281,8 +316,16 @@ public sealed class ModuleTestSelectionTests
             }
         }
 
-        if (scenario is "secret" or "app-secret" or "dapr-secret")
+        if (scenario is "secret" or "app-secret" or "dapr-secret" or "endpoint-secret")
         {
+            selectedRun.GetProperty("terminalOutcome").GetProperty("ruleId").GetString().ShouldBe("HXT008");
+            selectedRun.GetProperty("reportHash").ValueKind.ShouldBe(JsonValueKind.Null);
+            if (scenario == "endpoint-secret")
+            {
+                File.Exists(Path.Combine(workspace.Root, "endpoint-child-executed")).ShouldBeTrue();
+            }
+
+            File.Exists(Path.Combine(workspace.Root, "evidence/result.python3.trx")).ShouldBeFalse();
             File.Exists(Path.Combine(selectedPlan!.Workspace, "native-tests/native.trx")).ShouldBeFalse();
             File.Exists(Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId, "native.trx")).ShouldBeFalse();
         }
@@ -460,10 +503,21 @@ public sealed class ModuleTestSelectionTests
         }
 
         string owner = scenario.StartsWith("memories-", StringComparison.Ordinal) ? "memories" : "sample";
-        if (owner == "memories")
+        if (scenario.StartsWith("parties-", StringComparison.Ordinal))
         {
-            workspace.Document["modules"]![0] = JsonNode.Parse(workspace.Document["modules"]![0]!.ToJsonString().Replace("sample", "memories", StringComparison.Ordinal));
-            workspace.Change("modules.0.tests.0.name", "\"functional-retention\"");
+            owner = "parties";
+        }
+
+        if (owner is "memories" or "parties")
+        {
+            workspace.Document["modules"]![0] = JsonNode.Parse(workspace.Document["modules"]![0]!.ToJsonString().Replace("sample", owner, StringComparison.Ordinal));
+            string profile = scenario switch
+            {
+                "parties-source-missing-detail" => "platform-source",
+                "parties-package-missing-detail" => "platform-package",
+                _ => "functional-retention",
+            };
+            workspace.Change("modules.0.tests.0.name", JsonSerializer.Serialize(profile));
         }
 
         string report = scenario switch
@@ -472,11 +526,17 @@ public sealed class ModuleTestSelectionTests
             "skipped" => "<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"2\" passed=\"1\" failed=\"0\" notExecuted=\"1\" /></ResultSummary></TestRun>",
             _ => "<TestRun><ResultSummary outcome=\"Completed\"><Counters total=\"1\" passed=\"1\" failed=\"0\" /></ResultSummary></TestRun>",
         };
+        if (scenario == "endpoint-secret")
+        {
+            report = report.Replace("</TestRun>", "<Output><StdOut>__ENDPOINT_SECRET__</StdOut></Output></TestRun>", StringComparison.Ordinal);
+        }
+
         string secretSuffix = scenario switch
         {
             "secret" => " + os.environ['HEXALITH_G4_ACCESS_TOKEN']",
             "app-secret" => " + 'fixture-app-credential'",
             "dapr-secret" => " + 'fixture-dapr-credential'",
+            "endpoint-secret" => ".replace('__ENDPOINT_SECRET__', json.loads(pathlib.Path(os.environ['HEXALITH_TEST_ENDPOINT_CREDENTIALS_PATH']).read_text())['endpoints'][0]['value'])",
             _ => string.Empty,
         };
         string detailValue = scenario switch
@@ -503,6 +563,7 @@ public sealed class ModuleTestSelectionTests
             + "assert os.environ['HEXALITH_G4_TEST_OWNER'] == '" + owner + "'\n"
             + "assert os.environ['HEXALITH_G4_DOMAINS'] == '" + owner + "'\n"
             + "assert 0 <= (datetime.datetime.fromisoformat(os.environ['HEXALITH_G4_CREDENTIAL_EXPIRY_UTC']) - datetime.datetime.fromisoformat(os.environ['HEXALITH_G4_EXECUTION_DEADLINE_UTC'])).total_seconds() < 1\n"
+            + (scenario == "endpoint-secret" ? "pathlib.Path(__file__).with_name('endpoint-child-executed').touch()\n" : string.Empty)
             + (scenario == "timeout" ? "time.sleep(30)\n" : string.Empty)
             + (scenario is "missing" or "detail-no-report" ? string.Empty : "pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).write_text(" + JsonSerializer.Serialize(report) + secretSuffix + ")\n")
             + (scenario.StartsWith("detail-", StringComparison.Ordinal) || scenario == "memories-detail-pass" ? "pathlib.Path(os.environ['HEXALITH_G4_TEST_REPORT_PATH']).with_name('functional-observations.json').write_text(" + detailValue + ")\n" : string.Empty)

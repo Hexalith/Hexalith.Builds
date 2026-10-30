@@ -521,7 +521,8 @@ internal static class NativeTestExecutor
         }
 
         (NativeTestReportLoadResult report, byte[]? bytes) = await SelectedNativeTestReport.ReadAsync(reportPath, session.Plan.Workspace, handoffSecrets, processing.Token).ConfigureAwait(false);
-        bool requiresObservations = selection is { ModuleId: "memories", Name: "functional-retention" } || File.Exists(observationPath);
+        bool requiresObservations = selection is { ModuleId: "memories", Name: "functional-retention" }
+            or { ModuleId: "parties", Name: "platform-source" or "platform-package" } || File.Exists(observationPath);
         byte[]? observations = requiresObservations
             ? await SelectedNativeTestReport.ReadObservationsAsync(observationPath, session.Plan.Workspace, session.Plan.RunId, handoffSecrets, processing.Token).ConfigureAwait(false)
             : null;

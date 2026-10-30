@@ -5,11 +5,15 @@
 
 namespace Hexalith.Builds.ModuleTool.Tests;
 
+using System.Diagnostics;
 using System.Text;
+using System.Text.Json.Nodes;
 
 using Hexalith.Builds.Tooling.Diagnostics;
+using Hexalith.Builds.Tooling.Manifest;
 using Hexalith.Builds.Tooling.Runtime;
 using Hexalith.Builds.Tooling.TestReports;
+using Hexalith.Builds.Tooling.Workspace;
 
 using Shouldly;
 
@@ -154,6 +158,61 @@ public sealed class NativeTestExecutorTests
     {
         NativeTestExecutor.RetainedReportPath("evidence/g4/full.json", "vstest").ShouldBe("evidence/g4/full.vstest.trx");
         NativeTestExecutor.RetainedReportPath("full.json", "mtp").ShouldBe("full.mtp.trx");
+    }
+
+    /// <summary>Prepared scopes reject invalid identities before launch, while the valid control actually executes.</summary>
+    /// <param name="mutation">The independently invalid owner scope.</param>
+    /// <returns>The refusal and never-executed entry assertions.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The fixture mutation is unknown.</exception>
+    [Theory]
+    [InlineData("valid")]
+    [InlineData("foreign-run")]
+    [InlineData("foreign-module")]
+    [InlineData("wildcard-domain")]
+    [InlineData("wildcard-tenant")]
+    [InlineData("absent-synthetic-tenant")]
+    public async Task PreparedScopeGatesChildExecutionAsync(string mutation)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        workspace.Document["modules"]![0]!["tests"] = JsonNode.Parse("""
+            [{"name":"verify","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":60,"stopTimeoutSeconds":30,"mode":"source"}]
+            """);
+        string marker = Path.Combine(workspace.Root, "child-executed");
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "import pathlib\npathlib.Path(__file__).with_name('child-executed').touch()\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string manifest = workspace.Save();
+        PlatformManifestValidationResult validated = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+        validated.IsValid.ShouldBeTrue();
+        ModuleTestSelection selection = ModuleTestSelection.Select(validated.Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        SourceMapping mapping = new(WorkspaceMode.Source, workspace.Root, "sample", [new SourceMappingEntry("sample", "source", workspace.Root)], false);
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selection, SourceMapping = mapping, Modules = [], UiMarkers = [] };
+        plan = await TestEnvironmentProvisioningFixture.PrepareAsync(plan, manifest, workspace.Root).ConfigureAwait(true);
+        CompositionNativeTestScope scope = new(plan.RunId, "sample", new string('a', 64), ["sample"], [plan.TenantNamespace]);
+        scope = mutation switch
+        {
+            "valid" => scope,
+            "foreign-run" => scope with { RunId = "foreign-run" },
+            "foreign-module" => scope with { ModuleId = "foreign-module" },
+            "wildcard-domain" => scope with { Domains = ["sample*"] },
+            "wildcard-tenant" => scope with { Tenants = [plan.TenantNamespace, "*"] },
+            "absent-synthetic-tenant" => scope with { Tenants = ["other-tenant"] },
+            _ => throw new ArgumentOutOfRangeException(nameof(mutation)),
+        };
+        CompositionReadiness preliminary = new(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned-resource", "process", "Healthy")]);
+        CompositionReadiness readiness = TestEnvironmentProvisioningFixture.Observe(preliminary, "sample") with { NativeTestScope = scope };
+        using Process process = new();
+        NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(new CompositionRunSession(plan, readiness, "private-signing-key-value", process), new PersistedProfileNativeTests("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selection).ConfigureAwait(true);
+        if (mutation == "valid")
+        {
+            File.Exists(marker).ShouldBeTrue();
+
+            // The valid scope launches the marker-only child; its intentionally missing TRX remains a test failure.
+            result.Result.Outcome.RuleId.ShouldBe("HXT002");
+        }
+        else
+        {
+            AssertNotPassing(result, "HXT009", ToolExitCode.ProductOrTest);
+            File.Exists(marker).ShouldBeFalse();
+        }
     }
 
     private static void AssertNotPassing(NativeTestExecutionResult result, string ruleId, ToolExitCode exitCode)
