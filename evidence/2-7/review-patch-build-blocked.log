@@ -1,0 +1,31 @@
+  Determining projects to restore...
+  Restored /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj (in 252 ms).
+  Restored /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/test/fixtures/module/executable/P0Fixture.NativeMetadataProbe/P0Fixture.NativeMetadataProbe.csproj (in 252 ms).
+  Restored /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/Hexalith.Builds.Module.Cli.csproj (in 252 ms).
+  Restored /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.AppHost/Hexalith.Builds.Module.AppHost.csproj (in 280 ms).
+  Restored /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/test/Hexalith.Builds.Module.Tests/Hexalith.Builds.Module.Tests.csproj (in 280 ms).
+  8 of 13 projects are up-to-date for restore.
+  P0Fixture.Inventory.Descriptor -> /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.dll
+  P0Fixture.Ui.Descriptor -> /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui.Descriptor/P0Fixture.Ui.Descriptor.dll
+  P0Fixture.Orders.Descriptor -> /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders.Descriptor/P0Fixture.Orders.Descriptor.dll
+  P0Fixture.Ui -> /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Ui/P0Fixture.Ui.dll
+  P0Fixture.Orders -> /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Orders/P0Fixture.Orders.dll
+  P0Fixture.Inventory -> /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.Inventory/P0Fixture.Inventory.dll
+  Platform version catalog validated: Hexalith.EventStore.Aspire/3.128.4, CommunityToolkit.Aspire.Hosting.Dapr/13.6.2-beta.959, required range 13.6.2-beta.959 for net10.0.
+  Hexalith.Builds.Tooling -> /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Tooling/bin/Debug/net10.0/Hexalith.Builds.Tooling.dll
+  P0Fixture.NativeMetadataProbe -> /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/artifacts/g4-fixture/bin/P0Fixture.NativeMetadataProbe/P0Fixture.NativeMetadataProbe.dll
+  Hexalith.Builds.Module.Cli -> /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/libraries/Hexalith.Builds.Module.Cli/bin/Debug/net10.0/Hexalith.Builds.Module.Cli.dll
+/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs(31,9): error CS0234: The type or namespace name 'Routing' does not exist in the namespace 'Hexalith.EventStore.Server' (are you missing an assembly reference?) [/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj]
+/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs(44,9): error CS0234: The type or namespace name 'Routing' does not exist in the namespace 'Hexalith.EventStore.ServiceDefaults' (are you missing an assembly reference?) [/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj]
+/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs(46,9): error CS0234: The type or namespace name 'Routing' does not exist in the namespace 'Hexalith.EventStore.Server' (are you missing an assembly reference?) [/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj]
+  Hexalith.Builds.Module.UiHost -> /home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.UiHost/bin/Debug/net10.0/Hexalith.Builds.Module.UiHost.dll
+
+Build FAILED.
+
+/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs(31,9): error CS0234: The type or namespace name 'Routing' does not exist in the namespace 'Hexalith.EventStore.Server' (are you missing an assembly reference?) [/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj]
+/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs(44,9): error CS0234: The type or namespace name 'Routing' does not exist in the namespace 'Hexalith.EventStore.ServiceDefaults' (are you missing an assembly reference?) [/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj]
+/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs(46,9): error CS0234: The type or namespace name 'Routing' does not exist in the namespace 'Hexalith.EventStore.Server' (are you missing an assembly reference?) [/home/administrator/projects/hexalith/platform/references/Hexalith.Builds/src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj]
+    0 Warning(s)
+    3 Error(s)
+
+Time Elapsed 00:00:40.64
