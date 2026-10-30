@@ -38,7 +38,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
 
         CompositionWorkspace.CreatePrivateDirectory(_directory);
         using FileStream transaction = OpenTransaction();
-        string[] prior = ReadReceipt(runId);
+        string[] prior = ReadReceipt(runId, out bool verifiedPriorReceipt);
         string[] identities = [.. prior.Concat(requested.Select(resource => Path.GetFileNameWithoutExtension(PathFor(resource)))).Distinct(StringComparer.Ordinal)];
         byte[] receiptBytes = JsonSerializer.SerializeToUtf8Bytes(identities);
         if (receiptBytes.Length > _maximumBytes)
@@ -95,7 +95,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
                 File.Delete(path);
             }
 
-            if (prior.Length == 0)
+            if (!verifiedPriorReceipt)
             {
                 DeleteReceipt(runId);
             }
@@ -113,11 +113,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
     /// <exception cref="IOException">A receipt-bound claim remains or its ownership cannot be verified.</exception>
     public void ReleaseOwned(string runId)
     {
-        if (!Directory.Exists(_directory))
-        {
-            return;
-        }
-
+        CompositionWorkspace.CreatePrivateDirectory(_directory);
         using FileStream transaction = OpenTransaction();
         foreach (string path in Directory.EnumerateFiles(_directory, "*.json").Where(path => ReadOwner(path) == runId))
         {
@@ -129,7 +125,8 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
             throw new IOException("Recorded claims remain after ownership-limited release.");
         }
 
-        DeleteReceipt(runId);
+        // Preserve verified emptiness so later cleanup cannot mistake an unreadable peer claim for this owner.
+        WriteReceipt(runId, JsonSerializer.SerializeToUtf8Bytes(Array.Empty<string>()));
     }
 
     /// <summary>Returns the currently claimed TCP ports, including allocations not yet bound by their owners.</summary>
@@ -178,7 +175,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
         }
 
         HashSet<string> owned = new(StringComparer.Ordinal);
-        string[] recorded = ReadReceipt(runId);
+        string[] recorded = ReadReceipt(runId, out bool verifiedReceipt);
         HashSet<string> expected = new(recorded, StringComparer.Ordinal);
         IEnumerable<string> paths = Directory.EnumerateFileSystemEntries(_directory, "*.json")
             .Concat(recorded.Select(identity => Path.Combine(_directory, identity + ".json"))).Distinct(StringComparer.Ordinal);
@@ -199,6 +196,10 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
                 if (expected.Contains(identity))
                 {
                     _ = owned.Add("claim:" + identity);
+                }
+
+                if (expected.Contains(identity) || !verifiedReceipt)
+                {
                     onUnverified();
                 }
 
@@ -211,7 +212,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
                 _ = owned.Add("claim:" + identity);
             }
 
-            if (owner is null && expected.Contains(identity))
+            if (owner is null && (expected.Contains(identity) || !verifiedReceipt))
             {
                 onUnverified();
             }
@@ -224,7 +225,7 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
     {
         try
         {
-            using FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(path);
+            using FileStream stream = SelectedNativeTestReport.OpenWithoutBlocking(path, respectSharing: true);
             if (!stream.CanSeek || stream.Length > _maximumBytes)
             {
                 return null;
@@ -279,8 +280,9 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
         }
     }
 
-    private string[] ReadReceipt(string runId)
+    private string[] ReadReceipt(string runId, out bool verified)
     {
+        verified = false;
         string receipt = Path.Combine(_directory, "owners", runId + ".json");
         try
         {
@@ -297,9 +299,13 @@ public sealed class CompositionResourceClaimStore(string stateDirectory)
             string[] identities = stream.CanSeek && stream.Length <= _maximumBytes
                 ? JsonSerializer.Deserialize<string[]>(stream) ?? throw new IOException("Claim receipt cannot be verified.")
                 : throw new IOException("Claim receipt cannot be verified.");
-            return identities.All(identity => identity is { Length: 64 } && identity.All(char.IsAsciiHexDigit))
-                ? identities
-                : throw new IOException("Claim receipt cannot be verified.");
+            if (!identities.All(identity => identity is { Length: 64 } && identity.All(char.IsAsciiHexDigit)))
+            {
+                throw new IOException("Claim receipt cannot be verified.");
+            }
+
+            verified = true;
+            return identities;
         }
         catch (JsonException exception)
         {

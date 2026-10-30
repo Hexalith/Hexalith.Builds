@@ -84,7 +84,20 @@ public static class ToolDiagnosticFormatter
                 AppendField(builder, "attachments", environment.AttachmentInformation);
                 AppendField(builder, "startup-deadline", environment.StartupDeadlineUtc?.ToString("O", CultureInfo.InvariantCulture) ?? "unavailable");
                 AppendField(builder, "execution-deadline", environment.ExecutionDeadlineUtc?.ToString("O", CultureInfo.InvariantCulture) ?? "unavailable");
-                AppendField(builder, "hold-deadline", "unavailable");
+                AppendField(builder, "hold-deadline", environment.HoldDeadlineUtc?.ToString("O", CultureInfo.InvariantCulture) ?? "unavailable");
+                foreach (Runtime.CompositionAttachment attachment in environment.Attachments)
+                {
+                    _ = builder.Append('\n').Append("  attached=").Append(attachment.AttachedRunId);
+                    AppendField(builder, "state", attachment.EndedAtUtc is not null ? "ended" : "recorded");
+                    AppendField(builder, "outcome", attachment.Outcome ?? "active");
+                    AppendField(builder, "accepted", attachment.AcceptedAtUtc.ToString("O", CultureInfo.InvariantCulture));
+                    AppendField(builder, "expires", attachment.ExpiresAtUtc.ToString("O", CultureInfo.InvariantCulture));
+                    if (attachment.EndedAtUtc is { } endedAt)
+                    {
+                        AppendField(builder, "ended", endedAt.ToString("O", CultureInfo.InvariantCulture) + "/" + attachment.EndReason);
+                    }
+                }
+
                 if (environment.RemainingResources is { } leftovers)
                 {
                     AppendField(builder, "leftovers", string.Join(",", leftovers.ResourceIds));
@@ -94,6 +107,23 @@ public static class ToolDiagnosticFormatter
                         AppendField(builder, "discovery-failures", string.Join(",", leftovers.DiscoveryFailures));
                     }
                 }
+            }
+        }
+
+        if (result.Attachment is { } attached)
+        {
+            _ = builder.Append('\n').Append("attached-run=").Append(attached.AttachedRunId);
+            AppendField(builder, "request", attached.OriginalAttachmentRequestId);
+            AppendField(builder, "owner", attached.OwnerRunId);
+            AppendField(builder, "environment", attached.EnvironmentId);
+            AppendField(builder, "requested-hold-seconds", attached.RequestedHoldSeconds?.ToString(CultureInfo.InvariantCulture) ?? "omitted");
+            AppendField(builder, "hold-seconds", attached.EffectiveHoldSeconds.ToString(CultureInfo.InvariantCulture));
+            AppendField(builder, "accepted", attached.AcceptedAtUtc.ToString("O", CultureInfo.InvariantCulture));
+            AppendField(builder, "expires", attached.ExpiresAtUtc.ToString("O", CultureInfo.InvariantCulture));
+            AppendField(builder, "outcome", attached.Outcome ?? "active");
+            if (attached.EndedAtUtc is { } attachmentEnd)
+            {
+                AppendField(builder, "ended", attachmentEnd.ToString("O", CultureInfo.InvariantCulture) + "/" + attached.EndReason);
             }
         }
 

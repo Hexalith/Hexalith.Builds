@@ -35,6 +35,7 @@
   </ItemGroup>
   <!-- Build-order only: public command and engine readiness tests load the built executable fixture descriptors. -->
   <ItemGroup>
+    <ProjectReference Include="../fixtures/module/executable/P0Fixture.NativeMetadataProbe/P0Fixture.NativeMetadataProbe.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
     <ProjectReference Include="../fixtures/module/executable/P0Fixture.Inventory/P0Fixture.Inventory.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
     <ProjectReference Include="../fixtures/module/executable/P0Fixture.Inventory.Descriptor/P0Fixture.Inventory.Descriptor.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
     <ProjectReference Include="../fixtures/module/executable/P0Fixture.Orders/P0Fixture.Orders.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />

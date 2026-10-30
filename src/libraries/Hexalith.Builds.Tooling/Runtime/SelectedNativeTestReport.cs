@@ -230,9 +230,15 @@ internal static class SelectedNativeTestReport
         SafeFileHandle handle = new(descriptor, ownsHandle: true);
         try
         {
-            return respectSharing && Flock(descriptor, 1 | 4) != 0
-                ? throw new IOException("Runner metadata is exclusively held.")
-                : new FileStream(handle, FileAccess.Read, 8192, isAsync: false);
+            while (respectSharing && Flock(descriptor, 1 | 4) != 0)
+            {
+                if (Marshal.GetLastPInvokeError() != 4)
+                {
+                    throw new IOException("Runner metadata sharing cannot be verified.");
+                }
+            }
+
+            return new FileStream(handle, FileAccess.Read, 8192, isAsync: false);
         }
         catch
         {

@@ -16,7 +16,7 @@ public enum ModuleInvocationCommand
     /// <summary>Tears down a supported runtime composition.</summary>
     Down = 1,
 
-    /// <summary>Runs a named qualification profile.</summary>
+    /// <summary>Runs a named qualification profile, optionally bound to an authenticated candidate request.</summary>
     Test = 2,
 
     /// <summary>Starts the same composition as <see cref="Run"/> from source in Debug and reports process ids.</summary>

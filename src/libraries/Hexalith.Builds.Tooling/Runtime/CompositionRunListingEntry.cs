@@ -16,9 +16,9 @@ namespace Hexalith.Builds.Tooling.Runtime;
 /// <param name="Cleanup">The latest recorded cleanup state.</param>
 /// <param name="StartupDeadlineUtc">The original startup deadline.</param>
 /// <param name="ExecutionDeadlineUtc">The independent execution deadline, when activated.</param>
-/// <param name="AttachedRunIds">Accepted attachments; admission is currently unsupported.</param>
-/// <param name="AttachmentInformation">The supported attachment observation.</param>
-/// <param name="HoldDeadlineUtc">An unavailable future attachment deadline.</param>
+/// <param name="AttachedRunIds">Attached runs whose holds are still live.</param>
+/// <param name="AttachmentInformation">The attachment observation: <c>none</c>, <c>attached</c>, <c>ended-or-expired</c> or an explicit unknown.</param>
+/// <param name="HoldDeadlineUtc">The latest absolute deadline among live holds, which is when deferred cleanup may run.</param>
 /// <param name="RemainingResources">The latest recorded resource observation.</param>
 public sealed record CompositionRunListingEntry(
     string OwnerRunId,
@@ -34,4 +34,8 @@ public sealed record CompositionRunListingEntry(
     IReadOnlyList<string> AttachedRunIds,
     string AttachmentInformation,
     DateTimeOffset? HoldDeadlineUtc,
-    CompositionRunResources? RemainingResources);
+    CompositionRunResources? RemainingResources)
+{
+    /// <summary>Gets every recorded attachment with its absolute deadlines.</summary>
+    public IReadOnlyList<CompositionAttachment> Attachments { get; init; } = [];
+}

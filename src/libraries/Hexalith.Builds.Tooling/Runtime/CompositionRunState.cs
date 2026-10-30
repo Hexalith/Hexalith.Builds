@@ -36,6 +36,9 @@ public sealed record CompositionRunState(
     /// </summary>
     public const string SupportedSchema = "hexalith.g4-run-state.v1";
 
+    /// <summary>Gets the immutable authenticated candidate decision and producing attempt.</summary>
+    public CandidatePolicy.CandidatePolicyBinding? CandidatePolicy { get; init; }
+
     /// <summary>Gets the immutable environment request time, unavailable on legacy state.</summary>
     public DateTimeOffset? CreatedAt { get; init; }
 
@@ -58,7 +61,7 @@ public sealed record CompositionRunState(
     public CompositionRunResources? RemainingResources { get; init; }
 
     /// <summary>Gets the recorded cleanup disposition.</summary>
-    public string CleanupDisposition { get; init; } = "not-requested";
+    public string CleanupDisposition { get; init; } = "unavailable";
 
     /// <summary>Gets the elapsed seconds from the start request until this state was recorded.</summary>
     public double? StartupDurationSeconds { get; init; }

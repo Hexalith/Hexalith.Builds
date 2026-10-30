@@ -21,7 +21,16 @@ public static class TestEnvironmentDescriptorWriter
     /// <param name="cancellationToken">The execution cancellation token.</param>
     /// <returns>The absolute validated descriptor path.</returns>
     /// <exception cref="InvalidDataException">A required real observation or immutable binding is unavailable.</exception>
-    public static async Task<string> WriteAsync(CompositionRunSession session, CancellationToken cancellationToken = default)
+    public static Task<string> WriteAsync(CompositionRunSession session, CancellationToken cancellationToken = default)
+        => WriteAsync(session, null, cancellationToken);
+
+    /// <summary>Writes a private descriptor that also carries the owner's accepted attachment holds.</summary>
+    /// <param name="session">The ready runner-owned session.</param>
+    /// <param name="ownerDiagnosticsDirectory">The owner's durable diagnostics directory holding accepted attachments, when known.</param>
+    /// <param name="cancellationToken">The execution cancellation token.</param>
+    /// <returns>The absolute validated descriptor path.</returns>
+    /// <exception cref="InvalidDataException">A required real observation or immutable binding is unavailable.</exception>
+    public static async Task<string> WriteAsync(CompositionRunSession session, string? ownerDiagnosticsDirectory, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(session);
         CompositionRunPlan plan = session.Plan;
@@ -101,7 +110,7 @@ public static class TestEnvironmentDescriptorWriter
             policyId = TestEnvironmentContractReader.PolicyId,
             bindings = new
             {
-                run = new { runId = plan.RunId, attemptId = plan.AttemptId, attemptSequence = 1, ownerRunId = plan.RunId, environmentId = plan.EnvironmentId, role = "owner" },
+                run = new { runId = plan.RunId, attemptId = plan.AttemptId, attemptSequence = plan.CandidatePolicy?.AttemptSequence ?? 1, ownerRunId = plan.RunId, environmentId = plan.EnvironmentId, role = "owner" },
                 environment = new
                 {
                     composition = new { id = plan.PlatformActiveModule ?? selected.ModuleId, contentIdentity = composition },
@@ -114,12 +123,12 @@ public static class TestEnvironmentDescriptorWriter
                     startupTasks = new { state = "populated", tasks = ready.StartupTaskResults.Select(task => new { taskId = task.TaskId, required = true, status = task.Status, startedAt = Utc(task.StartedAt!.Value), finishedAt = Utc(task.FinishedAt!.Value), diagnosticIds = Array.Empty<string>() }) },
                 },
                 tool = unavailable,
-                candidate = unavailable,
-                decision = unavailable,
-                reuseLineage = unavailable,
+                candidate = plan.CandidatePolicy is { } candidate ? (object)candidate.Candidate : new { state = "populated", classification = "baseline-only", reason = "No authenticated candidate request was selected." },
+                decision = plan.CandidatePolicy is { } decision ? decision.Decision : unavailable,
+                reuseLineage = plan.CandidatePolicy is { } lineage ? lineage.ReuseLineage : unavailable,
                 artifacts = new { expected = unavailable, loaded = unavailable },
                 suite = new { declared = unavailable, completion = unavailable },
-                attachments = new { state = "populated", holds = Array.Empty<object>() },
+                attachments = System.Text.Json.Nodes.JsonNode.Parse(CompositionAttachmentStore.ReadContractBinding(ownerDiagnosticsDirectory, plan.RunId, DateTimeOffset.UtcNow).ToJsonString()),
                 deadlines = new
                 {
                     startup = new { state = "populated", origin = "environment-requested", originAt = Utc(startupOrigin), effectiveSeconds = plan.EffectiveDeadline.TimeoutSeconds, expiresAt = Utc(plan.StartupDeadlineUtc.Value), actualDurationSeconds = ready.StartupDurationSeconds.Value, @override = startupOverride },

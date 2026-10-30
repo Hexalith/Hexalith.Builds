@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Hexalith.Builds.P0Fixture.NativeMetadataProbe</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../../../src/libraries/Hexalith.Builds.Tooling/Hexalith.Builds.Tooling.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,47 @@
+The '-xml' switch has been deprecated in favor of '-result-xml' and will be removed in the next major version
+
+  Discovering: Hexalith.Builds.Module.Tests
+  Discovered:  Hexalith.Builds.Module.Tests
+  Starting:    Hexalith.Builds.Module.Tests
+    Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(cleanup: "pending", reason: "owner-cleaning") [FAIL]
+      Shouldly.ShouldAssertException : result.Attachment
+          should be null but was
+      CompositionAttachment { OriginalAttachmentRequestId = 2622a5ea5c5e48c0828f59e07b79fae3, EnvironmentId = 43df3b2f590c45d5066688745ef1241f, OwnerRunId = 0123456789abcdef0123456789abcdef, AttachedRunId = 6fe9d522c2a9ec1dd95a29b665fe24f0, RequestedHoldSeconds = , AcceptedAtUtc = 10/30/2026 06:33:07 +00:00, EffectiveHoldSeconds = 1800, ExpiresAtUtc = 10/30/2026 07:03:07 +00:00, EndedAtUtc = , EndReason = , Outcome =  }
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs(210,0): at Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(String cleanup, String reason)
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(cleanup: "in-progress", reason: "owner-cleaning") [FAIL]
+      Shouldly.ShouldAssertException : result.Attachment
+          should be null but was
+      CompositionAttachment { OriginalAttachmentRequestId = 3932b8260d97eea0ab2f194dd8e1312b, EnvironmentId = 233467912371ce7a8c5464749f434f55, OwnerRunId = 0123456789abcdef0123456789abcdef, AttachedRunId = 29c736d854379edf1c72d15af6cdbd58, RequestedHoldSeconds = , AcceptedAtUtc = 10/30/2026 06:33:07 +00:00, EffectiveHoldSeconds = 1800, ExpiresAtUtc = 10/30/2026 07:03:07 +00:00, EndedAtUtc = , EndReason = , Outcome =  }
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs(210,0): at Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(String cleanup, String reason)
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+    Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(cleanup: "incomplete", reason: "owner-cleaning") [FAIL]
+      Shouldly.ShouldAssertException : result.Attachment
+          should be null but was
+      CompositionAttachment { OriginalAttachmentRequestId = 286eb4ff588e9c8a435fc5995a8cec0c, EnvironmentId = 1b69e326016859e9766da5cf64495a93, OwnerRunId = 0123456789abcdef0123456789abcdef, AttachedRunId = 5764b9822e9af0218bb4e1adf5f6047e, RequestedHoldSeconds = , AcceptedAtUtc = 10/30/2026 06:33:07 +00:00, EffectiveHoldSeconds = 1800, ExpiresAtUtc = 10/30/2026 07:03:07 +00:00, EndedAtUtc = , EndReason = , Outcome =  }
+      Stack Trace:
+        test/Hexalith.Builds.Module.Tests/AttachAdmissionTests.cs(210,0): at Hexalith.Builds.ModuleTool.Tests.AttachAdmissionTests.AttachedFailureCannotOverrideCleanupRefusalAsync(String cleanup, String reason)
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+        --- End of stack trace from previous location ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task, ConfigureAwaitOptions options)
+  Finished:    Hexalith.Builds.Module.Tests (ID = '7cae78b6043dc846a09ef8121a894fb5df1d7d69afe29b3798a2e05ca632ba7c')
+=== TEST EXECUTION SUMMARY ===
+   Hexalith.Builds.Module.Tests  Total: 5, Errors: 0, Failed: 3, Skipped: 0, Not Run: 0, Time: 0.465s

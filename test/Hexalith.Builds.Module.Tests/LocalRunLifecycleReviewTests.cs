@@ -87,10 +87,15 @@ public sealed class LocalRunLifecycleReviewTests
         string peerClaim = Directory.GetFiles(Path.Combine(engine.StateStore.Directory, "claims"), "*.json").Single();
         engine.StateStore.Claims.Acquire(state.RunId, ["own-exclusive"]);
         await File.WriteAllTextAsync(peerClaim, "{invalid-peer-claim}", TestContext.Current.CancellationToken).ConfigureAwait(true);
-        CompositionDownResult down = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
-        down.Remaining.IsEmpty.ShouldBeTrue();
-        File.Exists(peerClaim).ShouldBeTrue();
+        byte[] peerBytes = await File.ReadAllBytesAsync(peerClaim, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            CompositionDownResult down = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+            down.Remaining.IsEmpty.ShouldBeTrue();
+            (await File.ReadAllBytesAsync(peerClaim, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(peerBytes);
+        }
+
         _ = Should.Throw<IOException>(() => engine.StateStore.Claims.FindOwned(peer));
     }
 

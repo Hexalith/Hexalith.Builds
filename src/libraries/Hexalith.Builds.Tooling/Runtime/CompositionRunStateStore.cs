@@ -150,6 +150,19 @@ public sealed class CompositionRunStateStore(string directory)
     internal static bool ValidCleanup(string disposition, CompositionRunResources? resources) => disposition is "not-requested" or "pending" or "in-progress" or "incomplete"
         || (disposition == "complete" && resources is not null && ValidResources(resources) && resources.IsEmpty);
 
+    /// <summary>Checks that tracked state is complete and internally consistent for its run identity.</summary>
+    /// <param name="state">The tracked state, or null when absent.</param>
+    /// <param name="runId">The expected run identity.</param>
+    /// <returns>Whether the state is verified.</returns>
+    internal static bool IsVerified([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] CompositionRunState? state, string runId) => state is not null && !(
+        state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId
+                || string.IsNullOrEmpty(state.Workspace) || !Path.IsPathFullyQualified(state.Workspace) || !Enum.IsDefined(state.Status)
+                || !ValidReadiness(state) || !ValidResources(state.RemainingResources)
+                || (state.CleanupDisposition != "unavailable" && !ValidCleanup(state.CleanupDisposition, state.RemainingResources ?? state.TestRun?.RemainingResources))
+                || (state.TestRun is { } test && !ValidOutcome(test, runId))
+                || (state.AttemptId is not null && (!CompositionRunPlanFactory.IsRunId(state.AttemptId) || state.AttemptId == runId || state.AttemptId == state.EnvironmentId))
+                || (state.EnvironmentId is not null && (!CompositionRunPlanFactory.IsRunId(state.EnvironmentId) || state.EnvironmentId == runId)));
+
     /// <summary>Enumerates verified states while optionally reporting individual unreadable entries.</summary>
     /// <param name="onInvalid">Receives each unverifiable entry; absence preserves strict enumeration.</param>
     /// <param name="cancellationToken">The enumeration cancellation.</param>
@@ -186,13 +199,7 @@ public sealed class CompositionRunStateStore(string directory)
             }
 
             CompositionRunState? state = await TryReadAsync(runId, cancellationToken).ConfigureAwait(false);
-            if (state is null || state.Schema != CompositionRunState.SupportedSchema || state.RunId != runId
-                || string.IsNullOrEmpty(state.Workspace) || !Path.IsPathFullyQualified(state.Workspace) || !Enum.IsDefined(state.Status)
-                || !ValidReadiness(state) || !ValidResources(state.RemainingResources)
-                || !ValidCleanup(state.CleanupDisposition, state.RemainingResources ?? state.TestRun?.RemainingResources)
-                || (state.TestRun is { } test && !ValidOutcome(test, runId))
-                || (state.AttemptId is not null && (!CompositionRunPlanFactory.IsRunId(state.AttemptId) || state.AttemptId == runId || state.AttemptId == state.EnvironmentId))
-                || (state.EnvironmentId is not null && (!CompositionRunPlanFactory.IsRunId(state.EnvironmentId) || state.EnvironmentId == runId)))
+            if (!IsVerified(state, runId))
             {
                 if (onInvalid is null)
                 {

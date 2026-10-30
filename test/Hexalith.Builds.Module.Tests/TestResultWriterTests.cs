@@ -7,6 +7,7 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Runtime;
@@ -19,6 +20,92 @@ using Xunit;
 /// <summary>Verifies durable validated result snapshots with truthful partial-startup observations.</summary>
 public sealed class TestResultWriterTests
 {
+    /// <summary>A passed owner's existing result records attached failure retention and explicit release without changing the first outcome.</summary>
+    /// <param name="local">Whether the attachment can establish local retention.</param>
+    /// <returns>The reader-valid retained/released snapshots, failed ids and immutable owner outcome.</returns>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AttachedFailuresPopulateExistingRetentionAndReleaseAsync(bool local)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        if (!local)
+        {
+            state = state with { ExecutionContext = JsonSerializer.SerializeToElement(new { kind = "ci", repository = "o/r", workflowRunId = "1", workflowAttempt = 1, jobId = "j", runnerKind = "github-hosted", operatingSystem = "Linux", disposable = true }) };
+        }
+
+        string directory = Path.Combine(workspace.Root, "state", "diagnostics", state.RunId);
+        DateTimeOffset accepted = DateTimeOffset.UtcNow;
+        CompositionAttachment failed = new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), 60, accepted, 60, accepted.AddSeconds(60)) { Outcome = "failed", EndReason = "terminal-outcome", EndedAtUtc = accepted.AddSeconds(1) };
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, _ => (0, new[] { failed }), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord passed = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), accepted, "retained", new CompositionRunResources([], []) { WorkspaceIds = ["workspace:" + state.RunId] });
+        string path = await TestResultWriter.WriteAsync(directory, state, passed, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        TestEnvironmentContractReadResult retained = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        retained.IsValid.ShouldBeTrue(string.Join(';', retained.Diagnostics.Select(item => item.Message)));
+        retained.Document!.Value.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe(local ? "failure-retained" : "not-retained");
+        retained.Document.Value.GetProperty("retention").GetProperty("failureRunIds").EnumerateArray().Select(item => item.GetString()).ShouldBe(local ? [failed.AttachedRunId] : []);
+        ModuleTestRunRecord removed = passed with { ResourceDisposition = "removed", CleanupDisposition = "complete", CleanupAttemptId = CompositionRunPlanFactory.NewRunId(), RemainingResources = new CompositionRunResources([], []) };
+        _ = await TestResultWriter.WriteAsync(directory, state, removed, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        TestEnvironmentContractReadResult released = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        released.IsValid.ShouldBeTrue(string.Join(';', released.Diagnostics.Select(item => item.Message)));
+        released.Document!.Value.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe(local ? "released" : "not-retained");
+        released.Document.Value.GetProperty("retention").GetProperty("failureRunIds").EnumerateArray().Select(item => item.GetString()).ShouldBe(local ? [failed.AttachedRunId] : []);
+        released.Document.Value.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("passed");
+        released.Document.Value.GetProperty("terminal").GetProperty("recordedAt").GetDateTimeOffset().ShouldBe(passed.TerminalAtUtc);
+        passed.FailureRetained.ShouldBeFalse();
+    }
+
+    /// <summary>Malformed deadlines refuse durably without escaping JSON exceptions or replacing a prior result.</summary>
+    /// <param name="field">The deadline object or population field to corrupt.</param>
+    /// <param name="replacement">The replacement JSON, or null to omit the field.</param>
+    /// <returns>The structured refusal and unchanged prior publication assertions.</returns>
+    [Theory]
+    [InlineData("deadlines", null)]
+    [InlineData("deadlines", "null")]
+    [InlineData("deadlines", "[]")]
+    [InlineData("deadlines", "1")]
+    [InlineData("execution", null)]
+    [InlineData("execution", "null")]
+    [InlineData("execution", "[]")]
+    [InlineData("state", null)]
+    [InlineData("state", "null")]
+    [InlineData("state", "1")]
+    public async Task MalformedDeadlineBindingsRefuseBeforeUpdatingDurationAsync(string field, string? replacement)
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        ModuleTestRunRecord first = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "unknown", new([], [], true));
+        string directory = Path.Combine(workspace.Root, "diagnostics");
+        string path = await TestResultWriter.WriteAsync(directory, state, first, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        byte[] published = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        JsonNode document = JsonNode.Parse(published).ShouldNotBeNull();
+        JsonNode bindings = document["bindings"].ShouldNotBeNull();
+        JsonObject parent = field switch
+        {
+            "deadlines" => bindings.AsObject(),
+            "execution" => bindings["deadlines"]!.AsObject(),
+            _ => bindings["deadlines"]!["execution"]!.AsObject(),
+        };
+        if (replacement is null)
+        {
+            parent.Remove(field).ShouldBeTrue();
+        }
+        else
+        {
+            parent[field] = JsonNode.Parse(replacement);
+        }
+
+        ModuleTestRunRecord malformed = first with
+        {
+            EnvironmentBindings = JsonSerializer.SerializeToElement(bindings),
+            ExecutionTiming = ModuleTestExecutionTiming.Start(selected, selected.RequestedAtUtc) with { ActualDurationSeconds = 0.5 },
+        };
+        _ = await Should.ThrowAsync<InvalidDataException>(() => TestResultWriter.WriteAsync(directory, state, malformed, TestContext.Current.CancellationToken)).ConfigureAwait(true);
+        (await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldBe(published);
+        TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken).IsValid.ShouldBeTrue();
+    }
+
     /// <summary>Every first lifecycle cause produces a reader-valid result and immutable classified diagnostics.</summary>
     /// <param name="outcome">The observed outcome.</param>
     /// <param name="cause">The observed cause.</param>
@@ -152,5 +239,35 @@ public sealed class TestResultWriterTests
         ModuleTestRunRecord record = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "passed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "unknown", new CompositionRunResources([], [], true));
         _ = await Should.ThrowAsync<InvalidDataException>(() => TestResultWriter.WriteAsync(workspace.Root, state with { AttemptId = null }, record, TestContext.Current.CancellationToken)).ConfigureAwait(true);
         File.Exists(Path.Combine(workspace.Root, "test-result.json")).ShouldBeFalse();
+    }
+
+    /// <summary>Accepted holds, an ended hold and a passively expired hold are published in the valid owner result.</summary>
+    /// <returns>The populated holds assertions.</returns>
+    [Fact]
+    public async Task ResultPublishesAcceptedHoldsWithActualEndsAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        string directory = Path.Combine(workspace.Root, "diagnostics");
+        DateTimeOffset accepted = DateTimeOffset.UtcNow.AddHours(-1);
+        CompositionAttachment Hold(int? requested, int effective, DateTimeOffset? ended = null) => new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), requested, accepted, effective, accepted.AddSeconds(effective))
+        {
+            EndedAtUtc = ended,
+            EndReason = ended is null ? null : "terminal-outcome",
+        };
+
+        CompositionAttachment[] holds = [Hold(null, 1800, accepted.AddMinutes(2)), Hold(60, 60), Hold(14400, 14400)];
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, current => (0, [.. current, .. holds]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        ModuleTestRunRecord record = new(state.RunId, state.RunId, selected, null, null, null, null, null, false, [], "completed", ToolOutcome.Passed(), DateTimeOffset.UtcNow, "unknown", new([], [], true));
+        string path = await TestResultWriter.WriteAsync(directory, state, record, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        TestEnvironmentContractReadResult read = TestEnvironmentContractReader.ReadResult(path, TestContext.Current.CancellationToken);
+        read.IsValid.ShouldBeTrue(string.Join(';', read.Diagnostics.Select(item => item.Message)));
+        JsonElement[] published = [.. read.Document!.Value.GetProperty("bindings").GetProperty("attachments").GetProperty("holds").EnumerateArray()];
+        published.Length.ShouldBe(3);
+        published[0].TryGetProperty("requestedHoldSeconds", out _).ShouldBeFalse();
+        published[0].GetProperty("end").GetProperty("reason").GetString().ShouldBe("terminal-outcome");
+        published[1].GetProperty("end").GetProperty("reason").GetString().ShouldBe("expired");
+        published[2].GetProperty("end").GetProperty("state").GetString().ShouldBe("active");
+        published[2].GetProperty("effectiveHoldSeconds").GetInt32().ShouldBe(14400);
     }
 }

@@ -6,6 +6,7 @@
 namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Diagnostics;
+using System.Text.Json;
 
 using Hexalith.Builds.Tooling.Diagnostics;
 using Hexalith.Builds.Tooling.Manifest;
@@ -213,7 +214,7 @@ public sealed class LocalRunReviewCorrectionTests
         Directory.GetFiles(outside).ShouldBe([sentinel]);
     }
 
-    /// <summary>The immediate callback preserves a process-start prerequisite failure before report inspection.</summary>
+    /// <summary>A post-readiness process-start failure retains HXR030 with the declared execution outcome.</summary>
     /// <returns>The first and returned prerequisite classification.</returns>
     [Fact]
     public async Task MissingNativeProcessCommitsPrerequisiteClassificationAsync()
@@ -235,7 +236,23 @@ public sealed class LocalRunReviewCorrectionTests
         }).ConfigureAwait(true);
         first.ShouldNotBeNull().Result.Outcome.RuleId.ShouldBe("HXR030");
         first.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.PrerequisiteUnavailable);
+        first.Result.Status.ShouldBe("failed");
+        first.MetadataRecordingTimestamp.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(first.StoppingTimestamp.ShouldNotBeNull());
+        result.Result.Status.ShouldBe("failed");
         result.Result.Outcome.RuleId.ShouldBe("HXR030");
+        CompositionEngine engine = new(LocalRunLifecycleFixture.Options(workspace.Root, selected) with { WorkspaceRoot = Path.GetDirectoryName(session.Plan.Workspace)! });
+        CompositionRunState issued = CompositionRunPlanFactory.CreateInitialState(session.RunId, session.Plan.Workspace, selected.ManifestHash, selected.RequestedAtUtc) with
+        {
+            SelectedTest = selected,
+            AttemptId = session.Plan.AttemptId,
+            EnvironmentId = session.Plan.EnvironmentId,
+            ExecutionContext = JsonSerializer.SerializeToElement(new { kind = "local" }),
+        };
+        await engine.StateStore.WriteAsync(issued, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        _ = await engine.RecordTestOutcomeAsync(session.RunId, session.Readiness.Resources, first.Result, "retained", new([], []), TestContext.Current.CancellationToken, executionTiming: session.Plan.ExecutionTiming, environmentBindings: session.EnvironmentBindings).ConfigureAwait(true);
+        JsonElement published = TestEnvironmentContractReader.ReadResult(Path.Combine(engine.StateStore.Directory, "diagnostics", session.RunId, "test-result.json"), TestContext.Current.CancellationToken).Document.ShouldNotBeNull();
+        published.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("failed");
+        published.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("test-failure");
     }
 
     /// <summary>A thrown first timeout callback retains its causal observation for the command's metadata retry.</summary>
