@@ -1,0 +1,37 @@
+{
+  "implementationCommit": "a13d7972395f989955cf00f1047f1ba50b1a6b73",
+  "implementationTree": "5b3e4e2986414362b299e530c97b118f6752066a",
+  "specBuildsBaseline": "2980efdf51f305dc5c39bb854261c252d13465f5",
+  "build": {
+    "command": "dotnet build test/Hexalith.Builds.Module.Tests -nodeReuse:false",
+    "exitCode": 0,
+    "warnings": 0,
+    "errors": 0,
+    "log": "build.log"
+  },
+  "tests": {
+    "command": "dotnet exec test/Hexalith.Builds.Module.Tests/bin/Debug/net10.0/Hexalith.Builds.Module.Tests.dll -class '*AttachAdmissionTests' -class '*CompositionRunListingTests' -class '*LocalRunLifecycleTests' -class '*LocalRunLifecycleReviewTests' -class '*TestResultWriterTests' -noLogo",
+    "exitCode": 0,
+    "total": 182,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "log": "tests.log"
+  },
+  "regressionTests": {
+    "exitCode": 0,
+    "total": 9,
+    "failed": 0,
+    "skipped": 0,
+    "log": "regression-tests.log"
+  },
+  "commitlint": {
+    "version": "@commitlint/cli@21.2.4",
+    "implementationCommitExitCode": 0,
+    "evidenceCommitExitCode": 0,
+    "implementationMessage": "feat(module): record attachment outcomes and retain failed environments\n\nCo-authored-by: Cursor <cursoragent@cursor.com>",
+    "evidenceMessage": "test(module): retain attachment withdrawal verification evidence",
+    "command": "node_modules/.bin/commitlint --edit <exact-message-file>"
+  },
+  "qualification": "Deterministic module tests only; no live topology or candidate acceptance qualification claimed."
+}
