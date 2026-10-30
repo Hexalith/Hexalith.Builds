@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "9b9a6117a2b72e6b9697534409758ea8aa9e13b7",
+  "generatedFromRevision": "d5e1b02f656f6190fcc34b5f0f8baa2262f21ce1",
   "catalogPath": "Props/Directory.Packages.props",
   "catalogSha256": "87cd59b4a8ddb829ed3d57670853413f39f0d832db4682e6b0610f5b2c501690",
   "catalogRawSha256": "7c1740a73c161364a1ee3d7b491e73e3deb99985c5b317616d6701d33fa5c5b2",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-10-30T12:28:36.8417053+00:00",
+    "auditedAtUtc": "2026-10-30T12:30:51.0382683+00:00",
     "refreshedFamilies": [
       "hexalith-commons",
       "hexalith-polymorphicserializations"
@@ -176,7 +176,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "9b9a6117a2b72e6b9697534409758ea8aa9e13b7",
+    "repositoryRevision": "d5e1b02f656f6190fcc34b5f0f8baa2262f21ce1",
     "sha256": "cf13b7f3fbf353f8904f372201ee5796c3dee66c63f688b32e73ca19311473c4",
     "entries": [
       {
@@ -6087,8 +6087,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-10-30T12:28:36.8417053+00:00",
-        "generatedFromRevision": "9b9a6117a2b72e6b9697534409758ea8aa9e13b7",
+        "auditedAtUtc": "2026-10-30T12:30:51.0382683+00:00",
+        "generatedFromRevision": "d5e1b02f656f6190fcc34b5f0f8baa2262f21ce1",
         "familySelectionSha256": "54fe02fd961a05f0ea36bb97a6deda3299b5291c16cd28d797578eafe71ac41a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "d2d967506822b62e9df21897ceb87621a2ec80ba4e8b0c3025cfd76a7c4d7c6d",
@@ -13662,8 +13662,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-10-30T12:28:36.8417053+00:00",
-        "generatedFromRevision": "9b9a6117a2b72e6b9697534409758ea8aa9e13b7",
+        "auditedAtUtc": "2026-10-30T12:30:51.0382683+00:00",
+        "generatedFromRevision": "d5e1b02f656f6190fcc34b5f0f8baa2262f21ce1",
         "familySelectionSha256": "74c4319f2d0d8078f66f4a8ed54a9f658414f2e8c1a441f254decba8975f5693",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "dce31eb4b0d44b6dc2175c27faca4163a4c99cb01f7a87845c08f8f492521361",
