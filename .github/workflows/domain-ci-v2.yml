@@ -620,10 +620,10 @@ jobs:
           dapr_home="$RUNNER_TEMP/hexalith-ci-dapr"
           mkdir -p "$tools" "$dapr_home/tools" "$dapr_home/.dapr/bin"
           dotnet tool install --tool-path "$tools" Aspire.Cli --version "$CI_ASPIRE_VERSION"
-          curl --fail --location --retry 3 "https://github.com/dapr/cli/releases/download/v$CI_DAPR_CLI_VERSION/dapr_linux_amd64.tar.gz" -o "$RUNNER_TEMP/dapr-cli.tar.gz"
+          curl --fail --location --proto '=https' --proto-redir '=https' --retry 3 "https://github.com/dapr/cli/releases/download/v$CI_DAPR_CLI_VERSION/dapr_linux_amd64.tar.gz" -o "$RUNNER_TEMP/dapr-cli.tar.gz"
           tar -xzf "$RUNNER_TEMP/dapr-cli.tar.gz" -C "$dapr_home/tools" dapr
           for binary in daprd placement scheduler; do
-            curl --fail --location --retry 3 "https://github.com/dapr/dapr/releases/download/v$CI_DAPR_RUNTIME_VERSION/${binary}_linux_amd64.tar.gz" -o "$RUNNER_TEMP/$binary.tar.gz"
+            curl --fail --location --proto '=https' --proto-redir '=https' --retry 3 "https://github.com/dapr/dapr/releases/download/v$CI_DAPR_RUNTIME_VERSION/${binary}_linux_amd64.tar.gz" -o "$RUNNER_TEMP/$binary.tar.gz"
             tar -xzf "$RUNNER_TEMP/$binary.tar.gz" -C "$dapr_home/.dapr/bin" "$binary"
           done
           echo "$tools" >> "$GITHUB_PATH"

@@ -1057,6 +1057,13 @@ if ($isV2) {
     Assert-Condition -Name 'Withdrawal finalizer order' -Condition ($ciWorkflow.IndexOf('Finalize exact CI owner') -gt $ciWorkflow.IndexOf('Runner-owned package integration') -and $ciWorkflow.IndexOf('Upload classified integration diagnostics') -gt $ciWorkflow.IndexOf('Finalize exact CI owner')) -Failure 'must finalize before uploading retained diagnostics.'
 
 
+    $integrationBinaries = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Prepare integration binaries'
+    $downloadCommands = @($integrationBinaries -split "`r?`n" | Where-Object { $_.TrimStart().StartsWith('curl ') })
+    Assert-Condition -Name 'Expected integration downloads' -Condition ($downloadCommands.Count -eq 2) -Failure 'requires the reviewed Dapr CLI and runtime download commands.'
+    foreach ($command in $downloadCommands) {
+        Assert-Contains -Name 'HTTPS-only integration download and redirects' -Content $command -Expected "--proto '=https' --proto-redir '=https'"
+    }
+
     $registryLogin = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Authenticate pull-only integration registry'
     $registryCleanup = Get-NamedStepBlock -Content $ciWorkflow -StepName 'Remove integration registry credentials'
     $registryLoginBody = Get-StepRunBody -Block $registryLogin -StepName 'Authenticate pull-only integration registry'

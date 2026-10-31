@@ -593,10 +593,11 @@ class EndToEndTests(unittest.TestCase):
 
     def test_v2_rejects_the_legacy_workflow_authorization_digest(self):
         legacy = evaluator.build_provenance(self.arguments("ci", WORKFLOW_PATH))
+        arguments = self.arguments(
+            "ci", V2_WORKFLOW_PATH, expected_evaluator_digest=legacy["closure"]["closure_digest"]
+        )
         with self.assertRaisesRegex(evaluator.ProvenanceError, "expected evaluator digest"):
-            evaluator.build_provenance(self.arguments(
-                "ci", V2_WORKFLOW_PATH, expected_evaluator_digest=legacy["closure"]["closure_digest"]
-            ))
+            evaluator.build_provenance(arguments)
 
     def test_the_document_is_deterministic_apart_from_its_timestamp(self):
         first = evaluator.build_provenance(self.arguments("ci", ".github/workflows/domain-ci.yml"))
