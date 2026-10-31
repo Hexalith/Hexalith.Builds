@@ -60,6 +60,7 @@ internal static class LocalRunLifecycleFixture
         StateDirectory = Path.Combine(root, "state"),
         DockerCommand = CompositionTestFiles.CreateStubDocker(root),
         RetainOnFailure = true,
+        ContinuousIntegrationOverride = false,
         StopTimeout = TimeSpan.FromMilliseconds(100),
     };
 }

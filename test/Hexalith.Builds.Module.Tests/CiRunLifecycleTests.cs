@@ -193,6 +193,52 @@ public sealed class CiRunLifecycleTests
         }
     }
 
+    /// <summary>Failed outcome metadata never renews stopping, and blocked withdrawal prevents every resource stop.</summary>
+    /// <param name="blockedWithdrawal">Whether outcome ownership remains unavailable during withdrawal.</param>
+    /// <returns>The original stop origin, finite metadata and resource-stop ordering assertions.</returns>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OutcomeCallbackFailureDoesNotRenewStoppingAllowanceAsync(bool blockedWithdrawal)
+    {
+        Dictionary<string, string?> previous = EnterCiContext();
+        try
+        {
+            using PlatformManifestTestWorkspace workspace = new();
+            _ = LocalRunLifecycleFixture.Create(workspace);
+            workspace.Change("modules.0.tests.0.stopTimeoutSeconds", blockedWithdrawal ? "4" : "1");
+            string manifest = workspace.Save();
+            ModuleTestSelection selected = ModuleTestSelection.Select(PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken).Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+            using Process appHost = new();
+            CompositionRunSession? session = null;
+            bool? cancelledCleanup = null;
+            CompositionEngineOptions options = BudgetOptions(workspace, selected, manifest, appHost, ready => session = ready, cancelled => cancelledCleanup = cancelled);
+            string directory = Path.Combine(options.StateDirectory, "diagnostics", CompositionTestFiles.RunId);
+            CompositionWorkspace.CreatePrivateDirectory(directory);
+            if (!blockedWithdrawal)
+            {
+                _ = Directory.CreateDirectory(Path.Combine(directory, "test-result.json"));
+            }
+
+            FileStream heldLock = new(Path.Combine(directory, "outcome.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable lockLifetime = heldLock.ConfigureAwait(true);
+            StringWriter output = new();
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable outputLifetime = output.ConfigureAwait(true);
+            await ExecuteBudgetCaseAsync(options, manifest, heldLock, () => session, () => cancelledCleanup, blockedWithdrawal, directory, output).ConfigureAwait(true);
+            if (blockedWithdrawal)
+            {
+                await AssertBlockedWithdrawalAsync(options, session.ShouldNotBeNull(), directory).ConfigureAwait(true);
+            }
+        }
+        finally
+        {
+            foreach ((string name, string? value) in previous)
+            {
+                Environment.SetEnvironmentVariable(name, value);
+            }
+        }
+    }
+
     private static async Task ExecuteCiOwnerAsync(CiOwnerExecution run, StringWriter output)
     {
         Stopwatch elapsed = Stopwatch.StartNew();
@@ -307,6 +353,113 @@ public sealed class CiRunLifecycleTests
             CompositionProcess.Kill(process);
             process.Dispose();
         }
+    }
+
+    private static async Task ExecuteBudgetCaseAsync(CompositionEngineOptions options, string manifest, FileStream heldLock, Func<CompositionRunSession?> session, Func<bool?> cancelledCleanup, bool blockedWithdrawal, string directory, StringWriter output)
+    {
+        Task released = blockedWithdrawal ? Task.CompletedTask : ReleaseBudgetLockAsync(heldLock, session);
+        Stopwatch elapsed = Stopwatch.StartNew();
+        try
+        {
+            int exit = await ModuleCommandExecutionService.ExecuteAsync(ModuleInvocationCommand.Test, manifest, "verify", null, null, ToolOutputFormat.Json, output, TestContext.Current.CancellationToken, "child.dll", compositionOptions: options).ConfigureAwait(true);
+            exit.ShouldBe((int)ToolExitCode.ProductOrTest, output.ToString());
+            AssertBudgetOutcome(session(), cancelledCleanup(), blockedWithdrawal, directory, elapsed.Elapsed, output.ToString());
+        }
+        finally
+        {
+            await released.ConfigureAwait(true);
+        }
+    }
+
+    private static async Task AssertBlockedWithdrawalAsync(CompositionEngineOptions options, CompositionRunSession session, string directory)
+    {
+        CompositionEngine engine = new(options);
+        CompositionDownResult refused = await engine.DownAsync(session, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        refused.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR037");
+        refused.Remaining.Unverified.ShouldBeTrue();
+        CompositionRunState state = (await engine.StateStore.TryReadAsync(session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        state.CleanupDisposition.ShouldNotBe("complete");
+        CompositionAttachment attachment = (await CompositionAttachmentStore.ReadAsync(directory, session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single();
+        attachment.EndedAtUtc.ShouldBeNull();
+        File.Exists(Path.Combine(directory, "attachment-withdrawals.json")).ShouldBeFalse();
+    }
+
+    private static CompositionEngineOptions BudgetOptions(PlatformManifestTestWorkspace workspace, ModuleTestSelection selected, string manifest, Process appHost, Action<CompositionRunSession> observeSession, Action<bool> observeCleanup)
+    {
+        string nativeDotnet = Path.Combine(workspace.Root, "native-dotnet");
+        CompositionTestFiles.WriteScript(nativeDotnet, "exit 1");
+        return LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            NativeDotnetCommand = nativeDotnet,
+            ContinuousIntegrationOverride = true,
+            WorkspaceRoot = Path.Combine(workspace.Root, "workspace"),
+            SourceMapping = new SourceMapping(WorkspaceMode.Source, workspace.Root, "sample", [new("sample", "source", workspace.Root)], false),
+            SelectedPlatformStartOverride = async (_, selection, token) =>
+            {
+                CompositionRunPlan plan = await TestEnvironmentProvisioningFixture.PrepareAsync(CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selection }, manifest, workspace.Root).ConfigureAwait(false);
+                CompositionReadiness ready = TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned", "process", "Healthy")]), "sample");
+                CompositionRunSession session = new(plan, ready, "private-signing-key", appHost);
+                observeSession(session);
+                CompositionRunState issued = CompositionRunPlanFactory.CreateInitialState(plan.RunId, plan.Workspace, selection.ManifestHash, selection.RequestedAtUtc) with
+                {
+                    SelectedTest = selection,
+                    AttemptId = plan.AttemptId,
+                    EnvironmentId = plan.EnvironmentId,
+                    ExecutionContext = Context(),
+                };
+                string directory = Path.Combine(workspace.Root, "state", "diagnostics", plan.RunId);
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                CompositionAttachment attachment = new(CompositionRunPlanFactory.NewRunId(), plan.EnvironmentId, plan.RunId, CompositionRunPlanFactory.NewRunId(), 14400, now, 14400, now.AddHours(4));
+                int admitted = await CompositionAttachmentStore.UpdateAsync<int>(directory, plan.RunId, _ => (0, [attachment]), token).ConfigureAwait(false);
+                admitted.ShouldBe(0);
+                await new CompositionRunStateStore(Path.Combine(workspace.Root, "state")).WriteAsync(issued, token).ConfigureAwait(false);
+                return new CompositionStartResult(new ToolCommandResult("ready", ToolOutcome.Passed(), []), plan.RunId, session);
+            },
+            PlatformDownOverride = async (session, token) =>
+            {
+                string report = Path.Combine(workspace.Root, "state", "diagnostics", session.RunId, "attachment-withdrawals.json");
+                using JsonDocument withdrawal = JsonDocument.Parse(await File.ReadAllTextAsync(report, TestContext.Current.CancellationToken).ConfigureAwait(false));
+                withdrawal.RootElement.GetProperty("ownerRunId").GetString().ShouldBe(session.RunId);
+                JsonElement attachment = withdrawal.RootElement.GetProperty("attachments").EnumerateArray().Single();
+                attachment.GetProperty("endReason").GetString().ShouldBe("ci-job-completed");
+                attachment.GetProperty("outcome").GetString().ShouldBe("withdrawn");
+                observeCleanup(token.IsCancellationRequested);
+                return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(ToolPhase.Cleanup, ToolFailureCategory.TopologyOrLifecycle, "HXR023", ToolExitCode.TopologyOrLifecycle), []), new CompositionRunResources([], [], true));
+            },
+        };
+    }
+
+    private static async Task ReleaseBudgetLockAsync(FileStream heldLock, Func<CompositionRunSession?> session)
+    {
+        using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        bound.CancelAfter(TimeSpan.FromSeconds(10));
+        while (session()?.FirstObservedOutcome?.MetadataRecordingTimestamp is not long)
+        {
+            await Task.Delay(10, bound.Token).ConfigureAwait(false);
+        }
+
+        long origin = session()!.FirstObservedOutcome!.MetadataRecordingTimestamp!.Value;
+        TimeSpan remaining = TimeSpan.FromMilliseconds(1250) - Stopwatch.GetElapsedTime(origin);
+        if (remaining > TimeSpan.Zero)
+        {
+            await Task.Delay(remaining, bound.Token).ConfigureAwait(false);
+        }
+
+        // The one-second stopping allowance expires before the metadata lock opens; the blocked destination then fails the callback.
+        await heldLock.DisposeAsync().ConfigureAwait(false);
+    }
+
+    private static void AssertBudgetOutcome(CompositionRunSession? session, bool? cancelledCleanup, bool blockedWithdrawal, string directory, TimeSpan elapsed, string output)
+    {
+        CompositionRunSession owned = session.ShouldNotBeNull();
+        long stopping = owned.StoppingTimestamp.ShouldNotBeNull();
+        owned.FirstObservedOutcome.ShouldNotBeNull().MetadataRecordingTimestamp.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(stopping);
+        Stopwatch.GetElapsedTime(stopping).ShouldBeGreaterThan(TimeSpan.FromSeconds(blockedWithdrawal ? 4 : 1));
+        cancelledCleanup.ShouldBe(blockedWithdrawal ? null : true);
+        elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(blockedWithdrawal ? 11 : 6));
+        output.ShouldContain("HXT008");
+        File.Exists(Path.Combine(directory, "attachment-withdrawals.json")).ShouldBe(!blockedWithdrawal);
+        Directory.Exists(owned.Plan.Workspace).ShouldBeTrue();
     }
 
     private static Dictionary<string, string?> EnterCiContext()
