@@ -850,37 +850,26 @@ public sealed class LocalRunLifecycleTests
         }
     }
 
-    /// <summary>Exact down interrupts readiness and prelaunch for declared and ordinary owner invocations.</summary>
+    /// <summary>Exact down interrupts readiness and prelaunch, waiting for brief outcome publication within its stop allowance.</summary>
     /// <param name="declared">Whether this is a selected declared suite.</param>
     /// <param name="beforeLaunch">Whether cleanup claims the owner before AppHost launch.</param>
+    /// <param name="contended">Whether startup outcome publication briefly owns the metadata lock.</param>
     /// <returns>The bounded cancellation, successful cleanup and no-resurrection assertions.</returns>
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public async Task ConcurrentDownCancelsStartingOwnerAsync(bool declared, bool beforeLaunch)
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, true)]
+    public async Task ConcurrentDownCancelsStartingOwnerAsync(bool declared, bool beforeLaunch, bool contended)
     {
         using PlatformManifestTestWorkspace workspace = new();
         (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
         string manifest = workspace.Save();
         string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, beforeLaunch ? "blocked-preflight" : "never", TestContext.Current.CancellationToken).ConfigureAwait(true);
         TaskCompletionSource<string> building = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
-        {
-            AppHostAssemblyPath = appHost,
-            SelectedTest = declared ? selected : null,
-            AspireCommand = CompositionTestFiles.CreateAspire(workspace.Root),
-            DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
-            SourceMapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root),
-            ReadinessTimeout = TimeSpan.FromSeconds(600),
-            StopTimeout = TimeSpan.FromSeconds(5),
-            PlatformModelBuildOverride = (_, runWorkspace, _) =>
-            {
-                building.SetResult(Path.GetFileName(runWorkspace));
-                return Task.FromResult(appHost);
-            },
-        };
+        CompositionEngineOptions options = ConcurrentStartupOptions(workspace.Root, selected, appHost, building, declared);
         CompositionEngine engine = new(options);
         using CancellationTokenSource testBound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         testBound.CancelAfter(TimeSpan.FromSeconds(30));
@@ -890,17 +879,13 @@ public sealed class LocalRunLifecycleTests
         try
         {
             string startupCheckpoint = beforeLaunch ? Path.Combine(Path.GetDirectoryName(appHost)!, "preflight-started") : runtimeStarted;
-            while (!File.Exists(startupCheckpoint))
-            {
-                await Task.Delay(10, testBound.Token).ConfigureAwait(true);
-            }
-
+            await WaitForStartupCheckpointAsync(startupCheckpoint, testBound.Token).ConfigureAwait(true);
+            string directory = Path.Combine(options.StateDirectory, "diagnostics", runId);
+            FileStream? publication = contended ? new(Path.Combine(directory, "outcome.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None) : null;
+            await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable publicationLifetime = (publication ?? Stream.Null).ConfigureAwait(true);
             Task<CompositionDownResult> stopping = engine.DownAsync(runId, testBound.Token);
-            while (!File.Exists(Path.Combine(options.StateDirectory, "diagnostics", runId, "cleanup-request.json")))
-            {
-                await Task.Delay(10, testBound.Token).ConfigureAwait(true);
-            }
-
+            await WaitForStartupCheckpointAsync(Path.Combine(directory, "cleanup-request.json"), testBound.Token).ConfigureAwait(true);
+            await ReleaseConcurrentPublicationAsync(publication, stopping, testBound.Token).ConfigureAwait(true);
             await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(appHost)!, "release-preflight"), "continue", TestContext.Current.CancellationToken).ConfigureAwait(true);
             CompositionStartResult started = await starting.WaitAsync(testBound.Token).ConfigureAwait(true);
             started.Result.Status.ShouldBe("cancelled", JsonSerializer.Serialize(started.Result));
@@ -908,19 +893,7 @@ public sealed class LocalRunLifecycleTests
             started.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Cancelled);
             CompositionDownResult down = await stopping.WaitAsync(testBound.Token).ConfigureAwait(true);
             down.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, JsonSerializer.Serialize(down));
-            Directory.Exists(Path.Combine(options.WorkspaceRoot, runId)).ShouldBeFalse();
-            File.Exists(engine.StateStore.PathFor(runId)).ShouldBeFalse();
-            if (beforeLaunch)
-            {
-                File.Exists(runtimeStarted).ShouldBeFalse();
-            }
-
-            if (declared)
-            {
-                JsonElement result = TestEnvironmentContractReader.ReadResult(Path.Combine(options.StateDirectory, "diagnostics", runId, "test-result.json"), testBound.Token).Document!.Value;
-                result.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("cancelled");
-                result.GetProperty("cleanup").GetProperty("disposition").GetString().ShouldBe("complete");
-            }
+            AssertConcurrentDownCompletion(engine, options, runId, declared, beforeLaunch ? runtimeStarted : null, testBound.Token);
         }
         finally
         {
@@ -1123,6 +1096,120 @@ public sealed class LocalRunLifecycleTests
         JsonElement result = TestEnvironmentContractReader.ReadResult(resultPath.GetString()!, TestContext.Current.CancellationToken).Document!.Value;
         result.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("execution-timeout");
         result.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe("failure-retained");
+    }
+
+    /// <summary>An unavailable outcome lock refuses every resource stop, then exact cleanup retries without rewriting first outcomes or expiry.</summary>
+    /// <returns>The bounded refusal, untouched ownership and idempotent cleanup assertions.</returns>
+    [Fact]
+    public async Task OutcomeLockDeadlineRefusesCleanupUntilExactRetryAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        selected = selected with { StopTimeoutSeconds = 1 };
+        state = state with { SelectedTest = selected };
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with { StopTimeout = TimeSpan.FromSeconds(1) };
+        CompositionEngine engine = new(options);
+        CompositionWorkspace.CreatePrivateDirectory(state.Workspace);
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        engine.StateStore.Claims.Acquire(state.RunId, ["owned-claim"]);
+        CompositionRunResources owned = new([], []) { WorkspaceIds = ["workspace:" + state.RunId], ClaimIds = engine.StateStore.Claims.FindOwned(state.RunId) };
+        ModuleTestRunRecord first = (await engine.RecordTestOutcomeAsync(state.RunId, [], Failure("HXT007"), "retained", owned, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        string directory = Path.Combine(options.StateDirectory, "diagnostics", state.RunId);
+        DateTimeOffset accepted = DateTimeOffset.UtcNow;
+        CompositionAttachment active = new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), 300, accepted, 300, accepted.AddSeconds(300));
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, _ => (0, [active]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        FileStream publication = new(Path.Combine(directory, "outcome.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        await using (publication.ConfigureAwait(true))
+        {
+            Stopwatch elapsed = Stopwatch.StartNew();
+            CompositionDownResult refused = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(3));
+            refused.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXR037");
+            refused.Result.Diagnostics.ShouldContain(diagnostic => diagnostic.RuleId == "HXT008");
+            refused.Remaining.IsEmpty.ShouldBeFalse();
+            Directory.Exists(state.Workspace).ShouldBeTrue();
+            engine.StateStore.Claims.FindOwned(state.RunId).ShouldNotBeEmpty();
+            File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeTrue();
+            File.Exists(Path.Combine(directory, "attachment-withdrawals.json")).ShouldBeFalse();
+            (await CompositionAttachmentStore.ReadAsync(directory, state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single().EndedAtUtc.ShouldBeNull();
+        }
+
+        CompositionDownResult retry = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        retry.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, JsonSerializer.Serialize(retry));
+        retry.Remaining.IsEmpty.ShouldBeTrue();
+        Directory.Exists(state.Workspace).ShouldBeFalse();
+        File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeFalse();
+        engine.StateStore.Claims.FindOwned(state.RunId).ShouldBeEmpty();
+        ModuleTestRunRecord final = (await engine.ReadCommittedOutcomeAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        final.TerminalOutcome.ShouldBe(first.TerminalOutcome);
+        final.TerminalStatus.ShouldBe(first.TerminalStatus);
+        final.TerminalCause.ShouldBe(first.TerminalCause);
+        final.TerminalAtUtc.ShouldBe(first.TerminalAtUtc);
+        CompositionAttachment ended = (await CompositionAttachmentStore.ReadAsync(directory, state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single();
+        ended.Outcome.ShouldBe("withdrawn");
+        ended.ExpiresAtUtc.ShouldBe(active.ExpiresAtUtc);
+        ended.EndReason.ShouldBe("developer-stop");
+        (await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+    }
+
+    private static CompositionEngineOptions ConcurrentStartupOptions(string root, ModuleTestSelection selected, string appHost, TaskCompletionSource<string> building, bool declared) =>
+        LocalRunLifecycleFixture.Options(root, selected) with
+        {
+            AppHostAssemblyPath = appHost,
+            SelectedTest = declared ? selected : null,
+            AspireCommand = CompositionTestFiles.CreateAspire(root),
+            DaprHome = CompositionTestFiles.CreateDaprHome(root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+            SourceMapping = CompositionTestFiles.CreatePlatformMapping(root),
+            ReadinessTimeout = TimeSpan.FromSeconds(600),
+            StopTimeout = TimeSpan.FromSeconds(5),
+            PlatformModelBuildOverride = (_, runWorkspace, _) =>
+            {
+                building.SetResult(Path.GetFileName(runWorkspace));
+                return Task.FromResult(appHost);
+            },
+        };
+
+    private static async Task WaitForStartupCheckpointAsync(string path, CancellationToken token)
+    {
+        while (!File.Exists(path))
+        {
+            await Task.Delay(10, token).ConfigureAwait(true);
+        }
+    }
+
+    private static async Task ReleaseConcurrentPublicationAsync(FileStream? publication, Task<CompositionDownResult> stopping, CancellationToken token)
+    {
+        if (publication is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(200), token).ConfigureAwait(true);
+            stopping.IsCompleted.ShouldBeFalse("Brief startup outcome publication must wait within the existing cleanup allowance.");
+        }
+        finally
+        {
+            await publication.DisposeAsync().ConfigureAwait(true);
+        }
+    }
+
+    private static void AssertConcurrentDownCompletion(CompositionEngine engine, CompositionEngineOptions options, string runId, bool declared, string? forbiddenRuntimeStart, CancellationToken token)
+    {
+        Directory.Exists(Path.Combine(options.WorkspaceRoot, runId)).ShouldBeFalse();
+        File.Exists(engine.StateStore.PathFor(runId)).ShouldBeFalse();
+        if (forbiddenRuntimeStart is not null)
+        {
+            File.Exists(forbiddenRuntimeStart).ShouldBeFalse();
+        }
+
+        if (declared)
+        {
+            JsonElement result = TestEnvironmentContractReader.ReadResult(Path.Combine(options.StateDirectory, "diagnostics", runId, "test-result.json"), token).Document!.Value;
+            result.GetProperty("terminal").GetProperty("outcome").GetString().ShouldBe("cancelled");
+            result.GetProperty("cleanup").GetProperty("disposition").GetString().ShouldBe("complete");
+        }
     }
 
     private static async Task AssertRetainedWorkspaceAsync(CompositionEngineOptions options, string runId, JsonElement result)
