@@ -219,7 +219,7 @@ public sealed class ExecutableDescriptorLoaderTests
                     eventStoreVersion = SupportedPlatformPins.EventStoreVersion,
                     daprRuntimeVersion = SupportedPlatformPins.DaprRuntimeVersion,
                     daprSdkVersion = "1.19.0",
-                    frontComposerVersion = "4.7.1",
+                    frontComposerVersion = "4.7.2",
                 },
                 profiles = new
                 {
@@ -429,7 +429,7 @@ public sealed class ExecutableDescriptorLoaderTests
         "hexalith.module-manifest.v1",
         "descriptor-test",
         [new ModuleDescriptor("module-a", descriptorAssembly, [], "module-a", "module-a", "module-a")],
-        new PlatformPins("3.126.0", "1.18.2", "1.19.0", "4.7.1"),
+        new PlatformPins("3.126.0", "1.18.2", "1.19.0", "4.7.2"),
         null,
         new Dictionary<string, ModuleProfile>(StringComparer.Ordinal));
 

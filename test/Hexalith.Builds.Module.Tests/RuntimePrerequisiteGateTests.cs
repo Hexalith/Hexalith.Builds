@@ -45,7 +45,7 @@ public sealed class RuntimePrerequisiteGateTests
         "hexalith.module-manifest.v1",
         "g6-test",
         [],
-        new PlatformPins("3.90.0", runtimeVersion, sdkVersion, "4.7.1"),
+        new PlatformPins("3.90.0", runtimeVersion, sdkVersion, "4.7.2"),
         null,
         new Dictionary<string, ModuleProfile>());
 }

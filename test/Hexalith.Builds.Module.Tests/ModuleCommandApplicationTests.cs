@@ -49,7 +49,7 @@ public sealed class ModuleCommandApplicationTests
             "eventStoreVersion": "{{SupportedPlatformPins.EventStoreVersion}}",
             "daprRuntimeVersion": "{{SupportedPlatformPins.DaprRuntimeVersion}}",
             "daprSdkVersion": "1.19.0",
-            "frontComposerVersion": "4.7.1"
+            "frontComposerVersion": "4.7.2"
           },
           "ui": { "descriptorAssembly": "assemblies/ui.dll" },
           "profiles": {
