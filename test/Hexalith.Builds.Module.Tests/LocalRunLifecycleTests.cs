@@ -1197,6 +1197,55 @@ public sealed class LocalRunLifecycleTests
         result.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe("failure-retained");
     }
 
+    /// <summary>A held outcome lock immediately refuses cleanup, then exact retry preserves first outcomes and attachment expiry.</summary>
+    /// <returns>The bounded refusal, untouched ownership and idempotent cleanup assertions.</returns>
+    [Fact]
+    public async Task OutcomeLockImmediatelyRefusesCleanupUntilExactRetryAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        (ModuleTestSelection selected, CompositionRunState state) = LocalRunLifecycleFixture.Create(workspace);
+        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected);
+        CompositionEngine engine = new(options);
+        CompositionWorkspace.CreatePrivateDirectory(state.Workspace);
+        await engine.StateStore.WriteAsync(state, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        engine.StateStore.Claims.Acquire(state.RunId, ["owned-claim"]);
+        CompositionRunResources owned = new([], []) { WorkspaceIds = ["workspace:" + state.RunId], ClaimIds = engine.StateStore.Claims.FindOwned(state.RunId) };
+        ModuleTestRunRecord first = (await engine.RecordTestOutcomeAsync(state.RunId, [], Failure("HXT007"), "retained", owned, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        string directory = Path.Combine(options.StateDirectory, "diagnostics", state.RunId);
+        DateTimeOffset accepted = DateTimeOffset.UtcNow;
+        CompositionAttachment active = new(CompositionRunPlanFactory.NewRunId(), state.EnvironmentId!, state.RunId, CompositionRunPlanFactory.NewRunId(), 300, accepted, 300, accepted.AddSeconds(300));
+        _ = await CompositionAttachmentStore.UpdateAsync<int>(directory, state.RunId, _ => (0, [active]), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        FileStream publication = new(Path.Combine(directory, "outcome.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        await using (publication.ConfigureAwait(true))
+        {
+            CompositionDownResult refused = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+            AssertRetryableMetadataRefusal(refused);
+            refused.Remaining.IsEmpty.ShouldBeFalse();
+            Directory.Exists(state.Workspace).ShouldBeTrue();
+            engine.StateStore.Claims.FindOwned(state.RunId).ShouldNotBeEmpty();
+            File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeTrue();
+            File.Exists(Path.Combine(directory, "attachment-withdrawals.json")).ShouldBeFalse();
+            (await CompositionAttachmentStore.ReadAsync(directory, state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single().EndedAtUtc.ShouldBeNull();
+        }
+
+        CompositionDownResult retry = await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        retry.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success, JsonSerializer.Serialize(retry));
+        retry.Remaining.IsEmpty.ShouldBeTrue();
+        Directory.Exists(state.Workspace).ShouldBeFalse();
+        File.Exists(engine.StateStore.PathFor(state.RunId)).ShouldBeFalse();
+        engine.StateStore.Claims.FindOwned(state.RunId).ShouldBeEmpty();
+        ModuleTestRunRecord final = (await engine.ReadCommittedOutcomeAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        final.TerminalOutcome.ShouldBe(first.TerminalOutcome);
+        final.TerminalStatus.ShouldBe(first.TerminalStatus);
+        final.TerminalCause.ShouldBe(first.TerminalCause);
+        final.TerminalAtUtc.ShouldBe(first.TerminalAtUtc);
+        CompositionAttachment ended = (await CompositionAttachmentStore.ReadAsync(directory, state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Single();
+        ended.Outcome.ShouldBe("withdrawn");
+        ended.ExpiresAtUtc.ShouldBe(active.ExpiresAtUtc);
+        ended.EndReason.ShouldBe("developer-stop");
+        (await engine.DownAsync(state.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).Result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+    }
+
     /// <summary>Builds the ready process used to observe cleanup before and after mandatory metadata becomes available.</summary>
     /// <param name="workspace">The isolated declaration and runtime workspace.</param>
     /// <param name="selected">The original immutable test selection.</param>

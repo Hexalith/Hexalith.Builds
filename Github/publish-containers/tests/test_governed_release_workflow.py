@@ -20,6 +20,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 WORKFLOWS = REPOSITORY_ROOT / ".github" / "workflows"
 DOMAIN_RELEASE = WORKFLOWS / "domain-release.yml"
 DOMAIN_CI = WORKFLOWS / "domain-ci.yml"
+DOMAIN_CI_V2 = WORKFLOWS / "domain-ci-v2.yml"
 DAPR_INIT = REPOSITORY_ROOT / "Github" / "dapr-init" / "action.yml"
 
 FREEZE_VARIABLE = "HEXALITH_RELEASE_PUBLISH_ENABLED"
@@ -1090,7 +1091,7 @@ class ShellBlockSyntaxTests(unittest.TestCase):
 
     def test_every_run_block_in_the_governed_workflows_parses(self):
         pattern = re.compile(r"^      - name: (?P<name>.+)$", re.MULTILINE)
-        for path in (DOMAIN_RELEASE, DOMAIN_CI):
+        for path in (DOMAIN_RELEASE, DOMAIN_CI, DOMAIN_CI_V2):
             workflow = read(path)
             seen = {}
             for match in pattern.finditer(workflow):
@@ -1128,7 +1129,7 @@ class GovernedIdentityAndPinningTests(unittest.TestCase):
     """Governed paths must resolve only immutable, identity-proven sources."""
 
     def test_every_governed_workflow_reference_is_literal_40_hex_or_local(self):
-        for path in (DOMAIN_RELEASE, DOMAIN_CI, DAPR_INIT):
+        for path in (DOMAIN_RELEASE, DOMAIN_CI, DOMAIN_CI_V2, DAPR_INIT):
             for match in USES_PATTERN.finditer(read(path)):
                 value = match.group("value")
                 with self.subTest(path=path.name, uses=value):
@@ -1145,7 +1146,14 @@ class GovernedIdentityAndPinningTests(unittest.TestCase):
         self.assertIn("Hexalith/Hexalith.Builds/Github/dapr-init@", workflow)
 
     def test_governed_ci_proves_its_reusable_workflow_identity(self):
-        script = extract_run_block(DOMAIN_CI, "Validate governed CI contract")
+        self.assert_governed_ci_identity(DOMAIN_CI)
+
+    def test_governed_v2_proves_its_own_identity_and_refuses_legacy(self):
+        self.assert_governed_ci_identity(DOMAIN_CI_V2)
+
+    @staticmethod
+    def ci_identity_environment(path, temporary_directory):
+        """Bind one test workflow to a fixed Git identity and repository-owned executable double."""
         builds_sha = "c" * 40
         base = {
             "BUILDS_EXECUTION_SHA": builds_sha,
@@ -1159,29 +1167,36 @@ class GovernedIdentityAndPinningTests(unittest.TestCase):
             "RESOLVED_WORKFLOW_REPOSITORY": "Hexalith/Hexalith.Builds",
             "RESOLVED_WORKFLOW_SHA": builds_sha,
             "RESOLVED_WORKFLOW_REF":
-                "Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml@refs/heads/main",
+                f"Hexalith/Hexalith.Builds/.github/workflows/{path.name}@refs/heads/main",
         }
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            fake_bin = Path(temporary_directory) / "bin"
-            fake_bin.mkdir()
-            git = fake_bin / "git"
-            git.write_text(
-                "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$FAKE_HEAD\"\n",
-                encoding="utf-8",
-            )
-            git.chmod(0o755)
-            path_prefix = {"PATH": f"{fake_bin}:{os.environ['PATH']}", "FAKE_HEAD": GOVERNED_CANDIDATE}
+        fake_bin = Path(temporary_directory) / "bin"
+        fake_bin.mkdir()
+        git = fake_bin / "git"
+        git.write_text(
+            "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$FAKE_HEAD\"\n",
+            encoding="utf-8",
+        )
+        git.chmod(0o755)
+        path_prefix = {"PATH": f"{fake_bin}:{os.environ['PATH']}", "FAKE_HEAD": GOVERNED_CANDIDATE}
+        return {**base, **path_prefix}
 
-            accepted = run_block(script, {**base, **path_prefix})
+    def assert_governed_ci_identity(self, path):
+        script = extract_run_block(path, "Validate governed CI contract")
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            base = self.ci_identity_environment(path, temporary_directory)
+
+            accepted = run_block(script, base)
             self.assertEqual(0, accepted.returncode, accepted.stderr)
 
+            other = DOMAIN_CI if path == DOMAIN_CI_V2 else DOMAIN_CI_V2
             scenarios = (
+                ({"RESOLVED_WORKFLOW_REF": f"Hexalith/Hexalith.Builds/.github/workflows/{other.name}@refs/heads/main"}, "does not name"),
                 ({"RESOLVED_WORKFLOW_SHA": "d" * 40}, "does not match the approved builds-execution-sha"),
                 ({"RESOLVED_WORKFLOW_REPOSITORY": "attacker/Hexalith.Builds"}, "approved Hexalith.Builds repository"),
                 (
                     {"RESOLVED_WORKFLOW_REF": "Hexalith/Hexalith.Builds/.github/workflows/other.yml@refs/heads/main"},
-                    "does not name Hexalith/Hexalith.Builds/.github/workflows/domain-ci.yml",
+                    f"does not name Hexalith/Hexalith.Builds/.github/workflows/{path.name}",
                 ),
                 ({"EVENT_HEAD_SHA": "e" * 40}, "must be the exact commit this CI run evaluates"),
                 ({"CANDIDATE_COMMIT": "not-a-sha"}, "candidate-commit"),
@@ -1195,13 +1210,13 @@ class GovernedIdentityAndPinningTests(unittest.TestCase):
             )
             for override, expected in scenarios:
                 with self.subTest(expected=expected):
-                    rejected = run_block(script, {**base, **path_prefix, **override})
+                    rejected = run_block(script, {**base, **override})
 
                     self.assertNotEqual(0, rejected.returncode)
                     self.assertIn(expected, rejected.stderr)
 
             mismatched_head = run_block(
-                script, {**base, **path_prefix, "FAKE_HEAD": "d" * 40}
+                script, {**base, "FAKE_HEAD": "d" * 40}
             )
 
             self.assertNotEqual(0, mismatched_head.returncode)
@@ -1215,6 +1230,7 @@ class GovernedIdentityAndPinningTests(unittest.TestCase):
         # closed on a mismatch, so the workflows must actually pass it through.
         for path, input_name in (
             (DOMAIN_CI, "expected-ci-evaluator-digest"),
+            (DOMAIN_CI_V2, "expected-ci-evaluator-digest"),
             (DOMAIN_RELEASE, "expected-release-evaluator-digest"),
         ):
             with self.subTest(workflow=path.name):

@@ -29,6 +29,7 @@ CANDIDATE = "fedcba9876543210fedcba9876543210fedcba98"
 POLICY_SHA256 = "a" * 64
 EVALUATOR_DIGEST = "b" * 64
 WORKFLOW_PATH = ".github/workflows/domain-ci.yml"
+V2_WORKFLOW_PATH = ".github/workflows/domain-ci-v2.yml"
 PINNED_CHECKOUT = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
 
 
@@ -447,6 +448,57 @@ class DependencyPolicyProjectionTests(unittest.TestCase):
                     evaluator.dependency_policy_projection(Arguments("/tmp", **override))
 
 
+class VersionedWorkflowClosureTests(unittest.TestCase):
+    """The exact v2 identity and its direct executor remain inside the authorized closure."""
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.builder = CheckoutBuilder(temporary.name)
+        self.helper = "Github/run-module-integration/run_module_integration.py"
+        self.builder.workflow("jobs:\n  ci:\n    steps:\n      - run: python3 " + self.helper + "\n", V2_WORKFLOW_PATH)
+        self.helper_path = self.builder.write(self.helper, "print('owned executor')\n")
+        self.arguments = Arguments(
+            temporary.name, workflow_path=V2_WORKFLOW_PATH,
+            workflow_ref=f"{evaluator.BUILDS_REPOSITORY}/{V2_WORKFLOW_PATH}@{COMMIT}",
+            workflow_file_path=V2_WORKFLOW_PATH, expected_evaluator_digest="",
+        )
+
+    def test_v2_hashes_its_direct_executor_at_the_approved_commit(self):
+        provenance = evaluator.build_provenance(self.arguments)
+        helper = next(item for item in provenance["closure"]["helpers"] if item["path"] == self.helper)
+        self.assertEqual(COMMIT, helper["commit"])
+        self.assertEqual(hashlib.sha256(self.helper_path.read_bytes()).hexdigest(), helper["blob_sha256"])
+        self.arguments.expected_evaluator_digest = provenance["closure"]["closure_digest"]
+        self.assertEqual(provenance["closure"], evaluator.build_provenance(self.arguments)["closure"])
+
+    def test_v2_refuses_a_missing_direct_executor(self):
+        self.helper_path.unlink()
+        with self.assertRaisesRegex(evaluator.ProvenanceError, "not a regular file"):
+            evaluator.build_provenance(self.arguments)
+
+    def test_v2_refuses_executor_changes_after_authorization(self):
+        self.arguments.expected_evaluator_digest = evaluator.build_provenance(self.arguments)["closure"]["closure_digest"]
+        self.helper_path.write_text("print('changed executor')\n")
+        with self.assertRaisesRegex(evaluator.ProvenanceError, "expected evaluator digest"):
+            evaluator.build_provenance(self.arguments)
+
+    def test_v2_refuses_legacy_or_foreign_job_identity(self):
+        refusals = (
+            {"workflow_ref": f"{evaluator.BUILDS_REPOSITORY}/{WORKFLOW_PATH}@{COMMIT}"},
+            {"workflow_file_path": WORKFLOW_PATH},
+            {"workflow_repository": "attacker/Hexalith.Builds"},
+            {"workflow_sha": OTHER_COMMIT},
+            {"builds_execution_sha": OTHER_COMMIT},
+        )
+        for override in refusals:
+            with self.subTest(override=override):
+                values = {name: value for name, value in vars(self.arguments).items() if name != "builds_root"}
+                arguments = Arguments(self.builder.root, **{**values, **override})
+                with self.assertRaises(evaluator.ProvenanceError):
+                    evaluator.build_provenance(arguments)
+
+
 class EndToEndTests(unittest.TestCase):
     """The evaluator must produce a stable document for the real shipped workflows."""
 
@@ -476,9 +528,10 @@ class EndToEndTests(unittest.TestCase):
             **overrides,
         )
 
-    def test_both_shipped_governed_workflows_evaluate_to_a_complete_closure(self):
+    def test_all_shipped_governed_workflows_evaluate_to_a_complete_closure(self):
         for stage, workflow_path in (
             ("ci", ".github/workflows/domain-ci.yml"),
+            ("ci", V2_WORKFLOW_PATH),
             ("release", ".github/workflows/domain-release.yml"),
         ):
             with self.subTest(stage=stage):
@@ -537,6 +590,14 @@ class EndToEndTests(unittest.TestCase):
 
         self.assertIn("Github/publish-containers/action.yml", local)
         self.assertIn("github.com/actions/attest-build-provenance", external)
+
+    def test_v2_rejects_the_legacy_workflow_authorization_digest(self):
+        legacy = evaluator.build_provenance(self.arguments("ci", WORKFLOW_PATH))
+        arguments = self.arguments(
+            "ci", V2_WORKFLOW_PATH, expected_evaluator_digest=legacy["closure"]["closure_digest"]
+        )
+        with self.assertRaisesRegex(evaluator.ProvenanceError, "expected evaluator digest"):
+            evaluator.build_provenance(arguments)
 
     def test_the_document_is_deterministic_apart_from_its_timestamp(self):
         first = evaluator.build_provenance(self.arguments("ci", ".github/workflows/domain-ci.yml"))

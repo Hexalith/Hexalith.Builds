@@ -112,6 +112,10 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
 
+    - name: Test strict v2 workflow contracts
+      shell: pwsh
+      run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1 -Contract v2
+
     - name: Setup Node.js
       uses: actions/setup-node@v7.1.0
       with:

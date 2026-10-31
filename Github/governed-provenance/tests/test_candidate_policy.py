@@ -155,19 +155,20 @@ class CandidatePolicyTests(unittest.TestCase):
     def test_domain_ci_never_requests_elevated_token_permissions(self):
         # GitHub validates called-workflow job permissions before `if:`; any elevated
         # request breaks every caller that grants only contents: read.
-        text = (ROOT.parents[1] / ".github/workflows/domain-ci.yml").read_text()
-        self.assertNotIn("candidate-policy.yml", text)
-        lines = text.splitlines()
-        blocks = [index for index, line in enumerate(lines) if line.lstrip().startswith("permissions:")]
-        self.assertEqual(1, len(blocks))
-        self.assertEqual("permissions:", lines[blocks[0]])
-        granted = []
-        for line in lines[blocks[0] + 1:]:
-            if line and not line[0].isspace():
-                break
-            if line.strip() and not line.lstrip().startswith("#"):
-                granted.append(line.strip())
-        self.assertEqual(["contents: read"], granted)
+        for workflow in (".github/workflows/domain-ci.yml", ".github/workflows/domain-ci-v2.yml"):
+            text = (ROOT.parents[1] / workflow).read_text()
+            self.assertNotIn("candidate-policy.yml", text)
+            lines = text.splitlines()
+            blocks = [index for index, line in enumerate(lines) if line.lstrip().startswith("permissions:")]
+            self.assertEqual(1, len(blocks))
+            self.assertEqual("permissions:", lines[blocks[0]])
+            granted = []
+            for line in lines[blocks[0] + 1:]:
+                if line and not line[0].isspace():
+                    break
+                if line.strip() and not line.lstrip().startswith("#"):
+                    granted.append(line.strip())
+            self.assertEqual(["contents: read"], granted)
 
 
     def test_release_requires_main_dispatch_ref_and_branch(self):

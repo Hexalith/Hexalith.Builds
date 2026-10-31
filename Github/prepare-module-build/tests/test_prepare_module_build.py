@@ -143,6 +143,8 @@ class PreparationTests(unittest.TestCase):
         for name in ("ci.yml", "build-release.yml"):
             workflow = (MODULE_PATH.parents[2] / ".github/workflows" / name).read_text()
             self.assertIn("python3 -m unittest discover -s Github/prepare-module-build/tests -v", workflow)
+            self.assertIn("Tools/test-domain-workflow-test-platforms.ps1\n", workflow)
+            self.assertIn("Tools/test-domain-workflow-test-platforms.ps1 -Contract v2", workflow)
 
     def test_all_workflow_jobs_opt_in_before_restore(self):
         workflow = (MODULE_PATH.parents[2] / ".github/workflows/domain-ci.yml").read_text()
@@ -157,6 +159,48 @@ class PreparationTests(unittest.TestCase):
             self.assertLess(job.index("name: Prepare module build"), job.index("name: Restore"))
             self.assertIn("./.hexalith/builds-execution/Github/prepare-module-build", job)
             self.assertIn("ref: ${{ job.workflow_sha }}", job)
+
+
+    def test_owner_job_prepares_before_restore_and_retires_advisory_jobs(self):
+        workflow = (MODULE_PATH.parents[2] / ".github/workflows/domain-ci-v2.yml").read_text()
+        self.assertIn("      module-manifest:", workflow)
+        job = workflow.split("\n  build-and-test:", 1)[1]
+        self.assertIn("inputs.module-manifest != '' && !inputs.governed-ci", job)
+        self.assertLess(job.index("name: Prepare module build"), job.index("name: Restore"))
+        self.assertIn("./.hexalith/builds-execution/Github/prepare-module-build", job)
+        self.assertIn("ref: ${{ job.workflow_sha }}", job)
+        self.assertNotIn("\n  aspire-tests:", workflow)
+        self.assertNotIn("\n  performance-tests:", workflow)
+
+
+    def test_versioned_workflow_keeps_only_active_inputs_and_explicit_refusals(self):
+        workflow = (MODULE_PATH.parents[2] / ".github/workflows/domain-ci-v2.yml").read_text()
+        for name in (
+            'dapr-version',
+            'dapr-runtime-version',
+            'aspire-non-performance-filter',
+            'performance-filter',
+            'aspire-mtp-excluded-trait',
+            'performance-mtp-trait',
+            'aspire-continue-on-error',
+            'aspire-prepare-script',
+            'aspire-runner-script',
+            'aspire-prepare-timeout-minutes',
+            'aspire-runner-timeout-minutes',
+            'aspire-evidence-path',
+            'aspire-browser-project',
+            'aspire-fail-skips',
+            'aspire-timeout-minutes',
+            'performance-timeout-minutes',
+        ):
+            with self.subTest(input=name):
+                self.assertNotIn("      " + name + ":", workflow)
+        self.assertIn("LEGACY_INTEGRATION: ${{ inputs.integration-test-projects }}", workflow)
+        self.assertIn("LEGACY_ASPIRE: ${{ inputs.aspire-test-project }}", workflow)
+        legacy = (MODULE_PATH.parents[2] / ".github/workflows/domain-ci.yml").read_text()
+        self.assertIn("      dapr-version:", legacy)
+        self.assertIn("      aspire-prepare-script:", legacy)
+        self.assertNotIn("registry-pull-password", legacy)
 
 
 if __name__ == "__main__":

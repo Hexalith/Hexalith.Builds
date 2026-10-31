@@ -29,3 +29,6 @@ evidence/2-7/*.log whitespace=cr-at-eol
 # Preserve the exact Story 3.1 verification bytes recorded by its manifest.
 evidence/3-1/** -text
 evidence/3-1/*.log whitespace=cr-at-eol
+
+# Preserve the authored CRLF bytes in governed workflow shell controls.
+Github/publish-containers/tests/test_governed_release_workflow.py -text diff whitespace=cr-at-eol
