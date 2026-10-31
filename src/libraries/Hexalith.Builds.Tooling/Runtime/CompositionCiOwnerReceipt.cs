@@ -18,7 +18,7 @@ using System.Text.Json;
 public sealed record CompositionCiOwnerReceipt(string Schema, string RunId, string AttemptId, string EnvironmentId, JsonElement ExecutionContext, string StateDirectory, DateTimeOffset CreatedAtUtc)
 {
     /// <summary>Gets the supported receipt identifier.</summary>
-    public const string SupportedSchema = "hexalith.module.ci-owner-receipt.v1";
+    public static string SupportedSchema { get; } = "hexalith.module.ci-owner-receipt.v1";
 
     /// <summary>Persists the exact recovery identities before any run workspace or service is allocated.</summary>
     /// <param name="path">An external receipt file, outside deleted run workspaces.</param>
@@ -32,21 +32,9 @@ public sealed record CompositionCiOwnerReceipt(string Schema, string RunId, stri
     internal static async Task PersistAsync(string path, CompositionRunState owner, string stateDirectory, string workspaceRoot, CancellationToken cancellationToken)
     {
         string fullPath = Path.GetFullPath(path);
-        string workspace = Path.GetFullPath(workspaceRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         JsonElement context = owner.ExecutionContext ?? throw new InvalidDataException("CI recovery requires an actual execution context.");
-        if (owner.SelectedTest?.Mode != "package" || context.GetProperty("kind").GetString() != "ci"
-            || context.GetProperty("runnerKind").GetString() != "github-hosted" || context.GetProperty("operatingSystem").GetString() != "Linux"
-            || !context.GetProperty("disposable").GetBoolean()
-            || fullPath.StartsWith(workspace, StringComparison.Ordinal) || fullPath == workspace.TrimEnd(Path.DirectorySeparatorChar))
-        {
-            throw new InvalidDataException("CI recovery requires disposable Linux GitHub-hosted package integration and a receipt outside run workspaces.");
-        }
-
-        if (!SelectedNativeTestReport.IsOwnedParent(fullPath, Path.GetPathRoot(fullPath)!)
-            || (Path.Exists(fullPath) && !SelectedNativeTestReport.IsOwnedRegularPath(fullPath, Path.GetDirectoryName(fullPath)!)))
-        {
-            throw new IOException("The CI ownership receipt must be a regular file without link traversal.");
-        }
+        ValidateOwnerContext(owner, context, workspaceRoot, fullPath);
+        ValidateReceiptPath(fullPath);
 
         string directory = Path.GetDirectoryName(fullPath)!;
         CompositionWorkspace.CreatePrivateDirectory(directory);
@@ -61,8 +49,7 @@ public sealed record CompositionCiOwnerReceipt(string Schema, string RunId, stri
         {
             CompositionCiOwnerReceipt? existing = await CompositionDocumentStore.ReadIfExistsAsync<CompositionCiOwnerReceipt>(fullPath, cancellationToken).ConfigureAwait(false);
             CompositionCiOwnerReceipt receipt = new(SupportedSchema, owner.RunId, owner.AttemptId!, owner.EnvironmentId!, context, Path.GetFullPath(stateDirectory), owner.CreatedAt!.Value);
-            if (existing is not null && (existing.Schema != SupportedSchema || existing.RunId != receipt.RunId || existing.AttemptId != receipt.AttemptId
-                || existing.EnvironmentId != receipt.EnvironmentId || !JsonElement.DeepEquals(existing.ExecutionContext, context) || existing.StateDirectory != receipt.StateDirectory))
+            if (existing is not null && !MatchesOwner(existing, receipt))
             {
                 throw new IOException("An ownership receipt cannot be rebound to another allocation.");
             }
@@ -70,4 +57,43 @@ public sealed record CompositionCiOwnerReceipt(string Schema, string RunId, stri
             await CompositionDocumentStore.WriteAsync(fullPath, receipt, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    /// <summary>Refuses an ineligible owner or a receipt inside disposable run workspaces.</summary>
+    /// <param name="owner">The new allocation.</param>
+    /// <param name="context">Its actual execution context.</param>
+    /// <param name="workspaceRoot">The disposable workspace root.</param>
+    /// <param name="fullPath">The external receipt destination.</param>
+    /// <exception cref="InvalidDataException">The owner or destination is ineligible.</exception>
+    private static void ValidateOwnerContext(CompositionRunState owner, JsonElement context, string workspaceRoot, string fullPath)
+    {
+        string workspace = Path.GetFullPath(workspaceRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        if (owner.SelectedTest?.Mode != "package" || context.GetProperty("kind").GetString() != "ci"
+            || context.GetProperty("runnerKind").GetString() != "github-hosted" || context.GetProperty("operatingSystem").GetString() != "Linux"
+            || !context.GetProperty("disposable").GetBoolean()
+            || fullPath.StartsWith(workspace, StringComparison.Ordinal) || fullPath == workspace.TrimEnd(Path.DirectorySeparatorChar))
+        {
+            throw new InvalidDataException("CI recovery requires disposable Linux GitHub-hosted package integration and a receipt outside run workspaces.");
+        }
+    }
+
+    /// <summary>Verifies all existing parent components and the receipt before publication.</summary>
+    /// <param name="fullPath">The external receipt destination.</param>
+    /// <exception cref="IOException">The destination or its parent cannot be verified.</exception>
+    private static void ValidateReceiptPath(string fullPath)
+    {
+        if (!SelectedNativeTestReport.IsOwnedParent(fullPath, Path.GetPathRoot(fullPath)!)
+            || (Path.Exists(fullPath) && !SelectedNativeTestReport.IsOwnedRegularPath(fullPath, Path.GetDirectoryName(fullPath)!)))
+        {
+            throw new IOException("The CI ownership receipt must be a regular file without link traversal.");
+        }
+    }
+
+    /// <summary>Preserves the original allocation binding across retryable receipt publication.</summary>
+    /// <param name="existing">The durably published receipt.</param>
+    /// <param name="receipt">The requested same-owner retry.</param>
+    /// <returns>Whether the complete original owner identity matches.</returns>
+    private static bool MatchesOwner(CompositionCiOwnerReceipt existing, CompositionCiOwnerReceipt receipt) =>
+        existing.Schema == SupportedSchema && existing.RunId == receipt.RunId && existing.AttemptId == receipt.AttemptId
+        && existing.EnvironmentId == receipt.EnvironmentId && JsonElement.DeepEquals(existing.ExecutionContext, receipt.ExecutionContext)
+        && existing.StateDirectory == receipt.StateDirectory;
 }
