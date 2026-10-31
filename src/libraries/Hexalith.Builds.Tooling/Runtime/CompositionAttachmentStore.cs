@@ -88,9 +88,9 @@ public static class CompositionAttachmentStore
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Validate the reason before constructing the serialized attachment change.")]
     public static Task<IReadOnlyList<CompositionAttachment>> WithdrawAsync(string diagnosticsDirectory, string ownerRunId, string reason, DateTimeOffset now, CancellationToken cancellationToken = default)
     {
-        if (reason is not ("owner-cancelled" or "developer-stop"))
+        if (reason is not ("owner-cancelled" or "developer-stop" or "ci-job-completed" or "ci-job-cancelled"))
         {
-            throw new ArgumentOutOfRangeException(nameof(reason), reason, "The withdrawal reason must be owner-cancelled or developer-stop.");
+            throw new ArgumentOutOfRangeException(nameof(reason), reason, "The withdrawal reason must identify owner cancellation, developer stop or CI job completion/cancellation.");
         }
 
         return UpdateWithReportAsync<IReadOnlyList<CompositionAttachment>>(

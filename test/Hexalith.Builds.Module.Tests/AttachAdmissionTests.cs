@@ -139,18 +139,17 @@ public sealed class AttachAdmissionTests
         File.Exists(CompositionAttachmentStore.PathFor(Path.Combine(store.Directory, "diagnostics", owner.RunId))).ShouldBeFalse();
     }
 
-    /// <summary>A CI owner is refused even for a same-job attacher, because CI owners do not wait for holds.</summary>
+    /// <summary>A compatible CI attachment is accepted within its owner job.</summary>
     /// <returns>The refusal assertion.</returns>
     [Fact]
-    public async Task SameJobCiAttachmentIsRefusedAsync()
+    public async Task SameJobCiAttachmentIsAcceptedAsync()
     {
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
         ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = Ci("job-a") }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        result.Attachment.ShouldBeNull();
-        result.Diagnostics.Single().RuleId.ShouldBe("HXR035");
-        result.Diagnostics.Single().Field.ShouldBe("owner-ci-holds-unsupported");
-        File.Exists(CompositionAttachmentStore.PathFor(Path.Combine(store.Directory, "diagnostics", owner.RunId))).ShouldBeFalse();
+        result.Outcome.ExitCode.ShouldBe(ToolExitCode.Success);
+        _ = result.Attachment.ShouldNotBeNull();
+        File.Exists(CompositionAttachmentStore.PathFor(Path.Combine(store.Directory, "diagnostics", owner.RunId))).ShouldBeTrue();
     }
 
     /// <summary>A finished owner refuses new attaches and names its state, unless it is a ready failure-retained local environment.</summary>
@@ -532,7 +531,7 @@ public sealed class AttachAdmissionTests
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunStateStore store, CompositionRunState owner, string composition) = await ReadyOwnerAsync(workspace, state => Finished(state, "failed-retained") with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
         ToolCommandResult result = await CompositionAttachAdmission.AdmitAsync(store, Request(owner, composition) with { AttacherContext = Ci("job-a") }, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        result.Diagnostics.Single().Field.ShouldBe("owner-ci-holds-unsupported");
+        result.Diagnostics.Single().Field.ShouldBe("owner-failed");
     }
 
     /// <summary>Any differing CI identity element refuses the attachment as cross-job.</summary>
@@ -1503,10 +1502,10 @@ public sealed class AttachAdmissionTests
         reports.Count(item => item.GetProperty("message").GetString()!.Contains(run.Seeded.AttachedRunId, StringComparison.Ordinal)).ShouldBe(1);
     }
 
-    /// <summary>Only local selected-test owners require durable withdrawal before resource stopping.</summary>
+    /// <summary>Local and CI selected-test owners require durable withdrawal before resource stopping.</summary>
     /// <param name="context">The recorded owner locality or environment-only category.</param>
     /// <param name="blockOutcome">Whether the selected-test state write rather than cleanup marker is blocked.</param>
-    /// <returns>The strict local refusal or best-effort nonattachable cleanup assertions.</returns>
+    /// <returns>The strict attachable-owner refusal or best-effort nonattachable cleanup assertions.</returns>
     [Theory]
     [InlineData("local", false)]
     [InlineData("ci", false)]
@@ -1520,7 +1519,13 @@ public sealed class AttachAdmissionTests
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunStateStore store, CompositionRunState original, _) = await ReadyOwnerAsync(workspace).ConfigureAwait(true);
         string kind = context == "ci" ? "ci" : "local";
-        CompositionRunState owner = original with { ExecutionContext = context == "missing" ? null : JsonSerializer.SerializeToElement(new { kind }), SelectedTest = context == "environment" ? null : original.SelectedTest };
+        JsonElement? recordedContext = context == "missing" ? null : JsonSerializer.SerializeToElement(new { kind });
+        if (context == "ci")
+        {
+            recordedContext = Ci("job-a");
+        }
+
+        CompositionRunState owner = original with { ExecutionContext = recordedContext, SelectedTest = context == "environment" ? null : original.SelectedTest };
         await store.WriteAsync(owner, TestContext.Current.CancellationToken).ConfigureAwait(true);
         CompositionWorkspace.CreatePrivateDirectory(owner.Workspace);
         string directory = Path.Combine(store.Directory, "diagnostics", owner.RunId);
@@ -1548,7 +1553,7 @@ public sealed class AttachAdmissionTests
                 File.Exists(Path.Combine(directory, "cleanup-request.json")).ShouldBeTrue();
             }
 
-            if (context == "local")
+            if (context is "local" or "ci")
             {
                 result.Result.Diagnostics.ShouldContain(item => item.RuleId == "HXR037" && item.Message.Contains("cleanup state", StringComparison.Ordinal));
                 result.Result.Outcome.RuleId.ShouldBe("HXR037");
@@ -1660,15 +1665,14 @@ public sealed class AttachAdmissionTests
     }
 
     /// <summary>
-    /// A CI owner can never hold attachments, so its live session AppHost stops before cleanup locks or state reads and
-    /// early cleanup exits, including an exhausted stopping budget, never leave it running.
+    /// A CI owner with unverifiable withdrawal keeps its session until a retry can record withdrawal.
     /// </summary>
     /// <param name="exit">The early cleanup exit: an exhausted budget or an unverifiable owner state.</param>
     /// <returns>The incomplete cleanup, stopped and disposed AppHost and retained workspace assertions.</returns>
     [Theory]
     [InlineData("exhausted-budget")]
     [InlineData("unverifiable-state")]
-    public async Task CiSessionStopsAppHostOnEarlyCleanupExitsAsync(string exit)
+    public async Task CiSessionPreservesAppHostUntilWithdrawalCanBeVerifiedAsync(string exit)
     {
         using PlatformManifestTestWorkspace workspace = new();
         (CompositionRunStateStore store, CompositionRunState owner, _) = await ReadyOwnerAsync(workspace, state => state with { ExecutionContext = Ci("job-a") }).ConfigureAwait(true);
@@ -1695,9 +1699,7 @@ public sealed class AttachAdmissionTests
             CompositionDownResult result = await new CompositionEngine(LocalRunLifecycleFixture.Options(workspace.Root, owner.SelectedTest!)).DownWithinBudgetAsync(session, stopping.Token).ConfigureAwait(true);
             result.Result.Diagnostics.ShouldContain(item => item.RuleId == "HXR023");
             result.Result.Diagnostics.ShouldNotContain(item => item.RuleId == "HXR037");
-            await observer.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken).ConfigureAwait(true);
-            observer.HasExited.ShouldBeTrue();
-            _ = Should.Throw<InvalidOperationException>(() => appHost.HasExited);
+            observer.HasExited.ShouldBeFalse();
             Directory.Exists(owner.Workspace).ShouldBeTrue();
         }
         finally

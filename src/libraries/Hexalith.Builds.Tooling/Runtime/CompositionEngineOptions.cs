@@ -15,6 +15,12 @@ using Hexalith.Builds.Tooling.Workspace;
 /// <param name="DescriptorChildEntryAssemblyPath">The absolute path of the runner assembly hosting the descriptor child command.</param>
 public sealed record CompositionEngineOptions(string AppHostAssemblyPath, string DescriptorChildEntryAssemblyPath)
 {
+    /// <summary>Gets the external durable receipt used by the same CI job to recover exact ownership before allocation.</summary>
+    public string? CiOwnerReceiptPath { get; init; }
+
+    /// <summary>Gets a value indicating whether the independent CI finalizer observed actual job cancellation.</summary>
+    public bool CiJobCancelled { get; init; }
+
     /// <summary>Gets the immutable authenticated candidate decision and producing attempt.</summary>
     public CandidatePolicy.CandidatePolicyBinding? CandidatePolicy { get; init; }
 

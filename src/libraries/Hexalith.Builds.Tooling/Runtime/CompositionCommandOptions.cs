@@ -30,7 +30,10 @@ public static class CompositionCommandOptions
             appHost = FindSourceAppHost(runnerAssembly) ?? packaged;
         }
 
-        return new CompositionEngineOptions(appHost, runnerAssembly);
+        return new CompositionEngineOptions(appHost, runnerAssembly)
+        {
+            CiJobCancelled = string.Equals(Environment.GetEnvironmentVariable("HEXALITH_CI_JOB_STATUS"), "cancelled", StringComparison.Ordinal),
+        };
     }
 
     private static string? FindSourceAppHost(string runnerAssembly)

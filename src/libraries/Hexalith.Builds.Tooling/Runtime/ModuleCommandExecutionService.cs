@@ -1371,6 +1371,23 @@ public static class ModuleCommandExecutionService
             bool cleanupPending = false;
             bool cancellationWithdrawn = false;
             string? attachmentDirectory = ownedRunId is null ? null : Path.Combine(options.StateDirectory, "diagnostics", ownedRunId);
+            if (ci && attachmentDirectory is not null)
+            {
+                try
+                {
+                    using CancellationTokenSource withdrawalMetadata = new(TimeSpan.FromSeconds(5));
+                    await engine!.RecordOwnerCancellationAsync(ownedRunId!, withdrawalMetadata.Token).ConfigureAwait(false);
+                    IReadOnlyList<CompositionAttachment> ended = await CompositionAttachmentStore.WithdrawAsync(attachmentDirectory, ownedRunId!, cancellationToken.IsCancellationRequested || withdrawn ? "ci-job-cancelled" : "ci-job-completed", DateTimeOffset.UtcNow, withdrawalMetadata.Token).ConfigureAwait(false);
+                    result = result with { Diagnostics = [.. result.Diagnostics.Where(item => item.RuleId != "HXI011"), .. CompositionAttachmentStore.WithdrawalDiagnostics(ended)] };
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException or OperationCanceledException)
+                {
+                    holdsVerified = false;
+                    cleanupPending = true;
+                    result = MergeEvidenceFailure(result, new ToolDiagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "CI attachment withdrawal could not be durably reported; exact cleanup must be retried by the job finalizer.", "evidence"));
+                }
+            }
+
             if (!ci && attachmentDirectory is not null)
             {
                 try
@@ -1392,7 +1409,7 @@ public static class ModuleCommandExecutionService
                 }
             }
 
-            bool retentionEstablished = attachedFailure || record?.FailureRetained == true || (record is null && retain && !passed && !withdrawn);
+            bool retentionEstablished = !ci && (attachedFailure || record?.FailureRetained == true || (record is null && retain && !passed && !withdrawn));
             bool cleanup = session is not null && !(PersistsAfterExit(command) && passed)
                 && holdsVerified && !retentionEstablished && record?.CleanupDisposition != "complete";
             if (cleanup && !ci && record is null)

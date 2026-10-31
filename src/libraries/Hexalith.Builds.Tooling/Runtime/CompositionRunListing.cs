@@ -125,6 +125,7 @@ public static class CompositionRunListing
     /// <returns>The retention label.</returns>
     internal static string Retention(CompositionRunState state, IReadOnlyList<CompositionAttachment>? attachments = null) => state.TestRun switch
     {
+        _ when state.ExecutionContext is { } context && context.ValueKind == System.Text.Json.JsonValueKind.Object && context.TryGetProperty("kind", out System.Text.Json.JsonElement kind) && kind.ValueKind == System.Text.Json.JsonValueKind.String && kind.GetString() == "ci" => "not-retained",
         _ when attachments?.Any(item => item.Outcome == "failed") == true => state.CleanupDisposition == "complete" ? "released" : "failure-retained",
         null => "unavailable",
         _ when state.CleanupDisposition == "complete" && state.TestRun.FailureRetained => "released",
