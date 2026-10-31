@@ -41,15 +41,20 @@ PACKAGE_FIELDS = {
 REQUIRED_PURPOSES = {
     "fresh EventStore qualifier build", "fresh EventStore support build",
     "real PostgreSQL two-sidecar stop/restart qualifier",
-    "21 exact deterministic support selectors", "strict EventStore capture validation",
+    "21 exact deterministic support selectors",
 }
 LOG_PROOFS = {
     "fresh EventStore qualifier build": ("Build succeeded.", "0 Error(s)"),
     "fresh EventStore support build": ("Build succeeded.", "0 Error(s)"),
     "real PostgreSQL two-sidecar stop/restart qualifier": ("Total: 1, Errors: 0, Failed: 0, Skipped: 0, Not Run: 0",),
     "21 exact deterministic support selectors": ("Total: 33, Errors: 0, Failed: 0, Skipped: 0, Not Run: 0",),
-    "strict EventStore capture validation": ("OQ8 capture validation passed.",),
 }
+QUALIFIER_TEST = ("Hexalith.EventStore.Server.LiveSidecar.Tests.Actors.IdempotencyAdmissionOq8PostgresqlTests."
+                  "ProductionMatrix_IndependentProcessesPreserveAuthorityReplayExpiryAndLeakageInvariants")
+CAPTURE_FILES = {"observations.json", "test-results.json", "deterministic-support.json"}
+SUPPORT_SELECTORS = 21
+SUPPORT_CASES = 33
+TOOLCHAIN_BASELINE = Path(__file__).with_name("runtime-toolchain-baseline-2026-10-01.json")
 SHA = re.compile(r"[0-9a-f]{64}")
 VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?")
 UTC = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
@@ -365,17 +370,68 @@ def audit(workspace: Path, policy_path: Path) -> dict[str, Any]:
     }
 
 
-def validate_receipts(workspace: Path, evidence_path: Path, qualification: dict[str, Any], runtime: str) -> None:
-    """Recheck the retained EventStore proof, not merely the compact summary."""
+def required_apphost_builds() -> dict[str, str]:
+    """Map each selected AppHost build purpose to the project file its command must compile."""
+    baseline = read_json(TOOLCHAIN_BASELINE)
+    projects = [item["path"] for item in baseline["pinAudit"]["appHostProjects"]]
+    projects += baseline["consumerInventory"]["fileBasedAppHosts"]
+    required = {}
+    for relative in projects:
+        path = Path(relative)
+        purpose = "AppHost build " + ("Hexalith.Platform" if path.suffix == ".cs" else path.parent.name)
+        require(purpose not in required, f"selected AppHost purpose is ambiguous: {purpose}")
+        required[purpose] = path.name
+    return required
+
+
+def retained_summary(document: dict[str, Any], label: str) -> dict[str, int]:
+    summary = document.get("summary")
+    require(isinstance(summary, dict) and set(summary) == {"tests", "passed", "failed", "skipped"}
+            and all(type(value) is int and value >= 0 for value in summary.values()),
+            f"retained {label} summary is malformed")
+    return {"total": summary["tests"], "passed": summary["passed"],
+            "failed": summary["failed"], "skipped": summary["skipped"]}
+
+
+def validate_retained_tests(directory: Path, tests: dict[str, Any]) -> None:
+    """Recheck qualifier 1/1 and support 33/33 from the retained test documents."""
+    focused = read_json(directory / "test-results.json")
+    require(retained_summary(focused, "qualifier") == {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+            "retained qualifier result did not pass exactly 1 of 1")
+    test = focused.get("test")
+    require(isinstance(test, dict) and test.get("name") == QUALIFIER_TEST and test.get("status") == "passed",
+            "retained qualifier identity or status drifted")
+    support = read_json(directory / "deterministic-support.json")
+    require(retained_summary(support, "support") == {"total": SUPPORT_CASES, "passed": SUPPORT_CASES, "failed": 0, "skipped": 0},
+            f"deterministic support did not pass all {SUPPORT_CASES} cases")
+    require("unrecognizedCases" not in support, "deterministic support retained unrecognized cases")
+    selectors = support.get("selectors")
+    methods = support.get("methods")
+    require(isinstance(selectors, list) and len(selectors) == len(set(selectors)) == SUPPORT_SELECTORS
+            and all(isinstance(item, str) and item.startswith("Hexalith.EventStore.Server.Tests.") for item in selectors),
+            f"deterministic support does not bind {SUPPORT_SELECTORS} exact selectors")
+    require(isinstance(methods, list) and all(isinstance(item, dict) for item in methods)
+            and [item.get("identity") for item in methods] == selectors,
+            "deterministic support methods do not match its selectors")
+    require(all(type(item.get("observedCases")) is int and item["observedCases"] >= 1
+                and item.get("passedCases") == item["observedCases"] for item in methods),
+            "a deterministic support selector was not observed passing")
+    require(sum(item["observedCases"] for item in methods) == SUPPORT_CASES,
+            "deterministic support method cases do not total the passed summary")
+    require(tests == {"qualifier": retained_summary(focused, "qualifier"), "support": retained_summary(support, "support")},
+            "compact test counts contradict the retained test documents")
+
+
+def validate_receipts(workspace: Path, evidence_path: Path, qualification: dict[str, Any]) -> None:
+    """Recheck the retained proof, not merely the compact summary."""
     receipts = qualification["receipts"]
     require(set(receipts) == {"captureDirectory", "files", "logs", "cleanup"}, "receipt fields drifted")
     directory = workspace_path(workspace, receipts["captureDirectory"])
     run_directory = evidence_path.resolve().parent
     require(directory == run_directory / "capture", "OQ8 capture is not in this result's run directory")
-    required_files = {"observations.json", "test-results.json", "deterministic-support.json", "capture-validation.json"}
     files = receipts["files"]
-    require(isinstance(files, list) and {item.get("name") for item in files} == required_files
-            and len(files) == len(required_files), "OQ8 capture receipt is incomplete")
+    require(isinstance(files, list) and {item.get("name") for item in files} == CAPTURE_FILES
+            and len(files) == len(CAPTURE_FILES), "OQ8 capture receipt is incomplete")
     for item in files:
         require(set(item) == {"name", "sha256"} and SHA.fullmatch(item["sha256"]),
                 "capture file receipt is malformed")
@@ -395,28 +451,8 @@ def validate_receipts(workspace: Path, evidence_path: Path, qualification: dict[
             log_text = path.read_text(encoding="utf-8")
             require(all(marker in log_text for marker in LOG_PROOFS[item["purpose"]]),
                     f"critical command log lacks pass proof: {item['purpose']}")
-    module_path = workspace / "references/Hexalith.EventStore/tools/validate-oq8-platform-evidence.py"
-    spec = importlib.util.spec_from_file_location("g6_oq8_capture_validator", module_path)
-    require(spec is not None and spec.loader is not None, "EventStore OQ8 validator is missing")
-    oq8 = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(oq8)
-    observations = directory / "observations.json"
-    focused = directory / "test-results.json"
-    support = directory / "deterministic-support.json"
-    receipt = read_json(directory / "capture-validation.json")
-    try:
-        oq8.validate_observations(observations, runtime, oq8.POSTGRES_IMAGE, expected_configuration="Debug")
-        oq8.validate_focused_document(read_json(focused), oq8.FOCUSED_CURRENT_COMMAND.replace("/Release/", "/Debug/"))
-        oq8.validate_support_document(read_json(support), oq8.SUPPORT_CURRENT_COMMAND.replace("/Release/", "/Debug/"))
-    except oq8.EvidenceError as error:
-        raise G6Error(f"retained EventStore OQ8 proof failed validation: {error}") from error
-    require(receipt == {
-        "schemaVersion": 1, "validation": "passed", "observationsSha256": file_hash(observations),
-        "testResultsSha256": file_hash(focused), "deterministicSupportSha256": file_hash(support),
-    }, "OQ8 capture validation receipt does not bind its proof")
-    summary = read_json(support)["summary"]
-    require(summary == {"tests": 33, "passed": 33, "failed": 0, "skipped": 0},
-            "deterministic support did not pass all 33 cases")
+    read_json(directory / "observations.json")
+    validate_retained_tests(directory, qualification["tests"])
     cleanup_receipt = receipts["cleanup"]
     require(set(cleanup_receipt) == {"path", "sha256"} and SHA.fullmatch(cleanup_receipt["sha256"]),
             "cleanup receipt is malformed")
@@ -490,8 +526,9 @@ def validate(workspace: Path, policy_path: Path, evidence_path: Path, release: b
     require("-method" in by_purpose["21 exact deterministic support selectors"]
             and "Server.Tests" in by_purpose["21 exact deterministic support selectors"],
             "deterministic support command identity drifted")
-    require("validate-oq8-platform-evidence.py" in by_purpose["strict EventStore capture validation"],
-            "OQ8 capture validation command identity drifted")
+    for purpose, project in required_apphost_builds().items():
+        require(purpose in by_purpose and "dotnet build" in by_purpose[purpose] and project in by_purpose[purpose],
+                f"selected AppHost build command missing or drifted: {purpose}")
     tests = qualification["tests"]
     require(set(tests) == {"qualifier", "support"}, "critical test result set drifted")
     for label, expected in (("qualifier", 1), ("support", 33)):
@@ -499,7 +536,7 @@ def validate(workspace: Path, policy_path: Path, evidence_path: Path, release: b
         require(set(result) == {"total", "passed", "failed", "skipped"} and result["total"] == expected
                 and result["passed"] == expected and result["failed"] == result["skipped"] == 0,
                 f"{label} failed, skipped, or unavailable")
-    validate_receipts(workspace, evidence_path, qualification, current["effectiveTuple"]["daprRuntime"])
+    validate_receipts(workspace, evidence_path, qualification)
     cleanup = qualification["cleanup"]
     require(set(cleanup) == {"ownedProcessesStopped", "scratchRemoved", "fixtureScratchRemoved",
                              "sharedResourcesUnchanged", "ownedContainersRemoved"}

@@ -17,7 +17,8 @@ WORKSPACE = TOOLS.parents[2]
 SPEC = importlib.util.spec_from_file_location("g6_current", TOOLS / "g6_current.py")
 G6 = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(G6)
-POLICY = TOOLS / "g6-current-policy.json"
+# The policy CI and release select; the legacy g6-current-policy.json still names the retired OQ8 validator.
+POLICY = TOOLS / "g6-current-policy-2026-10-20.json"
 HISTORICAL = WORKSPACE / "_bmad-output/implementation-artifacts/qualification-evidence/g-6-runtime-toolchain-20261001/attempt-16"
 
 
@@ -87,7 +88,7 @@ class CurrentG6Tests(unittest.TestCase):
         self.assertFalse(any(path.startswith("_bmad-output/") for path in observed))
 
     def test_historical_capture_revalidates_and_tamper_is_rejected(self) -> None:
-        names = ("observations.json", "test-results.json", "deterministic-support.json", "capture-validation.json")
+        names = ("observations.json", "test-results.json", "deterministic-support.json")
         directory = HISTORICAL / "capture"
         relative = directory.relative_to(WORKSPACE).as_posix()
         logs = []
@@ -103,18 +104,72 @@ class CurrentG6Tests(unittest.TestCase):
             "cleanup": {"path": (HISTORICAL / "cleanup.json").relative_to(WORKSPACE).as_posix(),
                         "sha256": G6.file_hash(HISTORICAL / "cleanup.json")},
         }, "cleanup": {field: True for field in ("ownedProcessesStopped", "scratchRemoved", "fixtureScratchRemoved",
-                                                   "sharedResourcesUnchanged", "ownedContainersRemoved")}}
-        G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", qualification, "1.18.2")
+                                                   "sharedResourcesUnchanged", "ownedContainersRemoved")},
+            "tests": {"qualifier": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+                      "support": {"total": 33, "passed": 33, "failed": 0, "skipped": 0}}}
+        self.assertFalse((WORKSPACE / "references/Hexalith.EventStore/tools/validate-oq8-platform-evidence.py").exists())
+        G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", qualification)
         broken = copy.deepcopy(qualification)
         broken["receipts"]["files"][0]["sha256"] = "0" * 64
         with self.assertRaisesRegex(G6.G6Error, "capture file changed"):
-            G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", broken, "1.18.2")
+            G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", broken)
         missing = copy.deepcopy(qualification)
         missing["receipts"]["files"].pop()
         with self.assertRaisesRegex(G6.G6Error, "incomplete"):
-            G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", missing, "1.18.2")
+            G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", missing)
+        retired = copy.deepcopy(qualification)
+        retired["receipts"]["files"].append({"name": "capture-validation.json",
+                                             "sha256": G6.file_hash(directory / "capture-validation.json")})
+        with self.assertRaisesRegex(G6.G6Error, "incomplete"):
+            G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", retired)
         with self.assertRaisesRegex(G6.G6Error, "not in this result's run directory"):
-            G6.validate_receipts(WORKSPACE, WORKSPACE / "forged-current-result.json", qualification, "1.18.2")
+            G6.validate_receipts(WORKSPACE, WORKSPACE / "forged-current-result.json", qualification)
+        for label, counts in (("qualifier", {"total": 1, "passed": 0, "failed": 1, "skipped": 0}),
+                              ("support", {"total": 21, "passed": 21, "failed": 0, "skipped": 0})):
+            with self.subTest(contradiction=label):
+                contradicted = copy.deepcopy(qualification)
+                contradicted["tests"][label] = counts
+                with self.assertRaisesRegex(G6.G6Error, "contradict the retained test documents"):
+                    G6.validate_receipts(WORKSPACE, HISTORICAL / "packet.json", contradicted)
+
+    def test_retained_test_documents_must_prove_exact_qualifier_and_support_passes(self) -> None:
+        source = HISTORICAL / "capture"
+        tests = {"qualifier": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+                 "support": {"total": 33, "passed": 33, "failed": 0, "skipped": 0}}
+        focused = json.loads((source / "test-results.json").read_text(encoding="utf-8"))
+        support = json.loads((source / "deterministic-support.json").read_text(encoding="utf-8"))
+        mutations = [
+            ("qualifier failed", "test-results.json",
+             lambda f, s: f["summary"].update(passed=0, failed=1), "exactly 1 of 1"),
+            ("qualifier identity", "test-results.json",
+             lambda f, s: f["test"].update(name="Hexalith.EventStore.Other"), "identity or status"),
+            ("qualifier status", "test-results.json",
+             lambda f, s: f["test"].update(status="skipped"), "identity or status"),
+            ("support skipped", "deterministic-support.json",
+             lambda f, s: s["summary"].update(passed=32, skipped=1), "all 33 cases"),
+            ("support unrecognized", "deterministic-support.json",
+             lambda f, s: s.update(unrecognizedCases=[{"identitySha256": "0" * 64, "status": "passed"}]), "unrecognized"),
+            ("support selector dropped", "deterministic-support.json",
+             lambda f, s: s.update(selectors=s["selectors"][:-1]), "21 exact selectors"),
+            ("support selector unobserved", "deterministic-support.json",
+             lambda f, s: s["methods"][0].update(observedCases=0, passedCases=0), "observed passing"),
+            ("support case total", "deterministic-support.json",
+             lambda f, s: s["methods"][0].update(observedCases=s["methods"][0]["observedCases"] + 1,
+                                                 passedCases=s["methods"][0]["passedCases"] + 1), "do not total"),
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "test-results.json").write_text(json.dumps(focused), encoding="utf-8")
+            (directory / "deterministic-support.json").write_text(json.dumps(support), encoding="utf-8")
+            G6.validate_retained_tests(directory, tests)
+            for label, _, mutation, message in mutations:
+                with self.subTest(label=label):
+                    altered_focused, altered_support = copy.deepcopy(focused), copy.deepcopy(support)
+                    mutation(altered_focused, altered_support)
+                    (directory / "test-results.json").write_text(json.dumps(altered_focused), encoding="utf-8")
+                    (directory / "deterministic-support.json").write_text(json.dumps(altered_support), encoding="utf-8")
+                    with self.assertRaisesRegex(G6.G6Error, message):
+                        G6.validate_retained_tests(directory, tests)
 
     def test_recomputed_digest_cannot_turn_21_cases_or_stale_source_into_qualification(self) -> None:
         source = {"rootSha": "a" * 40, "gitlinks": []}
@@ -133,10 +188,15 @@ class CurrentG6Tests(unittest.TestCase):
             "fresh EventStore support build": "dotnet build tests/Hexalith.EventStore.Server.Tests/Hexalith.EventStore.Server.Tests.csproj",
             "real PostgreSQL two-sidecar stop/restart qualifier": "dotnet LiveSidecar.Tests.dll -method ProductionMatrix_IndependentProcessesPreserveAuthorityReplayExpiryAndLeakageInvariants",
             "21 exact deterministic support selectors": "dotnet Server.Tests.dll -method Server.Tests.Selector",
-            "strict EventStore capture validation": "python3 tools/validate-oq8-platform-evidence.py",
         }
+        self.assertNotIn("strict EventStore capture validation", G6.REQUIRED_PURPOSES)
         commands = [{"purpose": purpose, "command": examples[purpose], "exitCode": 0}
                     for purpose in sorted(G6.REQUIRED_PURPOSES)]
+        apphosts = G6.required_apphost_builds()
+        self.assertEqual(10, len(apphosts))
+        self.assertEqual("apphost.cs", apphosts["AppHost build Hexalith.Platform"])
+        commands += [{"purpose": purpose, "command": f"dotnet build [workspace]/selected/{project} --configuration Debug",
+                      "exitCode": 0} for purpose, project in sorted(apphosts.items())]
         evidence = {
             "schema": "hexalith.g6-current-evidence.v1", "audit": copy.deepcopy(current),
             "qualification": {
@@ -178,6 +238,13 @@ class CurrentG6Tests(unittest.TestCase):
                 ("cleanup failed", lambda x: x["qualification"]["cleanup"].update(scratchRemoved=False)),
                 ("owner decision missing", lambda x: x["approval"].update(decision="pending")),
                 ("execution SHA changed", lambda x: x["qualification"]["environment"].update(buildsExecutionSha="0" * 40)),
+                ("AppHost build missing", lambda x: x["qualification"].update(commands=[
+                    item for item in x["qualification"]["commands"] if item["purpose"] != "AppHost build Hexalith.Projects.AppHost"])),
+                ("AppHost build failed", lambda x: next(item for item in x["qualification"]["commands"]
+                                                        if item["purpose"] == "AppHost build Hexalith.Platform").update(exitCode=1)),
+                ("AppHost build retargeted", lambda x: next(item for item in x["qualification"]["commands"]
+                                                            if item["purpose"] == "AppHost build Hexalith.Conversations.AppHost").update(
+                    command="dotnet build [workspace]/selected/Other.AppHost.csproj")),
             ]
             for label, mutation in mutations:
                 with self.subTest(label=label):
