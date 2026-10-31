@@ -12,6 +12,7 @@ import signal
 import stat
 import subprocess  # nosec B404 -- fixed module tool, checked paths and allowlisted single-token option values.
 import sys
+import uuid
 
 _spec = importlib.util.spec_from_file_location(
     "prepare_module_build", Path(__file__).parents[1] / "prepare-module-build" / "prepare_module_build.py"
@@ -239,8 +240,10 @@ def finalize(root: Path, receipt: Path, evidence: Path, timeout: int = 150, job_
     verify_tool(root)
     environment = os.environ.copy()
     environment["HEXALITH_CI_JOB_STATUS"] = job_status
-    completed = subprocess.run(  # nosec B603 # nosemgrep -- fixed tool/options; strictly validated ASCII run id.
-        TOOL + ["down", "--run-id=" + owner["runId"], "--output=json"],
+    run_id = uuid.UUID(hex=owner["runId"]).hex
+    command = TOOL + ["down", "--run-id=" + run_id, "--output=json"]
+    completed = subprocess.run(
+        command,  # nosec B603 # nosemgrep -- fixed tool/options; canonical128-bit run identity only.
         cwd=root,
         capture_output=True,
         text=True,

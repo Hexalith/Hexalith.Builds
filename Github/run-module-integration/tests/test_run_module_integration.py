@@ -126,6 +126,25 @@ class IntegrationTests(unittest.TestCase):
         self.assertTrue((self.evidence / "test-result.json").exists())
         self.assertNotIn("private-key-sentinel", str([p.read_text() for p in self.evidence.iterdir()]))
 
+    def test_cleanup_keeps_leading_zeroes_in_the_exact_canonical_owner_identity(self):
+        self.owner["runId"] = "00000000000000001234567890abcdef"
+        self.write_receipt()
+        with patch.object(helper, "verify_tool"), patch.object(
+            helper.subprocess, "run", return_value=self.down_result()
+        ) as process:
+            self.assertEqual(helper.finalize(self.root, self.receipt, self.evidence), 0)
+        self.assertEqual(
+            process.call_args.args[0],
+            helper.TOOL
+            + [
+                "down",
+                "--run-id=00000000000000001234567890abcdef",
+                "--output=json",
+            ],
+        )
+        result = json.loads((self.evidence / "cleanup.json").read_text())
+        self.assertEqual(result["runId"], self.owner["runId"])
+
     def test_constructor_time_cancellation_is_forwarded_after_child_assignment(self):
         forwarded = []
 
