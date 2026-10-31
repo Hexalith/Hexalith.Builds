@@ -582,6 +582,9 @@ function Set-EvidenceContentAndRefreshInventory {
 try {
     $null = New-Item -ItemType Directory -Path (Join-Path $sourceRepositoryRoot 'Tools') -Force
     $null = New-Item -ItemType Directory -Path (Join-Path $sourceRepositoryRoot 'test') -Force
+    $null = New-Item -ItemType Directory -Path (Join-Path $sourceRepositoryRoot 'Props') -Force
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../Props/Directory.Packages.props') `
+        -Destination (Join-Path $sourceRepositoryRoot 'Props/Directory.Packages.props') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'publish-g4-tool-packages.ps1') `
         -Destination $publisherPath -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'G4PackageQualification.functions.ps1') `
@@ -729,6 +732,19 @@ try {
         $content = ($evidence | ConvertTo-Json -Depth 12) + "`n"
         Set-EvidenceContentAndRefreshInventory -Inventory $Inventory -PackageDirectory $PackageDirectory `
             -RelativePath $relativePath -Content $content
+    }
+    Invoke-RejectionCase -PublishedVersion '9.8.101' -ExpectedMessage 'does not match its exact typed outcome' -Mutate {
+        param($Inventory, $PackageDirectory)
+        # Rebinding all packaged evidence and its hashes cannot make the previous
+        # SDK pin replace the current trusted catalog selection.
+        foreach ($name in @('packaged-down-evidence', 'packaged-test-evidence', 'packaged-unavailable-evidence')) {
+            $relativePath = "qualification-evidence/$name.json"
+            $path = Join-Path $PackageDirectory $relativePath
+            $evidence = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+            $evidence.topology.platform.eventStoreVersion = '3.128.4'
+            Set-EvidenceContentAndRefreshInventory -Inventory $Inventory -PackageDirectory $PackageDirectory `
+                -RelativePath $relativePath -Content (($evidence | ConvertTo-Json -Depth 12) + "`n")
+        }
     }
     Invoke-RejectionCase -PublishedVersion '9.8.22' -ExpectedMessage "does not contain required command 'dotnet tool run hexalith-evidence -- validate'" -Mutate {
         param($Inventory, $PackageDirectory)

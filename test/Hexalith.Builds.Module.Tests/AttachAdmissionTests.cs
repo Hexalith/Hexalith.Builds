@@ -1012,7 +1012,7 @@ public sealed class AttachAdmissionTests
 
         using System.Diagnostics.Process observer = System.Diagnostics.Process.GetProcessById(run.Session!.AppHost.Id);
         CompositionEngine engine = new(run.Options);
-        ModuleTestRunRecord first = (await engine.ReadCommittedOutcomeAsync(run.Session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+        ModuleTestRunRecord first = (await engine.ReadCommittedOutcomeAsync(run.Session.RunId, TestContext.Current.CancellationToken, waitForLock: true).ConfigureAwait(true)).ShouldNotBeNull();
         string directory = Path.Combine(run.Options.StateDirectory, "diagnostics", run.Session.RunId);
         FileStream cancellationGate = await OpenOutcomeGateAsync(directory).ConfigureAwait(true);
         await using System.Runtime.CompilerServices.ConfiguredAsyncDisposable cancellationGateLifetime = cancellationGate.ConfigureAwait(true);

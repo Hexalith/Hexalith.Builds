@@ -219,7 +219,7 @@ public sealed class ExecutableDescriptorLoaderTests
                     eventStoreVersion = SupportedPlatformPins.EventStoreVersion,
                     daprRuntimeVersion = SupportedPlatformPins.DaprRuntimeVersion,
                     daprSdkVersion = "1.19.0",
-                    frontComposerVersion = "4.7.2",
+                    frontComposerVersion = SupportedPlatformPins.FrontComposerVersion,
                 },
                 profiles = new
                 {

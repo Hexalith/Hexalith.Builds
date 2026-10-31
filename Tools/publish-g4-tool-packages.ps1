@@ -259,6 +259,15 @@ if ($currentSourceTree.Revision -cne [string]$qualifiedSourceTree.revision) {
 }
 $qualifiedSourceRevision = [string]$qualifiedSourceTree.revision
 
+# The verified clean source is the SDK authority for the packages being published.
+# Never derive the expected SDK from the evidence artifact being validated.
+$qualifiedCatalog = [xml][IO.File]::ReadAllText((Join-Path $repositoryRoot 'Props/Directory.Packages.props'))
+$qualifiedSdkPins = @($qualifiedCatalog.SelectNodes('/Project/PropertyGroup/HexalithEventStoreVersion'))
+if ($qualifiedSdkPins.Count -ne 1 -or $qualifiedSdkPins[0].InnerText -cnotmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$') {
+    throw 'The qualified source catalog must declare one canonical EventStore version.'
+}
+$qualifiedEventStoreVersion = $qualifiedSdkPins[0].InnerText
+
 $fixtureBinding = $qualification.fixtures
 if ($null -eq $fixtureBinding -or
     [string]$fixtureBinding.mode -cne 'repository-tracked' -or
@@ -358,26 +367,26 @@ $null = Assert-ModuleRunEvidenceContent -FilePath $sourceEvidencePath `
     -ExpectedCommand "hexalith-module test --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json --profile full --filter-sha256 $readinessFilterHash" `
     -ExpectedToolVersion '0.0.0-contract' `
     -ExpectedRepositoryRevision '0123456789abcdef0123456789abcdef01234567' -ExpectedRepositoryDirtyMarker 'clean' `
-    -ExpectedManifestHash $moduleManifestHash
+    -ExpectedManifestHash $moduleManifestHash -ExpectedEventStoreVersion $qualifiedEventStoreVersion
 
 $null = Assert-ModuleRunEvidenceContent `
     -FilePath $evidencePathsByName['qualification-evidence/packaged-down-evidence.json'] `
     -ExpectedFinalStatus 'completed' -ExpectedExitCode 0 -ExpectedRuleId $null -ExpectedPhase 'None' -ExpectedCategory 'None' `
     -ExpectedCommand "hexalith-module down --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json --filter-sha256 $packagedFilterHash" `
     -ExpectedToolVersion $packagedToolVersion -ExpectedRepositoryRevision 'unavailable' -ExpectedRepositoryDirtyMarker 'dirty' `
-    -ExpectedManifestHash $moduleManifestHash
+    -ExpectedManifestHash $moduleManifestHash -ExpectedEventStoreVersion $qualifiedEventStoreVersion
 $null = Assert-ModuleRunEvidenceContent `
     -FilePath $evidencePathsByName['qualification-evidence/packaged-test-evidence.json'] `
     -ExpectedFinalStatus 'unavailable' -ExpectedExitCode 2 -ExpectedRuleId 'HXR003' -ExpectedPhase 'Prerequisite' -ExpectedCategory 'PrerequisiteUnavailable' `
     -ExpectedCommand 'hexalith-module test --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json --profile full' `
     -ExpectedToolVersion $packagedToolVersion -ExpectedRepositoryRevision 'unavailable' -ExpectedRepositoryDirtyMarker 'dirty' `
-    -ExpectedManifestHash $moduleManifestHash
+    -ExpectedManifestHash $moduleManifestHash -ExpectedEventStoreVersion $qualifiedEventStoreVersion
 $null = Assert-ModuleRunEvidenceContent `
     -FilePath $evidencePathsByName['qualification-evidence/packaged-unavailable-evidence.json'] `
     -ExpectedFinalStatus 'unavailable' -ExpectedExitCode 2 -ExpectedRuleId 'HXR003' -ExpectedPhase 'Prerequisite' -ExpectedCategory 'PrerequisiteUnavailable' `
     -ExpectedCommand 'hexalith-module run --manifest test/fixtures/module/positive/hexalith.module-manifest.v1.json' `
     -ExpectedToolVersion $packagedToolVersion -ExpectedRepositoryRevision 'unavailable' -ExpectedRepositoryDirtyMarker 'dirty' `
-    -ExpectedManifestHash $moduleManifestHash
+    -ExpectedManifestHash $moduleManifestHash -ExpectedEventStoreVersion $qualifiedEventStoreVersion
 
 $null = Assert-QualificationEvidenceContent `
     -FilePath $evidencePathsByName['qualification-evidence/packaged-down-output.json'] -Kind Positive `
