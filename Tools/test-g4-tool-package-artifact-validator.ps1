@@ -381,8 +381,8 @@ try {
         package = @{ id = 'Hexalith.Builds.Module.Cli'; version = '0.0.0-contract'; sha256 = (Get-FileHash $seedPackage -Algorithm SHA256).Hash }
         seed = @{ entry = $seedEntry; sha256 = $seedHash; loadedSha256 = $seedHash }
         checks = @(
-            @{ declarative = $false; discoveryStatusCode = 200; projectionSubscriptionCount = 1; subscriptionPubsubName = 'configured-seed-events'; receiverPresent = $true; receiverTopicMetadataCount = 1; receiverPubsubName = 'configured-seed-events'; startupIndexWriterAliasRemoved = $true },
-            @{ declarative = $true; discoveryStatusCode = 404; projectionSubscriptionCount = 0; subscriptionPubsubName = $null; receiverPresent = $true; receiverTopicMetadataCount = 0; receiverPubsubName = $null; startupIndexWriterAliasRemoved = $true }
+            @{ declarative = $false; discoveryStatusCode = 200; missingChannelStatusCode = 401; invalidChannelStatusCode = 401; projectionSubscriptionCount = 1; subscriptionPubsubName = 'configured-seed-events'; receiverPresent = $true; receiverTopicMetadataCount = 1; receiverPubsubName = 'configured-seed-events'; startupIndexWriterAliasRemoved = $true },
+            @{ declarative = $true; discoveryStatusCode = 404; missingChannelStatusCode = 401; invalidChannelStatusCode = 401; projectionSubscriptionCount = 0; subscriptionPubsubName = $null; receiverPresent = $true; receiverTopicMetadataCount = 0; receiverPubsubName = $null; startupIndexWriterAliasRemoved = $true }
         )
     }
     $seedProofText = $seedProof | ConvertTo-Json -Depth 8
@@ -401,6 +401,19 @@ try {
             $target.$name = @(for ($index = 0; $index -lt $arraySize; $index++) { $value })
             [IO.File]::WriteAllText($seedProofPath, (ConvertTo-Json -InputObject $mutated -Depth 8))
             Test-Throws -Name "$field rejects $arraySize-element array" -ExpectedMessageFragment 'scalar string identities' -ScriptBlock {
+                $null = Assert-PackagedSeedSubscriptionEvidence -FilePath $seedProofPath -PackagePath $seedPackage -Version '0.0.0-contract'
+            }
+        }
+    }
+    foreach ($field in @('missingChannelStatusCode', 'invalidChannelStatusCode')) {
+        foreach ($fault in @('missing', 'wrong', 'string', 'array')) {
+            $mutated = $seedProofText | ConvertFrom-Json
+            if ($fault -eq 'missing') { $mutated.checks[0].PSObject.Properties.Remove($field) }
+            elseif ($fault -eq 'wrong') { $mutated.checks[0].$field = 200 }
+            elseif ($fault -eq 'string') { $mutated.checks[0].$field = '401' }
+            else { $mutated.checks[0].$field = @(401, 401) }
+            [IO.File]::WriteAllText($seedProofPath, (ConvertTo-Json -InputObject $mutated -Depth 8))
+            Test-Throws -Name "$field rejects $fault security observation" -ExpectedMessageFragment 'exact typed HTTP' -ScriptBlock {
                 $null = Assert-PackagedSeedSubscriptionEvidence -FilePath $seedProofPath -PackagePath $seedPackage -Version '0.0.0-contract'
             }
         }

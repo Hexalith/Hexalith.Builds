@@ -405,8 +405,8 @@ function New-PackageInventory {
                     package = @{ id = 'Hexalith.Builds.Module.Cli'; version = $PublishedVersion; sha256 = (Get-FileHash -LiteralPath (Join-Path $packageDirectory "Hexalith.Builds.Module.Cli.$PublishedVersion.nupkg") -Algorithm SHA256).Hash }
                     seed = @{ entry = 'tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll'; sha256 = $seedHash; loadedSha256 = $seedHash }
                     checks = @(
-                        @{ declarative = $false; discoveryStatusCode = 200; actorDiscoveryStatusCode = 200; missingChannelStatusCode = 401; wrongChannelStatusCode = 401; projectionSubscriptionCount = 1; subscriptionPubsubName = 'configured-seed-events'; receiverPresent = $true; receiverTopicMetadataCount = 1; receiverPubsubName = 'configured-seed-events'; startupIndexWriterAliasRemoved = $true },
-                        @{ declarative = $true; discoveryStatusCode = 404; actorDiscoveryStatusCode = 200; missingChannelStatusCode = 401; wrongChannelStatusCode = 401; projectionSubscriptionCount = 0; subscriptionPubsubName = $null; receiverPresent = $true; receiverTopicMetadataCount = 0; receiverPubsubName = $null; startupIndexWriterAliasRemoved = $true }
+                        @{ declarative = $false; discoveryStatusCode = 200; missingChannelStatusCode = 401; invalidChannelStatusCode = 401; projectionSubscriptionCount = 1; subscriptionPubsubName = 'configured-seed-events'; receiverPresent = $true; receiverTopicMetadataCount = 1; receiverPubsubName = 'configured-seed-events'; startupIndexWriterAliasRemoved = $true },
+                        @{ declarative = $true; discoveryStatusCode = 404; missingChannelStatusCode = 401; invalidChannelStatusCode = 401; projectionSubscriptionCount = 0; subscriptionPubsubName = $null; receiverPresent = $true; receiverTopicMetadataCount = 0; receiverPubsubName = $null; startupIndexWriterAliasRemoved = $true }
                     )
                 } | ConvertTo-Json -Depth 8
             }
@@ -760,6 +760,9 @@ try {
     # Jointly refresh inventory hashes so these controls exercise proof semantics,
     # rather than succeeding merely because the outer evidence hash went stale.
     $seedMutations = @(
+        @{ Change = { param($proof) $proof.checks[0].missingChannelStatusCode = 200 }; Message = 'exact typed HTTP' },
+        @{ Change = { param($proof) $proof.checks[1].invalidChannelStatusCode = '401' }; Message = 'exact typed HTTP' },
+        @{ Change = { param($proof) $proof.checks[0].PSObject.Properties.Remove('missingChannelStatusCode') }; Message = 'exact typed HTTP' },
         @{ Change = { param($proof) $proof.package.sha256 = '0' * 64 }; Message = 'does not bind the exact package' },
         @{ Change = { param($proof) $proof.seed.loadedSha256 = '0' * 64 }; Message = 'does not bind the exact package' },
         @{ Change = { param($proof) $proof.seed.sha256 = '0' * 64 }; Message = 'does not bind the exact package' },
@@ -768,9 +771,6 @@ try {
         @{ Change = { param($proof) $proof.checks = @($proof.checks[0], $proof.checks[0]) }; Message = 'both modes exactly once' },
         @{ Change = { param($proof) $proof.checks = @($proof.checks[0]) }; Message = 'both modes exactly once' },
         @{ Change = { param($proof) $proof.checks[1].declarative = 'true' }; Message = 'both modes exactly once' },
-        @{ Change = { param($proof) $proof.checks[0].actorDiscoveryStatusCode = '200' }; Message = 'exact typed HTTP' },
-        @{ Change = { param($proof) $proof.checks[0].missingChannelStatusCode = 200 }; Message = 'exact typed HTTP' },
-        @{ Change = { param($proof) $proof.checks[1].wrongChannelStatusCode = 200 }; Message = 'exact typed HTTP' },
         @{ Change = { param($proof) $proof.checks[0].discoveryStatusCode = '200' }; Message = 'exact typed HTTP' },
         @{ Change = { param($proof) $proof.checks[1].discoveryStatusCode = 200 }; Message = 'exact typed HTTP' },
         @{ Change = { param($proof) $proof.checks[0].projectionSubscriptionCount = 2 }; Message = 'exact typed HTTP' },

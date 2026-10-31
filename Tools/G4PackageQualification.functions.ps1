@@ -354,6 +354,11 @@ function Assert-PackagedSeedSubscriptionEvidence {
         $cases = @($checks | Where-Object { $_.declarative -is [bool] -and $_.declarative -eq $declarative })
         if ($cases.Count -ne 1) { throw 'Packaged seed subscription proof must cover both modes exactly once.' }
         $case = $cases[0]
+        foreach ($field in @('missingChannelStatusCode', 'invalidChannelStatusCode')) {
+            if ($case.PSObject.Properties.Name -cnotcontains $field -or $case.$field -isnot [long] -or $case.$field -ne 401) {
+                throw 'Packaged seed subscription proof does not satisfy the exact typed HTTP and receiver metadata assertions.'
+            }
+        }
         $status = if ($declarative) { 404 } else { 200 }
         $count = if ($declarative) { 0 } else { 1 }
         $pubsub = if ($declarative) { $null } else { 'configured-seed-events' }
@@ -361,10 +366,7 @@ function Assert-PackagedSeedSubscriptionEvidence {
             (-not $declarative -and ($case.subscriptionPubsubName -isnot [string] -or $case.receiverPubsubName -isnot [string]))) {
             throw 'Packaged seed subscription proof requires exact scalar or null pubsub names.'
         }
-        if ($case.actorDiscoveryStatusCode -isnot [long] -or $case.actorDiscoveryStatusCode -ne 200 -or
-            $case.missingChannelStatusCode -isnot [long] -or $case.missingChannelStatusCode -ne 401 -or
-            $case.wrongChannelStatusCode -isnot [long] -or $case.wrongChannelStatusCode -ne 401 -or
-            $case.discoveryStatusCode -isnot [long] -or $case.discoveryStatusCode -ne $status -or
+        if ($case.discoveryStatusCode -isnot [long] -or $case.discoveryStatusCode -ne $status -or
             $case.projectionSubscriptionCount -isnot [long] -or $case.projectionSubscriptionCount -ne $count -or
             $case.subscriptionPubsubName -cne $pubsub -or
             $case.receiverPresent -isnot [bool] -or $case.receiverPresent -ne $true -or

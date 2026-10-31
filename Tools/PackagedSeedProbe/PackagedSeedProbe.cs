@@ -91,18 +91,19 @@ internal static class PackagedSeedProbe
     public static async Task<(bool Passed, object Observation)> CheckAsync<TEntryPoint>(bool declarative)
         where TEntryPoint : class
     {
-        string channelToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        string channelToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        string signingKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
         WebApplicationFactory<TEntryPoint> sourceFactory = new();
         await using ConfiguredAsyncDisposable sourceLifetime = sourceFactory.ConfigureAwait(false);
         WebApplicationFactory<TEntryPoint> factory = sourceFactory.WithWebHostBuilder(builder => builder.UseEnvironment("Development").ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["Dapr:DeclarativeSubscriptions"] = declarative.ToString(),
             ["APP_API_TOKEN"] = channelToken,
+            ["Dapr:DeclarativeSubscriptions"] = declarative.ToString(),
             ["EventStore:ProjectionChanges:PubSubName"] = "configured-seed-events",
             ["EventStore:OpenApi:Enabled"] = "false",
             ["Authentication:JwtBearer:Issuer"] = "hexalith-test",
             ["Authentication:JwtBearer:Audience"] = "hexalith-eventstore",
-            ["Authentication:JwtBearer:SigningKey"] = "test-only-seed-subscription-signing-key-at-least-32-bytes",
+            ["Authentication:JwtBearer:SigningKey"] = signingKey,
             ["Authentication:JwtBearer:AllowedAlgorithms:0"] = "HS256",
             ["Authentication:JwtBearer:RequireHttpsMetadata"] = "false",
         })).ConfigureServices(services =>
@@ -117,10 +118,20 @@ internal static class PackagedSeedProbe
         await using ConfiguredAsyncDisposable factoryLifetime = factory.ConfigureAwait(false);
         using HttpClient client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
-        using HttpResponseMessage response = await GetWithChannelAsync(client, "/dapr/subscribe", channelToken, timeout.Token).ConfigureAwait(false);
-        using HttpResponseMessage actorDiscovery = await GetWithChannelAsync(client, "/dapr/config", channelToken, timeout.Token).ConfigureAwait(false);
-        using HttpResponseMessage missingChannel = await client.GetAsync(new Uri("/dapr/config", UriKind.Relative), timeout.Token).ConfigureAwait(false);
-        using HttpResponseMessage wrongChannel = await GetWithChannelAsync(client, "/dapr/config", "wrong-" + channelToken, timeout.Token).ConfigureAwait(false);
+        using HttpRequestMessage missingRequest = new(HttpMethod.Post, new Uri("/projections/changed", UriKind.Relative))
+        {
+            Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+        };
+        using HttpResponseMessage missingChannel = await client.SendAsync(missingRequest, timeout.Token).ConfigureAwait(false);
+        using HttpRequestMessage invalidRequest = new(HttpMethod.Post, new Uri("/projections/changed", UriKind.Relative))
+        {
+            Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+        };
+        invalidRequest.Headers.Add("dapr-api-token", "invalid-" + channelToken);
+        using HttpResponseMessage invalidChannel = await client.SendAsync(invalidRequest, timeout.Token).ConfigureAwait(false);
+        using HttpResponseMessage untokened = await client.GetAsync(new Uri("/dapr/subscribe", UriKind.Relative), timeout.Token).ConfigureAwait(false);
+        client.DefaultRequestHeaders.Add("dapr-api-token", channelToken);
+        using HttpResponseMessage response = await client.GetAsync(new Uri("/dapr/subscribe", UriKind.Relative), timeout.Token).ConfigureAwait(false);
         RouteEndpoint receiver = factory.Services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>()
             .Single(endpoint => endpoint.RoutePattern.RawText == "projections/changed");
         object[] topics = [.. receiver.Metadata.Where(item => item.GetType().GetInterfaces().Any(type => type.FullName == "Dapr.ITopicMetadata"))];
@@ -137,19 +148,19 @@ internal static class PackagedSeedProbe
                 : null;
         }
 
-        bool subscriptionPassed = declarative
+        bool protectedReceiver = (int)missingChannel.StatusCode == 401 && (int)invalidChannel.StatusCode == 401
+            && (int)untokened.StatusCode == (declarative ? 404 : 401);
+        bool passed = protectedReceiver && (declarative
             ? (int)response.StatusCode == 404 && topics.Length == 0
-            : (int)response.StatusCode == 200 && subscriptionCount == 1 && subscriptionPubsub == "configured-seed-events" && topics.Length == 1 && receiverPubsub == "configured-seed-events";
+            : (int)response.StatusCode == 200 && subscriptionCount == 1 && subscriptionPubsub == "configured-seed-events" && topics.Length == 1 && receiverPubsub == "configured-seed-events");
 
-        bool passed = subscriptionPassed && (int)actorDiscovery.StatusCode == 200
-            && (int)missingChannel.StatusCode == 401 && (int)wrongChannel.StatusCode == 401;
         return (passed, new
         {
             declarative,
             discoveryStatusCode = (int)response.StatusCode,
-            actorDiscoveryStatusCode = (int)actorDiscovery.StatusCode,
+            untokenedDiscoveryStatusCode = (int)untokened.StatusCode,
             missingChannelStatusCode = (int)missingChannel.StatusCode,
-            wrongChannelStatusCode = (int)wrongChannel.StatusCode,
+            invalidChannelStatusCode = (int)invalidChannel.StatusCode,
             projectionSubscriptionCount = subscriptionCount,
             subscriptionPubsubName = subscriptionPubsub,
             receiverPresent = true,
@@ -157,19 +168,6 @@ internal static class PackagedSeedProbe
             receiverPubsubName = receiverPubsub,
             startupIndexWriterAliasRemoved = true,
         });
-    }
-
-    /// <summary>Sends the probe's own temporary application-channel credential without retaining it.</summary>
-    /// <param name="client">The loaded package host's client.</param>
-    /// <param name="path">The exact host endpoint.</param>
-    /// <param name="channelToken">The probe-owned application-channel credential.</param>
-    /// <param name="cancellationToken">The original bounded probe token.</param>
-    /// <returns>The response, owned by the caller.</returns>
-    private static async Task<HttpResponseMessage> GetWithChannelAsync(HttpClient client, string path, string channelToken, CancellationToken cancellationToken)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Get, new Uri(path, UriKind.Relative));
-        request.Headers.Add("dapr-api-token", channelToken);
-        return await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Extracts and binds one packaged entry point without source-host resolution.</summary>

@@ -1,0 +1,151 @@
+{
+  "schema": "hexalith.builds.seed-http-security-verification.v1",
+  "status": "passed-local-affected-checks",
+  "upstreamMain": "2132fe0e276059dcd9fc35a7115fd2a1795ce538",
+  "preservedPullRequest": 147,
+  "preservedHead": "e2b2c34552cfabb22a2e8ab6ee6d7e663982dba6",
+  "sdkPackages": "3.129.0",
+  "scopeSha256": {
+    "src/hosts/Hexalith.Builds.Module.EventStoreHost/Program.cs": "86bd473dada55943afc9dcba58a65a093edc627a9769fa00d34084d367a25fe6",
+    "Tools/PackagedSeedProbe/PackagedSeedProbe.cs": "3d7b84069a7561f7a6111b435d413ae49efc46e4d62686ff2f3a6c2a90f19d48",
+    "Tools/G4PackageQualification.functions.ps1": "32d8ecbf93c3cb9f60780471260c63bcc2411f4dba2252a33077441f10bd3e13",
+    "Tools/test-publish-g4-tool-packages.ps1": "c7a2b7d64c555ff74bbc119f8cd41594799b6622d15eda90b32031356d3d97b9",
+    "Tools/test-g4-tool-package-artifact-validator.ps1": "811ca080ad3cc1908bdef8c1773fdc699ac0e4b2095df695ee4329f5a6ec0223",
+    "Tools/README.md": "4c12482fa1653bfd8529d76aef5ab988a4fdf13a1170f8647b2be0d663f6ee48"
+  },
+  "checks": [
+    {
+      "id": "host_release_build",
+      "command": "dotnet build src/hosts/Hexalith.Builds.Module.EventStoreHost/Hexalith.Builds.Module.EventStoreHost.csproj --configuration Release --disable-build-servers -m:1 -warnaserror -p:GeneratePackageOnBuild=false",
+      "exitCode": 0,
+      "logSha256": "079da5eb9646ba42c4555375471bce5b06fd3f9f768cce14b886b90679991d7b",
+      "observations": {
+        "warnings": 0,
+        "errors": 0
+      }
+    },
+    {
+      "id": "reconciled_probe_debug_build",
+      "command": "dotnet build Tools/PackagedSeedProbe/PackagedSeedProbe.csproj --configuration Debug --disable-build-servers -m:1 -warnaserror -p:GeneratePackageOnBuild=false",
+      "exitCode": 0,
+      "logSha256": "207640a337b163b108ef333b0e1fc7930186c26f6161d21e4a6b8d00324d89a1",
+      "observations": {
+        "warnings": 0,
+        "errors": 0
+      }
+    },
+    {
+      "id": "artifact_validator",
+      "command": "pwsh -NoProfile -File Tools/test-g4-tool-package-artifact-validator.ps1",
+      "exitCode": 0,
+      "logSha256": "ddaf275b81747857203b9e8e3e16260a0260bfefba67e3aead35e4078a3aeed9",
+      "observations": {
+        "scenarios": 71
+      }
+    },
+    {
+      "id": "publisher_matrix",
+      "command": "pwsh -NoProfile -File Tools/test-publish-g4-tool-packages.ps1",
+      "exitCode": 0,
+      "logSha256": "5c79084d9923da0a5de83294168771dea07f1daf4616335b3a8ea4b669b76a1c",
+      "observations": {
+        "suite": "passed"
+      }
+    },
+    {
+      "id": "package_contracts",
+      "command": "pwsh -NoProfile -File Tools/test-g4-tool-package-contracts.ps1 -Version 0.0.0-ci.41217160786 -RequireControls -SkipSourceValidation -RetainPackageDirectory",
+      "exitCode": 0,
+      "logSha256": "77e159d4b35394a9591c2562284a026ebbf9efc51cf51da66de8d5fff0c8e4c9",
+      "observations": {
+        "controls": "executed",
+        "sourceValidation": "skipped",
+        "releaseEligible": false,
+        "source": "213 plus reviewed six-path patch before retaining the concurrent discovery observation"
+      }
+    },
+    {
+      "id": "reconciled_actual_archive_probe",
+      "command": "pwsh -NoProfile -File Tools/test-g4-packaged-seed-subscriptions.ps1 -PackagePath /tmp/hexalith-builds-g4-packages-7277b7bd2ba445cb818d66590a859a7c/Hexalith.Builds.Module.Cli.0.0.0-ci.41217160786.nupkg -Version 0.0.0-ci.41217160786 -OutputPath /tmp/builds147-seed-focused-proof.json",
+      "exitCode": 0,
+      "logSha256": "083bb72686298b72932ed3009bb5418b8f605aeeebc1775940e1f7089a799ce0",
+      "observations": {
+        "modes": 2,
+        "retainedConcurrentDiscoveryNegative": true
+      }
+    }
+  ],
+  "actualArchiveObservation": {
+    "schema": "hexalith.g4-packaged-seed-subscriptions.v1",
+    "status": "passed",
+    "package": {
+      "id": "Hexalith.Builds.Module.Cli",
+      "version": "0.0.0-ci.41217160786",
+      "sha256": "C73890CFFDF2AC5E9B5F137B0D1D995768B36537565CC497A3A4BDC0FC63C919"
+    },
+    "seed": {
+      "entry": "tools/net10.0/any/g4-host/bin/EventStoreHost/Hexalith.Builds.Module.EventStoreHost.dll",
+      "sha256": "877FD634787EC84345D43F2E9179B2D7E6B0FEAFBA28E89F718824061967A40D",
+      "loadedSha256": "877FD634787EC84345D43F2E9179B2D7E6B0FEAFBA28E89F718824061967A40D"
+    },
+    "checks": [
+      {
+        "declarative": false,
+        "discoveryStatusCode": 200,
+        "untokenedDiscoveryStatusCode": 401,
+        "missingChannelStatusCode": 401,
+        "invalidChannelStatusCode": 401,
+        "projectionSubscriptionCount": 1,
+        "subscriptionPubsubName": "configured-seed-events",
+        "receiverPresent": true,
+        "receiverTopicMetadataCount": 1,
+        "receiverPubsubName": "configured-seed-events",
+        "startupIndexWriterAliasRemoved": true
+      },
+      {
+        "declarative": true,
+        "discoveryStatusCode": 404,
+        "untokenedDiscoveryStatusCode": 404,
+        "missingChannelStatusCode": 401,
+        "invalidChannelStatusCode": 401,
+        "projectionSubscriptionCount": 0,
+        "subscriptionPubsubName": null,
+        "receiverPresent": true,
+        "receiverTopicMetadataCount": 0,
+        "receiverPubsubName": null,
+        "startupIndexWriterAliasRemoved": true
+      }
+    ]
+  },
+  "proofSha256": "5aed6e4488ccc7cd74fd2f35ef801a1310aba5eabbc1f121573a6ab6cf855db6",
+  "packageInventorySha256": "06c44a8e17e3b48ffc02fb2463ec8ea3dac85f3a31989c4f88f04d7778694f68",
+  "limits": [
+    "Local nonpublishing CI-equivalent package gate deliberately skips source validation and has dirty inputs; it is not a release receipt.",
+    "MVC metadata probe starts no Dapr sidecar; it verifies actual packaged host startup, channel refusal and mapper metadata, not broker delivery.",
+    "Existing single startup index-writer hosted alias removal remains asserted; no authentication or catalog service is replaced.",
+    "Historical operator receipts, upstream585/213 changes and existing PR147 discovery assertions are preserved."
+  ],
+  "cleanup": {
+    "mvcFactoriesDisposed": true,
+    "sourceAndConsumerTempDirectoriesRemovedByGate": true,
+    "retainedArchivesIntentional": true,
+    "resourcesStarted": 0
+  },
+  "requiredMainChecks": [
+    "Codacy Static Code Analysis",
+    "SonarCloud Code Analysis",
+    "commitlint / commitlint"
+  ],
+  "humanApprovalsRequired": 0,
+  "mergeMethod": "squash",
+  "commitlint": {
+    "version": "21.2.4",
+    "candidate": "fix(g4): enroll packaged seed http security\n\nEnroll the packaged EventStore host with shared SDK HTTP security.\nAuthenticate discovery and require missing and invalid channel\ncredentials to fail before publishing qualified tool archives.\n",
+    "command": "/home/administrator/.nvm/versions/node/v24.22.1/bin/node /home/administrator/projects/hexalith/parties/references/Hexalith.Builds/node_modules/@commitlint/cli/cli.js --config commitlint.config.mjs --edit /tmp/builds213-seed-commit-message.txt --verbose",
+    "exitCode": 0,
+    "problems": 0,
+    "warnings": 0,
+    "logSha256": "6320456d0a805c78b48f8a803b0bfff6cd8e049f98f9989c9b148076dabea3bf",
+    "normalGitHooks": "effective core.hooksPath unset; commit uses normal Git hook execution without bypass"
+  }
+}
