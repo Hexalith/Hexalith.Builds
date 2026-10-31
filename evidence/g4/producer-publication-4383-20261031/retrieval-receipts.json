@@ -1,0 +1,105 @@
+{
+  "schema": "hexalith.producer-evidence-retrieval.v1",
+  "receipts": [
+    {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/actions/runs/40669428503"
+      ],
+      "startedAtUtc": "2026-10-31T22:34:07.130831+00:00",
+      "endedAtUtc": "2026-10-31T22:34:07.455847+00:00",
+      "exitCode": 0,
+      "responseFile": "evidence/g4/producer-publication-4383-20261031/observations/ci-run.json",
+      "responseSizeBytes": 12945,
+      "responseSha256": "3572c65bcc24b2f483a2b595fdf30c79f240d068a049a3a315b4ee93c53c75f8",
+      "authentication": "existing authenticated gh profile; no auth bypass"
+    },
+    {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/actions/runs/40669428503/artifacts"
+      ],
+      "startedAtUtc": "2026-10-31T22:34:07.456150+00:00",
+      "endedAtUtc": "2026-10-31T22:34:07.792618+00:00",
+      "exitCode": 0,
+      "responseFile": "evidence/g4/producer-publication-4383-20261031/observations/ci-artifacts.json",
+      "responseSizeBytes": 32,
+      "responseSha256": "244563f989470892c537c9a4622920af0d228ee4528f7d00c64a06d6cd95856c",
+      "authentication": "existing authenticated gh profile; no auth bypass"
+    },
+    {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/actions/runs/40673566658"
+      ],
+      "startedAtUtc": "2026-10-31T22:34:07.792855+00:00",
+      "endedAtUtc": "2026-10-31T22:34:08.161095+00:00",
+      "exitCode": 0,
+      "responseFile": "evidence/g4/producer-publication-4383-20261031/observations/release-run.json",
+      "responseSizeBytes": 12567,
+      "responseSha256": "f266430fe9775db0c5dfa8d5d15988d44ce71f810dde200af5769e08d685c4ba",
+      "authentication": "existing authenticated gh profile; no auth bypass"
+    },
+    {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/actions/runs/40673566658/artifacts"
+      ],
+      "startedAtUtc": "2026-10-31T22:34:08.161376+00:00",
+      "endedAtUtc": "2026-10-31T22:34:08.464320+00:00",
+      "exitCode": 0,
+      "responseFile": "evidence/g4/producer-publication-4383-20261031/observations/release-artifacts.json",
+      "responseSizeBytes": 32,
+      "responseSha256": "244563f989470892c537c9a4622920af0d228ee4528f7d00c64a06d6cd95856c",
+      "authentication": "existing authenticated gh profile; no auth bypass"
+    },
+    {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/releases/tags/v4.38.3"
+      ],
+      "startedAtUtc": "2026-10-31T22:34:08.464548+00:00",
+      "endedAtUtc": "2026-10-31T22:34:08.839563+00:00",
+      "exitCode": 0,
+      "responseFile": "evidence/g4/producer-publication-4383-20261031/observations/release-assets.json",
+      "responseSizeBytes": 3915,
+      "responseSha256": "bbb15294ea604a1aba3850f52ec9502481e48a626c0a16d4b688452dedf06eca",
+      "authentication": "existing authenticated gh profile; no auth bypass"
+    },
+    {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/git/ref/tags/v4.38.3"
+      ],
+      "startedAtUtc": "2026-10-31T22:34:08.839815+00:00",
+      "endedAtUtc": "2026-10-31T22:34:09.188831+00:00",
+      "exitCode": 0,
+      "responseFile": "evidence/g4/producer-publication-4383-20261031/observations/release-tag.json",
+      "responseSizeBytes": 353,
+      "responseSha256": "2acf5e60abb19f03ea73a2269446dd39fb91062da2317c58eb9a2829b3b67ac7",
+      "authentication": "existing authenticated gh profile; no auth bypass"
+    },
+    {
+      "command": [
+        "gh",
+        "api",
+        "repos/Hexalith/Hexalith.Builds/releases/assets/684839586",
+        "-H",
+        "Accept: application/octet-stream"
+      ],
+      "startedAtUtc": "2026-10-31T22:34:09.189097+00:00",
+      "endedAtUtc": "2026-10-31T22:34:09.541496+00:00",
+      "exitCode": 0,
+      "responseFile": "evidence/g4/producer-publication-4383-20261031/original-inventory.json",
+      "responseSizeBytes": 74432,
+      "responseSha256": "2421408b564af44ba75a83670aee147d21347d09ed5b823d091c24a6dbc29b5e",
+      "authentication": "existing authenticated gh profile; no auth bypass"
+    }
+  ]
+}

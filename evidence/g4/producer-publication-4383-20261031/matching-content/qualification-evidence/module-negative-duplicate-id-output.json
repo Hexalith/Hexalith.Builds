@@ -1,0 +1,1 @@
+{"status":"failed","outcome":{"exitCode":"UsageOrManifest","phase":"Manifest","category":"Manifest","ruleId":"HXM003"},"diagnostics":[{"ruleId":"HXM003","phase":"Manifest","category":"Manifest","message":"The manifest contains a duplicate deterministic identifier.","field":"modules.id","hint":"Use unique deterministic identifiers.","source":null,"location":null,"row":null}]}

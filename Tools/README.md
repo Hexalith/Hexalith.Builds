@@ -141,6 +141,11 @@ semantic-release so publisher contract tests retain their default attempt count.
 A payload mismatch fails immediately. If the feed added a repository signature,
 every unsigned payload entry must match.
 
+Producer qualification bytes are now retained with their inventory and run identity.
+See the [4.38.3 recovery and successor handoff](../docs/producer-qualification-evidence-4383-handoff.md)
+for the original publication gap, recovered content, remaining missing files and
+separately authorized publication actions.
+
 `verify-g4-tool-release.ps1` checks the target feed credential and qualifies
 the actual semantic-release version before a release tag is created. The
 release workflow requires successful push CI for the exact current branch SHA

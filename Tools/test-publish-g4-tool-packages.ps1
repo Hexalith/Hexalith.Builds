@@ -15,6 +15,12 @@ $publisherPath = Join-Path $sourceRepositoryRoot 'Tools/publish-g4-tool-packages
 $packageIds = @('Hexalith.Builds.Evidence.Cli', 'Hexalith.Builds.Module.Cli')
 $originalGitHubToken = $env:GITHUB_TOKEN
 $originalNuGetApiKey = $env:NUGET_API_KEY
+$carrierEnvironmentNames = @('GITHUB_SHA', 'GITHUB_REPOSITORY', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT',
+    'GITHUB_JOB', 'GITHUB_WORKFLOW_REF', 'GITHUB_WORKFLOW_SHA', 'GITHUB_EVENT_NAME')
+$originalCarrierEnvironment = @{}
+foreach ($name in $carrierEnvironmentNames) {
+    $originalCarrierEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
+}
 $global:HexalithG4PublisherTestInvocations = [System.Collections.Generic.List[string]]::new()
 $global:HexalithG4PublisherRemoteDirectory = $null
 $global:HexalithG4PublisherRemoteDownloads = 0
@@ -467,6 +473,10 @@ function New-PackageInventory {
     $inventoryPath = Join-Path $packageDirectory 'g4-tool-package-inventory.json'
     [System.IO.File]::WriteAllText($inventoryPath, ($inventory | ConvertTo-Json -Depth 5), [System.Text.UTF8Encoding]::new($false))
 
+    $null = & python3 (Join-Path $sourceRepositoryRoot 'Tools/archive-g4-qualification-evidence.py') `
+        --package-directory $packageDirectory --kind release
+    if ($LASTEXITCODE -ne 0) { throw 'Could not prepare the offline publisher fixture carrier.' }
+
     return $packageDirectory
 }
 
@@ -587,6 +597,8 @@ try {
         -Destination (Join-Path $sourceRepositoryRoot 'Props/Directory.Packages.props') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'publish-g4-tool-packages.ps1') `
         -Destination $publisherPath -Force
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'archive-g4-qualification-evidence.py') `
+        -Destination (Join-Path $sourceRepositoryRoot 'Tools/archive-g4-qualification-evidence.py') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'G4PackageQualification.functions.ps1') `
         -Destination (Join-Path $sourceRepositoryRoot 'Tools/G4PackageQualification.functions.ps1') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../test/fixtures') `
@@ -602,6 +614,16 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Could not stage the isolated publisher-test source fixture.' }
     & git -C $sourceRepositoryRoot commit --quiet -m 'test: create publisher source fixture'
     if ($LASTEXITCODE -ne 0) { throw 'Could not commit the isolated publisher-test source fixture.' }
+
+    # Offline fixture identities only; no workflow is dispatched by these tests.
+    $env:GITHUB_SHA = (& git -C $sourceRepositoryRoot rev-parse HEAD).Trim()
+    $env:GITHUB_REPOSITORY = 'Hexalith/Hexalith.Builds'
+    $env:GITHUB_RUN_ID = '123'
+    $env:GITHUB_RUN_ATTEMPT = '1'
+    $env:GITHUB_JOB = 'release'
+    $env:GITHUB_WORKFLOW_REF = 'Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/main'
+    $env:GITHUB_WORKFLOW_SHA = $env:GITHUB_SHA
+    $env:GITHUB_EVENT_NAME = 'workflow_dispatch'
 
     $env:NUGET_API_KEY = 'stable-test-token'
     $env:GITHUB_TOKEN = $null
@@ -853,6 +875,15 @@ try {
         $package.nupkg.sizeBytes = (Get-Item -LiteralPath $path).Length
     }
 
+    Invoke-RejectionCase -PublishedVersion '9.8.35' -ExpectedMessage 'Qualification evidence carrier failed validation' -Mutate {
+        param($Inventory, $PackageDirectory)
+        Remove-Item -LiteralPath (Join-Path $PackageDirectory 'g4-tool-qualification-evidence.zip')
+    }
+    Invoke-RejectionCase -PublishedVersion '9.8.36' -ExpectedMessage 'Qualification evidence carrier failed validation' -Mutate {
+        param($Inventory, $PackageDirectory)
+        [IO.File]::WriteAllText((Join-Path $PackageDirectory 'g4-tool-qualification-evidence.zip'), 'truncated offline carrier')
+    }
+
     # Source-tree cleanliness is evaluated immediately before publication. Keep
     # this scenario last because its deliberate tracked-file edit makes all later
     # inventories ineligible until the isolated repository is removed.
@@ -865,6 +896,9 @@ try {
 finally {
     $env:GITHUB_TOKEN = $originalGitHubToken
     $env:NUGET_API_KEY = $originalNuGetApiKey
+    foreach ($name in $carrierEnvironmentNames) {
+        [Environment]::SetEnvironmentVariable($name, $originalCarrierEnvironment[$name])
+    }
     Remove-Item Function:\dotnet -Force -ErrorAction SilentlyContinue
     Remove-Item Function:\Invoke-RestMethod -Force -ErrorAction SilentlyContinue
     Remove-Item Function:\Invoke-WebRequest -Force -ErrorAction SilentlyContinue

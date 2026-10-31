@@ -1,0 +1,6 @@
+2026-10-28T10:33:05.5060480Z ##[group]Run pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -RequireControls -SkipSourceValidation
+2026-10-28T10:34:11.7254376Z   Successfully created package '/tmp/hexalith-builds-g4-packages-3edeea625f664c7b99360e445fac2ea4/Hexalith.Builds.Module.Cli.0.0.0-ci.521.nupkg'.
+2026-10-28T10:34:11.7255267Z   Successfully created package '/tmp/hexalith-builds-g4-packages-3edeea625f664c7b99360e445fac2ea4/Hexalith.Builds.Module.Cli.0.0.0-ci.521.snupkg'.
+2026-10-28T10:34:11.7259384Z   Successfully created package '/tmp/hexalith-builds-g4-packages-3edeea625f664c7b99360e445fac2ea4/Hexalith.Builds.Evidence.Cli.0.0.0-ci.521.nupkg'.
+2026-10-28T10:34:11.7260040Z   Successfully created package '/tmp/hexalith-builds-g4-packages-3edeea625f664c7b99360e445fac2ea4/Hexalith.Builds.Evidence.Cli.0.0.0-ci.521.snupkg'.
+2026-10-28T10:36:04.5214560Z Packed G-4 tool contract qualification passed for version '0.0.0-ci.521'; inventory recorded at '/tmp/hexalith-builds-g4-packages-3edeea625f664c7b99360e445fac2ea4/g4-tool-package-inventory.json'.

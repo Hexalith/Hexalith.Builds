@@ -234,8 +234,31 @@ jobs:
       # missing control fixture or a broken packaged CLI fails on the pull
       # request rather than at release time.
       - name: Qualify G-4 tool source and Release packages
+        id: g4_qualification
         shell: pwsh
-        run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -RequireControls -SkipSourceValidation
+        run: pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -PackageDirectory artifacts/g4-ci-qualification -RetainPackageDirectory -RequireControls -SkipSourceValidation
+
+      - name: Archive CI qualification evidence
+        run: python3 Tools/archive-g4-qualification-evidence.py --package-directory artifacts/g4-ci-qualification --kind ci
+
+      - name: Record CI qualification attempt
+        if: always()
+        env:
+          G4_PRODUCER_STEP_OUTCOME: ${{ steps.g4_qualification.outcome }}
+        run: python3 Tools/archive-g4-qualification-evidence.py --package-directory artifacts/g4-ci-qualification --kind ci --record-attempt
+
+      - name: Retain CI qualification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: g4-ci-qualification-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/g4-ci-qualification/producer-attempt.json
+            artifacts/g4-ci-qualification/g4-tool-qualification-evidence.zip
+            artifacts/g4-ci-qualification/g4-tool-package-inventory.json
+            artifacts/g4-ci-qualification/qualification-evidence/
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Test multi-platform container publisher contracts
         shell: pwsh
@@ -264,6 +287,9 @@ jobs:
 
       - name: Test self-CI required status
         run: python3 Tools/test-self-ci.py
+
+      - name: Test qualification evidence retention
+        run: python3 Tools/test-archive-g4-qualification-evidence.py
 
       - name: Test qualification file boundaries
         run: |

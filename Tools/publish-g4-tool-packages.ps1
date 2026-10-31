@@ -492,6 +492,14 @@ $null = Assert-PackagedSeedSubscriptionEvidence `
     -FilePath $evidencePathsByName['qualification-evidence/packaged-seed-subscriptions.json'] `
     -PackagePath (Join-Path $packageDirectoryPath "Hexalith.Builds.Module.Cli.$Version.nupkg") -Version $Version
 
+# A configured GitHub asset glob alone does not require a readable carrier.
+# Recheck it against the same inventory and run before the first package push.
+& python3 (Join-Path $PSScriptRoot 'archive-g4-qualification-evidence.py') `
+    --package-directory $packageDirectoryPath --kind release --verify
+if ($LASTEXITCODE -ne 0) {
+    throw 'Qualification evidence carrier failed validation; publication is blocked.'
+}
+
 if ($Version.Contains('-', [System.StringComparison]::Ordinal)) {
     $source = 'https://nuget.pkg.github.com/Hexalith/index.json'
     $apiKey = $env:GITHUB_TOKEN

@@ -32,6 +32,10 @@
             {
               "path": "artifacts/g4-tool-packages/**/g4-tool-package-inventory.json",
               "label": "G-4 tool package SHA-256 inventory"
+            },
+            {
+              "path": "artifacts/g4-tool-packages/**/g4-tool-qualification-evidence.zip",
+              "label": "G-4 qualification evidence, inventory and producer run identity"
             }
           ]
         }

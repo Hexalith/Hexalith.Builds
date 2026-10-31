@@ -1,0 +1,217 @@
+{
+  "schema": "hexalith.producer-publication-correction-validation.v1",
+  "recordedAtUtc": "2026-10-31T22:38:51.263398+00:00",
+  "baseRevision": "d8d0d70f26d79c95b544a64a74e329149711cb7d",
+  "completionScope": "local producer correction, matching-content recovery and reviewable successor handoff",
+  "localCorrection": "PASS",
+  "original4383Qualification": "BLOCKED",
+  "originalRunProvenance": "UNVERIFIED",
+  "declaredFiles": 55,
+  "matchingContentFiles": 50,
+  "unavailableFiles": 5,
+  "verifiedOriginalRunCarriers": 0,
+  "commands": [
+    {
+      "command": "python3 Tools/test-archive-g4-qualification-evidence.py",
+      "exitCode": 0,
+      "state": "PASS",
+      "stdout": {
+        "sizeBytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      },
+      "stderr": {
+        "sizeBytes": 2056,
+        "sha256": "8c7488a21f13891d7dab922c85289fa011ee63cddf86207705693c475033493d",
+        "text": "test_archive_preserves_exact_bytes_names_and_run_identity (__main__.CarrierTests.test_archive_preserves_exact_bytes_names_and_run_identity) ... ok\ntest_existing_carrier_is_never_overwritten (__main__.CarrierTests.test_existing_carrier_is_never_overwritten) ... ok\ntest_failed_attempt_records_diagnostic_identity_without_qualification_credit (__main__.CarrierTests.test_failed_attempt_records_diagnostic_identity_without_qualification_credit) ... ok\ntest_interrupted_archive_never_leaves_a_final_or_staged_carrier (__main__.CarrierTests.test_interrupted_archive_never_leaves_a_final_or_staged_carrier) ... ok\ntest_rechecks_real_source_cleanliness (__main__.CarrierTests.test_rechecks_real_source_cleanliness) ... ok\ntest_rejects_ambiguous_inventory_and_untyped_source_identity (__main__.CarrierTests.test_rejects_ambiguous_inventory_and_untyped_source_identity) ... ok\ntest_rejects_changed_hash_size_empty_duplicate_or_unsafe_inventory (__main__.CarrierTests.test_rejects_changed_hash_size_empty_duplicate_or_unsafe_inventory) ... ok\ntest_rejects_dirty_source_and_missing_or_mismatched_run_identity (__main__.CarrierTests.test_rejects_dirty_source_and_missing_or_mismatched_run_identity) ... ok\ntest_rejects_ineligible_release_but_labels_ci_without_promoting_it (__main__.CarrierTests.test_rejects_ineligible_release_but_labels_ci_without_promoting_it) ... ok\ntest_rejects_missing_extra_or_symlink_evidence (__main__.CarrierTests.test_rejects_missing_extra_or_symlink_evidence) ... ok\ntest_rejects_symlinked_ancestor_and_inconsistent_event_identity (__main__.CarrierTests.test_rejects_symlinked_ancestor_and_inconsistent_event_identity) ... ok\ntest_verification_rejects_missing_truncated_changed_and_extra_members (__main__.CarrierTests.test_verification_rejects_missing_truncated_changed_and_extra_members) ... ok\ntest_workflows_retain_carriers_and_release_publishes_it (__main__.CarrierTests.test_workflows_retain_carriers_and_release_publishes_it) ... ok\n\n----------------------------------------------------------------------\nRan 13 tests in 0.071s\n\nOK\n"
+      }
+    },
+    {
+      "command": "python3 Tools/test-self-ci.py",
+      "exitCode": 0,
+      "state": "PASS",
+      "stdout": {
+        "sizeBytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      },
+      "stderr": {
+        "sizeBytes": 98,
+        "sha256": "39ad57a413c8f0a83fc15ea84df7e3eb05a06e5e606e5c70d3e7cdb3c331b6e1",
+        "text": ".\n----------------------------------------------------------------------\nRan 1 test in 1.128s\n\nOK\n"
+      }
+    },
+    {
+      "command": "pwsh -NoProfile -File Tools/test-g4-release-contract.ps1",
+      "exitCode": 0,
+      "state": "PASS",
+      "stdout": {
+        "sizeBytes": 63,
+        "sha256": "5f5b33b89af45f74f8747c75894d5082846041561a0c3edf39f7859379bf1b75",
+        "text": "G-4 release lifecycle and pre-tag credential contracts passed.\n"
+      },
+      "stderr": {
+        "sizeBytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      }
+    },
+    {
+      "command": "pwsh -NoProfile -File Tools/test-publish-g4-tool-packages.ps1",
+      "exitCode": 0,
+      "state": "PASS",
+      "stdout": {
+        "sizeBytes": 9899,
+        "sha256": "f70483fe9892712e8c3ee325a45e0e1e03446be2e88dbce37afa17f71b873877",
+        "text": "/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/9.8.7/g4-tool-qualification-evidence.zip\nPublishing the verified G-4 tool package inventory to NuGet.org stable release.\nVerified remote 'Hexalith.Builds.Evidence.Cli' '9.8.7' SHA-256 1D7515F3818CBE26140F7EA6DC52F1D025FE5EA864AEBA21EAA47AD6A3F23922 (qualified local SHA-256 1D7515F3818CBE26140F7EA6DC52F1D025FE5EA864AEBA21EAA47AD6A3F23922).\nVerified remote 'Hexalith.Builds.Module.Cli' '9.8.7' SHA-256 DBAA37F7CAABA522DEF14B4640EE7E0FC6C263CBD64CE75E9E7840AF2CF3A93F (qualified local SHA-256 DBAA37F7CAABA522DEF14B4640EE7E0FC6C263CBD64CE75E9E7840AF2CF3A93F).\n/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/9.8.30/g4-tool-qualification-evidence.zip\nPublishing the verified G-4 tool package inventory to NuGet.org stable release.\nVerified remote 'Hexalith.Builds.Evidence.Cli' '9.8.30' SHA-256 1CC59A0E329749E16F3D642D934C8B550E4879CD7465FC39E35EF7A22CE5D66A (qualified local SHA-256 7DC354058EA54866BBDBAB406F9762E46488170BCD8C75BC0E5EB00C76397BCD).\nVerified remote 'Hexalith.Builds.Module.Cli' '9.8.30' SHA-256 E7A575E20F0C4974D38571AD4E85254746BA79E7A083F14D1C73E0618ABC750A (qualified local SHA-256 6079B4C5958AFAA59350ADD668C1A9E9725E1B58B72A43C193E98BA0EA61F268).\n/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/9.8.32/g4-tool-qualification-evidence.zip\nPublishing the verified G-4 tool package inventory to NuGet.org stable release.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.32' is not available yet (attempt 1 of 45); waiting 20s for repository signing to publish the package blob.\nVerified remote 'Hexalith.Builds.Evidence.Cli' '9.8.32' SHA-256 E2E2B06E5719524436B50782806D0C50A50B299BCF38E7E5DDC00F6F81B85288 (qualified local SHA-256 E2E2B06E5719524436B50782806D0C50A50B299BCF38E7E5DDC00F6F81B85288).\nRemote 'Hexalith.Builds.Module.Cli' '9.8.32' is not available yet (attempt 1 of 45); waiting 20s for repository signing to publish the package blob.\nVerified remote 'Hexalith.Builds.Module.Cli' '9.8.32' SHA-256 A9E966E1AB61341F76278328760200BEACC99C4CD8965D69C22028291B07F2EB (qualified local SHA-256 A9E966E1AB61341F76278328760200BEACC99C4CD8965D69C22028291B07F2EB).\n/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/9.8.33/g4-tool-qualification-evidence.zip\nPublishing the verified G-4 tool package inventory to NuGet.org stable release.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 1 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 2 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 3 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 4 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 5 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 6 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 7 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 8 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 9 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 10 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 11 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 12 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 13 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 14 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 15 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 16 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 17 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 18 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 19 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 20 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 21 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 22 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 23 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 24 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 25 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 26 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 27 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 28 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 29 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 30 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 31 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 32 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 33 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 34 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 35 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 36 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 37 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 38 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 39 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 40 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 41 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 42 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 43 of 45); waiting 20s for repository signing to publish the package blob.\nRemote 'Hexalith.Builds.Evidence.Cli' '9.8.33' is not available yet (attempt 44 of 45); waiting 20s for repository signing to publish the package blob.\n/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/9.8.31/g4-tool-qualification-evidence.zip\nPublishing the verified G-4 tool package inventory to NuGet.org stable release.\n/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/9.8.7-preview.1/g4-tool-qualification-evidence.zip\nPublishing the verified G-4 tool package inventory to GitHub Packages prerelease.\nVerified remote 'Hexalith.Builds.Evidence.Cli' '9.8.7-preview.1' SHA-256 47269C5AC0899A0CB0139F84A9AE442EB95102800D418CA4A136C345501B21D1 (qualified local SHA-256 47269C5AC0899A0CB0139F84A9AE442EB95102800D418CA4A136C345501B21D1).\nVerified remote 'Hexalith.Builds.Module.Cli' '9.8.7-preview.1' SHA-256 F428EECD04023F15C113476B145BDDDB4F4C31F818161BCCCBD7B148F3C890B2 (qualified local SHA-256 F428EECD04023F15C113476B145BDDDB4F4C31F818161BCCCBD7B148F3C890B2).\nG-4 tool package publisher checks passed.\n"
+      },
+      "stderr": {
+        "sizeBytes": 1629,
+        "sha256": "14791913feee282d4fe957bf5d1a307bdb49deee6aaae27dd25d3e009c8833ef",
+        "text": "Traceback (most recent call last):\n  File \"/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/source/Tools/archive-g4-qualification-evidence.py\", line 161, in <module>\n    print(operation(args.package_directory, args.kind))\n          ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/source/Tools/archive-g4-qualification-evidence.py\", line 144, in verify_archive\n    with zipfile.ZipFile(path) as archive:\n         ~~~~~~~~~~~~~~~^^^^^^\n  File \"/usr/lib/python3.14/zipfile/__init__.py\", line 1453, in __init__\n    self.fp = io.open(file, filemode)\n              ~~~~~~~^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/9.8.35/g4-tool-qualification-evidence.zip'\nTraceback (most recent call last):\n  File \"/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/source/Tools/archive-g4-qualification-evidence.py\", line 161, in <module>\n    print(operation(args.package_directory, args.kind))\n          ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/hexalith-g4-publisher-7a6da04aa0254e66ba953a6b766481dd/source/Tools/archive-g4-qualification-evidence.py\", line 144, in verify_archive\n    with zipfile.ZipFile(path) as archive:\n         ~~~~~~~~~~~~~~~^^^^^^\n  File \"/usr/lib/python3.14/zipfile/__init__.py\", line 1471, in __init__\n    self._RealGetContents()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/zipfile/__init__.py\", line 1538, in _RealGetContents\n    raise BadZipFile(\"File is not a zip file\")\nzipfile.BadZipFile: File is not a zip file\n"
+      }
+    },
+    {
+      "command": "actionlint .github/workflows/ci.yml .github/workflows/build-release.yml",
+      "exitCode": 0,
+      "state": "PASS",
+      "stdout": {
+        "sizeBytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      },
+      "stderr": {
+        "sizeBytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      }
+    },
+    {
+      "command": "python3 evidence/g4/producer-publication-4383-20261031/verify-recovery.py",
+      "exitCode": 0,
+      "state": "PASS",
+      "stdout": {
+        "sizeBytes": 162,
+        "sha256": "bbb31fa3fca7da2fdb7acbb25237b89e21a6c50d6c99bf6e3a9a38a8ab92aca8",
+        "text": "PASS: 55 exact inventory rows; 50 recovered byte matches; 5 explicitly unavailable; run/source/carrier identities checked. Original-run recovery remains BLOCKED.\n"
+      },
+      "stderr": {
+        "sizeBytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "text": ""
+      }
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0,
+      "state": "PASS"
+    }
+  ],
+  "additionalChecks": {
+    "installedPinnedSemanticReleaseAssetGlob": "PASS",
+    "independentBlindReview": "10 findings patched; numeric-job mapping clarified; no deferred findings",
+    "consumerStoryLifecycle": "unchanged draft/backlog; ACTIVE hold",
+    "broadConsumerRegression": "separate outstanding gate; not run by producer correction",
+    "conversationsHistoricalStoryEvidenceAndCompletionContracts": "not-applicable to this freeform Builds change"
+  },
+  "publication": {
+    "ciDispatched": false,
+    "published": false,
+    "committed": false,
+    "authorization": "separate authorization required"
+  },
+  "exactChangedPathBoundary": {
+    "state": "PASS",
+    "paths": 86,
+    "missing": [],
+    "unexpected": [],
+    "rawGitlinkChanges": []
+  },
+  "preservation": {
+    "state": "PASS",
+    "checks": [
+      {
+        "repository": "/home/administrator/projects/hexalith/builds",
+        "state": "PASS",
+        "head": "d8d0d70f26d79c95b544a64a74e329149711cb7d",
+        "preservedPreexistingTrackedFiles": 3112,
+        "rawMode160000GitlinksAndCheckoutRevisions": {
+          "references/Hexalith.AI.Tools": {
+            "gitlink": "9b78aa008cfc62cd88ad0ea4b39b1f07311956ce",
+            "checkout": "9b78aa008cfc62cd88ad0ea4b39b1f07311956ce"
+          }
+        },
+        "consumerWorkingTreePreserved": null
+      },
+      {
+        "repository": "/home/administrator/projects/hexalith/conversations",
+        "state": "PASS",
+        "head": "8a26cb03ee1d5413c034eb60aee71618f3ebd31a",
+        "preservedPreexistingTrackedFiles": 43487,
+        "rawMode160000GitlinksAndCheckoutRevisions": {
+          "references/Hexalith.AI.Tools": {
+            "gitlink": "9b78aa008cfc62cd88ad0ea4b39b1f07311956ce",
+            "checkout": "9b78aa008cfc62cd88ad0ea4b39b1f07311956ce"
+          },
+          "references/Hexalith.Builds": {
+            "gitlink": "96dc22928af914ed22d44789090dd2f65c9e598e",
+            "checkout": "96dc22928af914ed22d44789090dd2f65c9e598e"
+          },
+          "references/Hexalith.Commons": {
+            "gitlink": "0604bcf5304fc09a569f7abbd8e5d1b9049c02b7",
+            "checkout": "0604bcf5304fc09a569f7abbd8e5d1b9049c02b7"
+          },
+          "references/Hexalith.EventStore": {
+            "gitlink": "e92e6694a93c79531368fa3bbf6c06462fd05484",
+            "checkout": "e92e6694a93c79531368fa3bbf6c06462fd05484"
+          },
+          "references/Hexalith.Folders": {
+            "gitlink": "a5f1cd8bebba3f09d698ea6682b1531179bb3a3b",
+            "checkout": "a5f1cd8bebba3f09d698ea6682b1531179bb3a3b"
+          },
+          "references/Hexalith.FrontComposer": {
+            "gitlink": "2255fb8a7fc135a04769c7b9df0f14de3796fb19",
+            "checkout": "2255fb8a7fc135a04769c7b9df0f14de3796fb19"
+          },
+          "references/Hexalith.McpCli": {
+            "gitlink": "e74d215739766a663cb9e910f4534f383e7973ff",
+            "checkout": "e74d215739766a663cb9e910f4534f383e7973ff"
+          },
+          "references/Hexalith.Memories": {
+            "gitlink": "0ae7faee14bf20e280e9c5bb23ff763dbda64382",
+            "checkout": "0ae7faee14bf20e280e9c5bb23ff763dbda64382"
+          },
+          "references/Hexalith.Parties": {
+            "gitlink": "f9757d94a9e3f144d250b21f295b903c00d5f412",
+            "checkout": "f9757d94a9e3f144d250b21f295b903c00d5f412"
+          },
+          "references/Hexalith.Platform": {
+            "gitlink": "2030542f8e7e25f97b2ee106e8074dedeefda9f5",
+            "checkout": "2030542f8e7e25f97b2ee106e8074dedeefda9f5"
+          },
+          "references/Hexalith.Projects": {
+            "gitlink": "f99cbe784fc77d82291c14ef3cbf86368f7b1863",
+            "checkout": "f99cbe784fc77d82291c14ef3cbf86368f7b1863"
+          },
+          "references/Hexalith.Tenants": {
+            "gitlink": "8919dd0c5bca3e505ed3de25c37f8326f9e8b814",
+            "checkout": "8919dd0c5bca3e505ed3de25c37f8326f9e8b814"
+          }
+        },
+        "consumerWorkingTreePreserved": true
+      },
+      {
+        "protectedInput": "/home/administrator/projects/hexalith/conversations/module/validation/epic-16-published-artifact-qualification/attempt-20261031-4383-03",
+        "state": "PASS",
+        "files": 8007,
+        "canonicalSha256": "c5595137c6973cebb78bc8b45738e787a8fd8a359d659eb9c8c8dc65b04c1c0b"
+      },
+      {
+        "protectedInput": "/home/administrator/projects/hexalith/conversations/_bmad-output/planning-artifacts/epic-16-tooling-v3",
+        "state": "PASS",
+        "files": 6,
+        "canonicalSha256": "50d472a242d2d50b7a1ee0076fef7fb5f2b2abca752649b9e8f351fe391aab01"
+      }
+    ]
+  }
+}
