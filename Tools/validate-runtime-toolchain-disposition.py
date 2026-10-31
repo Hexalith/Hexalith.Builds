@@ -93,13 +93,16 @@ def validate(disposition_path: Path, baseline_path: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--disposition", type=workspace_file,
-                        default=Path(__file__).with_name("runtime-toolchain-disposition-2026-09-27.json"))
-    parser.add_argument("--baseline", type=workspace_file, default=Path(__file__).with_name(BASELINE_NAME))
+    parser.add_argument("--disposition")
+    parser.add_argument("--baseline")
     arguments = parser.parse_args()
     try:
-        validate(arguments.disposition, arguments.baseline)
-    except (OSError, ValueError, KeyError, TypeError) as error:
+        disposition = (Path(__file__).with_name("runtime-toolchain-disposition-2026-09-27.json")
+                       if arguments.disposition is None else workspace_file(arguments.disposition))
+        baseline = (Path(__file__).with_name(BASELINE_NAME)
+                    if arguments.baseline is None else workspace_file(arguments.baseline))
+        validate(disposition, baseline)
+    except (argparse.ArgumentTypeError, OSError, ValueError, KeyError, TypeError) as error:
         print(f"RUNTIME-TOOLCHAIN-DISPOSITION-INVALID: {error}", file=sys.stderr)
         return 1
     print("RUNTIME-TOOLCHAIN-DISPOSITION-VALID: superseded; SDK split unqualified; release holds preserved")

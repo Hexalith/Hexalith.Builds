@@ -565,6 +565,11 @@ support-table metadata with an explicit historical exception; uppercase `Dapr`
 means the catalog package identity, recorded as not activated. They are distinct
 case-sensitive keys, not contradictory qualification claims.
 
+The defaults read the repository's pinned historical files. Explicit
+`--baseline` and `--disposition` inputs must resolve to regular files inside
+the current working directory, including through symlinks. Run from the
+workspace containing alternate inputs when validating a copied fixture.
+
 ```bash
 python3 Tools/validate-runtime-toolchain-disposition.py
 python3 Tools/test-runtime-toolchain-disposition.py
