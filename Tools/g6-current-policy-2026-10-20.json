@@ -1,13 +1,13 @@
 {
   "schema": "hexalith.g6-current-policy.v1",
   "tuple": {
-    "dotnetSdk": "10.0.402",
+    "dotnetSdk": "10.0.403",
     "aspireSdk": "13.6.4",
     "aspireCli": "13.6.4",
-    "communityToolkitAspireDapr": "13.6.1-beta.935",
+    "communityToolkitAspireDapr": "13.6.2-beta.959",
     "daprCli": "1.18.0",
     "daprRuntime": "1.18.2",
-    "daprDotnetPackages": "1.18.10",
+    "daprDotnetPackages": "1.19.0",
     "fluentUi": "5.0.1",
     "nSubstitute": "6.2.0",
     "fluxor": "6.11.0"
@@ -15,9 +15,9 @@
   "approval": {
     "decision": "approved",
     "approvedBy": "Jérôme Piquot",
-    "approvedAtUtc": "2026-10-27T23:54:00Z",
-    "reference": "Operator request on 2026-10-28 to update the controlled tuple to Aspire 13.6.4, the latest stable SDK and CLI, with Aspire.Hosting.Keycloak and Aspire.Hosting.Kubernetes at 13.6.4-preview.1.26523.11. Approval covers the tuple change, not unseen qualification result acceptance.",
-    "tupleSha256": "391b1482011caeec06a8b7c65491c12afd00271f454fe29e4d3d7c5aa9086d8a"
+    "approvedAtUtc": "2026-10-31T09:30:00Z",
+    "reference": "Operator request on 2026-10-31 to update to the latest stable .NET SDK 10.0.403 and the latest package versions, selecting the catalog's CommunityToolkit.Aspire.Hosting.Dapr 13.6.2-beta.959 prerelease and Dapr .NET packages 1.19.0, with release human validation explicitly waived. Approval covers the tuple change, not unseen qualification result acceptance.",
+    "tupleSha256": "5ecd093de561644c2335a41a456be770dacda4737b3803b048fe52485ddeccc7"
   },
   "exceptions": {
     "daprSupportTable": "approved-explicit-exception",
