@@ -692,7 +692,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
     /// <param name="remaining">The observed remainder or uncertainty.</param>
     /// <param name="cancellationToken">The durable write token.</param>
     /// <param name="native">The optional safe native test report.</param>
-    /// <param name="waitForLock">Whether to wait briefly for the outcome lock within the supplied cancellation allowance.</param>
+    /// <param name="waitForLock">Whether non-stopping callers may wait briefly for the outcome lock.</param>
     /// <param name="executionTiming">The runner-held execution observation; child-writable timing files are never reread.</param>
     /// <param name="environmentBindings">The immutable validated pre-launch bindings held by the runner.</param>
     /// <param name="terminalCause">The observed first cause, when more precise than the status.</param>
@@ -1441,9 +1441,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             try
             {
                 CompositionRunResources lastKnown = state.RemainingResources ?? state.TestRun?.RemainingResources ?? new CompositionRunResources([], [], true);
-
-                // Attachment-capable startup may still be committing its first outcome. Wait only within the existing stop bound.
-                _ = await RecordTestOutcomeAsync(runId, state.ReadinessResults, terminal, state.TestRun?.ResourceDisposition ?? "unknown", lastKnown with { Unverified = true }, bound, waitForLock: canHoldAttachments, cleanupDisposition: "in-progress", cleanupAttemptId: attemptId).ConfigureAwait(false);
+                _ = await RecordTestOutcomeAsync(runId, state.ReadinessResults, terminal, state.TestRun?.ResourceDisposition ?? "unknown", lastKnown with { Unverified = true }, bound, waitForLock: false, cleanupDisposition: "in-progress", cleanupAttemptId: attemptId).ConfigureAwait(false);
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
             {
