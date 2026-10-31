@@ -91,16 +91,19 @@ internal static class PackagedSeedProbe
     public static async Task<(bool Passed, object Observation)> CheckAsync<TEntryPoint>(bool declarative)
         where TEntryPoint : class
     {
+        string channelToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        string signingKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
         WebApplicationFactory<TEntryPoint> sourceFactory = new();
         await using ConfiguredAsyncDisposable sourceLifetime = sourceFactory.ConfigureAwait(false);
         WebApplicationFactory<TEntryPoint> factory = sourceFactory.WithWebHostBuilder(builder => builder.UseEnvironment("Development").ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
+            ["APP_API_TOKEN"] = channelToken,
             ["Dapr:DeclarativeSubscriptions"] = declarative.ToString(),
             ["EventStore:ProjectionChanges:PubSubName"] = "configured-seed-events",
             ["EventStore:OpenApi:Enabled"] = "false",
             ["Authentication:JwtBearer:Issuer"] = "hexalith-test",
             ["Authentication:JwtBearer:Audience"] = "hexalith-eventstore",
-            ["Authentication:JwtBearer:SigningKey"] = "test-only-seed-subscription-signing-key-at-least-32-bytes",
+            ["Authentication:JwtBearer:SigningKey"] = signingKey,
             ["Authentication:JwtBearer:AllowedAlgorithms:0"] = "HS256",
             ["Authentication:JwtBearer:RequireHttpsMetadata"] = "false",
         })).ConfigureServices(services =>
@@ -115,6 +118,19 @@ internal static class PackagedSeedProbe
         await using ConfiguredAsyncDisposable factoryLifetime = factory.ConfigureAwait(false);
         using HttpClient client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
+        using HttpRequestMessage missingRequest = new(HttpMethod.Post, new Uri("/projections/changed", UriKind.Relative))
+        {
+            Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+        };
+        using HttpResponseMessage missingChannel = await client.SendAsync(missingRequest, timeout.Token).ConfigureAwait(false);
+        using HttpRequestMessage invalidRequest = new(HttpMethod.Post, new Uri("/projections/changed", UriKind.Relative))
+        {
+            Content = new StringContent("{}", Encoding.UTF8, "application/json"),
+        };
+        invalidRequest.Headers.Add("dapr-api-token", "invalid-" + channelToken);
+        using HttpResponseMessage invalidChannel = await client.SendAsync(invalidRequest, timeout.Token).ConfigureAwait(false);
+        using HttpResponseMessage untokened = await client.GetAsync(new Uri("/dapr/subscribe", UriKind.Relative), timeout.Token).ConfigureAwait(false);
+        client.DefaultRequestHeaders.Add("dapr-api-token", channelToken);
         using HttpResponseMessage response = await client.GetAsync(new Uri("/dapr/subscribe", UriKind.Relative), timeout.Token).ConfigureAwait(false);
         RouteEndpoint receiver = factory.Services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>()
             .Single(endpoint => endpoint.RoutePattern.RawText == "projections/changed");
@@ -132,14 +148,19 @@ internal static class PackagedSeedProbe
                 : null;
         }
 
-        bool passed = declarative
+        bool protectedReceiver = (int)missingChannel.StatusCode == 401 && (int)invalidChannel.StatusCode == 401
+            && (int)untokened.StatusCode == (declarative ? 404 : 401);
+        bool passed = protectedReceiver && (declarative
             ? (int)response.StatusCode == 404 && topics.Length == 0
-            : (int)response.StatusCode == 200 && subscriptionCount == 1 && subscriptionPubsub == "configured-seed-events" && topics.Length == 1 && receiverPubsub == "configured-seed-events";
+            : (int)response.StatusCode == 200 && subscriptionCount == 1 && subscriptionPubsub == "configured-seed-events" && topics.Length == 1 && receiverPubsub == "configured-seed-events");
 
         return (passed, new
         {
             declarative,
             discoveryStatusCode = (int)response.StatusCode,
+            untokenedDiscoveryStatusCode = (int)untokened.StatusCode,
+            missingChannelStatusCode = (int)missingChannel.StatusCode,
+            invalidChannelStatusCode = (int)invalidChannel.StatusCode,
             projectionSubscriptionCount = subscriptionCount,
             subscriptionPubsubName = subscriptionPubsub,
             receiverPresent = true,

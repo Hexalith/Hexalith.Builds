@@ -354,6 +354,11 @@ function Assert-PackagedSeedSubscriptionEvidence {
         $cases = @($checks | Where-Object { $_.declarative -is [bool] -and $_.declarative -eq $declarative })
         if ($cases.Count -ne 1) { throw 'Packaged seed subscription proof must cover both modes exactly once.' }
         $case = $cases[0]
+        foreach ($field in @('missingChannelStatusCode', 'invalidChannelStatusCode')) {
+            if ($case.PSObject.Properties.Name -cnotcontains $field -or $case.$field -isnot [long] -or $case.$field -ne 401) {
+                throw 'Packaged seed subscription proof does not satisfy the exact typed HTTP and receiver metadata assertions.'
+            }
+        }
         $status = if ($declarative) { 404 } else { 200 }
         $count = if ($declarative) { 0 } else { 1 }
         $pubsub = if ($declarative) { $null } else { 'configured-seed-events' }
