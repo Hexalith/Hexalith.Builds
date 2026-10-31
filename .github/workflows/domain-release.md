@@ -389,3 +389,81 @@ authenticated CI handoff, not from `github.sha`:
 The caller's permissions block must include everything the governed job
 requests: GitHub rejects a called workflow that asks for more than its caller
 was granted.
+
+## Split publication mode (`split-publication-v1`)
+
+`release-mode: split-publication-v1` selects the AD-19 successor. Leave
+`release-mode` empty to keep the legacy `release` job or the existing
+`governed-release` job exactly. The mode is default-off, and combining it with
+`governed-release: true` fails the run.
+
+The reusable defines both roles directly:
+
+| Job | Boundary |
+| --- | --- |
+| `build-publication-candidate` | No environment, no publication secret, no OIDC or write permission. Checks out the authenticated candidate with `submodules: false`, initializes only root-declared submodules, and uploads `publication-candidate-<run_id>-<run_attempt>`. |
+| `publish-publication-candidate` | Protected `environment-name` (pass `production`). Permissions are `actions: read`, `contents: write`, `id-token: write`, and `attestations: write`. It checks out only `Hexalith/Hexalith.Builds` at `builds-execution-sha`, authenticates the raw archive before extraction, and treats candidate bytes as data. |
+| `emit-release-verification-handoff` | Read-only evidence job. It is not a publication actor. It uploads `release-verification-handoff-<run_id>-<run_attempt>`. |
+
+`HEXALITH_RELEASE_PUBLISH_ENABLED` remains deny-only. Any value other than the
+literal `true` skips the publisher. It never authorizes a bad candidate.
+
+### Caller migration
+
+Existing callers omit `release-mode`. A FrontComposer caller switches only
+after this Builds revision is owner-accepted into the AD-16 lineage and the
+active policy pre-authorizes its closure:
+
+```yaml
+permissions:
+  actions: read
+  contents: write
+  id-token: write
+  attestations: write
+jobs:
+  release:
+    uses: Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@<40-hex>
+    with:
+      release-mode: split-publication-v1
+      solution: Hexalith.FrontComposer.slnx
+      environment-name: production
+      builds-execution-sha: <same-40-hex>
+      release-commit: <authenticated-candidate>
+      ci-run-id: <ci-run-id>
+      ci-run-attempt: <ci-run-attempt>
+      ci-handoff-artifact: dependency-release-handoff-<ci-run-id>-<ci-run-attempt>
+      ci-handoff-sha256: <raw-handoff-json-sha256>
+      ci-handoff-artifact-id: <ci-artifact-id>
+      ci-handoff-archive-sha256: <ci-artifact-zip-sha256>
+      quality-run-id: <quality-run-id>
+      quality-run-attempt: <quality-run-attempt>
+      dependency-policy-repository: github.com/hexalith/hexalith.frontcomposer
+      dependency-policy-path: eng/dependency-graph-policy.json
+      dependency-policy-commit: <policy-commit>
+      dependency-policy-sha256: <policy-sha256>
+      release-evaluator: <canonical-evaluator-json>
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+```
+
+Do not pass `secrets: inherit` or the author-signing secrets. Do not set
+`governed-release` in the same call.
+
+### Outputs used by handoff v3
+
+| Output | Meaning |
+| --- | --- |
+| `split-publication-started` | Owner-controlled marker. True only after the publisher set it immediately before the first NuGet or GitHub Release mutation. |
+| `split-published` | True only when that marker exists and the publisher succeeded. |
+| `split-publish-gate-variable` | Literal recorded gate value. |
+| `split-prepublication-denial` | One closed denial, or empty. |
+| `split-handoff-sha256` | SHA-256 of `hexalith.release-verification-handoff.v3`. |
+| `split-candidate-descriptor-sha256` | SHA-256 of `publication-candidate.json`. |
+| `split-candidate-archive-sha256` | SHA-256 of the raw publication-candidate archive. |
+
+The sealed manifest is `hexalith.release-evidence.v4` with exactly `schema`,
+`dependency_graph`, `dependency_policy`, `quality_run`, `attestation`,
+`workflow_provenance`, and `seal`. Attestation uses
+`actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6` with
+`push-to-registry: false`, `create-storage-record: false`, and
+`show-summary: false`.

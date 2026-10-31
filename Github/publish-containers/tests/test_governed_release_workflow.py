@@ -217,7 +217,7 @@ class ReleaseFreezeGateTests(unittest.TestCase):
     def test_both_freeze_gates_bind_the_caller_repository_variable(self):
         workflow = read(DOMAIN_RELEASE)
 
-        for occurrence in (0, 1):
+        for occurrence in (0, 1, 2):
             with self.subTest(occurrence=occurrence):
                 start = step_indices(workflow, "Resolve release publication freeze")[occurrence]
                 self.assertIn(
@@ -233,8 +233,8 @@ class ReleaseFreezeGateTests(unittest.TestCase):
     def test_both_release_jobs_evaluate_the_same_gate(self):
         workflow = read(DOMAIN_RELEASE)
 
-        self.assertEqual(2, len(step_indices(workflow, "Resolve release publication freeze")))
-        for occurrence in (0, 1):
+        self.assertEqual(3, len(step_indices(workflow, "Resolve release publication freeze")))
+        for occurrence in (0, 1, 2):
             with self.subTest(occurrence=occurrence):
                 result, output = run_freeze_gate("true", occurrence)
 
@@ -931,8 +931,15 @@ class GovernedOffParityTests(unittest.TestCase):
         workflow = read(DOMAIN_RELEASE)
 
         self.assertIn("  release:\n", workflow)
-        self.assertIn("if: ${{ !inputs.governed-release }}", job_slice(workflow, "release"))
-        self.assertIn("if: ${{ inputs.governed-release }}", job_slice(workflow, "governed-release"))
+        self.assertIn(
+            "if: ${{ inputs.release-mode == '' && !inputs.governed-release }}",
+            job_slice(workflow, "release"),
+        )
+        self.assertIn(
+            "if: ${{ inputs.release-mode == '' && inputs.governed-release }}",
+            job_slice(workflow, "governed-release"),
+        )
+        self.assertIn("default: ''", workflow[workflow.index("\n      release-mode:\n"): workflow.index("\n      release-mode:\n") + 500])
 
     def test_every_governed_input_defaults_to_the_legacy_behavior(self):
         workflow = read(DOMAIN_RELEASE)
@@ -1016,10 +1023,16 @@ class GovernedOffParityTests(unittest.TestCase):
         workflow = read(DOMAIN_RELEASE)
         governed = job_slice(workflow, "governed-release")
 
-        self.assertEqual(1, workflow.count("id-token: write"))
-        self.assertEqual(1, workflow.count("attestations: write"))
+        publisher = job_slice(workflow, "publish-publication-candidate")
+        builder = job_slice(workflow, "build-publication-candidate")
+        self.assertEqual(2, workflow.count("id-token: write"))
+        self.assertEqual(2, workflow.count("attestations: write"))
         self.assertIn("id-token: write", governed)
         self.assertIn("attestations: write", governed)
+        self.assertIn("id-token: write", publisher)
+        self.assertIn("attestations: write", publisher)
+        self.assertNotIn("id-token:", builder)
+        self.assertNotIn("attestations:", builder)
         legacy = job_slice(workflow, "release")
         self.assertNotIn("id-token:", legacy)
         self.assertNotIn("attestations:", legacy)

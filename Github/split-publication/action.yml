@@ -1,0 +1,105 @@
+name: Split publication
+description: >-
+  Owner-controlled split-publication-v1 commands. Candidate archives are data.
+  The action reads no publication secret unless the workflow command is the
+  protected publisher's final publication step.
+
+inputs:
+  command:
+    description: Literal prepare-candidate, authenticate-archive, inventory-closure, or helper-version command.
+    required: true
+  package-directory:
+    description: Directory containing candidate package bytes.
+    required: false
+    default: ""
+  output:
+    description: Directory or file the command writes.
+    required: false
+    default: ""
+  metadata:
+    description: Path of the owner-written candidate metadata document.
+    required: false
+    default: ""
+  archive:
+    description: Path of the raw publication-candidate archive.
+    required: false
+    default: ""
+  subjects:
+    description: Path of the attestation subject checksum file.
+    required: false
+    default: ""
+  workflow:
+    description: Path of the reusable workflow being inventoried.
+    required: false
+    default: ""
+  token:
+    description: Read-only GitHub token used for one authenticated artifact request.
+    required: false
+    default: ""
+  artifact-url:
+    description: Actions artifact archive URL.
+    required: false
+    default: ""
+  expected-sha256:
+    description: Expected raw archive SHA-256, optionally prefixed by sha256:.
+    required: false
+    default: ""
+  handoff:
+    description: Path of the authenticated CI handoff JSON.
+    required: false
+    default: ""
+  bundle:
+    description: Path of the provenance attestation bundle.
+    required: false
+    default: ""
+  member:
+    description: Archive member to extract after the AD-7 scan.
+    required: false
+    default: ""
+  object-store:
+    description: Directory of fetched bare repositories keyed by repository identity.
+    required: false
+    default: ""
+  nuget-api-key:
+    description: Environment-scoped NuGet API key used only by the publication command.
+    required: false
+    default: ""
+  repository-slug:
+    description: Caller owner/repository spelling used for GitHub and attestation identity.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Run split-publication command
+      shell: bash
+      env:
+        PYTHONDONTWRITEBYTECODE: "1"
+        SPLIT_COMMAND: ${{ inputs.command }}
+        SPLIT_PACKAGE_DIRECTORY: ${{ inputs.package-directory }}
+        SPLIT_OUTPUT: ${{ inputs.output }}
+        SPLIT_METADATA: ${{ inputs.metadata }}
+        SPLIT_ARCHIVE: ${{ inputs.archive }}
+        SPLIT_SUBJECTS: ${{ inputs.subjects }}
+        SPLIT_WORKFLOW: ${{ inputs.workflow }}
+        SPLIT_TOKEN: ${{ inputs.token }}
+        SPLIT_ARTIFACT_URL: ${{ inputs.artifact-url }}
+        SPLIT_EXPECTED_SHA256: ${{ inputs.expected-sha256 }}
+        SPLIT_HANDOFF: ${{ inputs.handoff }}
+        SPLIT_BUNDLE: ${{ inputs.bundle }}
+        SPLIT_MEMBER: ${{ inputs.member }}
+        SPLIT_OBJECT_STORE: ${{ inputs.object-store }}
+        SPLIT_NUGET_API_KEY: ${{ inputs.nuget-api-key }}
+        SPLIT_REPOSITORY_SLUG: ${{ inputs.repository-slug }}
+      run: |
+        set -euo pipefail
+        case "$SPLIT_COMMAND" in
+          prepare-candidate|authenticate-archive|download-archive|extract-member|verify-live|release-authenticated|emit-handoff|inventory-closure|helper-version)
+            ;;
+          *)
+            echo "split-publication command is not in the closed set." >&2
+            exit 1
+            ;;
+        esac
+        python3 "$GITHUB_ACTION_PATH/split_publication.py" "$SPLIT_COMMAND"

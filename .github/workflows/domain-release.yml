@@ -198,6 +198,51 @@ on:
         required: false
         type: string
         default: ''
+      release-mode:
+        description: >-
+          Opt into split-publication-v1. Leave this empty to keep the caller's current
+          legacy or governed-release contract. The mode is default-off and cannot be
+          combined with governed-release.
+        required: false
+        type: string
+        default: ''
+      ci-handoff-sha256:
+        description: 'SHA-256 of the authenticated raw CI handoff JSON. Required by split-publication-v1.'
+        required: false
+        type: string
+        default: ''
+      ci-handoff-archive-sha256:
+        description: 'SHA-256 of the raw CI handoff artifact archive. Required by split-publication-v1.'
+        required: false
+        type: string
+        default: ''
+      ci-handoff-artifact-id:
+        description: 'Numeric Actions artifact ID of the authenticated CI handoff. Required by split-publication-v1.'
+        required: false
+        type: string
+        default: ''
+      quality-run-id:
+        description: 'Run ID of the authenticated quality.yml push run. Required by split-publication-v1.'
+        required: false
+        type: string
+        default: ''
+      quality-run-attempt:
+        description: 'Run attempt of the authenticated quality.yml push run. Required by split-publication-v1.'
+        required: false
+        type: string
+        default: ''
+      release-evaluator:
+        description: 'Canonical JSON AD-13 Release evaluator. Required by split-publication-v1.'
+        required: false
+        type: string
+        default: ''
+      attestation-fallback-request:
+        description: >-
+          Unpadded base64url AD-9 fallback request. Empty unless the active policy records
+          attestation_capability unsupported.
+        required: false
+        type: string
+        default: ''
     secrets:
       NUGET_API_KEY:
         description: 'NuGet.org API key supplied explicitly by the caller.'
@@ -245,6 +290,27 @@ on:
       governed-publish-enabled:
         description: 'Whether the common release-freeze gate authorized Semantic Release.'
         value: ${{ jobs.governed-release.outputs.publish-enabled }}
+      split-publication-started:
+        description: 'Whether split-publication-v1 set the owner-controlled publication marker.'
+        value: ${{ jobs.emit-release-verification-handoff.outputs.publication-started }}
+      split-published:
+        description: 'Whether split-publication-v1 published the authenticated candidate.'
+        value: ${{ jobs.emit-release-verification-handoff.outputs.published }}
+      split-publish-gate-variable:
+        description: 'Literal HEXALITH_RELEASE_PUBLISH_ENABLED value recorded for handoff v3.'
+        value: ${{ jobs.emit-release-verification-handoff.outputs.publish-gate-variable }}
+      split-prepublication-denial:
+        description: 'Closed pre-publication denial, or empty when the attempt has none.'
+        value: ${{ jobs.emit-release-verification-handoff.outputs.prepublication-denial }}
+      split-handoff-sha256:
+        description: 'SHA-256 of the emitted hexalith.release-verification-handoff.v3 document.'
+        value: ${{ jobs.emit-release-verification-handoff.outputs.handoff-sha256 }}
+      split-candidate-descriptor-sha256:
+        description: 'SHA-256 of publication-candidate.json.'
+        value: ${{ jobs.build-publication-candidate.outputs.descriptor-sha256 }}
+      split-candidate-archive-sha256:
+        description: 'SHA-256 of the raw publication-candidate archive.'
+        value: ${{ jobs.build-publication-candidate.outputs.archive-sha256 }}
 permissions: {}
 
 jobs:
@@ -252,7 +318,7 @@ jobs:
     # Legacy contract. Governed callers run the governed-release job instead, because
     # GitHub resolves job permissions statically: id-token/attestations cannot be granted
     # conditionally inside one job without also demanding them from every legacy caller.
-    if: ${{ !inputs.governed-release }}
+    if: ${{ inputs.release-mode == '' && !inputs.governed-release }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
     environment: ${{ inputs.environment-name }}
@@ -496,7 +562,7 @@ jobs:
   governed-release:
     # BUILD-REL-1 governed contract. Only this job carries id-token/attestations, and it
     # never starts for a caller that leaves governed-release unset.
-    if: ${{ inputs.governed-release }}
+    if: ${{ inputs.release-mode == '' && inputs.governed-release }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
     environment: ${{ inputs.environment-name }}
@@ -1199,3 +1265,794 @@ jobs:
           if-no-files-found: warn
           include-hidden-files: true
           retention-days: 30
+
+  reject-release-mode:
+    if: ${{ inputs.release-mode != '' && (inputs.release-mode != 'split-publication-v1' || inputs.governed-release) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Reject an unknown or conflicting release mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "release-mode must be empty or split-publication-v1, and split-publication-v1 cannot be combined with governed-release." >&2
+          exit 1
+
+  build-publication-candidate:
+    if: ${{ inputs.release-mode == 'split-publication-v1' && !inputs.governed-release }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      publish-enabled: ${{ steps.publish-gate.outputs.publish-enabled }}
+      publish-gate-variable: ${{ steps.publish-gate.outputs.variable-value }}
+      release-plan-present: ${{ steps.prepared-outputs.outputs.release-plan-present }}
+      version: ${{ steps.prepared-outputs.outputs.version }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      archive-sha256: ${{ steps.upload.outputs.digest }}
+      descriptor-sha256: ${{ steps.prepared-outputs.outputs.descriptor-sha256 }}
+      candidate: ${{ steps.prepared-outputs.outputs.candidate }}
+    steps:
+      - name: Resolve release publication freeze
+        id: publish-gate
+        shell: bash
+        env:
+          HEXALITH_RELEASE_PUBLISH_ENABLED: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}
+        run: |
+          set -euo pipefail
+          value="${HEXALITH_RELEASE_PUBLISH_ENABLED-}"
+          encoded="$(printf '%s' "$value" | base64 -w 0)"
+          echo "variable-value=$encoded" >> "$GITHUB_OUTPUT"
+          if [ "$value" = "true" ]; then
+            echo "publish-enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish-enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Validate split publication inputs
+        shell: bash
+        env:
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          CI_RUN_ID: ${{ inputs.ci-run-id }}
+          CI_RUN_ATTEMPT: ${{ inputs.ci-run-attempt }}
+          CI_HANDOFF_SHA256: ${{ inputs.ci-handoff-sha256 }}
+          CI_HANDOFF_ARCHIVE_SHA256: ${{ inputs.ci-handoff-archive-sha256 }}
+          CI_HANDOFF_ARTIFACT_ID: ${{ inputs.ci-handoff-artifact-id }}
+          QUALITY_RUN_ID: ${{ inputs.quality-run-id }}
+          QUALITY_RUN_ATTEMPT: ${{ inputs.quality-run-attempt }}
+          POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
+          POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
+          RELEASE_EVALUATOR: ${{ inputs.release-evaluator }}
+          BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$CI_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$CI_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          [[ "$CI_HANDOFF_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$CI_HANDOFF_ARCHIVE_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$CI_HANDOFF_ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$QUALITY_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$QUALITY_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          [[ "$POLICY_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$POLICY_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$BUILD_EXECUTION_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test -n "$RELEASE_EVALUATOR"
+      - name: Checkout exact publication candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.release-commit }}
+          fetch-depth: 0
+          submodules: false
+          persist-credentials: false
+      - name: Checkout approved Builds actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ inputs.builds-execution-sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
+          submodules: false
+      - name: Validate approved Builds execution identity
+        shell: bash
+        env:
+          BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          RESOLVED_WORKFLOW_REF: ${{ job.workflow_ref }}
+        run: |
+          set -euo pipefail
+          test "$RESOLVED_WORKFLOW_REPOSITORY" = "Hexalith/Hexalith.Builds"
+          test "$RESOLVED_WORKFLOW_SHA" = "$BUILD_EXECUTION_SHA"
+          case "$RESOLVED_WORKFLOW_REF" in
+            Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@*) ;;
+            *) echo "Resolved workflow ref is not domain-release.yml." >&2; exit 1 ;;
+          esac
+      - name: Initialize root-declared submodules
+        uses: ./.hexalith/builds-execution/Github/initialize-build
+      - name: Initialize .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: ${{ inputs.dotnet-global-json }}
+      - name: Restore candidate
+        shell: bash
+        env:
+          SOLUTION: ${{ inputs.solution }}
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          set -euo pipefail
+          test -z "$GITHUB_TOKEN"
+          test -z "$GH_TOKEN"
+          dotnet restore "$SOLUTION"
+      - name: Build candidate
+        shell: bash
+        env:
+          SOLUTION: ${{ inputs.solution }}
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          set -euo pipefail
+          test -z "$GITHUB_TOKEN"
+          test -z "$GH_TOKEN"
+          dotnet build "$SOLUTION" --no-restore --configuration Release -warnaserror
+      - name: Run candidate tests
+        if: ${{ inputs.test-projects != '' }}
+        shell: bash
+        env:
+          TEST_PROJECTS: ${{ inputs.test-projects }}
+          TEST_PLATFORM: ${{ inputs.test-platform }}
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          set -euo pipefail
+          test -z "$GITHUB_TOKEN"
+          test -z "$GH_TOKEN"
+          while IFS= read -r proj; do
+            test -n "$proj" || continue
+            if [ "$TEST_PLATFORM" = "microsoft-testing-platform" ]; then
+              dotnet test "$proj" --no-build --configuration Release
+            else
+              dotnet test "$proj" --no-build --configuration Release --logger trx
+            fi
+          done <<< "$TEST_PROJECTS"
+      - name: Initialize Node.js for candidate release planning
+        if: ${{ inputs.reserved-version == '' }}
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Install candidate release-planning dependencies
+        if: ${{ inputs.reserved-version == '' }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          set -euo pipefail
+          test -z "$GITHUB_TOKEN"
+          test -z "$GH_TOKEN"
+          if [ -f package-lock.json ]; then
+            npm ci --ignore-scripts
+          fi
+      - name: Resolve split release version
+        id: version
+        shell: bash
+        env:
+          RESERVED_VERSION: ${{ inputs.reserved-version }}
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          set -euo pipefail
+          test -z "$GITHUB_TOKEN"
+          test -z "$GH_TOKEN"
+          if [ -n "$RESERVED_VERSION" ]; then
+            printf 'version=%s\nrelease-plan-present=true\n' "$RESERVED_VERSION" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ ! -f package.json ]; then
+            printf 'version=\nrelease-plan-present=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          dry_run_log="$(mktemp)"
+          if ! npm exec --no -- semantic-release --dry-run >"$dry_run_log" 2>&1; then
+            cat "$dry_run_log" >&2
+            exit 1
+          fi
+          version="$(sed -n 's/.*The next release version is \([0-9][0-9A-Za-z.+-]*\).*/\1/p' "$dry_run_log" | tail -n 1)"
+          if [ -z "$version" ]; then
+            printf 'version=\nrelease-plan-present=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          printf 'version=%s\nrelease-plan-present=true\n' "$version" >> "$GITHUB_OUTPUT"
+      - name: Pack split publication candidate
+        if: ${{ steps.version.outputs.release-plan-present == 'true' && inputs.candidate-command == '' }}
+        shell: bash
+        env:
+          SOLUTION: ${{ inputs.solution }}
+          VERSION: ${{ steps.version.outputs.version }}
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          set -euo pipefail
+          test -z "$GITHUB_TOKEN"
+          test -z "$GH_TOKEN"
+          mkdir -p publication-candidate-packages
+          dotnet pack "$SOLUTION" --configuration Release --no-build -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg -p:Version="$VERSION" -o publication-candidate-packages
+      - name: Run split candidate pack command
+        if: ${{ steps.version.outputs.release-plan-present == 'true' && inputs.candidate-command != '' }}
+        shell: bash
+        env:
+          CANDIDATE_COMMAND: ${{ inputs.candidate-command }}
+          HEXALITH_RELEASE_CANDIDATE_DIRECTORY: publication-candidate-packages
+          HEXALITH_RELEASE_CANDIDATE_VERSION: ${{ steps.version.outputs.version }}
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          set -euo pipefail
+          test -z "$GITHUB_TOKEN"
+          test -z "$GH_TOKEN"
+          if [ -n "${NUGET_API_KEY+x}" ]; then
+            echo "candidate pack must not receive a publication credential." >&2
+            exit 1
+          fi
+          mkdir -p publication-candidate-packages
+          bash -c "$CANDIDATE_COMMAND"
+      - name: Write publication candidate metadata
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          REPOSITORY: ${{ github.repository }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          CI_HANDOFF_SHA256: ${{ inputs.ci-handoff-sha256 }}
+          POLICY_REPOSITORY: ${{ inputs.dependency-policy-repository }}
+          POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
+          POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
+          RELEASE_EVALUATOR: ${{ inputs.release-evaluator }}
+          BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          set -euo pipefail
+          test -z "$GITHUB_TOKEN"
+          mkdir -p publication-candidate-packages
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          slug = os.environ["REPOSITORY"]
+          owner, name = slug.split("/", 1)
+          identity = f"github.com/{owner.lower()}/{name.lower()}"
+          workflow_path = os.environ["WORKFLOW_REF"].split("@", 1)[0].split("/", 2)[2]
+          metadata = {
+              "version": os.environ.get("VERSION", ""),
+              "notes": f"Release {os.environ['VERSION']}\n" if os.environ.get("VERSION") else "",
+              "repository_slug": slug,
+              "candidate": os.environ["RELEASE_COMMIT"],
+              "run_id": int(os.environ["RUN_ID"]),
+              "run_attempt": int(os.environ["RUN_ATTEMPT"]),
+              "ci_handoff_sha256": os.environ["CI_HANDOFF_SHA256"],
+              "release_run": {
+                  "repository": identity,
+                  "workflow_path": workflow_path,
+                  "run_id": int(os.environ["RUN_ID"]),
+                  "run_attempt": int(os.environ["RUN_ATTEMPT"]),
+              },
+              "dependency_policy": {
+                  "schema": "hexalith.dependency-graph-policy.v1",
+                  "repository": os.environ["POLICY_REPOSITORY"],
+                  "path": "eng/dependency-graph-policy.json",
+                  "commit": os.environ["POLICY_COMMIT"],
+                  "sha256": os.environ["POLICY_SHA256"],
+              },
+              "evaluator": json.loads(os.environ["RELEASE_EVALUATOR"]),
+          }
+          Path("publication-candidate-metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
+          PY
+      - name: Prepare publication candidate
+        id: prepare
+        uses: ./.hexalith/builds-execution/Github/split-publication
+        with:
+          command: prepare-candidate
+          package-directory: publication-candidate-packages
+          output: publication-candidate
+          metadata: publication-candidate-metadata.json
+      - name: Record prepared candidate outputs
+        id: prepared-outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          document = json.loads(Path("publication-candidate/publication-candidate.json").read_text(encoding="utf-8"))
+          payload = Path("publication-candidate/publication-candidate.json").read_bytes()
+          import hashlib
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"descriptor-sha256={hashlib.sha256(payload).hexdigest()}\n")
+              handle.write(f"candidate={document['candidate']}\n")
+              handle.write("release-plan-present=" + ("true" if document["release_plan"] else "false") + "\n")
+              handle.write("version=" + ((document["release_plan"] or {}).get("version") or "") + "\n")
+          PY
+      - name: Upload publication candidate
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: publication-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: publication-candidate
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
+
+  publish-publication-candidate:
+    needs: build-publication-candidate
+    if: ${{ inputs.release-mode == 'split-publication-v1' && !inputs.governed-release && needs.build-publication-candidate.result == 'success' && needs.build-publication-candidate.outputs.publish-enabled == 'true' && needs.build-publication-candidate.outputs.release-plan-present == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    environment: ${{ inputs.environment-name }}
+    concurrency:
+      group: governed-release-nuget-${{ needs.build-publication-candidate.outputs.version }}
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+    outputs:
+      publication-started: ${{ steps.record.outputs.publication-started }}
+      published: ${{ steps.record.outputs.published }}
+      prepublication-denial: ${{ steps.record.outputs.prepublication-denial }}
+      manifest-sha256: ${{ steps.record.outputs.manifest-sha256 }}
+      attestation-status: ${{ steps.record.outputs.attestation-status }}
+      github-release-id: ${{ steps.record.outputs.github-release-id }}
+    steps:
+      - name: Recheck deny-only publication gate
+        shell: bash
+        env:
+          HEXALITH_RELEASE_PUBLISH_ENABLED: ${{ vars.HEXALITH_RELEASE_PUBLISH_ENABLED }}
+        run: |
+          set -euo pipefail
+          if [ "${HEXALITH_RELEASE_PUBLISH_ENABLED-}" != "true" ]; then
+            echo "Publication gate is not exactly true." >&2
+            exit 1
+          fi
+      - name: Checkout pinned publisher code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ inputs.builds-execution-sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
+          submodules: false
+      - name: Validate approved Builds execution identity
+        shell: bash
+        env:
+          BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          RESOLVED_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          RESOLVED_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          RESOLVED_WORKFLOW_REF: ${{ job.workflow_ref }}
+        run: |
+          set -euo pipefail
+          test "$RESOLVED_WORKFLOW_REPOSITORY" = "Hexalith/Hexalith.Builds"
+          test "$RESOLVED_WORKFLOW_SHA" = "$BUILD_EXECUTION_SHA"
+          case "$RESOLVED_WORKFLOW_REF" in
+            Hexalith/Hexalith.Builds/.github/workflows/domain-release.yml@*) ;;
+            *) exit 1 ;;
+          esac
+      - name: Download raw publication candidate
+        uses: ./.hexalith/builds-execution/Github/split-publication
+        with:
+          command: download-archive
+          token: ${{ github.token }}
+          artifact-url: https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ needs.build-publication-candidate.outputs.artifact-id }}/zip
+          expected-sha256: ${{ needs.build-publication-candidate.outputs.archive-sha256 }}
+          output: publication-candidate.zip
+      - name: Authenticate publication candidate
+        uses: ./.hexalith/builds-execution/Github/split-publication
+        with:
+          command: authenticate-archive
+          archive: publication-candidate.zip
+          output: authenticated-candidate
+          subjects: subject-checksums.txt
+      - name: Download raw CI handoff
+        uses: ./.hexalith/builds-execution/Github/split-publication
+        with:
+          command: download-archive
+          token: ${{ github.token }}
+          artifact-url: https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ inputs.ci-handoff-artifact-id }}/zip
+          expected-sha256: ${{ inputs.ci-handoff-archive-sha256 }}
+          output: ci-handoff.zip
+      - name: Extract authenticated CI handoff
+        uses: ./.hexalith/builds-execution/Github/split-publication
+        with:
+          command: extract-member
+          archive: ci-handoff.zip
+          member: dependency-release-handoff.json
+          output: dependency-release-handoff.json
+      - name: Fetch candidate objects for live verification
+        shell: bash
+        env:
+          POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
+          BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          set -euo pipefail
+          test -z "$GITHUB_TOKEN"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          handoff = json.loads(Path("dependency-release-handoff.json").read_text(encoding="utf-8"))
+          graph = handoff["dependency_graph"]
+          commits = {}
+          commits.setdefault(graph["root"]["repository"], set()).add(graph["root"]["commit"])
+          commits.setdefault(graph["root"]["repository"], set()).add(os.environ["POLICY_COMMIT"])
+          commits.setdefault("github.com/hexalith/hexalith.builds", set()).add(os.environ["BUILD_EXECUTION_SHA"])
+          for edge in graph["edges"]:
+              commits.setdefault(edge["owner_repository"], set()).add(edge["owner_commit"])
+              commits.setdefault(edge["repository"], set()).add(edge["commit"])
+          Path("fetch-plan.json").write_text(
+              json.dumps({identity: sorted(values) for identity, values in commits.items()}),
+              encoding="utf-8",
+          )
+          PY
+          python3 - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          plan = json.loads(Path("fetch-plan.json").read_text(encoding="utf-8"))
+          for identity, commits in plan.items():
+              owner_repo = identity.removeprefix("github.com/")
+              destination = Path("object-stores") / identity
+              destination.mkdir(parents=True, exist_ok=True)
+              subprocess.run(["git", "init", "--bare", str(destination)], check=True)
+              for commit in commits:
+                  subprocess.run(
+                      [
+                          "git", "-C", str(destination),
+                          "-c", "http.sslVerify=true",
+                          "-c", "credential.helper=",
+                          "fetch", "--no-tags", "--depth", "1",
+                          f"https://github.com/{owner_repo}.git", commit,
+                      ],
+                      check=True,
+                  )
+          PY
+      - name: Attest authenticated packages
+        id: attest
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-checksums: subject-checksums.txt
+          push-to-registry: false
+          create-storage-record: false
+          show-summary: false
+          github-token: ${{ github.token }}
+      - name: Write publication state
+        shell: bash
+        env:
+          REPOSITORY: ${{ github.repository }}
+          POLICY_REPOSITORY: ${{ inputs.dependency-policy-repository }}
+          POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
+          CANDIDATE: ${{ inputs.release-commit }}
+          BUILD_EXECUTION_SHA: ${{ inputs.builds-execution-sha }}
+          QUALITY_RUN_ID: ${{ inputs.quality-run-id }}
+          QUALITY_RUN_ATTEMPT: ${{ inputs.quality-run-attempt }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          READ_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import subprocess
+          import urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          def blob(identity, commit, path):
+              store = Path("object-stores") / identity
+              result = subprocess.run(
+                  ["git", "-C", str(store), "cat-file", "blob", f"{commit}:{path}"],
+                  check=True,
+                  capture_output=True,
+              )
+              return result.stdout
+
+          def digest(value):
+              payload = json.dumps(value, ensure_ascii=True, allow_nan=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+              return hashlib.sha256(payload).hexdigest()
+
+          slug = os.environ["REPOSITORY"]
+          request = urllib.request.Request(
+              f"https://api.github.com/repos/{slug}",
+              headers={"authorization": f"Bearer {os.environ['READ_TOKEN']}", "accept": "application/vnd.github+json"},
+          )
+          with urllib.request.urlopen(request, timeout=60) as response:
+              repository = json.load(response)
+          policy_identity = os.environ["POLICY_REPOSITORY"]
+          policy_blob = json.loads(blob(policy_identity, os.environ["POLICY_COMMIT"], "eng/dependency-graph-policy.json"))
+          handoff = json.loads(Path("dependency-release-handoff.json").read_text(encoding="utf-8"))
+          caller_workflow = os.environ["WORKFLOW_REF"].split("@", 1)[0].split("/", 2)[2]
+          caller_bytes = blob(policy_identity, os.environ["CANDIDATE"], caller_workflow)
+          reusable_bytes = blob("github.com/hexalith/hexalith.builds", os.environ["BUILD_EXECUTION_SHA"], ".github/workflows/domain-release.yml")
+          provenance = {
+              "ci": {
+                  "run": {
+                      "repository": handoff["run"]["repository"],
+                      "workflow_path": ".github/workflows/ci.yml",
+                      "run_id": handoff["run"]["run_id"],
+                      "run_attempt": handoff["run"]["run_attempt"],
+                      "event": "push",
+                      "branch": "main",
+                      "head_sha": os.environ["CANDIDATE"],
+                  },
+                  "evidence_sha256": hashlib.sha256(Path("dependency-release-handoff.json").read_bytes()).hexdigest(),
+              },
+              "release": {
+                  "caller": {
+                      "repository": policy_identity,
+                      "workflow_path": caller_workflow,
+                      "commit": os.environ["CANDIDATE"],
+                      "blob_sha256": hashlib.sha256(caller_bytes).hexdigest(),
+                  },
+                  "reusable": {
+                      "repository": "github.com/hexalith/hexalith.builds",
+                      "workflow_path": ".github/workflows/domain-release.yml",
+                      "commit": os.environ["BUILD_EXECUTION_SHA"],
+                      "blob_sha256": hashlib.sha256(reusable_bytes).hexdigest(),
+                  },
+                  "builds_execution_sha": os.environ["BUILD_EXECUTION_SHA"],
+              },
+          }
+          provenance["definition_digest"] = digest({"ci": provenance["ci"], "release": provenance["release"]})
+          state = {
+              "publish_gate": "true",
+              "sealed_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "policy": policy_blob,
+              "quality_run": {
+                  "repository": policy_identity,
+                  "workflow_path": ".github/workflows/quality.yml",
+                  "run_id": int(os.environ["QUALITY_RUN_ID"]),
+                  "run_attempt": int(os.environ["QUALITY_RUN_ATTEMPT"]),
+                  "event": "push",
+                  "branch": "main",
+                  "head_sha": os.environ["CANDIDATE"],
+                  "conclusion": "success",
+              },
+              "workflow_provenance": provenance,
+              "attestation_expected": {
+                  "packages": [],
+                  "repository_slug": slug,
+                  "caller_workflow": caller_workflow,
+                  "repository_id": repository["id"],
+                  "owner_id": repository["owner"]["id"],
+                  "candidate": os.environ["CANDIDATE"],
+                  "builds_sha": os.environ["BUILD_EXECUTION_SHA"],
+                  "run_id": int(os.environ["RUN_ID"]),
+                  "run_attempt": int(os.environ["RUN_ATTEMPT"]),
+              },
+          }
+          packages = []
+          for line in Path("subject-checksums.txt").read_text(encoding="ascii").splitlines():
+              package_digest, name = line.split(" *", 1)
+              packages.append([name, package_digest])
+          state["attestation_expected"]["packages"] = packages
+          Path("publication-state.json").write_text(json.dumps(state), encoding="utf-8")
+          PY
+      - name: Publish authenticated candidate
+        id: publish
+        uses: ./.hexalith/builds-execution/Github/split-publication
+        with:
+          command: release-authenticated
+          output: authenticated-candidate
+          archive: publication-candidate.zip
+          handoff: dependency-release-handoff.json
+          bundle: ${{ steps.attest.outputs.bundle-path }}
+          metadata: publication-state.json
+          object-store: object-stores
+          token: ${{ github.token }}
+          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+          repository-slug: ${{ github.repository }}
+      - name: Record publication result
+        id: record
+        if: ${{ always() }}
+        shell: bash
+        env:
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+        run: |
+          set -euo pipefail
+          started=false
+          published=false
+          denial=""
+          if [ -f publication-started.json ]; then
+            started=true
+          fi
+          if [ "$PUBLISH_OUTCOME" = "success" ] && [ "$started" = "true" ]; then
+            published=true
+          elif [ "$started" != "true" ]; then
+            denial="classification-blocked"
+          fi
+          {
+            echo "publication-started=$started"
+            echo "published=$published"
+            echo "prepublication-denial=$denial"
+          } >> "$GITHUB_OUTPUT"
+
+  emit-release-verification-handoff:
+    needs:
+      - build-publication-candidate
+      - publish-publication-candidate
+    if: ${{ always() && inputs.release-mode == 'split-publication-v1' && !inputs.governed-release }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      publication-started: ${{ steps.emit.outputs.publication-started }}
+      published: ${{ steps.emit.outputs.published }}
+      publish-gate-variable: ${{ steps.emit.outputs.publish-gate-variable }}
+      prepublication-denial: ${{ steps.emit.outputs.prepublication-denial }}
+      handoff-sha256: ${{ steps.emit.outputs.handoff-sha256 }}
+    steps:
+      - name: Checkout pinned handoff code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Hexalith/Hexalith.Builds
+          ref: ${{ inputs.builds-execution-sha }}
+          path: .hexalith/builds-execution
+          persist-credentials: false
+          submodules: false
+      - name: Write verification handoff inputs
+        shell: bash
+        env:
+          BUILDER_RESULT: ${{ needs.build-publication-candidate.result }}
+          PUBLISHER_RESULT: ${{ needs.publish-publication-candidate.result }}
+          GATE_VALUE: ${{ needs.build-publication-candidate.outputs.publish-gate-variable }}
+          PUBLICATION_STARTED: ${{ needs.publish-publication-candidate.outputs.publication-started }}
+          PUBLISHED: ${{ needs.publish-publication-candidate.outputs.published }}
+          DENIAL: ${{ needs.publish-publication-candidate.outputs.prepublication-denial }}
+          CANDIDATE: ${{ inputs.release-commit }}
+          REPOSITORY: ${{ github.repository }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          QUALITY_RUN_ID: ${{ inputs.quality-run-id }}
+          QUALITY_RUN_ATTEMPT: ${{ inputs.quality-run-attempt }}
+          CI_RUN_ID: ${{ inputs.ci-run-id }}
+          CI_RUN_ATTEMPT: ${{ inputs.ci-run-attempt }}
+          CI_HANDOFF_SHA256: ${{ inputs.ci-handoff-sha256 }}
+          POLICY_REPOSITORY: ${{ inputs.dependency-policy-repository }}
+          POLICY_COMMIT: ${{ inputs.dependency-policy-commit }}
+          POLICY_SHA256: ${{ inputs.dependency-policy-sha256 }}
+          RELEASE_EVALUATOR: ${{ inputs.release-evaluator }}
+          ARTIFACT_ID: ${{ needs.build-publication-candidate.outputs.artifact-id }}
+          ARCHIVE_SHA256: ${{ needs.build-publication-candidate.outputs.archive-sha256 }}
+          DESCRIPTOR_SHA256: ${{ needs.build-publication-candidate.outputs.descriptor-sha256 }}
+          VERSION: ${{ needs.build-publication-candidate.outputs.version }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import json
+          import os
+          from pathlib import Path
+
+          slug = os.environ["REPOSITORY"]
+          owner, name = slug.split("/", 1)
+          identity = f"github.com/{owner.lower()}/{name.lower()}"
+          workflow_path = os.environ["WORKFLOW_REF"].split("@", 1)[0].split("/", 2)[2]
+          gate = base64.b64decode(os.environ.get("GATE_VALUE", "")).decode("utf-8") if os.environ.get("GATE_VALUE") else ""
+          started = os.environ.get("PUBLICATION_STARTED") == "true"
+          published = os.environ.get("PUBLISHED") == "true"
+          artifact_id = os.environ.get("ARTIFACT_ID", "")
+          candidate = None
+          if artifact_id:
+              candidate = {
+                  "artifact_name": f"publication-candidate-{os.environ['RUN_ID']}-{os.environ['RUN_ATTEMPT']}",
+                  "artifact_id": int(artifact_id),
+                  "run_id": int(os.environ["RUN_ID"]),
+                  "run_attempt": int(os.environ["RUN_ATTEMPT"]),
+                  "archive_sha256": os.environ["ARCHIVE_SHA256"].removeprefix("sha256:"),
+                  "descriptor_sha256": os.environ["DESCRIPTOR_SHA256"],
+              }
+          denial = os.environ.get("DENIAL") or None
+          if os.environ["BUILDER_RESULT"] == "failure" and gate == "true":
+              denial = "builder-failed"
+          document = {
+              "job_results": {
+                  "build-publication-candidate": os.environ["BUILDER_RESULT"],
+                  "publish-publication-candidate": os.environ["PUBLISHER_RESULT"],
+              },
+              "prepublication_denial": denial,
+              "assets": [],
+              "release": {
+                  "mode": "split-publication-v1",
+                  "version": os.environ.get("VERSION") or None,
+                  "tag": f"v{os.environ['VERSION']}" if os.environ.get("VERSION") else None,
+                  "github_release_id": None,
+                  "publication_started": started,
+                  "published": published,
+                  "publish_gate_variable": gate,
+              },
+              "publication_candidate": candidate,
+              "manifest": None,
+              "attestation": None,
+              "release_run": {
+                  "repository": identity,
+                  "workflow_path": workflow_path,
+                  "run_id": int(os.environ["RUN_ID"]),
+                  "run_attempt": int(os.environ["RUN_ATTEMPT"]),
+              },
+              "quality_run": {
+                  "repository": identity,
+                  "workflow_path": ".github/workflows/quality.yml",
+                  "run_id": int(os.environ["QUALITY_RUN_ID"]),
+                  "run_attempt": int(os.environ["QUALITY_RUN_ATTEMPT"]),
+                  "event": "push",
+                  "branch": "main",
+                  "head_sha": os.environ["CANDIDATE"],
+                  "conclusion": "success",
+              },
+              "ci_handoff": {
+                  "repository": identity,
+                  "workflow_path": ".github/workflows/ci.yml",
+                  "run_id": int(os.environ["CI_RUN_ID"]),
+                  "run_attempt": int(os.environ["CI_RUN_ATTEMPT"]),
+                  "evidence_sha256": os.environ["CI_HANDOFF_SHA256"],
+              },
+              "candidate": os.environ["CANDIDATE"],
+              "dependency_policy": {
+                  "schema": "hexalith.dependency-graph-policy.v1",
+                  "repository": os.environ["POLICY_REPOSITORY"],
+                  "path": "eng/dependency-graph-policy.json",
+                  "commit": os.environ["POLICY_COMMIT"],
+                  "sha256": os.environ["POLICY_SHA256"],
+              },
+              "evaluator": json.loads(os.environ["RELEASE_EVALUATOR"]),
+          }
+          Path("verification-handoff-input.json").write_text(json.dumps(document), encoding="utf-8")
+          PY
+      - name: Emit verification handoff
+        uses: ./.hexalith/builds-execution/Github/split-publication
+        with:
+          command: emit-handoff
+          metadata: verification-handoff-input.json
+          output: release-verification-handoff.json
+      - name: Record verification handoff outputs
+        id: emit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          payload = Path("release-verification-handoff.json").read_bytes()
+          document = json.loads(payload)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"handoff-sha256={hashlib.sha256(payload).hexdigest()}\n")
+              handle.write(f"publication-started={str(document['release']['publication_started']).lower()}\n")
+              handle.write(f"published={str(document['release']['published']).lower()}\n")
+              handle.write(f"publish-gate-variable={document['release']['publish_gate_variable']}\n")
+              denial = document["prepublication_denial"] or ""
+              handle.write(f"prepublication-denial={denial}\n")
+          PY
+      - name: Upload verification handoff
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-verification-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-verification-handoff.json
+          if-no-files-found: error
+          retention-days: 14
