@@ -7,7 +7,7 @@
     <HexalithConversationsVersion Condition="'$(HexalithConversationsVersion)' == ''">1.3.1</HexalithConversationsVersion>
     <HexalithPolymorphicSerializationsVersion Condition="'$(HexalithPolymorphicSerializationsVersion)' == ''">1.19.6</HexalithPolymorphicSerializationsVersion>
     <HexalithEventStoreVersion Condition="'$(HexalithEventStoreVersion)' == ''">3.128.4</HexalithEventStoreVersion>
-    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.7.1</HexalithFrontComposerVersion>
+    <HexalithFrontComposerVersion Condition="'$(HexalithFrontComposerVersion)' == ''">4.7.2</HexalithFrontComposerVersion>
     <HexalithFoldersVersion Condition="'$(HexalithFoldersVersion)' == ''">1.3.2</HexalithFoldersVersion>
     <HexalithMcpCliVersion Condition="'$(HexalithMcpCliVersion)' == ''">1.1.0</HexalithMcpCliVersion>
     <HexalithMemoriesVersion Condition="'$(HexalithMemoriesVersion)' == ''">3.0.10</HexalithMemoriesVersion>
@@ -124,7 +124,7 @@
     <PackageVersion Include="AdaptiveCards" Version="3.1.0" />
     <PackageVersion Include="AdaptiveCards.Templating" Version="2.0.6" />
     <!-- FrontComposer bunit transitive floor pulls the vulnerable 1.4.0; pin the GHSA-pgww-w46g-26qg fix. -->
-    <PackageVersion Include="AngleSharp" Version="1.8.6" />
+    <PackageVersion Include="AngleSharp" Version="1.9.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Amazon" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Apple" Version="10.0.0" />
     <PackageVersion Include="AspNet.Security.OAuth.Shopify" Version="10.0.0" />
@@ -199,7 +199,7 @@
     <PackageVersion Include="HotChocolate" Version="16.7.3" />
     <PackageVersion Include="Humanizer" Version="3.0.10" />
     <PackageVersion Include="ISO3166" Version="1.0.4" />
-    <PackageVersion Include="JsonSchema.Net" Version="9.5.0" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.6.0" />
     <PackageVersion Include="Kreuzberg" Version="4.10.4" />
     <PackageVersion Include="LibGit2Sharp" Version="0.32.0" />
     <PackageVersion Include="MailKit" Version="4.18.2" />
