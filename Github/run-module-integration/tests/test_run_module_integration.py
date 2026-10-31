@@ -44,7 +44,7 @@ class IntegrationTests(unittest.TestCase):
         self.addCleanup(self.environment.stop)
         self.state = self.root / "data" / "hexalith-builds" / "g4-runs"
         self.state.mkdir(parents=True)
-        self.receipt = self.runner_temp / "owner.json"
+        self.receipt = self.runner_temp / "hexalith-ci-owner.json"
         self.evidence = self.root / "TestResults" / "module-integration"
         self.owner = {
             "schema": helper.SCHEMA,
@@ -157,6 +157,17 @@ class IntegrationTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "posix", "The CI helper targets disposable Linux runners.")
     def test_real_helper_process_forwards_cancellation_and_finalizes_exact_receipt(self):
+        process = self._start_real_helper()
+        child_pid = None
+        try:
+            child_pid = self._wait_real_child(process)
+            process.send_signal(signal.SIGTERM)
+            output, errors = process.communicate(timeout=10)
+            self._assert_real_cancellation(process, output, errors)
+        finally:
+            self._stop_real_children(process, child_pid)
+
+    def _real_helper_environment(self):
         configuration = self.root / ".config"
         configuration.mkdir()
         (configuration / "dotnet-tools.json").write_text(
@@ -185,6 +196,9 @@ class IntegrationTests(unittest.TestCase):
         environment.update(
             Configuration="Release", HEXALITH_SOURCE_MAPPING_HASH=digest, FAKE_CI_OWNER=json.dumps(self.owner)
         )
+        return environment
+
+    def _fake_dotnet_directory(self):
         tools = self.root / "tools"
         tools.mkdir()
         executable = tools / "dotnet"
@@ -220,6 +234,11 @@ while True:
 """
         )
         executable.chmod(0o700)
+        return tools
+
+    def _start_real_helper(self):
+        environment = self._real_helper_environment()
+        tools = self._fake_dotnet_directory()
         environment["PATH"] = str(tools) + os.pathsep + environment["PATH"]
         command = [
             sys.executable,
@@ -234,7 +253,7 @@ while True:
             "--evidence",
             str(self.evidence),
         ]
-        process = subprocess.Popen(
+        return subprocess.Popen(
             command,  # nosec B603 # nosemgrep -- fixed interpreter/helper; all arguments belong to this temporary fixture.
             cwd=self.root,
             env=environment,
@@ -242,35 +261,36 @@ while True:
             stderr=subprocess.PIPE,
             text=True,
         )
-        child_pid = None
-        try:
-            deadline = time.monotonic() + 10
-            ready = self.root / "actual-child-ready"
-            while not ready.exists() and process.poll() is None and time.monotonic() < deadline:
-                time.sleep(0.01)
-            self.assertTrue(ready.exists(), "The real tool child must reach its interruptible boundary.")
-            child_pid = int(ready.read_text())
-            process.send_signal(signal.SIGTERM)
-            output, errors = process.communicate(timeout=10)
-            self.assertEqual(process.returncode, 130, output + errors)
-            self.assertEqual((self.root / "actual-child-interrupted").read_text(), str(signal.SIGINT))
-            actual = json.loads((self.root / "actual-finalizer.json").read_text())
-            self.assertEqual(actual, {"runId": self.owner["runId"], "jobStatus": "cancelled"})
-            self.assertEqual(
-                json.loads((self.evidence / "execution.json").read_text())["outcome"]["exitCode"], "Cancelled"
-            )
-            self.assertEqual(
-                json.loads((self.evidence / "cleanup.json").read_text())["remainingResources"]["processIds"], []
-            )
-        finally:
-            if process.poll() is None:
-                process.kill()
-            process.communicate(timeout=10)
-            if child_pid is not None and not (self.root / "actual-child-interrupted").exists():
-                try:
-                    os.kill(child_pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
+
+    def _wait_real_child(self, process):
+        deadline = time.monotonic() + 10
+        ready = self.root / "actual-child-ready"
+        while not ready.exists() and process.poll() is None and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertTrue(ready.exists(), "The real tool child must reach its interruptible boundary.")
+        return int(ready.read_text())
+
+    def _assert_real_cancellation(self, process, output, errors):
+        self.assertEqual(process.returncode, 130, output + errors)
+        self.assertEqual((self.root / "actual-child-interrupted").read_text(), str(signal.SIGINT))
+        actual = json.loads((self.root / "actual-finalizer.json").read_text())
+        self.assertEqual(actual, {"runId": self.owner["runId"], "jobStatus": "cancelled"})
+        self.assertEqual(
+            json.loads((self.evidence / "execution.json").read_text())["outcome"]["exitCode"], "Cancelled"
+        )
+        self.assertEqual(
+            json.loads((self.evidence / "cleanup.json").read_text())["remainingResources"]["processIds"], []
+        )
+
+    def _stop_real_children(self, process, child_pid):
+        if process.poll() is None:
+            process.kill()
+        process.communicate(timeout=10)
+        if child_pid is not None and not (self.root / "actual-child-interrupted").exists():
+            try:
+                os.kill(child_pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
 
     def test_actual_job_cancellation_reaches_exact_down_without_rewriting_first_result(self):
         self.write_receipt()
@@ -420,11 +440,26 @@ while True:
                     helper.run_integration(self.root, "module.json", [profile], self.receipt, self.evidence)
                 child.assert_not_called()
 
+    def test_fixed_job_receipt_rejects_a_different_name_and_a_canonical_symlink(self):
+        alternate = self.runner_temp / "alternate.json"
+        original = json.dumps(self.owner)
+        alternate.write_text(original)
+        with patch.object(helper.subprocess, "run") as process:
+            with self.assertRaises(ValueError):
+                helper.finalize(self.root, alternate, self.evidence)
+            self.receipt.symlink_to(alternate)
+            with self.assertRaises(ValueError):
+                helper.finalize(self.root, self.receipt, self.evidence)
+            process.assert_not_called()
+        self.assertEqual(alternate.read_text(), original)
+        self.assertFalse(self.evidence.exists())
+
     def test_digit_shorthand_keeps_owner_attempt_and_version_identities_ascii_only(self):
         self.owner["runId"] = "a" * 31 + "١"
         self.write_receipt()
+        context = helper.ci_context()
         with self.assertRaises(ValueError):
-            helper.receipt_owner(self.receipt, helper.ci_context())
+            helper.receipt_owner(self.receipt, context)
         with patch.dict(os.environ, {"GITHUB_RUN_ATTEMPT": "1٢"}):
             with self.assertRaises(ValueError):
                 helper.ci_context()

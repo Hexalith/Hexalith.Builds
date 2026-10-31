@@ -26,7 +26,8 @@ PROFILE = re.compile(r"[a-z][a-z\d]*(?:-[a-z\d]+)*", re.ASCII)
 PATH_PART = re.compile(r"[A-Za-z\d_.-]+", re.ASCII)
 TOOL = ["dotnet", "tool", "run", "hexalith-module", "--"]
 ARTIFACTS = ("test-result.json", "attachments.json", "attachment-withdrawals.json")
-EVIDENCE_FILES = frozenset((*ARTIFACTS, "invocation.json", "execution.json", "cleanup.json"))
+CLEANUP_FILE = "cleanup.json"
+EVIDENCE_FILES = frozenset((*ARTIFACTS, "invocation.json", "execution.json", CLEANUP_FILE))
 
 
 def ci_context() -> dict:
@@ -81,9 +82,11 @@ def checked_paths(root: Path, receipt: Path, evidence: Path) -> tuple[Path, Path
     root = real_path(root)
     if not root.is_relative_to(workspace):
         raise ValueError("integration tool must execute inside the checked-out workspace")
-    receipt = bounded_path(receipt, job_root("RUNNER_TEMP"))
-    if not receipt.name.endswith(".json"):
-        raise ValueError("integration receipt must be a job-temporary JSON file")
+    temporary = job_root("RUNNER_TEMP")
+    expected_receipt = temporary / "hexalith-ci-owner.json"
+    if receipt != expected_receipt:
+        raise ValueError("integration requires the fixed job-temporary ownership receipt")
+    receipt = bounded_path(expected_receipt, temporary)
     evidence = bounded_path(evidence, workspace)
     if not evidence.is_relative_to(workspace / "TestResults"):
         raise ValueError("integration evidence must stay under workspace/TestResults")
@@ -230,15 +233,14 @@ def finalize(root: Path, receipt: Path, evidence: Path, timeout: int = 150, job_
     if job_status not in ("", "success", "failure", "cancelled"):
         raise ValueError("unsupported CI finalizer job status")
     if not receipt.exists():
-        write_evidence(evidence, "cleanup.json", {"status": "not-allocated", "executionContext": context})
+        write_evidence(evidence, CLEANUP_FILE, {"status": "not-allocated", "executionContext": context})
         return 0
     owner = receipt_owner(receipt, context)
     verify_tool(root)
     environment = os.environ.copy()
     environment["HEXALITH_CI_JOB_STATUS"] = job_status
-    completed = subprocess.run(
+    completed = subprocess.run(  # nosec B603 # nosemgrep -- fixed tool/options; strictly validated ASCII run id.
         TOOL + ["down", "--run-id=" + owner["runId"], "--output=json"],
-        # nosec B603 # nosemgrep -- fixed tool/verb/options; run identity is strictly ASCII hex validated above.
         cwd=root,
         capture_output=True,
         text=True,
@@ -248,7 +250,7 @@ def finalize(root: Path, receipt: Path, evidence: Path, timeout: int = 150, job_
         env=environment,
     )
     result = read_json(completed.stdout)
-    write_evidence(evidence, "cleanup.json", result)
+    write_evidence(evidence, CLEANUP_FILE, result)
     retain_artifacts(owner, evidence)
     return 0 if cleanup_verified(completed, result, owner) else 1
 
