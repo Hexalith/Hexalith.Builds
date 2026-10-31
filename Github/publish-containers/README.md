@@ -78,6 +78,11 @@ It also requires every package version and every container tag to be absent. A
 single repository remains the same supported caller contract; multi-container
 callers repeat `--container-repository` when invoking the preflight wrapper.
 
+A new registry repository contributes an empty version inventory only when its
+authenticated initial tag-list request returns HTTP 404 with one valid OCI
+`NAME_UNKNOWN` error. Other lookup failures and missing later pages still block
+publication. The independent exact-tag absence checks remain mandatory.
+
 `verifyRelease` re-proves the source, freezes that identity, and checks every
 destination before tag creation. The pre-NuGet `publish` phase requires exact
 identity equality, re-proves the source, and repeats every destination check.

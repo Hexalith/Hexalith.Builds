@@ -361,6 +361,106 @@ class PublicationPreflightTests(unittest.TestCase):
                 "Basic fixture",
             )
         self.assertEqual("version-floor-invalid", context.exception.code)
+
+    def registry_lookup_error(self, body, status=404):
+        return urllib.error.HTTPError(
+            "https://registry.hexalith.com/v2/new-repository/tags/list?n=100",
+            status, "private-registry-response", {}, io.BytesIO(body),
+        )
+
+    def test_new_registry_repository_name_unknown_has_no_prior_versions(self):
+        absent = self.registry_lookup_error(b'{"errors":[{"code":"NAME_UNKNOWN"}]}')
+        with mock.patch.object(self.validator.URL_OPENER, "open", side_effect=absent) as request:
+            observation = self.validator._registry_version_observation(
+                "registry.hexalith.com/new-repository", "Basic fixture",
+            )
+        self.assertEqual(
+            {"kind": "oci-registry", "identity": "registry.hexalith.com/new-repository", "versions": []},
+            observation,
+        )
+        self.assertEqual(absent.url, request.call_args.args[0].full_url)
+        self.assertEqual("Basic fixture", request.call_args.args[0].get_header("Authorization"))
+        self.assertEqual(30, request.call_args.kwargs["timeout"])
+        evidence = self.validator.validate_version_floor("1.0.0", [observation])
+        self.assertEqual("1.0.0", evidence["candidate"])
+        # An empty inventory never replaces the independent exact-tag collision check.
+        with self.assertRaises(self.validator.PreflightError) as failure:
+            self.validator.validate_container_absence(
+                "1.0.0", [observation["identity"]], lambda *_: 200,
+            )
+        self.assertEqual("version-collision", failure.exception.code)
+
+    def test_registry_name_unknown_requires_authenticated_initial_request(self):
+        for authorization in (None, "", " "):
+            with self.subTest(authorization=authorization):
+                absent = self.registry_lookup_error(b'{"errors":[{"code":"NAME_UNKNOWN"}]}')
+                with (
+                    mock.patch.object(self.validator.URL_OPENER, "open", side_effect=absent),
+                    self.assertRaises(self.validator.PreflightError) as failure,
+                ):
+                    self.validator._registry_version_observation(
+                        "registry.hexalith.com/new-repository", authorization,
+                    )
+                self.assertEqual("version-floor-unavailable", failure.exception.code)
+
+        response = mock.MagicMock()
+        response.__enter__.return_value.status = 200
+        response.__enter__.return_value.read.return_value = b'{"name":"new-repository","tags":["1.0.0"]}'
+        response.__enter__.return_value.headers = {
+            "Link": '</v2/new-repository/tags/list?n=100&last=1.0.0>; rel="next"',
+        }
+        absent = self.registry_lookup_error(b'{"errors":[{"code":"NAME_UNKNOWN"}]}')
+        with (
+            mock.patch.object(self.validator.URL_OPENER, "open", side_effect=[response, absent]) as requests,
+            self.assertRaises(self.validator.PreflightError) as failure,
+        ):
+            self.validator._registry_version_observation(
+                "registry.hexalith.com/new-repository", "Basic fixture",
+            )
+        self.assertEqual(2, requests.call_count)
+        self.assertEqual("version-floor-unavailable", failure.exception.code)
+
+    def test_registry_generic_or_malformed_404_is_not_an_empty_inventory(self):
+        bodies = (
+            b'', b'private-invalid-json', b'\xff', b'null', b'[]', b'{}',
+            b'{"errors":null}', b'{"errors":[]}', b'{"errors":[null]}',
+            b'{"errors":[{"code":"MANIFEST_UNKNOWN"}]}',
+            b'{"errors":[{"code":"NAME_UNKNOWN"},{"code":"DENIED"}]}',
+            b'{"errors":[{"code":"DENIED","code":"NAME_UNKNOWN"}]}',
+            b'{"errors":[{"code":"NAME_UNKNOWN"}],"padding":"' + b'x' * 16384 + b'"}',
+        )
+        for body in bodies:
+            with self.subTest(body=body[:80]):
+                absent = self.registry_lookup_error(body)
+                with (
+                    mock.patch.object(self.validator.URL_OPENER, "open", side_effect=absent),
+                    self.assertRaises(self.validator.PreflightError) as failure,
+                ):
+                    self.validator._registry_version_observation(
+                        "registry.hexalith.com/new-repository", "Basic fixture",
+                    )
+                self.assertEqual("version-floor-unavailable", failure.exception.code)
+                self.assertNotIn("private", str(failure.exception))
+
+    def test_registry_version_lookup_auth_server_and_transport_errors_remain_blocking(self):
+        private = "private-registry-response"
+        errors = [
+            self.registry_lookup_error(b'{"errors":[{"code":"NAME_UNKNOWN"}]}', status)
+            for status in (400, 401, 403, 429, 500, 502, 503)
+        ]
+        errors.extend([urllib.error.URLError(private), TimeoutError(private)])
+        for error in errors:
+            with self.subTest(kind=type(error).__name__, status=getattr(error, "code", None)):
+                with (
+                    mock.patch.object(self.validator.URL_OPENER, "open", side_effect=error),
+                    self.assertRaises(self.validator.PreflightError) as failure,
+                ):
+                    self.validator._registry_version_observation(
+                        "registry.hexalith.com/new-repository", "Basic fixture",
+                    )
+                self.assertEqual("version-floor-unavailable", failure.exception.code)
+                self.assertNotIn(private, str(failure.exception))
+
     def test_authority_issue_paginates_and_rejects_ambiguous_or_untrusted_consumption(self):
         pages = [[{"id": index} for index in range(100)], [{"id": 101}]]
         requested = []
