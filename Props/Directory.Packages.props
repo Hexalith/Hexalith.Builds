@@ -68,6 +68,8 @@
     <PackageVersion Include="Hexalith.EventStore.Server" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.ServiceDefaults" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.SignalR" Version="$(HexalithEventStoreVersion)" />
+    <!-- Descriptor CI prerequisites ship in one approved EventStore release; keep Testing and
+         Testing.Integration on the owner family pin. Staged API changes grant no pin/publication approval. -->
     <PackageVersion Include="Hexalith.EventStore.Testing" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.EventStore.Testing.Integration" Version="$(HexalithEventStoreVersion)" />
     <PackageVersion Include="Hexalith.Conversations.Client" Version="$(HexalithConversationsVersion)" />
