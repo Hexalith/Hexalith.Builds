@@ -253,6 +253,16 @@ authorized audit commit. Run the deterministic validator against the committed
 result. Neither local commit publishes packages, pushes a branch, changes
 Platform's gitlink or grants Platform tool acceptance.
 
+### MSBuild inspection compatibility hold
+
+The architecture loader selects `Microsoft.Build` and `Microsoft.Build.Framework`
+`18.9.6`, plus Locator `1.11.2`. Package inspection confirms Build `18.10.1`
+and `18.11.0` target `net11.0`/`net472`; the attempted `18.11.0` Works Debug
+restore failed with NU1701 under `net10.0`. Version `18.9.6` supplies `net10.0`
+assets. Keep this hold until a later package supplies compatible .NET 10 assets
+and the architecture loader passes restore, compilation and its fitness tests.
+The audit retains the failed selection as historical metadata, not qualification.
+
 ### Central package freshness audit
 
 `audit-central-package-versions.ps1` evaluates the complete catalog, discovers
