@@ -7,6 +7,7 @@ namespace Hexalith.Builds.ModuleTool.Tests;
 
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Hexalith.Builds.Tooling.Diagnostics;
@@ -24,6 +25,8 @@ using Xunit;
 /// </summary>
 public sealed class NativeTestExecutorTests
 {
+    private const string _markerRunner = "import pathlib\npathlib.Path(__file__).with_name('child-executed').touch()\n";
+
     private static readonly NativeTestReportLoadResult _passingReport = new(new NativeTestReport("native.trx", new string('A', 64), 2, 2, 0, 0), null);
 
     private static readonly byte[] _reportBytes = Encoding.UTF8.GetBytes("<TestRun><ResultSummary outcome=\"Completed\" /></TestRun>");
@@ -174,18 +177,8 @@ public sealed class NativeTestExecutorTests
     public async Task PreparedScopeGatesChildExecutionAsync(string mutation)
     {
         using PlatformManifestTestWorkspace workspace = new();
-        workspace.Document["modules"]![0]!["tests"] = JsonNode.Parse("""
-            [{"name":"verify","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":60,"stopTimeoutSeconds":30,"mode":"source"}]
-            """);
         string marker = Path.Combine(workspace.Root, "child-executed");
-        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), "import pathlib\npathlib.Path(__file__).with_name('child-executed').touch()\n", TestContext.Current.CancellationToken).ConfigureAwait(true);
-        string manifest = workspace.Save();
-        PlatformManifestValidationResult validated = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
-        validated.IsValid.ShouldBeTrue();
-        ModuleTestSelection selection = ModuleTestSelection.Select(validated.Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
-        SourceMapping mapping = new(WorkspaceMode.Source, workspace.Root, "sample", [new SourceMappingEntry("sample", "source", workspace.Root)], false);
-        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selection, SourceMapping = mapping, Modules = [], UiMarkers = [] };
-        plan = await TestEnvironmentProvisioningFixture.PrepareAsync(plan, manifest, workspace.Root).ConfigureAwait(true);
+        (CompositionRunPlan plan, ModuleTestSelection selection, string manifest) = await PrepareSelectedRunAsync(workspace, _markerRunner).ConfigureAwait(true);
         CompositionNativeTestScope scope = new(plan.RunId, "sample", new string('a', 64), ["sample"], [plan.TenantNamespace]);
         scope = mutation switch
         {
@@ -197,8 +190,7 @@ public sealed class NativeTestExecutorTests
             "absent-synthetic-tenant" => scope with { Tenants = ["other-tenant"] },
             _ => throw new ArgumentOutOfRangeException(nameof(mutation)),
         };
-        CompositionReadiness preliminary = new(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned-resource", "process", "Healthy")]);
-        CompositionReadiness readiness = TestEnvironmentProvisioningFixture.Observe(preliminary, "sample") with { NativeTestScope = scope };
+        CompositionReadiness readiness = HealthyReadiness(plan) with { NativeTestScope = scope };
         using Process process = new();
         NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(new CompositionRunSession(plan, readiness, "private-signing-key-value", process), new PersistedProfileNativeTests("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selection).ConfigureAwait(true);
         if (mutation == "valid")
@@ -215,6 +207,128 @@ public sealed class NativeTestExecutorTests
         }
     }
 
+    /// <summary>A prepared scope that differs from the fallback identity is what the launched child actually receives.</summary>
+    /// <returns>The decoded token claim and domain handoff assertions.</returns>
+    [Fact]
+    public async Task PreparedScopeBindsNativeTokenAndDomainHandoffAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        string observedPath = Path.Combine(workspace.Root, "child-identity.json");
+        const string identityRunner = "import base64, json, os, pathlib\n"
+            + "claims = json.loads(base64.urlsafe_b64decode(os.environ['HEXALITH_G4_ACCESS_TOKEN'].split('.')[1] + '=='))\n"
+            + "observed = {key: claims.get(key) for key in ['sub', 'tenants', 'domains', 'eventstore:surface']}\n"
+            + "observed['HEXALITH_G4_DOMAINS'] = os.environ['HEXALITH_G4_DOMAINS']\n"
+            + "pathlib.Path(__file__).with_name('child-identity.json').write_text(json.dumps(observed))\n";
+        (CompositionRunPlan plan, ModuleTestSelection selection, string manifest) = await PrepareSelectedRunAsync(workspace, identityRunner).ConfigureAwait(true);
+
+        // Unsorted domains and an extra tenant differ from the fallback identity (["sample"], [synthetic tenant]).
+        CompositionNativeTestScope scope = new(plan.RunId, "sample", new string('a', 64), ["tenants", "party"], [plan.TenantNamespace, "system"]);
+        CompositionReadiness readiness = HealthyReadiness(plan) with { NativeTestScope = scope };
+        using Process process = new();
+
+        NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(new CompositionRunSession(plan, readiness, "private-signing-key-value", process), new PersistedProfileNativeTests("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selection).ConfigureAwait(true);
+
+        File.Exists(observedPath).ShouldBeTrue("The scoped child must launch and record its decoded identity.");
+        using JsonDocument observed = JsonDocument.Parse(await File.ReadAllTextAsync(observedPath, TestContext.Current.CancellationToken).ConfigureAwait(true));
+        JsonElement identity = observed.RootElement;
+        identity.GetProperty("sub").GetString().ShouldBe("g4-native-tests");
+        identity.GetProperty("domains").GetString().ShouldNotBeNull().Split(' ').ShouldBe(["party", "tenants"], ignoreOrder: true);
+        identity.GetProperty("tenants").GetString().ShouldNotBeNull().Split(' ').ShouldBe([plan.TenantNamespace, "system"], ignoreOrder: true);
+        identity.GetProperty("eventstore:surface").GetString().ShouldBe("agent");
+        identity.GetProperty("HEXALITH_G4_DOMAINS").GetString().ShouldBe("party,tenants");
+
+        // The identity-only child writes no TRX, so the launched run still fails on its missing report.
+        result.Result.Outcome.RuleId.ShouldBe("HXT002");
+    }
+
+    /// <summary>An unsafe or inconsistent endpoint-credential channel refuses at the executor before the child launches.</summary>
+    /// <param name="fault">The private-channel mutation, or valid for the launched control.</param>
+    /// <returns>The refusal and never-executed entry assertions.</returns>
+    [Theory]
+    [InlineData("valid")]
+    [InlineData("missing")]
+    [InlineData("group-readable")]
+    [InlineData("foreign-run")]
+    [InlineData("endpoints-without-path")]
+    public async Task EndpointCredentialChannelGatesChildExecutionAsync(string fault)
+    {
+        fault.ShouldBeOneOf("valid", "missing", "group-readable", "foreign-run", "endpoints-without-path");
+        using PlatformManifestTestWorkspace workspace = new();
+        string marker = Path.Combine(workspace.Root, "child-executed");
+        (CompositionRunPlan plan, ModuleTestSelection selection, string manifest) = await PrepareSelectedRunAsync(workspace, _markerRunner).ConfigureAwait(true);
+        Uri invocation = new("http://127.0.0.1:20012/v1.0/invoke/sample/method/api/v1/");
+        string credentialPath = Path.Combine(plan.Workspace, NativeTestHandoff.EndpointCredentialsFileName);
+        CompositionWorkspace.CreatePrivateDirectory(plan.Workspace);
+        if (fault != "missing")
+        {
+            JsonObject channel = new()
+            {
+                ["schema"] = NativeTestHandoff.EndpointCredentialsSchema,
+                ["runId"] = fault == "foreign-run" ? "foreign-run" : plan.RunId,
+                ["syntheticTenantId"] = plan.TenantNamespace,
+                ["dataIsolationId"] = plan.ResourceNamespace,
+                ["endpoints"] = new JsonArray(new JsonObject
+                {
+                    ["resourceId"] = "owned-resource",
+                    ["moduleId"] = "sample",
+                    ["endpointName"] = "dapr-invocation",
+                    ["uri"] = invocation.AbsoluteUri,
+                    ["headerName"] = "dapr-api-token",
+                    ["value"] = "fixture-endpoint-key",
+                }),
+            };
+            await File.WriteAllTextAsync(credentialPath, channel.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(credentialPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | (fault == "group-readable" ? UnixFileMode.GroupRead : UnixFileMode.None));
+            }
+        }
+
+        CompositionReadiness readiness = HealthyReadiness(plan);
+        readiness = readiness with
+        {
+            NativeEndpointCredentialsPath = fault == "endpoints-without-path" ? null : credentialPath,
+            NativeHttpEndpoints = [new("owned-resource", "sample", "dapr-invocation", invocation, "owned-sidecar")],
+            Resources = [.. readiness.Resources.Select(resource => resource with { Endpoints = [.. resource.Endpoints, new("dapr-invocation", "http", invocation)] })],
+        };
+        using Process process = new();
+
+        NativeTestExecutionResult result = await NativeTestExecutor.ExecuteAsync(new CompositionRunSession(plan, readiness, "private-signing-key-value", process), new PersistedProfileNativeTests("runner.py", "python3"), manifest, TestContext.Current.CancellationToken, selection: selection).ConfigureAwait(true);
+
+        // Windows has no group mode bit to refuse, so its group-readable fixture is the valid control.
+        if (fault == "valid" || (fault == "group-readable" && OperatingSystem.IsWindows()))
+        {
+            File.Exists(marker).ShouldBeTrue();
+
+            // The valid channel launches the marker-only child; its intentionally missing TRX remains a test failure.
+            result.Result.Outcome.RuleId.ShouldBe("HXT002");
+        }
+        else
+        {
+            AssertNotPassing(result, "HXT008", ToolExitCode.EvidenceSchemaOrPolicy);
+            File.Exists(marker).ShouldBeFalse();
+        }
+    }
+
+    private static async Task<(CompositionRunPlan Plan, ModuleTestSelection Selection, string Manifest)> PrepareSelectedRunAsync(PlatformManifestTestWorkspace workspace, string runner)
+    {
+        workspace.Document["modules"]![0]!["tests"] = JsonNode.Parse("""
+            [{"name":"verify","executor":"python3","entry":"runner.py","reportFormat":"trx","executionTimeoutSeconds":60,"stopTimeoutSeconds":30,"mode":"source"}]
+            """);
+        await File.WriteAllTextAsync(Path.Combine(workspace.Root, "runner.py"), runner, TestContext.Current.CancellationToken).ConfigureAwait(false);
+        string manifest = workspace.Save();
+        PlatformManifestValidationResult validated = PlatformManifestValidator.Validate([manifest], TestContext.Current.CancellationToken);
+        validated.IsValid.ShouldBeTrue();
+        ModuleTestSelection selection = ModuleTestSelection.Select(validated.Declarations!, "verify", manifest, DateTimeOffset.UtcNow).ShouldNotBeNull();
+        SourceMapping mapping = new(WorkspaceMode.Source, workspace.Root, "sample", [new SourceMappingEntry("sample", "source", workspace.Root)], false);
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with { SelectedTest = selection, SourceMapping = mapping, Modules = [], UiMarkers = [] };
+        plan = await TestEnvironmentProvisioningFixture.PrepareAsync(plan, manifest, workspace.Root).ConfigureAwait(false);
+        return (plan, selection, manifest);
+    }
+
+    private static CompositionReadiness HealthyReadiness(CompositionRunPlan plan) =>
+        TestEnvironmentProvisioningFixture.Observe(new CompositionReadiness(CompositionReadiness.SupportedSchema, plan.RunId, new Uri("http://127.0.0.1:20012/"), null, [new("owned-resource", "process", "Healthy")]), "sample");
+
     private static void AssertNotPassing(NativeTestExecutionResult result, string ruleId, ToolExitCode exitCode)
     {
         result.Result.Outcome.ExitCode.ShouldBe(exitCode);
@@ -223,4 +337,4 @@ public sealed class NativeTestExecutorTests
         result.Report.ShouldBeNull();
         result.ReportBytes.ShouldBeNull();
     }
-}
+}

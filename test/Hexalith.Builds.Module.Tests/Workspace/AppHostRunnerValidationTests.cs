@@ -515,6 +515,78 @@ public sealed class AppHostRunnerValidationTests
         }
     }
 
+    /// <summary>Verifies readiness publishes registered owner preparation outputs and refuses an inconsistent credential channel.</summary>
+    /// <param name="fault">The prepared channel inconsistency, or none for the published control.</param>
+    /// <returns>The published or refused readiness assertions.</returns>
+    [Theory]
+    [InlineData("none")]
+    [InlineData("endpoints-without-path")]
+    [InlineData("path-without-endpoints")]
+    [InlineData("path-outside-workspace")]
+    public async Task HealthyReadinessPublishesOwnerPreparationOutputsAsync(string fault)
+    {
+        fault.ShouldBeOneOf("none", "endpoints-without-path", "path-without-endpoints", "path-outside-workspace");
+        string root = CompositionTestFiles.CreateDirectory();
+        try
+        {
+            CompositionRunPlan plan = CompositionTestFiles.CreatePlan(root) with { Modules = [], UiMarkers = [] };
+            IDistributedApplicationBuilder builder = CreateBuilder();
+            ExecutableResource eventStore = builder.AddExecutable("eventstore", "unused", root).WithHttpEndpoint(port: 32125).Resource;
+            ExecutableResource owner = builder.AddExecutable("sample", "unused", root).Resource;
+            owner.Annotations.Add(new PlatformResourceOwnerAnnotation("sample"));
+            ExecutableResource sidecar = builder.AddExecutable("sample-dapr-cli", "unused", root).WithHttpEndpoint(port: 32126).Resource;
+            foreach (ExecutableResource allocated in new[] { eventStore, sidecar })
+            {
+                EndpointAnnotation endpoint = allocated.Annotations.OfType<EndpointAnnotation>().Single();
+                endpoint.AllocatedEndpoint = new AllocatedEndpoint(endpoint, "127.0.0.1", endpoint.Port!.Value);
+            }
+
+            Uri invocation = new("http://127.0.0.1:32126/v1.0/invoke/sample/method/api/v1/");
+            CompositionNativeHttpEndpoint prepared = new("sample", "sample", "dapr-invocation", invocation, "sample-dapr-cli");
+            CompositionNativeTestScope scope = new(plan.RunId, "sample", new string('a', 64), ["party", "tenants"], [plan.TenantNamespace, "system"]);
+            string credentialPath = fault == "path-outside-workspace"
+                ? Path.Combine(root, NativeTestHandoff.EndpointCredentialsFileName)
+                : Path.Combine(Path.GetFullPath(plan.Workspace), NativeTestHandoff.EndpointCredentialsFileName);
+            _ = builder.Services.AddSingleton<ICompositionRunPreparation>(new PreparedOutputsRunPreparation(
+                scope,
+                fault == "path-without-endpoints" ? [] : [prepared],
+                fault == "endpoints-without-path" ? null : credentialPath));
+            await using DistributedApplication app = builder.Build();
+            ResourceNotificationService notifications = app.Services.GetRequiredService<ResourceNotificationService>();
+            await PublishAsync(notifications, eventStore, HealthStatus.Healthy, 4244).ConfigureAwait(true);
+            await PublishAsync(notifications, owner, HealthStatus.Healthy, 4245).ConfigureAwait(true);
+            await PublishAsync(notifications, sidecar, HealthStatus.Healthy, 4246).ConfigureAwait(true);
+            using CancellationTokenSource bound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            bound.CancelAfter(TimeSpan.FromSeconds(5));
+
+            if (fault != "none")
+            {
+                _ = await Should.ThrowAsync<InvalidDataException>(() => RunReadiness.WaitAndWriteAsync(app, plan, bound.Token)).ConfigureAwait(true);
+                File.Exists(plan.ReadinessPath).ShouldBeFalse();
+                return;
+            }
+
+            (await RunReadiness.WaitAndWriteAsync(app, plan, bound.Token).ConfigureAwait(true)).ShouldBeTrue();
+            CompositionReadiness readiness = (await CompositionDocumentStore.TryReadAsync<CompositionReadiness>(plan.ReadinessPath, TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
+            CompositionNativeTestScope published = readiness.NativeTestScope.ShouldNotBeNull();
+            published.RunId.ShouldBe(plan.RunId);
+            published.ModuleId.ShouldBe("sample");
+            published.RoutingCatalogRoot.ShouldBe(new string('a', 64));
+            published.Domains.ShouldBe(["party", "tenants"]);
+            published.Tenants.ShouldBe([plan.TenantNamespace, "system"]);
+            readiness.NativeHttpEndpoints.ShouldHaveSingleItem().ShouldBe(prepared);
+            CompositionResourceEndpoint ownerEndpoint = readiness.Resources.Single(resource => resource.Name == "sample").Endpoints.ShouldHaveSingleItem();
+            ownerEndpoint.Name.ShouldBe("dapr-invocation");
+            ownerEndpoint.Protocol.ShouldBe("http");
+            ownerEndpoint.Uri.ShouldBe(invocation);
+            readiness.NativeEndpointCredentialsPath.ShouldBe(credentialPath);
+        }
+        finally
+        {
+            CompositionTestFiles.Delete(root);
+        }
+    }
+
     /// <summary>Verifies a real runner cutover failure reports the current unready list.</summary>
     /// <returns>The HXR027 document assertions.</returns>
     [Fact]
