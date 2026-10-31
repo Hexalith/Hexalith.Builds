@@ -85,3 +85,19 @@ PR checks and exact new-main CI remain pending before Root pointer adoption.
 - `/tmp/builds572-cleanup-green-methods.xml`: SHA-256 `bd0880f526c91e125822e249e1d0d1b710989abc7bcb0b487c911b5859eb2ffd`.
 - `/tmp/builds572-cleanup-affected-classes.xml`: SHA-256 `04eb56155ecdb320e5ed013285546c0e7e7503b34ade415af454e4e1031b83f3`.
 - `/tmp/builds572-cleanup-commit-message.txt`: SHA-256 `4e9c2f98564e732acf0a679abfe967555d0092fa60ac89021ec61578a37d7ef9`.
+
+## Automated review correction
+
+Codacy check 124657010010 on PR 150 reported one new minor issue: the new
+controlled method had 67 lines of code, exceeding its 50-line limit. Extract only
+ready-process construction and refusal/immutable-outcome assertions into small
+helpers in the same existing test class. The controlled method now has 49
+nonblank code lines. No limit or analysis rule is suppressed. The shared outcome
+check also compares retained environment bindings, including their actual timing.
+
+Final helper build: zero warnings/errors, 26.86 seconds. Final rerun of both
+relevant classes: 74/74 pass, zero errors/skips/not-run, 59.461 seconds. The same
+four original concurrent cases and two controlled refusal/retry cases remain.
+
+- `/tmp/builds150-final-helper-build.log`: SHA-256 `1743fadf2aa5094bc9890cd7738ae451a1bd9bec1fb267371451b62cbfd2cf68`.
+- `/tmp/builds150-final-helper-classes.xml`: SHA-256 `d4caf33c0a24cefd5e8b6712bbdb13ff5740340286b5267c26b2c33d18ffe6d4`.

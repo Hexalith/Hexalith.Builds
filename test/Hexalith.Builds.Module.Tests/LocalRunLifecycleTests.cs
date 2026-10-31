@@ -911,9 +911,7 @@ public sealed class LocalRunLifecycleTests
             if (down.Result.Outcome.RuleId == "HXR037")
             {
                 declared.ShouldBeTrue();
-                down.Result.Status.ShouldBe("failed");
-                down.Result.Diagnostics.Count(diagnostic => diagnostic.RuleId == "HXT008").ShouldBe(1);
-                down.Result.Diagnostics.Single(diagnostic => diagnostic.RuleId == "HXR037").Hint.ShouldBe("Retry down for the same owner run identity.");
+                AssertRetryableMetadataRefusal(down);
                 priorCancellation = (await engine.ReadCommittedOutcomeAsync(runId, testBound.Token, waitForLock: true).ConfigureAwait(true)).ShouldNotBeNull();
                 priorCancellation.TerminalStatus.ShouldBe("cancelled");
                 down = await engine.DownAsync(runId, testBound.Token).ConfigureAwait(true);
@@ -935,10 +933,7 @@ public sealed class LocalRunLifecycleTests
                 if (priorCancellation is not null)
                 {
                     ModuleTestRunRecord final = (await engine.ReadCommittedOutcomeAsync(runId, testBound.Token, waitForLock: true).ConfigureAwait(true)).ShouldNotBeNull();
-                    final.TerminalAtUtc.ShouldBe(priorCancellation.TerminalAtUtc);
-                    final.TerminalOutcome.ShouldBe(priorCancellation.TerminalOutcome);
-                    final.Selection.ExecutionDeadlineUtc.ShouldBe(priorCancellation.Selection.ExecutionDeadlineUtc);
-                    final.Selection.CredentialExpiryUtc.ShouldBe(priorCancellation.Selection.CredentialExpiryUtc);
+                    AssertFirstOutcomeUnchanged(final, priorCancellation);
                 }
             }
         }
@@ -962,25 +957,14 @@ public sealed class LocalRunLifecycleTests
         using PlatformManifestTestWorkspace workspace = new();
         (ModuleTestSelection selected, _) = LocalRunLifecycleFixture.Create(workspace);
         string manifest = workspace.Save();
-        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", TestContext.Current.CancellationToken).ConfigureAwait(true);
-        CompositionEngineOptions options = LocalRunLifecycleFixture.Options(workspace.Root, selected) with
-        {
-            AppHostAssemblyPath = appHost,
-            AspireCommand = CompositionTestFiles.CreateAspire(workspace.Root),
-            DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
-            SourceMapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root),
-            ReadinessTimeout = TimeSpan.FromSeconds(600),
-            StopTimeout = TimeSpan.FromSeconds(5),
-            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
-        };
-        CompositionEngine engine = new(options);
+        CompositionEngine engine = await CreateReadyCleanupEngineAsync(workspace, selected, TestContext.Current.CancellationToken).ConfigureAwait(true);
         using CancellationTokenSource testBound = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         testBound.CancelAfter(TimeSpan.FromSeconds(30));
         CompositionStartResult started = await engine.StartAsync(manifest, testBound.Token).ConfigureAwait(true);
         started.IsReady.ShouldBeTrue(JsonSerializer.Serialize(started.Result));
         CompositionRunSession session = started.Session.ShouldNotBeNull();
         using Process owned = Process.GetProcessById(session.AppHost.Id);
-        string directory = Path.Combine(options.StateDirectory, "diagnostics", session.RunId);
+        string directory = Path.Combine(engine.StateStore.Directory, "diagnostics", session.RunId);
         try
         {
             ModuleTestRunRecord first = (await engine.RecordTestOutcomeAsync(session.RunId, session.Readiness.Resources, Failure("HXT007"), "retained", new CompositionRunResources([], [owned.Id], true), TestContext.Current.CancellationToken).ConfigureAwait(true)).ShouldNotBeNull();
@@ -991,10 +975,7 @@ public sealed class LocalRunLifecycleTests
                 CompositionDownResult refused = useSession
                     ? await engine.DownAsync(session, TestContext.Current.CancellationToken).ConfigureAwait(true)
                     : await engine.DownAsync(session.RunId, TestContext.Current.CancellationToken).ConfigureAwait(true);
-                refused.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
-                refused.Result.Outcome.RuleId.ShouldBe("HXR037");
-                refused.Result.Diagnostics.Count(diagnostic => diagnostic.RuleId == "HXT008").ShouldBe(1);
-                refused.Result.Diagnostics.Single(diagnostic => diagnostic.RuleId == "HXR037").Hint.ShouldBe("Retry down for the same owner run identity.");
+                AssertRetryableMetadataRefusal(refused);
                 refused.Remaining.ProcessIds.ShouldContain(owned.Id);
                 owned.Refresh();
                 owned.HasExited.ShouldBeFalse();
@@ -1012,11 +993,7 @@ public sealed class LocalRunLifecycleTests
             Directory.Exists(session.Plan.Workspace).ShouldBeFalse();
             File.Exists(engine.StateStore.PathFor(session.RunId)).ShouldBeFalse();
             ModuleTestRunRecord final = (await engine.ReadCommittedOutcomeAsync(session.RunId, testBound.Token, waitForLock: true).ConfigureAwait(true)).ShouldNotBeNull();
-            final.TerminalStatus.ShouldBe(first.TerminalStatus);
-            final.TerminalAtUtc.ShouldBe(first.TerminalAtUtc);
-            final.TerminalOutcome.ShouldBe(first.TerminalOutcome);
-            final.Selection.ExecutionDeadlineUtc.ShouldBe(first.Selection.ExecutionDeadlineUtc);
-            final.Selection.CredentialExpiryUtc.ShouldBe(first.Selection.CredentialExpiryUtc);
+            AssertFirstOutcomeUnchanged(final, first);
             final.CleanupDisposition.ShouldBe("complete");
         }
         finally
@@ -1218,6 +1195,50 @@ public sealed class LocalRunLifecycleTests
         JsonElement result = TestEnvironmentContractReader.ReadResult(resultPath.GetString()!, TestContext.Current.CancellationToken).Document!.Value;
         result.GetProperty("terminal").GetProperty("cause").GetString().ShouldBe("execution-timeout");
         result.GetProperty("retention").GetProperty("disposition").GetString().ShouldBe("failure-retained");
+    }
+
+    /// <summary>Builds the ready process used to observe cleanup before and after mandatory metadata becomes available.</summary>
+    /// <param name="workspace">The isolated declaration and runtime workspace.</param>
+    /// <param name="selected">The original immutable test selection.</param>
+    /// <param name="cancellationToken">The fixture construction allowance.</param>
+    /// <returns>The engine using the existing bounded process fixture.</returns>
+    private static async Task<CompositionEngine> CreateReadyCleanupEngineAsync(PlatformManifestTestWorkspace workspace, ModuleTestSelection selected, CancellationToken cancellationToken)
+    {
+        string appHost = await CompositionTestFiles.BuildFakeAppHostAsync(workspace.Root, "ready", cancellationToken).ConfigureAwait(true);
+        return new(LocalRunLifecycleFixture.Options(workspace.Root, selected) with
+        {
+            AppHostAssemblyPath = appHost,
+            AspireCommand = CompositionTestFiles.CreateAspire(workspace.Root),
+            DaprHome = CompositionTestFiles.CreateDaprHome(workspace.Root, CompositionToolchainPins.DaprCliVersion, CompositionToolchainPins.DaprRuntimeVersion),
+            SourceMapping = CompositionTestFiles.CreatePlatformMapping(workspace.Root),
+            ReadinessTimeout = TimeSpan.FromSeconds(600),
+            StopTimeout = TimeSpan.FromSeconds(5),
+            PlatformModelBuildOverride = (_, _, _) => Task.FromResult(appHost),
+        });
+    }
+
+    /// <summary>Verifies the documented refusal when mandatory cleanup metadata is unavailable.</summary>
+    /// <param name="refused">The first explicit cleanup command result.</param>
+    private static void AssertRetryableMetadataRefusal(CompositionDownResult refused)
+    {
+        refused.Result.Status.ShouldBe("failed");
+        refused.Result.Outcome.ExitCode.ShouldBe(ToolExitCode.TopologyOrLifecycle);
+        refused.Result.Outcome.RuleId.ShouldBe("HXR037");
+        refused.Result.Diagnostics.Count(diagnostic => diagnostic.RuleId == "HXT008").ShouldBe(1);
+        refused.Result.Diagnostics.Single(diagnostic => diagnostic.RuleId == "HXR037").Hint.ShouldBe("Retry down for the same owner run identity.");
+    }
+
+    /// <summary>Verifies an explicit cleanup retry preserves the original terminal observation and expiry.</summary>
+    /// <param name="current">The observation after cleanup.</param>
+    /// <param name="original">The first committed observation.</param>
+    private static void AssertFirstOutcomeUnchanged(ModuleTestRunRecord current, ModuleTestRunRecord original)
+    {
+        current.TerminalStatus.ShouldBe(original.TerminalStatus);
+        current.TerminalAtUtc.ShouldBe(original.TerminalAtUtc);
+        current.TerminalOutcome.ShouldBe(original.TerminalOutcome);
+        current.Selection.ExecutionDeadlineUtc.ShouldBe(original.Selection.ExecutionDeadlineUtc);
+        current.Selection.CredentialExpiryUtc.ShouldBe(original.Selection.CredentialExpiryUtc);
+        (current.EnvironmentBindings?.GetRawText()).ShouldBe(original.EnvironmentBindings?.GetRawText());
     }
 
     private static async Task AssertRetainedWorkspaceAsync(CompositionEngineOptions options, string runId, JsonElement result)
