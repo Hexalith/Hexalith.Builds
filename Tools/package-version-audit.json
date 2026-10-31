@@ -1,13 +1,17 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
+  "generatedFromRevision": "7063319cc89b56eb74f1c718a3b5b13541c446d7",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "6edf0dc99eb29b476aed655dce05174cb95a2813ccf4bd8f29a87a9b8a44d6a2",
-  "catalogRawSha256": "d249d117a57c66c4c1b57ba59c1ee8ff649072003281eb8ce7850ac99df6401e",
+  "catalogSha256": "1d4b477b459f89d4b2e5c52a8d5e429d2af6fe3a6cd14c3102c3a544842983e3",
+  "catalogRawSha256": "a5d2aa68c88d22d956bc43de6f09c13882b0132f0eb52c296c568e064338be31",
   "snapshot": {
-    "mode": "complete",
-    "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
+    "mode": "incremental",
+    "auditedAtUtc": "2026-10-31T15:18:02.2559352+00:00",
     "refreshedFamilies": [
+      "package:microsoft.build",
+      "package:microsoft.build.framework"
+    ],
+    "preservedFamilies": [
       "aspire",
       "bunit-html",
       "dapr",
@@ -96,8 +100,6 @@
       "package:messagepack",
       "package:microsoft.azure.cosmos",
       "package:microsoft.bot.builder",
-      "package:microsoft.build",
-      "package:microsoft.build.framework",
       "package:microsoft.build.locator",
       "package:microsoft.graph",
       "package:microsoft.identity.client",
@@ -162,8 +164,7 @@
       "roslyn",
       "verify",
       "xunit"
-    ],
-    "preservedFamilies": []
+    ]
   },
   "sources": [
     {
@@ -178,7 +179,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
+    "repositoryRevision": "7063319cc89b56eb74f1c718a3b5b13541c446d7",
     "sha256": "c419088f40670c681d00d8367ec50fcd1d1391346c5c34ce04b3e0632539a80e",
     "entries": [
       {
@@ -41844,14 +41845,40 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
-        "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
-        "familySelectionSha256": "929f561e7f64e373fb1a3f7ee6d26c71d8cd8ce0ae507bcad83dcbe4596b66c6",
+        "auditedAtUtc": "2026-10-31T15:18:02.2559352+00:00",
+        "generatedFromRevision": "7063319cc89b56eb74f1c718a3b5b13541c446d7",
+        "familySelectionSha256": "0a57498fc310dd80756e705ce21627ba39663cc803bbda11a889f65066f41f4a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "b58ad88d5896d68ce793c21bbd04e383252229cbae3030164ab9fc42d1a9e7b1",
+        "packageMetadataSha256": "d2985e525e45ac7761e96aabb6e046d3cdfb00a27057ebd02d0e7de4eb61581d",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
-      "historicalContext": []
+      "historicalContext": [
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
+          "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
+          "family": "package:microsoft.build",
+          "disposition": "retained",
+          "rollbackGroup": "package:microsoft.build",
+          "packageIds": [
+            "Microsoft.Build"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
+            "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
+            "familySelectionSha256": "929f561e7f64e373fb1a3f7ee6d26c71d8cd8ce0ae507bcad83dcbe4596b66c6",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b58ad88d5896d68ce793c21bbd04e383252229cbae3030164ab9fc42d1a9e7b1",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        }
+      ]
     },
     {
       "family": "package:microsoft.build.framework",
@@ -41865,14 +41892,40 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
-        "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
-        "familySelectionSha256": "d915aa6a9b37f8f407bc9bae76ec70262aecfbf1d14d411677ab76b4599c41fe",
+        "auditedAtUtc": "2026-10-31T15:18:02.2559352+00:00",
+        "generatedFromRevision": "7063319cc89b56eb74f1c718a3b5b13541c446d7",
+        "familySelectionSha256": "3cc5d3922cdb48088f5e9d3f48c0a0a1d1a02cb5538fc799f4c10a348f84ecab",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
-        "packageMetadataSha256": "3a935ecfdecab798fcac9c8f0473190dbaa7ab2332986fb60fc20ab501b87846",
+        "packageMetadataSha256": "89ee9c2bb1259008790f9f83b60f8b932f627c69d2492e927e251705ef3c47d7",
         "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
-      "historicalContext": []
+      "historicalContext": [
+        {
+          "schema": "hexalith.package-audit-family-history.v2",
+          "label": "Historical prior family observation; not current metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
+          "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
+          "family": "package:microsoft.build.framework",
+          "disposition": "retained",
+          "rollbackGroup": "package:microsoft.build.framework",
+          "packageIds": [
+            "Microsoft.Build.Framework"
+          ],
+          "rationale": "Retain the current audited family until current metadata and owned direct consumers complete compatibility acceptance.",
+          "compatibilityEvidence": "Current NuGet metadata and owned direct-consumer discovery are recorded; historical claims are not current acceptance evidence.",
+          "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
+          "representativeConsumers": [],
+          "origin": {
+            "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
+            "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
+            "familySelectionSha256": "d915aa6a9b37f8f407bc9bae76ec70262aecfbf1d14d411677ab76b4599c41fe",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "3a935ecfdecab798fcac9c8f0473190dbaa7ab2332986fb60fc20ab501b87846",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        }
+      ]
     },
     {
       "family": "package:microsoft.build.locator",
@@ -190102,15 +190155,15 @@
     },
     {
       "id": "Microsoft.Build",
-      "auditedVersion": "18.11.0",
-      "selectedVersion": "18.11.0",
+      "auditedVersion": "18.9.6",
+      "selectedVersion": "18.9.6",
       "latestStable": "18.11.0",
       "latestPrerelease": "17.10.0-preview-24081-01",
       "listingState": "listed",
       "family": "package:microsoft.build",
       "disposition": "retained",
       "rollbackGroup": "package:microsoft.build",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "rationale": "Retain 18.9.6 pending compatibility validation of listed stable candidate 18.11.0.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=18.11.0, prerelease=17.10.0-preview-24081-01",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -190122,19 +190175,56 @@
           "diagnostic": "Registration metadata resolved."
         }
       ],
-      "historicalContext": []
+      "historicalContext": [
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
+          "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
+          "id": "Microsoft.Build",
+          "auditedVersion": "18.11.0",
+          "selectedVersion": "18.11.0",
+          "latestStable": "18.11.0",
+          "latestPrerelease": "17.10.0-preview-24081-01",
+          "listingState": "listed",
+          "family": "package:microsoft.build",
+          "disposition": "retained",
+          "rollbackGroup": "package:microsoft.build",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=18.11.0, prerelease=17.10.0-preview-24081-01",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "18.11.0",
+              "latestPrerelease": "17.10.0-preview-24081-01",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
+            "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
+            "familySelectionSha256": "929f561e7f64e373fb1a3f7ee6d26c71d8cd8ce0ae507bcad83dcbe4596b66c6",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "b58ad88d5896d68ce793c21bbd04e383252229cbae3030164ab9fc42d1a9e7b1",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        }
+      ]
     },
     {
       "id": "Microsoft.Build.Framework",
-      "auditedVersion": "18.11.0",
-      "selectedVersion": "18.11.0",
+      "auditedVersion": "18.9.6",
+      "selectedVersion": "18.9.6",
       "latestStable": "18.11.0",
       "latestPrerelease": "17.10.0-preview-24081-01",
       "listingState": "listed",
       "family": "package:microsoft.build.framework",
       "disposition": "retained",
       "rollbackGroup": "package:microsoft.build.framework",
-      "rationale": "Current pin is the latest listed stable release on the configured sources.",
+      "rationale": "Retain 18.9.6 pending compatibility validation of listed stable candidate 18.11.0.",
       "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=18.11.0, prerelease=17.10.0-preview-24081-01",
       "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
       "sourceResults": [
@@ -190146,7 +190236,44 @@
           "diagnostic": "Registration metadata resolved."
         }
       ],
-      "historicalContext": []
+      "historicalContext": [
+        {
+          "schema": "hexalith.package-audit-package-history.v2",
+          "label": "Historical prior package observation; not current package metadata or acceptance evidence.",
+          "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
+          "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
+          "id": "Microsoft.Build.Framework",
+          "auditedVersion": "18.11.0",
+          "selectedVersion": "18.11.0",
+          "latestStable": "18.11.0",
+          "latestPrerelease": "17.10.0-preview-24081-01",
+          "listingState": "listed",
+          "family": "package:microsoft.build.framework",
+          "disposition": "retained",
+          "rollbackGroup": "package:microsoft.build.framework",
+          "rationale": "Current pin is the latest listed stable release on the configured sources.",
+          "evidence": "https://api.nuget.org/v3/index.json: state=listed, stable=18.11.0, prerelease=17.10.0-preview-24081-01",
+          "removalTrigger": "Re-run the live audit and accept a source-resolved candidate only after the family and representative consumers pass compatibility validation.",
+          "sourceResults": [
+            {
+              "source": "https://api.nuget.org/v3/index.json",
+              "listingState": "listed",
+              "latestStable": "18.11.0",
+              "latestPrerelease": "17.10.0-preview-24081-01",
+              "diagnostic": "Registration metadata resolved."
+            }
+          ],
+          "origin": {
+            "auditedAtUtc": "2026-10-31T15:10:04.3918973+00:00",
+            "generatedFromRevision": "80665e59a198a7f0858fcb77593b260c697a8045",
+            "familySelectionSha256": "d915aa6a9b37f8f407bc9bae76ec70262aecfbf1d14d411677ab76b4599c41fe",
+            "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
+            "packageMetadataSha256": "3a935ecfdecab798fcac9c8f0473190dbaa7ab2332986fb60fc20ab501b87846",
+            "consumerEvidenceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "supersededBecause": "Family-local catalog selection or observation evidence changed."
+        }
+      ]
     },
     {
       "id": "Microsoft.Build.Locator",
