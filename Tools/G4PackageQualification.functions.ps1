@@ -361,7 +361,10 @@ function Assert-PackagedSeedSubscriptionEvidence {
             (-not $declarative -and ($case.subscriptionPubsubName -isnot [string] -or $case.receiverPubsubName -isnot [string]))) {
             throw 'Packaged seed subscription proof requires exact scalar or null pubsub names.'
         }
-        if ($case.discoveryStatusCode -isnot [long] -or $case.discoveryStatusCode -ne $status -or
+        if ($case.actorDiscoveryStatusCode -isnot [long] -or $case.actorDiscoveryStatusCode -ne 200 -or
+            $case.missingChannelStatusCode -isnot [long] -or $case.missingChannelStatusCode -ne 401 -or
+            $case.wrongChannelStatusCode -isnot [long] -or $case.wrongChannelStatusCode -ne 401 -or
+            $case.discoveryStatusCode -isnot [long] -or $case.discoveryStatusCode -ne $status -or
             $case.projectionSubscriptionCount -isnot [long] -or $case.projectionSubscriptionCount -ne $count -or
             $case.subscriptionPubsubName -cne $pubsub -or
             $case.receiverPresent -isnot [bool] -or $case.receiverPresent -ne $true -or

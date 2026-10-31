@@ -23,7 +23,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
 {
     private static readonly TimeSpan _pollInterval = TimeSpan.FromMilliseconds(500);
 
-    private readonly CompositionEngineOptions _options = options ?? throw new ArgumentNullException(nameof(options));
+    private readonly CompositionEngineOptions _options = ApplyRetentionPolicy(options ?? throw new ArgumentNullException(nameof(options)));
 
     /// <summary>
     /// Gets the state store used by this engine.
@@ -956,10 +956,18 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(diagnostic.Phase, diagnostic.Category, diagnostic.RuleId, ToolExitCode.TopologyOrLifecycle), [.. bookkeeping, diagnostic]) { RemainingResources = remaining }, remaining);
     }
 
-    /// <summary>Mirrors admission: only a selected-test owner with a local execution context can ever hold attachments.</summary>
+    /// <summary>Limits failure retention to local owners regardless of caller-supplied retention options.</summary>
+    /// <param name="settings">The requested engine settings.</param>
+    /// <returns>The settings with CI failure retention disabled.</returns>
+    private static CompositionEngineOptions ApplyRetentionPolicy(CompositionEngineOptions settings) =>
+        (settings.ContinuousIntegrationOverride ?? !TestEnvironment.TestEnvironmentDescriptorWriter.IsLocalExecution())
+            ? settings with { RetainOnFailure = false }
+            : settings;
+
+    /// <summary>Mirrors admission for selected local and same-job CI owners.</summary>
     /// <param name="session">The owned session.</param>
     /// <returns>Whether attachment withdrawal must precede stopping this session.</returns>
-    private static bool CanHoldAttachments(CompositionRunSession session) => session.Plan.SelectedTest is not null && session.LocalExecution;
+    private static bool CanHoldAttachments(CompositionRunSession session) => session.Plan.SelectedTest is not null;
 
     private static ToolDiagnostic RecordingFailure() => Diagnostic("HXT008", ToolPhase.Evidence, ToolFailureCategory.EvidencePolicy, "Owned cleanup metadata or diagnostics could not be retained within the stopping budget.", "evidence", null);
 
@@ -1398,11 +1406,15 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             return new CompositionDownResult(new ToolCommandResult("failed", ToolOutcome.Passed().Fail(invalid.Phase, invalid.Category, invalid.RuleId, ToolExitCode.UsageOrManifest), [invalid]), new CompositionRunResources([], [], true) { DiscoveryFailures = ["ownership"] });
         }
 
-        // Admission only permits selected-test owners with a recorded local execution context.
-        bool canHoldAttachments = state?.SelectedTest is not null
-            && state.ExecutionContext is { ValueKind: System.Text.Json.JsonValueKind.Object } context
-            && context.TryGetProperty("kind", out System.Text.Json.JsonElement kind)
-            && kind.ValueKind == System.Text.Json.JsonValueKind.String && kind.GetString() == "local";
+        // Selected owners can admit local or same-job CI attachments. Withdrawal must precede every resource stop.
+        bool supportedContext = state?.ExecutionContext is { ValueKind: System.Text.Json.JsonValueKind.Object } ownerContext
+            && ownerContext.TryGetProperty("kind", out System.Text.Json.JsonElement ownerKind) && ownerKind.ValueKind == System.Text.Json.JsonValueKind.String && ownerKind.GetString() is "local" or "ci";
+        bool canHoldAttachments = state?.SelectedTest is not null && supportedContext;
+        bool ciOwner = state?.ExecutionContext is { ValueKind: System.Text.Json.JsonValueKind.Object } context
+            && context.TryGetProperty("kind", out System.Text.Json.JsonElement kind) && kind.ValueKind == System.Text.Json.JsonValueKind.String && kind.GetString() == "ci";
+        bool ciCancelled = _options.CiJobCancelled || state?.TestRun is null || state.TestRun.TerminalStatus is "cancelled" or "withdrawn";
+        string ciWithdrawalReason = ciCancelled ? "ci-job-cancelled" : "ci-job-completed";
+        string withdrawalReason = ciOwner ? ciWithdrawalReason : "developer-stop";
         string attemptId = CompositionRunPlanFactory.NewRunId();
         string directory = DiagnosticsDirectory(runId);
         if (state is not null)
@@ -1457,7 +1469,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         {
             try
             {
-                IReadOnlyList<CompositionAttachment> withdrawn = await CompositionAttachmentStore.WithdrawAsync(directory, runId, "developer-stop", DateTimeOffset.UtcNow, bound).ConfigureAwait(false);
+                IReadOnlyList<CompositionAttachment> withdrawn = await CompositionAttachmentStore.WithdrawAsync(directory, runId, withdrawalReason, DateTimeOffset.UtcNow, bound).ConfigureAwait(false);
                 bookkeeping.AddRange(CompositionAttachmentStore.WithdrawalDiagnostics(withdrawn));
             }
             catch (Exception exception) when (IsTeardownFailure(exception))
@@ -1973,6 +1985,22 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             }
         }
 
+        if (!requirePublication && _options.SelectedTest is not null)
+        {
+            try
+            {
+                await CompositionDocumentStore.WriteAsync(Path.Combine(diagnosticsPath, "cleanup-request.json"), new { runId, attemptId = CompositionRunPlanFactory.NewRunId() }, boundToken).ConfigureAwait(false);
+                IReadOnlyList<CompositionAttachment> ended = await CompositionAttachmentStore.WithdrawAsync(diagnosticsPath, runId, status == CompositionRunStatus.Cancelled ? "ci-job-cancelled" : "ci-job-completed", DateTimeOffset.UtcNow, boundToken).ConfigureAwait(false);
+                bookkeeping.AddRange(CompositionAttachmentStore.WithdrawalDiagnostics(ended));
+            }
+            catch (Exception exception) when (IsTeardownFailure(exception))
+            {
+                // Leave ownership and resources retryable when withdrawal could not be committed before stopping.
+                AddRecordingFailure(bookkeeping);
+                return Failed("failed", exitCode, [.. located, .. bookkeeping], runId);
+            }
+        }
+
         (CompositionRunResources remaining, bool workspaceRemoved) = retained || (!terminalPublished && requirePublication)
             ? (await ObserveOwnedResourcesAsync(runId, boundToken).ConfigureAwait(false), false)
             : await TearDownAsync(runId, appHost, boundToken).ConfigureAwait(false);
@@ -2443,6 +2471,12 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
             EffectiveDeadlineModuleId = deadline.ModuleId,
             ExecutionContext = _options.SelectedTest is null ? null : System.Text.Json.JsonSerializer.SerializeToElement(TestEnvironment.TestEnvironmentDescriptorWriter.ExecutionContext()),
         };
+        if (_options.CiOwnerReceiptPath is { } receiptPath)
+        {
+            // The finalizer can recover these exact identities even if cancellation interrupts the following state writes.
+            await CompositionCiOwnerReceipt.PersistAsync(receiptPath, initial, StateStore.Directory, _options.WorkspaceRoot, cancellationToken).ConfigureAwait(false);
+        }
+
         await StateStore.WriteAsync(initial, cancellationToken).ConfigureAwait(false);
         CandidateStateIssued = _options.CandidatePolicy is not null;
         await CompositionDocumentStore.WriteAsync(Path.Combine(directory, "owner.json"), initial, cancellationToken).ConfigureAwait(false);

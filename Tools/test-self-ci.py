@@ -22,22 +22,23 @@ class RequiredStatusTests(unittest.TestCase):
         self.assertIsNotNone(match)
         block = match[1]
         self.assertIn("    name: Build and test\n", block)
-        self.assertIn("    needs: [catalog, contracts, dotnet]\n", block)
+        self.assertIn("    needs: [catalog, contracts, dotnet, python-tests]\n", block)
         self.assertIn("    if: always()\n", block)
         self.assertIn("CATALOG_RESULT: ${{ needs.catalog.result }}", block)
         self.assertIn("CONTRACTS_RESULT: ${{ needs.contracts.result }}", block)
         self.assertIn("DOTNET_RESULT: ${{ needs.dotnet.result }}", block)
+        self.assertIn("PYTHON_RESULT: ${{ needs.python-tests.result }}", block)
         body = re.search(r"(?ms)^        run: \|\n(.*)", block)
         self.assertIsNotNone(body)
         script = textwrap.dedent(body[1])
-        for catalog, contracts, dotnet in itertools.product(
-            ("success", "failure", "cancelled", "skipped", ""), repeat=3
+        for catalog, contracts, dotnet, python in itertools.product(
+            ("success", "failure", "cancelled", "skipped", ""), repeat=4
         ):
-            with self.subTest(catalog=catalog, contracts=contracts, dotnet=dotnet):
+            with self.subTest(catalog=catalog, contracts=contracts, dotnet=dotnet, python=python):
                 environment = os.environ.copy()
-                environment.update(CATALOG_RESULT=catalog, CONTRACTS_RESULT=contracts, DOTNET_RESULT=dotnet)
+                environment.update(CATALOG_RESULT=catalog, CONTRACTS_RESULT=contracts, DOTNET_RESULT=dotnet, PYTHON_RESULT=python)
                 result = subprocess.run(["bash", "-e", "-c", script], env=environment, check=False)
-                self.assertEqual(result.returncode == 0, catalog == contracts == dotnet == "success")
+                self.assertEqual(result.returncode == 0, catalog == contracts == dotnet == python == "success")
 
 
 if __name__ == "__main__":

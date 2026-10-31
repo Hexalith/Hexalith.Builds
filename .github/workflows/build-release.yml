@@ -170,6 +170,9 @@ jobs:
       shell: pwsh
       run: pwsh -NoProfile -File ./Tools/test-publish-containers.ps1
 
+    - name: Test CI integration lifecycle helper
+      run: python3 -m unittest discover -s Github/run-module-integration/tests -v
+
     - name: Test module build preparation helper
       run: python3 -m unittest discover -s Github/prepare-module-build/tests -v
 

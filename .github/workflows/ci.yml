@@ -26,7 +26,7 @@ jobs:
   build-and-test:
     name: Build and test
     runs-on: ubuntu-latest
-    needs: [catalog, contracts, dotnet]
+    needs: [catalog, contracts, dotnet, python-tests]
     if: always()
     timeout-minutes: 5
     steps:
@@ -35,9 +35,10 @@ jobs:
           CATALOG_RESULT: ${{ needs.catalog.result }}
           CONTRACTS_RESULT: ${{ needs.contracts.result }}
           DOTNET_RESULT: ${{ needs.dotnet.result }}
+          PYTHON_RESULT: ${{ needs.python-tests.result }}
         shell: bash
         run: |
-          [[ "$CATALOG_RESULT" == "success" && "$CONTRACTS_RESULT" == "success" && "$DOTNET_RESULT" == "success" ]]
+          [[ "$CATALOG_RESULT" == "success" && "$CONTRACTS_RESULT" == "success" && "$DOTNET_RESULT" == "success" && "$PYTHON_RESULT" == "success" ]]
 
   dotnet:
     runs-on: ubuntu-latest
@@ -278,6 +279,9 @@ jobs:
       - name: Test container publisher helpers
         working-directory: Github/publish-containers/tests
         run: python3 -m unittest discover -v
+
+      - name: Test CI integration lifecycle helper
+        run: python3 -m unittest discover -s Github/run-module-integration/tests -v
 
       - name: Test module build preparation helper
         run: python3 -m unittest discover -s Github/prepare-module-build/tests -v

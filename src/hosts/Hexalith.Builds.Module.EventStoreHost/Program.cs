@@ -29,11 +29,7 @@ builder.Services.AddEventStoreServer(builder.Configuration);
 builder.Services.AddEventStoreDomainQueryRouting();
 if (!string.IsNullOrEmpty(builder.Configuration["EventStore:RouteCatalog:DevelopmentBootstrap:CatalogPath"]))
 {
-#if HEXALITH_EVENTSTORE_MAPPED_SOURCE
     _ = Hexalith.EventStore.Server.Routing.RunScopedRouteCatalogGateway.AddEventStoreRunScopedCatalogGateway(builder.Services, builder.Configuration);
-#else
-    throw new NotSupportedException("Run-scoped route catalogs require the mapped EventStore source build.");
-#endif
 }
 
 WebApplication app = builder.Build();
@@ -44,18 +40,14 @@ app.MapDefaultEndpoints();
 app.UseRouting();
 app.UseAuthentication();
 app.UseRateLimiter();
-#if HEXALITH_EVENTSTORE_MAPPED_SOURCE
 app.UseEventStoreHttpHostSecurity();
-#endif
 app.UseAuthorization();
-#if HEXALITH_EVENTSTORE_MAPPED_SOURCE
 if (!string.IsNullOrEmpty(app.Configuration["EventStore:RouteCatalog:DevelopmentBootstrap:CatalogPath"]))
 {
     _ = Hexalith.EventStore.ServiceDefaults.Routing.FiniteRouteCatalogReceiver.UseFiniteDevelopmentRouteCatalogReceiver(
         app,
         Hexalith.EventStore.Server.Routing.RunScopedRouteCatalogGateway.Operation);
 }
-#endif
 
 app.UseCloudEvents();
 
@@ -84,17 +76,9 @@ app.MapErrorReferences();
 app.MapApiVersionFallback();
 if (!declarativeSubscriptions)
 {
-#if HEXALITH_EVENTSTORE_MAPPED_SOURCE
     _ = app.MapSubscribeHandler().RequireEventStoreChannel();
-#else
-    _ = app.MapSubscribeHandler().RequireAuthorization(EventStoreWorkloadAuthenticationDefaults.SidecarChannelPolicy);
-#endif
 }
 
-#if HEXALITH_EVENTSTORE_MAPPED_SOURCE
 app.MapActorsHandlers().WithMetadata(EventStoreActorCallbackEndpointMetadata.Instance).RequireEventStoreChannel();
-#else
-app.MapActorsHandlers().RequireAuthorization(EventStoreWorkloadAuthenticationDefaults.SidecarChannelPolicy);
-#endif
 
 await app.RunAsync().ConfigureAwait(false);

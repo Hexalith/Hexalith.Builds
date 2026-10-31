@@ -367,6 +367,7 @@ internal static class ModuleCommandApplication
         Option<string> evidenceOption = new("--evidence");
         Option<string> candidateOption = new("--candidate-request") { Description = "Signed GitHub gate issuance; requires independently enrolled host authority." };
         Option<string> runIdOption = new("--run-id");
+        Option<string> ciReceiptOption = new("--ci-owner-receipt") { Description = "External durable ownership receipt for disposable Linux GitHub-hosted package integration." };
         Option<string> outputOption = new("--output")
         {
             DefaultValueFactory = _ => "human",
@@ -382,6 +383,7 @@ internal static class ModuleCommandApplication
         if (command == ModuleInvocationCommand.Test)
         {
             commandDefinition.Options.Add(candidateOption);
+            commandDefinition.Options.Add(ciReceiptOption);
         }
 
         if (command == ModuleInvocationCommand.Down)
@@ -410,6 +412,12 @@ internal static class ModuleCommandApplication
                 return ToolCommandHost.WriteParseFailureAsync(standardOutput, ParseOutputFormat(parseResult.GetValue(outputOption)));
             }
 
+            CompositionEngineOptions? executionOptions = compositionOptions;
+            if (command == ModuleInvocationCommand.Test && parseResult.GetValue(ciReceiptOption) is { } receiptPath)
+            {
+                executionOptions = (executionOptions ?? CompositionCommandOptions.Create(descriptorChildEntryAssemblyPath!)) with { CiOwnerReceiptPath = receiptPath };
+            }
+
             Task<int> execution = ModuleCommandExecutionService.ExecuteAsync(
                 command,
                 parseResult.GetValue(manifestOption) ?? "unused-manifest-for-exact-run",
@@ -421,7 +429,7 @@ internal static class ModuleCommandApplication
                 cancellationToken,
                 descriptorChildEntryAssemblyPath,
                 command == ModuleInvocationCommand.Down ? parseResult.GetValue(runIdOption) : null,
-                compositionOptions,
+                executionOptions,
                 mode,
                 parseResult.GetValue(profileOption),
                 command == ModuleInvocationCommand.Test ? parseResult.GetValue(candidateOption) : null);
