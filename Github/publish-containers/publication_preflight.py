@@ -895,6 +895,27 @@ def _registry_version_observation(container_repository, authorization):
                     _fail("version-floor-unavailable", "Registry tag lookup did not return HTTP 200.")
                 document = json.loads(response.read())
                 link = response.headers.get("Link")
+        except urllib.error.HTTPError as error:
+            # A first publication has no repository yet. Accept only the registry's
+            # exact initial NAME_UNKNOWN response; later-page loss is never absence.
+            if (len(visited) == 1 and error.code == 404 and error.geturl() == url
+                    and (error.headers or {}).get("Content-Type", "").split(";", 1)[0].strip().lower() == "application/json"):
+                try:
+                    with error:
+                        raw_error = error.read(65537)
+                    absence = json.loads(raw_error) if len(raw_error) <= 65536 else None
+                    errors = absence.get("errors") if isinstance(absence, dict) else None
+                    if (isinstance(errors, list) and errors
+                            and all(isinstance(item, dict) and item.get("code") == "NAME_UNKNOWN"
+                                    and isinstance(item.get("detail"), dict)
+                                    and item["detail"].get("name") == repository_path for item in errors)):
+                        return {"kind": "oci-registry", "identity": container_repository, "versions": []}
+                except (OSError, ValueError, UnicodeDecodeError):
+                    pass
+            raise PreflightError(
+                "version-floor-unavailable",
+                "Registry tag lookup could not be completed.",
+            ) from error
         except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as error:
             raise PreflightError(
                 "version-floor-unavailable",

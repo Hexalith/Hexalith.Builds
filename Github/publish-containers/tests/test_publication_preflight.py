@@ -361,6 +361,49 @@ class PublicationPreflightTests(unittest.TestCase):
                 "Basic fixture",
             )
         self.assertEqual("version-floor-invalid", context.exception.code)
+    def test_new_registry_repository_requires_exact_initial_name_unknown(self):
+        url = "https://registry.hexalith.com/v2/tenants-api/tags/list?n=100"
+        body = {"errors": [{"code": "NAME_UNKNOWN", "detail": {"name": "tenants-api"}}]}
+        absent = urllib.error.HTTPError(url, 404, "Not Found", {"Content-Type": "application/json"},
+                                        io.BytesIO(json.dumps(body).encode()))
+        with mock.patch.object(self.validator.URL_OPENER, "open", side_effect=absent) as request:
+            observation = self.validator._registry_version_observation("registry.hexalith.com/tenants-api", "Basic fixture")
+        self.assertEqual({"kind": "oci-registry", "identity": "registry.hexalith.com/tenants-api", "versions": []}, observation)
+        self.assertEqual(url, request.call_args.args[0].full_url)
+        self.assertEqual("Basic fixture", request.call_args.args[0].get_header("Authorization"))
+        self.assertEqual("1.0.0", self.validator.validate_version_floor("1.0.0", [observation])["candidate"])
+
+    def test_registry_absence_never_hides_lookup_failure_or_page_loss(self):
+        url = "https://registry.hexalith.com/v2/tenants-api/tags/list?n=100"
+        valid = {"errors": [{"code": "NAME_UNKNOWN", "detail": {"name": "tenants-api"}}]}
+        cases = [(status, valid, "application/json", url) for status in (401, 403, 429, 500, 503)]
+        cases.extend((404, body, content_type, response_url) for body, content_type, response_url in [
+            ({"errors": []}, "application/json", url),
+            ({"errors": [{"code": "DENIED", "detail": {"name": "tenants-api"}}]}, "application/json", url),
+            ({"errors": [{"code": "NAME_UNKNOWN", "detail": {"name": "other"}}]}, "application/json", url),
+            ({"errors": [{"code": "NAME_UNKNOWN"}]}, "application/json", url),
+            (valid, "text/html", url), (valid, "application/json", url.replace("tenants-api", "other")),
+            ("private-malformed-response", "application/json", url),
+        ])
+        for status, body, content_type, response_url in cases:
+            with self.subTest(status=status, body=body, content_type=content_type, response_url=response_url):
+                raw = body.encode() if isinstance(body, str) else json.dumps(body).encode()
+                error = urllib.error.HTTPError(response_url, status, "private-error", {"Content-Type": content_type}, io.BytesIO(raw))
+                with mock.patch.object(self.validator.URL_OPENER, "open", side_effect=error):
+                    with self.assertRaises(self.validator.PreflightError) as failure:
+                        self.validator._registry_version_observation("registry.hexalith.com/tenants-api", "Basic fixture")
+                self.assertEqual("version-floor-unavailable", failure.exception.code)
+                self.assertNotIn("private-", str(failure.exception))
+        response = mock.MagicMock()
+        response.__enter__.return_value.status = 200
+        response.__enter__.return_value.read.return_value = b'{"name":"tenants-api","tags":["1.0.0"]}'
+        next_url = url + "&last=1.0.0"
+        response.__enter__.return_value.headers = {"Link": '<' + next_url + '>; rel="next"'}
+        error = urllib.error.HTTPError(next_url, 404, "Not Found", {"Content-Type": "application/json"}, io.BytesIO(json.dumps(valid).encode()))
+        with mock.patch.object(self.validator.URL_OPENER, "open", side_effect=[response, error]):
+            with self.assertRaises(self.validator.PreflightError):
+                self.validator._registry_version_observation("registry.hexalith.com/tenants-api", "Basic fixture")
+
     def test_authority_issue_paginates_and_rejects_ambiguous_or_untrusted_consumption(self):
         pages = [[{"id": index} for index in range(100)], [{"id": 101}]]
         requested = []

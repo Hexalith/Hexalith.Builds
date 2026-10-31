@@ -30,6 +30,10 @@ inputs:
   dotnet-global-json:
     description: Caller SDK pin
     default: global.json
+  package-prepare-script:
+    description: Optional caller-owned Bash script preparing verified package dependencies before restore
+    required: false
+    default: ''
   packages-lock-file:
     description: NuGet cache key source
     default: Directory.Packages.props
@@ -122,11 +126,31 @@ runs:
     - name: Verify npm dependency provenance and signatures
       shell: bash
       run: npm audit signatures
+    - name: Prepare package dependencies
+      if: ${{ inputs.package-prepare-script != '' }}
+      shell: bash
+      env:
+        PACKAGE_PREPARE_SCRIPT: ${{ inputs.package-prepare-script }}
+      run: |
+        set -euo pipefail
+        if [[ ! "$PACKAGE_PREPARE_SCRIPT" =~ ^[A-Za-z0-9_./-]+\.sh$ || "$PACKAGE_PREPARE_SCRIPT" = /* || "$PACKAGE_PREPARE_SCRIPT" =~ (^|/)\.\.?(/|$) || ! -f "$PACKAGE_PREPARE_SCRIPT" ]]; then
+          echo "Package preparation must select an existing repository-relative bash script." >&2
+          exit 1
+        fi
+        checked_path="$PACKAGE_PREPARE_SCRIPT"
+        while [ "$checked_path" != . ]; do
+          if [ -L "$checked_path" ]; then
+            echo "Package preparation forbids symbolic links." >&2
+            exit 1
+          fi
+          checked_path="$(dirname "$checked_path")"
+        done
+        timeout --signal=TERM --kill-after=30s 1800 bash "$PACKAGE_PREPARE_SCRIPT" </dev/null
     - name: Restore
       shell: bash
       env:
         SOLUTION: ${{ inputs.solution }}
-      run: dotnet restore "$SOLUTION"
+      run: dotnet restore "$SOLUTION" -p:Configuration=Release
     - name: Build
       shell: bash
       env:

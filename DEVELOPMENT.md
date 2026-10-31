@@ -17,6 +17,15 @@ a reviewed full commit SHA and pass that same literal as
 `builds-execution-sha`. Do not use a branch, tag, expression, or repository
 variable for release-tool identity.
 
+## Verified package preparation in domain workflows
+
+Both domain CI and `Github/prepare-domain-release` accept the optional
+`package-prepare-script` input. Select one caller-owned relative Bash script
+when a build needs verified published dependency artifacts before restore.
+Both paths apply the same path and symlink checks, propagate failures, and
+allow at most 1800 seconds. Preparation runs before explicit Release restore;
+the caller remains responsible for verifying the artifacts it selects.
+
 ## Running and debugging modules
 
 `hexalith-module debug --manifest <declaration>` runs the active module and
