@@ -35,7 +35,10 @@ or reused runs expose no complete inventory.
 
 The gate also extracts the EventStore seed from the actual module-tool `.nupkg`
 and runs configured and declarative HTTP subscription checks through MVC Testing.
-It requires configured discovery HTTP 200 with exactly one projection-change
+The probe supplies ephemeral real SDK channel credentials and requires missing/invalid
+channel requests to the mapped notification receiver to return HTTP 401 in both
+modes; the publication validator requires both exact typed negative observations.
+It requires authenticated configured discovery HTTP 200 with exactly one projection-change
 subscription using `configured-seed-events` and matching receiver topic metadata.
 Declarative discovery must return HTTP 404 while the projection receiver remains
 present without topic metadata. Only the startup index writer's asserted hosted
