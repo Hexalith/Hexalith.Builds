@@ -103,6 +103,7 @@ internal static class PackagedSeedProbe
             ["Authentication:JwtBearer:SigningKey"] = "test-only-seed-subscription-signing-key-at-least-32-bytes",
             ["Authentication:JwtBearer:AllowedAlgorithms:0"] = "HS256",
             ["Authentication:JwtBearer:RequireHttpsMetadata"] = "false",
+            ["APP_API_TOKEN"] = "test-only-packaged-seed-channel-token",
         })).ConfigureServices(services =>
         {
             // Same narrow no-sidecar override as Platform's existing HTTP fixture.
@@ -115,6 +116,8 @@ internal static class PackagedSeedProbe
         await using ConfiguredAsyncDisposable factoryLifetime = factory.ConfigureAwait(false);
         using HttpClient client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
+        using HttpResponseMessage untokened = await client.GetAsync(new Uri("/dapr/subscribe", UriKind.Relative), timeout.Token).ConfigureAwait(false);
+        client.DefaultRequestHeaders.Add("dapr-api-token", "test-only-packaged-seed-channel-token");
         using HttpResponseMessage response = await client.GetAsync(new Uri("/dapr/subscribe", UriKind.Relative), timeout.Token).ConfigureAwait(false);
         RouteEndpoint receiver = factory.Services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>()
             .Single(endpoint => endpoint.RoutePattern.RawText == "projections/changed");
@@ -132,14 +135,15 @@ internal static class PackagedSeedProbe
                 : null;
         }
 
-        bool passed = declarative
+        bool passed = (int)untokened.StatusCode == (declarative ? 404 : 401) && (declarative
             ? (int)response.StatusCode == 404 && topics.Length == 0
-            : (int)response.StatusCode == 200 && subscriptionCount == 1 && subscriptionPubsub == "configured-seed-events" && topics.Length == 1 && receiverPubsub == "configured-seed-events";
+            : (int)response.StatusCode == 200 && subscriptionCount == 1 && subscriptionPubsub == "configured-seed-events" && topics.Length == 1 && receiverPubsub == "configured-seed-events");
 
         return (passed, new
         {
             declarative,
             discoveryStatusCode = (int)response.StatusCode,
+            untokenedDiscoveryStatusCode = (int)untokened.StatusCode,
             projectionSubscriptionCount = subscriptionCount,
             subscriptionPubsubName = subscriptionPubsub,
             receiverPresent = true,

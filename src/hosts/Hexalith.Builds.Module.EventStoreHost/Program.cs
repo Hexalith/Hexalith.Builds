@@ -44,9 +44,7 @@ app.MapDefaultEndpoints();
 app.UseRouting();
 app.UseAuthentication();
 app.UseRateLimiter();
-#if HEXALITH_EVENTSTORE_MAPPED_SOURCE
 app.UseEventStoreHttpHostSecurity();
-#endif
 app.UseAuthorization();
 #if HEXALITH_EVENTSTORE_MAPPED_SOURCE
 if (!string.IsNullOrEmpty(app.Configuration["EventStore:RouteCatalog:DevelopmentBootstrap:CatalogPath"]))
@@ -84,17 +82,9 @@ app.MapErrorReferences();
 app.MapApiVersionFallback();
 if (!declarativeSubscriptions)
 {
-#if HEXALITH_EVENTSTORE_MAPPED_SOURCE
     _ = app.MapSubscribeHandler().RequireEventStoreChannel();
-#else
-    _ = app.MapSubscribeHandler().RequireAuthorization(EventStoreWorkloadAuthenticationDefaults.SidecarChannelPolicy);
-#endif
 }
 
-#if HEXALITH_EVENTSTORE_MAPPED_SOURCE
 app.MapActorsHandlers().WithMetadata(EventStoreActorCallbackEndpointMetadata.Instance).RequireEventStoreChannel();
-#else
-app.MapActorsHandlers().RequireAuthorization(EventStoreWorkloadAuthenticationDefaults.SidecarChannelPolicy);
-#endif
 
 await app.RunAsync().ConfigureAwait(false);
