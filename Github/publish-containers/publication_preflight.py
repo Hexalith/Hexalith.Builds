@@ -896,22 +896,26 @@ def _registry_version_observation(container_repository, authorization):
                 document = json.loads(response.read())
                 link = response.headers.get("Link")
         except urllib.error.HTTPError as error:
-            # A first publication has no repository yet. Accept only the registry's
-            # exact initial NAME_UNKNOWN response; later-page loss is never absence.
-            if (len(visited) == 1 and error.code == 404 and error.geturl() == url
-                    and (error.headers or {}).get("Content-Type", "").split(";", 1)[0].strip().lower() == "application/json"):
+            # A new repository has no version inventory. Only an authenticated,
+            # initial-page OCI NAME_UNKNOWN response proves that absence.
+            if (error.code == 404 and len(visited) == 1 and authorization and authorization.strip()
+                    and error.geturl() == url
+                    and (error.headers or {}).get("Content-Type", "application/json").split(";", 1)[0].strip().lower() == "application/json"):
                 try:
-                    with error:
-                        raw_error = error.read(65537)
-                    absence = json.loads(raw_error) if len(raw_error) <= 65536 else None
-                    errors = absence.get("errors") if isinstance(absence, dict) else None
-                    if (isinstance(errors, list) and errors
-                            and all(isinstance(item, dict) and item.get("code") == "NAME_UNKNOWN"
-                                    and isinstance(item.get("detail"), dict)
-                                    and item["detail"].get("name") == repository_path for item in errors)):
-                        return {"kind": "oci-registry", "identity": container_repository, "versions": []}
-                except (OSError, ValueError, UnicodeDecodeError):
-                    pass
+                    body = error.read(16 * 1024 + 1)
+                    document = json.loads(body, object_pairs_hook=_unique_json_object) if len(body) <= 16 * 1024 else None
+                except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
+                    document = None
+                errors = document.get("errors") if isinstance(document, dict) else None
+                if (
+                    isinstance(errors, list)
+                    and len(errors) == 1
+                    and isinstance(errors[0], dict)
+                    and errors[0].get("code") == "NAME_UNKNOWN"
+                    and ("detail" not in errors[0] or isinstance(errors[0]["detail"], dict)
+                         and errors[0]["detail"].get("name") == repository_path)
+                ):
+                    return {"kind": "oci-registry", "identity": container_repository, "versions": []}
             raise PreflightError(
                 "version-floor-unavailable",
                 "Registry tag lookup could not be completed.",
