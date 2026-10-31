@@ -167,6 +167,10 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1
 
+      - name: Test strict v2 workflow contracts
+        shell: pwsh
+        run: pwsh -NoProfile -File ./Tools/test-domain-workflow-test-platforms.ps1 -Contract v2
+
       - name: Test caller-owned domain release preparation
         shell: bash
         run: python3 Tools/test-prepare-domain-release.py

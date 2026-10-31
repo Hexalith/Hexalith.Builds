@@ -111,8 +111,10 @@ This repository:
 
 - `.github/workflows/build-release.yml`: Releases this repository with
   `Github/create-release`.
-- `.github/workflows/domain-ci.yml`: Reusable domain module CI pipeline. See
+- `.github/workflows/domain-ci.yml`: Existing reusable domain module CI contract. See
   [domain-ci.md](.github/workflows/domain-ci.md).
+- `.github/workflows/domain-ci-v2.yml`: Explicit strict package integration contract.
+  See [domain-ci-v2.md](.github/workflows/domain-ci-v2.md).
 - `.github/workflows/domain-release.yml`: Reusable domain module release
   pipeline. See [domain-release.md](.github/workflows/domain-release.md).
 
@@ -494,7 +496,7 @@ already established retention. The first outcome, cause and UTC time are committ
 before cleanup or optional archival and survive later cancellation and retries.
 Automatic deletion requires a reader-valid durable terminal result. If publication
 fails, the owner stays discoverable with pending cleanup; repair the result path
-and retry exact cleanup. CI keeps its existing cleanup policy.
+and retry exact cleanup. CI withdraws active same-job attachments and cleans every owned resource after all terminal paths.
 
 Command terminal status and outcome preserve the first recorded observation.
 Later archive or cleanup errors remain in diagnostics and cleanup disposition.
@@ -531,7 +533,7 @@ incompatible mode, composition, artifact identity, readiness or isolation, `HXR0
 finished owner (naming its state; a ready local failure-retained environment stays
 attachable until it is stopped or cleaned), and `HXR036` an unknown, ended or expired
 retry. Artifact-identity matching is refused as unverifiable until Epic 3 populates expected
-and loaded identities. CI owners do not wait for holds in this version, so `HXR035` refuses an attachment to one (`owner-ci-holds-unsupported`). The stable reason is the diagnostic field. An accepted attachment records the
+and loaded identities. Compatible active CI owners admit only same-repository/run/attempt/job attachments. Completion or cancellation withdraws active holds before cleanup; CI never waits for them beyond its job and never retains failures. The stable reason is the diagnostic field. An accepted attachment records the
 original request or omission, acceptance time, effective seconds and absolute expiry, and
 issues `originalAttachmentRequestId` and `attachedRunId`; a retry that presents either keeps
 the first acceptance and expiry. `--end` requires `--outcome passed|failed|cancelled` and
@@ -550,17 +552,29 @@ this failure retention; only explicit `down` releases it. Owner cancellation, in
 withdraws active attachments with reason `owner-cancelled` before cleanup. Explicit `down`
 withdraws them with reason `developer-stop`. Earlier unrecorded expiries are recorded as
 `expired` in the same pass, and `HXI011` reports withdrawn run ids and their reasons.
-For local selected-test owners that can accept attachments, cleanup state and withdrawal
+For local or CI selected-test owners that can accept attachments, cleanup state and withdrawal
 must be durably recorded before cleanup starts: `down` returns retryable `HXR037` on a
-recording failure, while owner cleanup remains pending with `HXT008`. CI, context-less
+recording failure, while owner cleanup remains pending with `HXT008`. Context-less
 and environment-only owners cannot accept attachments; bookkeeping failures keep their
 bounded exact-owner cleanup running and report `HXT008`. Cancellation metadata gets its
 own finite allowance even when the resource stopping budget is exhausted. After durable
 withdrawal, a session AppHost is stopped before provisioning-lock acquisition, including
-when that lock later stalls. Sessions whose owners cannot accept attachments (CI, Run,
+when that lock later stalls. Sessions whose owners cannot accept attachments (Run,
 Debug, profile and environment-only) stop their AppHost before any cleanup lock or
 bookkeeping, killing it without waiting once the stopping budget is exhausted, so no
 cleanup exit leaves it running. Each command reports each withdrawn run id once.
+CI package integration additionally supports `test --ci-owner-receipt <external-file>`.
+The tool publishes exact ownership before allocation and refuses an unwritable receipt.
+The workflow-owned helper checks the receipt's repository/run/attempt/job bindings,
+invokes exact `down --run-id` in a bounded finalizer, rejects unknown discovery or
+leftovers and retains only classified redacted documents outside deleted workspaces.
+The independent workflow `always()` finalizer retries after cancellation or partial
+startup. The explicit `domain-ci-v2.yml` workflow requires isolated success before
+blocking package integration and refuses direct/advisory fallbacks. The existing
+`domain-ci.yml` entry point retains its legacy interface and supplies no Story 2.8
+acceptance. See [domain-ci-v2.md](.github/workflows/domain-ci-v2.md) for migration,
+explicit pull-only secrets and separate publication/hosted-qualification gates.
+
 Withdrawal records outcomes; termination of attached processes at expiry is deferred to
 the Platform follow-up `attached-test-execution-and-expiry-enforcement`.
 Exact cleanup accepts an omitted, missing or changed manifest, removes only the
@@ -654,7 +668,8 @@ required suite completion and applicable tool qualifications. All policy refusal
 use `HXP301` with a stable named condition. It never promotes local, baseline,
 cancelled, withdrawn, incomplete or foreign evidence.
 
-`domain-ci.yml` carries no candidate wiring and requests only `contents: read`.
+`domain-ci.yml` and `domain-ci-v2.yml` carry no candidate wiring and request only
+`contents: read`.
 GitHub validates a called workflow's job permissions before evaluating `if:`, so
 an opt-in job requesting `id-token: write` breaks every caller that grants only
 `contents: read`. `candidate-policy.yml` remains a standalone reusable workflow.

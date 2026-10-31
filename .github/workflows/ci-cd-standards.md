@@ -39,7 +39,7 @@ test project lists, and operational exceptions in their own docs.
 
 The tag-over-SHA preference above is a readability trade-off, and it stops
 applying wherever a closure has to be *provable*. Inside the governed BUILD-REL-1
-surface — `domain-ci.yml`, `domain-release.yml`, and every composite action
+surface — `domain-ci.yml`, `domain-ci-v2.yml`, `domain-release.yml`, and every composite action
 reachable from them (`Github/initialize-build`, `Github/dapr-init`,
 `Github/publish-containers`, `Github/governed-provenance`) — every `uses:` is
 either a literal lowercase 40-hex commit or a local
@@ -57,7 +57,7 @@ either a literal lowercase 40-hex commit or a local
   never drift from the workflow that invoked them. `domain-ci.yml` keeps a
   second, 40-hex-pinned form of the same composites for legacy callers, which
   never check Builds out.
-- `Tools/test-governed-provenance.ps1` evaluates both shipped workflows on every
+- `Tools/test-governed-provenance.ps1` evaluates all shipped governed workflows on every
   CI run, so a reference that stops being resolvable fails the pull request
   rather than a release.
 
@@ -65,6 +65,14 @@ Self-pinning has a known consequence: a commit that changes a composite cannot
 also pin itself to its own future SHA. The legacy 40-hex pins in `domain-ci.yml`
 therefore name the previous reviewed commit and must be bumped in a follow-up
 commit after the change that alters those composites merges.
+
+The strict integration contract is available only through `domain-ci-v2.yml`.
+Existing `domain-ci.yml` inputs, jobs and permissions remain unchanged. V2 adopters
+provide declared package suites and explicit pull-only registry secrets; absent
+prerequisites fail without a legacy fallback. V2 binds its actual workflow path
+and the direct integration executor into its own governed closure. Authorizing a
+legacy closure does not authorize v2; each exact source needs its matching digest.
+This versioned rollout supplies no candidate acceptance or publication approval.
 
 ## Submodules
 

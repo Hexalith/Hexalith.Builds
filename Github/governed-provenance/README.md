@@ -8,8 +8,8 @@ reusable-workflow identity, walks the bounded static `uses:` closure of that
 workflow inside an immutable Builds checkout, hashes every Builds-owned source,
 and records every third-party action as a pinned 40-hex coordinate.
 
-It is used by the BUILD-REL-1 / GOV-1 governed paths in `domain-ci.yml` and
-`domain-release.yml`. The action reads no secret, contacts no network service,
+It is used by the BUILD-REL-1 / GOV-1 governed paths in `domain-ci.yml`,
+`domain-ci-v2.yml` and `domain-release.yml`. The action reads no secret, contacts no network service,
 and never decides whether a release may publish. Callers own their evidence
 logic; this action only supplies provenance.
 
@@ -26,6 +26,10 @@ logic; this action only supplies provenance.
    helper, so it is hashed and it counts toward the source ceiling. Only
    never-tracked build output (`__pycache__`, `node_modules`, `.git`, `.pyc`) is
    excluded.
+   V2 also explicitly binds `Github/run-module-integration/run_module_integration.py`,
+   which its `run:` steps execute directly. Missing source refuses evaluation;
+   changed source invalidates the authorized digest. The legacy helper mapping is
+   unchanged, and legacy and v2 workflow identities/digests are not interchangeable.
 3. **Projection.** The result is serialized canonically and reduced to a single
    `closure_digest`, so any change to any byte in the closure changes the digest
    a consumer previously accepted.

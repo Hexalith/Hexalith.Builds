@@ -425,6 +425,7 @@ class ClosureCollector:
             workflow_helpers = {
                 ".github/workflows/candidate-policy.yml": "Github/governed-provenance/candidate_policy.py",
                 ".github/workflows/domain-ci.yml": "Github/governed-provenance/candidate_workspace.py",
+                ".github/workflows/domain-ci-v2.yml": "Github/run-module-integration/run_module_integration.py",
             }
             if workflow_path in workflow_helpers and workflow_helpers[workflow_path] in text and not self.workflow_root:
                 helper = workflow_helpers[workflow_path]
