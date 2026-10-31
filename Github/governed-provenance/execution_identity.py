@@ -25,7 +25,10 @@ def workspace_file(workspace, value):
 
 
 def git(root, *arguments, binary=False):
-    result = subprocess.run(["git", "-C", str(root), *arguments], capture_output=True)
+    directory = Path(root).resolve(strict=True)
+    if not directory.is_dir():
+        raise ValueError("approved Git source must be a directory")
+    result = subprocess.run(["git", *arguments], cwd=directory, capture_output=True)
     if result.returncode:
         raise ValueError("approved Git source could not be read: " + " ".join(arguments[:2]))
     return result.stdout if binary else result.stdout.decode("utf-8").strip()

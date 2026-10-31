@@ -32,6 +32,18 @@ def _env(name: str) -> str:
     return value
 
 
+def _workspace_path(name: str) -> Path:
+    """Confine action file and directory inputs to the current workspace."""
+    workspace = Path.cwd().resolve()
+    try:
+        relative = (workspace / _env(name)).resolve().relative_to(workspace)
+    except ValueError as error:
+        raise ContractError(f"{name} escapes the current workspace") from error
+    if not relative.parts:
+        raise ContractError(f"{name} must name a workspace file or directory")
+    return workspace.joinpath(*(os.path.basename(part) for part in relative.parts))
+
+
 def prepare_candidate(package_directory: Path, output_directory: Path, metadata: dict) -> dict:
     """Stage one descriptor and its regular files. This output does not authorize publication."""
 
@@ -91,7 +103,8 @@ def prepare_candidate(package_directory: Path, output_directory: Path, metadata:
     if version:
         notes = metadata.get("notes") or f"Release {version}\n"
         notes_bytes = notes.encode("utf-8")
-        (output_directory / "release-notes.md").write_bytes(notes_bytes)
+        with (output_directory / "release-notes.md").open("wb") as stream:
+            stream.write(notes_bytes)
         files.append(
             {
                 "path": "release-notes.md",
@@ -238,8 +251,8 @@ def main(argv: list[str] | None = None) -> int:
     command = arguments[0]
     try:
         if command == "prepare-candidate":
-            metadata = parse_json(Path(_env("SPLIT_METADATA")).read_bytes(), "candidate metadata", max_bytes=16 * 1024 * 1024)
-            result = prepare_candidate(Path(_env("SPLIT_PACKAGE_DIRECTORY")), Path(_env("SPLIT_OUTPUT")), metadata)
+            metadata = parse_json(_workspace_path("SPLIT_METADATA").read_bytes(), "candidate metadata", max_bytes=16 * 1024 * 1024)
+            result = prepare_candidate(_workspace_path("SPLIT_PACKAGE_DIRECTORY"), _workspace_path("SPLIT_OUTPUT"), metadata)
             print(canonical_bytes({"descriptor_sha256": result["descriptor_sha256"], "release_plan_present": result["release_plan_present"], "version": result["version"]}).decode("ascii"))
             return 0
         if command == "download-archive":
@@ -248,47 +261,47 @@ def main(argv: list[str] | None = None) -> int:
             payload = publication.download_archive(_env("SPLIT_ARTIFACT_URL"), _env("SPLIT_TOKEN"))
             if sha256_bytes(payload) != expected:
                 raise ContractError("downloaded artifact digest does not match the authenticated upload digest")
-            Path(_env("SPLIT_OUTPUT")).write_bytes(payload)
+            _workspace_path("SPLIT_OUTPUT").write_bytes(payload)
             return 0
         if command == "extract-member":
-            members = {member.name: member.payload for member in scan_archive(Path(_env("SPLIT_ARCHIVE")).read_bytes())}
+            members = {member.name: member.payload for member in scan_archive(_workspace_path("SPLIT_ARCHIVE").read_bytes())}
             name = _env("SPLIT_MEMBER")
             if name not in members:
                 raise ContractError(f"authenticated archive has no member {name}")
-            Path(_env("SPLIT_OUTPUT")).write_bytes(members[name])
+            _workspace_path("SPLIT_OUTPUT").write_bytes(members[name])
             return 0
         if command == "verify-live":
-            handoff_bytes = Path(_env("SPLIT_HANDOFF")).read_bytes()
+            handoff_bytes = _workspace_path("SPLIT_HANDOFF").read_bytes()
             handoff = parse_json(handoff_bytes, "CI handoff", max_bytes=16 * 1024 * 1024)
             stores = {
                 identity.name: identity
-                for identity in Path(_env("SPLIT_OBJECT_STORE")).iterdir()
+                for identity in _workspace_path("SPLIT_OBJECT_STORE").iterdir()
                 if identity.is_dir()
             }
             # Identity directories are nested github.com/owner/repository.
             stores = {}
-            root = Path(_env("SPLIT_OBJECT_STORE"))
+            root = _workspace_path("SPLIT_OBJECT_STORE")
             for owner in root.glob("*/*/*"):
                 if owner.is_dir():
                     stores["/".join(owner.relative_to(root).parts)] = owner
-            policy = parse_json(Path(_env("SPLIT_METADATA")).read_bytes(), "active policy", max_bytes=16 * 1024 * 1024)
+            policy = parse_json(_workspace_path("SPLIT_METADATA").read_bytes(), "active policy", max_bytes=16 * 1024 * 1024)
             trusted = {row["identity"] for row in policy["trusted_identities"]}
             graph.verify_live(graph.GitDirectoryReader(stores), handoff["dependency_graph"], trusted)
             return 0
         if command == "release-authenticated":
-            bundle = Path(os.environ["SPLIT_BUNDLE"]) if os.environ.get("SPLIT_BUNDLE") else None
-            state = parse_json(Path(_env("SPLIT_METADATA")).read_bytes(), "publication state", max_bytes=16 * 1024 * 1024)
-            handoff_bytes = Path(_env("SPLIT_HANDOFF")).read_bytes()
+            bundle = _workspace_path("SPLIT_BUNDLE") if os.environ.get("SPLIT_BUNDLE") else None
+            state = parse_json(_workspace_path("SPLIT_METADATA").read_bytes(), "publication state", max_bytes=16 * 1024 * 1024)
+            handoff_bytes = _workspace_path("SPLIT_HANDOFF").read_bytes()
             handoff = parse_json(handoff_bytes, "CI handoff", max_bytes=16 * 1024 * 1024)
             stores = {}
-            root = Path(_env("SPLIT_OBJECT_STORE"))
+            root = _workspace_path("SPLIT_OBJECT_STORE")
             for owner in root.glob("*/*/*"):
                 if owner.is_dir():
                     stores["/".join(owner.relative_to(root).parts)] = owner
             graph.verify_live(graph.GitDirectoryReader(stores), handoff["dependency_graph"], {row["identity"] for row in state["policy"]["trusted_identities"]})
             state["live_verified"] = True
-            directory = Path(_env("SPLIT_OUTPUT"))
-            result = classify_authenticated(directory, Path(_env("SPLIT_HANDOFF")), bundle, state)
+            directory = _workspace_path("SPLIT_OUTPUT")
+            result = classify_authenticated(directory, _workspace_path("SPLIT_HANDOFF"), bundle, state)
             if not result.get("publish_authorized"):
                 print(canonical_bytes(result).decode("ascii"), file=sys.stderr)
                 return 1
@@ -307,7 +320,7 @@ def main(argv: list[str] | None = None) -> int:
                     packages.append((row["asset_name"][: -len(suffix)], row["asset_name"], payload))
             notes = (directory / descriptor["release_plan"]["release_notes_path"]).read_text(encoding="utf-8")
             archive_name = f"publication-candidate-{descriptor['release_run']['run_id']}-{descriptor['release_run']['run_attempt']}.zip"
-            assets.append((archive_name, Path(_env("SPLIT_ARCHIVE")).read_bytes()))
+            assets.append((archive_name, _workspace_path("SPLIT_ARCHIVE").read_bytes()))
             assets.append(("publication-candidate.json", (directory / "publication-candidate.json").read_bytes()))
             assets.append(("dependency-release-handoff.json", handoff_bytes))
             assets.append(("release-evidence.json", canonical_bytes(result["manifest"])))
@@ -339,9 +352,9 @@ def main(argv: list[str] | None = None) -> int:
             print(canonical_bytes({"publish_authorized": True, "github_release_id": published["github_release_id"]}).decode("ascii"))
             return 0
         if command == "authenticate-archive":
-            archive = Path(_env("SPLIT_ARCHIVE")).read_bytes()
+            archive = _workspace_path("SPLIT_ARCHIVE").read_bytes()
             members = authenticate_directory(archive)
-            destination = Path(_env("SPLIT_OUTPUT"))
+            destination = _workspace_path("SPLIT_OUTPUT")
             materialize_archive(archive, destination)
             packages = []
             descriptor = parse_json(members["publication-candidate.json"], "publication candidate", max_bytes=16 * 1024 * 1024)
@@ -349,16 +362,17 @@ def main(argv: list[str] | None = None) -> int:
             for row in validated["files"]:
                 if row["role"] == "package":
                     packages.append((row["asset_name"], row["sha256"]))
-            Path(_env("SPLIT_SUBJECTS")).write_bytes(subject_checksums(packages))
+            _workspace_path("SPLIT_SUBJECTS").write_bytes(subject_checksums(packages))
             return 0
         if command == "emit-handoff":
             document = build_verification_handoff(
-                parse_json(Path(_env("SPLIT_METADATA")).read_bytes(), "verification handoff", max_bytes=16 * 1024 * 1024)
+                parse_json(_workspace_path("SPLIT_METADATA").read_bytes(), "verification handoff", max_bytes=16 * 1024 * 1024)
             )
-            Path(_env("SPLIT_OUTPUT")).write_bytes(canonical_bytes(document))
+            with _workspace_path("SPLIT_OUTPUT").open("wb") as stream:
+                stream.write(canonical_bytes(document))
             return 0
         if command == "inventory-closure":
-            document = inventory_closure(Path(_env("SPLIT_WORKFLOW")), _ACTION_ROOT)
+            document = inventory_closure(_workspace_path("SPLIT_WORKFLOW"), _ACTION_ROOT)
             sys.stdout.buffer.write(canonical_bytes(document))
             return 0
         if command == "helper-version":

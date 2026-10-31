@@ -6,11 +6,27 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
 BASELINE_NAME = "runtime-toolchain-baseline-2026-09-27.json"
 BASELINE_SHA256 = "b9aa6791effe78cbb9bf405cd8384b81a6d750f996fabf8f79b7cd1c3bedad01"
+
+
+def workspace_file(value: str) -> Path:
+    """Confine explicitly selected CLI files to the current working directory."""
+    workspace = Path.cwd().resolve()
+    try:
+        relative = (workspace / value).resolve(strict=True).relative_to(workspace)
+        if not relative.parts:
+            raise ValueError("a file is required")
+        path = workspace.joinpath(*(os.path.basename(part) for part in relative.parts))
+        if not path.is_file():
+            raise ValueError("a regular file is required")
+        return path
+    except (OSError, ValueError) as error:
+        raise argparse.ArgumentTypeError("input must be an existing file inside the current workspace") from error
 
 
 def read_json(path: Path) -> dict:
@@ -77,9 +93,9 @@ def validate(disposition_path: Path, baseline_path: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--disposition", type=Path,
+    parser.add_argument("--disposition", type=workspace_file,
                         default=Path(__file__).with_name("runtime-toolchain-disposition-2026-09-27.json"))
-    parser.add_argument("--baseline", type=Path, default=Path(__file__).with_name(BASELINE_NAME))
+    parser.add_argument("--baseline", type=workspace_file, default=Path(__file__).with_name(BASELINE_NAME))
     arguments = parser.parse_args()
     try:
         validate(arguments.disposition, arguments.baseline)

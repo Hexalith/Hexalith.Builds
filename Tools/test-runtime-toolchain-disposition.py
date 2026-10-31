@@ -30,7 +30,7 @@ class DispositionTests(unittest.TestCase):
             crlf.write_bytes(baseline.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
             VALIDATOR.validate(disposition, crlf)
             result = subprocess.run([sys.executable, str(SCRIPT), "--baseline", str(crlf)],
-                                    capture_output=True, text=True, check=False)
+                                    cwd=scratch, capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_rejects_mutations_without_changing_historical_bytes(self):
@@ -81,10 +81,29 @@ class DispositionTests(unittest.TestCase):
             path = Path(scratch) / "duplicate.json"
             path.write_text('{"status":"qualified","status":"superseded-unqualified"}', encoding="utf-8")
             result = subprocess.run([sys.executable, str(SCRIPT), "--disposition", str(path)],
-                                    capture_output=True, text=True, check=False)
+                                    cwd=scratch, capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 1)
             self.assertIn("Duplicate JSON key", result.stderr)
             self.assertNotIn("Traceback", result.stderr)
+
+    def test_cli_refuses_traversal_and_symlink_escapes(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            base = Path(scratch)
+            workspace = base / "workspace"
+            workspace.mkdir()
+            protected = base / "protected.json"
+            protected.write_text("private input", encoding="utf-8")
+            link = workspace / "linked.json"
+            link.symlink_to(protected)
+            for option in ("--baseline", "--disposition"):
+                for value in ("../protected.json", str(protected), str(link)):
+                    with self.subTest(option=option, value=value):
+                        result = subprocess.run([sys.executable, str(SCRIPT), option, value],
+                                                cwd=workspace, capture_output=True, text=True, check=False)
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn("inside the current workspace", result.stderr)
+                        self.assertNotIn("private input", result.stderr)
+                        self.assertNotIn("Traceback", result.stderr)
 
 
 if __name__ == "__main__":

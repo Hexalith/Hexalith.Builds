@@ -16,6 +16,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -531,6 +532,34 @@ def job(workflow: str, name: str) -> str:
 
     match = re.search(r"\n  [a-z][a-z0-9-]*:\n", remainder)
     return remainder if match is None else remainder[: match.start()]
+
+
+class WorkspaceInputTests(unittest.TestCase):
+    def test_relative_and_absolute_inputs_stay_inside_workspace(self):
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory).resolve()
+            for value in ("nested/output.json", str(workspace / "nested/output.json")):
+                with self.subTest(value=value), mock.patch.object(split_publication.Path, "cwd", return_value=workspace), \
+                        mock.patch.dict(os.environ, {"SPLIT_OUTPUT": value}):
+                    self.assertEqual(workspace / "nested/output.json", split_publication._workspace_path("SPLIT_OUTPUT"))
+
+    def test_traversal_and_symlinks_cannot_select_external_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory).resolve()
+            workspace = base / "workspace"
+            workspace.mkdir()
+            protected = base / "protected.json"
+            protected.write_text("private input", encoding="utf-8")
+            link = workspace / "linked.json"
+            link.symlink_to(protected)
+            for value in ("../protected.json", str(protected), str(link)):
+                with self.subTest(value=value), mock.patch.object(split_publication.Path, "cwd", return_value=workspace), \
+                        mock.patch.dict(os.environ, {"SPLIT_METADATA": value}), \
+                        mock.patch.object(split_publication, "parse_json") as parse, \
+                        mock.patch.object(sys, "stderr", io.StringIO()):
+                    self.assertEqual(1, split_publication.main(["prepare-candidate"]))
+                    parse.assert_not_called()
+                    self.assertEqual("private input", protected.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

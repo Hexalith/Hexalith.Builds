@@ -240,15 +240,15 @@ class ClosureCollector:
 
     @staticmethod
     def _verify_head(root, commit, context):
-        result = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True)
+        result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True)
         if result.returncode or result.stdout.strip() != commit:
             raise ProvenanceError(f"{context} does not match its approved exact commit")
 
     @staticmethod
     def _verify_blob(root, commit, relative, payload):
-        result = subprocess.run(["git", "-C", str(root), "show", f"{commit}:{relative}"], capture_output=True)
-        if result.returncode or result.stdout != payload:
-            raise ProvenanceError(f"source bytes differ from the approved Git blob: {relative}")
+        require_commit(commit, "approved source commit")
+        normalize_path(relative, "approved source path")
+        verify_git_blobs(root, commit, {relative: payload})
 
     def _resolve_inside_root(self, relative_path, context):
         candidate = (self.root / relative_path).resolve()
@@ -550,7 +550,7 @@ def verify_git_blobs(root, commit, sources):
     names = list(sources)
     if not names:
         return
-    result = subprocess.run(["git", "-C", str(root), "cat-file", "--batch"],
+    result = subprocess.run(["git", "cat-file", "--batch"], cwd=root,
                             input="".join(f"{commit}:{name}\n" for name in names).encode(), capture_output=True)
     if result.returncode:
         raise ProvenanceError("approved source blobs could not be read")
@@ -661,7 +661,8 @@ def write_outputs(provenance, output_path):
     destination = resolve_workspace_path(output_path, "output path")
     destination.parent.mkdir(parents=True, exist_ok=True)
     payload = canonical_bytes(provenance)
-    destination.write_bytes(payload)
+    with destination.open("wb") as stream:
+        stream.write(payload)
 
     closure = provenance["closure"]
     outputs = {

@@ -141,7 +141,8 @@ def qualify(repository, source, branch, workflows, evidence):
     finally:
         destination = Path(evidence)
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+        with destination.open("w", encoding="utf-8") as stream:
+            stream.write(json.dumps(report, sort_keys=True, indent=2) + "\n")
     return report
 
 
