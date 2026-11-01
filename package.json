@@ -13,7 +13,10 @@
   "release": {
     "branches": [
       "main",
-      { "name": "prerelease", "prerelease": true }
+      {
+        "name": "prerelease",
+        "prerelease": true
+      }
     ],
     "plugins": [
       "@semantic-release/commit-analyzer",
@@ -48,5 +51,10 @@
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/github": "^12.0.10",
     "semantic-release": "^25.0.9"
+  },
+  "overrides": {
+    "semantic-release": {
+      "@semantic-release/npm": "npm:@semantic-release/error@4.0.0"
+    }
   }
 }

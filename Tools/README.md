@@ -3,6 +3,13 @@
 Utility scripts for consuming repositories that use `Hexalith.Builds` as a
 submodule.
 
+
+The explicit semantic-release configuration publishes NuGet through its four
+selected plugins. The unused default npm publisher is locked to an alias of
+`@semantic-release/error` 4.0.0 to exclude its vulnerable bundled npm dependency
+graph. Enabling npm publication requires reviewing that alias and dependency
+graph first; the current release plugin configuration remains unchanged.
+
 ## Available Tools
 
 ### G-4 tool package qualification
