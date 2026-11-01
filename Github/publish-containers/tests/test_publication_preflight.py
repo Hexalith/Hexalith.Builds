@@ -757,6 +757,152 @@ class PublicationPreflightTests(unittest.TestCase):
                 )
         self.assertEqual("source-ci-not-successful", context.exception.code)
 
+    def test_exact_eventstore_maintenance_source_freezes_all_three_phases(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            arguments = self.arguments(root)
+            arguments.version = "3.130.2"
+            arguments.source_branch = "release/parties-sdk-3.130.2"
+            arguments.authority_issue_url = ""
+            arguments.authority_owner = ""
+            environment = self.runtime_environment()
+            environment["GITHUB_REF"] = "refs/heads/release/parties-sdk-3.130.2"
+            environment["GITHUB_WORKFLOW_REF"] = environment["GITHUB_WORKFLOW_REF"].replace(
+                "refs/heads/main", "refs/heads/release/parties-sdk-3.130.2"
+            )
+            successful_run = dict(self.source_proof()["ci_run"], head_branch="release/parties-sdk-3.130.2")
+            requests = []
+
+            def github_json(url, token):
+                requests.append(url)
+                if "/git/ref/heads/" in url:
+                    self.assertTrue(url.endswith("/git/ref/heads/release%2Fparties-sdk-3.130.2"))
+                    return {"object": {"sha": SOURCE_SHA}}
+                query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+                self.assertEqual(["release/parties-sdk-3.130.2"], query["branch"])
+                self.assertEqual([SOURCE_SHA], query["head_sha"])
+                self.assertEqual(["push"], query["event"])
+                workflow = urllib.parse.urlparse(url).path.split("/workflows/", 1)[1].split("/", 1)[0]
+                run = dict(successful_run, id=100 + ["ci.yml", "commitlint.yml", "integration.yml"].index(workflow))
+                return {"workflow_runs": [run]}
+
+            with (
+                mock.patch.dict(os.environ, environment, clear=True),
+                mock.patch.object(self.validator, "_github_json", side_effect=github_json),
+                mock.patch.object(self.validator, "destination_probe", return_value=lambda *_: 404),
+                mock.patch.object(self.validator, "read_external_version_observations", return_value=self.version_observations()),
+                mock.patch.object(self.validator, "validate_publication_authority") as authority,
+            ):
+                identities = []
+                for phase in ("verify", "publish", "container"):
+                    arguments.phase = phase
+                    identities.append(self.validator._validate_publication(arguments))
+                authority.assert_not_called()
+            self.assertEqual(identities[0], identities[1])
+            self.assertEqual(identities[0], identities[2])
+            self.assertEqual("release/parties-sdk-3.130.2", identities[0]["source"]["branch"])
+            self.assertEqual("refs/heads/release/parties-sdk-3.130.2", identities[0]["source"]["ref"])
+            self.assertEqual("3.130.2", identities[0]["version"])
+            receipts = identities[0]["source"]["required_workflow_runs"]
+            self.assertEqual({"ci.yml", "commitlint.yml", "integration.yml"}, set(receipts))
+            self.assertEqual([100, 101, 102], [receipts[name]["id"] for name in receipts])
+            self.assertEqual(receipts["ci.yml"], identities[0]["source"]["ci_run"])
+            self.assertEqual(24, len(requests))
+            for phase in ("verify", "publish", "container"):
+                self.assertTrue((arguments.evidence_directory / f"publication-preflight.{phase}.json").is_file())
+
+    def test_maintenance_source_is_finite_before_any_network_or_destination_probe(self):
+        invalid = [
+            ("Other/Repository", "release/parties-sdk-3.130.2", "ci.yml", "3.130.2"),
+            ("Hexalith/Hexalith.EventStore", "3.131.x", "ci.yml", "3.130.2"),
+            ("Hexalith/Hexalith.EventStore", "fix/release/parties-sdk-3.130.2", "ci.yml", "3.130.2"),
+            ("Hexalith/Hexalith.EventStore", "release/parties-sdk-3.130.2", "other.yml", "3.130.2"),
+        ]
+        invalid.extend(("Hexalith/Hexalith.EventStore", "release/parties-sdk-3.130.2", "ci.yml", version) for version in
+                       (None, "3.130.1", "3.130.3", "3.131.2", "3.130.2-rc.1", "3.130.2+build"))
+        with mock.patch.object(self.validator, "_github_json") as github:
+            for repository, branch, workflow, version in invalid:
+                with self.subTest(repository=repository, branch=branch, workflow=workflow, version=version):
+                    with self.assertRaises(self.validator.PreflightError) as failure:
+                        self.validator.prove_current_green_source(repository, SOURCE_SHA, branch, workflow,
+                                                                 "fixture-token", version=version)
+                    self.assertEqual("source-branch-invalid", failure.exception.code)
+            github.assert_not_called()
+
+    def test_maintenance_rejects_stale_tip_and_main_only_green_receipts(self):
+        scenarios = [({"object": {"sha": "e" * 40}}, None, "source-no-longer-current"),
+                     ({"object": {"sha": SOURCE_SHA}}, {"workflow_runs": [self.source_proof()["ci_run"]]},
+                      "source-ci-not-successful")]
+        for ref, runs, expected in scenarios:
+            with self.subTest(expected=expected), mock.patch.object(
+                self.validator, "_github_json", side_effect=[ref] if runs is None else [ref, runs]
+            ):
+                with self.assertRaises(self.validator.PreflightError) as failure:
+                    self.validator.prove_current_green_source("Hexalith/Hexalith.EventStore", SOURCE_SHA,
+                                                             "release/parties-sdk-3.130.2", "ci.yml", "fixture-token", version="3.130.2")
+                self.assertEqual(expected, failure.exception.code)
+
+    def test_maintenance_requires_actual_runtime_ref_and_production_environment(self):
+        for wrong_ref, wrong_environment, expected in [
+            (True, False, "source-ref-mismatch"), (False, True, "environment-invalid")
+        ]:
+            with self.subTest(expected=expected), tempfile.TemporaryDirectory() as temporary_directory:
+                arguments = self.arguments(Path(temporary_directory))
+                arguments.version = "3.130.2"
+                arguments.source_branch = "release/parties-sdk-3.130.2"
+                if wrong_environment:
+                    arguments.environment_name = "preview"
+                environment = self.runtime_environment()
+                if not wrong_ref:
+                    environment["GITHUB_REF"] = "refs/heads/release/parties-sdk-3.130.2"
+                proof = dict(self.source_proof(), branch="release/parties-sdk-3.130.2", ref="refs/heads/release/parties-sdk-3.130.2")
+                with mock.patch.dict(os.environ, environment, clear=True):
+                    with self.assertRaises(self.validator.PreflightError) as failure:
+                        self.validator.build_publication_identity(arguments, proof)
+                self.assertEqual(expected, failure.exception.code)
+
+    def test_maintenance_container_rechecks_frozen_lint_and_integration_receipts(self):
+        for failed_workflow in ("commitlint.yml", "integration.yml"):
+            with self.subTest(workflow=failed_workflow), tempfile.TemporaryDirectory() as temporary_directory:
+                root = Path(temporary_directory)
+                arguments = self.arguments(root)
+                arguments.version = "3.130.2"
+                arguments.source_branch = "release/parties-sdk-3.130.2"
+                arguments.authority_issue_url = ""
+                arguments.authority_owner = ""
+                environment = self.runtime_environment()
+                environment["GITHUB_REF"] = "refs/heads/" + arguments.source_branch
+                state = {"failed": False}
+                requested = []
+
+                def github_json(url, token):
+                    if "/git/ref/heads/" in url:
+                        return {"object": {"sha": SOURCE_SHA}}
+                    workflow = urllib.parse.urlparse(url).path.split("/workflows/", 1)[1].split("/", 1)[0]
+                    requested.append(workflow)
+                    if state["failed"] and workflow == failed_workflow:
+                        return {"workflow_runs": []}
+                    return {"workflow_runs": [dict(self.source_proof()["ci_run"], head_branch=arguments.source_branch,
+                                                  id=100 + ["ci.yml", "commitlint.yml", "integration.yml"].index(workflow))]}
+
+                with (
+                    mock.patch.dict(os.environ, environment, clear=True),
+                    mock.patch.object(self.validator, "_github_json", side_effect=github_json),
+                    mock.patch.object(self.validator, "destination_probe", return_value=lambda *_: 404),
+                    mock.patch.object(self.validator, "read_external_version_observations", return_value=self.version_observations()),
+                ):
+                    for phase in ("verify", "publish"):
+                        arguments.phase = phase
+                        identity = self.validator._validate_publication(arguments)
+                    self.assertEqual({"ci.yml", "commitlint.yml", "integration.yml"}, set(identity["source"]["required_workflow_runs"]))
+                    state["failed"] = True
+                    arguments.phase = "container"
+                    with self.assertRaises(self.validator.PreflightError) as failure:
+                        self.validator._validate_publication(arguments)
+                    self.assertEqual("source-ci-not-successful", failure.exception.code)
+                    self.assertIn(failed_workflow, str(failure.exception))
+                self.assertFalse((arguments.evidence_directory / "publication-preflight.container.json").exists())
+
     def test_package_and_container_destinations_must_all_be_absent(self):
         packages = [f"Package.{index}" for index in range(FIXTURE_PACKAGE_COUNT)]
         calls = []

@@ -94,6 +94,28 @@ phase is single-use and fail-closed; redirects, ambiguous statuses, duplicate
 skipping, and overwrites are forbidden. The workflow uploads the complete
 hidden release-evidence directory on success or partial failure.
 
+## EventStore 3.130.2 maintenance source
+
+The only maintenance exception to the main source policy is
+`Hexalith/Hexalith.EventStore`, branch `release/parties-sdk-3.130.2`, version `3.130.2`, workflow
+`ci.yml`, and environment `production`. Other maintenance repositories,
+branches, versions, prereleases, metadata versions, and workflow names refuse
+before source acquisition. The runtime must identify that actual branch.
+
+This exception retains current-branch SHA equality, exact-branch successful push
+CI, immutable execution identity, package inventory, destination absence, and
+the frozen verify/publish/container sequence. It does not substitute main CI or
+an earlier release's receipts. The SDK's owning release workflow additionally
+requires its ordinary branch protections and complete integration gates.
+Both the canonical Python preflight and the real container shell entry point
+enforce this identity; exercising the Python phase alone does not qualify the
+container path. The other action, registry validator and platform smoke helper
+bytes remain those of the preceding approved publisher.
+For this maintenance identity, the frozen source proof includes separate
+successful exact-branch push receipts for `ci.yml`, `commitlint.yml`, and
+`integration.yml`. Every phase rechecks all three; a lost required receipt
+prevents the container phase even after verify and publish succeeded.
+
 ## Inputs
 
 | Input | Required | Description |

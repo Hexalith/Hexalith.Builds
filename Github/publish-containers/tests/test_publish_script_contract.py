@@ -201,6 +201,40 @@ def run_publisher_with(overrides, version="3.76.1"):
 
 
 class PublishScriptContractTests(unittest.TestCase):
+    def test_real_shell_publishes_exact_eventstore_maintenance_source(self):
+        branch = "release/parties-sdk-3.130.2"
+        result, preflight, root = run_publisher_with(
+            {"HEXALITH_RELEASE_SOURCE_BRANCH": branch, "HEXALITH_RELEASE_REQUIRE_AUTHORITY": "false"},
+            version="3.130.2",
+        )
+        try:
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            for key, value in [("--source-branch", branch), ("--version", "3.130.2"),
+                               ("--repository", "Hexalith/Hexalith.EventStore"), ("--phase", "container")]:
+                self.assertEqual(value, preflight[preflight.index(key) + 1])
+        finally:
+            shutil.rmtree(root)
+
+    def test_real_shell_rejects_wrong_maintenance_identity_before_preflight(self):
+        invalid = [
+            ({"GITHUB_REPOSITORY": "Other/Repository"}, "3.130.2"),
+            ({"HEXALITH_RELEASE_SOURCE_BRANCH": "release/other"}, "3.130.2"),
+            ({"HEXALITH_RELEASE_SOURCE_CI_WORKFLOW": "other.yml"}, "3.130.2"),
+            ({"HEXALITH_RELEASE_ENVIRONMENT": "preview"}, "3.130.2"),
+            ({}, "3.130.1"), ({}, "3.130.3"), ({}, "3.131.0"), ({}, "3.130.2-rc.1"),
+        ]
+        for mutation, version in invalid:
+            with self.subTest(mutation=mutation, version=version):
+                overrides = {"HEXALITH_RELEASE_SOURCE_BRANCH": "release/parties-sdk-3.130.2",
+                             "HEXALITH_RELEASE_REQUIRE_AUTHORITY": "false", **mutation}
+                result, preflight, root = run_publisher_with(overrides, version=version)
+                try:
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertIn("source", result.stderr)
+                    self.assertEqual([], preflight)
+                finally:
+                    shutil.rmtree(root)
+
     def test_action_installs_immutable_registry_validator(self):
         action = ACTION.read_text(encoding="utf-8")
 

@@ -74,7 +74,15 @@ is_semver_without_numeric_padding "$version" ||
 [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || fail "Exact workflow source SHA is required."
 [[ "$release_repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || fail "Release repository is invalid."
 [[ -n "${release_environment//[[:space:]]/}" ]] || fail "Protected release environment is required."
-[[ "$source_branch" = "main" ]] || fail "Release source branch must be exactly main."
+case "$source_branch" in
+  main) ;;
+  release/parties-sdk-3.130.2)
+    [[ "$release_repository" = "Hexalith/Hexalith.EventStore" && "$version" = "3.130.2"
+      && "$source_ci_workflow" = "ci.yml" && "$release_environment" = "production" ]] ||
+      fail "The EventStore maintenance source requires exact version, workflow and production identity."
+    ;;
+  *) fail "Release source must be main or the exact EventStore 3.130.2 maintenance branch." ;;
+esac
 [[ "$source_ci_workflow" =~ ^[A-Za-z0-9_.-]+\.ya?ml$ ]] || fail "Release CI workflow is invalid."
 [[ -f "$package_manifest" ]] || fail "Release package manifest is required."
 [[ "$expected_package_count" =~ ^[1-9][0-9]*$ ]] ||
