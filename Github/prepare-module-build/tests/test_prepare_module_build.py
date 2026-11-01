@@ -52,6 +52,9 @@ class PreparationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / ".config").mkdir()
+            platform = root / "references/Hexalith.Platform"
+            platform.mkdir(parents=True)
+            (platform / ".git").write_text("gitdir: unused-test-fixture")
             (root / "module.json").write_text("{}")
             (root / ".config/dotnet-tools.json").write_text(json.dumps(dict(isRoot=True, tools={"hexalith.builds.module.cli": dict(version="9.8.7", rollForward=False, commands=["hexalith-module"])})))
             export = root / "github-env"
@@ -59,6 +62,9 @@ class PreparationTests(unittest.TestCase):
             def run(command, cwd):
                 calls.append(command)
                 self.assertEqual(cwd, root)
+                if command[0] == "git":
+                    self.assertEqual(["git", "-c", "submodule.recurse=false", "-C", str(platform), "fetch", "--no-recurse-submodules", "--tags", "origin"], command)
+                    return ""
                 if command[1:3] == ["tool", "restore"]:
                     return "restored"
                 if command[-1] == "--version":
@@ -69,13 +75,38 @@ class PreparationTests(unittest.TestCase):
                 return json.dumps(self.result(workspace))
             with mock.patch.object(helper, "run", side_effect=run):
                 helper.prepare("module.json", root, root, export)
-            self.assertEqual(3, len(calls))
+            self.assertEqual(4, len(calls))
             self.assertEqual(helper.KEYS, {line.split("=", 1)[0] for line in export.read_text().splitlines()})
+
+    def test_platform_tag_fetch_failure_preserves_environment_and_stops_preparation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / ".config").mkdir()
+            (root / "module.json").write_text("{}")
+            (root / ".config/dotnet-tools.json").write_text(json.dumps(dict(isRoot=True, tools={"hexalith.builds.module.cli": dict(version="9.8.7", rollForward=False, commands=["hexalith-module"])})))
+            export = root / "github-env"
+            export.write_text("EXISTING=value\n")
+            # A declared but uninitialized dependency must fail before Git can
+            # discover and fetch the enclosing consumer repository instead.
+            platform = root / "references/Hexalith.Platform"
+            platform.mkdir(parents=True)
+            with mock.patch.object(helper, "run") as run, self.assertRaises(OSError):
+                helper.prepare("module.json", root, root, export)
+            run.assert_not_called()
+            (platform / ".git").write_text("gitdir: unused-test-fixture")
+            with mock.patch.object(helper, "run", side_effect=ValueError("Platform tags unavailable")) as run, self.assertRaisesRegex(ValueError, "Platform tags unavailable"):
+                helper.prepare("module.json", root, root, export)
+            self.assertEqual(1, run.call_count)
+            self.assertEqual("git", run.call_args.args[0][0])
+            self.assertEqual("EXISTING=value\n", export.read_text())
 
     def test_failed_tool_or_unqualified_pin_never_exports(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / ".config").mkdir()
+            platform = root / "references/Hexalith.Platform"
+            platform.mkdir(parents=True)
+            (platform / ".git").write_text("gitdir: unused-test-fixture")
             (root / "module.json").write_text("{}")
             manifest = root / ".config/dotnet-tools.json"
             export = root / "github-env"

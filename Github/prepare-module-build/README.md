@@ -4,6 +4,10 @@ This opt-in composite restores the caller's exact local module CLI manifest and
 runs `prepare-build --mode package` without starting resources. Supply a
 repository-relative v2 `manifest`. Install the pinned .NET SDK and initialize the
 root-declared identity dependencies first. The helper needs Python 3.9 or later.
+Before preparation, the helper fetches tags from the initialized direct Platform
+checkout's `origin` with submodule recursion disabled. An unavailable checkout or
+failed tag fetch blocks preparation and exports nothing; nested checkouts are
+never initialized.
 
 The tool version must be exact, `rollForward` must be false, and the observed
 restored tool version must match. Only five verified generated MSBuild imports,

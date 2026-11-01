@@ -97,6 +97,11 @@ def prepare(manifest: str, root: Path, temporary_root: Path, github_env: Path) -
     version = tool.get("version", "")
     if tools.get("isRoot") is not True or not isinstance(version, str) or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", version) or tool.get("rollForward") is not False or tool.get("commands") != ["hexalith-module"]:
         raise ValueError("the local tool manifest must pin the exact module CLI with rollForward=false")
+    platform = root / "references" / "Hexalith.Platform"
+    # Identity resolution reads local tags at the committed direct Platform pin.
+    # Never let Git discover the parent repository through an uninitialized path.
+    real_path(platform / ".git")
+    run(["git", "-c", "submodule.recurse=false", "-C", str(platform), "fetch", "--no-recurse-submodules", "--tags", "origin"], root)
     run(["dotnet", "tool", "restore", "--tool-manifest", str(manifest_path)], root)
     observed = run(["dotnet", "tool", "run", "hexalith-module", "--", "--version"], root)
     if observed.split("+", 1)[0] != version:
