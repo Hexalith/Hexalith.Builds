@@ -573,7 +573,7 @@ def _validate_source_branch(repository, source_branch, source_ci_workflow, versi
     if source_branch == "main":
         return
     if (repository, source_branch, source_ci_workflow, version) != (
-        "Hexalith/Hexalith.EventStore", "3.130.x", "ci.yml", "3.130.2"
+        "Hexalith/Hexalith.EventStore", "release/parties-sdk-3.130.2", "ci.yml", "3.130.2"
     ):
         _fail("source-branch-invalid", "Publication source must be main or the exact EventStore 3.130.2 maintenance source.")
 

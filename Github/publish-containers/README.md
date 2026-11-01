@@ -92,7 +92,7 @@ hidden release-evidence directory on success or partial failure.
 ## EventStore 3.130.2 maintenance source
 
 The only maintenance exception to the main source policy is
-`Hexalith/Hexalith.EventStore`, branch `3.130.x`, version `3.130.2`, workflow
+`Hexalith/Hexalith.EventStore`, branch `release/parties-sdk-3.130.2`, version `3.130.2`, workflow
 `ci.yml`, and environment `production`. Other maintenance repositories,
 branches, versions, prereleases, metadata versions, and workflow names refuse
 before source acquisition. The runtime must identify that actual branch.

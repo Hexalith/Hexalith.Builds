@@ -619,24 +619,24 @@ class PublicationPreflightTests(unittest.TestCase):
             root = Path(temporary_directory)
             arguments = self.arguments(root)
             arguments.version = "3.130.2"
-            arguments.source_branch = "3.130.x"
+            arguments.source_branch = "release/parties-sdk-3.130.2"
             arguments.authority_issue_url = ""
             arguments.authority_owner = ""
             environment = self.runtime_environment()
-            environment["GITHUB_REF"] = "refs/heads/3.130.x"
+            environment["GITHUB_REF"] = "refs/heads/release/parties-sdk-3.130.2"
             environment["GITHUB_WORKFLOW_REF"] = environment["GITHUB_WORKFLOW_REF"].replace(
-                "refs/heads/main", "refs/heads/3.130.x"
+                "refs/heads/main", "refs/heads/release/parties-sdk-3.130.2"
             )
-            successful_run = dict(self.source_proof()["ci_run"], head_branch="3.130.x")
+            successful_run = dict(self.source_proof()["ci_run"], head_branch="release/parties-sdk-3.130.2")
             requests = []
 
             def github_json(url, token):
                 requests.append(url)
                 if "/git/ref/heads/" in url:
-                    self.assertTrue(url.endswith("/git/ref/heads/3.130.x"))
+                    self.assertTrue(url.endswith("/git/ref/heads/release%2Fparties-sdk-3.130.2"))
                     return {"object": {"sha": SOURCE_SHA}}
                 query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
-                self.assertEqual(["3.130.x"], query["branch"])
+                self.assertEqual(["release/parties-sdk-3.130.2"], query["branch"])
                 self.assertEqual([SOURCE_SHA], query["head_sha"])
                 self.assertEqual(["push"], query["event"])
                 return {"workflow_runs": [successful_run]}
@@ -655,8 +655,8 @@ class PublicationPreflightTests(unittest.TestCase):
                 authority.assert_not_called()
             self.assertEqual(identities[0], identities[1])
             self.assertEqual(identities[0], identities[2])
-            self.assertEqual("3.130.x", identities[0]["source"]["branch"])
-            self.assertEqual("refs/heads/3.130.x", identities[0]["source"]["ref"])
+            self.assertEqual("release/parties-sdk-3.130.2", identities[0]["source"]["branch"])
+            self.assertEqual("refs/heads/release/parties-sdk-3.130.2", identities[0]["source"]["ref"])
             self.assertEqual("3.130.2", identities[0]["version"])
             self.assertEqual(12, len(requests))
             for phase in ("verify", "publish", "container"):
@@ -664,12 +664,12 @@ class PublicationPreflightTests(unittest.TestCase):
 
     def test_maintenance_source_is_finite_before_any_network_or_destination_probe(self):
         invalid = [
-            ("Other/Repository", "3.130.x", "ci.yml", "3.130.2"),
+            ("Other/Repository", "release/parties-sdk-3.130.2", "ci.yml", "3.130.2"),
             ("Hexalith/Hexalith.EventStore", "3.131.x", "ci.yml", "3.130.2"),
-            ("Hexalith/Hexalith.EventStore", "fix/3.130.x", "ci.yml", "3.130.2"),
-            ("Hexalith/Hexalith.EventStore", "3.130.x", "other.yml", "3.130.2"),
+            ("Hexalith/Hexalith.EventStore", "fix/release/parties-sdk-3.130.2", "ci.yml", "3.130.2"),
+            ("Hexalith/Hexalith.EventStore", "release/parties-sdk-3.130.2", "other.yml", "3.130.2"),
         ]
-        invalid.extend(("Hexalith/Hexalith.EventStore", "3.130.x", "ci.yml", version) for version in
+        invalid.extend(("Hexalith/Hexalith.EventStore", "release/parties-sdk-3.130.2", "ci.yml", version) for version in
                        (None, "3.130.1", "3.130.3", "3.131.2", "3.130.2-rc.1", "3.130.2+build"))
         with mock.patch.object(self.validator, "_github_json") as github:
             for repository, branch, workflow, version in invalid:
@@ -690,7 +690,7 @@ class PublicationPreflightTests(unittest.TestCase):
             ):
                 with self.assertRaises(self.validator.PreflightError) as failure:
                     self.validator.prove_current_green_source("Hexalith/Hexalith.EventStore", SOURCE_SHA,
-                                                             "3.130.x", "ci.yml", "fixture-token", version="3.130.2")
+                                                             "release/parties-sdk-3.130.2", "ci.yml", "fixture-token", version="3.130.2")
                 self.assertEqual(expected, failure.exception.code)
 
     def test_maintenance_requires_actual_runtime_ref_and_production_environment(self):
@@ -700,13 +700,13 @@ class PublicationPreflightTests(unittest.TestCase):
             with self.subTest(expected=expected), tempfile.TemporaryDirectory() as temporary_directory:
                 arguments = self.arguments(Path(temporary_directory))
                 arguments.version = "3.130.2"
-                arguments.source_branch = "3.130.x"
+                arguments.source_branch = "release/parties-sdk-3.130.2"
                 if wrong_environment:
                     arguments.environment_name = "preview"
                 environment = self.runtime_environment()
                 if not wrong_ref:
-                    environment["GITHUB_REF"] = "refs/heads/3.130.x"
-                proof = dict(self.source_proof(), branch="3.130.x", ref="refs/heads/3.130.x")
+                    environment["GITHUB_REF"] = "refs/heads/release/parties-sdk-3.130.2"
+                proof = dict(self.source_proof(), branch="release/parties-sdk-3.130.2", ref="refs/heads/release/parties-sdk-3.130.2")
                 with mock.patch.dict(os.environ, environment, clear=True):
                     with self.assertRaises(self.validator.PreflightError) as failure:
                         self.validator.build_publication_identity(arguments, proof)

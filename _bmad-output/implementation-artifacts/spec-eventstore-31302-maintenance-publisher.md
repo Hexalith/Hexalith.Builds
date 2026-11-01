@@ -10,7 +10,7 @@ baseline_commit: 22a578b576a515d2af214fe81859447fffc97981
 
 Publish the minimal SDK HTTP-verb reachability repair independently of newer
 unqualified SDK features. Permit only repository Hexalith/Hexalith.EventStore,
-branch 3.130.x, version 3.130.2, ci.yml and protected production. Preserve main
+branch release/parties-sdk-3.130.2, version 3.130.2, ci.yml and protected production. Preserve main
 publication and every source, identity, inventory, authority, registry and phase
 guard. Do not rewrite main, tags, generated publisher scripts or old receipts.
 
