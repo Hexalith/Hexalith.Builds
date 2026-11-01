@@ -102,6 +102,10 @@ CI, immutable execution identity, package inventory, destination absence, and
 the frozen verify/publish/container sequence. It does not substitute main CI or
 an earlier release's receipts. The SDK's owning release workflow additionally
 requires its ordinary branch protections and complete integration gates.
+Both the canonical Python preflight and the real container shell entry point
+enforce this identity; exercising the Python phase alone does not qualify the
+container path. The other action, registry validator and platform smoke helper
+bytes remain those of the preceding approved publisher.
 
 ## Inputs
 
