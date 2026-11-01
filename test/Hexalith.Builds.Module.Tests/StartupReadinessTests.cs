@@ -452,11 +452,11 @@ public sealed class StartupReadinessTests
         }
 
         using PlatformManifestTestWorkspace workspace = new();
-        string executable = Path.Combine(workspace.Root, "slow.sh");
         string started = Path.Combine(workspace.Root, "task-started");
-        CompositionTestFiles.WriteScript(executable, "touch task-started\nsleep 60\n");
+
+        // Execute the installed shell: parallel forks can retain a newly written script's writable handle.
         (string? failingTask, bool deadlineElapsed) = await CompositionStartupTasks.RunAsync(
-            [new CompositionStartupTask("sample", "verify", executable, [])],
+            [new CompositionStartupTask("sample", "verify", "/bin/sh", ["-c", ": > task-started\nsleep 60"]) { WorkingDirectory = workspace.Root }],
             DateTimeOffset.UtcNow.AddMilliseconds(500),
             TestContext.Current.CancellationToken).ConfigureAwait(true);
 
@@ -492,11 +492,9 @@ public sealed class StartupReadinessTests
         string root = CompositionTestFiles.CreateDirectory();
         try
         {
-            string script = Path.Combine(root, "sleep.sh");
-            CompositionTestFiles.WriteScript(script, "sleep 30\n");
             using CancellationTokenSource source = new();
             Task<(string? FailingTask, bool DeadlineElapsed)> running = CompositionStartupTasks.RunAsync(
-                [new CompositionStartupTask("sample", "verify", script, [])],
+                [new CompositionStartupTask("sample", "verify", "/bin/sh", ["-c", "sleep 30"]) { WorkingDirectory = root }],
                 DateTimeOffset.UtcNow.AddMinutes(1),
                 source.Token);
             await Task.Delay(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken).ConfigureAwait(true);
