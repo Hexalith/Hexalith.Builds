@@ -219,6 +219,8 @@ Run the focused fixture suite with:
 .\Tools\test-central-package-version-validator.ps1
 ```
 
+Run `python3 Tools/test_works_package_versions.py` from the Builds root to verify the read-only Works wrapper compatibility rule. It evaluates temporary CPM wrappers in both modes, including renamed checkouts, arbitrary project names, equivalent paths, alternate catalogs and explicit EventStore versions; it does not restore packages or start applications.
+
 `test-authoritative-package-catalog.ps1` protects the approved migration package
 identities, shared package-family alignment, and
 `CentralPackageVersionOverrideEnabled=false` through evaluated MSBuild output.
