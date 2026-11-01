@@ -569,17 +569,25 @@ def _successful_ci_runs(repository_path, source_sha, source_branch, source_ci_wo
     ]
 
 
-def prove_current_green_source(repository, source_sha, source_branch, source_ci_workflow, token):
-    """Prove the exact source is still current main and has successful push CI."""
-    if source_branch != "main":
-        _fail("source-branch-invalid", "Publication source branch must be exactly main.")
+def _validate_source_branch(repository, source_branch, source_ci_workflow, version):
+    if source_branch == "main":
+        return
+    if (repository, source_branch, source_ci_workflow, version) != (
+        "Hexalith/Hexalith.EventStore", "3.130.x", "ci.yml", "3.130.2"
+    ):
+        _fail("source-branch-invalid", "Publication source must be main or the exact EventStore 3.130.2 maintenance source.")
+
+
+def prove_current_green_source(repository, source_sha, source_branch, source_ci_workflow, token, *, version=None):
+    """Prove the exact source is current on an allowed branch with successful push CI."""
+    _validate_source_branch(repository, source_branch, source_ci_workflow, version)
     if WORKFLOW_PATTERN.fullmatch(source_ci_workflow) is None:
         _fail("source-workflow-invalid", "Source CI workflow must be a workflow filename.")
 
     repository_path = "/".join(urllib.parse.quote(part, safe="") for part in repository.split("/"))
     live_sha = _live_source_sha(repository_path, source_branch, token)
     if live_sha != source_sha:
-        _fail("source-no-longer-current", "The release source is no longer the current main tip.")
+        _fail("source-no-longer-current", "The release source is no longer the current selected branch tip.")
 
     successful_runs = _successful_ci_runs(
         repository_path,
@@ -589,7 +597,7 @@ def prove_current_green_source(repository, source_sha, source_branch, source_ci_
         token,
     )
     if not successful_runs:
-        _fail("source-ci-not-successful", "No successful push CI run exists for the exact current main source.")
+        _fail("source-ci-not-successful", "No successful push CI run exists for the exact current selected branch source.")
     selected = min(successful_runs, key=lambda run: run["id"])
     return {
         "branch": source_branch,
@@ -627,14 +635,16 @@ def build_publication_identity(arguments, source_proof=None):
         _fail("source-invalid", "Release source SHA must be an exact lowercase commit SHA.")
     if SHA_PATTERN.fullmatch(arguments.builds_execution_sha) is None:
         _fail("builds-identity-invalid", "Builds execution SHA must be an exact lowercase commit SHA.")
+    _validate_source_branch(arguments.repository, arguments.source_branch, arguments.source_ci_workflow, arguments.version)
+    if arguments.source_branch != "main" and arguments.environment_name != "production":
+        _fail("environment-invalid", "EventStore maintenance publication requires the protected production environment.")
     container_repositories = _argument_container_repositories(arguments)
 
-    proof = source_proof or prove_current_green_source(
-        arguments.repository,
-        arguments.source_sha,
-        arguments.source_branch,
-        arguments.source_ci_workflow,
-        os.environ.get("GITHUB_TOKEN", ""),
+    proof_arguments = (arguments.repository, arguments.source_sha, arguments.source_branch,
+                       arguments.source_ci_workflow, os.environ.get("GITHUB_TOKEN", ""))
+    proof = source_proof or (
+        prove_current_green_source(*proof_arguments) if arguments.source_branch == "main"
+        else prove_current_green_source(*proof_arguments, version=arguments.version)
     )
 
     identity = {

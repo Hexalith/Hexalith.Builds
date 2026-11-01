@@ -89,6 +89,20 @@ phase is single-use and fail-closed; redirects, ambiguous statuses, duplicate
 skipping, and overwrites are forbidden. The workflow uploads the complete
 hidden release-evidence directory on success or partial failure.
 
+## EventStore 3.130.2 maintenance source
+
+The only maintenance exception to the main source policy is
+`Hexalith/Hexalith.EventStore`, branch `3.130.x`, version `3.130.2`, workflow
+`ci.yml`, and environment `production`. Other maintenance repositories,
+branches, versions, prereleases, metadata versions, and workflow names refuse
+before source acquisition. The runtime must identify that actual branch.
+
+This exception retains current-branch SHA equality, exact-branch successful push
+CI, immutable execution identity, package inventory, destination absence, and
+the frozen verify/publish/container sequence. It does not substitute main CI or
+an earlier release's receipts. The SDK's owning release workflow additionally
+requires its ordinary branch protections and complete integration gates.
+
 ## Inputs
 
 | Input | Required | Description |

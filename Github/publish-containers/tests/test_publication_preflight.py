@@ -614,6 +614,104 @@ class PublicationPreflightTests(unittest.TestCase):
                 )
         self.assertEqual("source-ci-not-successful", context.exception.code)
 
+    def test_exact_eventstore_maintenance_source_freezes_all_three_phases(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            arguments = self.arguments(root)
+            arguments.version = "3.130.2"
+            arguments.source_branch = "3.130.x"
+            arguments.authority_issue_url = ""
+            arguments.authority_owner = ""
+            environment = self.runtime_environment()
+            environment["GITHUB_REF"] = "refs/heads/3.130.x"
+            environment["GITHUB_WORKFLOW_REF"] = environment["GITHUB_WORKFLOW_REF"].replace(
+                "refs/heads/main", "refs/heads/3.130.x"
+            )
+            successful_run = dict(self.source_proof()["ci_run"], head_branch="3.130.x")
+            requests = []
+
+            def github_json(url, token):
+                requests.append(url)
+                if "/git/ref/heads/" in url:
+                    self.assertTrue(url.endswith("/git/ref/heads/3.130.x"))
+                    return {"object": {"sha": SOURCE_SHA}}
+                query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+                self.assertEqual(["3.130.x"], query["branch"])
+                self.assertEqual([SOURCE_SHA], query["head_sha"])
+                self.assertEqual(["push"], query["event"])
+                return {"workflow_runs": [successful_run]}
+
+            with (
+                mock.patch.dict(os.environ, environment, clear=True),
+                mock.patch.object(self.validator, "_github_json", side_effect=github_json),
+                mock.patch.object(self.validator, "destination_probe", return_value=lambda *_: 404),
+                mock.patch.object(self.validator, "read_external_version_observations", return_value=self.version_observations()),
+                mock.patch.object(self.validator, "validate_publication_authority") as authority,
+            ):
+                identities = []
+                for phase in ("verify", "publish", "container"):
+                    arguments.phase = phase
+                    identities.append(self.validator._validate_publication(arguments))
+                authority.assert_not_called()
+            self.assertEqual(identities[0], identities[1])
+            self.assertEqual(identities[0], identities[2])
+            self.assertEqual("3.130.x", identities[0]["source"]["branch"])
+            self.assertEqual("refs/heads/3.130.x", identities[0]["source"]["ref"])
+            self.assertEqual("3.130.2", identities[0]["version"])
+            self.assertEqual(12, len(requests))
+            for phase in ("verify", "publish", "container"):
+                self.assertTrue((arguments.evidence_directory / f"publication-preflight.{phase}.json").is_file())
+
+    def test_maintenance_source_is_finite_before_any_network_or_destination_probe(self):
+        invalid = [
+            ("Other/Repository", "3.130.x", "ci.yml", "3.130.2"),
+            ("Hexalith/Hexalith.EventStore", "3.131.x", "ci.yml", "3.130.2"),
+            ("Hexalith/Hexalith.EventStore", "fix/3.130.x", "ci.yml", "3.130.2"),
+            ("Hexalith/Hexalith.EventStore", "3.130.x", "other.yml", "3.130.2"),
+        ]
+        invalid.extend(("Hexalith/Hexalith.EventStore", "3.130.x", "ci.yml", version) for version in
+                       (None, "3.130.1", "3.130.3", "3.131.2", "3.130.2-rc.1", "3.130.2+build"))
+        with mock.patch.object(self.validator, "_github_json") as github:
+            for repository, branch, workflow, version in invalid:
+                with self.subTest(repository=repository, branch=branch, workflow=workflow, version=version):
+                    with self.assertRaises(self.validator.PreflightError) as failure:
+                        self.validator.prove_current_green_source(repository, SOURCE_SHA, branch, workflow,
+                                                                 "fixture-token", version=version)
+                    self.assertEqual("source-branch-invalid", failure.exception.code)
+            github.assert_not_called()
+
+    def test_maintenance_rejects_stale_tip_and_main_only_green_receipts(self):
+        scenarios = [({"object": {"sha": "e" * 40}}, None, "source-no-longer-current"),
+                     ({"object": {"sha": SOURCE_SHA}}, {"workflow_runs": [self.source_proof()["ci_run"]]},
+                      "source-ci-not-successful")]
+        for ref, runs, expected in scenarios:
+            with self.subTest(expected=expected), mock.patch.object(
+                self.validator, "_github_json", side_effect=[ref] if runs is None else [ref, runs]
+            ):
+                with self.assertRaises(self.validator.PreflightError) as failure:
+                    self.validator.prove_current_green_source("Hexalith/Hexalith.EventStore", SOURCE_SHA,
+                                                             "3.130.x", "ci.yml", "fixture-token", version="3.130.2")
+                self.assertEqual(expected, failure.exception.code)
+
+    def test_maintenance_requires_actual_runtime_ref_and_production_environment(self):
+        for wrong_ref, wrong_environment, expected in [
+            (True, False, "source-ref-mismatch"), (False, True, "environment-invalid")
+        ]:
+            with self.subTest(expected=expected), tempfile.TemporaryDirectory() as temporary_directory:
+                arguments = self.arguments(Path(temporary_directory))
+                arguments.version = "3.130.2"
+                arguments.source_branch = "3.130.x"
+                if wrong_environment:
+                    arguments.environment_name = "preview"
+                environment = self.runtime_environment()
+                if not wrong_ref:
+                    environment["GITHUB_REF"] = "refs/heads/3.130.x"
+                proof = dict(self.source_proof(), branch="3.130.x", ref="refs/heads/3.130.x")
+                with mock.patch.dict(os.environ, environment, clear=True):
+                    with self.assertRaises(self.validator.PreflightError) as failure:
+                        self.validator.build_publication_identity(arguments, proof)
+                self.assertEqual(expected, failure.exception.code)
+
     def test_package_and_container_destinations_must_all_be_absent(self):
         packages = [f"Package.{index}" for index in range(FIXTURE_PACKAGE_COUNT)]
         calls = []
