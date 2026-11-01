@@ -100,8 +100,10 @@ def prepare(manifest: str, root: Path, temporary_root: Path, github_env: Path) -
     platform = root / "references" / "Hexalith.Platform"
     # Identity resolution reads local tags at the committed direct Platform pin.
     # Never let Git discover the parent repository through an uninitialized path.
-    real_path(platform / ".git")
-    run(["git", "-c", "submodule.recurse=false", "-C", str(platform), "fetch", "--no-recurse-submodules", "--tags", "origin"], root)
+    # A Platform-root caller uses its own HEAD; the producer validates that case.
+    if not (root / "hexalith-platform.json").is_file() or platform.exists():
+        real_path(platform / ".git")
+        run(["git", "-c", "submodule.recurse=false", "-C", str(platform), "fetch", "--no-recurse-submodules", "--tags", "origin"], root)
     run(["dotnet", "tool", "restore", "--tool-manifest", str(manifest_path)], root)
     observed = run(["dotnet", "tool", "run", "hexalith-module", "--", "--version"], root)
     if observed.split("+", 1)[0] != version:

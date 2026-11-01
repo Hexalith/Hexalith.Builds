@@ -78,6 +78,24 @@ class PreparationTests(unittest.TestCase):
             self.assertEqual(4, len(calls))
             self.assertEqual(helper.KEYS, {line.split("=", 1)[0] for line in export.read_text().splitlines()})
 
+    def test_platform_root_preserves_producer_owned_identity_without_a_direct_checkout(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / ".config").mkdir()
+            (root / "module.json").write_text("{}")
+            (root / "hexalith-platform.json").write_text('{"schemaVersion":1}')
+            (root / ".config/dotnet-tools.json").write_text(json.dumps(dict(isRoot=True, tools={"hexalith.builds.module.cli": dict(version="9.8.7", rollForward=False, commands=["hexalith-module"])})))
+            export = root / "github-env"
+            workspace = root / "hexalith-module-build-platformroot"
+            prepared = self.result(workspace)
+            with mock.patch.object(helper.uuid, "uuid4") as uuid4, mock.patch.object(helper, "run", side_effect=["restored", "9.8.7", json.dumps(prepared)]) as run:
+                uuid4.return_value.hex = "platformroot"
+                helper.prepare("module.json", root, root, export)
+            self.assertEqual(3, run.call_count)
+            self.assertTrue(all(call.args[0][0] == "dotnet" for call in run.call_args_list))
+            self.assertIn("prepare-build", run.call_args_list[-1].args[0])
+            self.assertEqual(helper.KEYS, {line.split("=", 1)[0] for line in export.read_text().splitlines()})
+
     def test_platform_tag_fetch_failure_preserves_environment_and_stops_preparation(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -110,9 +128,13 @@ class PreparationTests(unittest.TestCase):
             (root / "module.json").write_text("{}")
             manifest = root / ".config/dotnet-tools.json"
             export = root / "github-env"
+            def failed_tool(command, cwd):
+                if command[0] == "git":
+                    return ""
+                raise ValueError("unpublished prepare-build")
             for version, roll_forward in [("[4.35.2,)", False), ("4.35.2", True), ("4.35.2", False)]:
                 manifest.write_text(json.dumps(dict(isRoot=True, tools={"hexalith.builds.module.cli": dict(version=version, rollForward=roll_forward, commands=["hexalith-module"])})))
-                with mock.patch.object(helper, "run", side_effect=ValueError("unpublished prepare-build")), self.assertRaises(ValueError):
+                with mock.patch.object(helper, "run", side_effect=failed_tool), self.assertRaises(ValueError):
                     helper.prepare("module.json", root, root, export)
                 self.assertFalse(export.exists())
 
