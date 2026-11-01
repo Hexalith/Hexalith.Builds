@@ -21,7 +21,8 @@ function Invoke-CatalogProcess {
     $start.RedirectStandardOutput = $true
     $start.RedirectStandardError = $true
     foreach ($argument in $Arguments) { $start.ArgumentList.Add($argument) }
-    # MSBuild imports environment variables as initial properties. Only catalog declarations
+    # Independent probes exclude caller response files; MSBuild also imports environment
+    # variables as initial properties. Only catalog declarations
     # may select controlled versions; caller/build observations are compared separately.
     foreach ($name in @($start.Environment.Keys)) {
         if (-not $AllowInheritedSelections -and ($name -like 'Hexalith*Version' -or $name -in @('HexalithRedisImage', 'HexalithRedisImageTag', 'HexalithRedisImageDigest', 'HexalithVersionsLoaded'))) {
@@ -86,7 +87,7 @@ try {
     # Preprocessing includes imported declarations while preserving their XML conditions.
     $preprocessedPath = Join-Path ([IO.Path]::GetTempPath()) "hexalith-catalog-$([Guid]::NewGuid().ToString('N')).xml"
     try {
-        $null = Invoke-CatalogProcess (@('msbuild', $CatalogPath, '-nologo', "-preprocess:$preprocessedPath") + $contextArguments)
+        $null = Invoke-CatalogProcess (@('msbuild', $CatalogPath, '-nologo', '-noAutoResponse', "-preprocess:$preprocessedPath") + $contextArguments)
         [xml] $declarations = [IO.File]::ReadAllText($preprocessedPath)
         $requiredProperties = @($propertyFields.Values) + @('HexalithEventStoreVersion', 'HexalithFrontComposerVersion', 'HexalithAspireHostingDaprVersion')
         foreach ($property in $requiredProperties) {
@@ -103,7 +104,7 @@ try {
     }
     finally { Remove-Item -LiteralPath $preprocessedPath -Force -ErrorAction SilentlyContinue }
     # A neutral project name validates the Platform pair, preserving the Folders.Aspire exception.
-    $evaluation = (Invoke-CatalogProcess (@('msbuild', $CatalogPath, '-nologo', '-getItem:PackageVersion', $propertiesArgument) + $contextArguments)) | ConvertFrom-Json -Depth 100
+    $evaluation = (Invoke-CatalogProcess (@('msbuild', $CatalogPath, '-nologo', '-noAutoResponse', '-getItem:PackageVersion', $propertiesArgument) + $contextArguments)) | ConvertFrom-Json -Depth 100
     $snapshot = [ordered] @{ schemaVersion = '1' }
     foreach ($field in $packageFields.Keys) {
         $package = $packageFields[$field]
@@ -118,7 +119,7 @@ try {
         $snapshot[$field] = $value
     }
     if ($inheritedSelections.Count -gt 0) {
-        $observedEvaluation = (Invoke-CatalogProcess -Arguments (@('msbuild', $CatalogPath, '-nologo', '-getItem:PackageVersion', $propertiesArgument) + $contextArguments) -AllowInheritedSelections) | ConvertFrom-Json -Depth 100
+        $observedEvaluation = (Invoke-CatalogProcess -Arguments (@('msbuild', $CatalogPath, '-nologo', '-noAutoResponse', '-getItem:PackageVersion', $propertiesArgument) + $contextArguments) -AllowInheritedSelections) | ConvertFrom-Json -Depth 100
         foreach ($field in @($packageFields.Keys) + @($propertyFields.Keys)) {
             if ($packageFields.Contains($field)) {
                 $catalogField = $packageFields[$field]
@@ -178,7 +179,7 @@ try {
                 $escapedVersion = [Security.SecurityElement]::Escape($snapshot.eventStoreVersion)
                 $escapedFramework = [Security.SecurityElement]::Escape($TargetFramework)
                 [IO.File]::WriteAllText($restoreProject, "<Project Sdk=`"Microsoft.NET.Sdk`"><PropertyGroup><TargetFramework>$escapedFramework</TargetFramework><DirectoryBuildPropsPath/><DirectoryBuildTargetsPath/><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally><NuGetAudit>false</NuGetAudit></PropertyGroup><ItemGroup><PackageDownload Include=`"Hexalith.EventStore.Aspire`" Version=`"[$escapedVersion]`" /></ItemGroup></Project>")
-                $null = Invoke-CatalogProcess @('restore', $restoreProject, '--packages', $packageCache, '-p:DirectoryBuildPropsPath=', '-p:DirectoryBuildTargetsPath=')
+                $null = Invoke-CatalogProcess @('restore', $restoreProject, '-noAutoResponse', '--packages', $packageCache, '-p:DirectoryBuildPropsPath=', '-p:DirectoryBuildTargetsPath=')
             }
             finally { Remove-Item -LiteralPath $scratch -Recurse -Force }
         }

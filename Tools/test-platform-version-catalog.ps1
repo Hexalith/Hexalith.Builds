@@ -35,13 +35,14 @@ $pwshExecutable = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pws
 $count = 0
 
 function Test-Catalog {
-    param([string] $Name, [string] $Catalog, [string] $EventStore, [string] $Range, [int] $ExpectedExit, [string[]] $ExpectedText = @(), [string] $Metadata = '', [string] $Configuration = 'Debug', [string] $TargetFramework = 'net10.0', [hashtable] $ExpectedSnapshot = @{})
+    param([string] $Name, [string] $Catalog, [string] $EventStore, [string] $Range, [int] $ExpectedExit, [string[]] $ExpectedText = @(), [string] $Metadata = '', [string] $Configuration = 'Debug', [string] $TargetFramework = 'net10.0', [hashtable] $ExpectedSnapshot = @{}, [string] $ResponseFile = '')
     $directory = Join-Path $temporaryRoot $Name
     $null = New-Item -ItemType Directory -Path $directory
     $catalogPath = Join-Path $directory 'Directory.Packages.props'
     $metadataPath = Join-Path $directory 'eventstore.nuspec'
     $outputPath = Join-Path $directory 'catalog.json'
     [IO.File]::WriteAllText($catalogPath, $Catalog)
+    if ($ResponseFile) { [IO.File]::WriteAllText((Join-Path $directory 'Directory.Build.rsp'), $ResponseFile) }
     if (-not $Metadata) { $Metadata = "<package><metadata><id>Hexalith.EventStore.Aspire</id><version>$EventStore</version><dependencies><group targetFramework=`"net10.0`"><dependency id=`"CommunityToolkit.Aspire.Hosting.Dapr`" version=`"$Range`" /></group></dependencies></metadata></package>" }
     [IO.File]::WriteAllText($metadataPath, $Metadata)
     $result = @(& $pwshExecutable -NoProfile -File $writer -CatalogPath $catalogPath -NuspecPath $metadataPath -OutputPath $outputPath -Configuration $Configuration -TargetFramework $TargetFramework 2>&1)
@@ -72,6 +73,47 @@ try {
     $count++
     Write-Output 'PASS: current authoritative catalog with real selected package metadata'
     Test-Catalog 'current-pair' $catalogText '3.117.1' '13.6.0-preview.1.261001-0243' 0
+    # A fresh metadata restore must also ignore properties in caller response files.
+    $warmSnapshotPath = Join-Path $temporaryRoot 'warm-authority.json'
+    $null = & $pwshExecutable -NoProfile -File $writer -OutputPath $warmSnapshotPath
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot capture the current package for the cold-cache fixture.' }
+    $warmSnapshot = Get-Content $warmSnapshotPath -Raw | ConvertFrom-Json
+    $cacheOutput = (& dotnet nuget locals global-packages --list) -join "`n"
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot locate the warm package cache.' }
+    $warmCache = $cacheOutput.Substring($cacheOutput.IndexOf(':') + 1).Trim()
+    $sdkDirectory = (& dotnet msbuild (Join-Path $PSScriptRoot '../Props/Directory.Packages.props') -nologo -noAutoResponse -getProperty:MSBuildToolsPath) -join "`n"
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot locate SDK NuGet version semantics.' }
+    Add-Type -Path (Join-Path $sdkDirectory.Trim() 'NuGet.Versioning.dll')
+    $selectedVersion = [NuGet.Versioning.NuGetVersion]::Parse($warmSnapshot.eventStoreVersion).ToNormalizedString().ToLowerInvariant()
+    $selectedNuspec = Join-Path $warmCache "hexalith.eventstore.aspire/$selectedVersion/hexalith.eventstore.aspire.nuspec"
+    $coldRoot = Join-Path $temporaryRoot 'cold-response-metadata'
+    $feed = Join-Path $coldRoot 'feed'
+    $null = New-Item -ItemType Directory -Path $feed
+    # PackageDownload needs only this validated metadata; no warm archive is assumed.
+    $fixturePackage = Join-Path $coldRoot 'package'
+    $null = New-Item -ItemType Directory -Path $fixturePackage
+    Copy-Item -LiteralPath $selectedNuspec -Destination $fixturePackage
+    [IO.Compression.ZipFile]::CreateFromDirectory($fixturePackage, (Join-Path $feed "hexalith.eventstore.aspire.$selectedVersion.nupkg"))
+    [IO.File]::WriteAllText((Join-Path $coldRoot 'Directory.Packages.props'), $authoritativeCatalogText)
+    [IO.File]::WriteAllText((Join-Path $coldRoot 'Directory.Build.rsp'), '-p:TargetFramework=invalid-response-framework')
+    $escapedFeed = [Security.SecurityElement]::Escape($feed)
+    [IO.File]::WriteAllText((Join-Path $coldRoot 'NuGet.Config'), "<configuration><packageSources><clear/><add key=`"fixture`" value=`"$escapedFeed`" /></packageSources></configuration>")
+    $priorPackages = [Environment]::GetEnvironmentVariable('NUGET_PACKAGES')
+    try {
+        [Environment]::SetEnvironmentVariable('NUGET_PACKAGES', (Join-Path $coldRoot 'empty-cache'))
+        $coldSnapshotPath = Join-Path $coldRoot 'catalog.json'
+        $null = & $pwshExecutable -NoProfile -File $writer -CatalogPath (Join-Path $coldRoot 'Directory.Packages.props') -OutputPath $coldSnapshotPath
+        if ($LASTEXITCODE -ne 0) { throw 'Cold metadata restore consumed a caller response file.' }
+        $coldSnapshot = Get-Content $coldSnapshotPath -Raw | ConvertFrom-Json
+        if ($coldSnapshot.eventStoreVersion -cne $warmSnapshot.eventStoreVersion) { throw 'Cold metadata restore changed the selected package.' }
+        $restoredNuspec = Join-Path $coldRoot "empty-cache/hexalith.eventstore.aspire/$selectedVersion/hexalith.eventstore.aspire.nuspec"
+        if (-not (Test-Path -LiteralPath $restoredNuspec -PathType Leaf)) { throw 'The cold fixture did not perform the metadata restore.' }
+        $count++
+        Write-Output 'PASS: cold metadata restore ignores caller response files'
+    }
+    finally { [Environment]::SetEnvironmentVariable('NUGET_PACKAGES', $priorPackages) }
+    Test-Catalog 'caller-response-package-version-is-not-authority' $catalogText '3.117.1' '13.6.0-preview.1.261001-0243' 0 -ResponseFile '-p:HexalithEventStoreVersion=3.128.4' -ExpectedSnapshot @{ eventStoreVersion = '3.117.1' }
+    Test-Catalog 'caller-response-runtime-version-is-not-authority' $catalogText '3.117.1' '13.6.0-preview.1.261001-0243' 0 -ResponseFile '-p:HexalithDaprRuntimeVersion=99.0.0' -ExpectedSnapshot @{ daprRuntimeVersion = '1.18.2' }
     $historical = $catalogText.Replace('3.117.1', '3.109.0').Replace('13.6.0-preview.1.261001-0243', '13.5.1-beta.767')
     Test-Catalog 'historical-3-109-beta-767' $historical '3.109.0' '[13.5.1-beta.767]' 0
     Test-Catalog 'historical-preview-too-old' ($historical.Replace('13.5.1-beta.767', '13.5.1-beta.766')) '3.109.0' '[13.5.1-beta.767,13.6.0)' 1 @('Hexalith.EventStore.Aspire/3.109.0', 'CommunityToolkit.Aspire.Hosting.Dapr/13.5.1-beta.766', '[13.5.1-beta.767,13.6.0)')
@@ -157,6 +199,7 @@ try {
         Test-Catalog 'environment-override-rejected' $environmentCatalog '3.117.1' '[13,14)' 1 @('Hexalith.FrontComposer.Shell', 'inherited from environment', '99.0.0', '4.6.0')
         [Environment]::SetEnvironmentVariable('HexalithFrontComposerVersion', '4.6.0')
         Test-Catalog 'matching-environment-selection' $environmentCatalog '3.117.1' '[13,14)' 0
+        Test-Catalog 'matching-environment-with-caller-response' $environmentCatalog '3.117.1' '[13,14)' 0 -ResponseFile '-p:HexalithEventStoreVersion=3.128.4' -ExpectedSnapshot @{ eventStoreVersion = '3.117.1' }
         [Environment]::SetEnvironmentVariable('HexalithFrontComposerVersion', '99.0.0')
         Test-Catalog 'overwritten-environment-property-is-not-effective-drift' $catalogText '3.117.1' '[13,14)' 0
     }
@@ -246,6 +289,15 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Matching controlled build selection failed: $log" }
         $count++
         Write-Output 'PASS: controlled overrides reject divergence and permit matching selections'
+        # A caller response file affects the real build but never redefines catalog authority.
+        $callerResponse = Join-Path $copyRoot 'Directory.Build.rsp'
+        [IO.File]::WriteAllText($callerResponse, '-p:HexalithFrontComposerVersion=0.0.7')
+        try {
+            $log = @(& dotnet build $project -c Debug -m:1 2>&1) -join "`n"
+            if ($LASTEXITCODE -eq 0 -or -not $log.Contains('inconsistent build selection', [StringComparison]::Ordinal)) { throw "Response-file controlled build override was not rejected: $log" }
+            $count++
+        }
+        finally { Remove-Item -LiteralPath $callerResponse -Force }
         $priorEnvironment = [Environment]::GetEnvironmentVariable('HexalithFrontComposerVersion')
         try {
             [Environment]::SetEnvironmentVariable('HexalithFrontComposerVersion', '0.0.7')
