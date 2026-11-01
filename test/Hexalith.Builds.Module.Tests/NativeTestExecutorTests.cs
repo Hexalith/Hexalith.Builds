@@ -333,58 +333,7 @@ public sealed class NativeTestExecutorTests
             ownedRoot = workspace.Root;
             string marker = Path.Combine(workspace.Root, "child-executed");
             (CompositionRunPlan plan, ModuleTestSelection selection, string manifest) = await PrepareSelectedRunAsync(workspace, _markerRunner).ConfigureAwait(true);
-            string directory = Path.Combine(plan.Workspace, "platform-components", plan.EnvironmentId + "-catalog");
-            _ = Directory.CreateDirectory(directory);
-            foreach (string name in new[] { "catalog.json", "receipt.json", "activation.json", "owner.committed.json" })
-            {
-                await File.WriteAllTextAsync(Path.Combine(directory, name), "{}", TestContext.Current.CancellationToken).ConfigureAwait(true);
-            }
-
-            // These offline fields qualify only the pre-child handoff contract, never an active owner cohort.
-            JsonObject closure = new() { ["RunId"] = plan.RunId, ["hosts"] = new JsonArray(new JsonObject { ["ResourceId"] = "owner" }) };
-            JsonObject preparation = new() { ["RunId"] = plan.RunId, ["routingCatalogMetadataObserved"] = true };
-            JsonObject metadata = new() { ["method"] = "GET", ["path"] = "/api/v1/routing/catalog", ["status"] = 200 };
-            if (fault == "metadata-missing-status")
-            {
-                _ = metadata.Remove("status");
-            }
-
-            if (fault == "metadata-wrong-kind")
-            {
-                metadata["status"] = "200";
-            }
-
-            if (fault == "metadata-overflow")
-            {
-                metadata["status"] = long.MaxValue;
-            }
-
-            if (fault == "closure-missing-hosts")
-            {
-                _ = closure.Remove("hosts");
-            }
-
-            if (fault == "closure-wrong-kind")
-            {
-                closure["hosts"] = new JsonObject();
-            }
-
-            if (fault == "preparation-missing-flag")
-            {
-                _ = preparation.Remove("routingCatalogMetadataObserved");
-            }
-
-            if (fault == "preparation-wrong-kind")
-            {
-                preparation["routingCatalogMetadataObserved"] = "true";
-            }
-
-            await File.WriteAllTextAsync(Path.Combine(directory, "selected-closure.json"), closure.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
-            await File.WriteAllTextAsync(Path.Combine(directory, "preparation.json"), preparation.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
-            await File.WriteAllTextAsync(Path.Combine(directory, "metadata-http.json"), fault == "malformed-json" ? "{" : metadata.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
-            string assets = Path.Combine(plan.Workspace, "platform-components", "catalog-reader", "obj");
-            _ = Directory.CreateDirectory(assets);
-            await File.WriteAllTextAsync(Path.Combine(assets, "project.assets.json"), "{}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+            string directory = await WriteRoutingProofShapeAsync(plan, fault).ConfigureAwait(true);
             using Process process = new();
             CompositionReadiness readiness = HealthyReadiness(plan) with { RoutingCatalogObservationsRequired = fault != "not-required" };
             if (fault == "not-required")
@@ -474,35 +423,7 @@ public sealed class NativeTestExecutorTests
         string signing = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
         string endpointToken = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
         string[] accessTokens = [.. Enumerable.Range(0, 6).Select(_ => Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32)))];
-        Uri invocation = new("http://127.0.0.1:20012/v1.0/invoke/sample/method/api/v1/");
-        string endpointPath = Path.Combine(plan.Workspace, NativeTestHandoff.EndpointCredentialsFileName);
-        string endpointContent = JsonSerializer.Serialize(new
-        {
-            schema = NativeTestHandoff.EndpointCredentialsSchema,
-            runId = plan.RunId,
-            syntheticTenantId = plan.TenantNamespace,
-            dataIsolationId = plan.ResourceNamespace,
-            endpoints = new[] { new { resourceId = "owned-resource", moduleId = "sample", endpointName = "dapr-invocation", uri = invocation.AbsoluteUri, headerName = "dapr-api-token", value = endpointToken } },
-        });
-        await File.WriteAllTextAsync(endpointPath, endpointContent, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(endpointPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-        }
-
-        string accessPath = Path.Combine(plan.Workspace, "platform-components", "retention", "access.json");
-        _ = Directory.CreateDirectory(Path.GetDirectoryName(accessPath)!);
-        string accessContent = JsonSerializer.Serialize(Enumerable.Range(0, 3).ToDictionary(index => "service-" + index, index => new { APP_API_TOKEN = accessTokens[index * 2], DAPR_API_TOKEN = accessTokens[(index * 2) + 1] }));
-        await File.WriteAllTextAsync(accessPath, accessContent, TestContext.Current.CancellationToken).ConfigureAwait(true);
-        CompositionReadiness readiness = HealthyReadiness(plan);
-        readiness = readiness with
-        {
-            RoutingCatalogObservationsRequired = true,
-            NativeEndpointCredentialsPath = endpointPath,
-            NativeHttpEndpoints = [new("owned-resource", "sample", "dapr-invocation", invocation, "owned-sidecar")],
-            Resources = [.. readiness.Resources.Select(resource => resource with { Endpoints = [.. resource.Endpoints, new("dapr-invocation", "http", invocation)] })],
-            TestObservation = new() { RunId = plan.RunId, ModuleId = "sample", ProfileHash = new string('a', 64), ProfileJson = "{}", AccessPath = accessPath },
-        };
+        CompositionReadiness readiness = await CreateOpaqueHandoffReadinessAsync(plan, endpointToken, accessTokens).ConfigureAwait(true);
         string opaque = source switch
         {
             "signing" => signing,
@@ -532,6 +453,107 @@ public sealed class NativeTestExecutorTests
             File.Exists(Path.Combine(workspace.Root, "child-executed")).ShouldBeFalse();
             Directory.Exists(Path.Combine(archive, "routing-catalog")).ShouldBeFalse();
         }
+    }
+
+    private static async Task<string> WriteRoutingProofShapeAsync(CompositionRunPlan plan, string fault)
+    {
+        string directory = Path.Combine(plan.Workspace, "platform-components", plan.EnvironmentId + "-catalog");
+        _ = Directory.CreateDirectory(directory);
+        foreach (string name in new[] { "catalog.json", "receipt.json", "activation.json", "owner.committed.json" })
+        {
+            await File.WriteAllTextAsync(Path.Combine(directory, name), "{}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+        }
+
+        // These offline fields qualify only the pre-child handoff contract, never an active owner cohort.
+        JsonObject closure = new() { ["RunId"] = plan.RunId, ["hosts"] = new JsonArray(new JsonObject { ["ResourceId"] = "owner" }) };
+        JsonObject preparation = new() { ["RunId"] = plan.RunId, ["routingCatalogMetadataObserved"] = true };
+        JsonObject metadata = new() { ["method"] = "GET", ["path"] = "/api/v1/routing/catalog", ["status"] = 200 };
+        MutateRoutingProofShape(fault, closure, preparation, metadata);
+        await File.WriteAllTextAsync(Path.Combine(directory, "selected-closure.json"), closure.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(directory, "preparation.json"), preparation.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        await File.WriteAllTextAsync(Path.Combine(directory, "metadata-http.json"), fault == "malformed-json" ? "{" : metadata.ToJsonString(), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        string assets = Path.Combine(plan.Workspace, "platform-components", "catalog-reader", "obj");
+        _ = Directory.CreateDirectory(assets);
+        await File.WriteAllTextAsync(Path.Combine(assets, "project.assets.json"), "{}", TestContext.Current.CancellationToken).ConfigureAwait(true);
+
+        return directory;
+    }
+
+    private static void MutateRoutingProofShape(string fault, JsonObject closure, JsonObject preparation, JsonObject metadata)
+    {
+        if (fault == "metadata-missing-status")
+        {
+            _ = metadata.Remove("status");
+        }
+
+        if (fault == "metadata-wrong-kind")
+        {
+            metadata["status"] = "200";
+        }
+
+        if (fault == "metadata-overflow")
+        {
+            metadata["status"] = long.MaxValue;
+        }
+
+        if (fault == "closure-missing-hosts")
+        {
+            _ = closure.Remove("hosts");
+        }
+
+        if (fault == "closure-wrong-kind")
+        {
+            closure["hosts"] = new JsonObject();
+        }
+
+        if (fault == "preparation-missing-flag")
+        {
+            _ = preparation.Remove("routingCatalogMetadataObserved");
+        }
+
+        if (fault == "preparation-wrong-kind")
+        {
+            preparation["routingCatalogMetadataObserved"] = "true";
+        }
+    }
+
+    private static async Task<CompositionReadiness> CreateOpaqueHandoffReadinessAsync(CompositionRunPlan plan, string endpointToken, string[] accessTokens)
+    {
+        Uri invocation = new("http://127.0.0.1:20012/v1.0/invoke/sample/method/api/v1/");
+        string endpointPath = await WriteOpaqueEndpointCredentialsAsync(plan, endpointToken, invocation).ConfigureAwait(true);
+        string accessPath = Path.Combine(plan.Workspace, "platform-components", "retention", "access.json");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(accessPath)!);
+        string accessContent = JsonSerializer.Serialize(Enumerable.Range(0, 3).ToDictionary(index => "service-" + index, index => new { APP_API_TOKEN = accessTokens[index * 2], DAPR_API_TOKEN = accessTokens[(index * 2) + 1] }));
+        await File.WriteAllTextAsync(accessPath, accessContent, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        CompositionReadiness readiness = HealthyReadiness(plan);
+        return readiness with
+        {
+            RoutingCatalogObservationsRequired = true,
+            NativeEndpointCredentialsPath = endpointPath,
+            NativeHttpEndpoints = [new("owned-resource", "sample", "dapr-invocation", invocation, "owned-sidecar")],
+            Resources = [.. readiness.Resources.Select(resource => resource with { Endpoints = [.. resource.Endpoints, new("dapr-invocation", "http", invocation)] })],
+            TestObservation = new() { RunId = plan.RunId, ModuleId = "sample", ProfileHash = new string('a', 64), ProfileJson = "{}", AccessPath = accessPath },
+        };
+    }
+
+    private static async Task<string> WriteOpaqueEndpointCredentialsAsync(CompositionRunPlan plan, string endpointToken, Uri invocation)
+    {
+        string endpointPath = Path.Combine(plan.Workspace, NativeTestHandoff.EndpointCredentialsFileName);
+        string endpointContent = JsonSerializer.Serialize(new
+        {
+            schema = NativeTestHandoff.EndpointCredentialsSchema,
+            runId = plan.RunId,
+            syntheticTenantId = plan.TenantNamespace,
+            dataIsolationId = plan.ResourceNamespace,
+            endpoints = new[] { new { resourceId = "owned-resource", moduleId = "sample", endpointName = "dapr-invocation", uri = invocation.AbsoluteUri, headerName = "dapr-api-token", value = endpointToken } },
+        });
+        await File.WriteAllTextAsync(endpointPath, endpointContent, TestContext.Current.CancellationToken).ConfigureAwait(true);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(endpointPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+
+        return endpointPath;
     }
 
     private static async Task<IReadOnlyDictionary<string, byte[]>> WriteRequiredRoutingEvidenceAsync(CompositionRunPlan plan)

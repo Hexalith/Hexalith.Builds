@@ -44,7 +44,7 @@ app.UseEventStoreHttpHostSecurity();
 app.UseAuthorization();
 if (!string.IsNullOrEmpty(app.Configuration["EventStore:RouteCatalog:DevelopmentBootstrap:CatalogPath"]))
 {
-#if HEXALITH_BUILD_TECHNICAL_CATALOG_SDK
+#if HEXALITH_EVENTSTORE_MAPPED_SOURCE
     _ = Hexalith.EventStore.ServiceDefaults.Routing.TechnicalHttpRouteCatalogReceiver.IsEnabled(app.Configuration)
         ? Hexalith.EventStore.ServiceDefaults.Routing.TechnicalHttpRouteCatalogReceiver.UseDevelopmentTechnicalHttpCatalogReceiver(
             app,

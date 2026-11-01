@@ -5,7 +5,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <Description>Builds-owned EventStore composition root over the Hexalith.EventStore.Gateway package for G-4 runs.</Description>
     <BuildsCatalogFromMappedSource Condition="'$(Configuration)' == 'Debug' and Exists('$(HexalithEventStoreRoot)/src/Hexalith.EventStore.Gateway/Hexalith.EventStore.Gateway.csproj')">true</BuildsCatalogFromMappedSource>
-    <DefineConstants Condition="'$(BuildsCatalogFromMappedSource)' == 'true'">$(DefineConstants);HEXALITH_EVENTSTORE_MAPPED_SOURCE;HEXALITH_BUILD_TECHNICAL_CATALOG_SDK</DefineConstants>
+    <DefineConstants Condition="'$(BuildsCatalogFromMappedSource)' == 'true'">$(DefineConstants);HEXALITH_EVENTSTORE_MAPPED_SOURCE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Hexalith.EventStore.Gateway" Condition="'$(BuildsCatalogFromMappedSource)' != 'true'" />

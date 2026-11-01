@@ -47,14 +47,23 @@ internal static class SelectedRoutingCatalogSnapshot
     /// <exception cref="InvalidDataException">The proof identity, bounds or contents are invalid.</exception>
     private static async Task<IReadOnlyDictionary<string, byte[]>> ReadCoreAsync(CompositionRunPlan plan, byte[] descriptorSnapshot, bool required, IReadOnlyList<string> knownCredentials, CancellationToken cancellationToken)
     {
-        string instance = plan.EnvironmentId + "-catalog";
-        string directory = Path.Combine(plan.Workspace, "platform-components", instance);
-        Dictionary<string, byte[]> result = new(StringComparer.Ordinal);
         if (!required)
         {
-            return result.ToFrozenDictionary(StringComparer.Ordinal);
+            return new Dictionary<string, byte[]>(StringComparer.Ordinal).ToFrozenDictionary(StringComparer.Ordinal);
         }
 
+        string instance = plan.EnvironmentId + "-catalog";
+        string directory = Path.Combine(plan.Workspace, "platform-components", instance);
+        string catalogCommit = ValidateDescriptor(plan, descriptorSnapshot, directory, instance);
+        List<(string Source, string Name)> inputs = CollectInputs(plan.Workspace, directory, out int readbackCount);
+        Dictionary<string, byte[]> result = await ReadInputsAsync(plan.Workspace, inputs, catalogCommit, knownCredentials, cancellationToken).ConfigureAwait(false);
+        ValidateHostInventory(plan, result, readbackCount);
+        ValidatePreparation(plan, result);
+        return result.ToFrozenDictionary(StringComparer.Ordinal);
+    }
+
+    private static string ValidateDescriptor(CompositionRunPlan plan, byte[] descriptorSnapshot, string directory, string instance)
+    {
         if (!Directory.Exists(directory))
         {
             throw new InvalidDataException("A Platform native composition requires its routing observations.");
@@ -68,12 +77,15 @@ internal static class SelectedRoutingCatalogSnapshot
         using JsonDocument descriptor = JsonDocument.Parse(descriptorSnapshot);
         JsonElement bindings = descriptor.RootElement.GetProperty("bindings");
         JsonElement catalog = bindings.GetProperty("environment").GetProperty("catalog");
-        if (bindings.GetProperty("run").GetProperty("environmentId").GetString() != plan.EnvironmentId
-            || catalog.GetProperty("instanceId").GetString() != instance || !CompositionRunPlanFactory.IsRunId(plan.EnvironmentId))
-        {
-            throw new InvalidDataException("Routing observations differ from the validated descriptor instance.");
-        }
+        bool different = bindings.GetProperty("run").GetProperty("environmentId").GetString() != plan.EnvironmentId
+            || catalog.GetProperty("instanceId").GetString() != instance || !CompositionRunPlanFactory.IsRunId(plan.EnvironmentId);
+        return different
+            ? throw new InvalidDataException("Routing observations differ from the validated descriptor instance.")
+            : catalog.GetProperty("commit").GetString()!;
+    }
 
+    private static List<(string Source, string Name)> CollectInputs(string workspace, string directory, out int readbackCount)
+    {
         List<(string Source, string Name)> inputs = [];
         foreach (string name in new[] { "catalog.json", "receipt.json", "activation.json", "metadata-http.json", "preparation.json", "selected-closure.json" })
         {
@@ -81,7 +93,8 @@ internal static class SelectedRoutingCatalogSnapshot
         }
 
         string[] readbacks = [.. Directory.EnumerateFiles(directory, "*.committed.json", SearchOption.TopDirectoryOnly).Take(65)];
-        if (readbacks.Length > 64)
+        readbackCount = readbacks.Length;
+        if (readbackCount > 64)
         {
             throw new InvalidDataException("Routing observations exceed the bounded host inventory.");
         }
@@ -99,21 +112,20 @@ internal static class SelectedRoutingCatalogSnapshot
             inputs.Add((path, name));
         }
 
-        foreach ((string source, string name) in new[]
-        {
-            (Path.Combine(plan.Workspace, "source-mapping", "mapping.json"), "mapping.json"),
-            (Path.Combine(plan.Workspace, "source-mapping", "catalog-versions.json"), "catalog-versions.json"),
-            (Path.Combine(plan.Workspace, "platform-components", "catalog-reader", "obj", "project.assets.json"), "reader-assets.json"),
-        })
-        {
-            inputs.Add((source, name));
-        }
+        inputs.Add((Path.Combine(workspace, "source-mapping", "mapping.json"), "mapping.json"));
+        inputs.Add((Path.Combine(workspace, "source-mapping", "catalog-versions.json"), "catalog-versions.json"));
+        inputs.Add((Path.Combine(workspace, "platform-components", "catalog-reader", "obj", "project.assets.json"), "reader-assets.json"));
+        return inputs;
+    }
 
+    private static async Task<Dictionary<string, byte[]>> ReadInputsAsync(string workspace, List<(string Source, string Name)> inputs, string catalogCommit, IReadOnlyList<string> knownCredentials, CancellationToken cancellationToken)
+    {
+        Dictionary<string, byte[]> result = new(StringComparer.Ordinal);
         int total = 0;
         foreach ((string source, string name) in inputs)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!SelectedNativeTestReport.IsOwnedRegularPath(source, plan.Workspace))
+            if (!SelectedNativeTestReport.IsOwnedRegularPath(source, workspace))
             {
                 throw new InvalidDataException("Routing observations must be regular files inside the owned workspace.");
             }
@@ -130,7 +142,7 @@ internal static class SelectedRoutingCatalogSnapshot
                 byte[] bytes = new byte[(int)length];
                 await stream.ReadExactlyAsync(bytes, cancellationToken).ConfigureAwait(false);
                 using JsonDocument document = JsonDocument.Parse(bytes);
-                if (name == "catalog-versions.json" && document.RootElement.GetProperty("CatalogCommit").GetString() != catalog.GetProperty("commit").GetString())
+                if (name == "catalog-versions.json" && document.RootElement.GetProperty("CatalogCommit").GetString() != catalogCommit)
                 {
                     throw new InvalidDataException("Routing source metadata differs from the validated Builds catalog commit.");
                 }
@@ -146,26 +158,34 @@ internal static class SelectedRoutingCatalogSnapshot
             }
         }
 
+        return result;
+    }
+
+    private static void ValidateHostInventory(CompositionRunPlan plan, Dictionary<string, byte[]> result, int readbackCount)
+    {
         using JsonDocument closure = JsonDocument.Parse(result["selected-closure.json"]);
         JsonElement[] hosts = [.. closure.RootElement.GetProperty("hosts").EnumerateArray()];
         string[] requiredHosts = [.. hosts.Select(host => host.GetProperty("ResourceId").GetString()!)];
         if (closure.RootElement.GetProperty("RunId").GetString() != plan.RunId || requiredHosts.Length is < 1 or > 64
             || requiredHosts.Distinct(StringComparer.Ordinal).Count() != requiredHosts.Length
-            || requiredHosts.Any(host => !result.ContainsKey(host + ".committed.json")) || readbacks.Length != requiredHosts.Length)
+            || requiredHosts.Any(host => !result.ContainsKey(host + ".committed.json")) || readbackCount != requiredHosts.Length)
         {
             throw new InvalidDataException("Routing readbacks differ from the selected run host inventory.");
         }
+    }
 
+    private static void ValidatePreparation(CompositionRunPlan plan, Dictionary<string, byte[]> result)
+    {
         using JsonDocument preparation = JsonDocument.Parse(result["preparation.json"]);
         using JsonDocument metadata = JsonDocument.Parse(result["metadata-http.json"]);
-        bool incomplete = preparation.RootElement.GetProperty("RunId").GetString() != plan.RunId
+        if (preparation.RootElement.GetProperty("RunId").GetString() != plan.RunId
             || !preparation.RootElement.GetProperty("routingCatalogMetadataObserved").GetBoolean()
             || metadata.RootElement.GetProperty("status").GetInt32() != 200
             || metadata.RootElement.GetProperty("method").GetString() != "GET"
-            || metadata.RootElement.GetProperty("path").GetString() != "/api/v1/routing/catalog";
-        return incomplete
-            ? throw new InvalidDataException("Routing native preparation and public metadata observations must have succeeded.")
-            : result.ToFrozenDictionary(StringComparer.Ordinal);
+            || metadata.RootElement.GetProperty("path").GetString() != "/api/v1/routing/catalog")
+        {
+            throw new InvalidDataException("Routing native preparation and public metadata observations must have succeeded.");
+        }
     }
 
     private static bool ContainsKnownCredential(JsonElement value, IReadOnlyList<string> knownCredentials) => value.ValueKind switch
