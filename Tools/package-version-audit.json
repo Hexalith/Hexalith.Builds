@@ -1,16 +1,16 @@
 {
   "schemaVersion": 2,
-  "generatedFromRevision": "d46ab893b41aabaa027b10612003431686d414c6",
+  "generatedFromRevision": "a346bfeae5f441ed4a6293a211a2efdc468774b8",
   "catalogPath": "Props/Directory.Packages.props",
-  "catalogSha256": "032726ac14c90027f7106c0a796db2934bc51145a9a872df4487c301f6efbba1",
-  "catalogRawSha256": "73bdd13811b4c1d548f3535a8908a850e99ca858133968e9e55da3e85ee871c1",
+  "catalogSha256": "e0aea6a906982bcbc04057840ed0f615cf43b48903e2e3fb4bcb7137face39c5",
+  "catalogRawSha256": "1262594c4ee167265d4296ef39f1f9accace3ba374c8aa7e8656b7ef3399a8e5",
   "snapshot": {
     "mode": "incremental",
-    "auditedAtUtc": "2026-11-01T16:44:06.9099414+00:00",
+    "auditedAtUtc": "2026-11-01T17:52:33.4212367+00:00",
     "refreshedFamilies": [
-      "hexalith-conversations",
-      "hexalith-memories",
-      "hexalith-parties"
+      "package:microsoft.build",
+      "package:microsoft.build.framework",
+      "package:microsoft.build.locator"
     ],
     "preservedFamilies": [
       "aspire",
@@ -21,6 +21,7 @@
       "hexalith-applications",
       "hexalith-chatbot",
       "hexalith-commons",
+      "hexalith-conversations",
       "hexalith-documents",
       "hexalith-domains",
       "hexalith-eventstore",
@@ -29,7 +30,9 @@
       "hexalith-identitystores",
       "hexalith-keyvaluestorages",
       "hexalith-mcpcli",
+      "hexalith-memories",
       "hexalith-netaspire",
+      "hexalith-parties",
       "hexalith-polymorphicserializations",
       "hexalith-projects",
       "hexalith-security",
@@ -98,9 +101,6 @@
       "package:messagepack",
       "package:microsoft.azure.cosmos",
       "package:microsoft.bot.builder",
-      "package:microsoft.build",
-      "package:microsoft.build.framework",
-      "package:microsoft.build.locator",
       "package:microsoft.graph",
       "package:microsoft.identity.client",
       "package:microsoft.net.test.sdk",
@@ -179,7 +179,7 @@
     "fixture": null,
     "fixtureSha256": null,
     "fixtureMode": null,
-    "repositoryRevision": "d46ab893b41aabaa027b10612003431686d414c6",
+    "repositoryRevision": "a346bfeae5f441ed4a6293a211a2efdc468774b8",
     "sha256": "c419088f40670c681d00d8367ec50fcd1d1391346c5c34ce04b3e0632539a80e",
     "entries": [
       {
@@ -42316,8 +42316,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
-        "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+        "auditedAtUtc": "2026-11-01T17:52:33.4212367+00:00",
+        "generatedFromRevision": "a346bfeae5f441ed4a6293a211a2efdc468774b8",
         "familySelectionSha256": "0a57498fc310dd80756e705ce21627ba39663cc803bbda11a889f65066f41f4a",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "d2985e525e45ac7761e96aabb6e046d3cdfb00a27057ebd02d0e7de4eb61581d",
@@ -42363,8 +42363,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
-        "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+        "auditedAtUtc": "2026-11-01T17:52:33.4212367+00:00",
+        "generatedFromRevision": "a346bfeae5f441ed4a6293a211a2efdc468774b8",
         "familySelectionSha256": "3cc5d3922cdb48088f5e9d3f48c0a0a1d1a02cb5538fc799f4c10a348f84ecab",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "89ee9c2bb1259008790f9f83b60f8b932f627c69d2492e927e251705ef3c47d7",
@@ -42410,8 +42410,8 @@
       "removalTrigger": "Accept only after current family compatibility, consumer evidence, and owner review pass against this exact audit provenance.",
       "representativeConsumers": [],
       "origin": {
-        "auditedAtUtc": "2026-11-01T07:55:32.9423459+00:00",
-        "generatedFromRevision": "a319176d3d3b27462583f18236ff85c8705a4998",
+        "auditedAtUtc": "2026-11-01T17:52:33.4212367+00:00",
+        "generatedFromRevision": "a346bfeae5f441ed4a6293a211a2efdc468774b8",
         "familySelectionSha256": "acb8fc0b7e496ffac7a8fbbbccc021836de4b4cb4a96e3c2f4100c2fafc0c0a1",
         "sourceScopeSha256": "d4e87499724317c21e19499bcc6b057462117b9ed33b34b84c8dc5a1fa1321f2",
         "packageMetadataSha256": "bbaa2dbb352a68d413390e135301328487ed073e71643879a6d6cbf1fc385f9f",
