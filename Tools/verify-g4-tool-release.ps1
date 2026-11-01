@@ -31,3 +31,11 @@ if (-not $?) {
 
 $inventoryPath = Join-Path (Join-Path $PSScriptRoot '..') "$packageDirectory/g4-tool-package-inventory.json"
 $null = Assert-ReleaseEligibleInventory -InventoryPath $inventoryPath -Version $Version
+
+# Prepare the carrier before tagging. The publisher consumes these same bytes;
+# a later publication failure can still retain them through Actions artifacts.
+& python3 (Join-Path $PSScriptRoot 'archive-g4-qualification-evidence.py') `
+    --package-directory (Split-Path -Parent $inventoryPath) --kind release
+if ($LASTEXITCODE -ne 0) {
+    throw "Pre-tag G-4 qualification evidence retention failed for '$Version'."
+}

@@ -163,7 +163,8 @@ internal static class RunReadiness
                 }
             }
 
-            if (probe.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            cancellationToken.ThrowIfCancellationRequested();
+            if (probe.IsCancellationRequested)
             {
                 await ReportFailureAsync(plan, "HXR026", resource, appId, status + ";probe-timeout", CurrentUnready(model, notifications), null).ConfigureAwait(false);
                 return false;

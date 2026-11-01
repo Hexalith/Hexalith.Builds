@@ -1,0 +1,29 @@
+{
+  "roots": [
+    "/home/administrator/projects/hexalith",
+    "/tmp",
+    "/var/tmp"
+  ],
+  "pruned": [
+    ".git",
+    ".pytest_cache",
+    ".venv",
+    "__pycache__",
+    "bin",
+    "node_modules",
+    "obj"
+  ],
+  "fileCounts": {
+    "/home/administrator/projects/hexalith": 2284641,
+    "/tmp": 2733442,
+    "/var/tmp": 358736
+  },
+  "checkedMatchingBasenames": 34283,
+  "matchingContentFiles": 49,
+  "errors": [],
+  "archiveCount": 853,
+  "uniqueArchiveNameSizeCount": 14,
+  "archiveHitsForMissingFiles": [],
+  "archiveErrors": [],
+  "allZipArchivesInspected": 851
+}

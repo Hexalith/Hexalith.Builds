@@ -626,6 +626,29 @@ public sealed class AppHostRunnerValidationTests
         }
     }
 
+    /// <summary>Verifies cancellation cannot bypass an invocation probe and report readiness.</summary>
+    /// <returns>The cancellation assertion.</returns>
+    [Fact]
+    public async Task CancelledModuleInvocationCannotReportReadinessAsync()
+    {
+        using PlatformManifestTestWorkspace workspace = new();
+        CompositionRunPlan plan = CompositionTestFiles.CreatePlan(workspace.Root) with
+        {
+            Modules = [new CompositionRunModule("worker", "worker", "worker-app", Path.Combine(workspace.Root, "worker.csproj"))],
+            UiMarkers = [],
+            StartupDeadlineUtc = DateTimeOffset.UtcNow.AddSeconds(10),
+        };
+        await using DistributedApplication app = CreateBuilder().Build();
+        using CancellationTokenSource caller = new();
+        await caller.CancelAsync().ConfigureAwait(true);
+
+        _ = await Should.ThrowAsync<OperationCanceledException>(() => RunReadiness.WaitForModuleInvocationAsync(
+            plan,
+            app.Services.GetRequiredService<DistributedApplicationModel>(),
+            caller.Token)).ConfigureAwait(true);
+        File.Exists(CompositionStartupFailure.PathFor(plan.Workspace)).ShouldBeFalse();
+    }
+
     /// <summary>Verifies the last resource's new health is persisted before an invocation probe can stall.</summary>
     /// <returns>The progress assertions.</returns>
     [Fact]

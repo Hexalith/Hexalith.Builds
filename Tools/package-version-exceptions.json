@@ -126,7 +126,7 @@
       "owner": "Hexalith.EventStore",
       "path": ".config/dotnet-tools.json",
       "id": "hexalith.eventstore.admin.cli",
-      "version": "3.128.4",
+      "version": "3.130.1",
       "rationale": "The local tool manifest cannot import NuGet CPM versions.",
       "alignmentRule": "exact-manifest"
     },

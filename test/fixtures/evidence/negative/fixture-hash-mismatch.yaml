@@ -68,4 +68,4 @@ rows:
     status: passed
     outcome: passed
     artifact_schema: hexalith.module-run-evidence.v1
-    artifact_sha256: 8dc1bbf4c3cfcaec59cdf6d8282d8017a61e7680021bf9f5a7a02f61db9f66bf
+    artifact_sha256: 9f6d661e202cc4e63e321c8ba59062f6e9525ab9f774224df978a2f487eccea7

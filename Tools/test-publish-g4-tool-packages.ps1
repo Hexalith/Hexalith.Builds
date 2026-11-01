@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 
 [CmdletBinding()]
-param()
+param([switch] $UploadRetriesOnly)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -15,12 +15,19 @@ $publisherPath = Join-Path $sourceRepositoryRoot 'Tools/publish-g4-tool-packages
 $packageIds = @('Hexalith.Builds.Evidence.Cli', 'Hexalith.Builds.Module.Cli')
 $originalGitHubToken = $env:GITHUB_TOKEN
 $originalNuGetApiKey = $env:NUGET_API_KEY
+$carrierEnvironmentNames = @('GITHUB_SHA', 'GITHUB_REPOSITORY', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT',
+    'GITHUB_JOB', 'GITHUB_WORKFLOW_REF', 'GITHUB_WORKFLOW_SHA', 'GITHUB_EVENT_NAME')
+$originalCarrierEnvironment = @{}
+foreach ($name in $carrierEnvironmentNames) {
+    $originalCarrierEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
+}
 $global:HexalithG4PublisherTestInvocations = [System.Collections.Generic.List[string]]::new()
 $global:HexalithG4PublisherRemoteDirectory = $null
 $global:HexalithG4PublisherRemoteDownloads = 0
 $global:HexalithG4PublisherRemoteMode = 'exact'
 $global:HexalithG4PublisherDelayedUris = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 $global:HexalithG4PublisherSleepSeconds = 0
+$global:HexalithG4PublisherUploadResponses = [Collections.Generic.Queue[int]]::new()
 
 function global:dotnet {
     param(
@@ -29,6 +36,21 @@ function global:dotnet {
     )
 
     $global:HexalithG4PublisherTestInvocations.Add(($ForwardedArguments | ConvertTo-Json -Compress))
+    if ($global:HexalithG4PublisherUploadResponses.Count -gt 0) {
+        $status = $global:HexalithG4PublisherUploadResponses.Dequeue()
+        if ($status -ne 0) {
+            # Include the key in the simulated CLI output to verify the retry
+            # boundary redacts output as well as its final command diagnostic.
+            $keyIndex = [Array]::IndexOf($ForwardedArguments, '--api-key')
+            $key = if ($keyIndex -ge 0) { [string]$ForwardedArguments[$keyIndex + 1] } else { '' }
+            if ($status -in @(400, 401, 403)) {
+                Write-Output '  InternalServerError https://test.invalid/package/ 100ms'
+            }
+            Write-Output "error: Response status code does not indicate success: $status (simulated). api-key=$key"
+            $global:LASTEXITCODE = 1
+            return
+        }
+    }
     $global:LASTEXITCODE = 0
 }
 
@@ -102,6 +124,64 @@ function Assert-Equal {
     if ($Actual -cne $Expected) {
         throw "$Because Expected '$Expected', actual '$Actual'."
     }
+}
+
+function Test-UploadRetries {
+    # Exercise the actual command boundary without fabricating qualification
+    # inventories. The full publisher cases below still prove inventory checks,
+    # feed routing, upload ordering and remote payload verification together.
+    $tokens = $null
+    $parseErrors = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile(
+        (Join-Path $PSScriptRoot 'publish-g4-tool-packages.ps1'), [ref]$tokens, [ref]$parseErrors)
+    if ($parseErrors.Count -gt 0) { throw 'The publisher must parse before testing upload retries.' }
+    $definitions = @($ast.FindAll({
+        param($node)
+        $node -is [Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -in @('Get-RedactedDotNetArguments', 'Invoke-DotNet')
+    }, $false))
+    Assert-Equal -Actual $definitions.Count -Expected 2 -Because 'Test the actual publisher command functions.'
+    $functions = [scriptblock]::Create(($definitions | ForEach-Object { $_.Extent.Text }) -join "`n")
+    $cases = @(
+        @{ statuses = @(0); attempts = 1; delay = 0; succeeds = $true },
+        @{ statuses = @(500, 500, 0); attempts = 3; delay = 45; succeeds = $true },
+        @{ statuses = @(500, 500, 500, 500, 500); attempts = 5; delay = 225; succeeds = $false },
+        @{ statuses = @(400); attempts = 1; delay = 0; succeeds = $false },
+        @{ statuses = @(401); attempts = 1; delay = 0; succeeds = $false },
+        @{ statuses = @(403); attempts = 1; delay = 0; succeeds = $false },
+        @{ statuses = @(503); attempts = 1; delay = 0; succeeds = $false; nonPush = $true }
+    )
+    foreach ($status in @(408, 429, 502, 503, 504)) {
+        $cases += @{ statuses = @($status, 0); attempts = 2; delay = 15; succeeds = $true }
+    }
+    foreach ($case in $cases) {
+        $global:HexalithG4PublisherUploadResponses.Clear()
+        foreach ($status in $case.statuses) { $global:HexalithG4PublisherUploadResponses.Enqueue($status) }
+        $global:HexalithG4PublisherTestInvocations.Clear()
+        $global:HexalithG4PublisherSleepSeconds = 0
+        $key = 'upload-retry-redaction-control'
+        $arguments = if ($case.ContainsKey('nonPush')) { @('restore', 'package.9.8.500.nupkg') }
+            else { @('nuget', 'push', 'package.9.8.500.nupkg', '--skip-duplicate', '--api-key', $key) }
+        $output = [Collections.Generic.List[string]]::new()
+        $succeeded = $false
+        try {
+            & {
+                param($Definitions, $CommandArguments)
+                . $Definitions
+                Invoke-DotNet -Arguments $CommandArguments
+            } $functions $arguments 6>&1 2>&1 | ForEach-Object { $output.Add([string]$_) }
+            $succeeded = $true
+        }
+        catch { $output.Add($_.Exception.Message) }
+        Assert-Equal -Actual $succeeded -Expected $case.succeeds -Because 'Only recovered uploads may pass.'
+        Assert-Equal -Actual $global:HexalithG4PublisherTestInvocations.Count -Expected $case.attempts -Because 'Retry only transient upload failures within the finite attempt limit.'
+        Assert-Equal -Actual $global:HexalithG4PublisherSleepSeconds -Expected $case.delay -Because 'Use bounded backoff and never delay permanent failures.'
+        if (($output -join "`n").Contains($key, [StringComparison]::Ordinal)) {
+            throw 'Upload output or the final failure diagnostic exposed the API key.'
+        }
+    }
+    $global:HexalithG4PublisherUploadResponses.Clear()
+    [Console]::Out.WriteLine('G-4 package upload retry controls passed.')
 }
 
 function Write-TestPackage {
@@ -467,6 +547,10 @@ function New-PackageInventory {
     $inventoryPath = Join-Path $packageDirectory 'g4-tool-package-inventory.json'
     [System.IO.File]::WriteAllText($inventoryPath, ($inventory | ConvertTo-Json -Depth 5), [System.Text.UTF8Encoding]::new($false))
 
+    $null = & python3 (Join-Path $sourceRepositoryRoot 'Tools/archive-g4-qualification-evidence.py') `
+        --package-directory $packageDirectory --kind release
+    if ($LASTEXITCODE -ne 0) { throw 'Could not prepare the offline publisher fixture carrier.' }
+
     return $packageDirectory
 }
 
@@ -580,6 +664,8 @@ function Set-EvidenceContentAndRefreshInventory {
 }
 
 try {
+    Test-UploadRetries
+    if ($UploadRetriesOnly) { return }
     $null = New-Item -ItemType Directory -Path (Join-Path $sourceRepositoryRoot 'Tools') -Force
     $null = New-Item -ItemType Directory -Path (Join-Path $sourceRepositoryRoot 'test') -Force
     $null = New-Item -ItemType Directory -Path (Join-Path $sourceRepositoryRoot 'Props') -Force
@@ -587,6 +673,8 @@ try {
         -Destination (Join-Path $sourceRepositoryRoot 'Props/Directory.Packages.props') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'publish-g4-tool-packages.ps1') `
         -Destination $publisherPath -Force
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'archive-g4-qualification-evidence.py') `
+        -Destination (Join-Path $sourceRepositoryRoot 'Tools/archive-g4-qualification-evidence.py') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'G4PackageQualification.functions.ps1') `
         -Destination (Join-Path $sourceRepositoryRoot 'Tools/G4PackageQualification.functions.ps1') -Force
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../test/fixtures') `
@@ -602,6 +690,16 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Could not stage the isolated publisher-test source fixture.' }
     & git -C $sourceRepositoryRoot commit --quiet -m 'test: create publisher source fixture'
     if ($LASTEXITCODE -ne 0) { throw 'Could not commit the isolated publisher-test source fixture.' }
+
+    # Offline fixture identities only; no workflow is dispatched by these tests.
+    $env:GITHUB_SHA = (& git -C $sourceRepositoryRoot rev-parse HEAD).Trim()
+    $env:GITHUB_REPOSITORY = 'Hexalith/Hexalith.Builds'
+    $env:GITHUB_RUN_ID = '123'
+    $env:GITHUB_RUN_ATTEMPT = '1'
+    $env:GITHUB_JOB = 'release'
+    $env:GITHUB_WORKFLOW_REF = 'Hexalith/Hexalith.Builds/.github/workflows/build-release.yml@refs/heads/main'
+    $env:GITHUB_WORKFLOW_SHA = $env:GITHUB_SHA
+    $env:GITHUB_EVENT_NAME = 'workflow_dispatch'
 
     $env:NUGET_API_KEY = 'stable-test-token'
     $env:GITHUB_TOKEN = $null
@@ -853,6 +951,15 @@ try {
         $package.nupkg.sizeBytes = (Get-Item -LiteralPath $path).Length
     }
 
+    Invoke-RejectionCase -PublishedVersion '9.8.35' -ExpectedMessage 'Qualification evidence carrier failed validation' -Mutate {
+        param($Inventory, $PackageDirectory)
+        Remove-Item -LiteralPath (Join-Path $PackageDirectory 'g4-tool-qualification-evidence.zip')
+    }
+    Invoke-RejectionCase -PublishedVersion '9.8.36' -ExpectedMessage 'Qualification evidence carrier failed validation' -Mutate {
+        param($Inventory, $PackageDirectory)
+        [IO.File]::WriteAllText((Join-Path $PackageDirectory 'g4-tool-qualification-evidence.zip'), 'truncated offline carrier')
+    }
+
     # Source-tree cleanliness is evaluated immediately before publication. Keep
     # this scenario last because its deliberate tracked-file edit makes all later
     # inventories ineligible until the isolated repository is removed.
@@ -865,6 +972,9 @@ try {
 finally {
     $env:GITHUB_TOKEN = $originalGitHubToken
     $env:NUGET_API_KEY = $originalNuGetApiKey
+    foreach ($name in $carrierEnvironmentNames) {
+        [Environment]::SetEnvironmentVariable($name, $originalCarrierEnvironment[$name])
+    }
     Remove-Item Function:\dotnet -Force -ErrorAction SilentlyContinue
     Remove-Item Function:\Invoke-RestMethod -Force -ErrorAction SilentlyContinue
     Remove-Item Function:\Invoke-WebRequest -Force -ErrorAction SilentlyContinue
@@ -875,6 +985,7 @@ finally {
     Remove-Variable -Name HexalithG4PublisherRemoteMode -Scope Global -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4PublisherDelayedUris -Scope Global -ErrorAction SilentlyContinue
     Remove-Variable -Name HexalithG4PublisherSleepSeconds -Scope Global -ErrorAction SilentlyContinue
+    Remove-Variable -Name HexalithG4PublisherUploadResponses -Scope Global -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
 

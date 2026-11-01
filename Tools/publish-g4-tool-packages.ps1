@@ -60,10 +60,44 @@ function Invoke-DotNet {
         [string[]] $Arguments
     )
 
-    & dotnet @Arguments
-    if ($LASTEXITCODE -ne 0) {
+    # Handle native exit codes here rather than terminating before a transient
+    # feed response can be retried. Authentication and validation failures remain
+    # immediate failures, and the qualified package bytes never change.
+    $PSNativeCommandUseErrorActionPreference = $false
+    $maximumAttempts = 5
+    for ($attempt = 1; $attempt -le $maximumAttempts; $attempt++) {
+        $output = @(& dotnet @Arguments 2>&1)
+        $exitCode = $LASTEXITCODE
+        $outputText = [string]::Join([Environment]::NewLine, @($output | ForEach-Object { [string]$_ }))
+        $apiKeyIndex = [Array]::IndexOf($Arguments, '--api-key')
+        if ($apiKeyIndex -ge 0 -and $apiKeyIndex + 1 -lt $Arguments.Count -and
+            -not [string]::IsNullOrWhiteSpace($Arguments[$apiKeyIndex + 1])) {
+            $outputText = $outputText.Replace($Arguments[$apiKeyIndex + 1], '<redacted>', [StringComparison]::Ordinal)
+        }
+        if ($outputText.Length -gt 0) { Write-Host $outputText }
+        if ($exitCode -eq 0) { return }
+
+        $isPush = $Arguments.Count -ge 2 -and $Arguments[0] -ceq 'nuget' -and $Arguments[1] -ceq 'push'
+        # Prefer the final response: an earlier internal NuGet retry may have
+        # received 500 before the request ultimately failed with 401 or 403.
+        $responses = [regex]::Matches($outputText, '(?im)^\s*(?:error:\s*)?Response status code does not indicate success:\s*(?<status>[0-9]{3})\b')
+        if ($responses.Count -gt 0) {
+            $transientResponse = $responses[$responses.Count - 1].Groups['status'].Value -in @('408', '429', '500', '502', '503', '504')
+        }
+        else {
+            $responses = [regex]::Matches($outputText, '(?im)^\s*(?<status>[A-Za-z][A-Za-z0-9]+)\s+https?://')
+            $transientResponse = $responses.Count -gt 0 -and $responses[$responses.Count - 1].Groups['status'].Value -in
+                @('RequestTimeout', 'TooManyRequests', 'InternalServerError', 'BadGateway', 'ServiceUnavailable', 'GatewayTimeout')
+        }
+        if ($isPush -and $transientResponse -and $attempt -lt $maximumAttempts) {
+            $delaySeconds = [int][Math]::Min(120, 15 * [Math]::Pow(2, $attempt - 1))
+            Write-Host "Package upload received a transient feed response; retrying in $delaySeconds seconds (attempt $($attempt + 1)/$maximumAttempts)."
+            Start-Sleep -Seconds $delaySeconds
+            continue
+        }
+
         $redactedArguments = Get-RedactedDotNetArguments -Arguments $Arguments
-        throw "dotnet $($redactedArguments -join ' ') failed with exit code $LASTEXITCODE."
+        throw "dotnet $($redactedArguments -join ' ') failed with exit code $exitCode."
     }
 }
 
@@ -491,6 +525,14 @@ if ($artifactDifference.Count -gt 0 -or $actualArtifactNames.Count -ne 4) {
 $null = Assert-PackagedSeedSubscriptionEvidence `
     -FilePath $evidencePathsByName['qualification-evidence/packaged-seed-subscriptions.json'] `
     -PackagePath (Join-Path $packageDirectoryPath "Hexalith.Builds.Module.Cli.$Version.nupkg") -Version $Version
+
+# A configured GitHub asset glob alone does not require a readable carrier.
+# Recheck it against the same inventory and run before the first package push.
+& python3 (Join-Path $PSScriptRoot 'archive-g4-qualification-evidence.py') `
+    --package-directory $packageDirectoryPath --kind release --verify
+if ($LASTEXITCODE -ne 0) {
+    throw 'Qualification evidence carrier failed validation; publication is blocked.'
+}
 
 if ($Version.Contains('-', [System.StringComparison]::Ordinal)) {
     $source = 'https://nuget.pkg.github.com/Hexalith/index.json'

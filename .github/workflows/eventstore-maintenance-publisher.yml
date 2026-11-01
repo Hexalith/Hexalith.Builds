@@ -1,0 +1,34 @@
+name: EventStore maintenance publisher
+
+on:
+  push:
+    branches: [fix/eventstore-maintenance-publication]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publisher-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          submodules: false
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+      - name: Install owner-pinned commit validation
+        run: npm ci --ignore-scripts
+      - name: Validate every new source commit
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          BASELINE_SHA: 22a578b576a515d2af214fe81859447fffc97981
+        run: |
+          git merge-base --is-ancestor "$BASELINE_SHA" "$SOURCE_SHA"
+          node node_modules/@commitlint/cli/cli.js --from "$BASELINE_SHA" --to "$SOURCE_SHA"
+      - name: Run complete container publication contract suite
+        run: python3 -m unittest discover -s Github/publish-containers/tests -v

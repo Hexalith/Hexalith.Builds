@@ -1,0 +1,10 @@
+2026-10-28T11:05:31.4198570Z ##[group]Run pwsh -NoProfile -File ./Tools/test-g4-tool-package-contracts.ps1 -Version "0.0.0-ci.$env:GITHUB_RUN_NUMBER" -RequireControls
+2026-10-28T11:19:54.4250077Z   Successfully created package '/tmp/hexalith-builds-g4-packages-f2ca591f2e344801ae06b3d4cc943f65/Hexalith.Builds.Module.Cli.0.0.0-ci.458.nupkg'.
+2026-10-28T11:19:54.4251346Z   Successfully created package '/tmp/hexalith-builds-g4-packages-f2ca591f2e344801ae06b3d4cc943f65/Hexalith.Builds.Module.Cli.0.0.0-ci.458.snupkg'.
+2026-10-28T11:19:54.4279269Z   Successfully created package '/tmp/hexalith-builds-g4-packages-f2ca591f2e344801ae06b3d4cc943f65/Hexalith.Builds.Evidence.Cli.0.0.0-ci.458.nupkg'.
+2026-10-28T11:19:54.4280584Z   Successfully created package '/tmp/hexalith-builds-g4-packages-f2ca591f2e344801ae06b3d4cc943f65/Hexalith.Builds.Evidence.Cli.0.0.0-ci.458.snupkg'.
+2026-10-28T11:23:04.0290786Z Packed G-4 tool contract qualification passed for version '0.0.0-ci.458'; inventory recorded at '/tmp/hexalith-builds-g4-packages-f2ca591f2e344801ae06b3d4cc943f65/g4-tool-package-inventory.json'.
+2026-10-28T11:23:34.9774127Z [11:23:34 AM] [semantic-release] [@semantic-release/exec] › ℹ  Call script pwsh -NoProfile -File ./Tools/verify-g4-tool-release.ps1 -Version 4.38.3
+2026-10-28T11:40:50.0768725Z Packed G-4 tool contract qualification passed for version '4.38.3'; inventory recorded at '/home/runner/work/Hexalith.Builds/Hexalith.Builds/artifacts/g4-tool-packages/4.38.3/g4-tool-package-inventory.json'.
+2026-10-28T11:53:53.1189507Z [11:53:53 AM] [semantic-release] [@semantic-release/github] › ℹ  Published file https://github.com/Hexalith/Hexalith.Builds/releases/download/untagged-5b625f13deb9428e5164/g4-tool-package-inventory.json
+2026-10-28T11:53:53.9460637Z [11:53:53 AM] [semantic-release] [@semantic-release/github] › ℹ  Published GitHub release: https://github.com/Hexalith/Hexalith.Builds/releases/tag/v4.38.3

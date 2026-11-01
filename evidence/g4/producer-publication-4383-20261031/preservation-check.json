@@ -1,0 +1,87 @@
+{
+  "state": "PASS",
+  "checks": [
+    {
+      "repository": "/home/administrator/projects/hexalith/builds",
+      "state": "PASS",
+      "head": "d8d0d70f26d79c95b544a64a74e329149711cb7d",
+      "preservedPreexistingTrackedFiles": 3112,
+      "rawMode160000GitlinksAndCheckoutRevisions": {
+        "references/Hexalith.AI.Tools": {
+          "gitlink": "9b78aa008cfc62cd88ad0ea4b39b1f07311956ce",
+          "checkout": "9b78aa008cfc62cd88ad0ea4b39b1f07311956ce"
+        }
+      },
+      "consumerWorkingTreePreserved": null
+    },
+    {
+      "repository": "/home/administrator/projects/hexalith/conversations",
+      "state": "PASS",
+      "head": "8a26cb03ee1d5413c034eb60aee71618f3ebd31a",
+      "preservedPreexistingTrackedFiles": 43487,
+      "rawMode160000GitlinksAndCheckoutRevisions": {
+        "references/Hexalith.AI.Tools": {
+          "gitlink": "9b78aa008cfc62cd88ad0ea4b39b1f07311956ce",
+          "checkout": "9b78aa008cfc62cd88ad0ea4b39b1f07311956ce"
+        },
+        "references/Hexalith.Builds": {
+          "gitlink": "96dc22928af914ed22d44789090dd2f65c9e598e",
+          "checkout": "96dc22928af914ed22d44789090dd2f65c9e598e"
+        },
+        "references/Hexalith.Commons": {
+          "gitlink": "0604bcf5304fc09a569f7abbd8e5d1b9049c02b7",
+          "checkout": "0604bcf5304fc09a569f7abbd8e5d1b9049c02b7"
+        },
+        "references/Hexalith.EventStore": {
+          "gitlink": "e92e6694a93c79531368fa3bbf6c06462fd05484",
+          "checkout": "e92e6694a93c79531368fa3bbf6c06462fd05484"
+        },
+        "references/Hexalith.Folders": {
+          "gitlink": "a5f1cd8bebba3f09d698ea6682b1531179bb3a3b",
+          "checkout": "a5f1cd8bebba3f09d698ea6682b1531179bb3a3b"
+        },
+        "references/Hexalith.FrontComposer": {
+          "gitlink": "2255fb8a7fc135a04769c7b9df0f14de3796fb19",
+          "checkout": "2255fb8a7fc135a04769c7b9df0f14de3796fb19"
+        },
+        "references/Hexalith.McpCli": {
+          "gitlink": "e74d215739766a663cb9e910f4534f383e7973ff",
+          "checkout": "e74d215739766a663cb9e910f4534f383e7973ff"
+        },
+        "references/Hexalith.Memories": {
+          "gitlink": "0ae7faee14bf20e280e9c5bb23ff763dbda64382",
+          "checkout": "0ae7faee14bf20e280e9c5bb23ff763dbda64382"
+        },
+        "references/Hexalith.Parties": {
+          "gitlink": "f9757d94a9e3f144d250b21f295b903c00d5f412",
+          "checkout": "f9757d94a9e3f144d250b21f295b903c00d5f412"
+        },
+        "references/Hexalith.Platform": {
+          "gitlink": "2030542f8e7e25f97b2ee106e8074dedeefda9f5",
+          "checkout": "2030542f8e7e25f97b2ee106e8074dedeefda9f5"
+        },
+        "references/Hexalith.Projects": {
+          "gitlink": "f99cbe784fc77d82291c14ef3cbf86368f7b1863",
+          "checkout": "f99cbe784fc77d82291c14ef3cbf86368f7b1863"
+        },
+        "references/Hexalith.Tenants": {
+          "gitlink": "8919dd0c5bca3e505ed3de25c37f8326f9e8b814",
+          "checkout": "8919dd0c5bca3e505ed3de25c37f8326f9e8b814"
+        }
+      },
+      "consumerWorkingTreePreserved": true
+    },
+    {
+      "protectedInput": "/home/administrator/projects/hexalith/conversations/module/validation/epic-16-published-artifact-qualification/attempt-20261031-4383-03",
+      "state": "PASS",
+      "files": 8007,
+      "canonicalSha256": "c5595137c6973cebb78bc8b45738e787a8fd8a359d659eb9c8c8dc65b04c1c0b"
+    },
+    {
+      "protectedInput": "/home/administrator/projects/hexalith/conversations/_bmad-output/planning-artifacts/epic-16-tooling-v3",
+      "state": "PASS",
+      "files": 6,
+      "canonicalSha256": "50d472a242d2d50b7a1ee0076fef7fb5f2b2abca752649b9e8f351fe391aab01"
+    }
+  ]
+}
