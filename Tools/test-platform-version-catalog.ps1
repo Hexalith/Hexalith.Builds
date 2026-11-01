@@ -83,8 +83,9 @@ try {
     $warmCache = $cacheOutput.Substring($cacheOutput.IndexOf(':') + 1).Trim()
     $sdkDirectory = (& dotnet msbuild (Join-Path $PSScriptRoot '../Props/Directory.Packages.props') -nologo -noAutoResponse -getProperty:MSBuildToolsPath) -join "`n"
     if ($LASTEXITCODE -ne 0) { throw 'Cannot locate SDK NuGet version semantics.' }
-    Add-Type -Path (Join-Path $sdkDirectory.Trim() 'NuGet.Versioning.dll')
-    $selectedVersion = [NuGet.Versioning.NuGetVersion]::Parse($warmSnapshot.eventStoreVersion).ToNormalizedString().ToLowerInvariant()
+    # Keep SDK versioning out of this host: rebuild checks load the Tooling package's own NuGet version.
+    $selectedVersion = (& $pwshExecutable -NoProfile -CommandWithArgs 'param($assemblyPath, $version) Add-Type -Path $assemblyPath -ErrorAction Stop; [NuGet.Versioning.NuGetVersion]::Parse($version).ToNormalizedString().ToLowerInvariant()' (Join-Path $sdkDirectory.Trim() 'NuGet.Versioning.dll') $warmSnapshot.eventStoreVersion) -join "`n"
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot normalize the fixture package identity.' }
     $selectedNuspec = Join-Path $warmCache "hexalith.eventstore.aspire/$selectedVersion/hexalith.eventstore.aspire.nuspec"
     $coldRoot = Join-Path $temporaryRoot 'cold-response-metadata'
     $feed = Join-Path $coldRoot 'feed'
