@@ -639,7 +639,9 @@ class PublicationPreflightTests(unittest.TestCase):
                 self.assertEqual(["release/parties-sdk-3.130.2"], query["branch"])
                 self.assertEqual([SOURCE_SHA], query["head_sha"])
                 self.assertEqual(["push"], query["event"])
-                return {"workflow_runs": [successful_run]}
+                workflow = urllib.parse.urlparse(url).path.split("/workflows/", 1)[1].split("/", 1)[0]
+                run = dict(successful_run, id=100 + ["ci.yml", "commitlint.yml", "integration.yml"].index(workflow))
+                return {"workflow_runs": [run]}
 
             with (
                 mock.patch.dict(os.environ, environment, clear=True),
@@ -658,7 +660,11 @@ class PublicationPreflightTests(unittest.TestCase):
             self.assertEqual("release/parties-sdk-3.130.2", identities[0]["source"]["branch"])
             self.assertEqual("refs/heads/release/parties-sdk-3.130.2", identities[0]["source"]["ref"])
             self.assertEqual("3.130.2", identities[0]["version"])
-            self.assertEqual(12, len(requests))
+            receipts = identities[0]["source"]["required_workflow_runs"]
+            self.assertEqual({"ci.yml", "commitlint.yml", "integration.yml"}, set(receipts))
+            self.assertEqual([100, 101, 102], [receipts[name]["id"] for name in receipts])
+            self.assertEqual(receipts["ci.yml"], identities[0]["source"]["ci_run"])
+            self.assertEqual(24, len(requests))
             for phase in ("verify", "publish", "container"):
                 self.assertTrue((arguments.evidence_directory / f"publication-preflight.{phase}.json").is_file())
 
@@ -711,6 +717,48 @@ class PublicationPreflightTests(unittest.TestCase):
                     with self.assertRaises(self.validator.PreflightError) as failure:
                         self.validator.build_publication_identity(arguments, proof)
                 self.assertEqual(expected, failure.exception.code)
+
+    def test_maintenance_container_rechecks_frozen_lint_and_integration_receipts(self):
+        for failed_workflow in ("commitlint.yml", "integration.yml"):
+            with self.subTest(workflow=failed_workflow), tempfile.TemporaryDirectory() as temporary_directory:
+                root = Path(temporary_directory)
+                arguments = self.arguments(root)
+                arguments.version = "3.130.2"
+                arguments.source_branch = "release/parties-sdk-3.130.2"
+                arguments.authority_issue_url = ""
+                arguments.authority_owner = ""
+                environment = self.runtime_environment()
+                environment["GITHUB_REF"] = "refs/heads/" + arguments.source_branch
+                state = {"failed": False}
+                requested = []
+
+                def github_json(url, token):
+                    if "/git/ref/heads/" in url:
+                        return {"object": {"sha": SOURCE_SHA}}
+                    workflow = urllib.parse.urlparse(url).path.split("/workflows/", 1)[1].split("/", 1)[0]
+                    requested.append(workflow)
+                    if state["failed"] and workflow == failed_workflow:
+                        return {"workflow_runs": []}
+                    return {"workflow_runs": [dict(self.source_proof()["ci_run"], head_branch=arguments.source_branch,
+                                                  id=100 + ["ci.yml", "commitlint.yml", "integration.yml"].index(workflow))]}
+
+                with (
+                    mock.patch.dict(os.environ, environment, clear=True),
+                    mock.patch.object(self.validator, "_github_json", side_effect=github_json),
+                    mock.patch.object(self.validator, "destination_probe", return_value=lambda *_: 404),
+                    mock.patch.object(self.validator, "read_external_version_observations", return_value=self.version_observations()),
+                ):
+                    for phase in ("verify", "publish"):
+                        arguments.phase = phase
+                        identity = self.validator._validate_publication(arguments)
+                    self.assertEqual({"ci.yml", "commitlint.yml", "integration.yml"}, set(identity["source"]["required_workflow_runs"]))
+                    state["failed"] = True
+                    arguments.phase = "container"
+                    with self.assertRaises(self.validator.PreflightError) as failure:
+                        self.validator._validate_publication(arguments)
+                    self.assertEqual("source-ci-not-successful", failure.exception.code)
+                    self.assertIn(failed_workflow, str(failure.exception))
+                self.assertFalse((arguments.evidence_directory / "publication-preflight.container.json").exists())
 
     def test_package_and_container_destinations_must_all_be_absent(self):
         packages = [f"Package.{index}" for index in range(FIXTURE_PACKAGE_COUNT)]

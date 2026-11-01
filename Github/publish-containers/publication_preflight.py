@@ -589,30 +589,28 @@ def prove_current_green_source(repository, source_sha, source_branch, source_ci_
     if live_sha != source_sha:
         _fail("source-no-longer-current", "The release source is no longer the current selected branch tip.")
 
-    successful_runs = _successful_ci_runs(
-        repository_path,
-        source_sha,
-        source_branch,
-        source_ci_workflow,
-        token,
-    )
-    if not successful_runs:
-        _fail("source-ci-not-successful", "No successful push CI run exists for the exact current selected branch source.")
-    selected = min(successful_runs, key=lambda run: run["id"])
-    return {
+    required_workflows = [source_ci_workflow] if source_branch == "main" else [
+        source_ci_workflow, "commitlint.yml", "integration.yml"
+    ]
+    receipts = {}
+    for workflow in required_workflows:
+        successful_runs = _successful_ci_runs(repository_path, source_sha, source_branch, workflow, token)
+        if not successful_runs:
+            _fail("source-ci-not-successful", f"No successful push {workflow} run exists for the exact current selected branch source.")
+        selected = min(successful_runs, key=lambda run: run["id"])
+        receipts[workflow] = {key: selected[key] for key in (
+            "id", "head_sha", "head_branch", "event", "status", "conclusion"
+        )}
+    proof = {
         "branch": source_branch,
         "ref": f"refs/heads/{source_branch}",
         "live_sha": live_sha,
         "ci_workflow": source_ci_workflow,
-        "ci_run": {
-            "id": selected["id"],
-            "head_sha": selected["head_sha"],
-            "head_branch": selected["head_branch"],
-            "event": selected["event"],
-            "status": selected["status"],
-            "conclusion": selected["conclusion"],
-        },
+        "ci_run": receipts[source_ci_workflow],
     }
+    if source_branch != "main":
+        proof["required_workflow_runs"] = receipts
+    return proof
 
 
 def _contract_hashes(directory):

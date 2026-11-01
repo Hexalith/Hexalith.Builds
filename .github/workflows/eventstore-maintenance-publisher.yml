@@ -23,9 +23,12 @@ jobs:
           node-version: '24'
       - name: Install owner-pinned commit validation
         run: npm ci --ignore-scripts
-      - name: Validate exact source commit
+      - name: Validate every new source commit
         env:
           SOURCE_SHA: ${{ github.sha }}
-        run: git show -s --format=%B "$SOURCE_SHA" | node node_modules/@commitlint/cli/cli.js
+          BASELINE_SHA: 22a578b576a515d2af214fe81859447fffc97981
+        run: |
+          git merge-base --is-ancestor "$BASELINE_SHA" "$SOURCE_SHA"
+          node node_modules/@commitlint/cli/cli.js --from "$BASELINE_SHA" --to "$SOURCE_SHA"
       - name: Run complete container publication contract suite
         run: python3 -m unittest discover -s Github/publish-containers/tests -v

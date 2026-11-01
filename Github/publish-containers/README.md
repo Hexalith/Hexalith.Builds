@@ -106,6 +106,10 @@ Both the canonical Python preflight and the real container shell entry point
 enforce this identity; exercising the Python phase alone does not qualify the
 container path. The other action, registry validator and platform smoke helper
 bytes remain those of the preceding approved publisher.
+For this maintenance identity, the frozen source proof includes separate
+successful exact-branch push receipts for `ci.yml`, `commitlint.yml`, and
+`integration.yml`. Every phase rechecks all three; a lost required receipt
+prevents the container phase even after verify and publish succeeded.
 
 ## Inputs
 

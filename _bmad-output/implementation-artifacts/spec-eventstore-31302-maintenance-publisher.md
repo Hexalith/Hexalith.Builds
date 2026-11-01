@@ -44,7 +44,7 @@ and destination/authority/immutable-phase controls remain passing. Final owner
 commit/push and exact-source focused CI must pass before SDK selects its new
 publisher execution SHA. No new publication is claimed by local tests.
 
-Local verification: complete container publisher suite passes137tests/0failures,
+Local verification: complete container publisher suite passes138tests/0failures,
 including finite tuple refusal, exact branch source proof, actual runtime ref,
 production-only policy, and all three immutable publication phases. The joint
 SDK/Builds independent re-review and exact-source remote CI remain pending.
@@ -66,3 +66,12 @@ copy of baseline22a at its main-only guard. Receipt:
 or publication state changed. The SDK's joint triage contains individual B1–B3
 rows and the remaining SDK findings; its new three-layer review covers both
 canonical publisher corrections together.
+
+The second review's B6 correction freezes all three maintenance CI, commitlint
+and Integration receipts and rechecks each in every phase. A real three-phase
+test removes lint or Integration after publish and proves container refusal.
+Main's source-proof shape and single-CI contract are unchanged. B9 validates
+every new22a-to-source commit with pinned commitlint; executing the actual
+workflow block passes our range and rejects an existing older range containing
+an invalid earlier message despite a valid tip. No invalid commit was created.
+Proof: /tmp/builds-eventstore-maintenance-range-proof.json.
