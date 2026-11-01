@@ -313,6 +313,16 @@ jobs:
       - name: Test CI integration lifecycle helper
         run: python3 -m unittest discover -s Github/run-module-integration/tests -v
 
+      # Native preparation fixtures validate commits with the pinned CLI, and
+      # commitlint helper tests import @commitlint/lint from the Node toolchain.
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Install Node.js dependencies
+        run: npm ci --ignore-scripts
+
       - name: Test module build preparation helper
         run: python3 -m unittest discover -s Github/prepare-module-build/tests -v
 
@@ -325,16 +335,6 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -v
-
-      # The commitlint helper tests execute the workflow's inline node script,
-      # which imports @commitlint/lint, so the toolchain has to be installed.
-      - name: Setup Node.js
-        uses: actions/setup-node@v7.1.0
-        with:
-          node-version: '24'
-
-      - name: Install Node.js dependencies
-        run: npm ci --ignore-scripts
 
       - name: Test commitlint helpers
         working-directory: Github/commitlint/tests
