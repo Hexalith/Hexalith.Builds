@@ -80,6 +80,23 @@ public static class CompositionProcess
             }
         }
 
+        // SDK children retain explicit nonsecret prevention/cache controls; unrelated helpers keep the original allowlist.
+        if (string.Equals(Path.GetFileNameWithoutExtension(fileName), "dotnet", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (string name in new[]
+            {
+                "DOTNET_GENERATE_ASPNET_CERTIFICATE", "DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "DOTNET_ADD_GLOBAL_TOOLS_TO_PATH",
+                "DOTNET_CLI_USE_MSBUILD_SERVER", "DOTNET_CLI_WORKLOAD_UPDATE_NOTIFY_DISABLE", "MSBUILDDISABLENODEREUSE",
+                "NUGET_HTTP_CACHE_PATH", "NUGET_PLUGINS_CACHE_PATH", "NUGET_SCRATCH",
+            })
+            {
+                if (Environment.GetEnvironmentVariable(name) is string value)
+                {
+                    inherited[name] = value;
+                }
+            }
+        }
+
         start.Environment.Clear();
         foreach (KeyValuePair<string, string?> pair in inherited)
         {

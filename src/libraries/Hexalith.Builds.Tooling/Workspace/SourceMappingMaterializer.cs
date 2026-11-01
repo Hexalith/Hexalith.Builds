@@ -21,6 +21,11 @@ public static class SourceMappingMaterializer
     /// <returns>The props path.</returns>
     public static string PropsPath(string workspace) => Path.Combine(workspace, "source-mapping", "SourceMapping.props");
 
+    /// <summary>Gets the production model import that supplies the pin before SDK common and owner props.</summary>
+    /// <param name="workspace">The run workspace.</param>
+    /// <returns>The early model props path.</returns>
+    public static string ModelCommonPropsPath(string workspace) => Path.Combine(workspace, "source-mapping", "SourceMapping.model-common.props");
+
     /// <summary>Gets the import that records project-selected roots before consumer targets.</summary>
     /// <param name="workspace">The run workspace.</param>
     /// <returns>The pre-targets props path.</returns>
@@ -69,6 +74,7 @@ public static class SourceMappingMaterializer
         }
 
         await CatalogVersionMaterializer.WriteAsync(mapping, workspace, cancellationToken).ConfigureAwait(false);
+        await File.WriteAllTextAsync(ModelCommonPropsPath(workspace), CreateModelCommonProps(workspace), cancellationToken).ConfigureAwait(false);
         await WriteResourceAsync("SourceMapping.props", PropsPath(workspace), cancellationToken).ConfigureAwait(false);
         await WriteResourceAsync("SourceMapping.targets", TargetsPath(workspace), cancellationToken).ConfigureAwait(false);
         string props = CreateProps(mapping, workspace, initializeObserved: true);
@@ -97,6 +103,22 @@ public static class SourceMappingMaterializer
             ["Configuration"] = mapping.Mode == WorkspaceMode.Source ? "Debug" : "Release",
         };
     }
+
+    /// <summary>Refuses changed model import bytes before starting the model SDK child.</summary>
+    /// <param name="workspace">The materialized workspace.</param>
+    /// <exception cref="InvalidDataException">The production import is unavailable or changed.</exception>
+    internal static void VerifyModelCommonProps(string workspace)
+    {
+        string path = ModelCommonPropsPath(workspace);
+        if (!File.Exists(path) || !string.Equals(File.ReadAllText(path), CreateModelCommonProps(workspace), StringComparison.Ordinal))
+        {
+            throw new InvalidDataException("The production model common-props import is missing or changed.");
+        }
+    }
+
+    private static string CreateModelCommonProps(string workspace) =>
+        "<Project><Import Project=\"" + XmlEscape(MsBuildEscape(Path.Combine(workspace, "source-mapping", "pinned-tree", "Props", "Directory.Packages.props")))
+        + "\" /><Import Project=\"$(MSBuildExtensionsPath)/$(MSBuildToolsVersion)/Microsoft.Common.props\" /></Project>";
 
     private static string CreateProps(SourceMapping mapping, string workspace, bool initializeObserved)
     {

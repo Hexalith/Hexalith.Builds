@@ -84,6 +84,7 @@ public static class PlatformManifestCommand
         }
 
         string pinnedCatalog = VerifiedPinnedCatalog(mapping, workspace, $"Platform model '{project}'");
+        SourceMappingMaterializer.VerifyModelCommonProps(workspace);
         string output = Path.Combine(workspace, "hosts", "platform-model");
         List<string> arguments =
         [
@@ -92,7 +93,10 @@ public static class PlatformManifestCommand
             "-p:BuildsToolingAssemblyPath=" + typeof(PlatformManifestCommand).Assembly.Location,
             "-p:CopyLocalLockFileAssemblies=true",
             "-p:NuGetAudit=false", "-p:MinVerVersionOverride=1.0.0", "-nodeReuse:false", "-p:UseSharedCompilation=false",
-            .. mapping.Mode == WorkspaceMode.Source ? PinnedSourceModelCatalogArguments(pinnedCatalog) : PinnedCatalogArguments(pinnedCatalog),
+            "-m:1", "-p:BuildInParallel=false", "-p:RestoreBuildInParallel=false",
+            "-p:AlternateCommonProps=" + SourceMappingMaterializer.ModelCommonPropsPath(workspace),
+            .. (mapping.Mode == WorkspaceMode.Source ? PinnedSourceModelCatalogArguments(pinnedCatalog) : PinnedCatalogArguments(pinnedCatalog))
+                .Where(argument => !argument.StartsWith("-p:CustomBeforeDirectoryBuildProps=", StringComparison.Ordinal)),
         ];
 
         CompositionProcessResult result = await CompositionProcess.RunAsync(

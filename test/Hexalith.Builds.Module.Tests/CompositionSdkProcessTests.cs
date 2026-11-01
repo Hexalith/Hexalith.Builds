@@ -113,6 +113,23 @@ public sealed class CompositionSdkProcessTests
         result.Output.Trim().ShouldBe("intercepted|certificate=false|serial=1");
     }
 
+    /// <summary>Verifies a bare production dotnet child receives explicit prevention and private cache controls without interception.</summary>
+    /// <returns>The installed SDK observation.</returns>
+    [Fact]
+    public async Task ProductionBareDotnetChildUsesExplicitControlsAsync()
+    {
+        ProcessStartInfo controlled = CompositionSdkProcess.CreateStartInfo(["--version"], CompositionTestFiles.RepositoryRoot());
+        Dictionary<string, string> controls = controlled.Environment.Where(pair => pair.Value is not null)
+            .ToDictionary(pair => pair.Key, pair => pair.Value!, StringComparer.Ordinal);
+        ProcessStartInfo direct = CompositionProcess.CreateStartInfo("dotnet", ["--version"], CompositionTestFiles.RepositoryRoot(), controls);
+        direct.ArgumentList.ShouldBe(["--version"]);
+        direct.Environment["DOTNET_GENERATE_ASPNET_CERTIFICATE"].ShouldBe("false");
+        CompositionProcessResult observed = await CompositionProcess.RunAsync(direct, TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken).ConfigureAwait(true);
+        observed.ExitCode.ShouldBe(0, observed.Output + observed.ErrorOutput);
+        observed.TimedOut.ShouldBeFalse();
+        observed.Output.Trim().ShouldStartWith("10.");
+    }
+
     /// <summary>Verifies the actual SDK stays on a latestPatch resolution of the repository pin.</summary>
     /// <returns>The bounded SDK probe assertion.</returns>
     [Fact]
