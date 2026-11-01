@@ -1209,14 +1209,7 @@ public sealed class CompositionEngine(CompositionEngineOptions options)
         // Never reread child-writable entry files during terminal recording or cleanup.
     }
 
-    private static bool SafeMetadata(System.Text.Json.JsonElement value) => value.ValueKind switch
-    {
-        System.Text.Json.JsonValueKind.String => !ManifestSecretDetector.ContainsSecret(value.GetString()!),
-        System.Text.Json.JsonValueKind.Array => value.EnumerateArray().All(SafeMetadata),
-        System.Text.Json.JsonValueKind.Object => value.EnumerateObject().All(property => !ManifestSecretDetector.ContainsSecret(property.Name) && SafeMetadata(property.Value)),
-        System.Text.Json.JsonValueKind.Number or System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False or System.Text.Json.JsonValueKind.Null or System.Text.Json.JsonValueKind.Undefined => true,
-        _ => false,
-    };
+    private static bool SafeMetadata(System.Text.Json.JsonElement value) => SelectedMetadataSafety.IsSafe(value);
 
     private static void CopyDiagnostic(string source, string destination)
     {

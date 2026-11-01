@@ -19,6 +19,9 @@ internal sealed record NativeTestExecutionResult(ToolCommandResult Result, Nativ
     /// <summary>Gets the bounded inspected detailed native observations, retained beside TRX through existing artifact custody.</summary>
     internal byte[]? ObservationBytes { get; init; }
 
+    /// <summary>Gets bounded public routing files held before the selected child starts.</summary>
+    internal IReadOnlyDictionary<string, byte[]>? RoutingCatalogSnapshot { get; init; }
+
     /// <summary>Gets the runner-observed terminal cause, independent of later processing time.</summary>
     internal string? TerminalCause { get; init; }
 

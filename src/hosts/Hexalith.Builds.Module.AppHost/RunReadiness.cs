@@ -411,6 +411,7 @@ internal static class RunReadiness
                     RefreshId = refreshId,
                     SelectedTest = plan.SelectedTest,
                     TestObservation = testObservation,
+                    RoutingCatalogObservationsRequired = preparedOwners.Any(owner => owner.RoutingCatalogObservationsRequired),
                     NativeHttpEndpoints = nativeEndpoints,
                     NativeEndpointCredentialsPath = endpointCredentialPath,
                     NativeTestScope = app.Services.GetServices<ICompositionRunPreparation>().Select(owner => owner.NativeTestScope).OfType<CompositionNativeTestScope>().SingleOrDefault(),
